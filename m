@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab1DDXpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 19:45:00 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37659 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab1DDXo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 19:44:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-message-flag
-         :x-operating-system:x-editor:x-disclaimer:user-agent;
-        b=N1YB7LLWduoGtGIcSSnQ0uuQPXBGEuGasFKP5fb9PVEBSl4ecP9Gwq4llzNTvbJ7/b
-         CHxtNHVNyOpjIf41/g86qk3aDX/s3RoTcjTNCOaLEBHDCcGsAAyZesFAs42/sZsn5upQ
-         r7c4t+TJkVM0ADH62mKos7y0wTn6SC3i7yvh0=
-Date: Tue, 5 Apr 2011 08:44:49 +0900
-From: Mattia Dongili <malattia@linux.it>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Andrea Gelmini <andrea.gelmini@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, anssi.hannula@iki.fi,
-        linux-acpi@vger.kernel.org, axel.lin@gmail.com, trenn@suse.de,
-        len.brown@intel.com, linux-kernel@vger.kernel.org,
-        Dan Carpenter <error27@gmail.com>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-Subject: sony-laptop: fix early NULL pointer dereference
-Message-ID: <20110404234448.GA24957@kamineko.org>
-References: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com>
- <20110401172241.GA26851@srcf.ucam.org>
- <BANLkTikPjwowBge82viT+Ma5UnP0fA-pew@mail.gmail.com>
- <20110402100043.GA5890@kamineko.org>
- <BANLkTikVGWM3T1y2XvwkHB+Yub5EhG1RPA@mail.gmail.com>
- <20110402155549.GA6724@kamineko.org>
- <BANLkTimJa3CSWouTMJD5V0ZuMa67YXy88Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimJa3CSWouTMJD5V0ZuMa67YXy88Q@mail.gmail.com>
-X-Message-Flag: Cranky? Try Free Software instead!
-X-Operating-System: Linux 2.6.39-rc1+ x86_64
-X-Editor: Vim http://www.vim.org/
-X-Disclaimer: Buh!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756084Ab1DDXrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 19:47:07 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:44463 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755869Ab1DDXrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 19:47:02 -0400
+Subject: Re: Minimal requirements for RTC drivers
+From: John Stultz <john.stultz@linaro.org>
+To: Michael Hunold <hunold@linuxtv.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4D996B74.4070502@linuxtv.org>
+References: <4D996B74.4070502@linuxtv.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Apr 2011 16:46:50 -0700
+Message-ID: <1301960810.2319.63.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Author: Mattia Dongili <malattia@linux.it>
-Date:   Fri Apr 1 10:01:41 2011 +0900
+On Mon, 2011-04-04 at 08:55 +0200, Michael Hunold wrote:
+> I have been working on a new RTC driver for some custom RTC device
+> lately. It has the usual features like AIE, UIE and PIE.
+> 
+> I cloned the rtc-test.c driver as Documentation/rtc.txt suggested and
+> noticed that my driver would work with the test application even though
+> some of the driver functions were not implemented at all...
+> 
+> So I found out about your recent changes with regard to "RTC
+> virtualisation" and I understood the steps you have taken. It's not
+> necessary to provide all functionality through the RTC driver directly
+> any more, because some of the stuff is emulated via hrtimers.
+> 
+> One problem is that the documentation and the code have gotten out of
+> sync. People like me, who dive into the RTC subsystem for the first
+> time, can be easily fooled now.
 
-    sony-laptop: fix early NULL pointer dereference
-    
-    The SNC acpi driver could get early notifications before it fully
-    initializes and that could lead to dereferencing the sony_nc_handles
-    structure pointer that is still NULL at that stage.
-    Make sure we return early from the handle lookup function in these
-    cases.
-    
-    Signed-off-by: Mattia Dongili <malattia@linux.it>
----
+So I have committed some cleanups to the documentation already in
+2.6.39-rc1, but I'd be greatly interested in examples of where you found
+it confusing. 
 
-Hi Matthew,
-if it's not too late, can you pick this one up instead of the previous
-one (89ec2feafaedd759e53346d641f60863a14cfb9e)?
-If it's too late I'll try and do a round of return value fixes later.
 
-diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
-index b2ce172..de79c18 100644
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -810,6 +810,11 @@ static int sony_nc_handles_cleanup(struct platform_device *pd)
- static int sony_find_snc_handle(int handle)
- {
- 	int i;
-+
-+	/* not initialized yet, return early */
-+	if (!handles)
-+		return -EINVAL;
-+
- 	for (i = 0; i < 0x10; i++) {
- 		if (handles->cap[i] == handle) {
- 			dprintk("found handle 0x%.4x (offset: 0x%.2x)\n",
--- 
-mattia
-:wq!
+> So the main question now is what the minimal required functionality for
+> a RTC driver now actually is. Can you give me some hints?
+
+Well, it depends on the functionality that is available. Completely
+minimal might be just clock-only functions:
+	int (*read_time)(struct device *, struct rtc_time *);
+	int (*set_time)(struct device *, struct rtc_time *);
+or
+	int (*set_mmss)(struct device *, unsigned long secs);
+
+
+Then to get interrupt/alarm functionality:
+	int (*alarm_irq_enable)(struct device *, unsigned int enabled);
+	int (*set_alarm)(struct device *, struct rtc_wkalrm *);
+
+To have persistence over reboots:
+	int (*read_alarm)(struct device *, struct rtc_wkalrm *);
+
+
+These are completely optional:
+	int (*proc)(struct device *, struct seq_file *);
+	int (*ioctl)(struct device *, unsigned int, unsigned long);
+	int (*open)(struct device *);
+	void (*release)(struct device *);
+	int (*read_callback)(struct device *, int data);
+
+
+> I think it would be best if the rtc-test.c driver could be updated to
+> have a template new drivers can be cloned from.
+
+So upstream in 2.6.39-rc1 I think this has been done, but please let me
+know if there are any improvements you see that could be made.
+
+> Another thing that catched my eye is the current use of the read_alarm()
+> member in struct rtc_class_ops in rtc_read_alarm() in
+> drivers/rtc/interface.c. This is the only place where the member is used
+> and it's only used as a boolean there. The driver specific read_alarm()
+> op is never actually called, so I think that op can be transformed into
+> a boolean and all the read_alarm() functions from all the rtc drivers
+> can be removed - that's quite a lot of a code.
+
+Yes, I actually tried to remove it, but realized we need it to restore
+the aie_timer state at boot. 
+
+Please check 2.6.39-rc1, and let me know if your concerns have not been
+addressed already?
+
+thanks
+-john
+
+
