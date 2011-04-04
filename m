@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab1DDO6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 10:58:10 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:39497 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754601Ab1DDO6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 10:58:09 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>
-Subject: [PATCH] avr32: init cannot ignore signals sent by force_sig_info()
-Date: Mon,  4 Apr 2011 15:58:04 +0100
-Message-Id: <1301929084-2025-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4
+	id S1754758Ab1DDPAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 11:00:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60103 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754601Ab1DDPAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 11:00:33 -0400
+Date: Mon, 4 Apr 2011 15:00:08 GMT
+From: tip-bot for Florian Mickler <florian@mickler.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        florian@mickler.org, tj@kernel.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        florian@mickler.org, tj@kernel.org, tglx@linutronix.de
+In-Reply-To: <1301843624-22364-1-git-send-email-florian@mickler.org>
+References: <1301843624-22364-1-git-send-email-florian@mickler.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86-64, NUMA: Remove unused variable
+Message-ID: <tip-711b8c87a5fe6de78e90411cb67b506babfef74a@git.kernel.org>
+Git-Commit-ID: 711b8c87a5fe6de78e90411cb67b506babfef74a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 04 Apr 2011 15:00:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@linux.intel.com>
+Commit-ID:  711b8c87a5fe6de78e90411cb67b506babfef74a
+Gitweb:     http://git.kernel.org/tip/711b8c87a5fe6de78e90411cb67b506babfef74a
+Author:     Florian Mickler <florian@mickler.org>
+AuthorDate: Mon, 4 Apr 2011 01:17:40 +0200
+Committer:  Tejun Heo <tj@kernel.org>
+CommitDate: Mon, 4 Apr 2011 01:21:00 +0200
 
-We can delete the code that checks to see if we're sending an ignored
-signal to init because force_sig_info() already handles this case.
-force_sig_info() will kill init even if the signal handler is SIG_DFL
-and the scenario described in the comment where init might "generate
-the same exception over and over again" cannot occur (force_sig_info()
-clears SIGNAL_UNKILLABLE to ensure that init will die).
+x86-64, NUMA: Remove unused variable
 
-Also, the use of is_global_init() is not correct in the multhreaded
-case, as Oleg Nesterov explains,
+In case !CONFIG_ACPI_NUMA and !CONFIG_AMD_NUMA gcc emits a warning
+about the unused variable ret.
 
-	"is_global_init() is not right in theory, /sbin/init can be
-	multithreaded. And, this doesn't cover the sub-namespace
-	inits... I'd suggest to check SIGNAL_UNKILLABLE, but looking
-	closer I think you can simply remove this code."
+As that variable is in fact not needed I choose to remove it.
 
-It seems this code was copied from arch/powerpc in March 2007 in commit
-
-  623b0355d5b1 "[AVR32] Clean up exception handling code"
-
-but the code was deleted from arch/powerpc in November 2009 in commit
-
-  a0592d42fe3e "powerpc: kill the obsolete code under is_global_init()"
-
-So catch up with powerpc and delete the bogus code.
-
-Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
+Signed-off-by: Florian Mickler <florian@mickler.org>
+LKML-Reference: <1301843624-22364-1-git-send-email-florian@mickler.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- arch/avr32/kernel/traps.c |   22 ----------------------
- 1 files changed, 0 insertions(+), 22 deletions(-)
+ arch/x86/mm/numa_64.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/arch/avr32/kernel/traps.c b/arch/avr32/kernel/traps.c
-index b91b204..7aa2575 100644
---- a/arch/avr32/kernel/traps.c
-+++ b/arch/avr32/kernel/traps.c
-@@ -95,28 +95,6 @@ void _exception(long signr, struct pt_regs *regs, int code,
- 	info.si_code = code;
- 	info.si_addr = (void __user *)addr;
- 	force_sig_info(signr, &info, current);
--
--	/*
--	 * Init gets no signals that it doesn't have a handler for.
--	 * That's all very well, but if it has caused a synchronous
--	 * exception and we ignore the resulting signal, it will just
--	 * generate the same exception over and over again and we get
--	 * nowhere.  Better to kill it and let the kernel panic.
--	 */
--	if (is_global_init(current)) {
--		__sighandler_t handler;
--
--		spin_lock_irq(&current->sighand->siglock);
--		handler = current->sighand->action[signr-1].sa.sa_handler;
--		spin_unlock_irq(&current->sighand->siglock);
--		if (handler == SIG_DFL) {
--			/* init has generated a synchronous exception
--			   and it doesn't have a handler for the signal */
--			printk(KERN_CRIT "init has generated signal %ld "
--			       "but has no handler for it\n", signr);
--			do_exit(signr);
--		}
--	}
- }
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 3951ee6..13f5b06 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -505,17 +505,13 @@ static int __init numa_init(int (*init_func)(void))
  
- asmlinkage void do_nmi(unsigned long ecr, struct pt_regs *regs)
--- 
-1.7.4
-
+ void __init initmem_init(void)
+ {
+-	int ret;
+-
+ 	if (!numa_off) {
+ #ifdef CONFIG_ACPI_NUMA
+-		ret = numa_init(x86_acpi_numa_init);
+-		if (!ret)
++		if (!numa_init(x86_acpi_numa_init))
+ 			return;
+ #endif
+ #ifdef CONFIG_AMD_NUMA
+-		ret = numa_init(amd_numa_init);
+-		if (!ret)
++		if (!numa_init(amd_numa_init))
+ 			return;
+ #endif
+ 	}
