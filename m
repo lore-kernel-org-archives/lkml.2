@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1DDIVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 04:21:05 -0400
-Received: from smtp1.kolej.mff.cuni.cz ([78.128.192.10]:50880 "EHLO
+	id S1753963Ab1DDIV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 04:21:26 -0400
+Received: from smtp1.kolej.mff.cuni.cz ([78.128.192.10]:52021 "EHLO
 	smtp1.kolej.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab1DDIVE (ORCPT
+	with ESMTP id S1751878Ab1DDIVY (ORCPT
 	<RFC822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 04:21:04 -0400
+	Mon, 4 Apr 2011 04:21:24 -0400
 X-Envelope-From: santiago@crfreenet.org
-Date: Mon, 4 Apr 2011 10:33:16 +0200
+Date: Mon, 4 Apr 2011 10:33:47 +0200
 From: Ondrej Zajicek <santiago@crfreenet.org>
 To: Ondrej Zary <linux@rainbow-software.org>
 Cc: linux-fbdev@vger.kernel.org,
         Kernel development list <linux-kernel@vger.kernel.org>,
         Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH v3] s3fb: add DDC support
-Message-ID: <20110404083316.GB9431@localhost>
-References: <201104032236.18936.linux@rainbow-software.org>
+Subject: Re: [PATCH] s3fb: fix Virge/GX2
+Message-ID: <20110404083347.GC9431@localhost>
+References: <201103292107.11969.linux@rainbow-software.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1LKvkjL3sHcu1TtY"
+	protocol="application/pgp-signature"; boundary="tqI+Z3u+9OQ7kwn0"
 Content-Disposition: inline
-In-Reply-To: <201104032236.18936.linux@rainbow-software.org>
+In-Reply-To: <201103292107.11969.linux@rainbow-software.org>
 X-Operating-System: Debian GNU/Linux 4.0 (Etch)
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,22 +29,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1LKvkjL3sHcu1TtY
+--tqI+Z3u+9OQ7kwn0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, Apr 03, 2011 at 10:36:15PM +0200, Ondrej Zary wrote:
-> Add I2C support for the DDC bus and also default mode initialization by
-> reading monitor EDID to the s3fb driver.
+On Tue, Mar 29, 2011 at 09:07:08PM +0200, Ondrej Zary wrote:
+> Fix Virge/GX2 support in s3fb:
+> - fix IDs: 86C357 is GX2, 86C359 is GX2+, 86C356 probably does not exist
+> - add memory size detection
+> - drive it the same way as Trio3D/2X
 >=20
-> Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
-> Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
+> The original IDs most likely came from S3 website which claims that:
+> - 356 is Virge/GX2 with ID=3D8A10, driver included in Windows 2K, XP
+> - 357 is Virge/GX2+ with ID=3D8A11, driver included in Windows ME
+> - 359 is Virge/GX2+ with ID=3D8A12, driver included in Windows ME
+> but:
+> - google search for 86C356 only reveals references to Trio3D (probably
+> because of a typo - Trio3D is 86C365)
+> - my card is clearly marked as 86C357, Virge/GX2 and has ID=3D8A10
+> - there is no driver for IDs 8A11 and 8A12 in Windows ME
+> - there is a driver for ID 8A10 in Windows ME that says it's GX2 (357)
 >=20
-> Will probably not work on Trio32 - my 2 cards have DDC support in BIOS th=
-at
-> looks different from the other cards but the DDC pins on the VGA connector
-> are not connected.
+> Tested with #9 Reality 334 (86C357 Virge/GX2, ID=3D0x8A10).
 >=20
 > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
@@ -57,7 +64,7 @@ Ondrej 'SanTiago' Zajicek (email: santiago@crfreenet.org)
 OpenPGP encrypted e-mails preferred (KeyID 0x11DEADC3, wwwkeys.pgp.net)
 "To err is human -- to blame it on a computer is even more so."
 
---1LKvkjL3sHcu1TtY
+--tqI+Z3u+9OQ7kwn0
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 Content-Disposition: inline
@@ -65,9 +72,9 @@ Content-Disposition: inline
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAk2ZgkwACgkQw1GB2RHercNyUQCfR2jtWsyLsivx/IMhO+HM31Oz
-nnEAnjt5uMoxJ3GUiqmU4zd8fifrn18d
-=/MoA
+iEYEARECAAYFAk2ZgmsACgkQw1GB2RHercMU1QCdEloHe7ehmFz+VqFJ6KK9rsEQ
+ilEAn3it3fhw5xS6Y4NL5eibKumCBGE9
+=cAyz
 -----END PGP SIGNATURE-----
 
---1LKvkjL3sHcu1TtY--
+--tqI+Z3u+9OQ7kwn0--
