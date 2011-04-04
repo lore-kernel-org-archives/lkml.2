@@ -1,237 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab1DDMK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 08:10:58 -0400
-Received: from nwd2mail11.analog.com ([137.71.25.57]:33656 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab1DDMK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 08:10:56 -0400
-X-IronPort-AV: E=Sophos;i="4.63,296,1299474000"; 
-   d="scan'208";a="31224268"
-Message-ID: <4D99B34B.9050309@analog.com>
-Date: Mon, 4 Apr 2011 14:02:19 +0200
-From: Michael Hennerich <michael.hennerich@analog.com>
-Reply-To: michael.hennerich@analog.com
-Organization: Analog Devices Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1754551Ab1DDMRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 08:17:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60884 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752611Ab1DDMRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 08:17:18 -0400
+Message-ID: <4D99B6CC.7080707@suse.cz>
+Date: Mon, 04 Apr 2011 14:17:16 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Subject: Re: [RFC PATCH 00/21] IIO: Channel registration rework, buffer chardev
- combining and rewrite of triggers as 'virtual' irq_chips.
-References: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paulo Marques <pmarques@grupopie.com>
+Subject: Re: [PATCH 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig to
+ Makefile
+References: <1301913651-9055-1-git-send-email-dedekind1@gmail.com> <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
+In-Reply-To: <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2011 04:53 PM, Jonathan Cameron wrote:
-> Dear All,
->
-> I'm afraid what in many ways makes sense as three separate
-> series have gotten rather intertwined.  I can probably unpick
-> them but it will involve a lot of intermediate code in
-> lis3l02dq (which is our fiddly example for this set) that I'd
-> rather avoid.  Hence lets have a guide to what various people
-> might be interested in:
->
-> 1) Channel registration rework (this has previous been in linux-iio
->    but really comes into it's own after we remove various special
->    cases later in this code).
->
->    Patches 1, 2, 3, 21
->    (8) - cleanups Arnd Bergmann pointed out in passing.
->   
-Good approach. It removes quite a bit on duplicated code across drivers.
-At the moment I can't think of existing drivers that couldn't moved over
-to the
-new channel registration method. However there are some limitations.
-read_raw() value is currently type int, depending on the channel type,
-int type might be to short.
+On 4.4.2011 12:40, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> 
+> At the moment we have the CONFIG_KALLSYMS_EXTRA_PASS Kconfig switch,
+> which users can enable or disable while configuring the kernel. This
+> option is then used by 'make' to determine whether an extra kallsyms
+> pass is needed or not.
+> 
+> However, this approach is not nice and confusing, and this patch moves
+> CONFIG_KALLSYMS_EXTRA_PASS from Kconfig to Makefile instead. The
+> rationale is below.
+> 
+> 1. CONFIG_KALLSYMS_EXTRA_PASS is really about the build time, not
+>    run-time. There is no real need for it to be in Kconfig. It is
+>    just an additional work-around which should be used only in rare
+>    cases, when someone breaks kallsyms, so Kbuild/Makefile is much
+>    better place for this option.
+> 2. Grepping CONFIG_KALLSYMS_EXTRA_PASS shows that many defconfigs have
+>    it enabled, probably not because they try to work-around a kallsyms
+>    bug, but just because the Kconfig help text is confusing and does
+>    not really make it clear that this option should not be used unless
+>    except when kallsyms is broken.
+> 3. And since many people have CONFIG_KALLSYMS_EXTRA_PASS enabled in
+>    their Kconfig, we do might fail to notice kallsyms bugs in time. E.g.,
+>    many testers use "make allyesconfig" to test builds, which will enable
+>    CONFIG_KALLSYMS_EXTRA_PASS and kallsyms breakage will not be noticed.
+> 
+> To address that, this patch:
+> 
+> 1. Kills CONFIG_KALLSYMS_EXTRA_PASS
+> 2. Changes Makefile so that people can use "make KALLSYMS_EXTRA_PASS=1"
+>    to enable the extra pass if needed.
+> 3. By default KALLSYMS_EXTRA_PASS is disabled and if kallsyms has issues,
+>    "make" should print a warning and suggest using KALLSYMS_EXTRA_PASS
+> 4. Add "make help" entry for KALLSYMS_EXTRA_PASS
+> 
+> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Cc: Paulo Marques <pmarques@grupopie.com>
+> Cc: Michal Marek <mmarek@suse.cz>
+> ---
+>  Makefile     |   13 ++++++++-----
+>  init/Kconfig |   12 ------------
+>  2 files changed, 8 insertions(+), 17 deletions(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index ba7a55c..b66a43a 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -797,15 +797,16 @@ ifdef CONFIG_KALLSYMS
+>  # o The correct .tmp_kallsyms2.o is linked into the final vmlinux.
+>  # o Verify that the System.map from vmlinux matches the map from
+>  #   .tmp_vmlinux2, just in case we did not generate kallsyms correctly.
+> -# o If CONFIG_KALLSYMS_EXTRA_PASS is set, do an extra pass using
+> +# o If 'make KALLSYMS_EXTRA_PASS=1" was used, do an extra pass using
+>  #   .tmp_vmlinux3 and .tmp_kallsyms3.o.  This is only meant as a
+>  #   temporary bypass to allow the kernel to be built while the
+>  #   maintainers work out what went wrong with kallsyms.
+>  
+> -ifdef CONFIG_KALLSYMS_EXTRA_PASS
+> -last_kallsyms := 3
+> -else
+>  last_kallsyms := 2
+> +ifeq ("$(origin KALLSYMS_EXTRA_PASS)", "command line")
 
- 
-> 2) Flattening together of (some) of the chardevs (buffer related ones).
->    As Arnd pointed out, there is really a use case for having multiple
->    watershed type events from ring buffers.  Much better to have a
->    single one (be that at a controllable point).  Firstly this removes
->    the need for the event escalation code.  Second, this single 'event'
->    can then be indicated to user space purely using polling on the
->    access chrdev.  This approach does need an additional attribute to
->    tell user space what the poll succeeding indicates (tbd).
->
->    I haven't for now merged the ring handling with the more general
->    event handling as Arnd suggested.  This is for two reasons
->    1) It's much easier to debug this done in a couple of steps
->    2) The approach Arnd suggested may work well, but it is rather
->    different to how other bits of the kernel pass event type data
->    to user space.  It's an interesting idea, but I'd rather any
->    discussion of that approach was separate from the obviously
->    big gains seen here.
->
->    Patches 4, 5, 6, 7, 17
->   
-I appreciate the removal of the buffer event chardev. Adding support for
-poll is also a good thing to do.
-However support for a blocking read might also fit some use cases.
- 
-> 3) Reworking the triggering infrastructure to use 'virtual' irq_chips
->    This approach was suggested by Thomas Gleixner.
->    Before we had explicit trigger consumer lists.  This made for a very
->    clunky implementation when we considered moving things over to
->    threaded interrupts.  Thomas pointed out we were reinventing the
->    wheel and suggested more or less what we have here (I hope ;)
->   
-Using threaded interrupts, greatly reduces use of additional workqueues
-and excessive interrupt enable and disables.
-  
->    Patches 9 and 10 are minor rearrangements of code in the one
->    driver I know of where the physical interrupt line for events
->    is the same as that for data ready signals (though not at the
->    same time).
->   
-I wouldn't consider this being a corner case. I know quite a few devices
-that trigger data availability,
-and other events from the same physical interrupt line, and they may do
-it at the same time.
- 
->    In a rare situation we have complete control of these virtual
->    interrupts within the subsystem.  As such we want to be able to
->    continue to build the subsystem as a module.  This requires a
->    couple of additional exports in the generic irq core code and
->    also arm (for my test board anyway).
->    Patches 13 and 14 make these changes.  I hope they won't prove
->    to controversial.
->
->    Patch 15 adds a board info built in element to the IIO subsystem
->    so we have a means of platform data telling us what interrupt
->    numbers are available for us to play with.  Does anyone have
->    a better way of doing this?  Patch 16 is an example of what
->    needs to go in board files.
->   
-Since this is purely platform dependent, setting the irq pool from the
-board setup looks acceptable to me, and depending on the arch or machine
-it might be necessary two tweak some other defines.
-However many arches define NR_IRQS always greater than actually used. So
-why not make IR-Base a Kconfig option?
+I would drop the origin check here. We use it for single-letter
+variables that could be used outside the kernel with a different
+meaning, but if you export KALLSYMS_EXTRA_PASS, then you certainly mean
+the kernel's KALLSYMS_EXTRA_PASS.
 
->    18, 19 move lis3l02dq over to the threaded interrupts.
->
->    20 rips out the old approach.  Until this patch current drivers
->    using the old system should still work. I make no guarantees
->    about combining consumers of both types though!
->
->
-> Note that this series sits on top of the cleanup series:
-> [PATCH 0/8] staging:iio:mixed bag of fixes and cleanups
-> http://marc.info/?l=linux-iio&m=130039556909192&w=2
-> on top of staging-next (which right now might mean mainline is
-> also fine).
->
-> There are clearly corners to be cleaned up and exact interfaces
-> elements to be pinned down, but I'd like to get some opinions
-> on what we have here.
->
-> All comments welcomed!
->
-> Note, wrt to the recent discussion on a strategy for moving IIO
-> out of staging, my intent is to pin down these big changes before
-> we attempt to move these elements out.  Note that the initial
-> steps of that move may occur in parallel with these changes.
->
-> Some of these patches may only be applied during that move as
-> that is a sensible point to update and test every driver.
->
-> Thanks to Arnd and Thomas for their contributions to this.
->
-> Jonathan
->
-> Jonathan Cameron (21):
->   staging:iio: allow channels to be set up using a table of
->     iio_channel_spec structures.
->   staging:iio:lis3l02dq - experimental move to new channel_spec
->     approach.
->   staging:iio:max1363 - experimental move to channel_spec registration.
->   staging:iio: remove ability to escalate events.
->   staging:iio: Add polling of events on the ring access chrdev.
->   staging:iio: remove legacy event chrdev for the buffers
->   staging:iio: Buffer device flattening.
->   staging:iio:lis3l02dq: General cleanup
->   staging:iio: Push interrupt setup down into the drivers for event
->     lines.
->   staging:iio: lis3l02dq - separate entirely interrupt handling for
->     thesholds from that for the datardy signal.
->   staging:iio: Remove legacy event handling.
->   staging:iio:lis3l02dq make threshold interrupt threaded.
->   arm: irq: export set flags
->   irq: export handle_simple_irq and irq_to_desc to allow for virtual
->     irqs in IIO
->   staging:iio: Add infrastructure for irq_chip based triggers
->   stargate2 - add an IIO interrupt pool
->   staging:iio:Documentation generic_buffer.c update to new abi for
->     buffers.
->   staging:iio:ring_sw add function needed for threaded irq.
->   staging:iio:lis3l02dq move to threaded trigger handling.
->   staging:iio:trigger remove legacy pollfunc elements.
->   staging:iio: rip out scan_el attributes.  Now handled as
->     iio_dev_attrs like everything else.
->
->  arch/arm/kernel/irq.c                              |    1 +
->  arch/arm/mach-pxa/stargate2.c                      |    6 +-
->  drivers/staging/Makefile                           |    2 +-
->  drivers/staging/iio/Documentation/generic_buffer.c |   53 +-
->  drivers/staging/iio/Kconfig                        |   12 +
->  drivers/staging/iio/Makefile                       |    2 +
->  drivers/staging/iio/accel/lis3l02dq.h              |   25 +-
->  drivers/staging/iio/accel/lis3l02dq_core.c         |  700 +++++-------
->  drivers/staging/iio/accel/lis3l02dq_ring.c         |  421 +++----
->  drivers/staging/iio/adc/max1363.h                  |    8 +-
->  drivers/staging/iio/adc/max1363_core.c             | 1277 ++++++++------------
->  drivers/staging/iio/adc/max1363_ring.c             |    1 -
->  drivers/staging/iio/chrdev.h                       |   33 +-
->  drivers/staging/iio/iio-board-info.h               |   24 +
->  drivers/staging/iio/iio-core.h                     |   13 +
->  drivers/staging/iio/iio.h                          |  250 +++--
->  drivers/staging/iio/industrialio-board-info.c      |   25 +
->  drivers/staging/iio/industrialio-core.c            |  724 ++++++++---
->  drivers/staging/iio/industrialio-ring.c            |  315 +++---
->  drivers/staging/iio/industrialio-trigger.c         |  150 ++--
->  drivers/staging/iio/ring_generic.h                 |   79 +-
->  drivers/staging/iio/ring_sw.c                      |   42 +-
->  drivers/staging/iio/ring_sw.h                      |    1 +
->  drivers/staging/iio/sysfs.h                        |  152 +--
->  drivers/staging/iio/trigger.h                      |   68 +-
->  kernel/irq/chip.c                                  |    1 +
->  kernel/irq/irqdesc.c                               |    1 +
->  27 files changed, 2116 insertions(+), 2270 deletions(-)
->  create mode 100644 drivers/staging/iio/iio-board-info.h
->  create mode 100644 drivers/staging/iio/iio-core.h
->  create mode 100644 drivers/staging/iio/industrialio-board-info.c
->
-> --
-> 1.7.3.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   
-
-
--- 
-Greetings,
-Michael
-
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
-Margaret Seif
-
+Michal
