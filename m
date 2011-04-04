@@ -1,158 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1DDIko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 04:40:44 -0400
-Received: from tundra.namei.org ([65.99.196.166]:58366 "EHLO tundra.namei.org"
+	id S1754081Ab1DDIm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 04:42:26 -0400
+Received: from linux-sh.org ([111.68.239.195]:48415 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754009Ab1DDIkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 04:40:43 -0400
-Date: Mon, 4 Apr 2011 18:39:59 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: linux-security-module@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, lwn@lwn.net, fedora-selinux-list@redhat.com,
-        selinux@tycho.nsa.gov, ubuntu-hardened@lists.ubuntu.com,
-        tomoyo-users-en@lists.sourceforge.jp, netfilter-devel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, Audit-ML <linux-audit@redhat.com>,
-        Linux Security Summit Program Committee 
-	<lss-pc@ext.namei.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, gentoo-hardened@gentoo.org
-Subject: [ANN] Linux Security Summit 2011 - Announcement and CFP
-Message-ID: <alpine.LRH.2.00.1104041833360.354@tundra.namei.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751459Ab1DDImY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 04:42:24 -0400
+Date: Mon, 4 Apr 2011 17:42:03 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ondrej Zajicek <santiago@crfreenet.org>
+Cc: Ondrej Zary <linux@rainbow-software.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] s3fb: add DDC support
+Message-ID: <20110404084200.GD28208@linux-sh.org>
+References: <201104032236.18936.linux@rainbow-software.org> <20110404083316.GB9431@localhost>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110404083316.GB9431@localhost>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-==========================================================================
+On Mon, Apr 04, 2011 at 10:33:16AM +0200, Ondrej Zajicek wrote:
+> On Sun, Apr 03, 2011 at 10:36:15PM +0200, Ondrej Zary wrote:
+> > Add I2C support for the DDC bus and also default mode initialization by
+> > reading monitor EDID to the s3fb driver.
+> > 
+> > Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
+> > Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
+> > 
+> > Will probably not work on Trio32 - my 2 cards have DDC support in BIOS that
+> > looks different from the other cards but the DDC pins on the VGA connector
+> > are not connected.
+> > 
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> 
+> Acked-by: Ondrej Zajicek <santiago@crfreenet.org>
+> 
+Is there much reason to leave this optional? Or are you simply waiting
+for testing feedback from Trio32 users before default-enabling it?
 
-                 ANNOUNCEMENT AND CALL FOR PARTICIPATION
-
-                 LINUX SECURITY SUMMIT 2011 - SANTA ROSA
-
-==========================================================================
-
-
-DESCRIPTION
-
-  The Linux Security Summit is a technical forum for collaboration
-  between Linux developers, researchers, and end users.  Its primary aim
-  is to foster community efforts in analyzing and solving Linux security
-  challenges.
-
-  The format of the summit will be:
-  
-    * Selected brief presentations
-    * Lightning talks
-    * Q&A panel sessions 
-
-
-WEB SITE
-
-  https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2011
-
-
-DATES / LOCATION
-
-  The Linux Security Summit for 2011 will be held on the 8th of September in
-  Santa Rosa, CA, USA.  It will be co-located with Linux Plumbers Conference
-  (LPC) [1].
-  
-  Note that Linux Security Summit attendees and speakers must be registered to attend
-  LPC.  See the LPC site for details on registration, travel, and accommodation:
-  
-    http://www.linuxplumbersconf.org/2011/
-
-  The Linux Security Summit CFP is now open, and will close on 27th of May.
-  
-  Accepted speakers will be notified by 1st of June.
-
-
-WHO SHOULD ATTEND
-
-  The event is open to all registered LPC attendees.
-  
-  You do not have to be a "security person" to attend -- we're seeking a
-  diverse range of attendees, and welcome the participation of general
-  developers, researchers, operations, and end-users.
-
-  There will be several panel sessions in addition to brief, selected
-  presentations, with a strong focus on discussion.
-
-
-CALL FOR PARTICIPATION
-
-  The program committee currently seeks proposals for:
-
-  Presentations:
-  
-    Brief technical talks in 30 minute slots, including at least 10
-    minutes of discussion (i.e.  the maximum length of the presentation
-    alone is 20 minutes).  Papers are encouraged, and slides should be
-    minimal.
-    
-    Presentation abstracts should be approximately 150 words in length.
-
-
-  Panel discussion topics:
-  
-    If you'd like to see an issue discussed in a Q&A style panel, send it
-    in.  Note that this may result in you volunteering to participate in
-    a panel.
-
-    
-  Topic areas include, but are not limited to:
-  
-    * System hardening
-    * Access control
-    * Cryptography
-    * Integrity control
-    * Hardware security
-    * Networking
-    * Storage
-    * Virtualization
-    * Desktop
-    * Tools
-    * Management
-    * Case studies
-    * Emerging technologies, threats & techniques 
-    
-
-  Proposals should be submitted in plain text via email to the program
-  committee at:  lss-pc (_at_) ext.namei.org
-
-
-MAILING LIST
-
-  Everyone planning to attend should join the event mailing list:
-  
-     https://ext.namei.org/mailman/listinfo/linux-security-summit
-     
-  Updates and announcements about the event will also be sent to the list.
-  
-
-PROGRAM COMMITTEE
-
-  The Linux Security Summit for 2011 is organized by:
-
-    * James Morris, Red Hat
-    * Serge Hallyn, Canonical
-    * Paul Moore, HP
-    * Stephen Smalley, NSA
-    * Joshua Brindle, Tresys
-    * Tetsuo Handa, NTT Data
-    * Herbert Xu, Red Hat
-    * John Johansen, Canonical
-    * Kees Cook, Canonical
-    * Casey Schaufler, Smack Project
-
-  The program committee may be contacted as a group via email:
-
-     lss-pc (_at_) ext.namei.org
-   
-
-REFERENCES  
-
-  [1] Linux Plumbers Conference http://www.linuxplumbersconf.org/2011/
-
+It would generally be nice to avoid these sorts of config options for a
+specific driver if it already is quite capable of handling the
+unsupported cases and has a reasonable fallback on defaults via the error
+path.
