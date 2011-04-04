@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab1DDPAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 11:00:45 -0400
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:39240 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763Ab1DDPAn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 11:00:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
-	:cc:in-reply-to:references:content-type:date:message-id
-	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=trw5ix
-	a6/v+e3RQo9RHndWUTI/tFDUnchHRjN85GtCmZShW4vIk8sk484giN1a1Aikcdf/
-	DUdLxmTMrbkYWAt1OkwARkGEg84KieYYOlN6B/C5mBux0suo1ehL7Pa2jtsBLinA
-	3iyybyE695BoyTvrp6lS1vO89+4y37iFS2ZMo=
-Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
-From: Nathan Lynch <ntl@pobox.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-In-Reply-To: <20110403190324.GD15044@hallyn.com>
-References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
- <1298936432-29607-6-git-send-email-ntl@pobox.com>
- <20110403190324.GD15044@hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 10:00:28 -0500
-Message-ID: <1301929228.31531.39.camel@tp-t61>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 8E22A4B6-5ECC-11E0-B60E-E8AB60295C12-04752483!a-pb-sasl-sd.pobox.com
+	id S1754819Ab1DDPAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 11:00:52 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53843 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754686Ab1DDPAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 11:00:50 -0400
+Date: Mon, 4 Apr 2011 17:00:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Florian Mickler <florian@mickler.org>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
+        maciej.rutecki@gmail.com, rjw@sisk.pl, sedat.dilek@gmail.com
+Subject: Re: [PATCH] x86, ioapic: move acpi_get_override_irq to acpi.c
+Message-ID: <20110404150035.GB11475@elte.hu>
+References: <20110401075011.GD7594@elte.hu>
+ <1301672686-10096-1-git-send-email-florian@mickler.org>
+ <20110401182653.340abaa4@schatten.dmk.lab>
+ <20110403163449.33a6a4dc@schatten.dmk.lab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110403163449.33a6a4dc@schatten.dmk.lab>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-04-03 at 14:03 -0500, Serge E. Hallyn wrote:
-> Quoting ntl@pobox.com (ntl@pobox.com):
-> > Only a pid namespace init task - the child process produced by a call
-> > to clone(2) with CLONE_NEWPID - is allowed to call these.  The state
+
+* Florian Mickler <florian@mickler.org> wrote:
+
+> On Fri, 1 Apr 2011 18:26:53 +0200
+> Florian Mickler <florian@mickler.org> wrote:
 > 
-> So you make this useful for your cases by only using this with
-> application containers - created using lxc-execute, or, more precisely,
-> using lxc-init as the container's init.  So a container running a stock
-> distro can't be checkpointed.
+> > And how do I check compilation of !CONFIG_X86_IO_APIC?  
+> 
+> That was a real question, btw. Not just me mumbling around... make
+> oldconfig always turns that symbol back on to =y ... and I couldn't find
+> out why. 
 
-Correct, a conventional distro init won't work, and application
-containers are my focus for now, at least.
+'make ARCH=i386 allnoconfig' for example.
 
+Thanks,
 
-> Is this just to keep the patch simple for now, or is there some reason
-> to keep this limitation in place?
-
-I guess you're asking whether non-pid-init processes could be allowed to
-use the syscalls?  I don't think so... almost certainly not restart(2).
-
-I think that restriction keeps the implementation simple and the
-semantics clear.  And init is uniquely positioned to carry out any setup
-required (mounts, networking) before calling restart.
-
-
+	Ingo
