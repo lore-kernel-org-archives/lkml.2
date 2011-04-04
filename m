@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab1DDOQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 10:16:59 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:58135 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393Ab1DDOQ6 (ORCPT
+	id S1754533Ab1DDO3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 10:29:10 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:34979 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab1DDO3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 10:16:58 -0400
-Date: Mon, 4 Apr 2011 23:16:52 +0900
-From: Norbert Preining <preining@logic.at>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: Lenovo resume from suspends hangs in i915_gpu_busy or so
-Message-ID: <20110404141652.GB13658@gamma.logic.tuwien.ac.at>
-References: <20110401021055.GB6071@gamma.logic.tuwien.ac.at> <20110401051511.GE9128@gamma.logic.tuwien.ac.at> <20110401090817.01717af0@jbarnes-desktop> <20110402002410.GL6464@gamma.logic.tuwien.ac.at> <20110401192106.2cca8cd7@jbarnes-x200>
+	Mon, 4 Apr 2011 10:29:08 -0400
+Message-ID: <4D99D5B0.6010503@ahsoftware.de>
+Date: Mon, 04 Apr 2011 16:29:04 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110401192106.2cca8cd7@jbarnes-x200>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel@vger.kernel.org
+CC: linux-omap@vger.kernel.org
+Subject: rtc-twl: catch22 in 2.6.37 and 2.6.38 when clock was never set
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesse, hi everyone,
+Hello,
 
-ok, I give up for now. 
+it just happened here that the rechargeable backup battery for the RTC 
+on a TPS65950 run out off power, because of some days while the device 
+wasn't powered.
 
-On Fr, 01 Apr 2011, Jesse Barnes wrote:
-> Well I'd start with something like 2.6.37, I think that's the first
+Afterwards I couldn't read or set the clock with hwclock using a kernel 
+2.6.37.n or 2.6.38.n.
 
-2.6.37 suspends and resumes fine, even with X running
+I don't have a fix, but I think I've analyzed the problem and can offer 
+a (bad) workaround.
 
-Then I recompiled 2.6.39-rc1 with our patch and suspended,
-resume took 1min (exactely!) and worked out. I got a lot of the
-warning messages, every five seconds the DRM_ERROR msgs from
-the patch.
-[   52.069753] [drm:i915_gpu_busy] *ERROR* entering busy check, trying to take lock
-[   52.071813] [drm:i915_gpu_busy] *ERROR* got lock, returning current busy status
-[   52.074233] [drm:i915_gpu_busy] *ERROR* unlock & return
-[   57.074194] [drm:i915_gpu_busy] *ERROR* entering busy check, trying to take lock
-[   57.076270] [drm:i915_gpu_busy] *ERROR* got lock, returning current busy status
-[   57.078717] [drm:i915_gpu_busy] *ERROR* unlock & return
+What happens is the following:
 
+When trying to read or set the clock with hwclock, the driver (rtc-twl) 
+starts an alarm, but the irq for the alarm will never get called. The 
+result is that a select in hwclock times out (for both operations, read 
+or set).
 
-The resume was probably hanging at something different. I am not at 
-the laptop now (travelling with a ifferent laptop), but it was:
-	r8169: cannot apply firmware patch 
-or something similar. It was always ... resume ... 60sec hang ...
-then this message and "resume of devices completed" or so in the dmesg
-output.
+Because I had this clock running before, I've got the idea to try one of 
+those old OMAP-kernels (2.6.32-angstrom) using the same userland.
+And with that kernel I could set the clock.
+Using 2.6.37 or 2.6.38 afterwards, hwclock did function again, both read 
+an set are working.
 
-So I thought it might be that the patch changed a bit of timings 
-but recompiling *without* the patch and rebooting I get now the
-same behaviour: Suspend and resume works, although hanging for 1min
-before coming back.
+So it looks like there is a catch22 in kernels >=2.6.37 (I haven't 
+tested .33-.36):
 
-I guess that means we can close that problem for now.
+When the clock was never set, the alarm(-irq) doesn't work, so hwclock 
+doesn't work, so one can't set the clock.
 
-Sorry for the noise. If someone has an ide awhere to search for
-the "cannot apply firmware patch" problem please let me know.
+Regards,
 
-Thanks and all the best
-
-Norbert
-
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-TILLICOULTRY (n.)
-The man-to-man chumminess adopted by an employer as a prelude for
-telling an employee that he's going to have to let him go.
-			--- Douglas Adams, The Meaning of Liff
+Alexander Holler
