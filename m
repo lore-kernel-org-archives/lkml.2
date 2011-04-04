@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab1DDUxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 16:53:05 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38969 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab1DDUxD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 16:53:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=Z99blU56UFFLCZ6reOW1Z6VOrOaxnNrMlTlf870BKv/rlOWoBpSAjN+r5kMHaQVKR3
-         A9EY+PurwleHhK/fE1VRUhZFOkrqve0CAiC/BXn3B/8VRHPzDIw1hbMYOJyWR5LxSvZZ
-         gywv2gGHIRVqfzz77m4FArdVoih2bNPH5E6rY=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <c428cc13a1a5953be3310237e4f404ec65968d5a.1301936559.git.joe@perches.com>
-References: <664bf5e5585f3d959d6c57524d09353dd8d49f3f.1301936559.git.joe@perches.com>
-	<20110404130036.GB16669@srcf.ucam.org>
-	<c428cc13a1a5953be3310237e4f404ec65968d5a.1301936559.git.joe@perches.com>
-Date: Mon, 4 Apr 2011 22:53:01 +0200
-Message-ID: <BANLkTikCRLX61JUkbbo-g8CeNRf2=RK08Q@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] thinkpad_acpi: Convert printks to pr_<level>
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1755613Ab1DDVDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 17:03:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34951 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755411Ab1DDVD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 17:03:29 -0400
+Subject: Re: [RFC/PATCH] of: Match PCI devices to OF nodes generically
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+In-Reply-To: <20110404.004856.55863268.davem@davemloft.net>
+References: <1301882694.2549.53.camel@pasglop>
+	 <1301887630.2549.71.camel@pasglop>
+	 <20110404.004856.55863268.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Apr 2011 07:03:17 +1000
+Message-ID: <1301950997.2549.84.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 4, 2011 at 7:06 PM, Joe Perches <joe@perches.com> wrote:
-> Add pr_fmt.
-> Removed local TPACPI_<level> #defines, convert to pr_<level>.
-> Neaten dbg_<foo> macros.
-> Added a few missing newlines to logging messages.
-> Added static inline str_supported for !CONFIG_THINKPAD_ACPI_DEBUG vdbg_printk
-> defect reported by Sedat Dilek <sedat.dilek@googlemail.com>.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Mon, 2011-04-04 at 00:48 -0700, David Miller wrote:
+> From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date: Mon, 04 Apr 2011 13:27:10 +1000
+> 
+> > +struct device_node * __weak pcibios_get_phb_of_node(struct pci_bus *bus)
+> > +{
+> > +	/* This should only be called for PHBs */
+> > +	if (WARN_ON(bus->self || bus->parent))
+> > +		return NULL;
+> 
+> This WARN_ON() will always trigger on sparc, because we use the OF
+> device tree object at the "parent" of the PCI bus devices we create
+> for the PCI controller domains.
+> 
+> I'm really surprised you don't link the PCI bus roots into the rest of
+> the global device hierarchy on powerpc.
 
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+But in the above test bus->parent is the "struct pci_bus *" parent, not
+the "struct device *" nor "struct device_node *" parent... That
+shouldn't be linked to anything on a PHB.
+
+To answer your other point, we do link PHBs on some platforms, not
+others. Historical stuff here. Most of our platforms discover PCI
+bridges very early from setup_arch() before we have any struct device
+around. Mostly because that's how we always did and there's some
+subtle/nasty corner cases to deal with if we change that.
+
+Cheers,
+Ben.
+
