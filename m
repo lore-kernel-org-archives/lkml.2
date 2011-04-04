@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab1DDUIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 16:08:53 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40460 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab1DDUIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 16:08:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=i7R2Lh9soM/MCIhUlNNHVFX+4wEfPCzeET7mSqqaBEVI9+R3yg4K37fe3IiaF85hkz
-         YQOqiqnP7iCyFfNkWT1PO8TjdWkSSg8n9u9PO+SeCZWzNhjsfGoWfly3vwuI+SDHt4AY
-         ZJzYMXNiuyzaSL+kjW/8pgDPwFsfFh7m3wvTQ=
+	id S1755511Ab1DDUON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 16:14:13 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38898 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab1DDUOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 16:14:12 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [SUBMIT REQUEST] cpupowerutils for linux-next
+Date: Mon, 4 Apr 2011 22:14:00 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Len Brown <lenb@kernel.org>, "Greg Kroah-Hartman" <gregkh@novell.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Linus <torvalds@linux-foundation.org>
+References: <201104041510.56570.trenn@suse.de> <20110405004011.0628991a.sfr@canb.auug.org.au>
+In-Reply-To: <20110405004011.0628991a.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1301925445.417.54.camel@e102391-lin.cambridge.arm.com>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
-	<201104031726.37420.arnd@arndb.de>
-	<20110403160324.GA8050@n2100.arm.linux.org.uk>
-	<201104040259.26601.arnd@arndb.de>
-	<1301915022.15819.28.camel@e102109-lin.cambridge.arm.com>
-	<20110404112104.GB19854@n2100.arm.linux.org.uk>
-	<1301923457.417.34.camel@e102391-lin.cambridge.arm.com>
-	<20110404133104.GA23266@n2100.arm.linux.org.uk>
-	<1301925445.417.54.camel@e102391-lin.cambridge.arm.com>
-Date: Mon, 4 Apr 2011 22:08:50 +0200
-X-Google-Sender-Auth: 3U0XLF_AfFh34mB9nQfjDfdbX1s
-Message-ID: <BANLkTi=d-rQpinSW9YPsZbkh9tDK5FLS+w@mail.gmail.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, david@lang.hm,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Detlef Vollmann <dv@vollmann.ch>,
-        David Brown <davidb@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104042214.01501.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/4 Marc Zyngier <Marc.Zyngier@arm.com>:
-> On Mon, 2011-04-04 at 14:31 +0100, Russell King - ARM Linux wrote:
->>
->> If ARM are going to architect a set of timers into the hardware, let's
->> make sure that all such hardware has them so we can dig ourselves out
->> of this crappy mess that we find ourselves in today.
->
-> As far as I know, A15 always has a set of generic timers.
->
-> It may be that they are not available (frequency not programmed into the
-> CNTFREQ register), or that someone decided to use a better alternative
-> (for some particular interpretation of "better").
+On Monday 04 April 2011 16:40:11 Stephen Rothwell wrote:
+> Hi Thomas,
+> 
+> On Mon, 4 Apr 2011 15:10:56 +0200 Thomas Renninger <trenn@suse.de>
+> wrote:
+> >
+> > this is about the recently announced cpupowerutils project
+> > based on or say an enhancement of the well know
+> > cpufrequtils project:
+> > http://www.spinics.net/lists/cpufreq/msg02137.html
+> 
+> Has integration of this into the kernel sources been discussed
+> anywhere generally (like lkml)?
+This is the first submit request.
+> Has the work been done to integrate it into the
+> kernel build system (I am not sure what this involves for the tools
+> directory). 
+No, it's separated like perf (but it is by far not that complex and
+has not that much dependencies) or like tools/power/x86.
 
-I guess this thing is inside that A15 core?
+> At a first glance, it doesn't need it own copy of the
+> COPYING file (for example).
+While cpufrequtils has been developed by people working with
+the kernel, there are probably more things like this to clean up
+and get adopted.
+It would be great to have it in linux-next for a while to get such
+stuff addressed and cleaned up.
+ 
+> I see that you asked Linus about this, but have receibed no reply (on
+> list).
+It was not very clever to simply add Linus into CC of this announcement,
+asking for integration in the middle of a merge window...
+ 
+> Code being merged into linux-next should be basically ready for
+> merging into Linus' tree (apart from integration testing) and you need
+> to be pretty sure that it will be merged by Linus into the next
+> release (i.e. 2.6.40).  In this case that is not such a big issue as
+> the code is (currently) all in a new directory, so will not interfere
+> with other code.
+Yes, it's totally separated and will not interfere.
+80% of the code (cpufrequtils) is mature and well tested for years.
+Recent changes are the cpuidle (cpupower idle-info) and monitor
+parts. The integration to have one binary (command subcommand
+style like perf/git/guilt/...), invoke manpages via --help, etc.
+So yes, the code is ready for getting merged into Linus' tree, still
+there hopefully will show up some bugfixes and enhancements
+while it lives in linux-next.
 
-First, what happens the day any vendors start making SoCs on this is
-they turn the A15 core off whenever it is not used, loosing all state
-including this timer, I believe.
 
-This forces them all to add some totally different clocksource, event and
-wakeup in some always-on voltage domain and rate that higher than
-the A15 timer(s). They will then implement sched_clock() and
-clocksource on that instead and only use A15 for localtimers.
-
-(Leading to the proliferation of board/SoC timer hacks discussed
-so much recently...)
-
-The only way to reuse that poor thing in practice is if you engineer
-a separate power domain with stuff that is supposed to be always-on
-in the A15 macro (including these timers) so vendors must implement
-this so as not to loose its state. Is this the case?
-
-Else, in effect it will only be used as clocksource and sched_clock()
-with these Versatile boards where the power is always on anyway.
-
-Second, have you taken into account the effect of changing the
-frequency of the A15 core, which is something every vendor also
-does, as you know Colin Cross already has a patch pending
-for that on the TWD localtimer which has not yet reached
-the kernel. (Or is A15 fixed frequency? Forgive my ignorance...)
-
-(And third it will also eventually need to hook into the timer-based
-delay framework that I think Nokia is working on to be really
-useful, else all delays become unpredictable.)
-
-Yours,
-Linus Walleij
+    Thomas
