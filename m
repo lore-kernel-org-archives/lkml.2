@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab1DDXUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 19:20:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44204 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab1DDXUJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 19:20:09 -0400
-Date: Tue, 5 Apr 2011 00:20:01 +0100
-From: James Hogan <james@albanarts.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+	id S1756037Ab1DDXnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 19:43:31 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56640 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755777Ab1DDXn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 19:43:29 -0400
+Date: Mon, 4 Apr 2011 16:43:23 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Matt Helsley <matthltc@us.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Hogan <james.hogan@imgtec.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tile,mn10300: add device parameter to dma_cache_sync()
-Message-ID: <20110404232001.GA14102@gandalf.le.imgtec.org>
-References: <BANLkTi=wY2q49BRfZWempPRT7s=2Wa3YKQ@mail.gmail.com>
- <4D9A18F3.3090506@tilera.com>
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        containers@lists.linux-foundation.org, Nathan Lynch <ntl@pobox.com>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
+Message-ID: <20110404234323.GC27628@count0.beaverton.ibm.com>
+References: <20110403190324.GD15044@hallyn.com>
+ <1301929228.31531.39.camel@tp-t61>
+ <20110404151017.GA4857@hallyn.com>
+ <1301931608.31531.49.camel@tp-t61>
+ <20110404162753.GA3456@hallyn.com>
+ <20110404104119.78189678.akpm@linux-foundation.org>
+ <20110404185119.GB4782@peq.hallyn.com>
+ <20110404124222.fd5eb85b.akpm@linux-foundation.org>
+ <20110404215511.GA27628@count0.beaverton.ibm.com>
+ <31800.1301959010@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D9A18F3.3090506@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <31800.1301959010@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-
-On Mon, Apr 04, 2011 at 03:16:03PM -0400, Chris Metcalf wrote:
-> On 4/4/2011 11:21 AM, James Hogan wrote:
-> > From: James Hogan <james.hogan@imgtec.com>
-> >
-> > Note: I'm not in a position to compile test this patch, but I don't
-> > foresee any problems.
-> >
-> > Since v2.6.20 "Pass struct dev pointer to dma_cache_sync()"
-> > (d3fa72e4556ec1f04e46a0d561d9e785ecaa173d), dma_cache_sync() takes a
-> > struct dev pointer, but these appear to be missing from the tile and
-> > mn10300 implementations, so add them.
-> >
-> > Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> > ---
-> >  arch/mn10300/include/asm/dma-mapping.h |    2 +-
-> >  arch/tile/include/asm/dma-mapping.h    |    3 ++-
-> >  arch/tile/kernel/pci-dma.c             |    2 +-
+On Mon, Apr 04, 2011 at 07:16:50PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 04 Apr 2011 14:55:11 PDT, Matt Helsley said:
 > 
-> This change looks fine for tile (not compile-tested but pretty obvious), so
+> > Now we're back with a new minimal patch set. You're asking us to do the same
+> > thing and expect different results -- stack more patches on top and expect to
+> > get it reviewed. OK, but what reason do we have to believe this time will be
+> > any different?
 > 
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> Has the terrain changed any since last time? In particular, ISTR a bunch of
+> activity in namespace support since last time - does that change what your
+> patch set needs to do?
 
-Thanks
+Good question.
 
-> 
-> assuming you're planning to push this up yourself.
+Unfortunately it doesn't reduce what our patch set needs to do at this
+point. The primary namespace changes that happened about 10+ kernel
+versions ago (circa 2.6.28) are essential for containers and reliable
+checkpoint/restart. Since then namespace improvements have nothing or very
+little to do with enabling checkpoint/restart -- it's all for containers.
 
-I'm not sure. I'm not that familiar with the process (my other patches
-tend to have just been picked up by other people).
-
-Cheers
-James
+Cheers,
+	-Matt Helsley
