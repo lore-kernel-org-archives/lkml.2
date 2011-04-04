@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab1DDPq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 11:46:56 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38800 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab1DDPqz (ORCPT
+	id S1754982Ab1DDPtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 11:49:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50608 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab1DDPtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 11:46:55 -0400
-X-IronPort-AV: E=Sophos;i="4.63,298,1299456000"; 
-   d="scan'208";a="5130047"
-Date: Mon, 4 Apr 2011 16:47:59 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Ingo Molnar <mingo@elte.hu>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
-        stable kernel team <stable@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-In-Reply-To: <20110404151132.GC11475@elte.hu>
-Message-ID: <alpine.DEB.2.00.1104041616550.16492@kaball-desktop>
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <20110401062338.GA6434@elte.hu> <alpine.DEB.2.00.1104011212070.16492@kaball-desktop> <20110401190812.GA16830@elte.hu> <alpine.DEB.2.00.1104012318390.16492@kaball-desktop>
- <20110404151132.GC11475@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 4 Apr 2011 11:49:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=J3YtlvW0LLmFd7J7MciuPFEUJCkSX81Caus+U7ckmrlzlCFV7uKuL7awDtFPpodM9q
+         kZRCNqHvTLr5LAEprfKTY3EFyUlf0bK9aJ8z7A2M5+2c2P5JQ6XA6cm6vEzIBrWETf9x
+         eOEpqu5VeKuBXE6TzEEn4foBN6AAfQm61dlow=
+Subject: Re: [PATCH 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig to
+ Makefile
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Valdis.Kletnieks@vt.edu
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paulo Marques <pmarques@grupopie.com>
+In-Reply-To: <131611.1301921158@localhost>
+References: <1301913651-9055-1-git-send-email-dedekind1@gmail.com>
+	 <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
+	 <131611.1301921158@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Apr 2011 18:47:12 +0300
+Message-ID: <1301932032.2760.103.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Apr 2011, Ingo Molnar wrote:
-> 
-> * Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> 
-> > Just to clarify the situation the patch "x86-64: finish cleanup_highmaps()'s 
-> > job wrt. _brk_end" was backported to the stable trees [...]
-> 
-> There's no commit with such a title upstream - there's not even one that is 
-> close. Could you cite the sha1 you refer to?
+On Mon, 2011-04-04 at 08:45 -0400, Valdis.Kletnieks@vt.edu wrote:
+> If the Makefile has enough information to print the warning, why can't it go
+> ahead and do the extra pass itself instead of issuing the warning?
 
-The commit id upstream is 498343967613183611ac37dccb2846496d954c06
+Actually I need to dig and check if make can really always spot all
+errors.
 
-
-> > [...] (including Jeremy's 2.6.32 xen tree because he pulled from 2.6.32.y) 
-> > breaking boot on xen.
-> 
-> Basing upstream-relevant trees on stable backported sha1's is a very, very bad 
-> idea.
-
-We are not using Jeremy's 2.6.32 tree for development anymore, we
-develop on upstream directly.
-
-
-> > Yinghai's patch plus another patch of mine fix that breakage and that is why 
-> > I ask for it to be backported.
-> 
-> So it fixes a commit that is nowhere to be found upstream?
-
-It fixes 498343967613183611ac37dccb2846496d954c06, if you are interested
-in all the details of the conversation with Yinghai and Peter, here are
-a couple of links to the lkml archives:
-
-https://lkml.org/lkml/2011/1/31/232
-https://lkml.org/lkml/2011/2/28/410
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
