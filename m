@@ -1,253 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab1DDRLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 13:11:25 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:18690
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751328Ab1DDRLY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 13:11:24 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz9371P542N1432N98dK12b6izz1202hzzz2dh95h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1754852Ab1DDRNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 13:13:11 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:37839 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab1DDRNJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 13:13:09 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6306"; a="83679807"
+Message-ID: <4D99FC24.4060007@codeaurora.org>
+Date: Mon, 04 Apr 2011 10:13:08 -0700
+From: David Collins <collinsd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 2/3] ARM: Xilinx: add SMP specific support files
-Date: Mon, 4 Apr 2011 11:11:10 -0600
-In-Reply-To: <20110404165011.GE22480@n2100.arm.linux.org.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2/3] ARM: Xilinx: add SMP specific support files
-Thread-Index: Acvy6GWxkC0muZmBRPmepDtDMOEcbgAADG7w
-References: <1301864418-12425-1-git-send-email-john.linn@xilinx.com> <1301864418-12425-2-git-send-email-john.linn@xilinx.com> <5ad00b91-47d8-4f02-aa72-5a413957cdb5@VA3EHSMHS005.ehs.local> <20110404165011.GE22480@n2100.arm.linux.org.uk>
-From: John Linn <John.Linn@xilinx.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <catalin.marinas@arm.com>, <glikely@secretlab.ca>,
-        <jamie@jamieiles.com>, <arnd@arndb.de>
-X-OriginalArrivalTime: 04 Apr 2011 17:11:18.0127 (UTC) FILETIME=[4FDC5FF0:01CBF2EB]
-X-RCIS-Action: ALLOW
-Message-ID: <636cc632-4dae-477a-9092-24c0d8431cb8@VA3EHSMHS032.ehs.local>
-X-OriginatorOrg: xilinx.com
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm-owner@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: pm8921-regulator: Add regulator driver
+ for PM8921
+References: <1301523361-5982-1-git-send-email-collinsd@codeaurora.org> <1301523432-6017-1-git-send-email-collinsd@codeaurora.org> <20110330234613.GA21487@opensource.wolfsonmicro.com> <4D93DAD2.5080501@codeaurora.org> <20110331234359.GD21726@opensource.wolfsonmicro.com> <4D965F9D.3060907@codeaurora.org> <20110402025012.GD25424@opensource.wolfsonmicro.com>
+In-Reply-To: <20110402025012.GD25424@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Monday, April 04, 2011 10:50 AM
-> To: John Linn
-> Cc: linux-arm-kernel@lists.infradead.org;
-linux-kernel@vger.kernel.org;
-> catalin.marinas@arm.com; glikely@secretlab.ca; jamie@jamieiles.com;
-> arnd@arndb.de
-> Subject: Re: [PATCH 2/3] ARM: Xilinx: add SMP specific support files
+On 04/01/2011 07:50 PM, Mark Brown wrote:
+> This all seems fairly standard and like many other regulators except for
+> the the masking off the pin control.  The only unusual thing is that the
+> hardware control is being managed by software at runtime, usually it's
+> set up and then left alone by software.
 > 
-> On Sun, Apr 03, 2011 at 03:00:17PM -0600, John Linn wrote:
-> > +#include <linux/jiffies.h>
-> > +#include <linux/init.h>
-> > +#include <linux/io.h>
-> > +#include <asm/cacheflush.h>
-> > +#include <asm/smp_scu.h>
-> > +#include <mach/xilinx_soc.h>
-> > +#include <mach/smp.h>
-> > +#include "common.h"
-> > +
-> > +static void __iomem *scu_base = SCU_PERIPH_BASE;
+> The first thing I'm thinking here is that this maps fairly well onto a
+> semi-virtual regulator where the operations map onto the control for the
+> hardware mode.  The enable/disable control via the pin is totally
+> orthogonal to the control via the regular register interface, and it
+> sounds like the mode control is too though that was less clear to me.
+> Enabling would then translate into turning pin control on rather than
+> actually enabling but that seems OK.  Does that sound like it'd work?
+
+So what you are suggesting is that two regulators are registered for a
+single physical regulator.  The first operates normally with respect to
+enable, set mode, set voltage, etc.  The second will be used exclusively
+for pin control in which regulator_enable and regulator_disable will map
+to enabling and disabling pin control.  I suppose that this should be ok
+as long as it isn't confusing for consumers to utilize.  However, I will
+definitely only register pin control regulators which are marked for use
+with pin control via some of the platform data values.  Otherwise the
+number of regulators registered would double unnecessarily.
+
+Also, while conceptually pin control should be independent of other
+regulator features, it becomes nonorthogonal in practice.  For instance,
+some regulators have finer voltage stepping available in advanced
+operating mode, but pin control cannot be used in this advanced mode.  The
+result is that set_voltage becomes tried to pin control for these
+regulators.  The outcome is that the new pin control semi-virtual
+regulator would be tightly coupled to its real sibling regulator.
+Implementing it in this manner may get complicated.
+
+I suppose there is also a question of what regulator_disable should mean
+in terms of outcome regulator state.  Thus far, I have interpreted it to
+mean that the regulator is definitely turned off physically.  As such, pin
+control must be disabled if it was previously enabled.  Do you think this
+is the best approach to take, or should the concepts of regulator enable
+and regulator pin control enable be orthogonal?
+
+>> The regulator probe function reads the regulator register values to figure
+>> out the initial hardware state.  It also sets some regulator controls not
+>> handled by other regulator framework callback functions; e.g.: pull down
 > 
-> You don't need this if its known at build time.
+> That just sounds like platform data which could just work in the same
+> way as the regulator core - no platform data would mean nothing gets
+> changed.
 
-Ok.
+That is more or less how the patch already works.  If platform data for a
+given regulator is not passed to the pm8921-core, then that regulator is
+never probed (via platform device) and the regulator_dev is not created
+for it (in the platform driver probe).  The loop in pm8921_add_subdevices
+which adds the pm8921-regulator devices is important because it must
+iterate in topological order with respect to the regulator supply chain.
+This ordering is arbitrary and unknown to either the pm8921-core or the
+pm8921-regulator.  If there is no strong requirement for this to change, I
+would prefer to keep it as is.
 
+>> enable.  I'm not sure if this could be moved into an init_data
+>> regulator_init callback because that pointer would need to be specified in
+>> the board file where the function would be unknown.
 > 
-> > +
-> > +static DEFINE_SPINLOCK(boot_lock);
-> > +
-> > +/* Secondary CPU kernel startup is a 2 phase process.
-> > + * 1st phase is transition from a boot loader to the kernel, but
-> > + * then wait not starting the kernel yet. 2nd phase starts the
-> > + * the kernel. In both phases, the secondary CPU waits for an
-> > + * event before it continues.
-> > + */
-> > +
-> > +void __cpuinit platform_secondary_init(unsigned int cpu)
-> > +{
-> > +	/*
-> > +	 * if any interrupts are already enabled for the primary
-> > +	 * core (e.g. timer irq), then they will not have been enabled
-> > +	 * for us: do so
-> > +	 */
-> > +	gic_secondary_init(0);
-> > +
-> > +	/*
-> > +	 * Synchronise with the boot thread.
-> > +	 */
-> > +	spin_lock(&boot_lock);
-> > +	spin_unlock(&boot_lock);
-> > +}
-> > +
-> > +int __cpuinit boot_secondary(unsigned int cpu, struct task_struct
-> *idle)
-> > +{
-> > +	unsigned long timeout;
-> > +
-> > +	/*
-> > +	 * set synchronisation state between this boot processor
-> > +	 * and the secondary one
-> > +	 */
-> > +	spin_lock(&boot_lock);
-> > +
-> > +	printk(KERN_INFO "Xilinx SMP: booting CPU1 now\n");
+> I'm sorry, I don't understand what you're saying here.  Could you
+> clarify?
+
+struct regulator_init_data has a member: regulator_init.  However, I don't
+think there is a good way to make use of it for this system because that
+function pointer must be specified statically in a board file, but the
+regulator register init function is private to the pm8921-regulator driver.
+
+>> Also, it would pollute the system with unusable devices if all natively
+>> controlled regulator devices were registered if the shared driver was
+>> being used for many regulators.
 > 
-> Aren't the messages which are already printed enough?
+> Depends if you view it as pollution or not; also note that the devices
+> aren't totally unusuable as you can still use them for readback.
 
-This was helpful, but can be deleted too, not a big deal.
+They wouldn't be useful for readback either because register values are
+only read during initialization.  The remainder of the regulator usage is
+write-only.  This works under the assumption that PMIC registers will not
+be modified by any other writers.  This assumption is true except in the
+case of a regulator managed via the shared interface.
 
-> 
-> > +
-> > +	/*
-> > +	 * Update boot lock register with the boot key to allow the
-> > +	 * secondary processor to start the kernel after an SEV.
-> > +	 */
-> > +	__raw_writel(BOOT_LOCK_KEY, OCM_HIGH_BASE + BOOT_LOCK_OFFSET);
-> > +
-> > +	/* Flush the kernel cache to ensure that the page tables are
-> > +	 * available for the secondary CPU to use and make sure that
-> > +	 * the write buffer is drained before doing an SEV.
-> > +	 */
-> > +	flush_cache_all();
-> > +	smp_wmb();
-> 
-> The page tables and everything else required should already be visible
-> to the secondary CPU - if not that points to a bug in the generic
-code.
-> All that you should need to do here is to make sure your write above
-> is visible to the secondary CPU (and the address for it to boot from).
+- David
 
-I didn't have the flush in early during debug and found it was needed.
-I haven't tried it for quite some time without, I'll give it a try as
-maybe some generic code was updated to fix a problem since then.
-
-I noticed it in other platforms was the reason I thought it was really
-needed.
-
-> 
-> > +
-> > +	/*
-> > +	 * Send an event to wake the secondary core from WFE state.
-> > +	 */
-> > +	sev();
-> > +
-> > +	timeout = jiffies + (1 * HZ);
-> > +	while (time_before(jiffies, timeout))
-> > +		;
-> 
-> Have you no way to determine that the secondary CPU has started?
-
-Not right now. I can look at the ability to handshake back so that 
-it's not based on time.  I'll to see what some other platforms do with
-that.
-
-I can see that it would help boot time not to do it this way.
-
-It was based it off of some platforms doing it like this and it may 
-not have been the best pattern to use.
-
-> 
-> > +void __init smp_init_cpus(void)
-> > +{
-> > +	unsigned int i, ncores;
-> > +
-> > +	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
-> 
-> 	unsigned int i, ncores = scu_get_core_count(SCU_PERIPH_BASE);
-> 
-> > +
-> > +	/* sanity check */
-> > +	if (ncores > NR_CPUS) {
-> > +		printk(KERN_WARNING
-> > +		       "Realview: no. of cores (%d) greater than
-configured
-> "
-> > +		       "maximum of %d - clipping\n",
-> > +		       ncores, NR_CPUS);
-> > +		ncores = NR_CPUS;
-> > +	}
-> 
-> Firstly, you're not Realview.  Secondly, I think this kind of check
-> should
-> be inside scu_get_core_count() if it has to exist.
-> 
-
-I should have caught that. Ok it can be moved inside.  
-
-The NR_CPUS thing is not real clear to me so I'll have to investigate
-more as we 
-only have 2 CPUs, yet the default in the kernel configs is generally 4. 
-
-I know there has been a big deal about defconfigs so I was trying not to
-add more
-problems by adding one for Xilinx platform, but maybe I have
-misunderstood that issue.
-
-> > +
-> > +	for (i = 0; i < ncores; i++)
-> > +		set_cpu_possible(i, true);
-> > +}
-> > +
-> > +void __init platform_smp_prepare_cpus(unsigned int max_cpus)
-> > +{
-> > +	int i;
-> > +
-> > +	/*
-> > +	 * Initialise the present map, which describes the set of CPUs
-> > +	 * actually populated at the present time.
-> > +	 */
-> > +	for (i = 0; i < max_cpus; i++)
-> > +		set_cpu_present(i, true);
-> > +
-> > +	scu_enable(scu_base);
-> > +
-> > +	/* Initialize the boot lock register to prevent CPU1 from
-> > +	   starting the kernel before CPU0 is ready for that.
-> > +	*/
-> > +	__raw_writel(0, OCM_HIGH_BASE + BOOT_LOCK_OFFSET);
-> > +
-> > +	/*
-> > +	 * Write the address of secondary startup routine into the
-> > +	 * boot address. The secondary CPU will use this value
-> > +	 * to get into the kernel after it's awake from WFE state.
-> > +	 *
-> > +	 * Note the physical address is needed as the secondary CPU
-> > +	 * will not have the MMU on yet. A barrier is added to ensure
-> > +	 * that write buffer is drained.
-> > +	 */
-> > +	__raw_writel(virt_to_phys(xilinx_secondary_startup),
-> > +					OCM_HIGH_BASE +
-BOOT_ADDR_OFFSET);
-> > +	smp_wmb();
-> > +
-> > +	/*
-> > +	 * Send an event to wake the secondary core from WFE state.
-> > +	 */
-> > +	sev();
-> 
-> This looks like it shouldn't be necessary - you send an event in the
-> boot_secondary() path which should be enough to get the CPU going.
-
-It's a 2 stage process, the 1st SEV gets the 2nd CPU out of the boot rom
-and into the kernel, the 2nd SEV lets it start running the kernel.
-
-At some point this was based on a similar pattern that I saw in other
-platforms.
-
-Thanks for your time and input,
-John
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
