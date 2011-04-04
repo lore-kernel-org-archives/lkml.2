@@ -1,135 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1DDKhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:37:47 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:30058 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754263Ab1DDKhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:37:40 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paulo Marques <pmarques@grupopie.com>
-Subject: [PATCH 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig to Makefile
-Date: Mon,  4 Apr 2011 13:40:51 +0300
-Message-Id: <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1301913651-9055-1-git-send-email-dedekind1@gmail.com>
-References: <1301913651-9055-1-git-send-email-dedekind1@gmail.com>
-X-Nokia-AV: Clean
+	id S1754465Ab1DDKjw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:39:52 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35293 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab1DDKjt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 06:39:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GLWaf/wSSFIpGrJ5cy/eF34+EEYnfZoU+YU0OY/rlMpueXr44emjg1ycyzOtnR+J+W
+         TviYNLj8ciVTDQMzPnzPrXBhjjmyHNB0UNXCmbMbIVXm7AVS2RodJXlCdZRWzjRIpowM
+         wJUO47TvBlbsU2BaJPP2mlHjsUYlHOXcrmp7M=
+Date: Mon, 4 Apr 2011 12:39:45 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: wanlong.gao@gmail.com
+Cc: gregkh@suse.de, alan@linux.intel.com, tsozik@yahoo.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jiaweiwei.xiyou@gmail.com
+Subject: Re: [PATCH] USB:Fix the wrong function prototype .
+Message-ID: <20110404103945.GB26045@localhost>
+References: <1301912997-21248-1-git-send-email-wanlong.gao@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301912997-21248-1-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Mon, Apr 04, 2011 at 06:29:57PM +0800, wanlong.gao@gmail.com wrote:
+> From: Wanlong Gao <wanlong.gao@gmail.com>
+> 
+> While the "mct_u232_device.ioctl" initialized by a wrong function
+> prototype . And the argument "struct file *file" is unused in
+> the function "mct_u232_ioctl()".
 
-At the moment we have the CONFIG_KALLSYMS_EXTRA_PASS Kconfig switch,
-which users can enable or disable while configuring the kernel. This
-option is then used by 'make' to determine whether an extra kallsyms
-pass is needed or not.
+Thanks for the patch, but I believe there was patch submitted last
+Friday which also fixes this issue:
 
-However, this approach is not nice and confusing, and this patch moves
-CONFIG_KALLSYMS_EXTRA_PASS from Kconfig to Makefile instead. The
-rationale is below.
+	https://lkml.org/lkml/2011/4/3/74
 
-1. CONFIG_KALLSYMS_EXTRA_PASS is really about the build time, not
-   run-time. There is no real need for it to be in Kconfig. It is
-   just an additional work-around which should be used only in rare
-   cases, when someone breaks kallsyms, so Kbuild/Makefile is much
-   better place for this option.
-2. Grepping CONFIG_KALLSYMS_EXTRA_PASS shows that many defconfigs have
-   it enabled, probably not because they try to work-around a kallsyms
-   bug, but just because the Kconfig help text is confusing and does
-   not really make it clear that this option should not be used unless
-   except when kallsyms is broken.
-3. And since many people have CONFIG_KALLSYMS_EXTRA_PASS enabled in
-   their Kconfig, we do might fail to notice kallsyms bugs in time. E.g.,
-   many testers use "make allyesconfig" to test builds, which will enable
-   CONFIG_KALLSYMS_EXTRA_PASS and kallsyms breakage will not be noticed.
-
-To address that, this patch:
-
-1. Kills CONFIG_KALLSYMS_EXTRA_PASS
-2. Changes Makefile so that people can use "make KALLSYMS_EXTRA_PASS=1"
-   to enable the extra pass if needed.
-3. By default KALLSYMS_EXTRA_PASS is disabled and if kallsyms has issues,
-   "make" should print a warning and suggest using KALLSYMS_EXTRA_PASS
-4. Add "make help" entry for KALLSYMS_EXTRA_PASS
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: Paulo Marques <pmarques@grupopie.com>
-Cc: Michal Marek <mmarek@suse.cz>
----
- Makefile     |   13 ++++++++-----
- init/Kconfig |   12 ------------
- 2 files changed, 8 insertions(+), 17 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index ba7a55c..b66a43a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -797,15 +797,16 @@ ifdef CONFIG_KALLSYMS
- # o The correct .tmp_kallsyms2.o is linked into the final vmlinux.
- # o Verify that the System.map from vmlinux matches the map from
- #   .tmp_vmlinux2, just in case we did not generate kallsyms correctly.
--# o If CONFIG_KALLSYMS_EXTRA_PASS is set, do an extra pass using
-+# o If 'make KALLSYMS_EXTRA_PASS=1" was used, do an extra pass using
- #   .tmp_vmlinux3 and .tmp_kallsyms3.o.  This is only meant as a
- #   temporary bypass to allow the kernel to be built while the
- #   maintainers work out what went wrong with kallsyms.
- 
--ifdef CONFIG_KALLSYMS_EXTRA_PASS
--last_kallsyms := 3
--else
- last_kallsyms := 2
-+ifeq ("$(origin KALLSYMS_EXTRA_PASS)", "command line")
-+	ifneq (KALLSYMS_EXTRA_PASS,0)
-+		last_kallsyms := 3
-+	endif
- endif
- 
- kallsyms.o := .tmp_kallsyms$(last_kallsyms).o
-@@ -816,7 +817,8 @@ define verify_kallsyms
- 	  $(cmd_sysmap) .tmp_vmlinux$(last_kallsyms) .tmp_System.map
- 	$(Q)cmp -s System.map .tmp_System.map ||                             \
- 		(echo Inconsistent kallsyms data;                            \
--		 echo Try setting CONFIG_KALLSYMS_EXTRA_PASS;                \
-+		 echo This is a bug - please report about it;                \
-+		 echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround;      \
- 		 rm .tmp_kallsyms* ; /bin/false )
- endef
- 
-@@ -1268,6 +1270,7 @@ help:
- 	@echo  '  make C=1   [targets] Check all c source with $$CHECK (sparse by default)'
- 	@echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
- 	@echo  '  make W=1   [targets] Enable extra gcc checks'
-+	@echo  '  make KALLSYMS_EXTRA_PASS=1 [targets] Temporary workaround for kallsyms bugs'
- 	@echo  ''
- 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
- 	@echo  'For further info see the ./README file'
-diff --git a/init/Kconfig b/init/Kconfig
-index dae5297..8c16c19 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -981,18 +981,6 @@ config KALLSYMS_ALL
- 
- 	   Say N unless you really need all symbols.
- 
--config KALLSYMS_EXTRA_PASS
--	bool "Do an extra kallsyms pass"
--	depends on KALLSYMS
--	help
--	   If kallsyms is not working correctly, the build will fail with
--	   inconsistent kallsyms data.  If that occurs, log a bug report and
--	   turn on KALLSYMS_EXTRA_PASS which should result in a stable build.
--	   Always say N here unless you find a bug in kallsyms, which must be
--	   reported.  KALLSYMS_EXTRA_PASS is only a temporary workaround while
--	   you wait for kallsyms to be fixed.
--
--
- config HOTPLUG
- 	bool "Support for hot-pluggable devices" if EXPERT
- 	default y
--- 
-1.7.2.3
-
+Thanks,
+Johan
