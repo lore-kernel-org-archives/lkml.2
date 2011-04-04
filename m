@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1DDI0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 04:26:07 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:32768 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753848Ab1DDI0E convert rfc822-to-8bit (ORCPT
+	id S1754055Ab1DDI0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 04:26:16 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:42246 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab1DDI0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 04:26:04 -0400
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-From: Marc Zyngier <Marc.Zyngier@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, david@lang.hm,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-omap@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Brown <davidb@codeaurora.org>, Detlef Vollmann <dv@vollmann.ch>
-In-Reply-To: <201104040259.26601.arnd@arndb.de>
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
-	 <201104031726.37420.arnd@arndb.de>
-	 <20110403160324.GA8050@n2100.arm.linux.org.uk>
-	 <201104040259.26601.arnd@arndb.de>
-Organization: ARM Ltd
-Date: Mon, 04 Apr 2011 09:26:19 +0100
-Message-ID: <1301905579.417.16.camel@e102391-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-OriginalArrivalTime: 04 Apr 2011 08:25:52.0996 (UTC) FILETIME=[E96B2240:01CBF2A1]
-X-MC-Unique: 111040409255707201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Apr 2011 04:26:12 -0400
+X-IronPort-AV: E=Sophos;i="4.63,296,1299474000"; 
+   d="scan'208";a="143380938"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org,
+        xen-devel@lists.xensource.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] MAINTAINERS: add entry for Xen network backend
+Date: Mon,  4 Apr 2011 09:26:07 +0100
+Message-Id: <1301905567-7880-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+X-OriginalArrivalTime: 04 Apr 2011 08:26:11.0107 (UTC) FILETIME=[F436A730:01CBF2A1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-04 at 02:59 +0200, Arnd Bergmann wrote:
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: netdev@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ MAINTAINERS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-> Abstracting sched_clock() to be run-time selected is something that
-> needs to be taken care of. Maybe we could have a generic sched_clock
-> implementation that is written on top of clocksource instead of jiffies,
-> and always select that on architectures that have a decent clocksource.
-> Are there any platforms on ARM where that would be a bad idea? I believe
-> the main reaons why they are separate is that on x86 you can use the TSC
-> for sched_clock in many cases where you cannot use it for clocksource.
-
-I've proposed a mechanism for a run-time selectable sched_clock()
-implementation as part of my A15 timer patch set:
-http://www.spinics.net/lists/arm-kernel/msg116891.html
-and more specifically patches #10 and #11.
-
-I'm not completely pleased with it (the fact that it embeds a copy of
-the generic sched_clock() to be used as a default is properly ugly), but
-maybe this could be used as a base for further discussion.
-
-Cheers,
-
-	M.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6b4b9cd..bb702f3 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6916,6 +6916,12 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.
+ S:	Maintained
+ F:	drivers/platform/x86
+ 
++XEN NETWORK BACKEND DRIVER
++M:	Ian Campbell <ian.campbell@citrix.com>
++L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
++S:	Supported
++F:	drivers/net/xen-netback/*
++
+ XEN PCI SUBSYSTEM
+ M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+ L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
 -- 
-Reality is an implementation detail.
-
+1.7.2.5
 
