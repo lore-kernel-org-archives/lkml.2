@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750846Ab1DDX6O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 19:58:14 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:48516
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750758Ab1DDX6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 19:58:09 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 10/22] Staging: hv: Simplify blkvsc_init_rw
-Date: Mon,  4 Apr 2011 15:47:59 -0700
-Message-Id: <1301957291-8035-10-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1301957291-8035-1-git-send-email-kys@microsoft.com>
-References: <1301957186-7853-1-git-send-email-kys@microsoft.com>
- <1301957291-8035-1-git-send-email-kys@microsoft.com>
+	id S1751057Ab1DDX6d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 19:58:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46585 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab1DDX6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 19:58:21 -0400
+Subject: Re: [RFC/PATCH] of: Match PCI devices to OF nodes generically
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-arch@vger.kernel.org, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+In-Reply-To: <BANLkTimBD=NfFKGpy0ZTnT9Dcu=dkTHxZg@mail.gmail.com>
+References: <1301882694.2549.53.camel@pasglop>
+	 <1301887630.2549.71.camel@pasglop> <1301902664.2549.76.camel@pasglop>
+	 <BANLkTimBD=NfFKGpy0ZTnT9Dcu=dkTHxZg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Apr 2011 09:58:08 +1000
+Message-ID: <1301961488.2549.105.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplyfify blkvsc_init_rw() by using a single scsi command independent of
-the start sector
+On Mon, 2011-04-04 at 09:25 -0600, Bjorn Helgaas wrote:
+> Some of this is reminiscent of the ACPI/PCI binding we do on x86/ia64,
+> e.g., acpi_get_pci_dev() and the stuff in drivers/acpi/glue.c.  Have
+> you looked at that to see if there's any hope of covering both OF and
+> ACPI with something more generic?
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/blkvsc_drv.c |   58 +++++++++------------------------------
- 1 files changed, 13 insertions(+), 45 deletions(-)
+Hrm, the ACPI stuff is quite different (to some extent akin to what
+power used to do) form what I can tell. You basically traverse the ACPI
+tree do perform a matching after the fact.
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index da7fd38..69b6290 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -304,53 +304,21 @@ static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
- 
- 	blkvsc_req->cmd_len = 16;
- 
--	if (blkvsc_req->sector_start > 0xffffffff) {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_16;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_16;
--		}
--
--		blkvsc_req->cmnd[1] |=
--			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
--
--		*(unsigned long long *)&blkvsc_req->cmnd[2] =
--				cpu_to_be64(blkvsc_req->sector_start);
--		*(unsigned int *)&blkvsc_req->cmnd[10] =
--				cpu_to_be32(blkvsc_req->sector_count);
--	} else if ((blkvsc_req->sector_count > 0xff) ||
--		   (blkvsc_req->sector_start > 0x1fffff)) {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_10;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_10;
--		}
--
--		blkvsc_req->cmnd[1] |=
--			(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
--
--		*(unsigned int *)&blkvsc_req->cmnd[2] =
--				cpu_to_be32(blkvsc_req->sector_start);
--		*(unsigned short *)&blkvsc_req->cmnd[7] =
--				cpu_to_be16(blkvsc_req->sector_count);
-+	if (rq_data_dir(blkvsc_req->req)) {
-+		blkvsc_req->write = 1;
-+		blkvsc_req->cmnd[0] = WRITE_16;
- 	} else {
--		if (rq_data_dir(blkvsc_req->req)) {
--			blkvsc_req->write = 1;
--			blkvsc_req->cmnd[0] = WRITE_6;
--		} else {
--			blkvsc_req->write = 0;
--			blkvsc_req->cmnd[0] = READ_6;
--		}
--
--		*(unsigned int *)&blkvsc_req->cmnd[1] =
--				cpu_to_be32(blkvsc_req->sector_start) >> 8;
--		blkvsc_req->cmnd[1] &= 0x1f;
--		blkvsc_req->cmnd[4] = (unsigned char)blkvsc_req->sector_count;
-+		blkvsc_req->write = 0;
-+		blkvsc_req->cmnd[0] = READ_16;
- 	}
-+
-+	blkvsc_req->cmnd[1] |=
-+	(blkvsc_req->req->cmd_flags & REQ_FUA) ? 0x8 : 0;
-+
-+	*(unsigned long long *)&blkvsc_req->cmnd[2] =
-+	cpu_to_be64(blkvsc_req->sector_start);
-+	*(unsigned int *)&blkvsc_req->cmnd[10] =
-+	cpu_to_be32(blkvsc_req->sector_count);
- }
- 
- 
--- 
-1.7.4.1
+The idea with my patch is really to populate things as they get
+discovered, which makes the code much simpler. Since we have the pointer
+to the OF device node in the generic struct device nowadays, if we
+populate things that way, by the time we discover a device we already
+have at hand the OF device node of the parent bus, so it's a
+single/simpler one level search to locate the device itself and populate
+it's node as well, done once for all.
+
+I suppose you could do something similar for ACPI, but I wouldn't try to
+make a "common infrastructure" at that point, especially since there is
+the possibility on x86 to have both OF device-trees and ACPI :-)
+
+Note that I don't really provide a direct/good equivalent of your
+acpi_get_pci_dev() ... the matching is mostly used the other way around,
+ie a driver for a pci_dev wanting to peek a some properties in the
+corresponding OF device_node. ppc32 has some reverse mapping stuff but
+it's pretty crappy (and on my to-fixup list for after that patch goes
+in) and in fact it would be reasonably easy from now on to implement it
+as well, but so far there is no real demand.
+
+Cheers,
+Ben.
+
 
