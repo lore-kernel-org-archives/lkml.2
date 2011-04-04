@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab1DDTSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 15:18:35 -0400
+	id S1755472Ab1DDTTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 15:19:10 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43551 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab1DDTSd (ORCPT
+	with ESMTP id S1755339Ab1DDTSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 15:18:33 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=vhdKIqpQuCYA:10 a=BMVA_mf54fQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=h1msV1-NIpBbKvTb0w0A:9 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Mon, 4 Apr 2011 15:18:35 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=vhdKIqpQuCYA:10 a=nTbpr5Ojj3MA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=NEbeXOUqkpw6tpVCP_4A:9 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110404191654.006849945@goodmis.org>
+Message-Id: <20110404191833.040858028@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 04 Apr 2011 15:16:54 -0400
+Date: Mon, 04 Apr 2011 15:16:59 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
         Jason Baron <jbaron@redhat.com>
-Subject: [PATCH 0/6] [GIT PULL][v2.6.40] tracing: updates and jump label rebase
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [PATCH 5/6] jump label: Add _ASM_ALIGN for x86 and x86_64
+References: <20110404191654.006849945@goodmis.org>
+Content-Disposition: inline; filename=0005-jump-label-Add-_ASM_ALIGN-for-x86-and-x86_64.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jason Baron <jbaron@redhat.com>
 
-Hi Ingo,
+The linker should not be adding holes to word size aligned pointers, but
+out of paranoia we are explicitly specifying that alignment. I have not
+seen any holes in the jump label section in practice.
 
-This includes minor updates to ftrace as well as the patchset
-for jump labels. I took out the debug printk patch that had caused
-earlier conflicts. We can add that one later.
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+LKML-Reference: <e119fbd060c9452c56063ea6148ba1070e7434cc.1300299760.git.jbaron@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/include/asm/jump_label.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Please pull the latest tip/perf/core tree, which can be found at:
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+index f217cee..a32b18c 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -16,6 +16,7 @@ static __always_inline bool arch_static_branch(struct jump_label_key *key)
+ 	asm goto("1:"
+ 		JUMP_LABEL_INITIAL_NOP
+ 		".pushsection __jump_table,  \"aw\" \n\t"
++		_ASM_ALIGN "\n\t"
+ 		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+ 		".popsection \n\t"
+ 		: :  "i" (key) : : l_yes);
+-- 
+1.7.2.3
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/core
 
-
-Jan Glauber (1):
-      jump label: Add s390 support
-
-Jason Baron (2):
-      jump label: Introduce static_branch() interface
-      jump label: Add _ASM_ALIGN for x86 and x86_64
-
-Jiri Olsa (1):
-      tracing: Avoid soft lockup in trace_pipe
-
-Steven Rostedt (2):
-      tracing: Convert trace_printk() formats for module to const char *
-      tracing: Print trace_bprintk() formats for modules too
-
-----
- arch/mips/include/asm/jump_label.h  |   22 +-
- arch/s390/Kconfig                   |    1 +
- arch/s390/include/asm/jump_label.h  |   37 +++
- arch/s390/kernel/Makefile           |    2 +-
- arch/s390/kernel/jump_label.c       |   59 ++++
- arch/sparc/include/asm/jump_label.h |   25 +-
- arch/x86/include/asm/alternative.h  |    3 +-
- arch/x86/include/asm/jump_label.h   |   27 +-
- arch/x86/kernel/alternative.c       |    2 +-
- arch/x86/kernel/module.c            |    1 +
- include/asm-generic/vmlinux.lds.h   |   14 +-
- include/linux/dynamic_debug.h       |    2 -
- include/linux/jump_label.h          |   89 ++++---
- include/linux/jump_label_ref.h      |   44 ---
- include/linux/perf_event.h          |   26 +-
- include/linux/tracepoint.h          |   22 +-
- kernel/jump_label.c                 |  539 ++++++++++++++---------------------
- kernel/perf_event.c                 |    4 +-
- kernel/trace/trace.c                |   15 +-
- kernel/trace/trace_output.c         |    3 +
- kernel/trace/trace_printk.c         |  120 +++++++-
- kernel/tracepoint.c                 |   23 +-
- 22 files changed, 578 insertions(+), 502 deletions(-)
