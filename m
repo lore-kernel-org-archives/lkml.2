@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1DDKbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:31:03 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60914 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab1DDKbB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:31:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=E/WcrB45hVw5BvMxWMBYWb/yOewO2KWq7axqsCkCtWpF5Sko44NT13gcFEbm74Hb5t
-         3R6PBDZRpteTz8wLPxZ7FWEptlO1zik+e7pdoVhXZeK4p+KmsvIGZUCPFsF1TOxJQJ92
-         sNDMXT/5GFS7UtawXAl8t/RUjol2WDEp8aqoU=
-From: wanlong.gao@gmail.com
-To: gregkh@suse.de, jhovold@gmail.com, alan@linux.intel.com, tsozik@yahoo.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jiaweiwei.xiyou@gmail.com, Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH] USB:Fix the wrong function prototype .
-Date: Mon,  4 Apr 2011 18:29:57 +0800
-Message-Id: <1301912997-21248-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.3
+	id S1754323Ab1DDKfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:35:30 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54581 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab1DDKf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 06:35:29 -0400
+Date: Mon, 4 Apr 2011 12:31:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+        linux-kernel@vger.kernel.org, aarcange@redhat.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org, joro@8bytes.org, penberg@cs.helsinki.fi,
+        asias.hejun@gmail.com, gorcunov@gmail.com
+Subject: Re: [ANNOUNCE] Native Linux KVM tool
+Message-ID: <20110404103158.GA4300@elte.hu>
+References: <1301592656.586.15.camel@jaguar>
+ <4D978930.1000909@codemonkey.ws>
+ <20110403062117.GA27121@elte.hu>
+ <4D982EB8.7080001@redhat.com>
+ <BANLkTikkyktU3KL8h71PYLF_ds0C07QKcg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikkyktU3KL8h71PYLF_ds0C07QKcg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <wanlong.gao@gmail.com>
 
-While the "mct_u232_device.ioctl" initialized by a wrong function
-prototype . And the argument "struct file *file" is unused in
-the function "mct_u232_ioctl()".
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
----
- drivers/usb/serial/mct_u232.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> > Well, this is bound to cause confusion as the tool is yet quite immature.
+> 
+> Yes, that's really unfortunate. I don't care too much what we call the tool 
+> but I definitely agree with Ingo that 'kvm' is more discoverable to users. 
+> Any suggestions?
 
-diff --git a/drivers/usb/serial/mct_u232.c b/drivers/usb/serial/mct_u232.c
-index d2c0196..ba0d287
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -106,7 +106,7 @@ static void mct_u232_break_ctl(struct tty_struct *tty, int break_state);
- static int  mct_u232_tiocmget(struct tty_struct *tty);
- static int  mct_u232_tiocmset(struct tty_struct *tty,
- 			unsigned int set, unsigned int clear);
--static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
-+static int  mct_u232_ioctl(struct tty_struct *tty,
- 			unsigned int cmd, unsigned long arg);
- static int  mct_u232_get_icount(struct tty_struct *tty,
- 			struct serial_icounter_struct *icount);
-@@ -874,7 +874,7 @@ static void mct_u232_unthrottle(struct tty_struct *tty)
- 	}
- }
- 
--static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
-+static int  mct_u232_ioctl(struct tty_struct *tty,
- 			unsigned int cmd, unsigned long arg)
- {
- 	DEFINE_WAIT(wait);
--- 
-1.7.3
+Well, lets keep it 'kvm' - if it stays immature it doesnt matter much. If it 
+improves it has the right and obvious tool name.
 
+Thanks,
+
+	Ingo
