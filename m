@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab1DDRy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 13:54:56 -0400
-Received: from mail.lang.hm ([64.81.33.126]:49594 "EHLO bifrost.lang.hm"
+	id S1755198Ab1DDRzZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 13:55:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57033 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754876Ab1DDRyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 13:54:55 -0400
-Date: Mon, 4 Apr 2011 10:54:49 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Charles Samuels <charles@cariden.com>
-cc: "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Queuing of disk writes
-In-Reply-To: <201104041050.12731.charles@cariden.com>
-Message-ID: <alpine.DEB.2.00.1104041051560.21230@asgard.lang.hm>
-References: <201104011259.53936.charles@cariden.com> <20110404020235.GA4706@thunk.org> <201104041050.12731.charles@cariden.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1754973Ab1DDRzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 13:55:24 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] X86: Reorder reboot method preferences
+Date: Mon,  4 Apr 2011 13:55:05 -0400
+Message-Id: <1301939705-2404-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Apr 2011, Charles Samuels wrote:
+Windows reboots by hitting the ACPI reboot vector (if available), trying
+the keyboard controller, hitting the ACPI reboot vector again and then
+giving the keyboard controller one last go. This is important for modern
+hardware, which often lacks a keyboard controller and may even wedge if the
+legacy io ports are hit. Rework our reboot process a little to default to
+matching this behaviour, although we'll fall through to attempting a triple
+fault if nothing else works.
 
-> Hi,
->
-> Thanks for the reply.
->
-> On Sunday, April 03, 2011 7:02:35 pm Ted Ts'o wrote:
->> On Fri, Apr 01, 2011 at 12:59:53PM -0700, Charles Samuels wrote:
->>> I have an application that is writing large amounts of very
->>> fragmented data to harddrives. That is, I could write megabytes of
->>> data in blocks of a few bytes scattered around a multi-gigabyte
->>> file.
->>
->> Doctor, doctor, it hurts when I do this....  any way you can avoid
->> doing this?  What is your application doing at the high level.
-> Not really, I need the on-disk data organized in this pattern, so that the
-> reads are optimized nicely. It's a database application.
->
->>
->>> Obviously, doing this causes the harddrive to seek a lot and takes a
->>> while.  From what I understand, if I allow linux to cache the
->>> writes, it will fill up the kernel's write cache, and then
->>> consequently the disk drive's DMA queue. As a result of that, the
->>> harddrive can pick the correct order to do these writes,
->>> significantly reducing seek times.
->>
->> This is one way to avoid some of the seeks, yes.
->
-> What's another way? Other than not doing it :)
->
->> Who or what is calling fsync()?  Is it being called by your
->> application because you want to initiate writeout?  Or is it being
->> called by some completely unrelated process?
->
-> It's being called by my own process. When fsync finishes, I update another file
-> with some offset counters, fsync that, and with some luck, my writes are
-> transactional.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/kernel/reboot.c |   23 ++++++++++++++++++++++-
+ 1 files changed, 22 insertions(+), 1 deletions(-)
 
-get yourself a raid controller with a battery-backed cache on it. Then 
-your application can consider the data 'safe' once it's written to the 
-raid controller (and the fsync will return at that point), the raid 
-controller and the disks can then write the data in whatever order they 
-want and you won't care.
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index d3ce37e..9dd4330 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -35,7 +35,7 @@ EXPORT_SYMBOL(pm_power_off);
+ 
+ static const struct desc_ptr no_idt = {};
+ static int reboot_mode;
+-enum reboot_type reboot_type = BOOT_KBD;
++enum reboot_type reboot_type = BOOT_ACPI;
+ int reboot_force;
+ 
+ #if defined(CONFIG_X86_32) && defined(CONFIG_SMP)
+@@ -477,9 +477,23 @@ void __attribute__((weak)) mach_reboot_fixups(void)
+ {
+ }
+ 
++/*
++ * Windows does the following on reboot:
++ * 1) If the FADT has the ACPI reboot register flag set, try it
++ * 2) If still alive, write to the keyboard controller
++ * 3) If still alive, write to the ACPI reboot register again
++ * 4) If still alive, write to the keyboard controller again
++ *
++ * If the machine is still alive at this stage, it gives up. We default to
++ * following the same pattern, except that if we're still alive after (4) we'll
++ * try to force a triple fault and then cycle between hitting the keyboard
++ * controller and doing that
++ */
+ static void native_machine_emergency_restart(void)
+ {
+ 	int i;
++	int attempt = 0;
++	int orig_reboot_type = reboot_type;
+ 
+ 	if (reboot_emergency)
+ 		emergency_vmx_disable_all();
+@@ -501,6 +515,13 @@ static void native_machine_emergency_restart(void)
+ 				outb(0xfe, 0x64); /* pulse reset low */
+ 				udelay(50);
+ 			}
++			if (attempt == 0 && orig_reboot_type == BOOT_ACPI) {
++				attempt = 1;
++				reboot_type = BOOT_ACPI;
++			} else {
++				reboot_type = BOOT_TRIPLE;
++			}
++			break;
+ 
+ 		case BOOT_TRIPLE:
+ 			load_idt(&no_idt);
+-- 
+1.7.4.1
 
-This is a standard requirement for high performance databases. Without 
-this they run into the exact problem you are experiancing.
-
-This battery backed cache can be on the raid card in your machine, or in 
-the disk array that you are connecting to.
-
-David Lang
