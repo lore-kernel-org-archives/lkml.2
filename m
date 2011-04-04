@@ -1,191 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1DDTSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 15:18:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56197 "EHLO
+	id S1755421Ab1DDTSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 15:18:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:42850 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab1DDTSe (ORCPT
+	with ESMTP id S1755187Ab1DDTSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 15:18:34 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=vhdKIqpQuCYA:10 a=NN3dVZqmgpIA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=pc_eyObelX_Hb3W4ZDIA:9 a=g9WCVhkPnjGQwvDdFCQA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=mK4YuaWWMZrgA5sm:21 a=yYdysxRdVOkCkuKu:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Mon, 4 Apr 2011 15:18:33 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=pDOKfcMg7l0A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Iwdc0ePNTnk39Rv0CJYA:9 a=lSu7IAUlkRtUQclLTHkA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110404191832.287092387@goodmis.org>
+Message-Id: <20110404191831.917976310@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 04 Apr 2011 15:16:56 -0400
+Date: Mon, 04 Apr 2011 15:16:55 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
         Jason Baron <jbaron@redhat.com>
-Subject: [PATCH 2/6] tracing: Print trace_bprintk() formats for modules too
+Subject: [PATCH 1/6] tracing: Convert trace_printk() formats for module to const char *
 References: <20110404191654.006849945@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Print-trace_bprintk-formats-for-modules-too.patch
+Content-Disposition: inline; filename=0001-tracing-Convert-trace_printk-formats-for-module-to-c.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The file debugfs/tracing/printk_formats maps the addresses
-to the formats that are used by trace_bprintk() so that userspace
-tools can read the buffer and be able to decode trace_bprintk events
-to get the format saved when reading the ring buffer directly.
+The trace_printk() formats for modules do not show up in the
+debugfs/tracing/printk_formats file. Only the formats that are
+for trace_printk()s that are in the kernel core.
 
-This is because trace_bprintk() does not store the format into the
-buffer, but just the address of the format, which is hidden in
-the kernel memory.
-
-But currently it only exports trace_bprintk()s from the kernel core
-and not for modules. The modules need their formats exported
-as well.
+To facilitate the change to add trace_printk() formats from modules
+into that file as well, we need to convert the structure that
+holds the formats from char fmt[], into const char *fmt,
+and allocate them separately.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_printk.c |  103 ++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 97 insertions(+), 6 deletions(-)
+ kernel/trace/trace_printk.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
-index b8b2681..dff763b 100644
+index 2547d88..b8b2681 100644
 --- a/kernel/trace/trace_printk.c
 +++ b/kernel/trace/trace_printk.c
-@@ -89,6 +89,76 @@ static int module_trace_bprintk_format_notify(struct notifier_block *self,
- 	return 0;
- }
+@@ -32,7 +32,7 @@ static DEFINE_MUTEX(btrace_mutex);
  
-+/*
-+ * The debugfs/tracing/printk_formats file maps the addresses with
-+ * the ASCII formats that are used in the bprintk events in the
-+ * buffer. For userspace tools to be able to decode the events from
-+ * the buffer, they need to be able to map the address with the format.
-+ *
-+ * The addresses of the bprintk formats are in their own section
-+ * __trace_printk_fmt. But for modules we copy them into a link list.
-+ * The code to print the formats and their addresses passes around the
-+ * address of the fmt string. If the fmt address passed into the seq
-+ * functions is within the kernel core __trace_printk_fmt section, then
-+ * it simply uses the next pointer in the list.
-+ *
-+ * When the fmt pointer is outside the kernel core __trace_printk_fmt
-+ * section, then we need to read the link list pointers. The trick is
-+ * we pass the address of the string to the seq function just like
-+ * we do for the kernel core formats. To get back the structure that
-+ * holds the format, we simply use containerof() and then go to the
-+ * next format in the list.
-+ */
-+static const char **
-+find_next_mod_format(int start_index, void *v, const char **fmt, loff_t *pos)
-+{
-+	struct trace_bprintk_fmt *mod_fmt;
-+
-+	if (list_empty(&trace_bprintk_fmt_list))
-+		return NULL;
-+
-+	/*
-+	 * v will point to the address of the fmt record from t_next
-+	 * v will be NULL from t_start.
-+	 * If this is the first pointer or called from start
-+	 * then we need to walk the list.
-+	 */
-+	if (!v || start_index == *pos) {
-+		struct trace_bprintk_fmt *p;
-+
-+		/* search the module list */
-+		list_for_each_entry(p, &trace_bprintk_fmt_list, list) {
-+			if (start_index == *pos)
-+				return &p->fmt;
-+			start_index++;
+ struct trace_bprintk_fmt {
+ 	struct list_head list;
+-	char fmt[0];
++	const char *fmt;
+ };
+ 
+ static inline struct trace_bprintk_fmt *lookup_format(const char *fmt)
+@@ -49,6 +49,7 @@ static
+ void hold_module_trace_bprintk_format(const char **start, const char **end)
+ {
+ 	const char **iter;
++	char *fmt;
+ 
+ 	mutex_lock(&btrace_mutex);
+ 	for (iter = start; iter < end; iter++) {
+@@ -58,14 +59,18 @@ void hold_module_trace_bprintk_format(const char **start, const char **end)
+ 			continue;
+ 		}
+ 
+-		tb_fmt = kmalloc(offsetof(struct trace_bprintk_fmt, fmt)
+-				+ strlen(*iter) + 1, GFP_KERNEL);
+-		if (tb_fmt) {
++		tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
++		if (tb_fmt)
++			fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
++		if (tb_fmt && fmt) {
+ 			list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
+-			strcpy(tb_fmt->fmt, *iter);
++			strcpy(fmt, *iter);
++			tb_fmt->fmt = fmt;
+ 			*iter = tb_fmt->fmt;
+-		} else
++		} else {
++			kfree(tb_fmt);
+ 			*iter = NULL;
 +		}
-+		/* pos > index */
-+		return NULL;
-+	}
-+
-+	/*
-+	 * v points to the address of the fmt field in the mod list
-+	 * structure that holds the module print format.
-+	 */
-+	mod_fmt = container_of(v, typeof(*mod_fmt), fmt);
-+	if (mod_fmt->list.next == &trace_bprintk_fmt_list)
-+		return NULL;
-+
-+	mod_fmt = container_of(mod_fmt->list.next, typeof(*mod_fmt), list);
-+
-+	return &mod_fmt->fmt;
-+}
-+
-+static void format_mod_start(void)
-+{
-+	mutex_lock(&btrace_mutex);
-+}
-+
-+static void format_mod_stop(void)
-+{
-+	mutex_unlock(&btrace_mutex);
-+}
-+
- #else /* !CONFIG_MODULES */
- __init static int
- module_trace_bprintk_format_notify(struct notifier_block *self,
-@@ -96,6 +166,13 @@ module_trace_bprintk_format_notify(struct notifier_block *self,
- {
- 	return 0;
+ 	}
+ 	mutex_unlock(&btrace_mutex);
  }
-+static inline const char **
-+find_next_mod_format(int start_index, void *v, const char **fmt, loff_t *pos)
-+{
-+	return NULL;
-+}
-+static inline void format_mod_start(void) { }
-+static inline void format_mod_stop(void) { }
- #endif /* CONFIG_MODULES */
- 
- 
-@@ -158,20 +235,33 @@ int __ftrace_vprintk(unsigned long ip, const char *fmt, va_list ap)
- }
- EXPORT_SYMBOL_GPL(__ftrace_vprintk);
- 
-+static const char **find_next(void *v, loff_t *pos)
-+{
-+	const char **fmt = v;
-+	int start_index;
-+
-+	if (!fmt)
-+		fmt = __start___trace_bprintk_fmt + *pos;
-+
-+	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
-+
-+	if (*pos < start_index)
-+		return fmt;
-+
-+	return find_next_mod_format(start_index, v, fmt, pos);
-+}
-+
- static void *
- t_start(struct seq_file *m, loff_t *pos)
- {
--	const char **fmt = __start___trace_bprintk_fmt + *pos;
--
--	if ((unsigned long)fmt >= (unsigned long)__stop___trace_bprintk_fmt)
--		return NULL;
--	return fmt;
-+	format_mod_start();
-+	return find_next(NULL, pos);
- }
- 
- static void *t_next(struct seq_file *m, void * v, loff_t *pos)
- {
- 	(*pos)++;
--	return t_start(m, pos);
-+	return find_next(v, pos);
- }
- 
- static int t_show(struct seq_file *m, void *v)
-@@ -210,6 +300,7 @@ static int t_show(struct seq_file *m, void *v)
- 
- static void t_stop(struct seq_file *m, void *p)
- {
-+	format_mod_stop();
- }
- 
- static const struct seq_operations show_format_seq_ops = {
 -- 
 1.7.2.3
 
