@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab1DDVqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 17:46:39 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:59859 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723Ab1DDVqf (ORCPT
+	id S1754440Ab1DDVxC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 17:53:02 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43026 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab1DDVxA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 17:46:35 -0400
-Message-ID: <4D9A3C36.2080601@canonical.com>
-Date: Mon, 04 Apr 2011 17:46:30 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
+	Mon, 4 Apr 2011 17:53:00 -0400
 MIME-Version: 1.0
+In-Reply-To: <20110404213338.GB984@core.coreip.homeip.net>
+References: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
+ <1301727259-5185-3-git-send-email-jeffbrown@android.com> <20110404213338.GB984@core.coreip.homeip.net>
+From: Jeffrey Brown <jeffbrown@android.com>
+Date: Mon, 4 Apr 2011 14:52:19 -0700
+Message-ID: <BANLkTineFm2WvtHi6pL6f3UOhPcpiRdKQA@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] input: evdev: Indicate buffer overrun with SYN_DROPPED.
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Jeffrey Brown <jeffbrown@android.com>, Jiri Kosina <jkosina@suse.cz>,
-        Henrik Rydberg <rydberg@euromail.se>, Simon Budig <simon@budig.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
-References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com> <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com> <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz> <BANLkTikG-ku9mDebcaPKTwv3X0N+OKiyYQ@mail.gmail.com> <4D9A1407.6030308@canonical.com> <20110404213910.GD984@core.coreip.homeip.net>
-In-Reply-To: <20110404213910.GD984@core.coreip.homeip.net>
+Cc: rydberg@euromail.se, djkurtz@google.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2011 05:39 PM, Dmitry Torokhov wrote:
-> On Mon, Apr 04, 2011 at 02:55:03PM -0400, Chase Douglas wrote:
->> On 04/04/2011 02:13 PM, Jeffrey Brown wrote:
->>> On Mon, Apr 4, 2011 at 5:43 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->>>> I'd happuly take Chase's patch, but want to make sure that we don't cause
->>>> any changes that would make backwards compatilibity an issue later.
->>>
->>> There should be no compatibility issues.  However, we might be better
->>> off in the long term taking (some variation of) these patches instead.
->>
->> I like the proposed changes, but I want to ensure stable kernel releases
->> aren't left out of the fix for hid-magicmouse. I don't know the best way
->> forward, but here's one possibility:
->>
->> 1. Apply my patch to manually set the buffer size hint
->> 2. It gets sent to stable trees due to the 'Cc: stable@kernel.org' line
->> 3. Apply Jeffrey's patches, including a reversion of my buffer size hint
->>
->> Obviously the extra application and reversion is odd, but this seems the
->> easiest way forward given that the patches already exist and can be
->> applied without issue.
->>
-> 
-> Or, once Jeffrey's patches hit mainline, send your change to stable with
-> the explanation why it is needed for stable but not for mainline.
+Hi Dmitry,
 
-I'm fine with this too. I'll watch the list to see what happens.
+On Mon, Apr 4, 2011 at 2:33 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Fri, Apr 01, 2011 at 11:54:18PM -0700, Jeff Brown wrote:
+>> +      * When the client buffer is full, drain the buffer and enqueue a
+>> +      * SYN_DROPPED event to let the client know that events were dropped
+>> +      * and the last packet was incomplete.  We then consume all remaining
+>> +      * events from the dropped packet until the next packet begins.
+>
+> I do not think we (kernel) should be doing this. Clients should take
+> care and not allow overruns but if they happen the pain should be on the
+> client to restore the context. It has to query the device to get its
+> current state and it can drop the events till next sync as well.
 
-Thanks,
+That's fine.  We should document SYN_DROPPED and mention that the
+client should wait until after the next SYN_REPORT to get back in
+sync.
 
--- Chase
+> Therefore I intend to apply the patch in the form below.
+
+Looks good to me.  It's more like my original patch.
+
+Jeff.
