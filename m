@@ -1,134 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1DDJVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:21:46 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57999 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1DDJVo (ORCPT
+	id S1754113Ab1DDJYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:24:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49878 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab1DDJYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:21:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=m0zP0tjDdNRzvHgy4k/gPvjVyc5oxmgoGJRlR9bV0bOr00f29CzyWu4w9AuXIOLYtw
-         Z2uGWEh1h7vKxPNWbRg7rHWpWc6Rb2t8fN0QZlj7e5lsuEuxaln+tqY4EdrSWEZGqedr
-         iZAGB1c6bJ5yVNYjwStIp5JU0PL5sESgNT2b8=
+	Mon, 4 Apr 2011 05:24:48 -0400
+Date: Mon, 4 Apr 2011 10:24:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Prchal =?utf-8?B?SmnFmcOt?= <jiri.prchal@aksignal.cz>
+Cc: nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org,
+        Ryan Mallon <ryan@bluewatersys.com>, plagnioj@jcrosoft.co,
+        linux@maxim.org.za, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARCH arm: adding new board: CDU
+Message-ID: <20110404092434.GB19841@n2100.arm.linux.org.uk>
+References: <1300949648-15078-1-git-send-email-horms@verge.net.au> <1300949648-15078-2-git-send-email-horms@verge.net.au> <4D8B2068.60402@aksignal.cz> <4D8BA47B.8050904@bluewatersys.com> <4D998B12.1040909@aksignal.cz> <20110404091635.GA19841@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Mon, 4 Apr 2011 11:21:43 +0200
-Message-ID: <BANLkTikr62YPeDnkL3DKA1Nts5aRFxsO6Q@mail.gmail.com>
-Subject: Re: linux-next: Tree for April 4 [BROKEN thinkpad_acpi]
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110404091635.GA19841@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 4, 2011 at 6:35 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20110401:
->
-> Dropped tree: xen
->
-> The net tree gained a build failure so I used the version from
-> next-20110401.
->
+On Mon, Apr 04, 2011 at 10:16:35AM +0100, Russell King - ARM Linux wrote:
+> On Mon, Apr 04, 2011 at 11:10:42AM +0200, Prchal Jiří wrote:
+> > Hi,
+> > this is separated PATCH adding new board CDU.
+> 
+> What does this have to do with
+> 
+> "[PATCH 1/2] mmc, ARM: Rename SuperH Mobile ARM zboot helpers" ?
+> 
+> which is the message which you hit your mailer's "reply" button on?
+> Please don't pollute email threads.
 
-Hi,
+Sorry, it's not as trivial as I thought.  For some reason your mailer is
+introducing additional message IDs in the 'References' header which are
+causing the message to be incorrectly threaded.  Here are the original
+two messages:
 
-My build breaked today.
-Looks like the issue was introduced by commit
-2af915b1eda9a671973256540035f8a6da1d57b4:
-"thinkpad_acpi: Convert printks to pr_<level>"
+From: Simon Horman <horms@verge.net.au>
+Subject: [PATCH 0/2] mmc: zboot helpers
+Message-Id: <1300949648-15078-1-git-send-email-horms@verge.net.au>
 
-- Sedat -
+From: Simon Horman <horms@verge.net.au>
+Subject: [PATCH 1/2] mmc, ARM: Rename SuperH Mobile ARM zboot helpers
+Message-Id: <1300949648-15078-2-git-send-email-horms@verge.net.au>
 
-P.S.: Attached excerpt from my build.log
+And your messages:
 
-[...]
-  CC [M]  drivers/platform/x86/thinkpad_acpi.o
-[...]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'hotkey_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3233:2:
-error: implicit declaration of function 'str_supported'
-[-Werror=implicit-function-declaration]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3233:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3289:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'bluetooth_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3991:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'wan_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4179:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'uwb_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4319:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'video_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4419:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'light_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4803:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4803:2:
-warning: format '%s' expects argument of type 'char *', but argument 3
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'cmos_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4910:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'led_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:5281:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'beep_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:5404:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'thermal_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:5737:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'volume_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:6901:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-  CC [M]  net/sched/sch_sfb.o
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
-In function 'fan_init':
-/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:8001:2:
-warning: format '%s' expects argument of type 'char *', but argument 2
-has type 'int' [-Wformat]
-  CC [M]  drivers/media/dvb/ttusb-dec/ttusbdecfe.o
-cc1: some warnings being treated as errors
+From: Prchal Ji■í <jiri.prchal@aksignal.cz>
+Subject: [PATCH] mmc, AT91: fix init fequency problem
+References: <1300949648-15078-1-git-send-email-horms@verge.net.au>
+        <1300949648-15078-2-git-send-email-horms@verge.net.au>
+In-Reply-To: <1300949648-15078-2-git-send-email-horms@verge.net.au>
 
-make[7]: *** [drivers/platform/x86/thinkpad_acpi.o] Error 1
-make[6]: *** [drivers/platform/x86] Error 2
-make[5]: *** [drivers/platform] Error 2
+From: Prchal Ji■í <jiri.prchal@aksignal.cz>
+Subject: [PATCH] ARCH arm: adding new board: CDU
+References: <1300949648-15078-1-git-send-email-horms@verge.net.au>
+        <1300949648-15078-2-git-send-email-horms@verge.net.au>
+        <4D8B2068.60402@aksignal.cz> <4D8BA47B.8050904@bluewatersys.com>
+In-Reply-To: <4D8BA47B.8050904@bluewatersys.com>
 
-- Sedat -
+both of which reference Simon's unrelated emails.  No idea how you're
+doing that, but both of your messages seem to be completely unrelated
+to Simon's two.
