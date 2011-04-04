@@ -1,114 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab1DDNrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 09:47:47 -0400
-Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:42710 "EHLO
-	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754104Ab1DDNrp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 09:47:45 -0400
-Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>, Rob Landley <rlandley@parallels.com>,
-        Pete Clements <clem@clem.clem-digital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-In-Reply-To: <1301582977.1984.7.camel@castor.rsk>
-References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net>
-	 <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com>
-	 <4D933584.5050005@parallels.com> <4D94432D.5080601@fusionio.com>
-	 <4D944544.9040705@parallels.com> <4D945247.4080404@fusionio.com>
-	 <4D945976.8000401@fusionio.com> <20110331121100.GD3385@htj.dyndns.org>
-	 <4D9474AA.4070402@fusionio.com> <4D947D12.6070505@rsk.demon.co.uk>
-	 <4D947F29.5050203@fusionio.com> <1301577831.1984.2.camel@castor.rsk>
-	 <4D9482BA.8080807@fusionio.com>  <1301582977.1984.7.camel@castor.rsk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 14:47:43 +0100
-Message-ID: <1301924863.8526.9.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753393Ab1DDNxx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 09:53:53 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55665 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142Ab1DDNxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 09:53:52 -0400
+Date: Sun, 3 Apr 2011 22:02:35 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Charles Samuels <charles@cariden.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Queuing of disk writes
+Message-ID: <20110404020235.GA4706@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Charles Samuels <charles@cariden.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201104011259.53936.charles@cariden.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104011259.53936.charles@cariden.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-31 at 15:49 +0100, Richard Kennedy wrote:
-> On Thu, 2011-03-31 at 15:33 +0200, Jens Axboe wrote:
->[...]
-> > >>> Hi Jens,
-> > >>>
-> > >>> I'm seeing a problem with fio never completing when writing to 2 disks
-> > >>> simultaneously. In my test case I'm writing 2Gb to both a LVM volume & a
-> > >>> pata drive on x86_64 on a AMD X2. Could this be a related issue?
-> > >>>
-> > >>> I'm not getting anything reported in the log, lockup detection doesn't
-> > >>> report anything either. The write seems to have finished (the disk light
-> > >>> activity has stopped) and the cpu cores are both below 10% usage, but
-> > >>> fio never returns. The test does complete some times, but it seems to be
-> > >>> one 1 in 4.
-> > >>
-> > >> So when you say PATA, it's /dev/hdaX something as well?
-> > >>
-> > >>> I'm going to try tracing it and see if I can spot where it's stuck.
-> > >>
-> > >> Thanks, that would be nice.
-> > >>
-> > > The second drive is /dev/sdb1 mounted on /opt, both file systems are
-> > > ext4.
-> > 
-> > So probably not related. What does the fio job look like?
-> > 
-> fio job file --
-> [global]
-> pre_read=1
-> ioengine=mmap
+On Fri, Apr 01, 2011 at 12:59:53PM -0700, Charles Samuels wrote:
 > 
-> [f1]
-> size=2g
-> rw=write
-> directory=/home/tests
-> 
-> [f2]
-> size=2g
-> rw=write
-> directory=/opt/tests
-> 
-> Fio gets run from a script that also collects stats but it's been
-> running without any problems up until 2.6.39-rc1.
-> 
-Hi Jens
-I've upgrade to the latest fio version in the git repo 1.51 and I'm
-still seeing this problem. 
+> I have an application that is writing large amounts of very
+> fragmented data to harddrives. That is, I could write megabytes of
+> data in blocks of a few bytes scattered around a multi-gigabyte
+> file.
 
-Fio gets stuck after it writes the 100% complete message and strace on
-the processes shows this.
+Doctor, doctor, it hurts when I do this....  any way you can avoid
+doing this?  What is your application doing at the high level.
 
-the controlling fio process :- 
- ...
-[pid  8439] wait4(8442, 0x7fff848203ac, WNOHANG, NULL) = 0
-[pid  8439] nanosleep({0, 10000000}, NULL) = 0
-[pid  8439] wait4(8441, 0x7fff848203ac, WNOHANG, NULL) = 0
-[pid  8439] wait4(8442, 0x7fff848203ac, WNOHANG, NULL) = 0
-[pid  8439] nanosleep({0, 10000000}
+> Obviously, doing this causes the harddrive to seek a lot and takes a
+> while.  From what I understand, if I allow linux to cache the
+> writes, it will fill up the kernel's write cache, and then
+> consequently the disk drive's DMA queue. As a result of that, the
+> harddrive can pick the correct order to do these writes,
+> significantly reducing seek times.
 
-& the 2 workers are both stopped here, strace shows only the one line
-for each process.
+This is one way to avoid some of the seeks, yes.
 
-Process 8441 attached - interrupt to quit
-futex(0x7f9db76a802c, FUTEX_WAIT_PRIVATE, 2, NULL
+> However, there's a major cost in allowing the write cache to fill:
+> fsync takes *ages*. What's worse is that while fsync is proceeding,
+> it seems *all* disk operations in the OS are blocked. This is really
+> terrible for performance of my application: my application might
+> want to do some reads (i.e. from another thread) from the disk
+> preempting the fsync temporarily. It's also really terrible for me,
+> because then my workstation becomes unresponsive for several
+> minutes.
 
+Who or what is calling fsync()?  Is it being called by your
+application because you want to initiate writeout?  Or is it being
+called by some completely unrelated process?
 
-Process 8442 attached - interrupt to quit
-futex(0x7f9db76a802c, FUTEX_WAIT_PRIVATE, 2, NULL
+If it is being called by the application, one thing you can do is to
+use the Linux-specific system call sync_file_range().  You can use
+this to do asynchronous data flushes of the file, and control which
+range of bytes are written out, which can also help avoid flooding the
+disk with too many write requests.
 
-How do I find out which futex it's waiting for? 
-Any ideas where I should look next ?
+If the fsync() is being called by some other process, then yeah, you
+have a problem.  What I'd suggest is using a separate partition and
+file system for this application of yours which needs to write
+megabytes and megabytes of data at random locations in this
+multi-gigabyte file of yours....
 
-I can run the same test successfully on 2.6.38 so is it worth trying to
-bisect this ? 
-
-thanks 
-Richard
-
-
+						- Ted
