@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1DDVqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 17:46:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38608 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751823Ab1DDVq3 (ORCPT
+	id S1755515Ab1DDVqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 17:46:39 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:59859 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab1DDVqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 17:46:29 -0400
+	Mon, 4 Apr 2011 17:46:35 -0400
+Message-ID: <4D9A3C36.2080601@canonical.com>
+Date: Mon, 04 Apr 2011 17:46:30 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20110404210639.GA6133@sucs.org>
-References: <BANLkTinVd8-VNM+uJ0HReA3cd6DaF-wA=A@mail.gmail.com>
- <20110404194230.GA8785@sucs.org> <BANLkTik_MNB+4vWXw2k0-B-2B1_4MO3HMg@mail.gmail.com>
- <BANLkTi=oZ8a8EwbraRm4n-wjmyrLe+MySg@mail.gmail.com> <20110404210639.GA6133@sucs.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 4 Apr 2011 14:39:29 -0700
-Message-ID: <BANLkTinim5hdXJpMYG-naCt9-G4jKL52Hg@mail.gmail.com>
-Subject: Re: [REGRESSION] 2.6.39-rc1: f23eb2b breaks console output
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Alexander Beregalov <a.beregalov@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jeffrey Brown <jeffbrown@android.com>, Jiri Kosina <jkosina@suse.cz>,
+        Henrik Rydberg <rydberg@euromail.se>, Simon Budig <simon@budig.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
+References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com> <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com> <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz> <BANLkTikG-ku9mDebcaPKTwv3X0N+OKiyYQ@mail.gmail.com> <4D9A1407.6030308@canonical.com> <20110404213910.GD984@core.coreip.homeip.net>
+In-Reply-To: <20110404213910.GD984@core.coreip.homeip.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 4, 2011 at 2:06 PM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-> On Tue, Apr 05, 2011 at 12:42:54AM +0400, Alexander Beregalov wrote:
->> On 4 April 2011 23:59, Linus Torvalds <torvalds@linux-foundation.org> wrote:
->> >
->> > Does this patch make a difference?
->> Yes, it works on top of 2.6.39-rc1-00184-g78fca1b9
->
-> This fixes the problem for me too (on top of
-> 148086bb64694cc91624bab2a550d50f800eb4b7 ).
+On 04/04/2011 05:39 PM, Dmitry Torokhov wrote:
+> On Mon, Apr 04, 2011 at 02:55:03PM -0400, Chase Douglas wrote:
+>> On 04/04/2011 02:13 PM, Jeffrey Brown wrote:
+>>> On Mon, Apr 4, 2011 at 5:43 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>>>> I'd happuly take Chase's patch, but want to make sure that we don't cause
+>>>> any changes that would make backwards compatilibity an issue later.
+>>>
+>>> There should be no compatibility issues.  However, we might be better
+>>> off in the long term taking (some variation of) these patches instead.
+>>
+>> I like the proposed changes, but I want to ensure stable kernel releases
+>> aren't left out of the fix for hid-magicmouse. I don't know the best way
+>> forward, but here's one possibility:
+>>
+>> 1. Apply my patch to manually set the buffer size hint
+>> 2. It gets sent to stable trees due to the 'Cc: stable@kernel.org' line
+>> 3. Apply Jeffrey's patches, including a reversion of my buffer size hint
+>>
+>> Obviously the extra application and reversion is odd, but this seems the
+>> easiest way forward given that the patches already exist and can be
+>> applied without issue.
+>>
+> 
+> Or, once Jeffrey's patches hit mainline, send your change to stable with
+> the explanation why it is needed for stable but not for mainline.
 
-I had that patch pending because Dave Jones had reported a less
-extreme case of this earlier, but I never got a definitive ack from
-him on it.
-
-But with you two confirming it, it's now committed as commit
-a5660b41af6a ("tty: fix endless work loop when the buffer fills up")
-in my tree.
+I'm fine with this too. I'll watch the list to see what happens.
 
 Thanks,
 
-                             Linus
+-- Chase
