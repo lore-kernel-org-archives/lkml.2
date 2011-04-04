@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab1DDTTz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 15:19:55 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45694 "EHLO mx3.mail.elte.hu"
+	id S1755363Ab1DDTfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 15:35:10 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:47837 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755427Ab1DDTTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 15:19:54 -0400
-Date: Mon, 4 Apr 2011 21:19:43 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] scheduler fixes
-Message-ID: <20110404191943.GA28258@elte.hu>
-References: <20110402103125.GA18746@elte.hu>
- <BANLkTikZS8zZ-oRfBsriEnzp17VMwXAjSg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikZS8zZ-oRfBsriEnzp17VMwXAjSg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755019Ab1DDTfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 15:35:08 -0400
+Date: Mon, 4 Apr 2011 21:34:27 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Patrick Boettcher <pboettcher@kernellabs.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, oliver@neukum.org,
+        linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [media] dib0700: get rid of on-stack dma buffers
+Message-ID: <20110404213427.28d69419@schatten.dmk.lab>
+In-Reply-To: <alpine.LRH.2.00.1104040940000.31158@pub1.ifh.de>
+References: <1301851423-21969-1-git-send-email-florian@mickler.org>
+	<alpine.LRH.2.00.1104040940000.31158@pub1.ifh.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 4 Apr 2011 09:42:04 +0200 (CEST)
+Patrick Boettcher <pboettcher@kernellabs.com> wrote:
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> So I pulled this, but I think this:
+> Hi Florian,
 > 
-> On Sat, Apr 2, 2011 at 3:31 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > -               if (interval > HZ*NR_CPUS/10)
-> > -                       interval = HZ*NR_CPUS/10;
-> > +               if (interval > HZ*num_online_cpus()/10)
-> > +                       interval = HZ*num_online_cpus()/10;
-> 
-> is a horrible patch.
 
-Indeed, will fix it.
+> For this one we implemented an alternative. See here:
+> 
+> http://git.linuxtv.org/pb/media_tree.git?a=commit;h=16b54de2d8b46e48c5c8bdf9b350eac04e8f6b46
+> 
+> which I pushed, but obviously forgot to send the pull-request.
+> 
+
+OK, I just looked over it. What about dib0700_rc_query_old_firmware,
+that would also need to be fixed. 
+
+I don't have an overview over the media framework, so I wonder what
+arbitrates concurrent access to the buffer? Functions which are only
+called from the initialization and probe routines are probably properly
+arbitrated by the driver core. But I would expect (perhaps
+that is me being naive) stuff like dib0700_change_protocol to need some
+sort of mutex ? 
+
+It seems to be called from some /sys/class/*/ file while for example
+legacy_dvb_usb_read_remote_control, which calls dib0700_rc_query_old_firmware, is 
+described as being a polling function, i.e. periodically executed...
+or the streaming_ctrl function, that looks like it is executed at
+times...  
 
 Thanks,
+Flo
 
-	Ingo
+
+p.s.: 
+can you add yourself to the
+MAINTAINERS file please? 
