@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab1DDUFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 16:05:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60094 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752841Ab1DDUFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 16:05:41 -0400
+	id S1755515Ab1DDUG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 16:06:28 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:44509 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755454Ab1DDUG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 16:06:27 -0400
+Message-ID: <4D9A24A0.5050105@aknet.ru>
+Date: Tue, 05 Apr 2011 00:05:52 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20110404194230.GA8785@sucs.org>
-References: <BANLkTinVd8-VNM+uJ0HReA3cd6DaF-wA=A@mail.gmail.com> <20110404194230.GA8785@sucs.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 4 Apr 2011 12:59:09 -0700
-Message-ID: <BANLkTik_MNB+4vWXw2k0-B-2B1_4MO3HMg@mail.gmail.com>
-Subject: Re: [REGRESSION] 2.6.39-rc1: f23eb2b breaks console output
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Alexander Beregalov <a.beregalov@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: multipart/mixed; boundary=90e6ba6e8ff48842cb04a01d325d
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+References: <4D6510A3.90905@aknet.ru> <20110223191442.GA717@redhat.com> <4D656F87.3090005@aknet.ru> <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com> <4D99D6E6.4070008@aknet.ru> <20110404160351.GA23655@redhat.com>
+In-Reply-To: <20110404160351.GA23655@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba6e8ff48842cb04a01d325d
-Content-Type: text/plain; charset=ISO-8859-1
+04.04.2011 20:03, Oleg Nesterov wrote:
+>> I still haven't solved the problems with checking
+>> parent and checking ptrace, so ignore them for
+>> now (or give me the hints:)
+> Not sure I understand your question...
+I wonder how to check whether the child was
+reparented to init, and not is a child on init's
+subthread. You suggested to check
+same_thread_group(real_parent, ns->child_reaper),
+but I don't understand that suggestion because in
+our case real_parent==ns->child_reaper, yet it is not
+enough, as it could be of CLONE_PARENT (I suppose).
 
-On Mon, Apr 4, 2011 at 12:42 PM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-> On Mon, Apr 04, 2011 at 11:15:10PM +0400, Alexander Beregalov wrote:
->>
->> commit f23eb2b2b28547fc70df82dd5049eb39bec5ba12 tty: stop using
->> "delayed_work" in the tty layer
->> breaks console output for me.
+>> +			while_each_thread(me, p) {
+>> +				if (!ptrace_reparented(p))
+>> +					p->parent = pid_ns->child_reaper;
+>> +				p->real_parent = pid_ns->child_reaper;
+> Eek. Even ignoring ptrace, this is weird. We change parent/real_parent,
+> but we do not do list_move_tail(sibling) until wait_task_detached() !
+> No, I think we should not do this even if this was correct. I'll try
+> to nack this in any case, even if there were no immediate problems ;)
+> IMHO, this is insane.
 >
-> Same here - doing a dmesg in an xterm makes the machine hang for about
-> 10 seconds and latencytop whinges that a raw SCSI command took 4000ms to
-> complete (uniprocessor x86 EeePC 900).
->
-> Additionally, you won't see this problem if you have CONFIG_PREEMPT set
-> but as my config has CONFIG_PREEMPT_VOLUNTARY=y I do see this problem.
-> Reverting f23eb2b2b28547fc70df82dd5049eb39bec5ba12 fixed the problem for
-> me too.
+> But this is wrong. Well. Suppose that the caller of PR_DETACH exits
+> before the old parent does do_wait(). What /sbin/init (who is the new
+> parent) can do after it gets SIGCHLD? If can't see this zombie. Nor
+> the old parent can release this task due to ->detaching. Eventually
+> /sbin/init can reap it if it does, say, waitpid(-1), but still this
+> is wrong.
+No, the idea was like that: the old parent either wait()s or
+exits, then init became a "real" parent of that process, and
+reaps it immediately. I think that's natural: the very same will happen
+if the child didn't do pr_detach. If it exits, its current parent
+have to either wait(), or exit. If it doesn't do so - zombie.
+I decided that if I still allow wait() for the old parent, I'd better
+leave that logic untouched. So: until the old parent wait()s
+or exits, we have zombie, and that's what I supposed to implement.
 
-Does this patch make a difference?
+> Or. Suppose that the old parent exits after its child does PR_DETACH.
+> You changed forget_original_parent() but this is not enough, note that
+> find_new_reaper() can pick the live sub-thread. In this case the child
+> will be moved to init's ->children list, and after that we are changing
+> ->real_parent back.
+How? I think I prevented that with this:
+---
 
-The tty ldisc flushing code had this crazy "reflush if we're full"
-logic, which was apparently hiding a problem in N_TTY handling where
-it wouldn't wake things up when the receive-room was opened up again.
++			p->detaching = 0;
++			continue;
+---
+So it should not go down to get reparented back.
+Or am I missing something?
 
-When I made it not do timers, the "reflush" logic basically made for
-an infinite loop (before, it used to instead basically poll for the
-event on each timer tick instead).
+Thanks for your time!
 
-The attached patch removes the reflush logic, and makes N_TTY instead
-wake up the work when opening up the receive buffer again.
-
-               Linus
-
---90e6ba6e8ff48842cb04a01d325d
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gm3tpd410
-
-IGRyaXZlcnMvdHR5L25fdHR5LmMgICAgICB8ICAgIDYgKysrKysrCiBkcml2ZXJzL3R0eS90dHlf
-YnVmZmVyLmMgfCAgICA0ICstLS0KIDIgZmlsZXMgY2hhbmdlZCwgNyBpbnNlcnRpb25zKCspLCAz
-IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvdHR5L25fdHR5LmMgYi9kcml2ZXJz
-L3R0eS9uX3R0eS5jCmluZGV4IDQyOGY0ZmUuLjBhZDMyODggMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
-dHR5L25fdHR5LmMKKysrIGIvZHJpdmVycy90dHkvbl90dHkuYwpAQCAtOTUsNiArOTUsNyBAQCBz
-dGF0aWMgdm9pZCBuX3R0eV9zZXRfcm9vbShzdHJ1Y3QgdHR5X3N0cnVjdCAqdHR5KQogewogCS8q
-IHR0eS0+cmVhZF9jbnQgaXMgbm90IHJlYWQgbG9ja2VkID8gKi8KIAlpbnQJbGVmdCA9IE5fVFRZ
-X0JVRl9TSVpFIC0gdHR5LT5yZWFkX2NudCAtIDE7CisJaW50IG9sZF9sZWZ0OwogCiAJLyoKIAkg
-KiBJZiB3ZSBhcmUgZG9pbmcgaW5wdXQgY2Fub25pY2FsaXphdGlvbiwgYW5kIHRoZXJlIGFyZSBu
-bwpAQCAtMTA0LDcgKzEwNSwxMiBAQCBzdGF0aWMgdm9pZCBuX3R0eV9zZXRfcm9vbShzdHJ1Y3Qg
-dHR5X3N0cnVjdCAqdHR5KQogCSAqLwogCWlmIChsZWZ0IDw9IDApCiAJCWxlZnQgPSB0dHktPmlj
-YW5vbiAmJiAhdHR5LT5jYW5vbl9kYXRhOworCW9sZF9sZWZ0ID0gdHR5LT5yZWNlaXZlX3Jvb207
-CiAJdHR5LT5yZWNlaXZlX3Jvb20gPSBsZWZ0OworCisJLyogRGlkIHRoaXMgb3BlbiB1cCB0aGUg
-cmVjZWl2ZSBidWZmZXI/IFdlIG1heSBuZWVkIHRvIGZsaXAgKi8KKwlpZiAobGVmdCAmJiAhb2xk
-X2xlZnQpCisJCXNjaGVkdWxlX3dvcmsoJnR0eS0+YnVmLndvcmspOwogfQogCiBzdGF0aWMgdm9p
-ZCBwdXRfdHR5X3F1ZXVlX25vbG9jayh1bnNpZ25lZCBjaGFyIGMsIHN0cnVjdCB0dHlfc3RydWN0
-ICp0dHkpCmRpZmYgLS1naXQgYS9kcml2ZXJzL3R0eS90dHlfYnVmZmVyLmMgYi9kcml2ZXJzL3R0
-eS90dHlfYnVmZmVyLmMKaW5kZXggYjk0NTEyMS4uZjFhNzkxOCAxMDA2NDQKLS0tIGEvZHJpdmVy
-cy90dHkvdHR5X2J1ZmZlci5jCisrKyBiL2RyaXZlcnMvdHR5L3R0eV9idWZmZXIuYwpAQCAtNDQy
-LDEwICs0NDIsOCBAQCBzdGF0aWMgdm9pZCBmbHVzaF90b19sZGlzYyhzdHJ1Y3Qgd29ya19zdHJ1
-Y3QgKndvcmspCiAJCQkgICBsaW5lIGRpc2NpcGxpbmUgYXMgd2Ugd2FudCB0byBlbXB0eSB0aGUg
-cXVldWUgKi8KIAkJCWlmICh0ZXN0X2JpdChUVFlfRkxVU0hQRU5ESU5HLCAmdHR5LT5mbGFncykp
-CiAJCQkJYnJlYWs7Ci0JCQlpZiAoIXR0eS0+cmVjZWl2ZV9yb29tIHx8IHNlZW5fdGFpbCkgewot
-CQkJCXNjaGVkdWxlX3dvcmsoJnR0eS0+YnVmLndvcmspOworCQkJaWYgKCF0dHktPnJlY2VpdmVf
-cm9vbSB8fCBzZWVuX3RhaWwpCiAJCQkJYnJlYWs7Ci0JCQl9CiAJCQlpZiAoY291bnQgPiB0dHkt
-PnJlY2VpdmVfcm9vbSkKIAkJCQljb3VudCA9IHR0eS0+cmVjZWl2ZV9yb29tOwogCQkJY2hhcl9i
-dWYgPSBoZWFkLT5jaGFyX2J1Zl9wdHIgKyBoZWFkLT5yZWFkOwo=
---90e6ba6e8ff48842cb04a01d325d--
