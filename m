@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1DDPZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 11:25:45 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43421 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab1DDPZo (ORCPT
+	id S1754880Ab1DDPdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 11:33:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57033 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab1DDPdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 11:25:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=PuqyXE9y1KrSx39PL98TyGgQ5nued2XK1FJuFsEcJ7JqDke/PMOO+TSzS98GrcjSqH
-         xQqEzS80Chqi5ewzTM5Q==
+	Mon, 4 Apr 2011 11:33:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Thilo-Alexander Ginkel" <thilo@ginkel.com>
+Subject: Re: Soft lockup during suspend since ~2.6.36
+Date: Mon, 4 Apr 2011 17:32:42 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <AANLkTim5ctAoaB4+BS7Z-+ARUgTEBO22bkYMUvFtGmoN@mail.gmail.com> <201104041640.15578.arnd@arndb.de> <BANLkTim4Ro+u-9jfLPV1-+tM88xtvN-VTg@mail.gmail.com>
+In-Reply-To: <BANLkTim4Ro+u-9jfLPV1-+tM88xtvN-VTg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1301902664.2549.76.camel@pasglop>
-References: <1301882694.2549.53.camel@pasglop> <1301887630.2549.71.camel@pasglop>
- <1301902664.2549.76.camel@pasglop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 4 Apr 2011 09:25:20 -0600
-Message-ID: <BANLkTimBD=NfFKGpy0ZTnT9Dcu=dkTHxZg@mail.gmail.com>
-Subject: Re: [RFC/PATCH] of: Match PCI devices to OF nodes generically
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-arch@vger.kernel.org, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104041732.42489.arnd@arndb.de>
+X-Provags-ID: V02:K0:df4Ku/7SGrWtBiPpAL0DP0yUycFN1m1/tCUaED983Kw
+ G2d2tQExirDvbwTRxq5dzMhWn6LmZYgSXOxmsHHsyHN2yphizk
+ H9q2DrUDz12R5ma0yQ7o1dKd8doG9GwLuikE/CgU37wy/9q2PC
+ 5tkPsaXFgqaEhAdS2kShaNT8qlqD+PXU9FTQ0AGxxqA9SD48h6
+ VkPYTxVIKHw5iEnI0I7Vg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 4, 2011 at 1:37 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
+On Monday 04 April 2011, Thilo-Alexander Ginkel wrote:
+> ACK. I see two possibilities:
+> a) The bug was introduced after the bisected bug was fixed
+> b) The bug was already present earlier, but was masked by the bug from
+> the bisected change
+> 
+> I hope for a) as that would open the possibility to bisect this new bug.
+> 
 
-> powerpc has two different ways of matching PCI devices to their
-> corresponding OF node (if any) for historical reasons. The ppc64 one
-> does a scan looking for matching bus/dev/fn, while the ppc32 one does a
-> scan looking only for matching dev/fn on each level in order to be
-> agnostic to busses being renumbered (which Linux does on some
-> platforms).
->
-> This removes both and instead moves the matching code to the PCI core
-> itself. It's the most logical place to do it: when a pci_dev is created,
-> we know the parent and thus can do a single level scan for the matching
-> device_node (if any).
+In case of b), you can still bisect it when you either apply the later fix
+or revert the original patch whenever you build a kernel. Or you can try
+to avoid using the usb-hid driver during bisect.
 
-Some of this is reminiscent of the ACPI/PCI binding we do on x86/ia64,
-e.g., acpi_get_pci_dev() and the stuff in drivers/acpi/glue.c.  Have
-you looked at that to see if there's any hope of covering both OF and
-ACPI with something more generic?
-
-Bjorn
+	Arnd
