@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab1DDWYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 18:24:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47295 "EHLO
+	id S1755959Ab1DDWYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 18:24:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46324 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab1DDWYT (ORCPT
+	with ESMTP id S1755910Ab1DDWYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 18:24:19 -0400
+	Mon, 4 Apr 2011 18:24:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=LMQDAxMwluVAao/1uBMHTQuGUA2GYPaitm16fJ6KL05qcuwz/u/d6FqnpL8CqRMJnQ
-         c8GdsJpNfvYgVX9GrdI8qFH3i4MmrVOEyX9QnwCsWx5+EaIpykJPSvQLPdxl8tRchkuK
-         BfbPYKFvQXblW91FR3CcX5CYY70hgeIAJpDBw=
+        b=Pne4zNkqLdXbXejkxB57OaOxs9REdNktSTV9PaYV3m+n0vdAT5C3mAWEL4yit4PH5y
+         u4i/cUvY1tx8Sp8zOPCyZUjBEOncp/pUVwmZzEJRPj3iNqYIfzvuYY9ISKmrgPNWwwJm
+         e0iZHYX1pIdN852AL66rLPV3iIzvqQnGtR1RU=
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de, rientjes@google.com,
         yinghai@kernel.org, linux-kernel@vger.kernel.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/14] x86-32, NUMA: Move lowmem address space reservation to init_alloc_remap()
-Date: Tue,  5 Apr 2011 00:23:55 +0200
-Message-Id: <1301955840-7246-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 12/14] x86-32, NUMA: Remove now useless node_remap_offset[]
+Date: Tue,  5 Apr 2011 00:23:58 +0200
+Message-Id: <1301955840-7246-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1301955840-7246-1-git-send-email-tj@kernel.org>
 References: <1301955840-7246-1-git-send-email-tj@kernel.org>
@@ -28,39 +28,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remap alloc init is done in the following stages.
-
-1. init_alloc_remap() calculates how much memory is necessary for each
-   node and reserves node local memory.
-
-2. initmem_init() collects how much each node needs and reserves a
-   single contiguous lowmem area which can contain all.
-
-3. init_remap_allocator() initializes allocator parameters from the
-   determined lowmem address and per-node offsets.
-
-4. Actual remap happens.
-
-There is no reason for the lowmem remap area to be reserved as a
-single contiguous area at one go.  They don't interact with each other
-and the memblock allocator will put them side-by-side anyway.
-
-This patch breaks up the single lowmem address reservation and put
-per-node lowmem address reservation into init_alloc_remap() and
-initializes allocator parameters directly in the function as all the
-addresses are determined there.  This merges steps 2 and 3 into 1.
-
-While at it, remove now largely irrelevant comments in
-init_alloc_remap().
-
-This change causes the following behavior changes.
-
-* Remap lowmem areas are allocated in smaller per-node chunks.
-
-* Remap lowmem area reservation failure fail future remap allocations
-  instead of panicking.
-
-* Remap allocator initialization is less verbose.
+With lowmem address reservation moved into init_alloc_remap(),
+node_remap_offset[] is no longer useful.  Remove it and related offset
+handling code.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -69,147 +39,91 @@ Cc: Thomas Gleixner <tglx@linutronix.de
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- arch/x86/mm/numa_32.c |   82 +++++++++++++++----------------------------------
- 1 files changed, 25 insertions(+), 57 deletions(-)
+ arch/x86/mm/numa_32.c |   17 ++++++-----------
+ 1 files changed, 6 insertions(+), 11 deletions(-)
 
 diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index c127543..12bb34c 100644
+index 0184a9f..960ea7b 100644
 --- a/arch/x86/mm/numa_32.c
 +++ b/arch/x86/mm/numa_32.c
-@@ -108,9 +108,6 @@ static unsigned long node_remap_size[MAX_NUMNODES];
- static void *node_remap_start_vaddr[MAX_NUMNODES];
- void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
+@@ -187,7 +187,6 @@ static void __init allocate_pgdat(int nid)
+ static unsigned long node_remap_start_pfn[MAX_NUMNODES];
+ static void *node_remap_end_vaddr[MAX_NUMNODES];
+ static void *node_remap_alloc_vaddr[MAX_NUMNODES];
+-static unsigned long node_remap_offset[MAX_NUMNODES];
  
--static unsigned long kva_start_pfn;
--static unsigned long kva_pages;
--
- int __cpuinit numa_cpu_node(int cpu)
+ void *alloc_remap(int nid, unsigned long size)
  {
- 	return apic->x86_32_numa_cpu_node(cpu);
-@@ -266,7 +263,8 @@ void resume_map_numa_kva(pgd_t *pgd_base)
- static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+@@ -239,7 +238,7 @@ void resume_map_numa_kva(pgd_t *pgd_base)
+ }
+ #endif
+ 
+-static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
++static __init void init_alloc_remap(int nid)
  {
- 	unsigned long size;
--	u64 node_pa;
-+	u64 node_pa, remap_pa;
-+	void *remap_va;
+ 	unsigned long size, pfn;
+ 	u64 node_pa, remap_pa;
+@@ -252,9 +251,9 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+ 	printk(KERN_DEBUG "node %d pfn: [%lx - %lx]\n",
+ 	       nid, node_start_pfn[nid], node_end_pfn[nid]);
+ 	if (node_start_pfn[nid] > max_pfn)
+-		return 0;
++		return;
+ 	if (!node_end_pfn[nid])
+-		return 0;
++		return;
+ 	if (node_end_pfn[nid] > max_pfn)
+ 		node_end_pfn[nid] = max_pfn;
  
- 	/*
- 	 * The acpi/srat node info can show hot-add memroy zones where
-@@ -287,6 +285,7 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
- 	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
- 	size = ALIGN(size, LARGE_PAGE_BYTES);
- 
-+	/* allocate node memory and the lowmem remap area */
- 	node_pa = memblock_find_in_range(node_start_pfn[nid] << PAGE_SHIFT,
- 					 (u64)node_end_pfn[nid] << PAGE_SHIFT,
- 					 size, LARGE_PAGE_BYTES);
-@@ -295,45 +294,35 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+@@ -271,7 +270,7 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+ 	if (node_pa == MEMBLOCK_ERROR) {
+ 		pr_warning("remap_alloc: failed to allocate %lu bytes for node %d\n",
  			   size, nid);
- 		return 0;
+-		return 0;
++		return;
  	}
-+	memblock_x86_reserve_range(node_pa, node_pa + size, "KVA RAM");
-+
-+	remap_pa = memblock_find_in_range(min_low_pfn << PAGE_SHIFT,
-+					  max_low_pfn << PAGE_SHIFT,
-+					  size, LARGE_PAGE_BYTES);
-+	if (remap_pa == MEMBLOCK_ERROR) {
-+		pr_warning("remap_alloc: failed to allocate %lu bytes remap area for node %d\n",
-+			   size, nid);
-+		memblock_x86_free_range(node_pa, node_pa + size);
-+		return 0;
-+	}
-+	memblock_x86_reserve_range(remap_pa, remap_pa + size, "KVA PG");
-+	remap_va = phys_to_virt(remap_pa);
+ 	memblock_x86_reserve_range(node_pa, node_pa + size, "KVA RAM");
  
-+	/* initialize remap allocator parameters */
-+	node_remap_start_pfn[nid] = node_pa >> PAGE_SHIFT;
+@@ -282,7 +281,7 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+ 		pr_warning("remap_alloc: failed to allocate %lu bytes remap area for node %d\n",
+ 			   size, nid);
+ 		memblock_x86_free_range(node_pa, node_pa + size);
+-		return 0;
++		return;
+ 	}
+ 	memblock_x86_reserve_range(remap_pa, remap_pa + size, "KVA PG");
+ 	remap_va = phys_to_virt(remap_pa);
+@@ -296,7 +295,6 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+ 	/* initialize remap allocator parameters */
+ 	node_remap_start_pfn[nid] = node_pa >> PAGE_SHIFT;
  	node_remap_size[nid] = size >> PAGE_SHIFT;
- 	node_remap_offset[nid] = offset;
--	printk(KERN_DEBUG "Reserving %ld pages of KVA for lmem_map of node %d at %llx\n",
--	       size >> PAGE_SHIFT, nid, node_pa >> PAGE_SHIFT);
+-	node_remap_offset[nid] = offset;
  
--	/*
--	 *  prevent kva address below max_low_pfn want it on system
--	 *  with less memory later.
--	 *  layout will be: KVA address , KVA RAM
--	 *
--	 *  we are supposed to only record the one less then
--	 *  max_low_pfn but we could have some hole in high memory,
--	 *  and it will only check page_is_ram(pfn) &&
--	 *  !page_is_reserved_early(pfn) to decide to use it as free.
--	 *  So memblock_x86_reserve_range here, hope we don't run out
--	 *  of that array
--	 */
--	memblock_x86_reserve_range(node_pa, node_pa + size, "KVA RAM");
-+	node_remap_start_vaddr[nid] = remap_va;
-+	node_remap_end_vaddr[nid] = remap_va + size;
-+	node_remap_alloc_vaddr[nid] = remap_va + ALIGN(sizeof(pg_data_t), PAGE_SIZE);
+ 	node_remap_start_vaddr[nid] = remap_va;
+ 	node_remap_end_vaddr[nid] = remap_va + size;
+@@ -304,13 +302,10 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
  
--	node_remap_start_pfn[nid] = node_pa >> PAGE_SHIFT;
-+	printk(KERN_DEBUG "remap_alloc: node %d [%08llx-%08llx) -> [%p-%p)\n",
-+	       nid, node_pa, node_pa + size, remap_va, remap_va + size);
- 
- 	return size >> PAGE_SHIFT;
+ 	printk(KERN_DEBUG "remap_alloc: node %d [%08llx-%08llx) -> [%p-%p)\n",
+ 	       nid, node_pa, node_pa + size, remap_va, remap_va + size);
+-
+-	return size >> PAGE_SHIFT;
  }
  
--static void init_remap_allocator(int nid)
--{
--	node_remap_start_vaddr[nid] = pfn_to_kaddr(
--			kva_start_pfn + node_remap_offset[nid]);
--	node_remap_end_vaddr[nid] = node_remap_start_vaddr[nid] +
--		(node_remap_size[nid] * PAGE_SIZE);
--	node_remap_alloc_vaddr[nid] = node_remap_start_vaddr[nid] +
--		ALIGN(sizeof(pg_data_t), PAGE_SIZE);
--
--	printk(KERN_DEBUG "node %d will remap to vaddr %08lx - %08lx\n", nid,
--		(ulong) node_remap_start_vaddr[nid],
--		(ulong) node_remap_end_vaddr[nid]);
--}
--
  void __init initmem_init(void)
  {
- 	unsigned long reserve_pages = 0;
-@@ -352,25 +341,7 @@ void __init initmem_init(void)
+-	unsigned long reserve_pages = 0;
+ 	int nid;
+ 
+ 	/*
+@@ -325,7 +320,7 @@ void __init initmem_init(void)
+ 	numa_init_array();
  
  	for_each_online_node(nid)
- 		reserve_pages += init_alloc_remap(nid, reserve_pages);
--	kva_pages = roundup(reserve_pages, PTRS_PER_PTE);
--	printk(KERN_INFO "Reserving total of %lx pages for numa KVA remap\n",
--			reserve_pages);
--
--	kva_start_pfn = memblock_find_in_range(min_low_pfn << PAGE_SHIFT,
--				max_low_pfn << PAGE_SHIFT,
--				kva_pages << PAGE_SHIFT,
--				PTRS_PER_PTE << PAGE_SHIFT) >> PAGE_SHIFT;
--	if (kva_start_pfn == MEMBLOCK_ERROR)
--		panic("Can not get kva space\n");
--
--	printk(KERN_INFO "kva_start_pfn ~ %lx max_low_pfn ~ %lx\n",
--		kva_start_pfn, max_low_pfn);
--	printk(KERN_INFO "max_pfn = %lx\n", max_pfn);
--
--	/* avoid clash with initrd */
--	memblock_x86_reserve_range(kva_start_pfn<<PAGE_SHIFT,
--		      (kva_start_pfn + kva_pages)<<PAGE_SHIFT,
--		     "KVA PG");
-+
+-		reserve_pages += init_alloc_remap(nid, reserve_pages);
++		init_alloc_remap(nid);
+ 
  #ifdef CONFIG_HIGHMEM
  	highstart_pfn = highend_pfn = max_pfn;
- 	if (max_pfn > max_low_pfn)
-@@ -390,11 +361,8 @@ void __init initmem_init(void)
- 
- 	printk(KERN_DEBUG "Low memory ends at vaddr %08lx\n",
- 			(ulong) pfn_to_kaddr(max_low_pfn));
--	for_each_online_node(nid) {
--		init_remap_allocator(nid);
--
-+	for_each_online_node(nid)
- 		allocate_pgdat(nid);
--	}
- 	remap_numa_kva();
- 
- 	printk(KERN_DEBUG "High memory starts at vaddr %08lx\n",
 -- 
 1.7.1
 
