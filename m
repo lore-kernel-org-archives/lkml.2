@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1DDHoW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 03:44:22 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46378 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab1DDHoV (ORCPT
+	id S1753923Ab1DDHtg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 03:49:36 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55652
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751890Ab1DDHtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 03:44:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=mQsrPYcpIMxGmVahvrsSk9mZfl6qarBJwQPfDMwceUp1fGw/rLGX7TKHnq70Ot25/7
-         aZWDFOw0AkGDLYxnxAMC2VCPsnPjn54dovYJm0VNy9a3XXzvyQgPUjciuWYEsYhErJgS
-         75lEOPzLBnlxVVp8AdAIINd4K8KQBhvFsVaUU=
-Subject: Re: [PATCH] MTD: Retry Read/Write Transfer Buffer Allocations
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Grant Erickson <marathon96@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1301902050.2760.23.camel@localhost>
-References: <1301705049-15593-1-git-send-email-marathon96@gmail.com>
-	 <1301902050.2760.23.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 10:41:50 +0300
-Message-ID: <1301902910.2760.31.camel@localhost>
+	Mon, 4 Apr 2011 03:49:35 -0400
+Date: Mon, 04 Apr 2011 00:48:56 -0700 (PDT)
+Message-Id: <20110404.004856.55863268.davem@davemloft.net>
+To: benh@kernel.crashing.org
+Cc: linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [RFC/PATCH] of: Match PCI devices to OF nodes generically
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1301887630.2549.71.camel@pasglop>
+References: <1301882694.2549.53.camel@pasglop>
+	<1301887630.2549.71.camel@pasglop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-04 at 10:27 +0300, Artem Bityutskiy wrote:
-> An third, as I wrote in my answer to Jarkko, allocating large contiguous
-> buffers is bad for performance: if the system memory is fragmented and
-> there is no such large contiguous areas, the kernel will start writing
-> back dirty FS data, killing FS caches, shrinking caches and buggers,
-> probably even swapping out applications. We do not want MTD to cause
-> this at all.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Mon, 04 Apr 2011 13:27:10 +1000
 
-s/buggers/buffers/
+> +struct device_node * __weak pcibios_get_phb_of_node(struct pci_bus *bus)
+> +{
+> +	/* This should only be called for PHBs */
+> +	if (WARN_ON(bus->self || bus->parent))
+> +		return NULL;
 
-> Probably we can mitigate this with kmalloc flags. Now, I'm not sure what
-> flags are the optimal, but I'd do:
-> 
-> __GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY
+This WARN_ON() will always trigger on sparc, because we use the OF
+device tree object at the "parent" of the PCI bus devices we create
+for the PCI controller domains.
 
-Of course I meant you should use special flags as long as you are
-allocating more than 1 contiguous page. But the last PAGE_SIZE
-allocation should be done with standard GFP_KERNEL flag.
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+I'm really surprised you don't link the PCI bus roots into the rest of
+the global device hierarchy on powerpc.
