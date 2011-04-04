@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1DDCnm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Apr 2011 22:43:42 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48296
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753604Ab1DDCnl (ORCPT
+	id S1753739Ab1DDCtu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Apr 2011 22:49:50 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:49780 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab1DDCtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Apr 2011 22:43:41 -0400
-Date: Sun, 03 Apr 2011 19:43:01 -0700 (PDT)
-Message-Id: <20110403.194301.232921375.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mirq-linux@rere.qmqm.pl
-Subject: Re: linux-next: build failure after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110404112840.98dd98ec.sfr@canb.auug.org.au>
-References: <20110404112840.98dd98ec.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Apr 2011 22:49:49 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Sun, 03 Apr 2011 22:49:47 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Detlef Vollmann <dv@vollmann.ch>, Arnd Bergmann <arnd@arndb.de>,
+        david@lang.hm, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+In-reply-to: <1301869097.2549.36.camel@pasglop>
+Message-id: <alpine.LFD.2.00.1104032225170.28032@xanadu.home>
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+ <8ya39m2mv65.fsf@huya.qualcomm.com> <20110401074519.GC7594@elte.hu>
+ <201104011554.07924.arnd@arndb.de> <4D95E112.4020400@vollmann.ch>
+ <1301869097.2549.36.camel@pasglop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 4 Apr 2011 11:28:40 +1000
+On Mon, 4 Apr 2011, Benjamin Herrenschmidt wrote:
 
-> Hi all,
+> On Fri, 2011-04-01 at 16:28 +0200, Detlef Vollmann wrote:
+> > >   * No board files
+> > Where do you put code that needs to run very early (e.g. pinging the
+> > watchdog)? 
 > 
-> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
+> Even on powerpc I keep board files :-)
 > 
-> drivers/net/xen-netfront.c:1151: error: 'xennet_fix_features' undeclared here (not in a function)
-> drivers/net/xen-netfront.c:1152: error: 'xennet_set_features' undeclared here (not in a function)
+> The main thing is:
 > 
-> Caused by commit fb507934fd6f ("net: convert xen-netfront to hw_features").
+> - The generic -> board linkage must not be hard (ie, no
+> platform_restart, but a board_ops.restart() etc....)
 
-Just pushed a fix for this to net-next-2.6, sorry about that.
+We have that on ARM already.  See for example the struct machine_desc 
+definition in arch/arm/include/asm/mach/arch.h.
 
+> - An average board file is a few hundreds line long, that's it, mostly
+> it hooks up to generically provided functions, tho it gets the choice of
+> _which_ ones to hookup.
+
+Again that's largely the same situation on ARM.  Taking Kirkwood for 
+example (wc -l arch/arm/mach-kirkwood/*-setup.c) the average for board 
+file tends to be more towards 200 lines though.  Here DT could make a 
+difference by moving the statically defined board resources elsewhere.
+
+> - It can still quirk/fixup a thing or two if needed, I thinkt it's
+> useful to keep that around, as long as such "quirks" remain small and
+> few. At the end of the day, if dealing with one board special case gives
+> you the choice between changing a ton of infrastructure/core to
+> introduce a new abstraction to deal with -that- special case vs. having
+> a one liner fixup in the platform code, the later is the most sensible
+> option. The hard part of course is to have sensible maintainers to make
+> sure this doesn't grow back to the old mess.
+
+Totally agreed.  I think that's the core of the issue on ARM: we simply 
+aren't factoring out the duplication aggressively enough in order to 
+keep the board code to the absolute minimum.  The fact that different 
+SoCs are totally alien to each other never encouraged that.
+
+
+Nicolas
