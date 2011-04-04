@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab1DDPkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 11:40:25 -0400
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:54539 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890Ab1DDPkX (ORCPT
+	id S1754960Ab1DDPlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 11:41:05 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:34311 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab1DDPlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 11:40:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
-	:cc:in-reply-to:references:content-type:date:message-id
-	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=ivz5uJ
-	kgOuyxgy3Tw3ZsZUInrT3l07OYf4zSVu+BX/pznB8mvkJvTFKpWyLeBi55jV5UTK
-	uE9rUz72bA4v5SEi+A5fzldHVqRqHG6vQy+++1kzMsTLQmHJVYIW3eEXcIft/b6+
-	xah5lP3ezv+8cQf64ZMLtkYQL0b0GzDzI2pkw=
-Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
-From: Nathan Lynch <ntl@pobox.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-In-Reply-To: <20110404151017.GA4857@hallyn.com>
-References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
- <1298936432-29607-6-git-send-email-ntl@pobox.com>
- <20110403190324.GD15044@hallyn.com> <1301929228.31531.39.camel@tp-t61>
- <20110404151017.GA4857@hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 10:40:08 -0500
-Message-ID: <1301931608.31531.49.camel@tp-t61>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 183195C2-5ED2-11E0-9CF6-E8AB60295C12-04752483!a-pb-sasl-sd.pobox.com
+	Mon, 4 Apr 2011 11:41:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=kupKMIHxH5EZI7V1ljV1CVs+4Qu01aq/k9fPULIp7b1BbjwltgAMpcJRSvItqdQ0cU
+         XnUD9VRtlfkqOTu54JnmO6gcEnYpn/OSLwM5/k1DRhPhi9YUhgm629Wo4gvJwIzdBHqf
+         Ujs9Rb3jmg6CWVnKMd93SVZCNlM0fTZLMWPDQ=
+MIME-Version: 1.0
+From: "Jiejing.Zhang " <kzjeef@gmail.com>
+Date: Mon, 4 Apr 2011 23:36:18 +0800
+Message-ID: <BANLkTikv3kuv7Xqy98giAtQe5xfd3zO0-w@mail.gmail.com>
+Subject: Patchwork.kernel.org server die ?
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-04 at 10:10 -0500, Serge E. Hallyn wrote:
-> Quoting Nathan Lynch (ntl@pobox.com):
-> > On Sun, 2011-04-03 at 14:03 -0500, Serge E. Hallyn wrote:
-> > > Quoting ntl@pobox.com (ntl@pobox.com):
-> > > > Only a pid namespace init task - the child process produced by a call
-> > > > to clone(2) with CLONE_NEWPID - is allowed to call these.  The state
-> > > 
-> > > So you make this useful for your cases by only using this with
-> > > application containers - created using lxc-execute, or, more precisely,
-> > > using lxc-init as the container's init.  So a container running a stock
-> > > distro can't be checkpointed.
-> > 
-> > Correct, a conventional distro init won't work, and application
-> > containers are my focus for now, at least.
-> > 
-> > 
-> > > Is this just to keep the patch simple for now, or is there some reason
-> > > to keep this limitation in place?
-> > 
-> > I guess you're asking whether non-pid-init processes could be allowed to
-> > use the syscalls?
-> 
-> No.  I'm asking whether you are intending to later on change the checkpoint
-> API to allow an external task to checkpoint a pid-init process, rather than
-> the pid-init process having to initiate it itself.
+Hi Guys,
 
-No, that is not the intention.  I can see how that would be problematic
-for those wanting to run minimally-modified distro containers, but I
-think running a patched pid-init is a reasonable tradeoff to ask users
-to make in order to get c/r.  And there's nothing to keep the standard
-distro inits from growing c/r capability.
+Can you access https://patchwork.kernel.org/ ?
 
+seems the server is die ?
 
+I got this error for every time access https://patchwork.kernel.org/
+
+OperationalError at /project/linux-input/list/
+
+(2003, "Can't connect to MySQL server on 'mysql-ro1.sql.kernel.bak' (113)")
+
+Request Method: GET
+Request URL: https://patchwork.kernel.org/project/linux-input/list/
+Django Version: 1.2.5
+Exception Type: OperationalError
+Exception Value:
+
+(2003, "Can't connect to MySQL server on 'mysql-ro1.sql.kernel.bak' (113)")
+
+Exception Location:
+/usr/lib64/python2.7/site-packages/MySQLdb/connections.py in __init__,
+line 187
+Python Executable: /usr/bin/python
+Python Version: 2.7.0
+Python Path: ['/var/www/patchwork/apps', '/var/www/patchwork',
+'/var/www/patchwork/lib/python', '/usr/lib64/python27.zip',
+'/usr/lib64/python2.7', '/usr/lib64/python2.7/plat-linux2',
+'/usr/lib64/python2.7/lib-tk', '/usr/lib64/python2.7/lib-old',
+'/usr/lib64/python2.7/lib-dynload',
+'/usr/lib64/python2.7/site-packages',
+'/usr/lib64/python2.7/site-packages/Numeric',
+'/usr/lib64/python2.7/site-packages/PIL',
+'/usr/lib64/python2.7/site-packages/gtk-2.0',
+'/usr/lib/python2.7/site-packages',
+'/usr/lib/python2.7/site-packages/setuptools-0.6c11-py2.7.egg-info']
+Server time: Mon, 4 Apr 2011 15:30:41 +0000
+
+Best regards,
+Zhang Jiejing
