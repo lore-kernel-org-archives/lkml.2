@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1DDICB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 04:02:01 -0400
-Received: from router.aksignal.cz ([188.175.113.102]:45794 "EHLO
-	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab1DDIB7 (ORCPT
+	id S1753967Ab1DDIDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 04:03:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44368 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753731Ab1DDIDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 04:01:59 -0400
-Message-ID: <4D997AF2.5040601@aksignal.cz>
-Date: Mon, 04 Apr 2011 10:01:54 +0200
-From: =?ISO-8859-2?Q?Prchal_Ji=F8=ED?= <jiri.prchal@aksignal.cz>
-Organization: AK signal Brno
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; cs-CZ; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Lightning/1.0b1 Thunderbird/3.0.11
+	Mon, 4 Apr 2011 04:03:21 -0400
+Date: Mon, 4 Apr 2011 09:03:19 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Prchal =?utf-8?B?SmnFmcOt?= <jiri.prchal@aksignal.cz>
+Cc: alsa-devel@vger.kernel.org, alsa-devel@alsa-project.org,
+        vbarinov@embeddedalley.com, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 1/2] ALSA: ASoc: TLV320AIC3X: ad SPI and
+	clock on GPIO2 or BCLK
+Message-ID: <20110404080319.GA22584@opensource.wolfsonmicro.com>
+References: <1300949648-15078-1-git-send-email-horms@verge.net.au> <1300949648-15078-2-git-send-email-horms@verge.net.au> <4D8B1AFD.5060508@aksignal.cz> <20110402082604.GE21737@sirena.org.uk> <4D99781D.3030807@aksignal.cz>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: alsa-devel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ALSA: ASoc: new functions snd_soc_7_8_*
-References: <1300949648-15078-1-git-send-email-horms@verge.net.au> <1300949648-15078-2-git-send-email-horms@verge.net.au> <4D8B1AFD.5060508@aksignal.cz> <20110402082604.GE21737@sirena.org.uk>
-In-Reply-To: <20110402082604.GE21737@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D99781D.3030807@aksignal.cz>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-this is separated generic part of previous patch.
-It contains read and write functions for codecs which communicate via SPI with 7bit register address, 1 LSB is
-read/write and 2nd byte data.
+On Mon, Apr 04, 2011 at 09:49:49AM +0200, Prchal Jiří wrote:
+> Dne 2.4.2011 10:26, Mark Brown napsal(a):
 
-Dne 2.4.2011 10:26, Mark Brown napsal(a):
->> +/* special functions for codecs with 7 bit register address and LSB read/write (like TLV320AIC3X) */
->> +static unsigned int snd_soc_7_8_read(struct snd_soc_codec *codec,
->> +				     unsigned int reg)
->> +{
->> +	int ret;
->> +	unsigned int val;
-> 
-> This won't apply against the current kernel and should be a separate
-> patch, it's a generic thing rather than part of the CODEC driver.
-> --
-> To unsubscribe from this list: send the line "unsubscribe alsa-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> >> TODO: Set the model in SPI probe the right way. I don't know how.
 
-diff -uprN -X linux-2.6.38-vanilla/Documentation/dontdiff linux-2.6.38-vanilla/sound/soc/soc-cache.c
-linux-2.6.38-patch/sound/soc/soc-cache.c
---- linux-2.6.38-vanilla/sound/soc/soc-cache.c	2011-03-15 02:20:32.000000000 +0100
-+++ linux-2.6.38-patch/sound/soc/soc-cache.c	2011-03-24 09:23:00.984373772 +0100
-@@ -99,6 +99,58 @@ static int snd_soc_4_12_spi_write(void *
- #define snd_soc_4_12_spi_write NULL
- #endif
+> > Register two SPI drivers with different names.
 
-+/* special functions for codecs with 7 bit register address and LSB read/write (like TLV320AIC3X) */
-+static unsigned int snd_soc_7_8_read(struct snd_soc_codec *codec,
-+				     unsigned int reg)
-+{
-+	int ret;
-+	unsigned int val;
-+
-+	if (reg >= codec->driver->reg_cache_size ||
-+		snd_soc_codec_volatile_register(codec, reg)) {
-+			if (codec->cache_only)
-+				return -1;
-+
-+			BUG_ON(!codec->hw_read);
-+			return codec->hw_read(codec, ((reg << 1) | 1));
-+	}
-+
-+	ret = snd_soc_cache_read(codec, reg, &val);
-+	if (ret < 0)
-+		return -1;
-+	return val;
-+}
-+
-+static int snd_soc_7_8_write(struct snd_soc_codec *codec, unsigned int reg,
-+			     unsigned int value)
-+{
-+	u8 data[2];
-+	int ret;
-+
-+	data[0] = (reg << 1);
-+	data[1] = value;
-+
-+	if (!snd_soc_codec_volatile_register(codec, reg) &&
-+		reg < codec->driver->reg_cache_size) {
-+		ret = snd_soc_cache_write(codec, reg, value);
-+		if (ret < 0)
-+			return -1;
-+	}
-+
-+	if (codec->cache_only) {
-+		codec->cache_sync = 1;
-+		return 0;
-+	}
-+
-+	ret = codec->hw_write(codec->control_data, data, 2);
-+	if (ret == 2)
-+		return 0;
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return -EIO;
-+}
-+
- static unsigned int snd_soc_7_9_read(struct snd_soc_codec *codec,
- 				     unsigned int reg)
- {
-@@ -661,6 +713,11 @@ static struct {
- 		.spi_write = snd_soc_4_12_spi_write,
- 	},
- 	{
-+		.addr_bits = 7, .data_bits = 8,
-+		.write = snd_soc_7_8_write, .read = snd_soc_7_8_read,
-+		.spi_write = snd_soc_8_8_spi_write,
-+	},
-+	{
- 		.addr_bits = 7, .data_bits = 9,
- 		.write = snd_soc_7_9_write, .read = snd_soc_7_9_read,
- 		.spi_write = snd_soc_7_9_spi_write,
+> ???
+
+Register a SPI driver per model.
+
+> > This looks mostly good but there's some cleanups needed, mostly from
+> > extra stuff which snuck in there, and you need to rebase against current
+> > code.
+
+> What cleanup? I copy functions snd_soc_8_8_* and made change to 7_8.
+
+The comments I've made in the rest of the review such as removing random
+whitespace updates.
+
+> > As covered in SubmittingPatches you should always CC maintainers on
+> > patches.
+
+> Who is maintainer? I didn't find anyone, so I CC to author.
+
+Myself and Liam Girdwood.  At the most basic level the people you'd
+expect to apply the patch.
+
+> >> +	/* set external clock on GPIO2 or BCLK */
+> >> +	data = snd_soc_read(codec, AIC3X_CLKGEN_CTRL_REG);
+> >> +	data &= 0x0f;
+> >> +	data |= ((clk_id << PLLCLK_IN_SHIFT) | (clk_id << CLKDIV_IN_SHIFT));
+> >> +	snd_soc_write(codec, AIC3X_CLKGEN_CTRL_REG, data);
+
+> > This looks like an unrelated change which is specific to your board.
+> > You should add an interface for configuring this functionality .
+
+> No, it's for all, who uses other clock source. Interface is standard function:
+> 	/* Set the codec system clock for DAC and ADC */
+> 	ret = snd_soc_dai_set_sysclk(codec_dai,
+> 				     CLKIN_BCLK, cdu_audio[i].codecclk,
+> 				     SND_SOC_CLOCK_IN);
+
+In that case you should submit a separate patch adding this
+functionality, taking care to ensure that you don't break existing
+users.
+
+> >> +static struct spi_driver aic3x_spi_driver = {
+> >> +	.driver = {
+> >> +		.name	= "tlv320aic3x-codec",
+> >> +		.owner	= THIS_MODULE,
+
+> > Remove the -codec from the driver name.
+
+> Why? In I2C part it must be there, so should it be same?
+
+No, it should be removed from the I2C driver too.
