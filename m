@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab1DDQEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 12:04:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45767 "EHLO hera.kernel.org"
+	id S1755170Ab1DDQFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 12:05:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755129Ab1DDQEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 12:04:47 -0400
-Date: Mon, 4 Apr 2011 16:04:23 GMT
-From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rakib.mullick@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rakib.mullick@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <AANLkTing52ntzRcHkODCWDKOfRF=0uhXw5-cCUhx6M54@mail.gmail.com>
-References: <AANLkTing52ntzRcHkODCWDKOfRF=0uhXw5-cCUhx6M54@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mpparse: Put check_slot() into .init section
-Message-ID: <tip-64d21fc194e12bdf7347019bf10325a4b3d77e7b@git.kernel.org>
-Git-Commit-ID: 64d21fc194e12bdf7347019bf10325a4b3d77e7b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755104Ab1DDQFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 12:05:12 -0400
+Date: Mon, 4 Apr 2011 18:04:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [PATCH] avr32: init cannot ignore signals sent by
+	force_sig_info()
+Message-ID: <20110404160447.GB23655@redhat.com>
+References: <1301929084-2025-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 04 Apr 2011 16:04:28 +0000 (UTC)
+In-Reply-To: <1301929084-2025-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  64d21fc194e12bdf7347019bf10325a4b3d77e7b
-Gitweb:     http://git.kernel.org/tip/64d21fc194e12bdf7347019bf10325a4b3d77e7b
-Author:     Rakib Mullick <rakib.mullick@gmail.com>
-AuthorDate: Sat, 2 Apr 2011 13:17:48 +0600
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 4 Apr 2011 17:17:19 +0200
+On 04/04, Matt Fleming wrote:
+>
+> --- a/arch/avr32/kernel/traps.c
+> +++ b/arch/avr32/kernel/traps.c
+> @@ -95,28 +95,6 @@ void _exception(long signr, struct pt_regs *regs, int code,
+>  	info.si_code = code;
+>  	info.si_addr = (void __user *)addr;
+>  	force_sig_info(signr, &info, current);
+> -
+> -	/*
+> -	 * Init gets no signals that it doesn't have a handler for.
+> -	 * That's all very well, but if it has caused a synchronous
+> -	 * exception and we ignore the resulting signal, it will just
+> -	 * generate the same exception over and over again and we get
+> -	 * nowhere.  Better to kill it and let the kernel panic.
+> -	 */
+> -	if (is_global_init(current)) {
+> -		__sighandler_t handler;
+> -
+> -		spin_lock_irq(&current->sighand->siglock);
+> -		handler = current->sighand->action[signr-1].sa.sa_handler;
+> -		spin_unlock_irq(&current->sighand->siglock);
+> -		if (handler == SIG_DFL) {
+> -			/* init has generated a synchronous exception
+> -			   and it doesn't have a handler for the signal */
+> -			printk(KERN_CRIT "init has generated signal %ld "
+> -			       "but has no handler for it\n", signr);
+> -			do_exit(signr);
+> -		}
+> -	}
 
-x86, mpparse: Put check_slot() into .init section
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 
-check_slot() is only called from replace_intsrc_all() - which is
-in the .init section.
-
-So, put check_slot into the .init section as well, so it can be freed
-after system boot.
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-LKML-Reference: <AANLkTing52ntzRcHkODCWDKOfRF=0uhXw5-cCUhx6M54@mail.gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/mpparse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index 5a532ce..f1b2718 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -715,7 +715,7 @@ static void __init check_irq_src(struct mpc_intsrc *m, int *nr_m_spare)
- 	}
- }
- 
--static int
-+static int __init
- check_slot(unsigned long mpc_new_phys, unsigned long mpc_new_length, int count)
- {
- 	int ret = 0;
