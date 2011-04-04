@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1DDPW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 11:22:27 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:53843 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754269Ab1DDPW0 (ORCPT
+	id S1754790Ab1DDPZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 11:25:45 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:43421 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab1DDPZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 11:22:26 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: dedekind1@gmail.com
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paulo Marques <pmarques@grupopie.com>
-Subject: Re: [PATCH 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig to Makefile
-In-Reply-To: Your message of "Mon, 04 Apr 2011 15:47:10 +0300."
-             <1301921230.2760.79.camel@localhost>
-From: Valdis.Kletnieks@vt.edu
-References: <1301913651-9055-1-git-send-email-dedekind1@gmail.com> <1301913651-9055-2-git-send-email-dedekind1@gmail.com> <131611.1301921158@localhost>
-            <1301921230.2760.79.camel@localhost>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1301930536_4775P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 04 Apr 2011 11:22:16 -0400
-Message-ID: <7621.1301930536@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4D99E22A.00CF,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 4 Apr 2011 11:25:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=PuqyXE9y1KrSx39PL98TyGgQ5nued2XK1FJuFsEcJ7JqDke/PMOO+TSzS98GrcjSqH
+         xQqEzS80Chqi5ewzTM5Q==
+MIME-Version: 1.0
+In-Reply-To: <1301902664.2549.76.camel@pasglop>
+References: <1301882694.2549.53.camel@pasglop> <1301887630.2549.71.camel@pasglop>
+ <1301902664.2549.76.camel@pasglop>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 4 Apr 2011 09:25:20 -0600
+Message-ID: <BANLkTimBD=NfFKGpy0ZTnT9Dcu=dkTHxZg@mail.gmail.com>
+Subject: Re: [RFC/PATCH] of: Match PCI devices to OF nodes generically
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-arch@vger.kernel.org, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1301930536_4775P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Apr 4, 2011 at 1:37 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
 
-On Mon, 04 Apr 2011 15:47:10 +0300, Artem Bityutskiy said:
-> On Mon, 2011-04-04 at 08:45 -0400, Valdis.Kletnieks@vt.edu wrote:
-> > On Mon, 04 Apr 2011 13:40:51 +0300, Artem Bityutskiy said:
-> >
-> > > 3. By default KALLSYMS_EXTRA_PASS is disabled and if kallsyms has issues,
-> > >    "make" should print a warning and suggest using KALLSYMS_EXTRA_PASS
-> >
-> > If the Makefile has enough information to print the warning, why can't it go
-> > ahead and do the extra pass itself instead of issuing the warning?
-> >
-> > (I'm obviously missing something here, as I'm foolishly posting to lkml before
-> > caffeine ;)
+> powerpc has two different ways of matching PCI devices to their
+> corresponding OF node (if any) for historical reasons. The ppc64 one
+> does a scan looking for matching bus/dev/fn, while the ppc32 one does a
+> scan looking only for matching dev/fn on each level in order to be
+> agnostic to busses being renumbered (which Linux does on some
+> platforms).
 >
-> Good question, I thought to force people to send a bugreport.
+> This removes both and instead moves the matching code to the PCI core
+> itself. It's the most logical place to do it: when a pci_dev is created,
+> we know the parent and thus can do a single level scan for the matching
+> device_node (if any).
 
-When was the last time we actually saw such a bug report?  I'm suspecting that
-all the affected people just set the variable and get on with their lives.  So
-we should either just make it automatic if that's what people are going to do,
-or we rip the entire "EXTRA_PASS' stuff out forcibly and *make* people fix the
-actual underlying issue that causes the extra pass to be needed...
+Some of this is reminiscent of the ACPI/PCI binding we do on x86/ia64,
+e.g., acpi_get_pci_dev() and the stuff in drivers/acpi/glue.c.  Have
+you looked at that to see if there's any hope of covering both OF and
+ACPI with something more generic?
 
-
---==_Exmh_1301930536_4775P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNmeIocC3lWbTT17ARAkgTAJ0YiS3ZiCts0kqYp6kAoWCT0RIF6QCg4031
-KwR0Myh8oFn3GCoCNoQ7rRE=
-=s7aU
------END PGP SIGNATURE-----
-
---==_Exmh_1301930536_4775P--
-
+Bjorn
