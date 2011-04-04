@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab1DDMRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 08:17:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60884 "EHLO mx2.suse.de"
+	id S1754620Ab1DDMUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 08:20:43 -0400
+Received: from ftp.sofha.de ([82.144.60.99]:47969 "EHLO ftp.sofha.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab1DDMRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 08:17:18 -0400
-Message-ID: <4D99B6CC.7080707@suse.cz>
-Date: Mon, 04 Apr 2011 14:17:16 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1753629Ab1DDMUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 08:20:42 -0400
+X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Apr 2011 08:20:42 EDT
+Message-ID: <4D99B60D.3030009@snafu.de>
+Date: Mon, 04 Apr 2011 14:14:05 +0200
+From: Oncaphillis <oncaphillis@snafu.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paulo Marques <pmarques@grupopie.com>
-Subject: Re: [PATCH 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig to
- Makefile
-References: <1301913651-9055-1-git-send-email-dedekind1@gmail.com> <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
-In-Reply-To: <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
+To: Kernel development list <linux-kernel@vger.kernel.org>,
+        libusb-devel@lists.sourceforge.net
+Subject: Kernel bug message and missing data on libusb_interrupt_transfer
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4.4.2011 12:40, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> 
-> At the moment we have the CONFIG_KALLSYMS_EXTRA_PASS Kconfig switch,
-> which users can enable or disable while configuring the kernel. This
-> option is then used by 'make' to determine whether an extra kallsyms
-> pass is needed or not.
-> 
-> However, this approach is not nice and confusing, and this patch moves
-> CONFIG_KALLSYMS_EXTRA_PASS from Kconfig to Makefile instead. The
-> rationale is below.
-> 
-> 1. CONFIG_KALLSYMS_EXTRA_PASS is really about the build time, not
->    run-time. There is no real need for it to be in Kconfig. It is
->    just an additional work-around which should be used only in rare
->    cases, when someone breaks kallsyms, so Kbuild/Makefile is much
->    better place for this option.
-> 2. Grepping CONFIG_KALLSYMS_EXTRA_PASS shows that many defconfigs have
->    it enabled, probably not because they try to work-around a kallsyms
->    bug, but just because the Kconfig help text is confusing and does
->    not really make it clear that this option should not be used unless
->    except when kallsyms is broken.
-> 3. And since many people have CONFIG_KALLSYMS_EXTRA_PASS enabled in
->    their Kconfig, we do might fail to notice kallsyms bugs in time. E.g.,
->    many testers use "make allyesconfig" to test builds, which will enable
->    CONFIG_KALLSYMS_EXTRA_PASS and kallsyms breakage will not be noticed.
-> 
-> To address that, this patch:
-> 
-> 1. Kills CONFIG_KALLSYMS_EXTRA_PASS
-> 2. Changes Makefile so that people can use "make KALLSYMS_EXTRA_PASS=1"
->    to enable the extra pass if needed.
-> 3. By default KALLSYMS_EXTRA_PASS is disabled and if kallsyms has issues,
->    "make" should print a warning and suggest using KALLSYMS_EXTRA_PASS
-> 4. Add "make help" entry for KALLSYMS_EXTRA_PASS
-> 
-> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> Cc: Paulo Marques <pmarques@grupopie.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> ---
->  Makefile     |   13 ++++++++-----
->  init/Kconfig |   12 ------------
->  2 files changed, 8 insertions(+), 17 deletions(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index ba7a55c..b66a43a 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -797,15 +797,16 @@ ifdef CONFIG_KALLSYMS
->  # o The correct .tmp_kallsyms2.o is linked into the final vmlinux.
->  # o Verify that the System.map from vmlinux matches the map from
->  #   .tmp_vmlinux2, just in case we did not generate kallsyms correctly.
-> -# o If CONFIG_KALLSYMS_EXTRA_PASS is set, do an extra pass using
-> +# o If 'make KALLSYMS_EXTRA_PASS=1" was used, do an extra pass using
->  #   .tmp_vmlinux3 and .tmp_kallsyms3.o.  This is only meant as a
->  #   temporary bypass to allow the kernel to be built while the
->  #   maintainers work out what went wrong with kallsyms.
->  
-> -ifdef CONFIG_KALLSYMS_EXTRA_PASS
-> -last_kallsyms := 3
-> -else
->  last_kallsyms := 2
-> +ifeq ("$(origin KALLSYMS_EXTRA_PASS)", "command line")
+Hi,
 
-I would drop the origin check here. We use it for single-letter
-variables that could be used outside the kernel with a different
-meaning, but if you export KALLSYMS_EXTRA_PASS, then you certainly mean
-the kernel's KALLSYMS_EXTRA_PASS.
+  We are experiencing sporadic kernel bug messages and total
+kernel freezes on usb communication via libusb-1.0.6.
 
-Michal
+  We are currently under kernel 2.6.30.10 but have seen
+it also under older and newer kernel (I think the newest was
+a 2.6.36.x).
+
+  The communication should work as follows:
+
+   - Send a 2 byte sequence to endpoint #4
+     selecting the register to which the command should be send
+
+   - The device should answer with the same two byte sequence
+     on Endpoint #8
+
+   - Send a 2 byte command sequence to endpoint #4
+
+   - The device should acknowledge the command by returning
+     the same two bytes on endpoint #8
+
+   - The device may also initiate inbound data transfer on endpoint #8
+     to inform about status changes.
+
+  We send the register selection and command data via
+
+  libusb_bulk_transfer() with a time out of 10000 ms
+
+  and read the reply via libusb_interrupt_transfer
+  with a time out of 100  ms as specified for our device
+  We also periodically read on endpoint #8 to get the
+  status changes.
+
+  Sometimes we run into the following situation.
+
+  - We send the 2 byte register selection sequence via libusb_bulk_transfer
+  - We try to read the response via libusb_interrupt_transfer but run into
+    a time out.
+  - If we look at the USB communication via USB analyzer we actually see 
+the inbound
+    transfer of two bytes and the acknowledge by the kernel, but this 
+data never
+    ends up as a valid result of libusb_interrupt_transfer.
+  - Since we got a time out we retry the read up to 30 times. Within 
+this polling
+    we see the following kernel bug message in dmesg. Sometimes the 
+kernel freezes completely
+
+<snip>
+    ------------[ cut here ]------------
+kernel BUG at mm/slub.c:2808!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: 
+/sys/devices/pci0000:00/0000:00:1d.7/usb2/2-3/bConfigurationValue
+CPU 3
+Modules linked in:
+Pid: 4314, comm: rrdupdate Not tainted 2.6.30.10 #2 To Be Filled By O.E.M.
+RIP: 0010:[<ffffffff8028d2f8>]  [<ffffffff8028d2f8>] kfree+0x7c/0xdb
+RSP: 0000:ffff880077de1d38  EFLAGS: 00010246
+RAX: 4000000000000000 RBX: ffff88007a07a772 RCX: ffff88007acea7e0
+RDX: ffffe20000000000 RSI: ffffe20001ab1ab0 RDI: ffff88007a07a772
+RBP: ffff880077de1d58 R08: 0000000000000000 R09: 0000000000000008
+R10: 00000000f7f5e000 R11: 00000000f7f5d5b8 R12: ffff88007c081c80
+R13: ffffffff802c9cd8 R14: 00000000f7f5e000 R15: ffff880077de1f58
+FS:  0000000000000000(0000) GS:ffff88000105b000(0000) knlGS:0000000000000000
+CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+CR2: 00000000f7f5d5b8 CR3: 0000000079940000 CR4: 00000000000406e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process rrdupdate (pid: 4314, threadinfo ffff880077de0000, task 
+ffff8800790d8b40)
+Stack:
+  00000000f7f5e000 0000000000000000 ffff88007c081c80 ffff880077d77800
+  ffff880077de1e48 ffffffff802c9cd8 0000000000000080 ffff880077d77800
+  0000000000000001 00000000f7f3d000 ffff880077df2000 ffff880077df2000
+Call Trace:
+  [<ffffffff802c9cd8>] load_elf_binary+0xfda/0x1862
+  [<ffffffff802c0b6f>] ? compat_copy_strings+0x1b8/0x1ca
+  [<ffffffff802958fe>] search_binary_handler+0xb0/0x23f
+  [<ffffffff802c0dc7>] compat_do_execve+0x246/0x36f
+  [<ffffffff8022593b>] sys32_execve+0x3e/0x5c
+  [<ffffffff80225765>] ia32_ptregs_common+0x25/0x4c
+Code: ba 00 00 00 00 00 e2 ff ff 48 c1 e8 0c 48 6b f0 38 48 01 d6 66 83 
+3e 00 79 04 48 8b 76 10 48 8b 06 84 c0 78 14 66 a9 00 c0 75 04 <0f> 0b 
+eb fe 48 89 f7 e8 35 13 fe ff eb 48 48 8b 4d 08 48 8b 7e
+RIP  [<ffffffff8028d2f8>] kfree+0x7c/0xdb
+  RSP <ffff880077de1d38>
+---[ end trace ba800619f794f281 ]---
+
+</snip>
+
+
+I've placed a pdf on
+
+http://www.oncaphillis.net/usb.pdf
+
+which represents the annotated USB log
+
+
+Thank you
+
+O.
+
