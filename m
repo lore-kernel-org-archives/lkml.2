@@ -1,45 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1DDPdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 11:33:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57033 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab1DDPdC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 11:33:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Thilo-Alexander Ginkel" <thilo@ginkel.com>
-Subject: Re: Soft lockup during suspend since ~2.6.36
-Date: Mon, 4 Apr 2011 17:32:42 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <AANLkTim5ctAoaB4+BS7Z-+ARUgTEBO22bkYMUvFtGmoN@mail.gmail.com> <201104041640.15578.arnd@arndb.de> <BANLkTim4Ro+u-9jfLPV1-+tM88xtvN-VTg@mail.gmail.com>
-In-Reply-To: <BANLkTim4Ro+u-9jfLPV1-+tM88xtvN-VTg@mail.gmail.com>
+	id S1754898Ab1DDPdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 11:33:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28684 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab1DDPdx (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 4 Apr 2011 11:33:53 -0400
+Date: Mon, 4 Apr 2011 11:33:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 09/18] cpuidle: replace xen access to x86
+ pm_idle and default_idle
+Message-ID: <20110404153335.GA19168@dumpdata.com>
+References: <c82cf78992a66bfa7f0c82aeb20ba6922127463b.1301724243.git.len.brown@intel.com>
+ <e2f656a28f548ed19c829563e5168ce48026570b.1301724243.git.len.brown@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104041732.42489.arnd@arndb.de>
-X-Provags-ID: V02:K0:df4Ku/7SGrWtBiPpAL0DP0yUycFN1m1/tCUaED983Kw
- G2d2tQExirDvbwTRxq5dzMhWn6LmZYgSXOxmsHHsyHN2yphizk
- H9q2DrUDz12R5ma0yQ7o1dKd8doG9GwLuikE/CgU37wy/9q2PC
- 5tkPsaXFgqaEhAdS2kShaNT8qlqD+PXU9FTQ0AGxxqA9SD48h6
- VkPYTxVIKHw5iEnI0I7Vg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e2f656a28f548ed19c829563e5168ce48026570b.1301724243.git.len.brown@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D99E4D3.00A8:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 April 2011, Thilo-Alexander Ginkel wrote:
-> ACK. I see two possibilities:
-> a) The bug was introduced after the bisected bug was fixed
-> b) The bug was already present earlier, but was masked by the bug from
-> the bisected change
+On Sat, Apr 02, 2011 at 02:22:51AM -0400, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
 > 
-> I hope for a) as that would open the possibility to bisect this new bug.
+> When a Xen Dom0 kernel boots on a hypervisor, it gets access
+> to the raw-hardware ACPI tables.  While it parses the idle tables
+> for the hypervisor's beneift, it uses HLT for its own idle.
 > 
+> Rather than have xen scribble on pm_idle and access default_idle,
+> have it simply disable_cpuidle() so acpi_idle will not load and
+> architecture default HLT will be used.
+Hey Len,
 
-In case of b), you can still bisect it when you either apply the later fix
-or revert the original patch whenever you build a kernel. Or you can try
-to avoid using the usb-hid driver during bisect.
+Looks good to me. I've also tested this on the affected Intel machine and
+your patchset works fine.
 
-	Arnd
+> 
+> cc: xen-devel@lists.xensource.com
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+>  arch/x86/xen/setup.c      |    3 ++-
+>  drivers/cpuidle/cpuidle.c |    4 ++++
+>  include/linux/cpuidle.h   |    2 ++
+>  3 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index a8a66a5..aa02cce 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -9,6 +9,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/pm.h>
+>  #include <linux/memblock.h>
+> +#include <linux/cpuidle.h>
+>  
+>  #include <asm/elf.h>
+>  #include <asm/vdso.h>
+> @@ -354,7 +355,7 @@ void __init xen_arch_setup(void)
+>  #ifdef CONFIG_X86_32
+>  	boot_cpu_data.hlt_works_ok = 1;
+>  #endif
+> -	pm_idle = default_idle;
+> +	disable_cpuidle();
+>  	boot_option_idle_override = IDLE_HALT;
+>  
+>  	fiddle_vdso();
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index faae2c3..041df0b 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -34,6 +34,10 @@ int cpuidle_disabled(void)
+>  {
+>  	return off;
+>  }
+> +void disable_cpuidle(void)
+> +{
+> +	off = 1;
+> +}
+>  
+>  #if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
+>  static void cpuidle_kick_cpus(void)
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 36719ea..b89f67d 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -122,6 +122,7 @@ struct cpuidle_driver {
+>  };
+>  
+>  #ifdef CONFIG_CPU_IDLE
+> +extern void disable_cpuidle(void);
+>  
+>  extern int cpuidle_register_driver(struct cpuidle_driver *drv);
+>  struct cpuidle_driver *cpuidle_get_driver(void);
+> @@ -135,6 +136,7 @@ extern int cpuidle_enable_device(struct cpuidle_device *dev);
+>  extern void cpuidle_disable_device(struct cpuidle_device *dev);
+>  
+>  #else
+> +static inline void disable_cpuidle(void) { }
+>  
+>  static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
+>  {return -ENODEV; }
+> -- 
+> 1.7.5.rc0
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
