@@ -1,125 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab1DDTTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 15:19:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43551 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269Ab1DDTSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 15:18:34 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=vhdKIqpQuCYA:10 a=To5htxnoGzYA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=q6rQUnKnsQDmuxrwYP4A:9 a=33Wmf6nklRFcBIzi2asA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110404191832.571500022@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 04 Apr 2011 15:16:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/6] tracing: Avoid soft lockup in trace_pipe
-References: <20110404191654.006849945@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Avoid-soft-lockup-in-trace_pipe.patch
+	id S1755521Ab1DDTTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 15:19:55 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45694 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755427Ab1DDTTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 15:19:54 -0400
+Date: Mon, 4 Apr 2011 21:19:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] scheduler fixes
+Message-ID: <20110404191943.GA28258@elte.hu>
+References: <20110402103125.GA18746@elte.hu>
+ <BANLkTikZS8zZ-oRfBsriEnzp17VMwXAjSg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikZS8zZ-oRfBsriEnzp17VMwXAjSg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
 
-running following commands:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-  # enable the binary option
-  echo 1 > ./options/bin
-  # disable context info option
-  echo 0 > ./options/context-info
-  # tracing only events
-  echo 1 > ./events/enable
-  cat trace_pipe
+> So I pulled this, but I think this:
+> 
+> On Sat, Apr 2, 2011 at 3:31 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > -               if (interval > HZ*NR_CPUS/10)
+> > -                       interval = HZ*NR_CPUS/10;
+> > +               if (interval > HZ*num_online_cpus()/10)
+> > +                       interval = HZ*num_online_cpus()/10;
+> 
+> is a horrible patch.
 
-plus forcing system to generate many tracing events,
-is causing lockup (in NON preemptive kernels) inside
-tracing_read_pipe function.
+Indeed, will fix it.
 
-The issue is also easily reproduced by running ltp stress test.
-(ftrace_stress_test.sh)
+Thanks,
 
-The reasons are:
- - bin/hex/raw output functions for events are set to
-   trace_nop_print function, which prints nothing and
-   returns TRACE_TYPE_HANDLED value
- - LOST EVENT trace do not handle trace_seq overflow
-
-These reasons force the while loop in tracing_read_pipe
-function never to break.
-
-The attached patch fixies handling of lost event trace, and
-changes trace_nop_print to print minimal info, which is needed
-for the correct tracing_read_pipe processing.
-
-v2 changes:
- - omit the cond_resched changes by trace_nop_print changes
- - WARN changed to WARN_ONCE and added info to be able
-   to find out the culprit
-
-v3 changes:
- - make more accurate patch comment
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <20110325110518.GC1922@jolsa.brq.redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c        |   15 ++++++++++++---
- kernel/trace/trace_output.c |    3 +++
- 2 files changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9541c27..5af42f4 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2013,9 +2013,10 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
- {
- 	enum print_line_t ret;
- 
--	if (iter->lost_events)
--		trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
--				 iter->cpu, iter->lost_events);
-+	if (iter->lost_events &&
-+	    !trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
-+				 iter->cpu, iter->lost_events))
-+		return TRACE_TYPE_PARTIAL_LINE;
- 
- 	if (iter->trace && iter->trace->print_line) {
- 		ret = iter->trace->print_line(iter);
-@@ -3229,6 +3230,14 @@ waitagain:
- 
- 		if (iter->seq.len >= cnt)
- 			break;
-+
-+		/*
-+		 * Setting the full flag means we reached the trace_seq buffer
-+		 * size and we should leave by partial output condition above.
-+		 * One of the trace_seq_* functions is not used properly.
-+		 */
-+		WARN_ONCE(iter->seq.full, "full flag set for trace type %d",
-+			  iter->ent->type);
- 	}
- 	trace_access_unlock(iter->cpu_file);
- 	trace_event_read_unlock();
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 456be90..cf535cc 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -830,6 +830,9 @@ EXPORT_SYMBOL_GPL(unregister_ftrace_event);
- enum print_line_t trace_nop_print(struct trace_iterator *iter, int flags,
- 				  struct trace_event *event)
- {
-+	if (!trace_seq_printf(&iter->seq, "type: %d\n", iter->ent->type))
-+		return TRACE_TYPE_PARTIAL_LINE;
-+
- 	return TRACE_TYPE_HANDLED;
- }
- 
--- 
-1.7.2.3
-
-
+	Ingo
