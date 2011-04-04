@@ -1,62 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1DDTQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 15:16:09 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:35692 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab1DDTQH (ORCPT
+	id S1755445Ab1DDTSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 15:18:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56197 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab1DDTSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 15:16:07 -0400
-Message-ID: <4D9A18F3.3090506@tilera.com>
-Date: Mon, 4 Apr 2011 15:16:03 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: James Hogan <james@albanarts.com>
-CC: David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Hogan <james.hogan@imgtec.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-am33-list@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile,mn10300: add device parameter to dma_cache_sync()
-References: <BANLkTi=wY2q49BRfZWempPRT7s=2Wa3YKQ@mail.gmail.com>
-In-Reply-To: <BANLkTi=wY2q49BRfZWempPRT7s=2Wa3YKQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Apr 2011 15:18:34 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=vhdKIqpQuCYA:10 a=NN3dVZqmgpIA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=pc_eyObelX_Hb3W4ZDIA:9 a=g9WCVhkPnjGQwvDdFCQA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=mK4YuaWWMZrgA5sm:21 a=yYdysxRdVOkCkuKu:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110404191832.287092387@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 04 Apr 2011 15:16:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 2/6] tracing: Print trace_bprintk() formats for modules too
+References: <20110404191654.006849945@goodmis.org>
+Content-Disposition: inline; filename=0002-tracing-Print-trace_bprintk-formats-for-modules-too.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/4/2011 11:21 AM, James Hogan wrote:
-> From: James Hogan <james.hogan@imgtec.com>
->
-> Note: I'm not in a position to compile test this patch, but I don't
-> foresee any problems.
->
-> Since v2.6.20 "Pass struct dev pointer to dma_cache_sync()"
-> (d3fa72e4556ec1f04e46a0d561d9e785ecaa173d), dma_cache_sync() takes a
-> struct dev pointer, but these appear to be missing from the tile and
-> mn10300 implementations, so add them.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> ---
->  arch/mn10300/include/asm/dma-mapping.h |    2 +-
->  arch/tile/include/asm/dma-mapping.h    |    3 ++-
->  arch/tile/kernel/pci-dma.c             |    2 +-
+From: Steven Rostedt <srostedt@redhat.com>
 
-This change looks fine for tile (not compile-tested but pretty obvious), so
+The file debugfs/tracing/printk_formats maps the addresses
+to the formats that are used by trace_bprintk() so that userspace
+tools can read the buffer and be able to decode trace_bprintk events
+to get the format saved when reading the ring buffer directly.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+This is because trace_bprintk() does not store the format into the
+buffer, but just the address of the format, which is hidden in
+the kernel memory.
 
-assuming you're planning to push this up yourself.
+But currently it only exports trace_bprintk()s from the kernel core
+and not for modules. The modules need their formats exported
+as well.
 
-Apparently we've never tried to build anything that uses this API
-(sata_dwc_460ex.c, lasi_82596.c, 53c700.c, etc.).
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_printk.c |  103 ++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 97 insertions(+), 6 deletions(-)
 
+diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+index b8b2681..dff763b 100644
+--- a/kernel/trace/trace_printk.c
++++ b/kernel/trace/trace_printk.c
+@@ -89,6 +89,76 @@ static int module_trace_bprintk_format_notify(struct notifier_block *self,
+ 	return 0;
+ }
+ 
++/*
++ * The debugfs/tracing/printk_formats file maps the addresses with
++ * the ASCII formats that are used in the bprintk events in the
++ * buffer. For userspace tools to be able to decode the events from
++ * the buffer, they need to be able to map the address with the format.
++ *
++ * The addresses of the bprintk formats are in their own section
++ * __trace_printk_fmt. But for modules we copy them into a link list.
++ * The code to print the formats and their addresses passes around the
++ * address of the fmt string. If the fmt address passed into the seq
++ * functions is within the kernel core __trace_printk_fmt section, then
++ * it simply uses the next pointer in the list.
++ *
++ * When the fmt pointer is outside the kernel core __trace_printk_fmt
++ * section, then we need to read the link list pointers. The trick is
++ * we pass the address of the string to the seq function just like
++ * we do for the kernel core formats. To get back the structure that
++ * holds the format, we simply use containerof() and then go to the
++ * next format in the list.
++ */
++static const char **
++find_next_mod_format(int start_index, void *v, const char **fmt, loff_t *pos)
++{
++	struct trace_bprintk_fmt *mod_fmt;
++
++	if (list_empty(&trace_bprintk_fmt_list))
++		return NULL;
++
++	/*
++	 * v will point to the address of the fmt record from t_next
++	 * v will be NULL from t_start.
++	 * If this is the first pointer or called from start
++	 * then we need to walk the list.
++	 */
++	if (!v || start_index == *pos) {
++		struct trace_bprintk_fmt *p;
++
++		/* search the module list */
++		list_for_each_entry(p, &trace_bprintk_fmt_list, list) {
++			if (start_index == *pos)
++				return &p->fmt;
++			start_index++;
++		}
++		/* pos > index */
++		return NULL;
++	}
++
++	/*
++	 * v points to the address of the fmt field in the mod list
++	 * structure that holds the module print format.
++	 */
++	mod_fmt = container_of(v, typeof(*mod_fmt), fmt);
++	if (mod_fmt->list.next == &trace_bprintk_fmt_list)
++		return NULL;
++
++	mod_fmt = container_of(mod_fmt->list.next, typeof(*mod_fmt), list);
++
++	return &mod_fmt->fmt;
++}
++
++static void format_mod_start(void)
++{
++	mutex_lock(&btrace_mutex);
++}
++
++static void format_mod_stop(void)
++{
++	mutex_unlock(&btrace_mutex);
++}
++
+ #else /* !CONFIG_MODULES */
+ __init static int
+ module_trace_bprintk_format_notify(struct notifier_block *self,
+@@ -96,6 +166,13 @@ module_trace_bprintk_format_notify(struct notifier_block *self,
+ {
+ 	return 0;
+ }
++static inline const char **
++find_next_mod_format(int start_index, void *v, const char **fmt, loff_t *pos)
++{
++	return NULL;
++}
++static inline void format_mod_start(void) { }
++static inline void format_mod_stop(void) { }
+ #endif /* CONFIG_MODULES */
+ 
+ 
+@@ -158,20 +235,33 @@ int __ftrace_vprintk(unsigned long ip, const char *fmt, va_list ap)
+ }
+ EXPORT_SYMBOL_GPL(__ftrace_vprintk);
+ 
++static const char **find_next(void *v, loff_t *pos)
++{
++	const char **fmt = v;
++	int start_index;
++
++	if (!fmt)
++		fmt = __start___trace_bprintk_fmt + *pos;
++
++	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
++
++	if (*pos < start_index)
++		return fmt;
++
++	return find_next_mod_format(start_index, v, fmt, pos);
++}
++
+ static void *
+ t_start(struct seq_file *m, loff_t *pos)
+ {
+-	const char **fmt = __start___trace_bprintk_fmt + *pos;
+-
+-	if ((unsigned long)fmt >= (unsigned long)__stop___trace_bprintk_fmt)
+-		return NULL;
+-	return fmt;
++	format_mod_start();
++	return find_next(NULL, pos);
+ }
+ 
+ static void *t_next(struct seq_file *m, void * v, loff_t *pos)
+ {
+ 	(*pos)++;
+-	return t_start(m, pos);
++	return find_next(v, pos);
+ }
+ 
+ static int t_show(struct seq_file *m, void *v)
+@@ -210,6 +300,7 @@ static int t_show(struct seq_file *m, void *v)
+ 
+ static void t_stop(struct seq_file *m, void *p)
+ {
++	format_mod_stop();
+ }
+ 
+ static const struct seq_operations show_format_seq_ops = {
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.2.3
+
 
