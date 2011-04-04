@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab1DDJfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:35:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47548 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab1DDJfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:35:09 -0400
-From: Michal Simek <monstr@monstr.eu>
-To: linux-kernel@vger.kernel.org
-Cc: sshtylyov@mvista.com, Michal Simek <monstr@monstr.eu>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
-Subject: [PATCH v2] usb: Fix Kconfig unmet dependencies for Microblaze EHCI
-Date: Mon,  4 Apr 2011 11:35:05 +0200
-Message-Id: <1301909705-18460-1-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
+	id S1754221Ab1DDJgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:36:23 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:54217 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753949Ab1DDJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 05:36:22 -0400
+Date: Mon, 4 Apr 2011 11:36:20 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: wanlong.gao@gmail.com
+Cc: davem@davemloft.net, padovan@profusion.mobi, joe@perches.com,
+        marcel@holtmann.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] X86:NET:Replaced a deprecated function .
+Message-ID: <20110404093620.GA4896@isilmar-3.linta.de>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	wanlong.gao@gmail.com, davem@davemloft.net, padovan@profusion.mobi,
+	joe@perches.com, marcel@holtmann.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1301909548-20031-1-git-send-email-wanlong.gao@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301909548-20031-1-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disable USB_ARCH_HAS_EHCI in arch Kconfig and enable it in usb Kconfig
 
-Warning log:
-warning: (MICROBLAZE) selects USB_ARCH_HAS_EHCI which has unmet
-direct dependencies (USB_SUPPORT)
+On Mon, Apr 04, 2011 at 05:32:28PM +0800, wanlong.gao@gmail.com wrote:
+> From: Wanlong Gao <wanlong.gao@gmail.com>
+> 
+> kernel_warning: pcmcia_request_exclusive_irq is deprecated .
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-usb@vger.kernel.org
+NACK. This papers over the issue, instead of fixing it. To properly fix it,
+one needs to verify that the IRQ handler used in this driver is capable of
+handling a shared IRQ line.
 
----
-v2: Remove c&p error - Use correct warning log
----
- arch/microblaze/Kconfig |    1 -
- drivers/usb/Kconfig     |    1 +
- 2 files changed, 1 insertions(+), 1 deletions(-)
+Best,
+	Dominik
 
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index c49c326..46b970e 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -6,7 +6,6 @@ config MICROBLAZE
- 	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FTRACE_MCOUNT_RECORD
--	select USB_ARCH_HAS_EHCI
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select HAVE_OPROFILE
- 	select HAVE_ARCH_KGDB
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index 41b6e51..006489d 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -66,6 +66,7 @@ config USB_ARCH_HAS_EHCI
- 	default y if ARCH_VT8500
- 	default y if PLAT_SPEAR
- 	default y if ARCH_MSM
-+	default y if MICROBLAZE
- 	default PCI
- 
- # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
--- 
-1.5.5.6
-
+> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+> ---
+>  drivers/net/pcmcia/nmclan_cs.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/pcmcia/nmclan_cs.c b/drivers/net/pcmcia/nmclan_cs.c
+> index 76683d9..bf97231
+> --- a/drivers/net/pcmcia/nmclan_cs.c
+> +++ b/drivers/net/pcmcia/nmclan_cs.c
+> @@ -625,7 +625,7 @@ static int nmclan_config(struct pcmcia_device *link)
+>    ret = pcmcia_request_io(link);
+>    if (ret)
+>  	  goto failed;
+> -  ret = pcmcia_request_exclusive_irq(link, mace_interrupt);
+> +  ret = __pcmcia_request_exclusive_irq(link, mace_interrupt);
+>    if (ret)
+>  	  goto failed;
+>    ret = pcmcia_enable_device(link);
+> -- 
+> 1.7.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
