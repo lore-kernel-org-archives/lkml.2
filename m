@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab1DDKfa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:35:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54581 "EHLO mx3.mail.elte.hu"
+	id S1754375Ab1DDKhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:37:41 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:30040 "EHLO mgw-da01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775Ab1DDKf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:35:29 -0400
-Date: Mon, 4 Apr 2011 12:31:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
-        linux-kernel@vger.kernel.org, aarcange@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, joro@8bytes.org, penberg@cs.helsinki.fi,
-        asias.hejun@gmail.com, gorcunov@gmail.com
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-Message-ID: <20110404103158.GA4300@elte.hu>
-References: <1301592656.586.15.camel@jaguar>
- <4D978930.1000909@codemonkey.ws>
- <20110403062117.GA27121@elte.hu>
- <4D982EB8.7080001@redhat.com>
- <BANLkTikkyktU3KL8h71PYLF_ds0C07QKcg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikkyktU3KL8h71PYLF_ds0C07QKcg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754039Ab1DDKhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 06:37:39 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paulo Marques <pmarques@grupopie.com>
+Subject: [PATCH 1/2] Kconfig: improve KALLSYMS_ALL documentation
+Date: Mon,  4 Apr 2011 13:40:50 +0300
+Message-Id: <1301913651-9055-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-* Pekka Enberg <penberg@kernel.org> wrote:
+Dumb users like myself are not able to grasp from the existing KALLSYMS_ALL
+documentation that this option is not what they need. Improve the help
+message and make it clearer that KALLSYMS is enough in the majority of
+use cases, and KALLSYMS_ALL should really be used very rarely.
 
-> > Well, this is bound to cause confusion as the tool is yet quite immature.
-> 
-> Yes, that's really unfortunate. I don't care too much what we call the tool 
-> but I definitely agree with Ingo that 'kvm' is more discoverable to users. 
-> Any suggestions?
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Cc: Paulo Marques <pmarques@grupopie.com>
+Cc: Michal Marek <mmarek@suse.cz>
 
-Well, lets keep it 'kvm' - if it stays immature it doesnt matter much. If it 
-improves it has the right and obvious tool name.
+---
+ init/Kconfig |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
 
-Thanks,
+diff --git a/init/Kconfig b/init/Kconfig
+index 56240e7..dae5297 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -968,12 +968,18 @@ config KALLSYMS_ALL
+ 	bool "Include all symbols in kallsyms"
+ 	depends on DEBUG_KERNEL && KALLSYMS
+ 	help
+-	   Normally kallsyms only contains the symbols of functions, for nicer
+-	   OOPS messages.  Some debuggers can use kallsyms for other
+-	   symbols too: say Y here to include all symbols, if you need them 
+-	   and you don't care about adding 300k to the size of your kernel.
+-
+-	   Say N.
++	   Normally kallsyms only contains the symbols of functions for nicer
++	   OOPS messages and backtraces(i.e., symbols from the text and inittext
++	   sections). This is sufficient for most cases. And only in very rare
++	   cases (e.g., when a debugger is used) all symbols are required (e.g.,
++	   names of variables from the data sections, etc).
++
++	   This option makes sure that all symbols are loaded into the kernel
++	   image (i.e., symbols from all sections) in cost of increased kernel
++	   size (depending on the kernel configuration, it may be 300KiB or
++	   something like this).
++
++	   Say N unless you really need all symbols.
+ 
+ config KALLSYMS_EXTRA_PASS
+ 	bool "Do an extra kallsyms pass"
+-- 
+1.7.2.3
 
-	Ingo
