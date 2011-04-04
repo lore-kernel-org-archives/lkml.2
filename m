@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab1DDJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:56:47 -0400
-Received: from smtp209.alice.it ([82.57.200.105]:54816 "EHLO smtp209.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab1DDJ4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:56:46 -0400
-Date: Mon, 4 Apr 2011 11:56:31 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: linux-mmc@vger.kernel.org
-Cc: Antonio Ospite <ospite@studenti.unina.it>,
-        Daniel Ribeiro <drwyrm@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Ernst Schwab <eschwab@online.de>, Sonic Zhang <sonic.zhang@analog.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        openezx-devel@lists.openezx.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] mmc_spi: Add support for regulator framework
-Message-Id: <20110404115631.67b1f317.ospite@studenti.unina.it>
-In-Reply-To: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
-References: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; x86_64-unknown-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__4_Apr_2011_11_56_32_+0200_4LkaBDdw3mLxoal1"
+	id S1754311Ab1DDKAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:00:50 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:39588 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab1DDKAt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 06:00:49 -0400
+X-AuditID: b753bd60-a3cb9ba000004916-1f-4d9996ce0e9d
+X-AuditID: b753bd60-a3cb9ba000004916-1f-4d9996ce0e9d
+Message-ID: <4D9996C8.4020703@hitachi.com>
+Date: Mon, 04 Apr 2011 19:00:40 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110324113209.20235.61900.stgit@localhost6.localdomain6> <4D8B79E6.2050603@gmail.com> <4D8C6B1B.70409@hitachi.com> <4D8CAE74.9080805@gmail.com> <4D906450.1040809@hitachi.com> <4D909BBB.5020500@gmail.com> <20110401151313.GC2335@nowhere>
+In-Reply-To: <20110401151313.GC2335@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Apr_2011_11_56_32_+0200_4LkaBDdw3mLxoal1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 21 Mar 2011 19:46:38 +0100
-Antonio Ospite <ospite@studenti.unina.it> wrote:
-
-> Hi,
->=20
-> this patchset has the purpose of adding support for the regulator framewo=
-rk to=20
-> the mmc_spi driver. The first three patches are preparatory cleanups to m=
-ake=20
-> the fourth one more straightforward.
->=20
-> Maybe the fourth patch can be improved, I am open to any suggestions abou=
-t it.
+(2011/04/02 0:13), Frederic Weisbecker wrote:
+> On Mon, Mar 28, 2011 at 08:31:23AM -0600, David Ahern wrote:
+>> On 03/28/11 04:34, Akihiro Nagai wrote:
+>>>> from is sample->ip? to is sample->addr? In the above example
+>>>> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
+>>>> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
+>>> Yes.
+>>> In this example, resolved address is only sample->ip (branch from).
+>>> We need the resolved address of sample->addr (branch to) too, because
+>>> both of them are addresses of execution code.
+>>
+>> Ok, now I understand. In that case add conversion of sample->addr to
+>> symbols to perf-script.
 >
+> I agree that we should rather use perf script for branch dumps.
+> Sorry Akihiro, I think we suggested you to create this dedicated
+> perf branch by the past. But then perf script became the vanilla dump
+> tool in the middle and it seems more suitable today.
+>
+> We can still create a perf branch later in order to produce some more
+> advanced post-processing tools. But for sample dumps perf script (which starts
+> to show itself as a misnomer BTW) seems to be the right place.
+Finally, I would like to create coverage test tools using BTS on perf.
+I'm working on the project "Btrax" that is a coverage test tool using BTS.
+The URL is: http://sourceforge.net/projects/btrax/
 
-Ping. I forgot to Cc spi-devel-general on this series, should I resend
-it?
-
-> These changes take strong inspiration from the pxamci driver; they have b=
-een=20
-> tested on a Motorola A910, which uses a regulator to powerup the MMC card=
-=20
-> connected to the SPI bus, a test from a current user of the mmc_spi drive=
-r=20
-> would not hurt just to be sure no regressions have been introduced.
->=20
-> Thanks,
->    Antonio
->=20
-> Antonio Ospite (4):
->   mmc_spi.c: factor out the check for power capability
->   mmc_spi.c: factor out the SD card shutdown sequence
->   mmc_spi.c: factor out a mmc_spi_setpower() function
->   mmc_spi.c: add support for the regulator framework
->=20
->  drivers/mmc/host/mmc_spi.c |  194 +++++++++++++++++++++++++++++---------=
-------
->  1 files changed, 129 insertions(+), 65 deletions(-)
->=20
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Mon__4_Apr_2011_11_56_32_+0200_4LkaBDdw3mLxoal1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk2ZldAACgkQ5xr2akVTsAHKIQCeL58ZVn17aOb6tKRjo7QdBA0Z
-CioAn1lsItDi+7N74H/2C47j9n+OfEcs
-=TNs2
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Apr_2011_11_56_32_+0200_4LkaBDdw3mLxoal1--
+And, I would like to implement other functions on perf-branch too.
+For example, call graph, source code browser like perf-annotate which
+can show executed codes.
+So, I wolud like to continue to develop perf-branch.
