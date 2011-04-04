@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab1DDVQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 17:16:12 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:42159 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab1DDVQH (ORCPT
+	id S1755719Ab1DDVVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 17:21:07 -0400
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:63004 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755455Ab1DDVVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 17:16:07 -0400
-Date: Mon, 4 Apr 2011 22:16:05 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
-Message-ID: <20110404211604.GB6133@sucs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 4 Apr 2011 17:21:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
+	:cc:in-reply-to:references:content-type:date:message-id
+	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=u28Ad2
+	a/kmy+HO4gS+fyxubXp2I2JE5o/DOyvz2qWq0ytp+slv36vusYp6EYTVCx/9puQD
+	wBC5HfVKPF9j9HPjcmKaxwhxp5c1SlJuPz5V/mTHqh+Bd24gg8zdfXyAILqsM3RM
+	ovbaT5GCI5hweKIT820dpqPPo9z5qtii2Mr5c=
+Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
+From: Nathan Lynch <ntl@pobox.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Oren Laadan <orenl@cs.columbia.edu>, Andrew Morton <akpm@osdl.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+In-Reply-To: <20110404162753.GA3456@hallyn.com>
+References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
+ <1298936432-29607-6-git-send-email-ntl@pobox.com>
+ <20110403190324.GD15044@hallyn.com> <1301929228.31531.39.camel@tp-t61>
+ <20110404151017.GA4857@hallyn.com> <1301931608.31531.49.camel@tp-t61>
+ <20110404162753.GA3456@hallyn.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Apr 2011 16:20:46 -0500
+Message-ID: <1301952046.31531.112.camel@tp-t61>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: B019C5EC-5F01-11E0-9277-E8AB60295C12-04752483!a-pb-sasl-sd.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm seeing the following warning on 2.6.39-rc1-00220-g148086b when I was
-inserting an SD card (which is attached to the USB port) and USB stick
-with loads of kernel debug options on:
+On Mon, 2011-04-04 at 11:27 -0500, Serge E. Hallyn wrote:
+> Quoting Nathan Lynch (ntl@pobox.com):
+> > On Mon, 2011-04-04 at 10:10 -0500, Serge E. Hallyn wrote:
+> > > I'm asking whether you are intending to later on change the checkpoint
+> > > API to allow an external task to checkpoint a pid-init process, rather than
+> > > the pid-init process having to initiate it itself.
+> > 
+> > No, that is not the intention.  I can see how that would be problematic
+> > for those wanting to run minimally-modified distro containers, but I
+> > think running a patched pid-init is a reasonable tradeoff to ask users
+> > to make in order to get c/r.  And there's nothing to keep the standard
+> > distro inits from growing c/r capability.
+> 
+> It's not necessarily a dealbreaker, since presumably I can hack the
+> needed support into upstart, triggered by a boot option so it isn't
+> activated on a host.  But especially given the lack of interest in
+> this thread so far, I don't see a point in pushing this, an API-incompatible
+> less-capable version of the linux-cr tree.
 
-[    7.526172] ------------[ cut here ]------------
-[    7.526191] WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
-[    7.526197] Hardware name: 900
-[    7.526205] Pid: 1112, comm: udisks-part-id Not tainted 2.6.39-rc1-00227-gd7c764c-dirty #352
-[    7.526211] Call Trace:
-[    7.526224]  [<b0127208>] warn_slowpath_common+0x68/0xa0
-[    7.526232]  [<b0254e8c>] ? disk_clear_events+0xdc/0xf0
-[    7.526240]  [<b0254e8c>] ? disk_clear_events+0xdc/0xf0
-[    7.526248]  [<b012725b>] warn_slowpath_null+0x1b/0x20
-[    7.526255]  [<b0254e8c>] disk_clear_events+0xdc/0xf0
-[    7.526265]  [<b01c29c5>] check_disk_change+0x25/0x70
-[    7.526274]  [<b0345647>] sd_open+0x97/0x180
-[    7.526282]  [<b01c38ac>] __blkdev_get+0x7c/0x310
-[    7.526289]  [<b01c3b86>] blkdev_get+0x46/0x2c0
-[    7.526298]  [<b051206d>] ? _raw_spin_unlock+0x1d/0x20
-[    7.526306]  [<b01c3e55>] blkdev_open+0x55/0x70
-[    7.526316]  [<b0193262>] __dentry_open+0x112/0x290
-[    7.526323]  [<b0193446>] nameidata_to_filp+0x66/0x70
-[    7.526331]  [<b01c3e00>] ? blkdev_get+0x2c0/0x2c0
-[    7.526340]  [<b01a04fd>] do_last+0x19d/0x770
-[    7.526348]  [<b01a1730>] path_openat+0x90/0x310
-[    7.526356]  [<b01a1abd>] do_filp_open+0x5d/0x80
-[    7.526364]  [<b051206d>] ? _raw_spin_unlock+0x1d/0x20
-[    7.526373]  [<b01aec54>] ? alloc_fd+0x164/0x1b0
-[    7.526381]  [<b0194581>] do_sys_open+0xf1/0x1c0
-[    7.526389]  [<b01952ac>] ? vfs_write+0xfc/0x140
-[    7.526397]  [<b01946b9>] sys_open+0x29/0x40
-[    7.526404]  [<b0512817>] sysenter_do_call+0x12/0x36
-[    7.526410] ---[ end trace 1aec3f97d06611cd ]---
+The apparent lack of interest was discouraging, but I appreciate that
+you've been looking it over.
 
-A quick Google also turns up the same report in
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/748166 .
 
--- 
-Sitsofe | http://sucs.org/~sits/
+>   If it can gain traction
+> better than linux-cr, that'd be one thing.  But given the amount of
+> review and testing the other tree has gotten
+
+How much traction do you think linux-cr has?  It doesn't seem any closer
+to mainline than it was a year ago, and it barely has any users.  I
+don't think posting this little proof-of-concept patch set is disrupting
+linux-cr's progress toward mainline.
+
+
+>  - and I realize you're
+> able to piggy-back on much of that - and, again, the lack of responses
+> so far, I just don't see this as worth pushing for.
+
+Sure, the lack of response sucks, but it's not unexpected, and the code
+here is pretty rough (especially the stuff I wrote).  What I hoped to
+highlight and discuss were the differences in system call interfaces and
+goals, and to gauge interest from the larger community.  Certainly what
+I posted here isn't anywhere close to merge quality and I didn't intend
+it to be taken that way.  I don't think it's hurting anything to explore
+an alternative approach with more modest goals (and, one hopes, less of
+a maintenance footprint on the rest of the kernel).
+
+
+> I'd really prefer that everyone was using the same tree, and sending
+> any and all patches which they need, no matter how ugly they fear
+> they are, upstream.  To that end, I think it would be appropriate
+> for you or Dan to get write access to Oren's tree or to move to a
+> newly cloned copy of his tree to which one of you has acces.
+
+Oren and I disagree on some fundamental aspects of how kernel c/r should
+be implemented (hence this patch set), so I'm not sure how this would
+work.
+
+
