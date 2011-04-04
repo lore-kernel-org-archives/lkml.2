@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab1DDRWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 13:22:04 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34911 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab1DDRWD (ORCPT
+	id S1754891Ab1DDRb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 13:31:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51341 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab1DDRb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 13:22:03 -0400
-Message-ID: <4D99FE36.1070307@monstr.eu>
-Date: Mon, 04 Apr 2011 19:21:58 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Mon, 4 Apr 2011 13:31:57 -0400
+Date: Mon, 4 Apr 2011 19:31:49 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>,
+        devicetree-discuss@lists.ozlabs.org, john.williams@petalogix.com,
+        linux-kernel@vger.kernel.org, gregkh@suse.de
+Subject: Re: [PATCH] uio/pdrv_genirq: Add OF support
+Message-ID: <20110404173149.GB12200@pengutronix.de>
+References: <1301574600-4861-2-git-send-email-monstr@monstr.eu>
+ <20110331124925.GA2202@pengutronix.de>
+ <4D948189.9070606@monstr.eu>
+ <20110331170321.GA2734@local>
+ <4D94C09B.4070506@monstr.eu>
+ <20110331192302.GD2734@local>
+ <AANLkTin6iSVQtKo602hceod+4=cVUMG=GR7cCZvHg4nO@mail.gmail.com>
+ <20110331203024.GE2734@local>
+ <20110402103550.GA21760@pengutronix.de>
+ <20110404170437.GA4830@local>
 MIME-Version: 1.0
-To: Michal Simek <monstr@monstr.eu>
-CC: linux-kernel@vger.kernel.org, john.williams@petalogix.com,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: Microblaze early console support
-References: <1301934655-20495-1-git-send-email-monstr@monstr.eu>
-In-Reply-To: <1301934655-20495-1-git-send-email-monstr@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TakKZr9L6Hm6aLOc"
+Content-Disposition: inline
+In-Reply-To: <20110404170437.GA4830@local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-resent.
 
-M
+--TakKZr9L6Hm6aLOc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Michal Simek wrote:
-> Hi,
-> 
-> I have one question about early console support on MMU kernel.
-> When do you register an early console and what TLB mapping you use?
-> 
-> For Microblaze I registered it before main memory is setup that's why I was
-> hardcoded TLB 63 to 1:1 mapping (virt addr = phys addr). 
-> It is output only for early_printk messages but I would like to use it 
-> as boot console. There are only some messages that's why TLB 63 was released
-> later on.
-> That is the current state.
-> 
-> I have added CON_BOOT flag and register early console by register_console function
-> and I allocate TLB 63 for it. But unfortunately I haven't found any function 
-> in unregister_console which is called for unregistering to help me to release TLB 63
-> when early console is not used. Is there any way how to do it?
-> 
-> From our experiment in past there is performance degression when kernel can't use
-> a TLB that's why I tried to find out a way to release TLB 63.
-> This is the reason why I would like to know your opinion if my style is correct 
-> or not.
-> I created new remap_early_printk function which does ioremap for console space.
-> This function is called from setup_arch when memory is setup. Then early mapping of TLB 63
-> is automatically released and can be used for Linux purpose.
-> Is it correct design how to do it?
-> 
-> How do you handle it in your arch? Do you register early console before memory initialization
-> is done?
-> 
-> You can also look at my patch I have done.
-> 
-> Thanks for your suggestions,
-> Michal
+Hi Hans,
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+> > If the generic driver is not sufficent for a user and he
+> > patches it, he can simply patch the version string, too?
+>=20
+> Or better write a dedicated driver. Patching a generic thing like uio_pdr=
+v_genirq
+> can only be done in specialized drivers in a project. That's hackery that=
+ won't
+> make it into mainline anyway.
+
+I exactly meant that, maybe didn't make it clear enough. Of course, a seper=
+ate
+driver would be better, but guess what will happen in most projects.
+
+> > Or can we use the notifiers to set up an individual version? That could=
+ also be
+> > the place to do special board-setup connected to the selected version.
+>=20
+> How could that look like? If you have an idea for a generic solution, you=
+'re
+> welcome.
+
+That was more a brainstorming question; there are notifiers which help
+populating function-pointers which also can't be expressed in a device-tree.
+I just wanted to make sure this approach doesn't get overlooked.
+
+So, the solution for now is to simply add a default value and we can check
+later if it can be modified at runtime?
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--TakKZr9L6Hm6aLOc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk2aAIUACgkQD27XaX1/VRu0awCgnnzK4TUgwhEAe7Th3/bXgCsK
+WX8An1NKfgL9LYBuF2x03RQdrlItgGzf
+=05Sm
+-----END PGP SIGNATURE-----
+
+--TakKZr9L6Hm6aLOc--
