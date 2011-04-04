@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab1DDTki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 15:40:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46487 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755198Ab1DDTkh (ORCPT
+	id S1755428Ab1DDTrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 15:47:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48465 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab1DDTrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 15:40:37 -0400
-Date: Mon, 4 Apr 2011 12:42:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        containers@lists.linux-foundation.org, Nathan Lynch <ntl@pobox.com>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
-Message-Id: <20110404124222.fd5eb85b.akpm@linux-foundation.org>
-In-Reply-To: <20110404185119.GB4782@peq.hallyn.com>
-References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
-	<1298936432-29607-6-git-send-email-ntl@pobox.com>
-	<20110403190324.GD15044@hallyn.com>
-	<1301929228.31531.39.camel@tp-t61>
-	<20110404151017.GA4857@hallyn.com>
-	<1301931608.31531.49.camel@tp-t61>
-	<20110404162753.GA3456@hallyn.com>
-	<20110404104119.78189678.akpm@linux-foundation.org>
-	<20110404185119.GB4782@peq.hallyn.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+	Mon, 4 Apr 2011 15:47:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=aD2+t6MecH4l8/V02ZQAyXxrt3dv5aacPZ9oXy28GAjISGICPfa1qDEvV+9LNvG84n
+         OwfwoovC07Wg83iuDGgP8y6ZhOhPAkbc62CiTMg84hgNN1pk2NuoCKPS21/BPXUN2fD2
+         5ZjbwcxsCRcqkiGmLC75L5BqFahEBcdLm0nxE=
+Subject: Re: [PATCH] posix-timers: RCU conversion
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richard.cochran@omicron.at>, ben@iagu.net,
+        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1301940501.2319.25.camel@work-vm>
+References: <AANLkTikZZ4MXZjx_+6u-vKVSgxULQo2BkQKRO6K_vzFy@mail.gmail.com>
+	 <20110318123031.GB6066@8bytes.org>
+	 <AANLkTin2k1ZSLa0NG6pKBvHYnKEV21t8pEqzeJWNn_rR@mail.gmail.com>
+	 <4D871F6C.40207@redhat.com>
+	 <AANLkTintxnKRQ4rD4Wo8_MHU4yJVzYaRhR=GjnDMGwNj@mail.gmail.com>
+	 <AANLkTin8ZoUAVR2ajoV6cBFiUSe_Dof0_k60dcAGW3r-@mail.gmail.com>
+	 <4D875842.9050308@redhat.com>
+	 <AANLkTikWQS281kTtJ32-qo5U+w_BAak7qUwVhUQgOxxv@mail.gmail.com>
+	 <4D8773AA.8030408@redhat.com>
+	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
+	 <1300726498.2884.493.camel@edumazet-laptop> <4D8784A9.8040303@redhat.com>
+	 <1300727545.2884.513.camel@edumazet-laptop>
+	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
+	 <1300746429.2837.20.camel@edumazet-laptop>
+	 <1300777760.2837.38.camel@edumazet-laptop>
+	 <1301849660.2837.211.camel@edumazet-laptop>
+	 <1301940501.2319.25.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Apr 2011 21:47:16 +0200
+Message-ID: <1301946437.3021.7.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Apr 2011 13:51:20 -0500 "Serge E. Hallyn" <serge.hallyn@ubuntu.com> wrote:
-
-> Quoting Andrew Morton (akpm@linux-foundation.org):
-> > On Mon, 4 Apr 2011 11:27:53 -0500 "Serge E. Hallyn" <serge@hallyn.com> wrote:
-> > 
-> > > Andrew (Cc:d), did you see this thread go by, and it did it look
-> > > in any way more palatable to you?  Have you had any thoughts on
-> > > checkpoint/restart in the last few months?  Or did that horse quietly
-> > > die over winter?
-> > 
-> > argh, it was the victim of LIFO.
-> > 
-> > All I can say at this stage is that I'll be interested next time it
-> > comes past, sorry.
+Le lundi 04 avril 2011 à 11:08 -0700, john stultz a écrit :
+> On Sun, 2011-04-03 at 18:54 +0200, Eric Dumazet wrote:
+> > Andrew, I submitted this patch some time ago and got no feedback from
+> > Thomas, John, Richard or Paul.
 > 
-> Thanks, that's good to know.
+> Sorry about that. Its been on my list.
 > 
-> As you know, we started with a minimal patchset, then grew it over time
-> to answer the "but how will you (xyz) without uglifying the kernel".
-> Would you recommend we go back to keeping a separate minimal patchset,
-> or that we develop on the current, pretty feature-full version?  I'm not
-> convinced believe there will be bandwidth to keep two trees and do both
-> justice.
+> It looks ok to me, but I not very familiar with idr locking rules
+> (though looking at the code the comments state that idr_find can be
+> safely called the way you do here).
 
-The minimal patchset is too minimal for Oren's use and the maximal
-patchset seems to have run aground on general kernel sentiment.  So I
-guess you either take the minimal patchset and make it less minimal or
-take the maximal patchset and make it less maximal, ending up with the
-same thing.  How's that for hand-waving useless obviousnesses :)
+Not only comments, but ipc uses rcu locking as well ;)
 
-One obvious approach is to merge the minimal patchset then, over time,
-sneak more stuff into it so we end up with the maximal patchset which
-people didn't like.  Don't do that :)
+Nadia Derbey did the work on idr and ipc in commits :
+
+983bfb7db303cfde56ae5bbf4e0f2f46e38c9576
+(ipc: call idr_find() without locking in ipc_lock())
+
+f9c46d6ea5ce138a886c3a0f10a46130afab75f5
+(idr: make idr_find rcu-safe)
+
+
+
