@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1DDJGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:06:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53594 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751016Ab1DDJGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:06:01 -0400
-Date: Mon, 4 Apr 2011 11:05:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Unavowed <unavowed@vexillium.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Add NOGET quirk for the CH Pro Throttle
-In-Reply-To: <4d988b60.29c6ec0a.0716.ffffa4bf@mx.google.com>
-Message-ID: <alpine.LNX.2.00.1104041105250.28516@pobox.suse.cz>
-References: <4d988b60.29c6ec0a.0716.ffffa4bf@mx.google.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754039Ab1DDJI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:08:27 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36351
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751016Ab1DDJI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 05:08:26 -0400
+Date: Mon, 04 Apr 2011 02:07:48 -0700 (PDT)
+Message-Id: <20110404.020748.212408124.davem@davemloft.net>
+To: ian.campbell@citrix.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        xen-devel@lists.xensource.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] MAINTAINERS: add entry for Xen network backend
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1301905567-7880-1-git-send-email-ian.campbell@citrix.com>
+References: <1301905567-7880-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Apr 2011, Unavowed wrote:
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Mon,  4 Apr 2011 09:26:07 +0100
 
-> The CH Pro Throttle needs the NOGET quirk flag to work, just like other CH
-> Products devices which already have the flag set.
-> 
-> Signed-off-by: Unavowed <unavowed@vexillium.org>
+> +XEN NETWORK BACKEND DRIVER
+> +M:	Ian Campbell <ian.campbell@citrix.com>
+> +L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+> +S:	Supported
+> +F:	drivers/net/xen-netback/*
+> +
 
-Hi,
+To me there isn't much reason to have patch and other discussions
+about a network driver on a moderated XEN list (which the majority of
+core network developers are not subscribed to).
 
-thanks a lot for the patch.
-
-Would it please be possible to have a real name to attribute for patch 
-authorship and Signed-off-by line?
-
-> ---
->  drivers/hid/hid-ids.h           |    1 +
->  drivers/hid/usbhid/hid-quirks.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 65ac53d..1a9f996 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -150,6 +150,7 @@
->  #define USB_DEVICE_ID_CANDO_MULTI_TOUCH_15_6 0x0f01
->  
->  #define USB_VENDOR_ID_CH		0x068e
-> +#define USB_DEVICE_ID_CH_PRO_THROTTLE	0x00f1
->  #define USB_DEVICE_ID_CH_PRO_PEDALS	0x00f2
->  #define USB_DEVICE_ID_CH_COMBATSTICK	0x00f4
->  #define USB_DEVICE_ID_CH_FLIGHT_SIM_ECLIPSE_YOKE       0x0051
-> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-> index 9a94b64..a8426f1 100644
-> --- a/drivers/hid/usbhid/hid-quirks.c
-> +++ b/drivers/hid/usbhid/hid-quirks.c
-> @@ -59,6 +59,7 @@ static const struct hid_blacklist {
->  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_COMBATSTICK, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_FLIGHT_SIM_ECLIPSE_YOKE, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_FLIGHT_SIM_YOKE, HID_QUIRK_NOGET },
-> +	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_PRO_THROTTLE, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_PRO_PEDALS, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_3AXIS_5BUTTON_STICK, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
-> -- 
-> 1.7.3.4
-> 
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+If anything, list both.  But not listing netdev is pretty pointless.
