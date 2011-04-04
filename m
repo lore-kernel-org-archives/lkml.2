@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab1DDJM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:12:27 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:47561 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741Ab1DDJMZ (ORCPT
+	id S1754024Ab1DDJPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:15:36 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51813 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286Ab1DDJPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:12:25 -0400
-X-IronPort-AV: E=Sophos;i="4.63,296,1299456000"; 
-   d="scan'208";a="5119096"
-Subject: Re: [PATCH] MAINTAINERS: add entry for Xen network backend
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: David Miller <davem@davemloft.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-In-Reply-To: <20110404.020748.212408124.davem@davemloft.net>
-References: <1301905567-7880-1-git-send-email-ian.campbell@citrix.com>
-	 <20110404.020748.212408124.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Mon, 4 Apr 2011 10:12:23 +0100
-Message-ID: <1301908343.23887.54.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Apr 2011 05:15:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Xl4/udfT1+3kCfZPq772bYctr+Z/18gekKUnoWhAQvP0ELjwiaiNWX/sGOFbGRyNIQ
+         BiAeaU/4oTQD8vhqi0HLTloAf5ZTgjdKskgdxpOjbg5szVAo7ryBrXSWdQFc/dPLLCao
+         cpQcrKr/P34NV9VqTc7bhdNarBg9cVVf/5se0=
+From: wanlong.gao@gmail.com
+To: jbarnes@virtuousgeek.org, prarit@redhat.com,
+        kaneshige.kenji@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        arnd@arndb.de
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        harryxiyou@gmail.com, Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH]X86:PCI: Fix an uninitialized variable warning
+Date: Mon,  4 Apr 2011 17:12:59 +0800
+Message-Id: <1301908379-19283-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-04 at 10:07 +0100, David Miller wrote:
-> From: Ian Campbell <ian.campbell@citrix.com>
-> Date: Mon,  4 Apr 2011 09:26:07 +0100
-> 
-> > +XEN NETWORK BACKEND DRIVER
-> > +M:	Ian Campbell <ian.campbell@citrix.com>
-> > +L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
-> > +S:	Supported
-> > +F:	drivers/net/xen-netback/*
-> > +
-> 
-> To me there isn't much reason to have patch and other discussions
-> about a network driver on a moderated XEN list (which the majority of
-> core network developers are not subscribed to).
-> 
-> If anything, list both.  But not listing netdev is pretty pointless.
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-get_maintainer.pl lists both (due to the umbrella netdev entry) so I
-didn't think it was required here also, I stand corrected.
+If it was preempted , and the variable aer_mask_override is
+changed after the spin_unlock_irqrestore ,  it will write an
+uninitialized variable by the pci_write_config_dword() function .
 
-8<-------------------------------------
-
->From 6c71610a1155eecc72f22529513bc130cfab3fe2 Mon Sep 17 00:00:00 2001
-From: Ian Campbell <ian.campbell@citrix.com>
-Date: Mon, 4 Apr 2011 09:15:29 +0100
-Subject: [PATCH] MAINTAINERS: add entry for Xen network backend
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: netdev@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
 ---
- MAINTAINERS |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/pci/pcie/aer/aer_inject.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6b4b9cd..649600c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6916,6 +6916,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.
- S:	Maintained
- F:	drivers/platform/x86
+diff --git a/drivers/pci/pcie/aer/aer_inject.c b/drivers/pci/pcie/aer/aer_inject.c
+index f62079f..95489cd
+--- a/drivers/pci/pcie/aer/aer_inject.c
++++ b/drivers/pci/pcie/aer/aer_inject.c
+@@ -326,7 +326,7 @@ static int aer_inject(struct aer_error_inj *einj)
+ 	unsigned long flags;
+ 	unsigned int devfn = PCI_DEVFN(einj->dev, einj->fn);
+ 	int pos_cap_err, rp_pos_cap_err;
+-	u32 sever, cor_mask, uncor_mask, cor_mask_orig, uncor_mask_orig;
++	u32 sever, cor_mask, uncor_mask, cor_mask_orig = 0, uncor_mask_orig = 0;
+ 	int ret = 0;
  
-+XEN NETWORK BACKEND DRIVER
-+M:	Ian Campbell <ian.campbell@citrix.com>
-+L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
-+L:	netdev@vger.kernel.org
-+S:	Supported
-+F:	drivers/net/xen-netback/*
-+
- XEN PCI SUBSYSTEM
- M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
- L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+ 	dev = pci_get_domain_bus_and_slot((int)einj->domain, einj->bus, devfn);
 -- 
-1.7.2.5
-
-
+1.7.3
 
