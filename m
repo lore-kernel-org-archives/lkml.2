@@ -1,72 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1DDJVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:21:11 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:36874 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab1DDJVJ (ORCPT
+	id S1754162Ab1DDJVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:21:46 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57999 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab1DDJVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:21:09 -0400
-Message-ID: <4D998D75.1080903@ahsoftware.de>
-Date: Mon, 04 Apr 2011 11:20:53 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	Mon, 4 Apr 2011 05:21:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=m0zP0tjDdNRzvHgy4k/gPvjVyc5oxmgoGJRlR9bV0bOr00f29CzyWu4w9AuXIOLYtw
+         Z2uGWEh1h7vKxPNWbRg7rHWpWc6Rb2t8fN0QZlj7e5lsuEuxaln+tqY4EdrSWEZGqedr
+         iZAGB1c6bJ5yVNYjwStIp5JU0PL5sESgNT2b8=
 MIME-Version: 1.0
-To: Carsten Emde <C.Emde@osadl.org>
-CC: Mike Galbraith <efault@gmx.de>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Linux 2.6.33.8
-References: <20110321204104.GA2702@kroah.com>  <4D94C666.3060206@osadl.org> <1301632555.4766.5.camel@marge.simson.net> <4D96E90D.9000905@osadl.org> <4D96F945.3030101@ahsoftware.de> <4D970818.2020707@osadl.org>
-In-Reply-To: <4D970818.2020707@osadl.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+Date: Mon, 4 Apr 2011 11:21:43 +0200
+Message-ID: <BANLkTikr62YPeDnkL3DKA1Nts5aRFxsO6Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for April 4 [BROKEN thinkpad_acpi]
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Am 02.04.2011 13:27, schrieb Carsten Emde:
-
->> I'm using a
->> model name : Intel(R) Core(TM) i7 CPU 860 @ 2.80GHz
-> This probably is not model 44; is it 26, 30 or 31?
-
-Model 30, stepping 5. HT is enabled.
-
->> and can confirm some problem with power down, at least in 2.6.38.2.
->> Sometimes I only see the powerdown message but the machine will stay on
->> (and the fan starts getting louder).
->> [..]
->> Maybe it's a totally unrelated problem, but I thought it might be good
->> to mention that I'm having a problem with powerdown in 2.6.38 too.
-> Yes, thank you,
+On Mon, Apr 4, 2011 at 6:35 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
 >
-> Would you mind to completely disable processor frequency scaling and
-> check whether the powerdown problem goes away on your system as well? I
-> do not know which distro you are using, but on some systems "chkconfig
-> cpuspeed off; reboot" would do the job. When the system then reboots,
-> "halt" should correctly power off the system.
+> Changes since 20110401:
+>
+> Dropped tree: xen
+>
+> The net tree gained a build failure so I used the version from
+> next-20110401.
+>
 
-I'm currently using F13, always with the latest stable vanilla kernel 
-from kernel.org. No cpufreq-daemons or similiar are involved, just the 
-governor "ondemand".
+Hi,
 
-In regard to more detailed testing I can't say when I will find the time 
-to do that. I'm using this machine regulary and the problem occurs only 
-seldom (maybe 1 out of 5 shutdowns). So git bisect or similiar generic 
-tests aren't very practical.
+My build breaked today.
+Looks like the issue was introduced by commit
+2af915b1eda9a671973256540035f8a6da1d57b4:
+"thinkpad_acpi: Convert printks to pr_<level>"
 
-I will try to add some print statements, I assume 
-native_machine_power_off() and stuff afterwards are the candidates where 
-to do that.
+- Sedat -
 
-Regards,
+P.S.: Attached excerpt from my build.log
 
-Alexander
+[...]
+  CC [M]  drivers/platform/x86/thinkpad_acpi.o
+[...]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'hotkey_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3233:2:
+error: implicit declaration of function 'str_supported'
+[-Werror=implicit-function-declaration]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3233:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3289:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'bluetooth_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:3991:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'wan_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4179:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'uwb_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4319:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'video_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4419:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'light_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4803:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4803:2:
+warning: format '%s' expects argument of type 'char *', but argument 3
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'cmos_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:4910:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'led_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:5281:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'beep_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:5404:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'thermal_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:5737:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'volume_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:6901:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+  CC [M]  net/sched/sch_sfb.o
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:
+In function 'fan_init':
+/home/sd/src/linux-2.6/linux-2.6.39-rc1/debian/build/source_i386_none/drivers/platform/x86/thinkpad_acpi.c:8001:2:
+warning: format '%s' expects argument of type 'char *', but argument 2
+has type 'int' [-Wformat]
+  CC [M]  drivers/media/dvb/ttusb-dec/ttusbdecfe.o
+cc1: some warnings being treated as errors
+
+make[7]: *** [drivers/platform/x86/thinkpad_acpi.o] Error 1
+make[6]: *** [drivers/platform/x86] Error 2
+make[5]: *** [drivers/platform] Error 2
+
+- Sedat -
