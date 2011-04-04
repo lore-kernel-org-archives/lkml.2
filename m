@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab1DDVxC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 17:53:02 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43026 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab1DDVxA convert rfc822-to-8bit (ORCPT
+	id S1755132Ab1DDVxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 17:53:52 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56805 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1DDVxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 17:53:00 -0400
+	Mon, 4 Apr 2011 17:53:51 -0400
+Date: Mon, 4 Apr 2011 16:53:44 -0500
+From: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>
+To: Nathan Lynch <ntl@pobox.com>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
+Message-ID: <20110404215344.GC7873@peq.hallyn.com>
+References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
+ <1298936432-29607-6-git-send-email-ntl@pobox.com>
+ <20110403190324.GD15044@hallyn.com>
+ <1301929228.31531.39.camel@tp-t61>
+ <20110404151017.GA4857@hallyn.com>
+ <1301931608.31531.49.camel@tp-t61>
+ <20110404162753.GA3456@hallyn.com>
+ <1301952046.31531.112.camel@tp-t61>
 MIME-Version: 1.0
-In-Reply-To: <20110404213338.GB984@core.coreip.homeip.net>
-References: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
- <1301727259-5185-3-git-send-email-jeffbrown@android.com> <20110404213338.GB984@core.coreip.homeip.net>
-From: Jeffrey Brown <jeffbrown@android.com>
-Date: Mon, 4 Apr 2011 14:52:19 -0700
-Message-ID: <BANLkTineFm2WvtHi6pL6f3UOhPcpiRdKQA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] input: evdev: Indicate buffer overrun with SYN_DROPPED.
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: rydberg@euromail.se, djkurtz@google.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <1301952046.31531.112.camel@tp-t61>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
 
-On Mon, Apr 4, 2011 at 2:33 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Fri, Apr 01, 2011 at 11:54:18PM -0700, Jeff Brown wrote:
->> +      * When the client buffer is full, drain the buffer and enqueue a
->> +      * SYN_DROPPED event to let the client know that events were dropped
->> +      * and the last packet was incomplete.  We then consume all remaining
->> +      * events from the dropped packet until the next packet begins.
->
-> I do not think we (kernel) should be doing this. Clients should take
-> care and not allow overruns but if they happen the pain should be on the
-> client to restore the context. It has to query the device to get its
-> current state and it can drop the events till next sync as well.
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's fine.  We should document SYN_DROPPED and mention that the
-client should wait until after the next SYN_REPORT to get back in
-sync.
+Quoting Nathan Lynch (ntl@pobox.com):
+> >   If it can gain traction
+> > better than linux-cr, that'd be one thing.  But given the amount of
+> > review and testing the other tree has gotten
+>=20
+> How much traction do you think linux-cr has?  It doesn't seem any closer
+> to mainline than it was a year ago, and it barely has any users.  I
+> don't think posting this little proof-of-concept patch set is disrupting
+> linux-cr's progress toward mainline.
 
-> Therefore I intend to apply the patch in the form below.
+No, I agree with you there.  I appreciate your attempt, and it would have
+been great if it had worked.  My comments are only about going forward
+=66rom today onward.  And, going forward, I don't believe that this API
+simplification (and regression in functionality) is going to pay off
+the way you'd hoped.
 
-Looks good to me.  It's more like my original patch.
+> > I'd really prefer that everyone was using the same tree, and sending
+> > any and all patches which they need, no matter how ugly they fear
+> > they are, upstream.  To that end, I think it would be appropriate
+> > for you or Dan to get write access to Oren's tree or to move to a
+> > newly cloned copy of his tree to which one of you has acces.
+>=20
+> Oren and I disagree on some fundamental aspects of how kernel c/r should
+> be implemented (hence this patch set), so I'm not sure how this would
+> work.
 
-Jeff.
+Ok, not you then :)
+
+I'm willing to do it, but since I won't be able to spend full time
+reviewing it, I'd have to set some ground-rules, like:  I"ll pull in
+any patch as soon as it has an ack from (Oren, Dan Smith, Matt
+Helsley) which is not also from the submitter.  Any regression in
+automated tests cause the patch which caused it to get kicked out.
+
+If you want to discuss the technical advantages of not allowing a task
+to call checkpoint on another task, let's start a new thread to do that.
+So far, I'm against it.
+
+thanks,
+-serge
+
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNmj3oAAoJEHmllQITXQdF/n8IAJnKkl3LVEM673EZco3gqEqY
+rAP+CeE0aH1KrOTcscQ841wAm5JqARCZ3wxC41SjvkBtxX3euw/3y16c4ANaIFLU
+5jpAqFJ2Yqt6V7AygURi1UX+IirN2AVgIKGycuVbdbeqmM/iAQGZbdWASgtb8K/3
+kzuMqsbaU6Kdncw21061HXOVPeUZ9DdlYVr5n0+uE8BHrlNvABlI/vy/yuQZkKbW
+IhLZu39CVDSy8QvlVCDfHR9GOXDVB/NQNbdvLHfuPPW0b1MQJfqF7rY8rTiMQXjP
+d6Dg4jcGpQUOJ7QvskvOQ6nWGKjv/4TInIQ05XRhHg0WwCUrTxAbLY68ABeD0O8=
+=kp7r
+-----END PGP SIGNATURE-----
+
+--EeQfGwPcQSOJBaQU--
