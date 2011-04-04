@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab1DDQZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 12:25:25 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52166 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab1DDQZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 12:25:24 -0400
-Date: Mon, 4 Apr 2011 18:25:16 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
-        stable kernel team <stable@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-Message-ID: <20110404162516.GA31241@elte.hu>
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop>
- <20110401062338.GA6434@elte.hu>
- <alpine.DEB.2.00.1104011212070.16492@kaball-desktop>
- <20110401190812.GA16830@elte.hu>
- <alpine.DEB.2.00.1104012318390.16492@kaball-desktop>
- <20110404151132.GC11475@elte.hu>
- <alpine.DEB.2.00.1104041616550.16492@kaball-desktop>
+	id S1754696Ab1DDQ0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 12:26:31 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:25510 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab1DDQ0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 12:26:31 -0400
+X-IronPort-AV: E=Sophos;i="4.63,298,1299456000"; 
+   d="scan'208";a="5131095"
+Subject: Re: [PATCH] MAINTAINERS: Re-alphabetize Xen entries.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20110404161812.GA26835@dumpdata.com>
+References: <1301905843-8003-1-git-send-email-ian.campbell@citrix.com>
+	 <20110404161812.GA26835@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Mon, 4 Apr 2011 17:26:29 +0100
+Message-ID: <1301934389.23887.108.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1104041616550.16492@kaball-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-
-> On Mon, 4 Apr 2011, Ingo Molnar wrote:
-> > 
-> > * Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > 
-> > > Just to clarify the situation the patch "x86-64: finish cleanup_highmaps()'s 
-> > > job wrt. _brk_end" was backported to the stable trees [...]
-> > 
-> > There's no commit with such a title upstream - there's not even one that is 
-> > close. Could you cite the sha1 you refer to?
+On Mon, 2011-04-04 at 17:18 +0100, Konrad Rzeszutek Wilk wrote:
+> On Mon, Apr 04, 2011 at 09:30:43AM +0100, Ian Campbell wrote:
+> > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> > Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Cc: xen-devel@lists.xensource.com
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
 > 
-> The commit id upstream is 498343967613183611ac37dccb2846496d954c06
+> Looks good to me.
 
-That commit is from the v2.6.30 era:
+Thanks.
 
- |
- | commit 498343967613183611ac37dccb2846496d954c06
- | Author:     Jan Beulich <jbeulich@novell.com>
- | AuthorDate: Wed May 6 13:06:47 2009 +0100
- | Commit:     H. Peter Anvin <hpa@zytor.com>
- | CommitDate: Thu May 7 21:51:34 2009 -0700
- |
- |    x86-64: finish cleanup_highmaps()'s job wrt. _brk_end
- |
+> This, and "Various merges over time have led to rather a mish-mash of indentation"
+> is in the 2.6.40 queue..
 
-... i.e. the bug is almost 2 years and 8 -stable cycles old!
+I sent that one now because I thought post 39-rc1 would be a suitably
+quiet window wrt other merges etc for such a cleanup patch. I don't mind
+either way though.
 
-Peter very consciously did not mark the fix for this commit as -stable 
-material. It was ineligible for -stable for multiple reasons: it by no means 
-fixed a 2.6.39 regression and the fix was literally just a few days old.
+Ian.
 
-Thanks,
-
-	Ingo
