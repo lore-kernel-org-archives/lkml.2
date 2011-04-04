@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab1DDIV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 04:21:26 -0400
-Received: from smtp1.kolej.mff.cuni.cz ([78.128.192.10]:52021 "EHLO
-	smtp1.kolej.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1DDIVY (ORCPT
-	<RFC822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 04:21:24 -0400
-X-Envelope-From: santiago@crfreenet.org
-Date: Mon, 4 Apr 2011 10:33:47 +0200
-From: Ondrej Zajicek <santiago@crfreenet.org>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH] s3fb: fix Virge/GX2
-Message-ID: <20110404083347.GC9431@localhost>
-References: <201103292107.11969.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tqI+Z3u+9OQ7kwn0"
-Content-Disposition: inline
-In-Reply-To: <201103292107.11969.linux@rainbow-software.org>
-X-Operating-System: Debian GNU/Linux 4.0 (Etch)
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754024Ab1DDI0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 04:26:07 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:32768 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753848Ab1DDI0E convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 04:26:04 -0400
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+From: Marc Zyngier <Marc.Zyngier@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, david@lang.hm,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Brown <davidb@codeaurora.org>, Detlef Vollmann <dv@vollmann.ch>
+In-Reply-To: <201104040259.26601.arnd@arndb.de>
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+	 <201104031726.37420.arnd@arndb.de>
+	 <20110403160324.GA8050@n2100.arm.linux.org.uk>
+	 <201104040259.26601.arnd@arndb.de>
+Organization: ARM Ltd
+Date: Mon, 04 Apr 2011 09:26:19 +0100
+Message-ID: <1301905579.417.16.camel@e102391-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+X-OriginalArrivalTime: 04 Apr 2011 08:25:52.0996 (UTC) FILETIME=[E96B2240:01CBF2A1]
+X-MC-Unique: 111040409255707201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-04-04 at 02:59 +0200, Arnd Bergmann wrote:
 
---tqI+Z3u+9OQ7kwn0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Abstracting sched_clock() to be run-time selected is something that
+> needs to be taken care of. Maybe we could have a generic sched_clock
+> implementation that is written on top of clocksource instead of jiffies,
+> and always select that on architectures that have a decent clocksource.
+> Are there any platforms on ARM where that would be a bad idea? I believe
+> the main reaons why they are separate is that on x86 you can use the TSC
+> for sched_clock in many cases where you cannot use it for clocksource.
 
-On Tue, Mar 29, 2011 at 09:07:08PM +0200, Ondrej Zary wrote:
-> Fix Virge/GX2 support in s3fb:
-> - fix IDs: 86C357 is GX2, 86C359 is GX2+, 86C356 probably does not exist
-> - add memory size detection
-> - drive it the same way as Trio3D/2X
->=20
-> The original IDs most likely came from S3 website which claims that:
-> - 356 is Virge/GX2 with ID=3D8A10, driver included in Windows 2K, XP
-> - 357 is Virge/GX2+ with ID=3D8A11, driver included in Windows ME
-> - 359 is Virge/GX2+ with ID=3D8A12, driver included in Windows ME
-> but:
-> - google search for 86C356 only reveals references to Trio3D (probably
-> because of a typo - Trio3D is 86C365)
-> - my card is clearly marked as 86C357, Virge/GX2 and has ID=3D8A10
-> - there is no driver for IDs 8A11 and 8A12 in Windows ME
-> - there is a driver for ID 8A10 in Windows ME that says it's GX2 (357)
->=20
-> Tested with #9 Reality 334 (86C357 Virge/GX2, ID=3D0x8A10).
->=20
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+I've proposed a mechanism for a run-time selectable sched_clock()
+implementation as part of my A15 timer patch set:
+http://www.spinics.net/lists/arm-kernel/msg116891.html
+and more specifically patches #10 and #11.
 
-Acked-by: Ondrej Zajicek <santiago@crfreenet.org>
+I'm not completely pleased with it (the fact that it embeds a copy of
+the generic sched_clock() to be used as a default is properly ugly), but
+maybe this could be used as a base for further discussion.
 
---=20
-Elen sila lumenn' omentielvo
+Cheers,
 
-Ondrej 'SanTiago' Zajicek (email: santiago@crfreenet.org)
-OpenPGP encrypted e-mails preferred (KeyID 0x11DEADC3, wwwkeys.pgp.net)
-"To err is human -- to blame it on a computer is even more so."
+	M.
+-- 
+Reality is an implementation detail.
 
---tqI+Z3u+9OQ7kwn0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk2ZgmsACgkQw1GB2RHercMU1QCdEloHe7ehmFz+VqFJ6KK9rsEQ
-ilEAn3it3fhw5xS6Y4NL5eibKumCBGE9
-=cAyz
------END PGP SIGNATURE-----
-
---tqI+Z3u+9OQ7kwn0--
