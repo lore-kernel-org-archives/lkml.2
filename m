@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab1DDRmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 13:42:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40729 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab1DDRmI (ORCPT
+	id S1754999Ab1DDRm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 13:42:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56464 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754907Ab1DDRm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 13:42:08 -0400
-Subject: Re: [PATCH] Make clocksource name const
-From: john stultz <johnstul@us.ibm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110402141134.GA23324@n2100.arm.linux.org.uk>
-References: <20110219153450.GI29493@n2100.arm.linux.org.uk>
-	 <20110402141134.GA23324@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Apr 2011 10:42:00 -0700
-Message-ID: <1301938920.2319.2.camel@work-vm>
+	Mon, 4 Apr 2011 13:42:56 -0400
+Date: Mon, 4 Apr 2011 10:41:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Nathan Lynch <ntl@pobox.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
+Message-Id: <20110404104119.78189678.akpm@linux-foundation.org>
+In-Reply-To: <20110404162753.GA3456@hallyn.com>
+References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
+	<1298936432-29607-6-git-send-email-ntl@pobox.com>
+	<20110403190324.GD15044@hallyn.com>
+	<1301929228.31531.39.camel@tp-t61>
+	<20110404151017.GA4857@hallyn.com>
+	<1301931608.31531.49.camel@tp-t61>
+	<20110404162753.GA3456@hallyn.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-02 at 15:11 +0100, Russell King - ARM Linux wrote:
-> Has this patch been rejected?
+On Mon, 4 Apr 2011 11:27:53 -0500 "Serge E. Hallyn" <serge@hallyn.com> wrote:
 
-No, just my clocksource cleanups tree didn't get pulled for 2.6.39.
+> Andrew (Cc:d), did you see this thread go by, and it did it look
+> in any way more palatable to you?  Have you had any thoughts on
+> checkpoint/restart in the last few months?  Or did that horse quietly
+> die over winter?
 
-Thomas: The commit can be found here:
-http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commit;h=36d8593ec74dc04d3bd7c1c897a7b7cfbd0b0dc6
+argh, it was the victim of LIFO.
 
-
-thanks
--john
-
-
+All I can say at this stage is that I'll be interested next time it
+comes past, sorry.
