@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1DDJbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:31:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48552 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab1DDJbe (ORCPT
+	id S1754196Ab1DDJdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:33:40 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34068 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab1DDJdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:31:34 -0400
-Message-ID: <4D998FF2.5050105@monstr.eu>
-Date: Mon, 04 Apr 2011 11:31:30 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: Fix Kconfig unmet dependencies for Microblaze EHCI
-References: <1301908812-8119-1-git-send-email-monstr@monstr.eu> <4D998EDD.1080404@ru.mvista.com>
-In-Reply-To: <4D998EDD.1080404@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Apr 2011 05:33:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=U2VHDPA7q+a/94pWj34k+Yal3jaIu8duTH8OwFmg9+DCulCRmO7UVGUouQO2J2Znen
+         BQgxVzbD3D7NQGqPt04XOr0P7buj3o5w4Jg46BUUDHGIdREuakv9B2gsdL6jLcFwPZ88
+         JSk4Mv5HpuZtdTE4nhYIda0Z9mv71RMqvqfog=
+From: wanlong.gao@gmail.com
+To: linux@dominikbrodowski.net, davem@davemloft.net, padovan@profusion.mobi,
+        joe@perches.com, marcel@holtmann.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] X86:NET:Replaced a deprecated function .
+Date: Mon,  4 Apr 2011 17:32:28 +0800
+Message-Id: <1301909548-20031-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 04-04-2011 13:20, Michal Simek wrote:
-> 
->> Disable USB_ARCH_HAS_EHCI in arch Kconfig and enable it in usb Kconfig
-> 
->> Warning log:
->> warning: (LOCKDEP&&  FAULT_INJECTION_STACKTRACE_FILTER&&  
->> LATENCYTOP&&  FUNCTION_TRACER&&
->> KMEMCHECK) selects FRAME_POINTER which has unmet direct dependencies 
->> (DEBUG_KERNEL&&
->> (CRIS || M68K || FRV || UML || AVR32 || SUPERH || BLACKFIN || MN10300) ||
->> ARCH_WANT_FRAME_POINTERS)
-> 
->    Hm, what this has to do with USB_ARCH_HAS_EHCI?
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-aaah. c&p error. I was doing two patches and copy the same warning to both.
+kernel_warning: pcmcia_request_exclusive_irq is deprecated .
 
-There should be:
-warning: (MICROBLAZE) selects USB_ARCH_HAS_EHCI which has unmet direct 
-dependencies (USB_SUPPORT)
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ drivers/net/pcmcia/nmclan_cs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Will replace it!
-
-Thanks,
-Michal
-
-
-
-
+diff --git a/drivers/net/pcmcia/nmclan_cs.c b/drivers/net/pcmcia/nmclan_cs.c
+index 76683d9..bf97231
+--- a/drivers/net/pcmcia/nmclan_cs.c
++++ b/drivers/net/pcmcia/nmclan_cs.c
+@@ -625,7 +625,7 @@ static int nmclan_config(struct pcmcia_device *link)
+   ret = pcmcia_request_io(link);
+   if (ret)
+ 	  goto failed;
+-  ret = pcmcia_request_exclusive_irq(link, mace_interrupt);
++  ret = __pcmcia_request_exclusive_irq(link, mace_interrupt);
+   if (ret)
+ 	  goto failed;
+   ret = pcmcia_enable_device(link);
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+1.7.3
+
