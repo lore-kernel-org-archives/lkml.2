@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab1DDVVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 17:21:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46920 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755707Ab1DDVVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 17:21:06 -0400
-Subject: Re: [RFC/PATCH] of: Match PCI devices to OF nodes generically
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-arch@vger.kernel.org, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-In-Reply-To: <BANLkTimBD=NfFKGpy0ZTnT9Dcu=dkTHxZg@mail.gmail.com>
-References: <1301882694.2549.53.camel@pasglop>
-	 <1301887630.2549.71.camel@pasglop> <1301902664.2549.76.camel@pasglop>
-	 <BANLkTimBD=NfFKGpy0ZTnT9Dcu=dkTHxZg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Apr 2011 07:03:57 +1000
-Message-ID: <1301951037.2549.85.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754028Ab1DDV3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 17:29:15 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42371 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab1DDV3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 17:29:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ok28Bc/+WhJG1zH9WJq1Y95fXQxlHCAjD12MvXzs5ybrTwwu5iCf//vsP0tR7beOB+
+         VA042bAG5N/43WeFNpGQOMgFFp47DWf6CoOgHo4a6e6Gr2Iu6ohgo5ZWPK1CeVL9XfmA
+         9ru9aG1yhYMOlz6Xc1XRL2c54m8nishJvE+Is=
+Date: Mon, 4 Apr 2011 14:29:06 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com
+Subject: Re: WARNING: at mm/page_alloc.c
+Message-ID: <20110404212906.GA984@core.coreip.homeip.net>
+References: <20110404132226.GA14806@atrey.karlin.mff.cuni.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110404132226.GA14806@atrey.karlin.mff.cuni.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-04 at 09:25 -0600, Bjorn Helgaas wrote:
+On Mon, Apr 04, 2011 at 03:22:26PM +0200, Cyril Hrubis wrote:
+> Hi!
+> I'm playing with uinput on zaurus (spitz) I've a pxa-2.6 kernel flashed in the
+> uinput is loaded as module. Right after my program called:
 > 
-> Some of this is reminiscent of the ACPI/PCI binding we do on x86/ia64,
-> e.g., acpi_get_pci_dev() and the stuff in drivers/acpi/glue.c.  Have
-> you looked at that to see if there's any hope of covering both OF and
-> ACPI with something more generic?
+> ioctl(fd, UI_DEV_CREATE);
+> 
+> I've got:
+> 
+> WARNING: at mm/page_alloc.c:2012 __alloc_pages_nodemask+0148/0x5a8()
+> 
+> and the ioctl() has failed.
+> 
+> Anybody has an idea what went wrong?
 
-I haven't but I will have a look. Thanks.
+You do not have enough memory?
 
-Cheers,
-Ben.
+Maybe if you could post your program we could see what exactly went
+wrong...
 
+Thanks.
 
+-- 
+Dmitry
