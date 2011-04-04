@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab1DDLl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 07:41:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59337 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294Ab1DDLl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 07:41:56 -0400
-Date: Mon, 4 Apr 2011 13:41:54 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Unavowed <unavowed@vexillium.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Add NOGET quirk for the CH Pro Throttle
-In-Reply-To: <4D999177.4010401@vexillium.org>
-Message-ID: <alpine.LNX.2.00.1104041340080.28516@pobox.suse.cz>
-References: <4d988b60.29c6ec0a.0716.ffffa4bf@mx.google.com> <alpine.LNX.2.00.1104041105250.28516@pobox.suse.cz> <4D999177.4010401@vexillium.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753823Ab1DDMCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 08:02:51 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:36599 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab1DDMCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 08:02:50 -0400
+X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Apr 2011 08:02:50 EDT
+Date: Mon, 4 Apr 2011 12:50:14 +0200
+From: Nico Schottelius <nico-kernel-20110117@schottelius.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Nico Schottelius <nico-kernel-20110117@schottelius.org>
+Subject: Re: [Bug #28102] New display errors in 2.6.38-rc2-00175-g6fb1b30
+Message-ID: <20110404105014.GA581@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-kernel-20110117@schottelius.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Kernel Testers List <kernel-testers@vger.kernel.org>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Florian Mickler <florian@mickler.org>
+References: <lDYNS4ATQ-N.A._aD.9m5jNB@chimera>
+ <40UNry85rJN.A.ocF.fp5jNB@chimera>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <40UNry85rJN.A.ocF.fp5jNB@chimera>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.38 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Apr 2011, Unavowed wrote:
+Hey!
 
-> >> The CH Pro Throttle needs the NOGET quirk flag to work, just like other CH
-> >> Products devices which already have the flag set.
-> >>
-> >> Signed-off-by: Unavowed <unavowed@vexillium.org>
-> > 
-> > Hi,
-> > 
-> > thanks a lot for the patch.
-> > 
-> > Would it please be possible to have a real name to attribute for patch 
-> > authorship and Signed-off-by line?
-> 
-> Hi,
-> 
-> Thanks for such a quick response.
-> 
-> I'm sorry, but I only ever write contributions under a pseudonym.  Is
-> this not acceptable, especially for such a trivial patch?
+I've tested 2.6.38, which does not have this bug anymore.
 
-Well, see paragraph 12) of Documentation/SubmittingPatches. Especially the 
-part with "sorry, no pseudonyms or anonymous contributions".
+Cheers,
 
-Now, I agree that trivial USB ID addition such as this really is 
-a bit borderline ... 
+Nico
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
