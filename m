@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab1DDP5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 11:57:36 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40202 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab1DDP5f (ORCPT
+	id S1754975Ab1DDQBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 12:01:12 -0400
+Received: from bipbip.grupopie.com ([195.23.16.24]:35559 "EHLO
+	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab1DDQBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 11:57:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:date:in-reply-to:references:content-type
-         :x-mailer:content-transfer-encoding:message-id:mime-version;
-        b=sOQ2v8R+8yIm+7Rn38XFlN5EXj7JoRWAgFbrr9Q/d5nAocUt13K8581YtM7GLj2w4o
-         GAKFGoOLQJ//bHvIQSZh3QPX/yItUqqU4UhtGM4aNQzN7KBlfmJTfhY5keGtx0lSl1rj
-         yw4kaqrRqEwtkyXr8/J8eIs/AwngZ327a20J0=
-Subject: Re: Patchwork.kernel.org server die ?
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: "Jiejing.Zhang" <kzjeef@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 04 Apr 2011 08:57:26 -0700
-In-Reply-To: <BANLkTikv3kuv7Xqy98giAtQe5xfd3zO0-w@mail.gmail.com>
-References: <BANLkTikv3kuv7Xqy98giAtQe5xfd3zO0-w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.92 (2.91.92-2.fc15) 
+	Mon, 4 Apr 2011 12:01:11 -0400
+Message-ID: <4D99EB3E.1020202@grupopie.com>
+Date: Mon, 04 Apr 2011 17:01:02 +0100
+From: Paulo Marques <pmarques@grupopie.com>
+Organization: Grupo PIE
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: Valdis.Kletnieks@vt.edu, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig to
+ Makefile
+References: <1301913651-9055-1-git-send-email-dedekind1@gmail.com>	 <1301913651-9055-2-git-send-email-dedekind1@gmail.com>	 <131611.1301921158@localhost> <1301921230.2760.79.camel@localhost>	 <7621.1301930536@localhost> <1301931464.2760.101.camel@localhost>
+In-Reply-To: <1301931464.2760.101.camel@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1301932649.32111.0.camel@Linux-2>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-04 at 23:36 +0800, Jiejing.Zhang wrote:
-> Hi Guys,
+Artem Bityutskiy wrote:
+> On Mon, 2011-04-04 at 11:22 -0400, Valdis.Kletnieks@vt.edu wrote:
+>> [...]
+>> When was the last time we actually saw such a bug report?  I'm suspecting that
+>> all the affected people just set the variable and get on with their lives.  So
+>> we should either just make it automatic if that's what people are going to do,
+>> or we rip the entire "EXTRA_PASS' stuff out forcibly and *make* people fix the
+>> actual underlying issue that causes the extra pass to be needed...
 > 
-> Can you access https://patchwork.kernel.org/ ?
+> I do not know when this bug was last seen, but I'd not remove this
+> "extra pass" work around so far. WRT automatic fix-up - I do not have
+> strong opinion here, but Paulo Marques pointed in another thread that
+> due to various alignment issues the bug is tricky and may come back. So
+> probably removing working code is not very wise. Thus, it seems the way
+> I proposed in this patch is a good balance.
 > 
-> seems the server is die ?
-> 
-> I got this error for every time access https://patchwork.kernel.org/
-> 
-> OperationalError at /project/linux-input/list/
-> 
-> (2003, "Can't connect to MySQL server on 'mysql-ro1.sql.kernel.bak' (113)")
-> 
-> Request Method: GET
-> Request URL: https://patchwork.kernel.org/project/linux-input/list/
-> Django Version: 1.2.5
-> Exception Type: OperationalError
-> Exception Value:
-> 
-> (2003, "Can't connect to MySQL server on 'mysql-ro1.sql.kernel.bak' (113)")
-> 
-> Exception Location:
-> /usr/lib64/python2.7/site-packages/MySQLdb/connections.py in __init__,
-> line 187
-> Python Executable: /usr/bin/python
-> Python Version: 2.7.0
-> Python Path: ['/var/www/patchwork/apps', '/var/www/patchwork',
-> '/var/www/patchwork/lib/python', '/usr/lib64/python27.zip',
-> '/usr/lib64/python2.7', '/usr/lib64/python2.7/plat-linux2',
-> '/usr/lib64/python2.7/lib-tk', '/usr/lib64/python2.7/lib-old',
-> '/usr/lib64/python2.7/lib-dynload',
-> '/usr/lib64/python2.7/site-packages',
-> '/usr/lib64/python2.7/site-packages/Numeric',
-> '/usr/lib64/python2.7/site-packages/PIL',
-> '/usr/lib64/python2.7/site-packages/gtk-2.0',
-> '/usr/lib/python2.7/site-packages',
-> '/usr/lib/python2.7/site-packages/setuptools-0.6c11-py2.7.egg-info']
-> Server time: Mon, 4 Apr 2011 15:30:41 +0000
-> 
-> Best regards,
-> Zhang Jiejing
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> But anyway, if Michal Marek requests to change this, I'll do this (he is
+> the Maintainer).
 
+Doing a search on a mail archive for "Inconsistent kallsyms data"
+results in a dozen or so threads, and the last one seems to be on alpha
+in 2008.
 
-yeah I get this:
-http://www.flickr.com/photos/44066293@N08/5588772127/
+Not very frequent for certain, but not in the "never been seen" category
+either.
 
-must be maintaining it or something..
+-- 
+Paulo Marques - www.grupopie.com
 
-Justin P. Mattock
-
+"All I ask is a chance to prove that money can't make me happy."
