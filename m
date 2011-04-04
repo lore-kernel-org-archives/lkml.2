@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab1DDNcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 09:32:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47330 "EHLO
+	id S1754443Ab1DDNc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 09:32:28 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47333 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753116Ab1DDNcU (ORCPT
+	by vger.kernel.org with ESMTP id S1754347Ab1DDNc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 09:32:20 -0400
+	Mon, 4 Apr 2011 09:32:27 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+To: Len Brown <len.brown@intel.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Continue with IRQ setup even if we don't have PMIC main IRQ
-Date: Mon,  4 Apr 2011 11:59:57 +0900
-Message-Id: <1301885997-1612-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] cpuidle: Fix build on ARM and SH
+Date: Mon,  4 Apr 2011 14:23:32 +0900
+Message-Id: <1301894612-10471-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fact that we can't actually raise any interrupts doesn't stop us
-setting up the IRQs we're exporting. While this isn't actually going
-to do anything it allows us to proceed further through device setup
-during board bringup and avoids issues with the MFD core not letting
-us suppress the configuration of IRQ resources.
+Commit 5f8cf82 (cpuidle: stop using pm_idle) converted arches to use
+cpuidle_idle_call() but contained typos on ARM and SH transposing the
+function name into cpuidle_call_idle().
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/wm831x-irq.c |   27 ++++++++++++++-------------
- 1 files changed, 14 insertions(+), 13 deletions(-)
+ arch/arm/kernel/process.c |    2 +-
+ arch/sh/kernel/idle.c     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
-index 23e66af..42b928e 100644
---- a/drivers/mfd/wm831x-irq.c
-+++ b/drivers/mfd/wm831x-irq.c
-@@ -515,12 +515,6 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
- 				 0xffff);
- 	}
- 
--	if (!irq) {
--		dev_warn(wm831x->dev,
--			 "No interrupt specified - functionality limited\n");
--		return 0;
--	}
--
- 	if (!pdata || !pdata->irq_base) {
- 		dev_err(wm831x->dev,
- 			"No interrupt base specified, no interrupts\n");
-@@ -567,15 +561,22 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
- #endif
- 	}
- 
--	ret = request_threaded_irq(irq, NULL, wm831x_irq_thread,
--				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
--				   "wm831x", wm831x);
--	if (ret != 0) {
--		dev_err(wm831x->dev, "Failed to request IRQ %d: %d\n",
--			irq, ret);
--		return ret;
-+	if (irq) {
-+		ret = request_threaded_irq(irq, NULL, wm831x_irq_thread,
-+					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+					   "wm831x", wm831x);
-+		if (ret != 0) {
-+			dev_err(wm831x->dev, "Failed to request IRQ %d: %d\n",
-+				irq, ret);
-+			return ret;
-+		}
-+	} else {
-+		dev_warn(wm831x->dev,
-+			 "No interrupt specified - functionality limited\n");
- 	}
- 
-+
-+
- 	/* Enable top level interrupts, we mask at secondary level */
- 	wm831x_reg_write(wm831x, WM831X_SYSTEM_INTERRUPTS_MASK, 0);
- 
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index dc9d685..f47660e 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -197,7 +197,7 @@ void cpu_idle(void)
+ 				cpu_relax();
+ 			} else {
+ 				stop_critical_timings();
+-				if (cpuidle_call_idle())
++				if (cpuidle_idle_call())
+ 					pm_idle();
+ 				start_critical_timings();
+ 				/*
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index 9c7099e..1db1968 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -101,7 +101,7 @@ void cpu_idle(void)
+ 			local_irq_disable();
+ 			/* Don't trace irqs off for idle */
+ 			stop_critical_timings();
+-			if (cpuidle_call_idle())
++			if (cpuidle_idle_call())
+ 				pm_idle();
+ 			/*
+ 			 * Sanity check to ensure that pm_idle() returns
 -- 
 1.7.4.1
 
