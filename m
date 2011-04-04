@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab1DDMnX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 08:43:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33691 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab1DDMnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 08:43:22 -0400
-Date: Mon, 4 Apr 2011 14:43:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jeffrey Brown <jeffbrown@android.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Simon Budig <simon@budig.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
-In-Reply-To: <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz>
-References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com> <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751670Ab1DDMqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 08:46:12 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56655 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab1DDMqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 08:46:09 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paulo Marques <pmarques@grupopie.com>
+Subject: Re: [PATCH 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig to Makefile
+In-Reply-To: Your message of "Mon, 04 Apr 2011 13:40:51 +0300."
+             <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1301913651-9055-1-git-send-email-dedekind1@gmail.com>
+            <1301913651-9055-2-git-send-email-dedekind1@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1301921158_92930P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 04 Apr 2011 08:45:58 -0400
+Message-ID: <131611.1301921158@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4D99BD89.0081,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Apr 2011, Jeffrey Brown wrote:
+--==_Exmh_1301921158_92930P
+Content-Type: text/plain; charset=us-ascii
 
-> I've got another change in the works that fixes this problem more
-> systematically.
+On Mon, 04 Apr 2011 13:40:51 +0300, Artem Bityutskiy said:
 
-Could you just briefly describe what your solution is?
+> 3. By default KALLSYMS_EXTRA_PASS is disabled and if kallsyms has issues,
+>    "make" should print a warning and suggest using KALLSYMS_EXTRA_PASS
 
-I'd happuly take Chase's patch, but want to make sure that we don't cause 
-any changes that would make backwards compatilibity an issue later.
+If the Makefile has enough information to print the warning, why can't it go
+ahead and do the extra pass itself instead of issuing the warning?
 
-Thanks,
+(I'm obviously missing something here, as I'm foolishly posting to lkml before
+caffeine ;)
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+
+--==_Exmh_1301921158_92930P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNmb2GcC3lWbTT17ARAloDAKD+x1wg/vN9qk/rvfpcBG42d0cszACfRXyJ
+kXlTDEMJ28XKz6VNmbypuvo=
+=gnYt
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1301921158_92930P--
+
