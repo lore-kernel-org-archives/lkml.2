@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab1DDSzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 14:55:11 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:47508 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab1DDSzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 14:55:10 -0400
-Message-ID: <4D9A1407.6030308@canonical.com>
-Date: Mon, 04 Apr 2011 14:55:03 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Jeffrey Brown <jeffbrown@android.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-        Simon Budig <simon@budig.de>, linux-input@vger.kernel.org,
+	id S1755204Ab1DDTHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 15:07:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51901 "EHLO linutronix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754862Ab1DDTHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 15:07:08 -0400
+Date: Mon, 4 Apr 2011 21:07:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
-References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com> <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com> <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz> <BANLkTikG-ku9mDebcaPKTwv3X0N+OKiyYQ@mail.gmail.com>
-In-Reply-To: <BANLkTikG-ku9mDebcaPKTwv3X0N+OKiyYQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] Make clocksource name const
+In-Reply-To: <1301941373.2319.28.camel@work-vm>
+Message-ID: <alpine.LFD.2.00.1104042106160.19945@localhost6.localdomain6>
+References: <20110219153450.GI29493@n2100.arm.linux.org.uk>  <20110402141134.GA23324@n2100.arm.linux.org.uk>  <1301938920.2319.2.camel@work-vm>  <alpine.LFD.2.00.1104041943580.19945@localhost6.localdomain6> <1301941373.2319.28.camel@work-vm>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2011 02:13 PM, Jeffrey Brown wrote:
-> On Mon, Apr 4, 2011 at 5:43 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> I'd happuly take Chase's patch, but want to make sure that we don't cause
->> any changes that would make backwards compatilibity an issue later.
+On Mon, 4 Apr 2011, john stultz wrote:
+
+> On Mon, 2011-04-04 at 19:44 +0200, Thomas Gleixner wrote:
+> > On Mon, 4 Apr 2011, john stultz wrote:
+> > 
+> > > On Sat, 2011-04-02 at 15:11 +0100, Russell King - ARM Linux wrote:
+> > > > Has this patch been rejected?
+> > > 
+> > > No, just my clocksource cleanups tree didn't get pulled for 2.6.39.
+> > 
+> > Crap.
 > 
-> There should be no compatibility issues.  However, we might be better
-> off in the long term taking (some variation of) these patches instead.
+> Sorry, I probably should have nagged you a bit more.
+> 
+> 
+> > > Thomas: The commit can be found here:
+> > > http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commit;h=36d8593ec74dc04d3bd7c1c897a7b7cfbd0b0dc6
+> > 
+> > Is there more stuff pending ?
+> 
+> Just clocksource_register_hz/khz bits, but those aren't critical, and
+> can be moved in slowly via arch maintainers if you're not comfortable
+> with them. I also need to refresh some of them, as there were some
+> collisions in the merge window.
 
-I like the proposed changes, but I want to ensure stable kernel releases
-aren't left out of the fix for hid-magicmouse. I don't know the best way
-forward, but here's one possibility:
-
-1. Apply my patch to manually set the buffer size hint
-2. It gets sent to stable trees due to the 'Cc: stable@kernel.org' line
-3. Apply Jeffrey's patches, including a reversion of my buffer size hint
-
-Obviously the extra application and reversion is odd, but this seems the
-easiest way forward given that the patches already exist and can be
-applied without issue.
+Just tried merging linus head into it, but that does not show any
+conflicts.
 
 Thanks,
 
--- Chase
+	tglx
