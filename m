@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab1DDJUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 05:20:18 -0400
+	id S1754157Ab1DDJUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 05:20:24 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:53145 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab1DDJUR (ORCPT
+	with ESMTP id S1751795Ab1DDJUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 05:20:17 -0400
+	Mon, 4 Apr 2011 05:20:18 -0400
 From: Michal Simek <monstr@monstr.eu>
 To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH] usb: Fix Kconfig unmet dependencies for Microblaze EHCI
-Date: Mon,  4 Apr 2011 11:20:11 +0200
-Message-Id: <1301908812-8119-1-git-send-email-monstr@monstr.eu>
+Cc: Michal Simek <monstr@monstr.eu>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] ftrace: Build without frame pointers on Microblaze
+Date: Mon,  4 Apr 2011 11:20:12 +0200
+Message-Id: <1301908812-8119-2-git-send-email-monstr@monstr.eu>
 X-Mailer: git-send-email 1.5.5.1
+In-Reply-To: <1301908812-8119-1-git-send-email-monstr@monstr.eu>
+References: <1301908812-8119-1-git-send-email-monstr@monstr.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disable USB_ARCH_HAS_EHCI in arch Kconfig and enable it in usb Kconfig
+Microblaze doesn't need/support FRAME_POINTERS in order to have a working
+function tracer.
+
+The patch remove Kconfig warning.
 
 Warning log:
-warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP && FUNCTION_TRACER &&
-KMEMCHECK) selects FRAME_POINTER which has unmet direct dependencies (DEBUG_KERNEL &&
-(CRIS || M68K || FRV || UML || AVR32 || SUPERH || BLACKFIN || MN10300) ||
-ARCH_WANT_FRAME_POINTERS)
+warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP &&
+FUNCTION_TRACER && KMEMCHECK) selects FRAME_POINTER which has unmet direct
+dependencies (DEBUG_KERNEL && (CRIS || M68K || FRV || UML || AVR32 ||
+SUPERH || BLACKFIN || MN10300) || ARCH_WANT_FRAME_POINTERS)
 
 Signed-off-by: Michal Simek <monstr@monstr.eu>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-usb@vger.kernel.org
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@redhat.com>
 ---
- arch/microblaze/Kconfig |    1 -
- drivers/usb/Kconfig     |    1 +
- 2 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/trace/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index c49c326..46b970e 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -6,7 +6,6 @@ config MICROBLAZE
- 	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FTRACE_MCOUNT_RECORD
--	select USB_ARCH_HAS_EHCI
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select HAVE_OPROFILE
- 	select HAVE_ARCH_KGDB
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index 41b6e51..006489d 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -66,6 +66,7 @@ config USB_ARCH_HAS_EHCI
- 	default y if ARCH_VT8500
- 	default y if PLAT_SPEAR
- 	default y if ARCH_MSM
-+	default y if MICROBLAZE
- 	default PCI
- 
- # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 61d7d59..2ad39e5 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -141,7 +141,7 @@ if FTRACE
+ config FUNCTION_TRACER
+ 	bool "Kernel Function Tracer"
+ 	depends on HAVE_FUNCTION_TRACER
+-	select FRAME_POINTER if !ARM_UNWIND && !S390
++	select FRAME_POINTER if !ARM_UNWIND && !S390 && !MICROBLAZE
+ 	select KALLSYMS
+ 	select GENERIC_TRACER
+ 	select CONTEXT_SWITCH_TRACER
 -- 
 1.5.5.6
 
