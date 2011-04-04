@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab1DDXIn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 19:08:43 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:36157
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1756103Ab1DDXJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 19:09:18 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52395
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755888Ab1DDXIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 19:08:07 -0400
+	id S1755879Ab1DDXIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 19:08:06 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 07/22] Staging: hv: Get rid of the function blkvsc_do_flush()
-Date: Mon,  4 Apr 2011 15:47:56 -0700
-Message-Id: <1301957291-8035-7-git-send-email-kys@microsoft.com>
+Subject: [PATCH 09/22] Staging: hv: Get rid of the function blkvsc_revalidate_disk()
+Date: Mon,  4 Apr 2011 15:47:58 -0700
+Message-Id: <1301957291-8035-9-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301957291-8035-1-git-send-email-kys@microsoft.com>
 References: <1301957186-7853-1-git-send-email-kys@microsoft.com>
@@ -24,121 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the function blkvsc_do_flush() and instead use the common function
-to force a device flush.
+The block driver in Hyper-V does not support removable media, get rid of the 
+blkvsc_revalidate_disk().
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   52 ++++++++++----------------------------
- 1 files changed, 14 insertions(+), 38 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   17 -----------------
+ 1 files changed, 0 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 4da42c9..0715cba 100644
+index 1ea5f9c..da7fd38 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -49,6 +49,7 @@ enum blkvsc_device_type {
- enum blkvsc_op_type {
- 	DO_INQUIRY,
- 	DO_CAPACITY,
-+	DO_FLUSH,
- };
- 
- /*
-@@ -450,6 +451,13 @@ static int blkvsc_do_operation(struct block_device_context *blkdev,
- 		blkvsc_req->cmd_len = 16;
- 		blkvsc_req->request.data_buffer.len = 8;
- 		break;
-+
-+	case DO_FLUSH:
-+		blkvsc_req->cmnd[0] = SYNCHRONIZE_CACHE;
-+		blkvsc_req->cmd_len = 10;
-+		blkvsc_req->request.data_buffer.pfn_array[0] = 0;
-+		blkvsc_req->request.data_buffer.len = 0;
-+		break;
- 	default:
- 		ret = -EINVAL;
- 		goto cleanup;
-@@ -501,6 +509,9 @@ static int blkvsc_do_operation(struct block_device_context *blkdev,
- 		(buf[4] << 24) | (buf[5] << 16) |
- 		(buf[6] << 8) | buf[7];
- 		break;
-+	default:
-+		break;
-+
- 	}
- 
- cleanup:
-@@ -514,41 +525,6 @@ cleanup:
- 	return ret;
+@@ -721,22 +721,6 @@ static int blkvsc_release(struct gendisk *disk, fmode_t mode)
  }
  
--static int blkvsc_do_flush(struct block_device_context *blkdev)
+ 
+-static int blkvsc_revalidate_disk(struct gendisk *gd)
 -{
--	struct blkvsc_request *blkvsc_req;
+-	struct block_device_context *blkdev = gd->private_data;
 -
--	DPRINT_DBG(BLKVSC_DRV, "blkvsc_do_flush()\n");
+-	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
 -
--	if (blkdev->device_type != HARDDISK_TYPE)
--		return 0;
--
--	blkvsc_req = kmem_cache_zalloc(blkdev->request_pool, GFP_KERNEL);
--	if (!blkvsc_req)
--		return -ENOMEM;
--
--	memset(blkvsc_req, 0, sizeof(struct blkvsc_request));
--	init_completion(&blkvsc_req->request.wait_event);
--	blkvsc_req->dev = blkdev;
--	blkvsc_req->req = NULL;
--	blkvsc_req->write = 0;
--
--	blkvsc_req->request.data_buffer.pfn_array[0] = 0;
--	blkvsc_req->request.data_buffer.offset = 0;
--	blkvsc_req->request.data_buffer.len = 0;
--
--	blkvsc_req->cmnd[0] = SYNCHRONIZE_CACHE;
--	blkvsc_req->cmd_len = 10;
--
--	blkvsc_submit_request(blkvsc_req, blkvsc_cmd_completion);
--
--	wait_for_completion_interruptible(&blkvsc_req->request.wait_event);
--
--	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
--
+-	if (blkdev->device_type == DVD_TYPE) {
+-		blkvsc_do_operation(blkdev, DO_CAPACITY);
+-		set_capacity(blkdev->gd, blkdev->capacity *
+-			    (blkdev->sector_size/512));
+-		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
+-	}
 -	return 0;
 -}
 -
- 
- static int blkvsc_cancel_pending_reqs(struct block_device_context *blkdev)
- {
-@@ -675,7 +651,7 @@ static int blkvsc_remove(struct device *device)
- 		udelay(100);
- 	}
- 
--	blkvsc_do_flush(blkdev);
-+	blkvsc_do_operation(blkdev, DO_FLUSH);
- 
- 	spin_lock_irqsave(&blkdev->lock, flags);
- 
-@@ -719,7 +695,7 @@ static void blkvsc_shutdown(struct device *device)
- 		udelay(100);
- 	}
- 
--	blkvsc_do_flush(blkdev);
-+	blkvsc_do_operation(blkdev, DO_FLUSH);
- 
- 	spin_lock_irqsave(&blkdev->lock, flags);
- 
-@@ -739,7 +715,7 @@ static int blkvsc_release(struct gendisk *disk, fmode_t mode)
- 	spin_lock(&blkdev->lock);
- 	if (blkdev->users == 1) {
- 		spin_unlock(&blkdev->lock);
--		blkvsc_do_flush(blkdev);
-+		blkvsc_do_operation(blkdev, DO_FLUSH);
- 		spin_lock(&blkdev->lock);
- 	}
- 
+-
+ /*
+  * We break the request into 1 or more blkvsc_requests and submit
+  * them.  If we cant submit them all, we put them on the
+@@ -996,7 +980,6 @@ static const struct block_device_operations block_ops = {
+ 	.owner = THIS_MODULE,
+ 	.open = blkvsc_open,
+ 	.release = blkvsc_release,
+-	.revalidate_disk = blkvsc_revalidate_disk,
+ 	.getgeo = blkvsc_getgeo,
+ 	.ioctl  = blkvsc_ioctl,
+ };
 -- 
 1.7.4.1
 
