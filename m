@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab1DDWhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 18:37:08 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:34897
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1755980Ab1DDWhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 18:37:11 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33576
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754979Ab1DDWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755555Ab1DDWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Apr 2011 18:37:00 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 03/22] Staging: hv: Simplify the code for blkvsc_getgeo()
-Date: Mon,  4 Apr 2011 15:47:52 -0700
-Message-Id: <1301957291-8035-3-git-send-email-kys@microsoft.com>
+Subject: [PATCH 08/22] Staging hv: Get rid of the state media_not_present
+Date: Mon,  4 Apr 2011 15:47:57 -0700
+Message-Id: <1301957291-8035-8-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1301957291-8035-1-git-send-email-kys@microsoft.com>
 References: <1301957186-7853-1-git-send-email-kys@microsoft.com>
@@ -24,113 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are making up the geometry anyway, keep it simple.
+The block driver in Hyper-V does not handle removable media, get rid of the
+media_not_present state.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   84 +++++---------------------------------
- 1 files changed, 11 insertions(+), 73 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 12a9083..ad09917 100644
+index 0715cba..1ea5f9c 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -277,82 +277,20 @@ static int blkvsc_open(struct block_device *bdev, fmode_t mode)
+@@ -103,7 +103,6 @@ struct block_device_context {
+ 	unsigned int device_id_len;
+ 	int num_outstanding_reqs;
+ 	int shutting_down;
+-	int media_not_present;
+ 	unsigned int sector_size;
+ 	sector_t capacity;
+ 	unsigned int port;
+@@ -445,7 +444,6 @@ static int blkvsc_do_operation(struct block_device_context *blkdev,
+ 	case DO_CAPACITY:
+ 		blkdev->sector_size = 0;
+ 		blkdev->capacity = 0;
+-		blkdev->media_not_present = 0; /* assume a disk is present */
  
- static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
- {
--	sector_t total_sectors = get_capacity(bd->bd_disk);
--	sector_t cylinder_times_heads = 0;
--	sector_t temp = 0;
-+	sector_t nsect = get_capacity(bd->bd_disk);
-+	sector_t cylinders = nsect;
+ 		blkvsc_req->cmnd[0] = READ_CAPACITY;
+ 		blkvsc_req->cmd_len = 16;
+@@ -472,10 +470,6 @@ static int blkvsc_do_operation(struct block_device_context *blkdev,
+ 		scsi_normalize_sense(blkvsc_req->sense_buffer,
+ 				     SCSI_SENSE_BUFFERSIZE, &sense_hdr);
  
--	int sectors_per_track = 0;
--	int heads = 0;
--	int cylinders = 0;
--	int rem = 0;
+-		if (sense_hdr.asc == 0x3A)
+-			/* Medium not present */
+-			blkdev->media_not_present = 1;
 -
--	if (total_sectors > (65535 * 16 * 255))
--		total_sectors = (65535 * 16 * 255);
--
--	if (total_sectors >= (65535 * 16 * 63)) {
--		sectors_per_track = 255;
--		heads = 16;
--
--		cylinder_times_heads = total_sectors;
--		/* sector_div stores the quotient in cylinder_times_heads */
--		rem = sector_div(cylinder_times_heads, sectors_per_track);
--	} else {
--		sectors_per_track = 17;
--
--		cylinder_times_heads = total_sectors;
--		/* sector_div stores the quotient in cylinder_times_heads */
--		rem = sector_div(cylinder_times_heads, sectors_per_track);
--
--		temp = cylinder_times_heads + 1023;
--		/* sector_div stores the quotient in temp */
--		rem = sector_div(temp, 1024);
--
--		heads = temp;
--
--		if (heads < 4)
--			heads = 4;
--
--
--		if (cylinder_times_heads >= (heads * 1024) || (heads > 16)) {
--			sectors_per_track = 31;
--			heads = 16;
--
--			cylinder_times_heads = total_sectors;
--			/*
--			 * sector_div stores the quotient in
--			 * cylinder_times_heads
--			 */
--			rem = sector_div(cylinder_times_heads,
--					 sectors_per_track);
--		}
--
--		if (cylinder_times_heads >= (heads * 1024)) {
--			sectors_per_track = 63;
--			heads = 16;
--
--			cylinder_times_heads = total_sectors;
--			/*
--			 * sector_div stores the quotient in
--			 * cylinder_times_heads
--			 */
--			rem = sector_div(cylinder_times_heads,
--					 sectors_per_track);
--		}
--	}
--
--	temp = cylinder_times_heads;
--	/* sector_div stores the quotient in temp */
--	rem = sector_div(temp, heads);
--	cylinders = temp;
--
--	hg->heads = heads;
--	hg->sectors = sectors_per_track;
-+	/*
-+	 * We are making up these values; let us keep it simple.
-+	 */
-+	hg->heads = 0xff;
-+	hg->sectors = 0x3f;
-+	sector_div(cylinders, hg->heads * hg->sectors);
- 	hg->cylinders = cylinders;
--
--	DPRINT_INFO(BLKVSC_DRV, "CHS (%d, %d, %d)", cylinders, heads,
--		    sectors_per_track);
--
-+	if ((sector_t)(hg->cylinders + 1) * hg->heads * hg->sectors < nsect)
-+		hg->cylinders = 0xffff;
- 	return 0;
-+
- }
+ 		return 0;
+ 	}
  
+@@ -963,8 +957,7 @@ static void blkvsc_request(struct request_queue *queue)
+ 		DPRINT_DBG(BLKVSC_DRV, "- req %p\n", req);
  
+ 		blkdev = req->rq_disk->private_data;
+-		if (blkdev->shutting_down || req->cmd_type != REQ_TYPE_FS ||
+-		    blkdev->media_not_present) {
++		if (blkdev->shutting_down || req->cmd_type != REQ_TYPE_FS) {
+ 			__blk_end_request_cur(req, 0);
+ 			continue;
+ 		}
 -- 
 1.7.4.1
 
