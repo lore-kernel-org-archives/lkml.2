@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab1DDOkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 10:40:25 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56417 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754533Ab1DDOkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 10:40:24 -0400
-Date: Tue, 5 Apr 2011 00:40:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Len Brown <lenb@kernel.org>, "Greg Kroah-Hartman" <gregkh@novell.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: [SUBMIT REQUEST] cpupowerutils for linux-next
-Message-Id: <20110405004011.0628991a.sfr@canb.auug.org.au>
-In-Reply-To: <201104041510.56570.trenn@suse.de>
-References: <201104041510.56570.trenn@suse.de>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__5_Apr_2011_00_40_11_+1000_+9cxAH9rKqU2TUWx"
+	id S1754662Ab1DDOoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 10:44:30 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35120 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab1DDOo3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 10:44:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=oOO09zMsBl5NdA/EwHZBV+TfLyuBNbXs5YD6QsJPqRk4a1WZ1CM7l7NO+TQ3y5QeDR
+         nyxfT7Y+tPqivs4gjGlGv4rLiRiQ7TwH3jQdas671ESSIRywJHDFWzKMziK9f7YiD2pO
+         an7hlFqPjVvy+z6SxW+8CHO/SnGBSa6qW66n4=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <BANLkTimqp6FwLJP3d3dYcx7-Ut9pMjdtFA@mail.gmail.com>
+References: <BANLkTikr62YPeDnkL3DKA1Nts5aRFxsO6Q@mail.gmail.com>
+	<20110404122225.GA15883@srcf.ucam.org>
+	<1301921369.1941.29.camel@Joe-Laptop>
+	<20110404130036.GB16669@srcf.ucam.org>
+	<BANLkTimqp6FwLJP3d3dYcx7-Ut9pMjdtFA@mail.gmail.com>
+Date: Mon, 4 Apr 2011 16:44:27 +0200
+Message-ID: <BANLkTimvi53PWhN9HO4f04p_U-vae8D5Hw@mail.gmail.com>
+Subject: Re: linux-next: Tree for April 4 [BROKEN thinkpad_acpi]
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Joe Perches <joe@perches.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        ibm-acpi@hmh.eng.br
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Apr_2011_00_40_11_+1000_+9cxAH9rKqU2TUWx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Thomas,
-
-On Mon, 4 Apr 2011 15:10:56 +0200 Thomas Renninger <trenn@suse.de> wrote:
+On Mon, Apr 4, 2011 at 3:44 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Mon, Apr 4, 2011 at 3:00 PM, Matthew Garrett <mjg@redhat.com> wrote:
+>> On Mon, Apr 04, 2011 at 05:49:29AM -0700, Joe Perches wrote:
+>>
+>>> It's vdbg_printk no_printk verification.
+>>>
+>>> #ifdef CONFIG_THINKPAD_ACPI_DEBUG
+>>> #define vdbg_printk dbg_printk
+>>> static const char *str_supported(int is_supported);
+>>> #else
+>>> #define vdbg_printk(a_dbg_level, format, arg...)      \
+>>>       no_printk(format, ##arg)
+>>> #endif
+>>>
+>>> Two ways to handle this.
+>>>
+>>> 1: add
+>>> static inline const char *str_supported(int is_supported) { return ""; }
+>>> to the #else
+>>>
+>>> 2: Remove no_printk verification and return it to do {} while (0)
+>>>
+>>> Do you have a preference?
+>>
+>> I don't. Henrique?
+>>
+>> --
+>> Matthew Garrett | mjg59@srcf.ucam.org
+>>
 >
-> this is about the recently announced cpupowerutils project
-> based on or say an enhancement of the well know
-> cpufrequtils project:
-> http://www.spinics.net/lists/cpufreq/msg02137.html
+> I have tried with solution #2 as it partially restores old behaviour
+> (patch is attached).
+>
+> - Sedat -
+>
 
-Has integration of this into the kernel sources been discussed anywhere
-generally (like lkml)?  Has the work been done to integrate it into the
-kernel build system (I am not sure what this involves for the tools
-directory).  At a first glance, it doesn't need it own copy of the
-COPYING file (for example).
+Please feel free to add a:
 
-I see that you asked Linus about this, but have receibed no reply (on
-list).
+     Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
 
-Code being merged into linux-next should be basically ready for merging
-into Linus' tree (apart from integration testing) and you need to be
-pretty sure that it will be merged by Linus into the next release (i.e.
-2.6.40).  In this case that is not such a big issue as the code is
-(currently) all in a new directory, so will not interfere with other code.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+For solution #2 :
 
---Signature=_Tue__5_Apr_2011_00_40_11_+1000_+9cxAH9rKqU2TUWx
-Content-Type: application/pgp-signature
+     Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNmdhLAAoJEDMEi1NhKgbs4J4H/3J/vmumomNKLKywxkowU/nf
-X7yHqlr3siXhzzIgwY3klGW2a7mbP/sE81DyhW02IaJZXtqud7vso4FiB+ZDdT8a
-hSaNEQYYw0FywRwOP0BothZ5WzSzwFNJcErv5Br2pKnUvj975p+GwHEeYYdNXHsV
-l5ltNT6eeOPg61mnZTvqTf5zd4m1vvuJ4KOKrzsCKgwmR3thct3uRUMU32IBcSQt
-ChLd2p5OZ0QHA43tEm1mtO04FeEfTSN1tXMfL/QrRdj/b+EBNitb5lNI3YijMzkU
-83EhqfbcbUUY1iDSutdpTXN87fu4752j8wMpSFJwP0/0TiY8xQ//ONMnDMsbkYA=
-=VuoL
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Apr_2011_00_40_11_+1000_+9cxAH9rKqU2TUWx--
+- Sedat -
