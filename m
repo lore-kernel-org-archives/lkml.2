@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1DDK1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 06:27:39 -0400
-Received: from mail.petropolis.rj.gov.br ([200.149.208.131]:55718 "EHLO
-	mail.petropolis.rj.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab1DDK1i (ORCPT
+	id S1754162Ab1DDK3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 06:29:49 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:38244 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929Ab1DDK3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 06:27:38 -0400
-Reply-To: <private-post@w.cn>
-From: "MALTA" <private-post@w.cn>
-Subject: MALTA
-Date: Mon, 4 Apr 2011 10:54:29 +0100
+	Mon, 4 Apr 2011 06:29:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=Hc4MUuqPX18xIj0vIkIHGmcXaHSPuHNZzBZZqXGpz62AIJWKCuK8a3kOB0c5k9vqMu
+         lk44JlYMoHp7OetdDqmnPB4OKpd1G1MbHdF4fbkLJJ7F3g1h53kvK39YMryLlNmwlT5S
+         lixUMj1Llrw4xGqZ6ezQ+u6pIIT7FU7mdGeaI=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110120-0, 01/20/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110404095224.4BC51AA116@mail.petropolis.rj.gov.br>
-To: undisclosed-recipients:;
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1301911604.2760.52.camel@localhost>
+References: <1301874939-2630-1-git-send-email-sedat.dilek@gmail.com>
+	<1301900656.2760.6.camel@localhost>
+	<BANLkTi=WTWa4yj+ysta8jiHs9r4MX5Gf_g@mail.gmail.com>
+	<1301911604.2760.52.camel@localhost>
+Date: Mon, 4 Apr 2011 12:29:47 +0200
+Message-ID: <BANLkTi=DHTjL7M9bzYY-t5MJS2s1WScBCQ@mail.gmail.com>
+Subject: Re: [PATCH] ubifs: Use empty_iops and empty_fops consistently
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On Mon, Apr 4, 2011 at 12:06 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Mon, 2011-04-04 at 11:38 +0200, Sedat Dilek wrote:
+>> Sorry for having flooded your inbox.
+>
+> That's ok! :-) I think I did not look carefully enough. Your patch is
+> just an additional clean-up which makes the names to be consistent. I
+> can pick it, but probably it is better if it goes in with the
+> 'empty_aops' changes? Whatever you prefer.
+>
 
-This is a personal email directed to you for your consideration alone, I
-request that it remain and be treated as such only. Please bear with me
-for now and do not ask my name. I am a banker with HSBC in Malta. I have
-an interesting business proposal for you that will be of immense benefit
-to both of us. Although this may be hard for you to believe, we stand to
-gain 18.7 million USD between us in a matter of days. Please grant me the
-benefit of doubt and hear me out. I need you to signify your interest by
-replying to this email.
+I dunno the internal organization between block-tree and fs-sub-tree
+maintainers.
+As I was in contact first with Jens in this issue, it might be a good
+idea to let this patch go through his block-tree.
 
-Most importantly, I will need you to promise to keep whatever you learn
-from me between us even if you decide not to go along with me. I will make
-more details available to you on receipt of a positive response from you.
-Do contact me only at my private email address: private.post@gncn.net
-
-Warm regards from Malta.
+- Sedat -
