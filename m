@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab1DEPBW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:01:22 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44466 "EHLO mx1.suse.de"
+	id S1754858Ab1DEPBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:01:25 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44467 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab1DEO7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754152Ab1DEO7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Apr 2011 10:59:38 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 23/34] scsi/wd33c93: Drop __TIME__ usage
-Date: Tue,  5 Apr 2011 16:59:10 +0200
-Message-Id: <1302015561-21047-24-git-send-email-mmarek@suse.cz>
+        Tony Olech <tony.olech@elandigitalsystems.com>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 25/34] usb/ftdi-elan: Drop __TIME__ usage
+Date: Tue,  5 Apr 2011 16:59:12 +0200
+Message-Id: <1302015561-21047-26-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
@@ -25,38 +25,27 @@ The kernel already prints its build timestamp during boot, no need to
 repeat it in random drivers and produce different object files each
 time.
 
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
-Cc: linux-scsi@vger.kernel.org
+Cc: Tony Olech <tony.olech@elandigitalsystems.com>
+Cc: linux-usb@vger.kernel.org
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- drivers/scsi/wd33c93.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/usb/misc/ftdi-elan.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/wd33c93.c b/drivers/scsi/wd33c93.c
-index 5f697e0..6c983a2 100644
---- a/drivers/scsi/wd33c93.c
-+++ b/drivers/scsi/wd33c93.c
-@@ -2052,8 +2052,7 @@ wd33c93_init(struct Scsi_Host *instance, const wd33c93_regs regs,
- 	for (i = 0; i < MAX_SETUP_ARGS; i++)
- 		printk("%s,", setup_args[i]);
- 	printk("\n");
--	printk("           Version %s - %s, Compiled %s at %s\n",
--	       WD33C93_VERSION, WD33C93_DATE, __DATE__, __TIME__);
-+	printk("           Version %s - %s\n", WD33C93_VERSION, WD33C93_DATE);
- }
- 
- int
-@@ -2133,8 +2132,8 @@ wd33c93_proc_info(struct Scsi_Host *instance, char *buf, char **start, off_t off
- 	bp = buf;
- 	*bp = '\0';
- 	if (hd->proc & PR_VERSION) {
--		sprintf(tbuf, "\nVersion %s - %s. Compiled %s %s",
--			WD33C93_VERSION, WD33C93_DATE, __DATE__, __TIME__);
-+		sprintf(tbuf, "\nVersion %s - %s.",
-+			WD33C93_VERSION, WD33C93_DATE);
- 		strcat(bp, tbuf);
- 	}
- 	if (hd->proc & PR_INFO) {
+diff --git a/drivers/usb/misc/ftdi-elan.c b/drivers/usb/misc/ftdi-elan.c
+index 7839c98..b16bd3c 100644
+--- a/drivers/usb/misc/ftdi-elan.c
++++ b/drivers/usb/misc/ftdi-elan.c
+@@ -2889,8 +2889,7 @@ static struct usb_driver ftdi_elan_driver = {
+ static int __init ftdi_elan_init(void)
+ {
+         int result;
+-        printk(KERN_INFO "driver %s built at %s on %s\n", ftdi_elan_driver.name,
+-	       __TIME__, __DATE__);
++        printk(KERN_INFO "driver %s\n", ftdi_elan_driver.name);
+         mutex_init(&ftdi_module_lock);
+         INIT_LIST_HEAD(&ftdi_static_list);
+         status_queue = create_singlethread_workqueue("ftdi-status-control");
 -- 
 1.7.4.1
 
