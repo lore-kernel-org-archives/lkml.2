@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab1DEO7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:59:53 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44457 "EHLO mx1.suse.de"
+	id S1754299Ab1DEO7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:59:50 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44458 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754138Ab1DEO7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754140Ab1DEO7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Apr 2011 10:59:37 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH 14/34] media/cx231xx: Drop __TIME__ usage
-Date: Tue,  5 Apr 2011 16:59:01 +0200
-Message-Id: <1302015561-21047-15-git-send-email-mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+Subject: [PATCH 18/34] wan/pc300: Drop __TIME__ usage
+Date: Tue,  5 Apr 2011 16:59:05 +0200
+Message-Id: <1302015561-21047-19-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
@@ -24,26 +24,27 @@ The kernel already prints its build timestamp during boot, no need to
 repeat it in random drivers and produce different object files each
 time.
 
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-media@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- drivers/media/video/cx231xx/cx231xx-avcore.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/wan/pc300_drv.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/video/cx231xx/cx231xx-avcore.c b/drivers/media/video/cx231xx/cx231xx-avcore.c
-index c53e972..ff5cb50 100644
---- a/drivers/media/video/cx231xx/cx231xx-avcore.c
-+++ b/drivers/media/video/cx231xx/cx231xx-avcore.c
-@@ -1356,7 +1356,7 @@ void cx231xx_dump_SC_reg(struct cx231xx *dev)
- {
- 	u8 value[4] = { 0, 0, 0, 0 };
- 	int status = 0;
--	cx231xx_info("cx231xx_dump_SC_reg %s!\n", __TIME__);
-+	cx231xx_info("cx231xx_dump_SC_reg!\n");
+diff --git a/drivers/net/wan/pc300_drv.c b/drivers/net/wan/pc300_drv.c
+index f875cfa..80ae503 100644
+--- a/drivers/net/wan/pc300_drv.c
++++ b/drivers/net/wan/pc300_drv.c
+@@ -3242,8 +3242,7 @@ static inline void show_version(void)
+ 	rcsdate++;
+ 	tmp = strrchr(rcsdate, ' ');
+ 	*tmp = '\0';
+-	printk(KERN_INFO "Cyclades-PC300 driver %s %s (built %s %s)\n", 
+-		rcsvers, rcsdate, __DATE__, __TIME__);
++	printk(KERN_INFO "Cyclades-PC300 driver %s %s\n", rcsvers, rcsdate);
+ }				/* show_version */
  
- 	status = cx231xx_read_ctrl_reg(dev, VRT_GET_REGISTER, BOARD_CFG_STAT,
- 				 value, 4);
+ static const struct net_device_ops cpc_netdev_ops = {
 -- 
 1.7.4.1
 
