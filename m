@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab1DEPBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:01:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44470 "EHLO mx1.suse.de"
+	id S1754838Ab1DEPBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:01:22 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44466 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab1DEO7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754147Ab1DEO7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Apr 2011 10:59:38 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com
-Subject: [PATCH 26/34] dlm: Drop __TIME__ usage
-Date: Tue,  5 Apr 2011 16:59:13 +0200
-Message-Id: <1302015561-21047-27-git-send-email-mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 23/34] scsi/wd33c93: Drop __TIME__ usage
+Date: Tue,  5 Apr 2011 16:59:10 +0200
+Message-Id: <1302015561-21047-24-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
@@ -24,27 +25,38 @@ The kernel already prints its build timestamp during boot, no need to
 repeat it in random drivers and produce different object files each
 time.
 
-Cc: Christine Caulfield <ccaulfie@redhat.com>
-Cc: David Teigland <teigland@redhat.com>
-Cc: cluster-devel@redhat.com
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: linux-scsi@vger.kernel.org
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- fs/dlm/main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/scsi/wd33c93.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/dlm/main.c b/fs/dlm/main.c
-index b80e0aa..5a59efa 100644
---- a/fs/dlm/main.c
-+++ b/fs/dlm/main.c
-@@ -50,7 +50,7 @@ static int __init init_dlm(void)
- 	if (error)
- 		goto out_netlink;
+diff --git a/drivers/scsi/wd33c93.c b/drivers/scsi/wd33c93.c
+index 5f697e0..6c983a2 100644
+--- a/drivers/scsi/wd33c93.c
++++ b/drivers/scsi/wd33c93.c
+@@ -2052,8 +2052,7 @@ wd33c93_init(struct Scsi_Host *instance, const wd33c93_regs regs,
+ 	for (i = 0; i < MAX_SETUP_ARGS; i++)
+ 		printk("%s,", setup_args[i]);
+ 	printk("\n");
+-	printk("           Version %s - %s, Compiled %s at %s\n",
+-	       WD33C93_VERSION, WD33C93_DATE, __DATE__, __TIME__);
++	printk("           Version %s - %s\n", WD33C93_VERSION, WD33C93_DATE);
+ }
  
--	printk("DLM (built %s %s) installed\n", __DATE__, __TIME__);
-+	printk("DLM installed\n");
- 
- 	return 0;
- 
+ int
+@@ -2133,8 +2132,8 @@ wd33c93_proc_info(struct Scsi_Host *instance, char *buf, char **start, off_t off
+ 	bp = buf;
+ 	*bp = '\0';
+ 	if (hd->proc & PR_VERSION) {
+-		sprintf(tbuf, "\nVersion %s - %s. Compiled %s %s",
+-			WD33C93_VERSION, WD33C93_DATE, __DATE__, __TIME__);
++		sprintf(tbuf, "\nVersion %s - %s.",
++			WD33C93_VERSION, WD33C93_DATE);
+ 		strcat(bp, tbuf);
+ 	}
+ 	if (hd->proc & PR_INFO) {
 -- 
 1.7.4.1
 
