@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab1DEPB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:01:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56497 "EHLO mx2.suse.de"
+	id S1754892Ab1DEPB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:01:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44454 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754127Ab1DEO7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754124Ab1DEO7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Apr 2011 10:59:36 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Steven Whitehouse <swhiteho@redhat.com>,
-        cluster-devel@redhat.com
-Subject: [PATCH 27/34] gfs2: Drop __TIME__ usage
-Date: Tue,  5 Apr 2011 16:59:14 +0200
-Message-Id: <1302015561-21047-28-git-send-email-mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Thomas Sailer <t.sailer@alumni.ethz.ch>,
+        linux-hams@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 15/34] baycom: Drop __TIME__ usage
+Date: Tue,  5 Apr 2011 16:59:02 +0200
+Message-Id: <1302015561-21047-16-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
@@ -24,25 +24,68 @@ The kernel already prints its build timestamp during boot, no need to
 repeat it in random drivers and produce different object files each
 time.
 
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com
+Cc: Thomas Sailer <t.sailer@alumni.ethz.ch>
+Cc: linux-hams@vger.kernel.org
+Cc: netdev@vger.kernel.org
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- fs/gfs2/main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/hamradio/baycom_epp.c     |    2 +-
+ drivers/net/hamradio/baycom_par.c     |    2 +-
+ drivers/net/hamradio/baycom_ser_fdx.c |    2 +-
+ drivers/net/hamradio/baycom_ser_hdx.c |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-index 72c31a3..07d057b 100644
---- a/fs/gfs2/main.c
-+++ b/fs/gfs2/main.c
-@@ -143,7 +143,7 @@ static int __init init_gfs2_fs(void)
+diff --git a/drivers/net/hamradio/baycom_epp.c b/drivers/net/hamradio/baycom_epp.c
+index a3c0dc9..9537aaa 100644
+--- a/drivers/net/hamradio/baycom_epp.c
++++ b/drivers/net/hamradio/baycom_epp.c
+@@ -69,7 +69,7 @@ static const char paranoia_str[] = KERN_ERR
  
- 	gfs2_register_debugfs();
+ static const char bc_drvname[] = "baycom_epp";
+ static const char bc_drvinfo[] = KERN_INFO "baycom_epp: (C) 1998-2000 Thomas Sailer, HB9JNX/AE4WA\n"
+-"baycom_epp: version 0.7 compiled " __TIME__ " " __DATE__ "\n";
++"baycom_epp: version 0.7\n";
  
--	printk("GFS2 (built %s %s) installed\n", __DATE__, __TIME__);
-+	printk("GFS2 installed\n");
+ /* --------------------------------------------------------------------- */
  
- 	return 0;
+diff --git a/drivers/net/hamradio/baycom_par.c b/drivers/net/hamradio/baycom_par.c
+index 5f5af9a..279d229 100644
+--- a/drivers/net/hamradio/baycom_par.c
++++ b/drivers/net/hamradio/baycom_par.c
+@@ -102,7 +102,7 @@
+ 
+ static const char bc_drvname[] = "baycom_par";
+ static const char bc_drvinfo[] = KERN_INFO "baycom_par: (C) 1996-2000 Thomas Sailer, HB9JNX/AE4WA\n"
+-"baycom_par: version 0.9 compiled " __TIME__ " " __DATE__ "\n";
++"baycom_par: version 0.9\n";
+ 
+ /* --------------------------------------------------------------------- */
+ 
+diff --git a/drivers/net/hamradio/baycom_ser_fdx.c b/drivers/net/hamradio/baycom_ser_fdx.c
+index 3e25f10..99cdce3 100644
+--- a/drivers/net/hamradio/baycom_ser_fdx.c
++++ b/drivers/net/hamradio/baycom_ser_fdx.c
+@@ -92,7 +92,7 @@
+ 
+ static const char bc_drvname[] = "baycom_ser_fdx";
+ static const char bc_drvinfo[] = KERN_INFO "baycom_ser_fdx: (C) 1996-2000 Thomas Sailer, HB9JNX/AE4WA\n"
+-"baycom_ser_fdx: version 0.10 compiled " __TIME__ " " __DATE__ "\n";
++"baycom_ser_fdx: version 0.10\n";
+ 
+ /* --------------------------------------------------------------------- */
+ 
+diff --git a/drivers/net/hamradio/baycom_ser_hdx.c b/drivers/net/hamradio/baycom_ser_hdx.c
+index 1686f6d..d92fe6c 100644
+--- a/drivers/net/hamradio/baycom_ser_hdx.c
++++ b/drivers/net/hamradio/baycom_ser_hdx.c
+@@ -80,7 +80,7 @@
+ 
+ static const char bc_drvname[] = "baycom_ser_hdx";
+ static const char bc_drvinfo[] = KERN_INFO "baycom_ser_hdx: (C) 1996-2000 Thomas Sailer, HB9JNX/AE4WA\n"
+-"baycom_ser_hdx: version 0.10 compiled " __TIME__ " " __DATE__ "\n";
++"baycom_ser_hdx: version 0.10\n";
+ 
+ /* --------------------------------------------------------------------- */
  
 -- 
 1.7.4.1
