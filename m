@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab1DEOzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:55:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42604 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab1DEOzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:55:00 -0400
-Message-ID: <56341.94.211.195.167.1302015286.squirrel@gate.crashing.org>
-In-Reply-To: <4D9AE10E.3080501@snafu.de>
-References: <4D99B60D.3030009@snafu.de>
-    <BANLkTi=mU=v_6gH_5VCwZZmiX+UoqAVf+w@mail.gmail.com>
-    <4D99C83A.2080807@snafu.de> <4D9AE10E.3080501@snafu.de>
-Date: Tue, 5 Apr 2011 16:54:46 +0200 (CEST)
-Subject: Re: [Libusb-devel] Kernel bug message and missing data 
-     on	libusb_interrupt_transfer
-From: "Segher Boessenkool" <segher@kernel.crashing.org>
-To: "Oncaphillis" <oncaphillis@snafu.de>
-Cc: "Xiaofan Chen" <xiaofanc@gmail.com>, libusb-devel@lists.sourceforge.net,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.10a-1.fc6
+	id S1753693Ab1DEOzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:55:18 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:35192 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab1DEOzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:55:16 -0400
+Message-ID: <4D9B2CD0.20404@canonical.com>
+Date: Tue, 05 Apr 2011 09:53:04 -0500
+From: Manoj <manoj.iyer@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: linux-input@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Lenovo X220 Touchpad + Trackpoint BIOS issue workaround ?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I'm in an environment where we are
->> reluctant to switch between versions. I had a hard time to
+The Lenovo X220 has a touch pad and a track point.  I would like to get 
+some clues as to if there is any work around in the kernel for the issue 
+I am seeing below:
 
-> Pid: 14293, comm: E25Stress Tainted: G      D    2.6.30.10 #2 To Be
-> Filled By O.E.M.
-> RIP: 0010:[<ffffffff8028d2f8>]  [<ffffffff8028d2f8>] kfree+0x7c/0xdb
+Case 1: Touchpad and Trackpoint enabled in BIOS.
+================================================
+In this case the touchpad works correctly, but the trackpoint is not 
+detected at all. Some times after random number of reboots, the 
+trackpoint will start to respond approximately 15mts after X starts. But 
+the mouse will be detected as PS2 Generic Mouse.
 
-> Suprisingly now the kernel is reported as tainted although there isn't
-> any module inserted the
+Case 2: Touchpad Disabled Trackpoint Enabled in BIOS
+======================================================
+In this case the trackpoint works as expected, and it is detected as 
+TPPS/2 IBM TrackPoint.
+[    9.675396] input: TPPS/2 IBM TrackPoint as 
+/devices/platform/i8042/serio1/input/input9
 
-That is not true; "G" means you have loaded a (GPL-compatible) module.
-"D" means the kernel died.  It died because it tried to dealloc memory
-using a bad pointer, perhaps a null pointer.
-
-Your kernel is two years old, you should try a current kernel.
+I suspect this is a BIOS bug? Is it possible to work around this in the 
+kernel?
 
 
-Segher
-
+-- 
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
