@@ -1,214 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab1DEOe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:34:28 -0400
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:57078
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752049Ab1DEOe1 (ORCPT
+	id S1753174Ab1DEOf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:35:28 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34477 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab1DEOf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:34:27 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915: Disable all outputs early, before KMS takeover
-Date: Tue,  5 Apr 2011 15:34:15 +0100
-Message-Id: <1302014055-13708-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <BANLkTins76X1mOFepqXEQjMEh_hd4Vgw1Q@mail.gmail.com>
-References: <BANLkTins76X1mOFepqXEQjMEh_hd4Vgw1Q@mail.gmail.com>
-X-Originating-IP: 78.156.66.37
+	Tue, 5 Apr 2011 10:35:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=p2a9p40zjnwc+rtGCT/z0a+yGbupnrWLaVI+DW2tuHD59xDgzsU8bkJOjMw9wlSMAk
+         i0fwNFGvqj8jqBpzzd5w+TMiGuufVM6ur6y0OaSITCuwgMm6wLRgEbu1tEqiAlp3eXmJ
+         zzsuHJ6Plr0dUgLX6bs4cn/9ONAiZI/435kwA=
+Date: Tue, 5 Apr 2011 07:35:22 -0700
+From: Tejun Heo <tj@kernel.org>
+To: James.Bottomley@hansenpartnership.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] workqueue: Separate out drain_workqueue() from
+ destroy_workqueue()
+Message-ID: <20110405143522.GA9621@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the outputs are active and continuing to access the GATT when we
-teardown the PTEs, then there is a potential for us to hang the GPU.
-The hang tends to be a PGTBL_ER with either an invalid host access or
-an invalid display plane fetch.
+There are users which want to drain workqueues without destroying it.
+Separate out drain functionality from destroy_workqueue() into
+drain_workqueue() and make it accessible to workqueue users.
 
-v2: Reorder IRQ initialisation to defer until after GEM is setup.
+To guarantee forward-progress, only chain queueing is allowed while
+drain is in progress.  If a new work item which isn't chained from the
+running or pending work items is queued while draining is in progress,
+WARN_ON_ONCE() is triggered.
 
-Reported-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch> (855GM)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c      |   31 ++++++++++++++++++++++---------
- drivers/gpu/drm/i915/i915_drv.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |   17 +++++++++++------
- drivers/gpu/drm/i915/intel_dp.c      |    9 +++++++++
- 4 files changed, 43 insertions(+), 15 deletions(-)
+James, does this seem to fit your use cases?
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 7273037..b28e023 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1176,11 +1176,11 @@ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
- 	return can_switch;
- }
+Thanks.
+
+ include/linux/workqueue.h |    3 +
+ kernel/workqueue.c        |   86 +++++++++++++++++++++++++++++++---------------
+ 2 files changed, 60 insertions(+), 29 deletions(-)
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index f7998a3..b5ba4ba 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -255,7 +255,7 @@ enum {
+ 	WQ_HIGHPRI		= 1 << 4, /* high priority */
+ 	WQ_CPU_INTENSIVE	= 1 << 5, /* cpu instensive workqueue */
  
--static int i915_load_modeset_init(struct drm_device *dev)
-+static int i915_load_gem_init(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	unsigned long prealloc_size, gtt_size, mappable_size;
--	int ret = 0;
-+	int ret;
+-	WQ_DYING		= 1 << 6, /* internal: workqueue is dying */
++	WQ_DRAINING		= 1 << 6, /* internal: workqueue is draining */
+ 	WQ_RESCUER		= 1 << 7, /* internal: workqueue has rescuer */
  
- 	prealloc_size = dev_priv->mm.gtt->stolen_size;
- 	gtt_size = dev_priv->mm.gtt->gtt_total_entries << PAGE_SHIFT;
-@@ -1204,7 +1204,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	ret = i915_gem_init_ringbuffer(dev);
- 	mutex_unlock(&dev->struct_mutex);
- 	if (ret)
--		goto out;
-+		return ret;
+ 	WQ_MAX_ACTIVE		= 512,	  /* I like 512, better ideas? */
+@@ -351,6 +351,7 @@ extern int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+ 			struct delayed_work *work, unsigned long delay);
  
- 	/* Try to set up FBC with a reasonable compressed buffer size */
- 	if (I915_HAS_FBC(dev) && i915_powersave) {
-@@ -1222,6 +1222,13 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ extern void flush_workqueue(struct workqueue_struct *wq);
++extern void drain_workqueue(struct workqueue_struct *wq);
+ extern void flush_scheduled_work(void);
  
- 	/* Allow hardware batchbuffers unless told otherwise. */
- 	dev_priv->allow_batchbuffer = 1;
-+	return 0;
-+}
+ extern int schedule_work(struct work_struct *work);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index ee6578b..909a01b 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -221,7 +221,7 @@ typedef unsigned long mayday_mask_t;
+  * per-CPU workqueues:
+  */
+ struct workqueue_struct {
+-	unsigned int		flags;		/* I: WQ_* flags */
++	unsigned int		flags;		/* W: WQ_* flags */
+ 	union {
+ 		struct cpu_workqueue_struct __percpu	*pcpu;
+ 		struct cpu_workqueue_struct		*single;
+@@ -240,6 +240,8 @@ struct workqueue_struct {
+ 	mayday_mask_t		mayday_mask;	/* cpus requesting rescue */
+ 	struct worker		*rescuer;	/* I: rescue worker */
+ 
++	atomic_t		nr_drainers;	/* drain in progress */
 +
-+static int i915_load_modeset_init(struct drm_device *dev)
+ 	int			saved_max_active; /* W: saved cwq max_active */
+ 	const char		*name;		/* I: workqueue name */
+ #ifdef CONFIG_LOCKDEP
+@@ -982,7 +984,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 	debug_work_activate(work);
+ 
+ 	/* if dying, only works from the same workqueue are allowed */
+-	if (unlikely(wq->flags & WQ_DYING) &&
++	if (unlikely(wq->flags & WQ_DRAINING) &&
+ 	    WARN_ON_ONCE(!is_chained_work(wq)))
+ 		return;
+ 
+@@ -2365,6 +2367,57 @@ out_unlock:
+ }
+ EXPORT_SYMBOL_GPL(flush_workqueue);
+ 
++/**
++ * drain_workqueue - drain a workqueue
++ * @wq: workqueue to drain
++ *
++ * Wait until the workqueue becomes empty.  While draining is in progress,
++ * only chain queueing is allowed.  IOW, only currently pending or running
++ * work items on @wq can queue further work items on it.  @wq is flushed
++ * repeatedly until it becomes empty.  The number of flushing is detemined
++ * by the depth of chaining and should be relatively short.  Whine if it
++ * takes too long.
++ */
++void drain_workqueue(struct workqueue_struct *wq)
 +{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	int ret;
- 
- 	ret = intel_parse_bios(dev);
- 	if (ret)
-@@ -1236,7 +1243,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	 */
- 	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
- 	if (ret && ret != -ENODEV)
--		goto cleanup_ringbuffer;
-+		goto out;
- 
- 	intel_register_dsm_handler();
- 
-@@ -1253,10 +1260,16 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 
- 	intel_modeset_init(dev);
- 
--	ret = drm_irq_install(dev);
-+	ret = i915_load_gem_init(dev);
- 	if (ret)
- 		goto cleanup_vga_switcheroo;
- 
-+	intel_modeset_gem_init(dev);
++	unsigned int flush_cnt = 0;
++	unsigned int cpu;
 +
-+	ret = drm_irq_install(dev);
-+	if (ret)
-+		goto cleanup_gem;
-+
- 	/* Always safe in the mode setting case. */
- 	/* FIXME: do pre/post-mode set stuff in core KMS code */
- 	dev->vblank_disable_allowed = 1;
-@@ -1274,14 +1287,14 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 
- cleanup_irq:
- 	drm_irq_uninstall(dev);
-+cleanup_gem:
-+	mutex_lock(&dev->struct_mutex);
-+	i915_gem_cleanup_ringbuffer(dev);
-+	mutex_unlock(&dev->struct_mutex);
- cleanup_vga_switcheroo:
- 	vga_switcheroo_unregister_client(dev->pdev);
- cleanup_vga_client:
- 	vga_client_register(dev->pdev, NULL, NULL, NULL);
--cleanup_ringbuffer:
--	mutex_lock(&dev->struct_mutex);
--	i915_gem_cleanup_ringbuffer(dev);
--	mutex_unlock(&dev->struct_mutex);
- out:
- 	return ret;
- }
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 359ddce..60ebd79 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1268,6 +1268,7 @@ static inline void intel_unregister_dsm_handler(void) { return; }
- 
- /* modesetting */
- extern void intel_modeset_init(struct drm_device *dev);
-+extern void intel_modeset_gem_init(struct drm_device *dev);
- extern void intel_modeset_cleanup(struct drm_device *dev);
- extern int intel_modeset_vga_set_state(struct drm_device *dev, bool state);
- extern void i8xx_disable_fbc(struct drm_device *dev);
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 432fc04..5c7385b 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6497,6 +6497,9 @@ static void intel_setup_outputs(struct drm_device *dev)
- 	}
- 
- 	intel_panel_setup_backlight(dev);
-+
-+	/* disable all the possible outputs/crtcs before entering KMS mode */
-+	drm_helper_disable_unused_functions(dev);
- }
- 
- static void intel_user_framebuffer_destroy(struct drm_framebuffer *fb)
-@@ -7432,13 +7435,12 @@ void intel_modeset_init(struct drm_device *dev)
- 		intel_crtc_init(dev, i);
- 	}
- 
-+	/* Just disable it once at startup */
-+	i915_disable_vga(dev);
- 	intel_setup_outputs(dev);
- 
- 	intel_enable_clock_gating(dev);
- 
--	/* Just disable it once at startup */
--	i915_disable_vga(dev);
--
- 	if (IS_IRONLAKE_M(dev)) {
- 		ironlake_enable_drps(dev);
- 		intel_init_emon(dev);
-@@ -7447,12 +7449,15 @@ void intel_modeset_init(struct drm_device *dev)
- 	if (IS_GEN6(dev))
- 		gen6_enable_rps(dev_priv);
- 
--	if (IS_IRONLAKE_M(dev))
--		ironlake_enable_rc6(dev);
--
- 	INIT_WORK(&dev_priv->idle_work, intel_idle_update);
- 	setup_timer(&dev_priv->idle_timer, intel_gpu_idle_timer,
- 		    (unsigned long)dev);
-+}
-+
-+void intel_modeset_gem_init(struct drm_device *dev)
-+{
-+	if (IS_IRONLAKE_M(dev))
-+		ironlake_enable_rc6(dev);
- 
- 	intel_setup_overlay(dev);
- }
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 0daefca..6caeabb 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -218,7 +218,16 @@ intel_dp_mode_valid(struct drm_connector *connector,
- 	if (!is_edp(intel_dp) &&
- 	    (intel_dp_link_required(connector->dev, intel_dp, mode->clock)
- 	     > intel_dp_max_data_rate(max_link_clock, max_lanes)))
-+	{
-+		DRM_DEBUG_KMS("mode exceeds DP bandwidth: required=%d, max=%d [clock=%d, lanes=%d]\n",
-+			      intel_dp_link_required(connector->dev,
-+						     intel_dp,
-+						     mode->clock),
-+			      intel_dp_max_data_rate(max_link_clock,
-+						     max_lanes),
-+			      max_link_clock, max_lanes);
- 		return MODE_CLOCK_HIGH;
++	/*
++	 * __queue_work() needs to test whether there are drainers, is much
++	 * hotter than drain_workqueue() and already looks at @wq->flags.
++	 * Use WQ_DRAINING so that queue doesn't have to check nr_drainers.
++	 */
++	if (atomic_inc_and_test(&wq->nr_drainers)) {
++		spin_lock(&workqueue_lock);
++		wq->flags |= WQ_DRAINING;
++		spin_unlock(&workqueue_lock);
 +	}
++reflush:
++	flush_workqueue(wq);
++
++	for_each_cwq_cpu(cpu, wq) {
++		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
++
++		if (!cwq->nr_active && list_empty(&cwq->delayed_works))
++			continue;
++
++		if (++flush_cnt == 10 ||
++		    (flush_cnt % 100 == 0 && flush_cnt <= 1000))
++			printk(KERN_WARNING "workqueue %s: flush on "
++			       "destruction isn't complete after %u tries\n",
++			       wq->name, flush_cnt);
++		goto reflush;
++	}
++
++	if (atomic_add_negative(-1, &wq->nr_drainers)) {
++		spin_lock(&workqueue_lock);
++		wq->flags &= ~WQ_DRAINING;
++		spin_unlock(&workqueue_lock);
++	}
++}
++EXPORT_SYMBOL_GPL(drain_workqueue);
++
+ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+ 			     bool wait_executing)
+ {
+@@ -2920,6 +2973,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
+ 	wq->saved_max_active = max_active;
+ 	mutex_init(&wq->flush_mutex);
+ 	atomic_set(&wq->nr_cwqs_to_flush, 0);
++	atomic_set(&wq->nr_drainers, -1);
+ 	INIT_LIST_HEAD(&wq->flusher_queue);
+ 	INIT_LIST_HEAD(&wq->flusher_overflow);
  
- 	if (mode->clock < 10000)
- 		return MODE_CLOCK_LOW;
--- 
-1.7.4.1
-
+@@ -2995,34 +3049,10 @@ EXPORT_SYMBOL_GPL(__alloc_workqueue_key);
+  */
+ void destroy_workqueue(struct workqueue_struct *wq)
+ {
+-	unsigned int flush_cnt = 0;
+ 	unsigned int cpu;
+ 
+-	/*
+-	 * Mark @wq dying and drain all pending works.  Once WQ_DYING is
+-	 * set, only chain queueing is allowed.  IOW, only currently
+-	 * pending or running work items on @wq can queue further work
+-	 * items on it.  @wq is flushed repeatedly until it becomes empty.
+-	 * The number of flushing is detemined by the depth of chaining and
+-	 * should be relatively short.  Whine if it takes too long.
+-	 */
+-	wq->flags |= WQ_DYING;
+-reflush:
+-	flush_workqueue(wq);
+-
+-	for_each_cwq_cpu(cpu, wq) {
+-		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+-
+-		if (!cwq->nr_active && list_empty(&cwq->delayed_works))
+-			continue;
+-
+-		if (++flush_cnt == 10 ||
+-		    (flush_cnt % 100 == 0 && flush_cnt <= 1000))
+-			printk(KERN_WARNING "workqueue %s: flush on "
+-			       "destruction isn't complete after %u tries\n",
+-			       wq->name, flush_cnt);
+-		goto reflush;
+-	}
++	/* drain it before proceeding with destruction */
++	drain_workqueue(wq);
+ 
+ 	/*
+ 	 * wq list is used to freeze wq, remove from list after
