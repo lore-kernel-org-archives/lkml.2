@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab1DEOrI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:47:08 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56851 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753050Ab1DEOrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:47:06 -0400
-Subject: Re: [PATCH] workqueue: Separate out drain_workqueue() from
- destroy_workqueue()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+	id S1753660Ab1DEOrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:47:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753575Ab1DEOrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:47:11 -0400
+Date: Tue, 5 Apr 2011 20:16:51 +0530
+From: Amit Shah <amit.shah@redhat.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20110405143522.GA9621@mtj.dyndns.org>
-References: <20110405143522.GA9621@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Apr 2011 07:47:01 -0700
-Message-ID: <1302014822.2924.0.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
+Message-ID: <20110405144651.GA20671@amit-x200.redhat.com>
+References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
+ <20110401154327.GA6593@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110401154327.GA6593@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-05 at 07:35 -0700, Tejun Heo wrote:
-> There are users which want to drain workqueues without destroying it.
-> Separate out drain functionality from destroy_workqueue() into
-> drain_workqueue() and make it accessible to workqueue users.
+On (Fri) 01 Apr 2011 [17:43:27], Tejun Heo wrote:
+> Hello,
 > 
-> To guarantee forward-progress, only chain queueing is allowed while
-> drain is in progress.  If a new work item which isn't chained from the
-> running or pending work items is queued while draining is in progress,
-> WARN_ON_ONCE() is triggered.
+> On Thu, Mar 31, 2011 at 11:50:04PM +0530, Amit Shah wrote:
+> > After the first GET_EVENT_STATUS_NOTIFICATION command, any new media
+> > notification is reset by the device.  The following is then noticed:
+> > 
+> > 1. insert a CD of a particular size
+> > 2. mount it
+> > 3. note /sys/block/sr0/size
+> > 4. unmount cd
+> > 5. replace cd with a size greater than previous one
+> > 6. mount it
+> > 7. /sys/block/sr0/size isn't updated
+> > 8. copy all files from cd to somewhere; IO errors will pop up where the
+> >    files lie beyond previous CD's geometry
+> > 
+> > The cause is:
+> > 
+> >  cdrom_open()
+> >      open_for_data()
+> >          cdo->drive_status() = sr_drive_status()
+> >              cdrom_get_media_event()
+> >              --> GPCMD_GET_EVENT_STATUS_NOTIFICATION
+> >          --> med.media_present is true, return CDS_DISK_OK
+> >      (success)
+> >  check_disk_change()
+> >     ... -> 2nd call to GPCMD_GET_EVENT_STATUS_NOTIFICATION
+> > 
+> > at this point the device has already reset the new media event and the
+> > call to revalidate_disk() in check_disk_change() is never made.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
-> ---
-> James, does this seem to fit your use cases?
+> Hmm... I see.  That's something I didn't expect.
 
-Perfectly, thanks.  It makes sure we have eliminated all work the
-workqueues generated before we return.  This is needed in some of the
-SCSI waits where we want all discovery to complete, not just the piece
-the WQ started.
+...
 
-Thanks,
+> But I don't think this is the correct place to do it.  The problem
+> happens because block layer consumes the event but doesn't remember it
+> when the time for revalidation comes.  It should be done by block
+> layer, not sr.
 
-James
+Hm, only the open call at the start of the call sequence is involved
+from the block layer.  How to pass on such a pending event back?  Some
+kind of an event array with helpers to modify it?
 
-
+		Amit
