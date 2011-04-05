@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab1DEBzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 21:55:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40274 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab1DEBzf (ORCPT
+	id S1751758Ab1DECHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 22:07:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61387 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab1DECHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 21:55:35 -0400
+	Mon, 4 Apr 2011 22:07:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=e7BDytRuxKxY559mWhkTYmwNzEeADMVSfuecYS0LtFf0uOhN2dvd2h0s36PxXCiKWR
-         qjJi8emi+Dlrh0syqERQ==
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Hv7g4XAByyFxs0oJy81RgO3IphXpdRvunxupFP4mMVSXSIpL49JY93LRwnMRvoE5Mw
+         7RhrZGm0AV5wp/gOaIYvZeBNaQ5i5brok99cYrOGfjEz6w4ydssew0wSfQerhOpqpMVn
+         pxI5gAAKfDMpXpHCxIsabYIVrcWwuFc1a0u4o=
+Date: Tue, 5 Apr 2011 10:07:20 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: rdunlap@xenotime.net
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org
+Subject: Re: [PATCH] Fixes a small error in Documentation/HOWTO
+Message-ID: <20110405020717.GA2506@gmail.com>
+Mail-Followup-To: rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
+	greg@kroah.com, akpm@linux-foundation.org
+References: <AANLkTinHAfGi84LWzP2rCqpzB6nmj-B2jU_pEPf89Lcz@mail.gmail.com>
+ <20110403045201.GA2598@gmail.com>
+ <4D99230C.6040403@cn.fujitsu.com>
+ <20110404111829.af8bc108.rdunlap@xenotime.net>
+ <BANLkTinSC1UTEQxS0iCKu4tMX-9CUY3rJg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4D981EAB.8070209@codeaurora.org>
-References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
-	<BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>
-	<4D959058.7010606@codeaurora.org>
-	<BANLkTim8GhUAZ7L-MiJiqi6xM=P_Q8kqfg@mail.gmail.com>
-	<4D981EAB.8070209@codeaurora.org>
-Date: Mon, 4 Apr 2011 18:55:31 -0700
-X-Google-Sender-Auth: cj1RHyrITE4DGS_vkjFLr3pLaKw
-Message-ID: <BANLkTimJkQ9afnO=6gKiBqWUo+Uv=hWx2Q@mail.gmail.com>
-Subject: Re: [PATCH] ARM: BUG() dies silently
-From: Simon Glass <sjg@chromium.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        lk <linux-kernel@vger.kernel.org>,
-        lak <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinSC1UTEQxS0iCKu4tMX-9CUY3rJg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 3, 2011 at 12:15 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> (Please stop top posting)
->
-> On 4/1/2011 3:29 PM, Simon Glass wrote:
->> Hi Stephen,
->>
->> Sorry for the confusion, but in fact I was talking about the patch to
->> make ARM use the generic bug handling via an undef instruction instead
->> of calling ______bug() or writing to memory address 0. Please see
->> here:
->>
->> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6808/1
->
-> Yes I've seen your patch (and even posted comments on it which have not
-> been responded to).
+On Tue, Apr 05, 2011 at 09:59:55AM +0800, harryxiyou wrote:
+> On Tue, Apr 5, 2011 at 2:18 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> 
+> > On Mon, 04 Apr 2011 09:46:52 +0800 Li Zefan wrote:
+> >
+> > > > Your updated link for HOWTO is just for linux-2.6.38. This link
+> > > > should be up-to-date kernel code. So i have corrected your
+> > > > patch like following.
+> > > >
+> > > > Thanks.
+> > > > Best Regards.
+> > > > Harry Wei.
+> > > >
+> > > > Signed-off-by: Someone Something <fordhaivat@gmail.com>
+> > > > Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> > >
+> > > Did he sign the patch? If not, you can't do this, and Instead you
+> > > must ask him for his SOB.
+> > >
+> > > And I'll appreciate if you add:
+> > >
+> > >       From: Someone ...
+> > >
+> > > because your change is not significant enough to make you the author
+> > > of the patch.
+> >
+> > Regardless of that latter part, we cannot merge the patch from SS,
+> > like Xiaochen Wang said, since the name is false.
+Hi Randy,
+    I have corrected this patch like following. This may be well 
+for us.
 
-Hi Stephen,
+Thanks.
+BR.
+Harry Wei.
 
-Not yet! Don't worry I will get to it. I like the suggestion and am
-pleased that you pointed me to it, thank you.
+From: Someone Something <fordhaivat@gmail.com>
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+---
+ Documentation/HOWTO |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Correct me if I'm wrong, but that patch with CONFIG_BUG=n would lead to
-> the same error that Omar is seeing because the code only modifies the
-> bug infrastructure when CONFIG_BUG=y.
+diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+index 365bda9..81bc1a9 100644
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -209,7 +209,7 @@ tools.  One such tool that is particularly recommended is the Linux
+ Cross-Reference project, which is able to present source code in a
+ self-referential, indexed webpage format. An excellent up-to-date
+ repository of the kernel code may be found at:
+-	http://users.sosdg.org/~qiyong/lxr/
++	http://lxr.linux.no/+trees
+ 
+ 
+ The development process
+-- 
+1.7.0.4
 
-Well if CONFIG_BUG=n then there is no bug infrastructure, The whole
-file is skipped and it falls back to the asm-generic/bug.h which has
-even more #ifdefs in it. But I think we end up here:
-
-#define BUG() do {} while(0)
-
-After all the patch removes the *(int*)0 = 0 code by virtue of
-CONFIG_GENERIC_BUG=y, right? If I have this wrong then I will have to
-break out the C preprocessor...
-
-Regards,
-Simon
-
->
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
->
