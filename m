@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab1DEJBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 05:01:38 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:56751 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab1DEJBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 05:01:36 -0400
-Message-ID: <4D9ADA58.9050806@nokia.com>
-Date: Tue, 5 Apr 2011 12:01:12 +0300
-From: Ameya Palande <ameya.palande@nokia.com>
-Organization: Nokia Oyj
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: ext Randy Dunlap <rdunlap@xenotime.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: Add Documentation/leds/00-INDEX
-References: <20110331084420.47eaa91c.rdunlap@xenotime.net>	<1301648314-3441-1-git-send-email-ameya.palande@nokia.com> <20110401101701.e440ad6d.rdunlap@xenotime.net>
-In-Reply-To: <20110401101701.e440ad6d.rdunlap@xenotime.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.24.192]
-X-OriginalArrivalTime: 05 Apr 2011 09:01:13.0958 (UTC) FILETIME=[04060060:01CBF370]
-X-Nokia-AV: Clean
+	id S1753210Ab1DEJEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 05:04:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38365 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698Ab1DEJEA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 05:04:00 -0400
+Subject: Re: [PATCH] posix-timers: RCU conversion
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Avi Kivity <avi@redhat.com>
+Cc: ben@iagu.net, Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Mike Galbraith <efault@gmx.de>
+In-Reply-To: <4D9AD92D.401@redhat.com>
+References: <AANLkTikZZ4MXZjx_+6u-vKVSgxULQo2BkQKRO6K_vzFy@mail.gmail.com>
+	 <20110318123031.GB6066@8bytes.org>
+	 <AANLkTin2k1ZSLa0NG6pKBvHYnKEV21t8pEqzeJWNn_rR@mail.gmail.com>
+	 <4D871F6C.40207@redhat.com>
+	 <AANLkTintxnKRQ4rD4Wo8_MHU4yJVzYaRhR=GjnDMGwNj@mail.gmail.com>
+	 <AANLkTin8ZoUAVR2ajoV6cBFiUSe_Dof0_k60dcAGW3r-@mail.gmail.com>
+	 <4D875842.9050308@redhat.com>
+	 <AANLkTikWQS281kTtJ32-qo5U+w_BAak7qUwVhUQgOxxv@mail.gmail.com>
+	 <4D8773AA.8030408@redhat.com>
+	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
+	 <1300726498.2884.493.camel@edumazet-laptop>	<4D8784A9.8040303@redhat.com>
+	 <1300727545.2884.513.camel@edumazet-laptop>
+	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
+	 <1300746429.2837.20.camel@edumazet-laptop>
+	 <1300777760.2837.38.camel@edumazet-laptop>
+	 <AANLkTik-Rt-Fy-2fKQTr2JBB9f7U2cbc0FmTZOoXc1+5@mail.gmail.com>
+	 <4D887B6A.2020102@redhat.com> <1301993300.2225.26.camel@twins>
+	 <4D9AD92D.401@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Apr 2011 11:03:49 +0200
+Message-ID: <1301994229.2225.30.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On Tue, 2011-04-05 at 11:56 +0300, Avi Kivity wrote:
+> 
+> Could be waking up due to guest wakeups, or qemu internal wakeups 
+> (display refresh) or due to guest timer sources which are masked away in 
+> the guest (if that's the case we should optimize it away).
 
-On 04/01/2011 08:17 PM, ext Randy Dunlap wrote:
-> On Fri,  1 Apr 2011 11:58:34 +0300 Ameya Palande wrote:
->
->> Signed-off-by: Ameya Palande<ameya.palande@nokia.com>
->
-> Applied, thanks.
->
->> ---
->>   Documentation/leds/00-INDEX |   10 ++++++++++
->>   1 files changed, 10 insertions(+), 0 deletions(-)
->>   create mode 100644 Documentation/leds/00-INDEX
->>
->> diff --git a/Documentation/leds/00-INDEX b/Documentation/leds/00-INDEX
->> new file mode 100644
->> index 0000000..762d676
->> --- /dev/null
->> +++ b/Documentation/leds/00-INDEX
->> @@ -0,0 +1,10 @@
->> +00-INDEX
->> +	- This file
->> +leds-class.txt
->> +	- Info about led sysfs class
->> +leds-lp3944.txt
->> +	- Info on National Semiconductor LP3944 fun-light chip
->> +leds-lp5521.txt
->> +	- Info on National Semiconductor LP5521 led driver chip
->> +leds-lp5523.txt
->> +	- Info on National Semiconductor LP5523 led driver chip
->> --
+Right, so I guess we're all clutching at straws here :-)
 
-Can you point me to your tree where you applied my commit?
+Ben how usable is that system when its in that state? Could you run a
+function trace or a trace with all kvm and sched trace-events enabled?
 
-Also I see following commit in latest linux mainline:
 
-commit 9a684e19afc630e0763246ee79c0578c1a8eaee8
-Author: Antonio Ospite <ospite@studenti.unina.it>
-Date:   Mon Apr 4 15:08:46 2011 -0700
-
-     Documentation: consolidate leds files to leds/ subdir
-
-     leds: move leds-class documentation under the leds/ subdir.
-     Add also a leds/00-INDEX file describing the files under leds/
-
-     Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
-     Acked-by: Richard Purdie <richard.purdie@linuxfoundation.org>
-     Cc: Andrew Morton <akpm@linux-foundation.org>
-     Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-Cheers,
-Ameya.
