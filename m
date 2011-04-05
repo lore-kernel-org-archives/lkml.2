@@ -1,39 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1DERWw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 13:22:52 -0400
+	id S1754085Ab1DERWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 13:22:51 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:32969 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab1DERWr (ORCPT
+	with ESMTP id S1750940Ab1DERWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 13:22:47 -0400
+	Tue, 5 Apr 2011 13:22:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=qE/EwEOG3Du0Gbi5n4X2Pr5ve6WUXH7sRSQO1BC1uaAu46UAvGTY1DoR2qqY1gjYDf
-         9jPXK9A25p1Mm4suH/7aimtVSZSAGdsiJMCRuI5J4Jh7RJDmrdPiNqX/2XChgiBZOyo1
-         qqjjj4VG3Tqxsf9A5cD0Y9RHN/lUR7OXJSTsI=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=XkTV7F9e8fn96Xt9ECJuLtLdpnnkoaOG5r7uCQ2ad6eWJtITspxawoaO3lnDxc8Yax
+         fReb6orXiRIUnMO2xk2KXydZsZOQnk+HWw/qfOEZ1HztLHjppMq4vXnebLczQEz948Y4
+         S4WZdRJW0Jq7a/1A1jlWn7NlpSf8u3lM61ivI=
 From: Alessio Igor Bogani <abogani@kernel.org>
 To: Rusty Russell <rusty@rustcorp.com.au>
 Cc: LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
         Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH] module: Use the binary search for symbols resolution
-Date: Tue,  5 Apr 2011 19:22:26 +0200
-Message-Id: <1302024146-2608-2-git-send-email-abogani@kernel.org>
+Subject: [PATCH] Speed up the symbols' resolution process V2
+Date: Tue,  5 Apr 2011 19:22:25 +0200
+Message-Id: <1302024146-2608-1-git-send-email-abogani@kernel.org>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1302024146-2608-1-git-send-email-abogani@kernel.org>
-References: <1302024146-2608-1-git-send-email-abogani@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the linker sort the exported symbols and use the binary search for locate them.
+The intent of this patch is to speed up the symbols' resolution process.
+
+This objective is achieved by sorting all ksymtab* and kcrctab* symbols
+(those which reside both in the kernel and in the modules) and thus add the fast
+binary search side by side to the usual slow linear search.
+
+To avoid adding lots of code for symbols sorting I rely on the linker which can
+easily do the job thanks to a little trick. The trick isn't really beautiful to
+see but permits minimal changes to the code and build process. Indeed the patch
+is very simple and short.
+
+In the first place I changed the code for place every symbol in a different
+section (for example: "___ksymtab" sec "__" #sym) at compile time (this the
+above mentioned trick!). Thus I request to the linker to sort and merge all
+these sections into the appropriate ones (for example: "__ksymtab") at link
+time using the linker scripts. Once all symbols are sorted we can use binary
+search instead of the linear one (enabling CONFIG_SYMBOLS_BSEARCH).
+
+I'm fairly sure that this is a good speed improvement even though I haven't
+made any comprehensive benchmarking (but follow a simple one). In any case
+I would be very happy to receive suggestions about how made it. Collaterally,
+the boot time should be reduced also (proportionally to the number of modules
+and symbols nvolved at boot stage).
+
+I hope that you find that interesting!
 
 This work was supported by a hardware donation from the CE Linux Forum.
 
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
----
+Changes since V1:
+*) Merge all patches into only one
+*) Remove few useless things
+*) Introduce CONFIG_SYMBOLS_BSEARCH kernel option 
+
+Using ftrace on each_symbol() function I obtained these values:
+
+Ubuntu       	Vanilla   	 Patched
+ 34.792 us 	 19.928 us 	9.561 us
+104.418 us 	 43.831 us 	4.018 us
+ 23.075 us 	  9.700 us	2.667 us
+ 40.798 us 	 15.495 us 	2.534 us
+ 48.106 us 	  7.658 us	3.219 us
+ 10.162 us 	  4.144 us	2.895 us
+ 27.939 us 	 12.624 us 	2.024 us
+ 39.885 us 	 16.618 us 	1.952 us
+ 28.419 us 	 12.751 us 	1.760 us
+  9.561 us	  4.108 us	1.394 us
+ 12.744 us 	  4.907 us	1.243 us
+ 10.342 us 	  4.504 us	2.408 us
+ 15.435 us 	  6.036 us	2.210 us
+  6.456 us	 10.414 us 	1.556 us
+ 25.807 us 	  5.994 us	2.798 us
+ 14.654 us 	  6.408 us	2.438 us
+ 16.150 us 	  1.165 us	2.114 us
+  2.534 us	  8.979 us	1.561 us
+ 22.017 us 	  1.322 us	1.820 us
+  2.894 us	 36.035 us 	2.583 us
+ 95.607 us 	 13.260 us 	1.735 us
+ 29.657 us 	  4.571 us	1.652 us
+ 11.778 us 	  1.994 us	2.247 us
+  4.498 us	 34.606 us 	1.400 us
+ 92.022 us 	 36.834 us 	1.664 us
+ 97.145 us 	  6.696 us	2.840 us
+ 16.847 us 	  9.417 us	2.486 us
+ 23.105 us 	 11.099 us 	1.682 us
+ 27.969 us 	 38.576 us 	1.375 us
+100.581 us    	  4.991 us	2.594 us
+ 12.756 us 	 14.348 us 	1.585 us
+ 37.309 us 	 37.350 us 	1.717 us
+ 97.776 us 	  9.657 us	1.297 us
+ 23.634 us 	  6.612 us	2.072 us
+ 17.387 us 	 38.791 us 	1.892 us
+100.028 us 	 10.300 us 	1.898 us
+ 25.098 us 	  3.994 us	2.252 us
+  9.934 us	 12.048 us 	1.640 us
+ 28.816 us 	 11.417 us 	1.237 us
+ 28.407 us 	 38.395 us 	1.459 us
+100.057 us 	  7.057 us	2.066 us
+ 16.396 us 	 38.822 us 	1.183 us
+ 99.787 us 	 19.153 us 	1.850 us
+  7.033 us	 15.862 us 	1.484 us
+ 44.341 us 	  7.976 us	1.711 us
+ 41.495 us 	  6.480 us	1.897 us
+ 19.129 us 	160.435 us 	1.542 us 
+ 16.498 us 	141.246 us 	0.426 us 
+418.032 us 	193.275 us 	10.000 us
+402.255 us 	141.780 us 	10.042 us 
+408.038 us 	142.243 us 	9.796 us
+404.957 us 	142.278 us 	9.759 us
+438.656 us 	142.261 us 	9.729 us
+399.666 us 	141.978 us 	9.693 us
+403.588 us 	142.255 us 	9.694 us
+394.987 us 	142.255 us 	9.700 us
+404.386 us 	142.242 us 	9.718 us
+398.861 us 	142.237 us 	9.735 us
+389.197 us 	142.237 us 	9.729 us
+401.053 us 	142.273 us 	9.772 us
+393.696 us 	142.267 us 	9.730 us
+442.008 us 	142.255 us 	9.801 us
+398.495 us 	142.254 us 	9.699 us
+396.645 us 	142.249 us 	9.711 us
+399.474 us 	142.243 us 	9.688 us
+400.327 us 	142.399 us 	9.694 us
+399.023 us 	142.267 us 	9.718 us
+397.588 us 	142.249 us 	9.687 us
+397.960 us 	142.254 us 	9.699 us
+398.147 us 	142.237 us 	9.724 us
+397.065 us 	142.297 us 	9.718 us
+442.193 us 	142.248 us 	9.700 us
+396.555 us 	142.249 us 	9.747 us
+402.158 us 	142.261 us 	9.705 us
+399.072 us 	142.254 us 	9.724 us
+400.074 us 	158.050 us 	9.730 us
+396.928 us 	142.567 us 	9.723 us
+395.666 us 	142.260 us 	9.837 us
+
+Ubuntu  kernel 2.6.38-7-generic 3306 modules
+Vanilla kernel 2.6.38 42 modules
+Patched kernel 2.6.38 42 modules
+
+Alessio Igor Bogani (1):
+  module: Use the binary search for symbols resolution
+
  include/asm-generic/vmlinux.lds.h |   43 +++++++++++++++++++++------
  include/linux/module.h            |   12 ++++++-
  init/Kconfig                      |    7 ++++
@@ -41,287 +154,6 @@ Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
  scripts/module-common.lds         |   11 +++++++
  5 files changed, 100 insertions(+), 30 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index fe77e33..b438dd9 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -149,6 +149,29 @@
- #define TRACE_SYSCALLS()
- #endif
- 
-+#ifdef CONFIG_SYMBOLS_BSEARCH
-+#define KSYMTAB_SYMBOLS SORT(___ksymtab__*)
-+#define KSYMTAB_GPL_SYMBOLS SORT(___ksymtab_gpl__*)
-+#define KSYMTAB_UNUSED_SYMBOLS SORT(___ksymtab_unused__*)
-+#define KSYMTAB_UNUSED_GPL_SYMBOLS SORT(___ksymtab_unused_gpl__*)
-+#define KSYMTAB_GPL_FUTURE_SYMBOLS SORT(___ksymtab_gpl_future__*)
-+#define KCRCTAB_SYMBOLS SORT(___kcrctab__*)
-+#define KCRCTAB_GPL_SYMBOLS SORT(___kcrctab_gpl__*)
-+#define KCRCTAB_UNUSED_SYMBOLS SORT(___kcrctab_unused__*)
-+#define KCRCTAB_UNUSED_GPL_SYMBOLS SORT(___kcrctab_unused_gpl__*)
-+#define KCRCTAB_GPL_FUTURE_SYMBOLS SORT(___kcrctab_gpl_future__*)
-+#else
-+#define KSYMTAB_SYMBOLS __ksymtab
-+#define KSYMTAB_GPL_SYMBOLS __ksymtab_gpl
-+#define KSYMTAB_UNUSED_SYMBOLS __ksymtab_unused
-+#define KSYMTAB_UNUSED_GPL_SYMBOLS __ksymtab_unused_gpl
-+#define KSYMTAB_GPL_FUTURE_SYMBOLS __ksymtab_gpl_future
-+#define KCRCTAB_SYMBOLS __kcrctab
-+#define KCRCTAB_GPL_SYMBOLS __kcrctab_gpl
-+#define KCRCTAB_UNUSED_SYMBOLS __kcrctab_unused
-+#define KCRCTAB_UNUSED_GPL_SYMBOLS __kcrctab_unused_gpl
-+#define KCRCTAB_GPL_FUTURE_SYMBOLS __kcrctab_gpl_future
-+#endif
- 
- #define KERNEL_DTB()							\
- 	STRUCT_ALIGN();							\
-@@ -274,70 +297,70 @@
- 	/* Kernel symbol table: Normal symbols */			\
- 	__ksymtab         : AT(ADDR(__ksymtab) - LOAD_OFFSET) {		\
- 		VMLINUX_SYMBOL(__start___ksymtab) = .;			\
--		*(__ksymtab)						\
-+		*(KSYMTAB_SYMBOLS)					\
- 		VMLINUX_SYMBOL(__stop___ksymtab) = .;			\
- 	}								\
- 									\
- 	/* Kernel symbol table: GPL-only symbols */			\
- 	__ksymtab_gpl     : AT(ADDR(__ksymtab_gpl) - LOAD_OFFSET) {	\
- 		VMLINUX_SYMBOL(__start___ksymtab_gpl) = .;		\
--		*(__ksymtab_gpl)					\
-+		*(KSYMTAB_GPL_SYMBOLS)					\
- 		VMLINUX_SYMBOL(__stop___ksymtab_gpl) = .;		\
- 	}								\
- 									\
- 	/* Kernel symbol table: Normal unused symbols */		\
- 	__ksymtab_unused  : AT(ADDR(__ksymtab_unused) - LOAD_OFFSET) {	\
- 		VMLINUX_SYMBOL(__start___ksymtab_unused) = .;		\
--		*(__ksymtab_unused)					\
-+		*(KSYMTAB_UNUSED_SYMBOLS)				\
- 		VMLINUX_SYMBOL(__stop___ksymtab_unused) = .;		\
- 	}								\
- 									\
- 	/* Kernel symbol table: GPL-only unused symbols */		\
- 	__ksymtab_unused_gpl : AT(ADDR(__ksymtab_unused_gpl) - LOAD_OFFSET) { \
- 		VMLINUX_SYMBOL(__start___ksymtab_unused_gpl) = .;	\
--		*(__ksymtab_unused_gpl)					\
-+		*(KSYMTAB_UNUSED_GPL_SYMBOLS)				\
- 		VMLINUX_SYMBOL(__stop___ksymtab_unused_gpl) = .;	\
- 	}								\
- 									\
- 	/* Kernel symbol table: GPL-future-only symbols */		\
- 	__ksymtab_gpl_future : AT(ADDR(__ksymtab_gpl_future) - LOAD_OFFSET) { \
- 		VMLINUX_SYMBOL(__start___ksymtab_gpl_future) = .;	\
--		*(__ksymtab_gpl_future)					\
-+		*(KSYMTAB_GPL_FUTURE_SYMBOLS)				\
- 		VMLINUX_SYMBOL(__stop___ksymtab_gpl_future) = .;	\
- 	}								\
- 									\
- 	/* Kernel symbol table: Normal symbols */			\
- 	__kcrctab         : AT(ADDR(__kcrctab) - LOAD_OFFSET) {		\
- 		VMLINUX_SYMBOL(__start___kcrctab) = .;			\
--		*(__kcrctab)						\
-+		*(KCRCTAB_SYMBOLS)					\
- 		VMLINUX_SYMBOL(__stop___kcrctab) = .;			\
- 	}								\
- 									\
- 	/* Kernel symbol table: GPL-only symbols */			\
- 	__kcrctab_gpl     : AT(ADDR(__kcrctab_gpl) - LOAD_OFFSET) {	\
- 		VMLINUX_SYMBOL(__start___kcrctab_gpl) = .;		\
--		*(__kcrctab_gpl)					\
-+		*(KCRCTAB_GPL_SYMBOLS)					\
- 		VMLINUX_SYMBOL(__stop___kcrctab_gpl) = .;		\
- 	}								\
- 									\
- 	/* Kernel symbol table: Normal unused symbols */		\
- 	__kcrctab_unused  : AT(ADDR(__kcrctab_unused) - LOAD_OFFSET) {	\
- 		VMLINUX_SYMBOL(__start___kcrctab_unused) = .;		\
--		*(__kcrctab_unused)					\
-+		*(KCRCTAB_UNUSED_SYMBOLS)				\
- 		VMLINUX_SYMBOL(__stop___kcrctab_unused) = .;		\
- 	}								\
- 									\
- 	/* Kernel symbol table: GPL-only unused symbols */		\
- 	__kcrctab_unused_gpl : AT(ADDR(__kcrctab_unused_gpl) - LOAD_OFFSET) { \
- 		VMLINUX_SYMBOL(__start___kcrctab_unused_gpl) = .;	\
--		*(__kcrctab_unused_gpl)					\
-+		*(KCRCTAB_UNUSED_GPL_SYMBOLS)				\
- 		VMLINUX_SYMBOL(__stop___kcrctab_unused_gpl) = .;	\
- 	}								\
- 									\
- 	/* Kernel symbol table: GPL-future-only symbols */		\
- 	__kcrctab_gpl_future : AT(ADDR(__kcrctab_gpl_future) - LOAD_OFFSET) { \
- 		VMLINUX_SYMBOL(__start___kcrctab_gpl_future) = .;	\
--		*(__kcrctab_gpl_future)					\
-+		*(KCRCTAB_GPL_FUTURE_SYMBOLS)				\
- 		VMLINUX_SYMBOL(__stop___kcrctab_gpl_future) = .;	\
- 	}								\
- 									\
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 5de4204..7ffdb0d 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -215,6 +215,14 @@ struct module_use {
- 	struct module *source, *target;
- };
- 
-+#ifdef CONFIG_SYMBOLS_BSEARCH
-+#define __KCRCTAB_SECTION(sym, sec) "___kcrctab" sec "__"#sym
-+#define __KSYMTAB_SECTION(sym, sec) "___ksymtab" sec "__"#sym
-+#else
-+#define __KCRCTAB_SECTION(sym, sec) "__kcrctab" sec
-+#define __KSYMTAB_SECTION(sym, sec) "__ksymtab" sec
-+#endif
-+
- #ifndef __GENKSYMS__
- #ifdef CONFIG_MODVERSIONS
- /* Mark the CRC weak since genksyms apparently decides not to
-@@ -223,7 +231,7 @@ struct module_use {
- 	extern void *__crc_##sym __attribute__((weak));		\
- 	static const unsigned long __kcrctab_##sym		\
- 	__used							\
--	__attribute__((section("__kcrctab" sec), unused))	\
-+	__attribute__((section(__KCRCTAB_SECTION(sym, sec)), unused)) \
- 	= (unsigned long) &__crc_##sym;
- #else
- #define __CRC_SYMBOL(sym, sec)
-@@ -238,7 +246,7 @@ struct module_use {
- 	= MODULE_SYMBOL_PREFIX #sym;                    	\
- 	static const struct kernel_symbol __ksymtab_##sym	\
- 	__used							\
--	__attribute__((section("__ksymtab" sec), unused))	\
-+	__attribute__((section(__KSYMTAB_SECTION(sym, sec)), unused)) \
- 	= { (unsigned long)&sym, __kstrtab_##sym }
- 
- #define EXPORT_SYMBOL(sym)					\
-diff --git a/init/Kconfig b/init/Kconfig
-index be788c0..4809c3e 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1354,6 +1354,13 @@ config MODULE_SRCVERSION_ALL
- 	  the version).  With this option, such a "srcversion" field
- 	  will be created for all modules.  If unsure, say N.
- 
-+config SYMBOLS_BSEARCH
-+	bool "Use the binary search for symbols resolution" if EXPERT
-+	default n
-+	help
-+	  Use binary search for symbols resolution during the kernel
-+	  modules loading.  If unsure, say N.
-+
- endif # MODULES
- 
- config INIT_ALL_POSSIBLE
-diff --git a/kernel/module.c b/kernel/module.c
-index efa290e..cb3c1f7 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -235,6 +235,18 @@ extern const unsigned long __start___kcrctab_unused_gpl[];
- #define symversion(base, idx) ((base != NULL) ? ((base) + (idx)) : NULL)
- #endif
- 
-+struct find_symbol_arg {
-+	/* Input */
-+	const char *name;
-+	bool gplok;
-+	bool warn;
-+
-+	/* Output */
-+	struct module *owner;
-+	const unsigned long *crc;
-+	const struct kernel_symbol *sym;
-+};
-+
- static bool each_symbol_in_section(const struct symsearch *arr,
- 				   unsigned int arrsize,
- 				   struct module *owner,
-@@ -243,12 +255,36 @@ static bool each_symbol_in_section(const struct symsearch *arr,
- 					      unsigned int symnum, void *data),
- 				   void *data)
- {
--	unsigned int i, j;
-+	unsigned int j;
-+	struct find_symbol_arg *fsa = data;
-+	int result;
-+#ifdef CONFIG_SYMBOLS_BSEARCH
-+	size_t num;
-+	int start, end, mid;
-+#endif
- 
- 	for (j = 0; j < arrsize; j++) {
--		for (i = 0; i < arr[j].stop - arr[j].start; i++)
--			if (fn(&arr[j], owner, i, data))
-+#ifdef CONFIG_SYMBOLS_BSEARCH
-+		num = arr[j].stop - arr[j].start;
-+		start = 0, end = num - 1, mid, result;
-+		while (start <= end) {
-+			mid = (start + end) / 2;
-+			result = strcmp(fsa->name, arr[j].start[mid].name);
-+			if (result < 0)
-+				end = mid - 1;
-+			else if (result > 0)
-+				start = mid + 1;
-+			else
-+				if (fn(&arr[j], owner, mid, data))
-+					return true;
-+		}
-+#else
-+		for (unsigned int i = 0; i < arr[j].stop - arr[j].start; i++) {
-+			result = strcmp(fsa->name, arr[j].start[i].name);
-+			if (result == 0 && fn(&arr[j], owner, i, data))
- 				return true;
-+		}
-+#endif
- 	}
- 
- 	return false;
-@@ -311,27 +347,12 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
- }
- EXPORT_SYMBOL_GPL(each_symbol);
- 
--struct find_symbol_arg {
--	/* Input */
--	const char *name;
--	bool gplok;
--	bool warn;
--
--	/* Output */
--	struct module *owner;
--	const unsigned long *crc;
--	const struct kernel_symbol *sym;
--};
--
- static bool find_symbol_in_section(const struct symsearch *syms,
- 				   struct module *owner,
- 				   unsigned int symnum, void *data)
- {
- 	struct find_symbol_arg *fsa = data;
- 
--	if (strcmp(syms->start[symnum].name, fsa->name) != 0)
--		return false;
--
- 	if (!fsa->gplok) {
- 		if (syms->licence == GPL_ONLY)
- 			return false;
-diff --git a/scripts/module-common.lds b/scripts/module-common.lds
-index 47a1f9a..055a8d5 100644
---- a/scripts/module-common.lds
-+++ b/scripts/module-common.lds
-@@ -5,4 +5,15 @@
-  */
- SECTIONS {
- 	/DISCARD/ : { *(.discard) }
-+
-+	__ksymtab				: { *(SORT(___ksymtab__*)) }
-+	__ksymtab_gpl			: { *(SORT(___ksymtab_gpl__*)) }
-+	__ksymtab_unused		: { *(SORT(___ksymtab_unused__*)) }
-+	__ksymtab_unused_gpl	: { *(SORT(___ksymtab_unused_gpl__*)) }
-+	__ksymtab_gpl_future	: { *(SORT(___ksymtab_gpl_future__*)) }
-+	__kcrctab				: { *(SORT(___kcrctab__*)) }
-+	__kcrctab_gpl			: { *(SORT(___kcrctab_gpl__*)) }
-+	__kcrctab_unused		: { *(SORT(___kcrctab_unused__*)) }
-+	__kcrctab_unused_gpl	: { *(SORT(___kcrctab_unused_gpl__*)) }
-+	__kcrctab_gpl_future	: { *(SORT(___kcrctab_gpl_future__*)) }
- }
 -- 
 1.7.4.1
 
