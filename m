@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab1DEGvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 02:51:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13350 "EHLO mx1.redhat.com"
+	id S1752886Ab1DEG4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 02:56:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37284 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752129Ab1DEGvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 02:51:46 -0400
-Date: Tue, 5 Apr 2011 12:21:30 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
-Message-ID: <20110405065129.GC2872@amit-x200.redhat.com>
-References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
- <20110401154327.GA6593@mtj.dyndns.org>
+	id S1752702Ab1DEG4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 02:56:07 -0400
+Message-ID: <4D9ABCED.30606@zytor.com>
+Date: Mon, 04 Apr 2011 23:55:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-1.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110401154327.GA6593@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
+        stable kernel team <stable@kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
+References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <201104050829.58474.rjw@sisk.pl> <4D9AB8B7.9020708@zytor.com> <201104050843.39246.rjw@sisk.pl>
+In-Reply-To: <201104050843.39246.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 01 Apr 2011 [17:43:27], Tejun Heo wrote:
-> Hello,
+On 04/04/2011 11:43 PM, Rafael J. Wysocki wrote:
+>>
+>> Just to refresh my memory... is this an issue in mainline, or is it only
+>> a problem in the backport (I'm wondering if the trampoline unification
+>> patches might have accidentally solved the issue)?
 > 
-> On Thu, Mar 31, 2011 at 11:50:04PM +0530, Amit Shah wrote:
-> > After the first GET_EVENT_STATUS_NOTIFICATION command, any new media
-> > notification is reset by the device.  The following is then noticed:
-> > 
-> > 1. insert a CD of a particular size
-> > 2. mount it
-> > 3. note /sys/block/sr0/size
-> > 4. unmount cd
-> > 5. replace cd with a size greater than previous one
-> > 6. mount it
-> > 7. /sys/block/sr0/size isn't updated
-> > 8. copy all files from cd to somewhere; IO errors will pop up where the
-> >    files lie beyond previous CD's geometry
-> > 
-> > The cause is:
-> > 
-> >  cdrom_open()
-> >      open_for_data()
-> >          cdo->drive_status() = sr_drive_status()
-> >              cdrom_get_media_event()
-> >              --> GPCMD_GET_EVENT_STATUS_NOTIFICATION
-> >          --> med.media_present is true, return CDS_DISK_OK
-> >      (success)
-> >  check_disk_change()
-> >     ... -> 2nd call to GPCMD_GET_EVENT_STATUS_NOTIFICATION
-> > 
-> > at this point the device has already reset the new media event and the
-> > call to revalidate_disk() in check_disk_change() is never made.
-> 
-> Hmm... I see.  That's something I didn't expect.
-> 
-> > All of this is noticed in a qemu-kvm virtual machine where two CD images
-> > are created from two files different in size.
-> ...
-> > diff --git a/drivers/scsi/sr_ioctl.c b/drivers/scsi/sr_ioctl.c
-> > index 8be3055..0651448 100644
-> > --- a/drivers/scsi/sr_ioctl.c
-> > +++ b/drivers/scsi/sr_ioctl.c
-> > @@ -316,12 +316,19 @@ int sr_drive_status(struct cdrom_device_info *cdi, int slot)
-> >  		return CDS_DRIVE_NOT_READY;
-> >  
-> >  	if (!cdrom_get_media_event(cdi, &med)) {
-> > -		if (med.media_present)
-> > +		if (med.media_present) {
-> > +			/*
-> > +			 * New media was inserted; ensure disk data is
-> > +			 * revalidated.
-> > +			 */
-> > +			if (cdi->disk->fops->revalidate_disk)
-> > +				cdi->disk->fops->revalidate_disk(cdi->disk);
-> >  			return CDS_DISC_OK;
-> > -		else if (med.door_open)
-> > +		} else if (med.door_open) {
-> >  			return CDS_TRAY_OPEN;
-> > -		else
-> > +		} else {
-> >  			return CDS_NO_DISC;
-> > +		}
-> >  	}
-> 
-> But I don't think this is the correct place to do it.  The problem
-> happens because block layer consumes the event but doesn't remember it
-> when the time for revalidation comes.  It should be done by block
-> layer, not sr.  Hmmm... looking at the code, the new disk event code
-> should handle this correctly.  Was 2.6.38 showing the problem too?
+> The problem is in mainline too, please fix ASAP.
 
-Yes, 2.6.38 shows the same problem.  I went back to ancient kernels
-(2.6.31 on Fedora 11-alpha) which had the previous media_changed
-infrastructure and those places too show the same behaviour (with the
-TEST_UNIT_READY way of detecting media changes).
+Thanks for confirming, will look at it in the morning.  Just looking for
+the sanest place to put the save/restore (it really should be done at
+the same places where we save/restore MISC_ENABLE.)
 
-		Amit
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
