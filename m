@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab1DER0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 13:26:53 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:49853
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752927Ab1DER0u (ORCPT
+	id S1754235Ab1DER1s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 13:27:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51510 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab1DER1q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 13:26:50 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzzz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJ6WGG-01-YWO-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <hpa@zytor.com>, <brgerst@gmail.com>
-CC: <tglx@linutronix.de>, <mingo@elte.hu>, <suresh.b.siddha@intel.com>,
-        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH] x86-32, fpu: unbreak FPU exceptions on systems without SSE
-Date: Tue, 5 Apr 2011 19:26:32 +0200
-Message-ID: <1302024392-610677-1-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.5.6.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Tue, 5 Apr 2011 13:27:46 -0400
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20110405 release
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hui Zhu <teawater@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+In-Reply-To: <BANLkTin7=j8-feeJw5fqDsMd9BYrq09KbQ@mail.gmail.com>
+References: <BANLkTin7=j8-feeJw5fqDsMd9BYrq09KbQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Apr 2011 19:27:38 +0200
+Message-ID: <1302024458.2225.1350.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 32bit systems without SSE, FPU exceptions in user mode cause Oopses,
-BUGs, recursive faults and other nasty things.
+On Tue, 2011-04-05 at 19:59 +0800, Hui Zhu wrote:
+> KGTP is a realtime and lightweight Linux Kernel GDB debugger and
+> tracer that use Kprobe.
+> 
+> It make Linux Kernel supply a GDB remote debug interface. Then GDB in
+> current machine or remote machine(see "Make GDB connect to gtp") can
+> debug Linux through GDB tracepoint without stop the Linux Kernel.
+> And even if the board doesn't have GDB on it and doesn't have
+> interface for remote debug. It can debug the Linux Kernel use offline
+> debug (See "Offline debug"). 
 
-This was caused by commit 58a992b9cbaf449aeebd3575c3695a9eb5d95b5e:
-	x86-32, fpu: Rewrite fpu_save_init()
----
- arch/x86/include/asm/i387.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index ef32890..c9e09ea 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -237,7 +237,7 @@ static inline void fpu_save_init(struct fpu *fpu)
- 	} else if (use_fxsr()) {
- 		fpu_fxsave(fpu);
- 	} else {
--		asm volatile("fsave %[fx]; fwait"
-+		asm volatile("fnsave %[fx]; fwait"
- 			     : [fx] "=m" (fpu->state->fsave));
- 		return;
- 	}
--- 
-1.5.6.5
+So this leaves me wondering how this is different from the existing
+KGDB, if its different why its not reusing/extending the existing
+infrastructure.
 
 
