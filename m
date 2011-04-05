@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab1DEP4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:56:54 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46651 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab1DEP4v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:56:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:organization:message-id:in-reply-to
-         :user-agent;
-        b=bzA2LKhrRgC66+s0n8vVFXafxUonQlbas2r+hPYyfC1Io24H42oXMpuYJtp1gvPTrP
-         Zq75gDRv8ze4FzsY4iJO2ObvTzDwBuMR88OM4UBn6ZBBeLFYq/vFjb3sXTpH9rE3eJw5
-         UMH6Du5qm8VUMBd6RYjM4eCrwT/Gcm6s8xwNw=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] usb: gadget: f_mass_storage: Prevent NULL pointer
- dereference
-References: <1302017802-16614-1-git-send-email-roger.quadros@nokia.com>
- <1302017802-16614-4-git-send-email-roger.quadros@nokia.com>
-Date: Tue, 05 Apr 2011 17:56:47 +0200
+	id S1754587Ab1DEP6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:58:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58870 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753373Ab1DEP6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 11:58:14 -0400
+Message-ID: <4D9B3C10.9060704@suse.com>
+Date: Tue, 05 Apr 2011 11:58:08 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Organization: Google
-Message-ID: <op.vtg2kx0d3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1302017802-16614-4-git-send-email-roger.quadros@nokia.com>
-User-Agent: Opera Mail/11.01 (Linux)
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Reiserfs deadlock in 2.6.36
+References: <201011181650.00152.roucaries.bastien@gmail.com>	<AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>	<AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>	<201103311704.40372.roucaries.bastien@gmail.com> <BANLkTikmtyyMes84rED5wpMxuN8kL91jEw@mail.gmail.com>
+In-Reply-To: <BANLkTikmtyyMes84rED5wpMxuN8kL91jEw@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Apr 2011 17:36:40 +0200, Roger Quadros  
-<roger.quadros@nokia.com> wrote:
-> Prevent a NULL pointer dereference in fsg_config_from_params() if
-> 'file' parameter is not specified.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Have you observed this behaviour?  I don't see how it could happen with
-module parameters and if it appears in some gadget it's a bug in the
-gadget.  Not that I'm saying checking for null pointer is a bad idea.
+On 04/05/2011 09:30 AM, Bastien ROUCARIES wrote:
+> Ping ? You said on bugzilla it is related to acl but see nothing
 
-> Signed-off-by: Roger Quadros <roger.quadros@nokia.com>
-> ---
->  drivers/usb/gadget/f_mass_storage.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/usb/gadget/f_mass_storage.c  
-> b/drivers/usb/gadget/f_mass_storage.c
-> index 5d7de93..f6bd001 100644
-> --- a/drivers/usb/gadget/f_mass_storage.c
-> +++ b/drivers/usb/gadget/f_mass_storage.c
-> @@ -3177,7 +3177,7 @@ fsg_config_from_params(struct fsg_config *cfg,
->  		lun->removable = /* Removable by default */
->  			params->removable_count <= i || params->removable[i];
->  		lun->filename =
-> -			params->file_count > i && params->file[i][0]
-> +			params->file_count > i && params->file[i]
+Yeah, I think it's related to the nesting not being quite right, but I
+need to look into it more. I've been unable to reproduce the problem
+locally.
 
-You're removing the check if an empty file name has been specified.  It
-should read:
+- -Jeff
 
-+			params->file_count > i && params->file[i] && params->file[i][0]
+> On Thu, Mar 31, 2011 at 5:04 PM, Bastien ROUCARIES
+> <roucaries.bastien@gmail.com> wrote:
+>> Le lundi 28 mars 2011 11:14:28, Bastien ROUCARIES a écrit :
+>>> On Tue, Mar 8, 2011 at 4:22 PM, Bastien ROUCARIES
+>>>
+>>> <roucaries.bastien@gmail.com> wrote:
+>>>> On Tue, Mar 8, 2011 at 3:18 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>>>> On Sun, Jan 30, 2011 at 01:08:29AM +0100, Bastien ROUCARIES wrote:
+>>>>>> Le jeudi 23 décembre 2010 04:42:33, Frederic Weisbecker a écrit :
+>>>>>> Hi,
+>>>>>>
+>>>>>> I take me more than two days of testing to reporduce this bugs with
+>>>>>> trace enabled. My filesystem was quite slow and this bugs seems to be
+>>>>>> timing related.
+>>>
+>>> Any news of this bug? Could I do something to help ?
+>>>
+>>> bastien
+>>>
+>>>> Ok bastien
+>>
 
-And since the line is getting pretty long, maybe convert it to a proper
-â€œifâ€.  I'm sure Greg will like that. ;)
 
->  			? params->file[i]
->  			: 0;
->  	}
+- -- 
+Jeff Mahoney
+SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+iEYEARECAAYFAk2bPBAACgkQLPWxlyuTD7ILtQCcDkPc1aAWmai1nTUHFxrLZzII
+iUQAn2ZLGtLFghO4oGs9R2iDiY2Mtnvz
+=UrzR
+-----END PGP SIGNATURE-----
