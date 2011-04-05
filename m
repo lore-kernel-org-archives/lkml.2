@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1DES5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:57:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6713 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab1DES5i convert rfc822-to-8bit (ORCPT
+	id S1754345Ab1DES5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 14:57:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42484 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab1DES5p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:57:38 -0400
+	Tue, 5 Apr 2011 14:57:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=NQAwkpWVDsQ3ff8HbzcSZk1G+lkmcKstNhJAABNkF4WFxhT9L3duTCrtjPDvO4RjAS
-         d2mHfPIlg41IND/uoIhg==
+        b=Lp7yiFw5evLCijAT0Pufk4v9O6xHOaCmWYjQ88SCrvHwhWyvna/pFwcLVpFY4Ok+ZH
+         BEjRan7fkdnYc6/TmhdsM7KFZCbfNHwFqs6QnQ4hshU5QsdGUJQ9y7hq3CLI3bXUTJ62
+         irBYX2wSG47fwVdiQeUAnIRjmpeBC1A56mWcQ=
 MIME-Version: 1.0
-In-Reply-To: <20110405173028.GC20622@kroah.com>
-References: <4D9B4E3A.4090601@redhat.com> <20110405173028.GC20622@kroah.com>
-From: Mike Waychison <mikew@google.com>
-Date: Tue, 5 Apr 2011 11:57:13 -0700
-Message-ID: <BANLkTi=pRVc+qc6DOHCdW3v7GcMu9U9bjQ@mail.gmail.com>
-Subject: Re: /sys/firmware/dmi name change?
-To: Greg KH <greg@kroah.com>
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <1302015561-21047-2-git-send-email-mmarek@suse.cz>
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
+	<1302015561-21047-2-git-send-email-mmarek@suse.cz>
+Date: Tue, 5 Apr 2011 14:57:44 -0400
+Message-ID: <BANLkTinwKzasKmB_fFzXd+W7F6GGuPO6+g@mail.gmail.com>
+Subject: Re: [PATCH 01/34] kconfig: Do not record timestamp in auto.conf and autoconf.h
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 10:30 AM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Apr 05, 2011 at 01:15:38PM -0400, Prarit Bhargava wrote:
->> commit 948af1f0bbc8526448e8cbe3f8d3bf211bdf5181 (and follow on commits)
->> introduced a new firmware directory called /sys/firmware/dmi which
->> provides broken out SMBIOS entries for userspace.
->>
->> In a previous discussion I've mentioned that it would be a good idea for
->> us to move away from using 'dmi' towards using 'smbios' and centralizing
->> the SMBIOS code that is scattered throughout the kernel.  One of my
->> changes was to export the SMBIOS information in a similar way that Mike
->> did in drivers/firmware/dmi-sysfs.c.
->>
->> Since this API is new for 2.6.39, can we change the name of the
->> directory to /sys/firmware/smbios?  Otherwise in 2.6.40, when further
->> changes are introduced to use SMBIOS in the kernel we will have to
->> change something that has been stable for one release.
->>
->> Mike?  Greg?  Alan?  What do you think?  IIUC, the interface isn't yet
->> "stable" so it should be changed now, correct?
->
-> Fine with me if Mike's ok with it as well.  If so, someone send me a
-> patch quick!
+Hi,
 
-Sounds good to me.
+On Tue, Apr 5, 2011 at 10:58 AM, Michal Marek <mmarek@suse.cz> wrote:
+> Timestamps in file data are useless and there is already one in .config
+>
+hum, shouldn't this be tunable via KCONFIG_NOTIMESTAMP ? This might be
+useful to know when the file was generated, independently of the
+.config, as conf_write() and conf_write_autoconf() are independent
+from one another.
 
+ - Arnaud
+
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  scripts/kconfig/confdata.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
 >
-> thanks,
+> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+> index 61c35bf..834eecb 100644
+> --- a/scripts/kconfig/confdata.c
+> +++ b/scripts/kconfig/confdata.c
+> @@ -784,7 +784,6 @@ int conf_write_autoconf(void)
+>        const char *str;
+>        const char *name;
+>        FILE *out, *tristate, *out_h;
+> -       time_t now;
+>        int i;
 >
-> greg k-h
+>        sym_clear_all_valid();
+> @@ -811,22 +810,19 @@ int conf_write_autoconf(void)
+>                return 1;
+>        }
+>
+> -       time(&now);
+>        fprintf(out, "#\n"
+>                     "# Automatically generated make config: don't edit\n"
+>                     "# %s\n"
+> -                    "# %s"
+>                     "#\n",
+> -                    rootmenu.prompt->text, ctime(&now));
+> +                    rootmenu.prompt->text);
+>        fprintf(tristate, "#\n"
+>                          "# Automatically generated - do not edit\n"
+>                          "\n");
+>        fprintf(out_h, "/*\n"
+>                       " * Automatically generated C config: don't edit\n"
+>                       " * %s\n"
+> -                      " * %s"
+>                       " */\n",
+> -                      rootmenu.prompt->text, ctime(&now));
+> +                      rootmenu.prompt->text);
+>
+>        for_all_symbols(i, sym) {
+>                sym_calc_value(sym);
+> --
+> 1.7.4.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
