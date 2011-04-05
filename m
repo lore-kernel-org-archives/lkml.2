@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab1DETpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 15:45:51 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35553 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab1DETpr (ORCPT
+	id S1754240Ab1DET4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 15:56:17 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50546 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab1DET4Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 15:45:47 -0400
-Message-ID: <4D9B7164.5070309@canonical.com>
-Date: Tue, 05 Apr 2011 15:45:40 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
+	Tue, 5 Apr 2011 15:56:16 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Jeffrey Brown <jeffbrown@android.com>, Jiri Kosina <jkosina@suse.cz>,
-        Henrik Rydberg <rydberg@euromail.se>, Simon Budig <simon@budig.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
-References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com> <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com> <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz> <BANLkTikG-ku9mDebcaPKTwv3X0N+OKiyYQ@mail.gmail.com> <4D9A1407.6030308@canonical.com> <20110404213910.GD984@core.coreip.homeip.net>
-In-Reply-To: <20110404213910.GD984@core.coreip.homeip.net>
+In-Reply-To: <20110405190704.GB28557@legolas.emea.dhcp.ti.com>
+References: <20110405034819.GA7872@kroah.com>
+	<Pine.LNX.4.44L0.1104051350480.1972-100000@iolanthe.rowland.org>
+	<20110405190704.GB28557@legolas.emea.dhcp.ti.com>
+Date: Tue, 5 Apr 2011 12:56:14 -0700
+Message-ID: <BANLkTinFpajeVXgrdBGEqQbM6VbsKtp_DA@mail.gmail.com>
+Subject: Re: mourning the loss of David Brownell
+From: Bill Gatliff <bgat@billgatliff.com>
+To: balbi@ti.com
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2011 05:39 PM, Dmitry Torokhov wrote:
-> On Mon, Apr 04, 2011 at 02:55:03PM -0400, Chase Douglas wrote:
->> On 04/04/2011 02:13 PM, Jeffrey Brown wrote:
->>> On Mon, Apr 4, 2011 at 5:43 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->>>> I'd happuly take Chase's patch, but want to make sure that we don't cause
->>>> any changes that would make backwards compatilibity an issue later.
->>>
->>> There should be no compatibility issues.  However, we might be better
->>> off in the long term taking (some variation of) these patches instead.
->>
->> I like the proposed changes, but I want to ensure stable kernel releases
->> aren't left out of the fix for hid-magicmouse. I don't know the best way
->> forward, but here's one possibility:
->>
->> 1. Apply my patch to manually set the buffer size hint
->> 2. It gets sent to stable trees due to the 'Cc: stable@kernel.org' line
->> 3. Apply Jeffrey's patches, including a reversion of my buffer size hint
->>
->> Obviously the extra application and reversion is odd, but this seems the
->> easiest way forward given that the patches already exist and can be
->> applied without issue.
->>
-> 
-> Or, once Jeffrey's patches hit mainline, send your change to stable with
-> the explanation why it is needed for stable but not for mainline.
+Will the family be having a memorial service?
 
-One thing that crossed my mind is that Jeffrey's patches wouldn't be
-merged until 2.6.40, right? If so, even 2.6.39 will be released with
-this bug, which makes me want to go with the plan I outlined above.
+On Tue, Apr 5, 2011 at 12:07 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Tue, Apr 05, 2011 at 02:10:53PM -0400, Alan Stern wrote:
+>> On Mon, 4 Apr 2011, Greg KH wrote:
+>>
+>> > As I have seen this tangentally mentioned already a few times
+>> > publically, I figured it warranted it's own announcement now.
+>> >
+>> > Linux has lost a great developer with the passing of David Brownell
+>> > recently and he will be greatly missed.
+>>
+>> David made contributions to a large number of areas in the Linux
+>> kernel.  Even a quick look through MAINTAINERS will show that he worked
+>> on USB controllers (OHCI, EHCI, OMAP and others), USB gadgets, USB
+>> networking, and SPI.  He was influential in the core USB design (the
+>> HCD "glue" layer and the scatter-gather library) and the development of
+>> Power Management (system sleep and the USB PM implementation).  His
+>> designs were elegant and his code was always a pleasure to read.
+>>
+>> He also was a big help to me personally, assisting in my initial entry
+>> to USB core development.  And he was the first person I met at the
+>> first Linux conference I attended.  I too will miss him.
+>
+> I guess many of us have similar experience with Dave. He also helped me
+> a lot when I first started doing Linux development. I learned a lot from
+> him and will miss him a lot. His teachings, I will always carry with me.
+>
+> Thanks Dave for all your help. Rest in Peace, my friend.
+>
+> --
+> balbi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Thanks,
 
--- Chase
+
+-- 
+Bill Gatliff
+bgat@billgatliff.com
