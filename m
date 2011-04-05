@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab1DEPMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:12:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36902 "EHLO mga01.intel.com"
+	id S1753893Ab1DEPPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:15:42 -0400
+Received: from ftp.sofha.de ([82.144.60.99]:42745 "EHLO ftp.sofha.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657Ab1DEPMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:12:06 -0400
-Message-Id: <1bdc18$k458om@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,304,1299484800"; 
-   d="scan'208";a="675455766"
-Date: Tue, 05 Apr 2011 16:12:02 +0100
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Disable all outputs early, before KMS takeover
-Cc: Tomas Winkler <tomasw@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-References: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com> <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk> <20110401114429.GA3526@viiv.ffwll.ch> <AANLkTik6njOQTLGsB4KzPP-J=fE=p4CHopAyvsDzdDSF@mail.gmail.com> <BANLkTimUZY+2E=kXG-as8-moAAS4+F5bTg@mail.gmail.com> <b7da2f$qvoau5@fmsmga001.fm.intel.com> <BANLkTinXZVOy9-j4TiJ7HMcTvv9Q8RS+DA@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <BANLkTinXZVOy9-j4TiJ7HMcTvv9Q8RS+DA@mail.gmail.com>
+	id S1753053Ab1DEPPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 11:15:41 -0400
+Message-ID: <4D9B321B.9050805@snafu.de>
+Date: Tue, 05 Apr 2011 17:15:39 +0200
+From: Oncaphillis <oncaphillis@snafu.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Segher Boessenkool <segher@kernel.crashing.org>
+CC: Xiaofan Chen <xiaofanc@gmail.com>, libusb-devel@lists.sourceforge.net,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [Libusb-devel] Kernel bug message and missing data      on	libusb_interrupt_transfer
+References: <4D99B60D.3030009@snafu.de>    <BANLkTi=mU=v_6gH_5VCwZZmiX+UoqAVf+w@mail.gmail.com>    <4D99C83A.2080807@snafu.de> <4D9AE10E.3080501@snafu.de> <56341.94.211.195.167.1302015286.squirrel@gate.crashing.org>
+In-Reply-To: <56341.94.211.195.167.1302015286.squirrel@gate.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Apr 2011 07:42:14 -0700, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> NO.
+On 04/05/2011 04:54 PM, Segher Boessenkool wrote:
+>>> I'm in an environment where we are
+>>> reluctant to switch between versions. I had a hard time to
+>> Pid: 14293, comm: E25Stress Tainted: G      D    2.6.30.10 #2 To Be
+>> Filled By O.E.M.
+>> RIP: 0010:[<ffffffff8028d2f8>]  [<ffffffff8028d2f8>] kfree+0x7c/0xdb
+>> Suprisingly now the kernel is reported as tainted although there isn't
+>> any module inserted the
+> That is not true; "G" means you have loaded a (GPL-compatible) module.
+> "D" means the kernel died.  It died because it tried to dealloc memory
+> using a bad pointer, perhaps a null pointer.
+>
+> Your kernel is two years old, you should try a current kernel.
+>
+>
 
-And you seemed to have missed that patch has sat around waiting for Pekka
-to give me some information on the failure on his machine.
+Thanks -- Didn't know anything about the 'G D' convention. Although
+/proc/modules is empty (I don't have lsmod on the target system).
 
-I have been poking as many people as I could to get it reviewed and tested
-on more machines so that someone else could either spot the problem or
-capture the oops.
+  We already have tried 2.6.36.x coming up with the same error.
+Alan Stern recommended testing 2.6.3(8|9-rc1) which I'm currently doing.
 
-I was being facetious in order to get a response. Thanks for playing,
--Chris
+O.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+> Segher
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
