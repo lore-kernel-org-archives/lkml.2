@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab1DERNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 13:13:42 -0400
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:49292 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751972Ab1DERNl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 13:13:41 -0400
-Date: Tue, 5 Apr 2011 13:13:41 -0400
-To: linux-kernel@vger.kernel.org
-Cc: aacraid@adaptec.com, Len Sorensen <lsorense@csclub.uwaterloo.ca>,
-        linux-scsi@vger.kernel.org
-Subject: aacraid adapter kernel panic'd ffffffff on 2.6.37 but not 2.6.32
-Message-ID: <20110405171341.GB351@caffeine.csclub.uwaterloo.ca>
+	id S1753672Ab1DERPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 13:15:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34635 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750940Ab1DERPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 13:15:51 -0400
+Message-ID: <4D9B4E3A.4090601@redhat.com>
+Date: Tue, 05 Apr 2011 13:15:38 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Don Zickus <dzickus@redhat.com>, mikew@google.com,
+        Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: /sys/firmware/dmi name change?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have an IBM serveraid 8k which is currently running a 2.6.32 kernel.
-I tried booting knoppix 6.4.4 which uses a 2.6.37 kernel to do some disk
-rearanging and was rather surprised that the aacraid failed to come up
-and instead resulting in the message:
+commit 948af1f0bbc8526448e8cbe3f8d3bf211bdf5181 (and follow on commits)
+introduced a new firmware directory called /sys/firmware/dmi which
+provides broken out SMBIOS entries for userspace.
 
-AAC0: adapter kernel panic'd ffffffff
-(transcribed by hand from memory, but I am pretty sure they were all f's).
+In a previous discussion I've mentioned that it would be a good idea for
+us to move away from using 'dmi' towards using 'smbios' and centralizing
+the SMBIOS code that is scattered throughout the kernel.  One of my
+changes was to export the SMBIOS information in a similar way that Mike
+did in drivers/firmware/dmi-sysfs.c.
 
-The firmware version on the adapter is 5.2-0[16002].
+Since this API is new for 2.6.39, can we change the name of the
+directory to /sys/firmware/smbios?  Otherwise in 2.6.40, when further
+changes are introduced to use SMBIOS in the kernel we will have to
+change something that has been stable for one release.
 
-It is running a single raid5 across four 750GB SATA drives (total of
-2.25TB capacity, which has turned out to be a huge pain in the ass,
-but that's hopefully an unrelated story).
+Mike?  Greg?  Alan?  What do you think?  IIUC, the interface isn't yet
+"stable" so it should be changed now, correct?
 
-I would love to know why it works fine with 2.6.32 but fails completely
-with 2.6.37.  I can't find any commits in git that seem major enough to
-really affect things, but clearly something did.  I am somewhat worried
-my next kernel upgrade won't go well.
+The patch would be trivial ... (no patch attached yet ;) ).
 
--- 
-Len Sorensen
+P.
