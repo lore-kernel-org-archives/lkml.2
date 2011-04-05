@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1DEO5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:57:41 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:57616 "EHLO mgw-sa02.nokia.com"
+	id S1754051Ab1DEO7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:59:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44431 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753373Ab1DEO5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:57:02 -0400
-From: Roger Quadros <roger.quadros@nokia.com>
-To: gregkh@suse.de
-Cc: stern@rowland.harvard.edu, sshtylyov@mvista.com, mina86@mina86.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH v3 0/3] Make CD-ROM emulation work with Mac OS-X
-Date: Tue,  5 Apr 2011 17:59:26 +0300
-Message-Id: <1302015569-9668-1-git-send-email-roger.quadros@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-X-Nokia-AV: Clean
+	id S1753088Ab1DEO73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:59:29 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 01/34] kconfig: Do not record timestamp in auto.conf and autoconf.h
+Date: Tue,  5 Apr 2011 16:58:48 +0200
+Message-Id: <1302015561-21047-2-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Timestamps in file data are useless and there is already one in .config
 
-Please accept these patches if no more comments. Thanks.
-
-Mac OS-X expects CD-ROM TOC in raw format (i.e. format:2). It also
-sends the READ_TOC CDB in old style SFF8020i format. i.e. 2 format bits
-are encoded in MSBs of CDB byte 9.
-
-The first patch introduces a fsg_get_toc() helper which builds the
-Table of Contents (TOC) that can be used for the READ_TOC command.
-The remaining two patches simply make file_storage gadget and mass_storage
-gadget use the new helper function.
-
-Changes in v3:
-- return length fixed for fsg_get_toc()
-
-Changes in v2:
-- Review comments incorporated.
-
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
-Roger Quadros (3):
-  usb: gadget: storage: Add fsg_get_toc helper
-  usb: gadget: file_storage: Make CD-ROM emulation work with Mac OS-X
-  usb: gadget: f_mass_storage: Make CD-ROM emulation work with Mac OS-X
+ scripts/kconfig/confdata.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
- drivers/usb/gadget/f_mass_storage.c |   31 ++++++++++-------
- drivers/usb/gadget/file_storage.c   |   31 ++++++++++-------
- drivers/usb/gadget/storage_common.c |   65 +++++++++++++++++++++++++++++++++++
- 3 files changed, 101 insertions(+), 26 deletions(-)
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 61c35bf..834eecb 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -784,7 +784,6 @@ int conf_write_autoconf(void)
+ 	const char *str;
+ 	const char *name;
+ 	FILE *out, *tristate, *out_h;
+-	time_t now;
+ 	int i;
+ 
+ 	sym_clear_all_valid();
+@@ -811,22 +810,19 @@ int conf_write_autoconf(void)
+ 		return 1;
+ 	}
+ 
+-	time(&now);
+ 	fprintf(out, "#\n"
+ 		     "# Automatically generated make config: don't edit\n"
+ 		     "# %s\n"
+-		     "# %s"
+ 		     "#\n",
+-		     rootmenu.prompt->text, ctime(&now));
++		     rootmenu.prompt->text);
+ 	fprintf(tristate, "#\n"
+ 			  "# Automatically generated - do not edit\n"
+ 			  "\n");
+ 	fprintf(out_h, "/*\n"
+ 		       " * Automatically generated C config: don't edit\n"
+ 		       " * %s\n"
+-		       " * %s"
+ 		       " */\n",
+-		       rootmenu.prompt->text, ctime(&now));
++		       rootmenu.prompt->text);
+ 
+ 	for_all_symbols(i, sym) {
+ 		sym_calc_value(sym);
+-- 
+1.7.4.1
 
