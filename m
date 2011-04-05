@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1DEVi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 17:38:28 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:45672 "EHLO
+	id S1753112Ab1DEVic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 17:38:32 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:45695 "EHLO
 	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752015Ab1DEViV (ORCPT
+	by vger.kernel.org with ESMTP id S1751883Ab1DEViW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 17:38:21 -0400
+	Tue, 5 Apr 2011 17:38:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=nanometrics.ca; s=google;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ebefRqvNPDpsFlAp/d45lOmfYW+9RRxpWvLptC9jUBDP1F5fTYPvfAqu8HAMfQKDCk
-         I4RrDKWFs5ibl4/dv/H5tBPo4uh9fWSftjMgk0YWPKFuMEDeBgNCDjZjs49qOrN0A0aF
-         a+OKdgvPjaLm2Dt14hL4vzy+/3Es2vfUFikWw=
+        b=JVhlAGfk9vs72WQO4EmYUo9Uv0YhTpNc9QiurP20DAsnPnQm57KxigeEf1dKihqf/3
+         O6TAs48BaMS+Z75CqVDgWwKGcbm6cs8op0MdykC5LyayHw6lHSeBWQRhdf7r/gllVpCP
+         NfK2KHXM5SsFxK72GYXfxW89dkM3+UeI86uQU=
 From: Ben Gardiner <bengardiner@nanometrics.ca>
 To: davinci-linux-open-source@linux.davincidsp.com, linux-i2c@vger.kernel.org,
         Sekhar Nori <nsekhar@ti.com>, Ben Dooks <ben-linux@fluff.org>
@@ -21,9 +21,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Brad Griffis <bgriffis@ti.com>, Jon Povey <jon.povey@racelogic.co.uk>,
         Philby John <pjohn@in.mvista.com>, Sekhar Nori <nsekhar@ti.com>,
         Ben Dooks <ben-linux@fluff.org>
-Subject: [PATCH 4/6] i2c-davinci: use the DA8xx's ICPFUNC to toggle I2C as gpio
-Date: Tue,  5 Apr 2011 17:38:07 -0400
-Message-Id: <b370ead67f06434d2f8ae1e94ede12f625c3edfc.1302031487.git.bengardiner@nanometrics.ca>
+Subject: [PATCH 5/6] i2c-davinci: if device has pfunc register, dump that group also
+Date: Tue,  5 Apr 2011 17:38:08 -0400
+Message-Id: <3a177f7c5f48db679db25035911abd2f53203122.1302031487.git.bengardiner@nanometrics.ca>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1302031487.git.bengardiner@nanometrics.ca>
 References: <cover.1302031487.git.bengardiner@nanometrics.ca>
@@ -31,179 +31,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the da850evm, with the default config of polling keys enabled, several
-"controller timed out" errors were observed on the console; as well as the
-same error observed on custom hardware when communicating with a i2c
-touchscreen device. [1]
-
-Discussion of the causes and potential workarounds began on the e2e forums [2]
-where Brad Griffis pointed out that the da850 (and da830) has an i2c controller
-whose SCL and SDA may be manipulated as GPIOs by using the ICPFUNC registers
-of the i2c controller. He further suggested a means of using this feature to
-send clock pulses on the I2C bus to free the frozen slave device.
-
-Implement the suggested procedure by toggling SCL and checking SDA using the
-ICPFUNC registers of the I2C controller when present. Allow platforms to
-indicate the presence of the ICPFUNC registers with a has_pfunc platform data
-flag.
-
-[1] http://permalink.gmane.org/gmane.linux.davinci/22291
-[2] http://e2e.ti.com/support/dsp/omap_applications_processors/f/42/p/99895/350610.aspx
+If the platform has indicated that this I2c controller has the ICPFUNC
+regsiters then also dump their contents when producing a debug register dump.
 
 Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
 Cc: Bastian Ruppert <Bastian.Ruppert@sewerin.de>
 Cc: Brad Griffis <bgriffis@ti.com>
-Cc: Jon Povey <jon.povey@racelogic.co.uk>
-Cc: Philby John <pjohn@in.mvista.com>
 Cc: Sekhar Nori <nsekhar@ti.com>
 Cc: Ben Dooks <ben-linux@fluff.org>
 
 ---
- arch/arm/mach-davinci/include/mach/i2c.h |    6 ++-
- drivers/i2c/busses/i2c-davinci.c         |   88 ++++++++++++++++++++++++++++++
- 2 files changed, 93 insertions(+), 1 deletions(-)
+ drivers/i2c/busses/i2c-davinci.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/include/mach/i2c.h b/arch/arm/mach-davinci/include/mach/i2c.h
-index ab07a44..858c5c6 100644
---- a/arch/arm/mach-davinci/include/mach/i2c.h
-+++ b/arch/arm/mach-davinci/include/mach/i2c.h
-@@ -19,12 +19,16 @@
-  * @bus_delay:	post-transaction delay (usec)
-  * @sda_pin:	GPIO pin ID to use for SDA
-  * @scl_pin:	GPIO pin ID to use for SCL
-+ * @has_pfunc:	set this to true if the i2c controller on your chip has a
-+ *		ICPFUNC register which allows the SDA and SCL pins to be
-+ *		controlled as gpio (like in DA850)
-  */
- struct davinci_i2c_platform_data {
- 	unsigned int	bus_freq;
- 	unsigned int	bus_delay;
- 	unsigned int	sda_pin;
- 	unsigned int	scl_pin;
-+	bool		has_pfunc;
- };
- 
- /* for board setup code */
 diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index 0a2c697..5bdc98c 100644
+index 5bdc98c..a084e50 100644
 --- a/drivers/i2c/busses/i2c-davinci.c
 +++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -65,6 +65,11 @@
- #define DAVINCI_I2C_IVR_REG	0x28
- #define DAVINCI_I2C_EMDR_REG	0x2c
- #define DAVINCI_I2C_PSC_REG	0x30
-+#define DAVINCI_I2C_PFUNC_REG	0x48
-+#define DAVINCI_I2C_PDIR_REG	0x4c
-+#define DAVINCI_I2C_PDIN_REG	0x50
-+#define DAVINCI_I2C_DSET_REG	0x58
-+#define DAVINCI_I2C_DCLR_REG	0x5c
+@@ -164,6 +164,8 @@ static inline u16 davinci_i2c_read_reg(struct davinci_i2c_dev *i2c_dev, int reg)
  
- #define DAVINCI_I2C_IVR_AAS	0x07
- #define DAVINCI_I2C_IVR_SCD	0x06
-@@ -98,6 +103,29 @@
- #define DAVINCI_I2C_IMR_NACK	BIT(1)
- #define DAVINCI_I2C_IMR_AL	BIT(0)
- 
-+/* set SDA and SCL as GPIO */
-+#define DAVINCI_I2C_PFUNC_PFUNC0	BIT(0)
+ static void i2c_davinci_dump_regs(struct davinci_i2c_dev *dev)
+ {
++	struct davinci_i2c_platform_data *pdata = dev->dev->platform_data;
 +
-+/* set SCL as output when used as GPIO*/
-+#define DAVINCI_I2C_PDIR_PDIR0	BIT(0)
-+/* set SDA as output when used as GPIO*/
-+#define DAVINCI_I2C_PDIR_PDIR1	BIT(1)
+ 	dev_dbg(dev->dev, "PSC  = %08x\n",
+ 		davinci_i2c_read_reg(dev, DAVINCI_I2C_PSC_REG));
+ 	dev_dbg(dev->dev, "CLKL = %08x\n",
+@@ -191,6 +193,19 @@ static void i2c_davinci_dump_regs(struct davinci_i2c_dev *dev)
+ 		davinci_i2c_read_reg(dev, DAVINCI_I2C_IVR_REG));
+ 	dev_dbg(dev->dev, "EMDR = %08x\n",
+ 		davinci_i2c_read_reg(dev, DAVINCI_I2C_EMDR_REG));
 +
-+/* read SCL GPIO level */
-+#define DAVINCI_I2C_PDIN_PDIN0 BIT(0)
-+/* read SDA GPIO level */
-+#define DAVINCI_I2C_PDIN_PDIN1 BIT(1)
-+
-+/*set the SCL GPIO high */
-+#define DAVINCI_I2C_DSET_PDSET0	BIT(0)
-+/*set the SDA GPIO high */
-+#define DAVINCI_I2C_DSET_PDSET1	BIT(1)
-+
-+/* set the SCL GPIO low */
-+#define DAVINCI_I2C_DCLR_PDCLR0	BIT(0)
-+/* set the SDA GPIO low */
-+#define DAVINCI_I2C_DCLR_PDCLR1	BIT(1)
-+
- struct davinci_i2c_dev {
- 	struct device           *dev;
- 	void __iomem		*base;
-@@ -182,6 +210,64 @@ static void generic_i2c_clock_pulse(struct davinci_i2c_dev *dev)
- 	}
++	if (pdata->has_pfunc) {
++		dev_dbg(dev->dev, "PFUNC = %08x\n",
++			davinci_i2c_read_reg(dev, DAVINCI_I2C_PFUNC_REG));
++		dev_dbg(dev->dev, "PDIR = %08x\n",
++			davinci_i2c_read_reg(dev, DAVINCI_I2C_PDIR_REG));
++		dev_dbg(dev->dev, "PDIN = %08x\n",
++			davinci_i2c_read_reg(dev, DAVINCI_I2C_PDIN_REG));
++		dev_dbg(dev->dev, "DSET = %08x\n",
++			davinci_i2c_read_reg(dev, DAVINCI_I2C_DSET_REG));
++		dev_dbg(dev->dev, "DCLR = %08x\n",
++			davinci_i2c_read_reg(dev, DAVINCI_I2C_DCLR_REG));
++	}
  }
  
-+static inline void davinci_i2c_reset_ctrl(struct davinci_i2c_dev *i2c_dev,
-+								int val);
-+
-+/* Generate gpio a pulse on the i2c clock pin. */
-+static void i2c_davinci_pfunc_i2c_clock_pulse(struct davinci_i2c_dev *dev)
-+{
-+	u32 flag = 0;
-+	u16 i;
-+
-+	davinci_i2c_reset_ctrl(dev, 0);
-+
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0x00);
-+
-+	/* SCL output, SDA input */
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_PDIR_REG,
-+				DAVINCI_I2C_PDIR_PDIR0);
-+
-+	/* change to GPIO mode */
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_PFUNC_REG,
-+				DAVINCI_I2C_PFUNC_PFUNC0);
-+
-+	/* SCL high */
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_DSET_REG,
-+				DAVINCI_I2C_DSET_PDSET0);
-+	udelay(5);
-+	for (i = 0; i < 16; i++) {
-+		/* SCL low */
-+		davinci_i2c_write_reg(dev, DAVINCI_I2C_DCLR_REG,
-+					DAVINCI_I2C_DCLR_PDCLR0);
-+		udelay(5);
-+		/* SCL high */
-+		davinci_i2c_write_reg(dev, DAVINCI_I2C_DSET_REG,
-+					DAVINCI_I2C_DSET_PDSET0);
-+		udelay(5);
-+
-+		/* read the state of SDA */
-+		flag = davinci_i2c_read_reg(dev, DAVINCI_I2C_PDIN_REG);
-+		if (flag & DAVINCI_I2C_PDIN_PDIN1) {
-+			dev_dbg(dev->dev, "recovered after %d SCL pulses",
-+					i + 1);
-+			break;
-+		}
-+	}
-+
-+	/* change back to I2C mode */
-+	davinci_i2c_write_reg(dev, DAVINCI_I2C_PFUNC_REG, 0);
-+
-+	/* take the I2C dev out of reset */
-+	davinci_i2c_reset_ctrl(dev, 1);
-+
-+	/* read the state of SDA */
-+	flag = davinci_i2c_read_reg(dev, DAVINCI_I2C_PDIN_REG);
-+	if (flag & DAVINCI_I2C_PDIN_PDIN1)
-+		return;
-+
-+	dev_err(dev->dev, "I2C slave will not release SDA.\n");
-+}
-+
- /* This routine does i2c bus recovery as specified in the
-  * i2c protocol Rev. 03 section 3.16 titled "Bus clear"
-  */
-@@ -756,6 +842,8 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 	pdata = dev->dev->platform_data;
- 	if (pdata->scl_pin)
- 		dev->pulse_scl = generic_i2c_clock_pulse;
-+	else if (pdata->has_pfunc)
-+		dev->pulse_scl = i2c_davinci_pfunc_i2c_clock_pulse;
- 
- 	return 0;
- 
+ /* Generate a pulse on the i2c clock pin. */
 -- 
 1.7.1
 
