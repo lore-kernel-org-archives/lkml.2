@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab1DESK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:10:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50885 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753775Ab1DESKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:10:54 -0400
-Date: Tue, 5 Apr 2011 14:10:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>, <netdev@vger.kernel.org>
-Subject: Re: mourning the loss of David Brownell
-In-Reply-To: <20110405034819.GA7872@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1104051350480.1972-100000@iolanthe.rowland.org>
+	id S1755675Ab1DESMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 14:12:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51066 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754618Ab1DESMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 14:12:16 -0400
+Message-ID: <4D9B5B81.3060404@suse.cz>
+Date: Tue, 05 Apr 2011 20:12:17 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Milton Miller <miltonm@bga.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [08/34] initramfs: Use KBUILD_BUILD_TIMESTAMP for generated entries
+References: <1302015561-21047-9-git-send-email-mmarek@suse.cz> <gen-initramfs-timestamp@mdm.bga.com>
+In-Reply-To: <gen-initramfs-timestamp@mdm.bga.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Apr 2011, Greg KH wrote:
+Dne 5.4.2011 19:31, Milton Miller napsal(a):
+> On Tue, 05 Apr 2011 about 14:58:55 -0000, Michal Marek wrote:
+>>
+>> gen_init_cpio uses the current time for symlinks, special files and
+>> directories.
+>
+> gen_init_cpio gets the current time and uses it for each symlink,
+> special file, and directory.
+>
+> Grab the current time once, and ...
+>
+>> Make it possible to override this with the
+> (s/this/it/)
+>> KBUILD_BUILD_TIMESTAMP variable for reproducible builds.
+>>
+...
+>> +	env = getenv("CPIO_TIMESTAMP");
+>> +	if (env)
+>> +		default_mtime = atol(env);
+>> +	if (!default_mtime)
+>> +		default_mtime = time(NULL);
+>> +
+>
+> Please pass it via an explicit flag in argv instead of magic env variables.
+>
+> The other current use of the environment (the expansion of variables
+> in the location name) is via explicit reference in the input file.
+>
+> Also, please use strol and check that the whole string is consumed.
 
-> As I have seen this tangentally mentioned already a few times
-> publically, I figured it warranted it's own announcement now.
-> 
-> Linux has lost a great developer with the passing of David Brownell
-> recently and he will be greatly missed.
+Yeah, I was too lazy. I'll do it properly in v2.
 
-David made contributions to a large number of areas in the Linux
-kernel.  Even a quick look through MAINTAINERS will show that he worked
-on USB controllers (OHCI, EHCI, OMAP and others), USB gadgets, USB
-networking, and SPI.  He was influential in the core USB design (the
-HCD "glue" layer and the scatter-gather library) and the development of
-Power Management (system sleep and the USB PM implementation).  His
-designs were elegant and his code was always a pleasure to read.
+Thanks for the review.
 
-He also was a big help to me personally, assisting in my initial entry
-to USB core development.  And he was the first person I met at the
-first Linux conference I attended.  I too will miss him.
-
-Alan Stern
-
-PS: A photo of David taken at the 2008 Linux Kernel Summit is available
-here:
-
-http://www.google.com/imgres?imgurl=http://farm4.static.flickr.com/3004/2949819475_98cbfc48b7.jpg&imgrefurl=http://www.flickr.com/photos/13825348%40N03/sets/72157608741347102/detail/&usg=__HjzUpixk_ITqzSnIhvUuWqdjQ_c=&h=500&w=333&sz=70&hl=en&start=0&zoom=1&tbnid=pixlWzZ4wUo1RM:&tbnh=132&tbnw=114&ei=w1mbTdXsCoO6sAOHp-j9Aw&prev=/search%3Fq%3Ddavid%2Bbrownell%26hl%3Den%26sa%3DX%26biw%3D1024%26bih%3D712%26tbm%3Disch%26prmd%3Divnso0%2C89&itbs=1&iact=hc&vpx=258&vpy=263&dur=7360&hovh=275&hovw=183&tx=85&ty=295&oei=w1mbTdXsCoO6sAOHp-j9Aw&page=1&ndsp=23&ved=1t:429,r:12,s:0&biw=1024&bih=712
-
+Michal
