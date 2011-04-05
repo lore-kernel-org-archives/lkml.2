@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab1DEQjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:39:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50925 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab1DEQjB (ORCPT
+	id S1754240Ab1DEQn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:43:27 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54982 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab1DEQn0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:39:01 -0400
+	Tue, 5 Apr 2011 12:43:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=gd/PW8R888uO1dXHmiT3klKYeydFPjhoEkkZ2k/FC6+PDOi1UwKvmRewgFKh6c3Xr3
-         8qFyMr9V4h9E/CMdSNDsLgrx6KnrsIGtB10I2vh0FpiI5Q6lV/JoexKQf76i2lkxQl62
-         AGx8br60z5DwFrtnEuFbFfhrUohIKUa0HnAkM=
-Date: Tue, 5 Apr 2011 09:38:55 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jeffrey Brown <jeffbrown@android.com>
-Cc: rydberg@euromail.se, djkurtz@google.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] input: evdev: Make device readable only when it
- contains a complete packet.
-Message-ID: <20110405163855.GC4183@core.coreip.homeip.net>
-References: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
- <1301727259-5185-4-git-send-email-jeffbrown@android.com>
- <20110404213659.GC984@core.coreip.homeip.net>
- <BANLkTi=0q6DbXki5RhE8eakermnVixN67g@mail.gmail.com>
- <20110404224611.GA2783@core.coreip.homeip.net>
- <BANLkTinLcXsZpHm3_uzRUEdrJQsbozgghA@mail.gmail.com>
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Nog2vKAWhQP+1b70/0Cc1qPR7NKEkGFxaN3nAyJFVSqjuG/u6wxAJQKzbWMJbIEtCt
+         doskfIEmNgljjgfA88dg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinLcXsZpHm3_uzRUEdrJQsbozgghA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTik3Rf_NUNnqQLPxRdokJzFLcZPK9w@mail.gmail.com>
+References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
+	<BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>
+	<4D959058.7010606@codeaurora.org>
+	<BANLkTim8GhUAZ7L-MiJiqi6xM=P_Q8kqfg@mail.gmail.com>
+	<4D981EAB.8070209@codeaurora.org>
+	<BANLkTimhk_G0fapzHAf0Gc-XhqT0qu+VbQ@mail.gmail.com>
+	<BANLkTinvbd9hmcsxhWQtM70uBzgv7sESTQ@mail.gmail.com>
+	<BANLkTik3Rf_NUNnqQLPxRdokJzFLcZPK9w@mail.gmail.com>
+Date: Tue, 5 Apr 2011 09:43:22 -0700
+X-Google-Sender-Auth: ds3ZMnuegw5HuNHJH9ov3dM5LlE
+Message-ID: <BANLkTima5DM6gm-1E_uGsM3cqPGd-U_how@mail.gmail.com>
+Subject: Re: [PATCH] ARM: BUG() dies silently
+From: Simon Glass <sjg@chromium.org>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        lk <linux-kernel@vger.kernel.org>,
+        lak <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 04, 2011 at 05:34:09PM -0700, Jeffrey Brown wrote:
-> Dmitry,
-> 
-> On Mon, Apr 4, 2011 at 3:46 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Mon, Apr 04, 2011 at 03:16:13PM -0700, Jeffrey Brown wrote:
-> >> bool full_sync = (type == EV_SYN && code == SYN_REPORT);
-> >
-> > I am not sure what is cheaper - 2 conditionals or stack manipulation
-> > needed to push another argument if we happed to be register-starved.
-> 
-> Not a question of the computational cost.  It was mostly done to avoid
-> repeating the same predicate in multiple places.  This was one of the
-> suggested improvements to my earlier patch.
-> 
-> >> This comment for last_syn is not quite right.  We need last_syn to
-> >> refer to the position just beyond the last sync.  Otherwise the device
-> >> will not become readable until another event is written there.  The
-> >> invariants for last_syn should be similar to those for head.
-> >
-> > Hm, yes, comment is incorrect. Given this fact I do not like the name
-> > anymore either (nor do I like 'end'). Need to think about something
-> > better.
-> 
-> Heh, I faced this very same dilemma.  I tried 'last_sync',
-> 'readable_tail', 'read_end', and others before settling on 'end' and a
-> descriptive comment.
+On Tue, Apr 5, 2011 at 9:02 AM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
+> Hi,
+>
+> On Tue, Apr 5, 2011 at 12:46 AM, Simon Glass <sjg@chromium.org> wrote:
+>> On Mon, Apr 4, 2011 at 7:29 PM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
+>> ...
 
-'packet_head' maybe? Similar to the head but for whole event packet?
+>>> OTOH, is not like "Use generic BUG() handler" gives the choice of
+>>> removing GENERIC_BUG given that it is not prompted in menuconfig and
+>>> auto selected, if this is the intention is there any reason to keep
+>>> the #else part of /* not CONFIG_GENERIC_BUG */? there is no way we can
+>>> use it with this patch, right?
+>>
+>> Well, er, the intention is that you use the patch. I kept the old code
+>> around since people can then simply change the Kconfig option and be
+>> back where they were, as indeed you have. I would be happy to remove
+>> the old behavior, but I was concerned about a possible roasting in
+>> this forum. Changing long-established behavior is sometimes tricky.
+>
+> Yes, but you can't change the Kconfig because it is not prompted with
+> your patch, if that was the intention then an option to de/select
+> GENERIC_BUG or not is needed:
+>
+> arch/arm/Kconfig
+> @@ -204,6 +204,10 @@ config MMU
+>          Select if you want MMU-based virtualised addressing space
+>          support by paged memory management. If unsure, say 'Y'.
+>
+> +config GENERIC_BUG
+> +       bool "Generic BUG"
+> +       default y
+> +       depends on BUG
 
-> 
-> >> Should use client->head here so that the SYN_DROPPED is readable.
-> >
-> > It is readable, but we do not want to signal on it.
-> 
-> I think we do want to signal on it.  We should signal whenever the
-> device becomes readable.
-> 
-> Signaling on dropped is useful in the case where a misbehaving device
-> driver fails to ever call input_sync.  If that happens, we might
-> enqueue a dropped event and then never wake up the client which makes
-> the issue hard to diagnose.
-> 
-> >> I don't think it's safe to modify last_syn outside of the spin lock.
-> >> This should be done above.
-> >
-> > This is the only writer, plus we are running under event_lock with
-> > interrupts off, so it is safe.
-> 
-> The value will be read concurrently by evdev_fetch_next_event.  So if
-> this were safe, then we wouldn't need the spin lock at all.
+Yes that's right, it is a manual edit. But if there are no objections
+I will create a patch to remove this and replace the old bug
+infrastructure entirely. - Simon
 
-Before we started changing tail to advance to SYN_DROPPED position we
-could probably drop the buffer lock and sprinkle memory barriers (to
-ensure, for example, that buffer is written before advancing head).
-
-Now we do need to protect buffer and head/tail but the new field can be
-updated outside the lock.
-
-> 
-> At the very least for the sake of consistency, I think we should keep
-> the buffer manipulations within the guarded region.
-> 
-
-OK, we can do that too. As I said, we are running with interrupts off
-and with even_lock acquired so we can pull update to the new field along
-with kill_fasync inside the buffer lock.
-
-Thanks.
-
--- 
-Dmitry
+>
+> Regards,
+>
+> Omar
+>
