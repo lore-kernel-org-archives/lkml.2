@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab1DEUSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 16:18:41 -0400
-Received: from home.keithp.com ([63.227.221.253]:33116 "EHLO keithp.com"
+	id S1754798Ab1DEUUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 16:20:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39351 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab1DEUSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 16:18:38 -0400
-From: "Keith Packard" <keithp@keithp.com>
-To: Dave Airlie <airlied@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: i915 fixes for VGA and LVDS DDC probing
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
-cc: "Torvalds, Linus" <torvalds@linux-foundation.org>
-Date: Tue, 05 Apr 2011 13:18:34 -0700
-Message-ID: <yunsjtwfo4l.fsf@aiko.keithp.com>
+	id S1751996Ab1DEUUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 16:20:36 -0400
+Date: Tue, 5 Apr 2011 22:19:58 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [RFC][PATCH 1/5] signals: Always place SIGCONT and SIGSTOP on
+	'shared_pending'
+Message-ID: <20110405201958.GA1404@redhat.com>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-2-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302031310-1765-2-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi Matt,
 
+I'll try to study this series, but not before Friday, sorry.
 
-Hi Dave,
+Only one thing,
 
-Please pull two fixes from
+On 04/05, Matt Fleming wrote:
+> 
+> Because SIGCONT and SIGSTOP affect an entire thread group,
 
-        git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6 drm-=
-intel-fixes
+Yes, the effect is global, but
 
-The first resolves a regression https://bugzilla.kernel.org/show_bug.cgi?id=
-=3D32612
-with VGA detection.
+> we can
+> place them on the 'shared_pending' queue.
 
-The second removes the same bogus code from the LVDS detection path.
+I don't think we can.
 
-Changelog:
-=2D--------
+ -	pending = group ? &t->signal->shared_pending : &t->pending;
+> +	/*
+> +	 * We always enqueue SIGSTOP or SIGCONT signals on the shared
+> +	 * queue. This means that a SIGSTOP or SIGCONT signal _cannot_
+> +	 * be present on a thread's private pending queue.
+> +	 *
+> +	 * This makes prepare_signal() more optimal as we do not have
+> +	 * to remove signals from each thread's pending queue and so
+> +	 * can avoid iterating over all threads in the thread group
+> +	 * (and therefore avoid the locking that would be necessary to
+> +	 * do that safely).
+> +	 */
+> +	if (group || sig_kernel_stop(sig) || sig == SIGCONT)
+> +		pending = &t->signal->shared_pending;
+> +	else
+> +		pending = &t->pending;
 
-Chris Wilson (2):
-      drm/i915/crt: Remove 0xa0 probe for VGA
-      drm/i915/lvds: Remove 0xa0 DDC probe for LVDS
+How so? Suppose the process has a handler for SIGCONT. Suppose this
+process is not stopped. tkill(SIGCONT) should deliver the signal to
+the right thread.
 
-Diffstat
-=2D-------
+SIGSTOP can't have the handler, still we shouldn't place it on the
+shared list, debuggers won't be happy.
 
- intel_crt.c  |   20 --------------------
- intel_lvds.c |   24 ------------------------
- 2 files changed, 44 deletions(-)
+Also. This code was changed very much, please do these changes on
+top of
+http://git.kernel.org/?p=linux/kernel/git/tj/misc.git;a=shortlog;h=refs/heads/ptrace
 
-=2D-=20
-keith.packard@intel.com
+Oleg.
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFNm3kaQp8BWwlsTdMRApFkAKCpwjRNR2e54E5g/rwqlGTJlmdKXgCg1F3l
-ah9Ecj+u9mGTaSoCNdkT+6c=
-=naF+
------END PGP SIGNATURE-----
---=-=-=--
