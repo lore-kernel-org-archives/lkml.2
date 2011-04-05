@@ -1,95 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab1DEXFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 19:05:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29156 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754515Ab1DEXFu convert rfc822-to-8bit (ORCPT
+	id S1753328Ab1DEXIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 19:08:00 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43778 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab1DEXHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 19:05:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VU60tFb+YAIghrULtchmlt99ZOMrUHRd+us/AxI3WfdnXV5cRhxnAciKDYzbfYHQLj
-         48eBU06j5h49mCoDG4oA==
+	Tue, 5 Apr 2011 19:07:54 -0400
+Date: Tue, 5 Apr 2011 16:07:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110405230745.GA5972@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110330105505.GA3195@sepie.suse.cz>
+ <1301482656.4859.171.camel@twins>
+ <4D931814.9090100@suse.cz>
+ <4D93D29C.5010702@cn.fujitsu.com>
+ <1301558691.2250.486.camel@laptop>
+ <4D944E60.8080704@cn.fujitsu.com>
+ <1301570320.4859.242.camel@twins>
+ <4D953121.6090901@cn.fujitsu.com>
+ <1301657749.4859.531.camel@twins>
+ <20110405215450.GK2247@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110405223814.GA21350@ericsson.com>
-References: <1302038697-28985-1-git-send-email-natg@google.com>
-	<20110405223814.GA21350@ericsson.com>
-Date: Tue, 5 Apr 2011 16:05:47 -0700
-Message-ID: <BANLkTikX5fAkdrZAktQON=8DwuQL+5Ow-w@mail.gmail.com>
-Subject: Re: [PATCH] Make all it87 drivers SMP safe.
-From: Natarajan Gurumoorthy <natg@google.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Mike Waychison <mikew@google.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110405215450.GK2247@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter,
-       This patch patch applies a common fix to all IT87 driver.
-Separating it into 2 patches (one for drivers/hwmon and one for
-drivers/watchdog) does not seem to be the right thing to do. I think
-having all the patches in one file makes it easier to understand the
-rationale behind the patch. The it87_io_lock.c and it87_io_lock.h
-files are in drivers/watchdog directory and the lock defined in it is
-needed by the changes in drivers/hwmon/it87.c
+On Tue, Apr 05, 2011 at 02:54:50PM -0700, Paul E. McKenney wrote:
+> On Fri, Apr 01, 2011 at 01:35:49PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2011-04-01 at 09:57 +0800, Lai Jiangshan wrote:
+> > > 
+> > > We are trying to use inlined read_read_[un]lock(), it is required that sched.h
+> > > needs include rcupdate.h which causes many recursive including. Splitting rcupdate.h
+> > > only does not help. 
+> > 
+> > You're not making any kind of sense there.
+> > 
+> > linux-2.6# cat kernel/sched_tmp.c 
+> > 
+> > #include <linux/sched.h>
+> > 
+> > linux-2.6# make kernel/sched_tmp.i
+> > linux-2.6# awk '/^#/ { t=$0 } /rcu_read_lock/ { print t " " $0 }' kernel/sched_tmp.i
+> > # 60 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline void __rcu_read_lock_bh(void)
+> > # 60 "/usr/src/linux-2.6/include/linux/rcupdate.h" extern void __rcu_read_lock(void);
+> > # 258 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline int rcu_read_lock_held(void)
+> > # 258 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline int rcu_read_lock_bh_held(void)
+> > # 258 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline int rcu_read_lock_sched_held(void)
+> > # 559 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline void rcu_read_lock(void)
+> > # 559 "/usr/src/linux-2.6/include/linux/rcupdate.h"  __rcu_read_lock();
+> > # 600 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline void rcu_read_lock_bh(void)
+> > # 600 "/usr/src/linux-2.6/include/linux/rcupdate.h"  __rcu_read_lock_bh();
+> > # 627 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline void rcu_read_lock_sched(void)
+> > # 627 "/usr/src/linux-2.6/include/linux/rcupdate.h" static inline __attribute__((no_instrument_function)) void rcu_read_lock_sched_notrace(void)
+> > # 70 "/usr/src/linux-2.6/include/linux/srcu.h" int __srcu_read_lock(struct srcu_struct *sp) ;
+> > # 103 "/usr/src/linux-2.6/include/linux/srcu.h" static inline int srcu_read_lock_held(struct srcu_struct *sp)
+> > # 149 "/usr/src/linux-2.6/include/linux/srcu.h" static inline int srcu_read_lock(struct srcu_struct *sp)
+> > # 149 "/usr/src/linux-2.6/include/linux/srcu.h"  int retval = __srcu_read_lock(sp);
+> > # 1227 "/usr/src/linux-2.6/include/linux/sched.h"  int rcu_read_lock_nesting;
+> > # 1786 "/usr/src/linux-2.6/include/linux/sched.h"  p->rcu_read_lock_nesting = 0;
+> > 
+> > There isn't a single rcu_read_lock() user in the include chain of
+> > sched.h, therefore its possible to split rcupdate.h such that one part
+> > includes the bits needed for sched.h and another part that includes
+> > sched.h and provides rcu_read_lock().
+> 
+> Yep, you can easily split struct rcu_head out into its own header file,
+> and then include that into sched.h in place of rcupdate.h without trouble
+> (at least in the few builds I tried).
+> 
+> The trouble comes when you take the next step and include sched.h
+> into include/linux/rcutree.h, which would be needed to allow
+> TREE_PREEMPT_RCU's rcu_read_lock() and rcu_read_unlock() to be
+> inlined.  This pulls sched.h into files that it was not already
+> included into, and we do get build failures (the first of which
+> requires changes local to RCU, FWIW).
+> 
+> Of course, it would be good to straighten this out.
 
-Regards
-Nat
+And here is a start -- the build is -much- quieter with this patch.
 
+The next layer on this onion is the use of the ctl_table typedef
+in include/linux/key.h -- which is defined to be struct ctl_table.
+Anyone know where struct ctl_table is defined?  Color me blind, but I
+am not seeing it...
 
-On Tue, Apr 5, 2011 at 3:38 PM, Guenter Roeck
-<guenter.roeck@ericsson.com> wrote:
->
-> On Tue, Apr 05, 2011 at 05:24:57PM -0400, Nat Gurumoorthy wrote:
-> > There are 3 different drivers that touch the it87 hardware registers.
-> > The 3 drivers have been written independently and access the it87 hardware
-> > registers assuming they are the only driver accessing it. This change
-> > attempts to serialize access to the hardware by defining a global spinlock
-> > it87_io_lock in a file it87_lock.c. This lock has to be acquired by each
-> > of the it87 drivers before it can access the hardware. We have defined
-> > a new Kconfig option IT87_LOCK. When it is selected it87_lock.c is compiled
-> > into the kernel thereby making the lock global and accessable to the it87
-> > drivers which are typically built as loadable modules. All the it87 drivers
-> > select IT87_LOCK to compile the lock into the kernel.
-> > The routines accessing the hardware are being called from module init,
-> > open, ioctl and module exit routines and hence it is sufficient to use
-> > calls to spin_lock and spin_unlock to acquire and release the locks. For
-> > the same reasons it87_wdt.c has extensive changes to remove calls to
-> > spin_lock_irqsave and spin_unlock_irqrestore. The lock is now acquired
-> > in superio_enter and released in superio_exit. This is now identical
-> > to the code in drivers/hwmon/it87.c and drivers/watchdog/it8712f_wdt.c.
-> > Added __acquire and __release annotations wherever needed.
-> > ---
-> >  drivers/hwmon/Kconfig          |    1 +
-> >  drivers/hwmon/it87.c           |   14 ++++++++++++-
-> >  drivers/watchdog/Kconfig       |   12 +++++++++++
-> >  drivers/watchdog/Makefile      |    1 +
-> >  drivers/watchdog/it8712f_wdt.c |   10 ++++----
-> >  drivers/watchdog/it87_lock.c   |   27 +++++++++++++++++++++++++
-> >  drivers/watchdog/it87_wdt.c    |   42 ++++++---------------------------------
-> >  include/linux/it87_lock.h      |   28 ++++++++++++++++++++++++++
-> >  8 files changed, 94 insertions(+), 41 deletions(-)
-> >  create mode 100644 drivers/watchdog/it87_lock.c
-> >  create mode 100644 include/linux/it87_lock.h
-> >
-> > Signed-off-by: Nat Gurumoorthy <natg@google.com>
-> >
-> Seems to me those should be separate patches, one per affected subsystem.
->
-> Guenter
+							Thanx, Paul
 
+------------------------------------------------------------------------
 
-
---
-Regards
-Nat Gurumoorthy AB6SJ
+diff --git a/include/linux/rcu_head.h b/include/linux/rcu_head.h
+new file mode 100644
+index 0000000..e0b8add
+--- /dev/null
++++ b/include/linux/rcu_head.h
+@@ -0,0 +1,46 @@
++/*
++ * Read-Copy Update mechanism for mutual exclusion: base structures
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright IBM Corporation, 2001
++ *
++ * Author: Dipankar Sarma <dipankar@in.ibm.com>
++ *
++ * Based on the original work by Paul McKenney <paulmck@us.ibm.com>
++ * and inputs from Rusty Russell, Andrea Arcangeli and Andi Kleen.
++ * Papers:
++ * http://www.rdrop.com/users/paulmck/paper/rclockpdcsproof.pdf
++ * http://lse.sourceforge.net/locking/rclock_OLS.2001.05.01c.sc.pdf (OLS2001)
++ *
++ * For detailed explanation of Read-Copy Update mechanism see -
++ *		http://lse.sourceforge.net/locking/rcupdate.html
++ *
++ */
++
++#ifndef __LINUX_RCU_HEAD_H
++#define __LINUX_RCU_HEAD_H
++
++/**
++ * struct rcu_head - callback structure for use with RCU
++ * @next: next update requests in a list
++ * @func: actual update function to call after the grace period.
++ */
++struct rcu_head {
++	struct rcu_head *next;
++	void (*func)(struct rcu_head *head);
++};
++
++#endif /* __LINUX_RCU_HEAD_H */
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index ff422d2..ab94fcfb 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -52,15 +52,7 @@ extern int rcutorture_runnable; /* for sysctl */
+ #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+ #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
+ 
+-/**
+- * struct rcu_head - callback structure for use with RCU
+- * @next: next update requests in a list
+- * @func: actual update function to call after the grace period.
+- */
+-struct rcu_head {
+-	struct rcu_head *next;
+-	void (*func)(struct rcu_head *head);
+-};
++#include <linux/rcu_head.h>
+ 
+ /* Exported common interfaces */
+ extern void call_rcu_sched(struct rcu_head *head,
+@@ -141,14 +133,6 @@ static inline void rcu_exit_nohz(void)
+ 
+ #endif /* #else #ifdef CONFIG_NO_HZ */
+ 
+-#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+-#include <linux/rcutree.h>
+-#elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
+-#include <linux/rcutiny.h>
+-#else
+-#error "Unknown RCU implementation specified to kernel configuration"
+-#endif
+-
+ /*
+  * init_rcu_head_on_stack()/destroy_rcu_head_on_stack() are needed for dynamic
+  * initialization and destruction of rcu_head on the stack. rcu_head structures
+@@ -797,4 +781,12 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+ }
+ #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ 
++#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
++#include <linux/rcutree.h>
++#elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
++#include <linux/rcutiny.h>
++#else
++#error "Unknown RCU implementation specified to kernel configuration"
++#endif
++
+ #endif /* __LINUX_RCUPDATE_H */
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 3a93348..c317eec 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -30,6 +30,8 @@
+ #ifndef __LINUX_RCUTREE_H
+ #define __LINUX_RCUTREE_H
+ 
++#include <linux/sched.h>
++
+ extern void rcu_init(void);
+ extern void rcu_note_context_switch(int cpu);
+ extern int rcu_needs_cpu(int cpu);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 83bd2e2..e7c6a90 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -78,7 +78,7 @@ struct sched_param {
+ #include <linux/topology.h>
+ #include <linux/proportions.h>
+ #include <linux/seccomp.h>
+-#include <linux/rcupdate.h>
++#include <linux/rcu_head.h>
+ #include <linux/rculist.h>
+ #include <linux/rtmutex.h>
+ 
+@@ -2241,11 +2241,9 @@ int same_thread_group(struct task_struct *p1, struct task_struct *p2)
+ 	return p1->tgid == p2->tgid;
+ }
+ 
+-static inline struct task_struct *next_thread(const struct task_struct *p)
+-{
+-	return list_entry_rcu(p->thread_group.next,
+-			      struct task_struct, thread_group);
+-}
++/* Avoid #include hell for inlining rcu_read_lock(). */
++#define next_thread(p) \
++	list_entry_rcu((p)->thread_group.next, struct task_struct, thread_group)
+ 
+ static inline int thread_group_empty(struct task_struct *p)
+ {
