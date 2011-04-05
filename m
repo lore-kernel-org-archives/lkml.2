@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab1DEPp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:45:56 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62511 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab1DEPpx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:45:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:organization:message-id:in-reply-to
-         :user-agent;
-        b=PbIOVbY7OdyX7ttcGHBxh0SCmflvICjHKyHhYALCob4dn93Fv1jLhyKgJ8DlNs5tYH
-         Manmtm6EyUPMV5lax7kO7JQtpcTmxw1rWCBxhuGsz31rORnc8QOJJE1aOTIzbcw/9i2N
-         jKY/OOIUvB0ee6evPaloP5nnUKgRAsQy6hGG0=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
-Cc: stern@rowland.harvard.edu, sshtylyov@mvista.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] usb: gadget: file_storage: Make CD-ROM emulation
- work with Mac OS-X
-References: <1302015569-9668-1-git-send-email-roger.quadros@nokia.com>
- <1302015569-9668-3-git-send-email-roger.quadros@nokia.com>
-Date: Tue, 05 Apr 2011 17:45:50 +0200
+	id S1754743Ab1DEPqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:46:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58454 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753709Ab1DEPqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 11:46:12 -0400
+Date: Tue, 5 Apr 2011 08:41:33 -0700
+From: Greg KH <gregkh@suse.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: hjanssen@microsoft.com, kys@microsoft.com, v-abkane@microsoft.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Mike Surcouf <mike@surcouf.co.uk>,
+        stable <stable@kernel.org>
+Subject: Re: [PATCH] staging: hv: Fix GARP not sent after Quick Migration
+Message-ID: <20110405154133.GA30923@suse.de>
+References: <1302017268-22913-1-git-send-email-haiyangz@microsoft.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Organization: Google
-Message-ID: <op.vtg12opj3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1302015569-9668-3-git-send-email-roger.quadros@nokia.com>
-User-Agent: Opera Mail/11.01 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302017268-22913-1-git-send-email-haiyangz@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Apr 2011 16:59:28 +0200, Roger Quadros  
-<roger.quadros@nokia.com> wrote:
-> --- a/drivers/usb/gadget/file_storage.c
-> +++ b/drivers/usb/gadget/file_storage.c
-> @@ -1703,18 +1705,21 @@ static int do_read_toc(struct fsg_dev *fsg,  
-> struct fsg_buffhd *bh)
->  		return -EINVAL;
->  	}
-> -	memset(buf, 0, 20);
-> -	buf[1] = (20-2);		/* TOC data length */
-> -	buf[2] = 1;			/* First track number */
-> -	buf[3] = 1;			/* Last track number */
-> -	buf[5] = 0x16;			/* Data track, copying allowed */
-> -	buf[6] = 0x01;			/* Only track is number 1 */
-> -	store_cdrom_address(&buf[8], msf, 0);
-> +	format = fsg->cmnd[2] & 0xf;
-> +	/*
-> +	 * Check if CDB is old style SFF-8020i
-> +	 * i.e. format is in 2 MSBs of byte 9
-> +	 * Mac OS-X host sends us this.
-> +	 */
-> +	if (format == 0)
-> +		format = (fsg->cmnd[9] >> 6) & 0x3;
-> -	buf[13] = 0x16;			/* Lead-out track is data */
-> -	buf[14] = 0xAA;			/* Lead-out track number */
-> -	store_cdrom_address(&buf[16], msf, curlun->num_sectors);
-> -	return 20;
-> +	ret = fsg_get_toc(curlun, msf, format, buf);
-> +	if (ret < 0) {
-> +		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
-> +		return -EINVAL;
-> +	}
+On Tue, Apr 05, 2011 at 08:27:48AM -0700, Haiyang Zhang wrote:
+> After Quick Migration, the network is not immediately operational in the
+> current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, I put
+> the netif_notify_peers() into a scheduled work, otherwise GARP packet will
+> not be sent after quick migration, and cause network disconnection.
 
-I'd drop the “return -EINVAL;” and let “return ret;” below handle it.
-This obviously also apply to patch to f_mass_storage.c (BTW. I would
-merge the two patches).
+But that's a hypervisor bug, right?  It shouldn't be sending a "connect"
+event on the ethernet device if the network really isn't present.  How
+about getting it fixed there, which will resolve the issues for all
+guest operating systems, not just Linux.
 
-> +	return ret;
->  }
+Or, if this is something that the hyperv developers are not going to
+fix, we need to document it in the code itself so that people don't try
+to remove it in a few years as an "optimization".
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+thanks,
+
+greg k-h
