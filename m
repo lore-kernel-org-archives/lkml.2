@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab1DELSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 07:18:16 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:15068 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab1DELSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 07:18:15 -0400
-X-IronPort-AV: E=Sophos;i="4.63,303,1299456000"; 
-   d="scan'208";a="5143510"
-Date: Tue, 5 Apr 2011 12:19:27 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH] xen: do not clear and mask evtchns in
- __xen_evtchn_do_upcall
-In-Reply-To: <20110404171739.GA15070@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1104051211420.16492@kaball-desktop>
-References: <alpine.DEB.2.00.1103291505090.16492@kaball-desktop> <20110330154630.GA17427@dumpdata.com> <alpine.DEB.2.00.1104041521370.16492@kaball-desktop> <20110404171739.GA15070@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1753365Ab1DELn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 07:43:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47731 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743Ab1DELn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 07:43:26 -0400
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Apr 2011 17:05:10 +1000
+Message-ID: <1301987110.2549.146.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Apr 2011, Konrad Rzeszutek Wilk wrote:
-> > I reworded this part of the commit message, see below updated patch.
-> > 
-> [looking]
-> .. snip..
-> > > Can you expand? As in for the GSI? Or for the MSI/MSI-X?
-> > 
-> > Linux on native would use handle_edge_irq for edge irqs and msis, and
-> > handle_fasteoi_irq for everything else.
-> 
-> What about per_cpu one?
-> 
+Hi Linus !
 
-That is the simplest case, we are already using the same semantic as in
-the native code.
+Some minor powerpc fixes for you, freescale device-tree updates
+and a few nits like wrong ifdef's etc... 
 
+Cheers,
+Ben.
 
-> > > OK. You need a big comment about this in the code. Explain
-> > > why this is happening. B/c if you look at this from code
-> > > it seems like wrong thing to do for gsi's (as in you would
-> > > think handle_level_irq would the right choice).
-> > 
-> > Except handle_level_irq is not used anymore anywhere in the kernel, give
-> > a look at arch/x86/kernel/apic/io_apic.c:ioapic_register_intr.
-> 
-> 'make_8259A_irq' ? But yeah, I don't think we will hit machines with
-> that architecture anymore.
+The following changes since commit b2a8b4b81966094703088a7bc76a313af841924d:
 
-Actually I was looking at:
+  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-04-04 17:56:07 -0700)
 
-setup_IO_APIC_irqs -> __io_apic_setup_irqs -> io_apic_setup_irq_pin
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
+Benjamin Herrenschmidt (2):
+      Merge remote branch 'kumar/merge' into merge
+      powerpc/pseries: Don't register global initcall
 
-> > Updated patch, rebased on 2.6.39-rc1 follows:
-> > 
-> > ---
-> > 
-> > 
-> > commit 6978531913b45abf3aff048475a2174a2cdaf288
-> > Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Date:   Tue Mar 29 14:15:06 2011 +0000
-> > 
-> >     xen: do not clear and mask evtchns in __xen_evtchn_do_upcall
-> >     
-> >     Change the irq handler of virqs and pirqs that don't need EOI (pirqs
-> >     that correspond to physical edge interrupts) to handle_edge_irq.
-> >     
-> >     Use handle_fasteoi_irq for pirqs that need eoi (they generally
-> >     correspond to level triggered irqs), no risk in loosing interrupts
-> >     because we have to EOI the irq anyway.
-> >     
-> >     This change has the following benefits:
-> >     
-> >     - it uses the very same handlers that Linux would use on native for the
-> >     same irqs (handle_edge_irq for edge irqs and msis, and
->                                                    ^^^-'MSIs/MSI-Xs'
-> >     handle_fasteoi_irq for everything else);
-> >     
-> >     - it uses these handlers in the same way Linux would use them: it let
->                                                                            ^- 's'
-> 
-> >     Linux mask\unmask and ack the irq when Linux want to mask\unmask and ack
->                                                        ^- 's'
-> >     the irq;
-> >     
-> >     See genericirq in the kernel docbook docs for more informations.
-> 
-> Say 'Documentation/DocBook/genericirq.tmpl'
-> 
-> [edit: The patch looks OK to me, but let me think about this some more over this
-> week and sketch out the flow].
+Kumar Gala (1):
+      edac/mpc85xx: Limit setting/clearing of HID1[RFXE] to e500v1/v2 cores
 
-done
+Matt Evans (1):
+      powerpc/pseries: Fix build without CONFIG_HOTPLUG_CPU
+
+Paul Gortmaker (1):
+      powerpc/kexec: Fix mismatched ifdefs for PPC64/SMP.
+
+Prabhakar Kushwaha (1):
+      powerpc/85xx: Update dts for PCIe memory maps to match u-boot of Px020RDB
+
+Ryan Grimm (1):
+      powerpc: Set nr_cpu_ids early and use it to free PACAs
+
+ arch/powerpc/boot/dts/p1020rdb.dts            |   12 +++++-----
+ arch/powerpc/boot/dts/p2020rdb.dts            |   12 +++++-----
+ arch/powerpc/boot/dts/p2020rdb_camp_core0.dts |    4 +-
+ arch/powerpc/boot/dts/p2020rdb_camp_core1.dts |   10 ++++----
+ arch/powerpc/kernel/crash.c                   |    6 ++--
+ arch/powerpc/kernel/paca.c                    |    2 +-
+ arch/powerpc/kernel/setup-common.c            |    3 ++
+ arch/powerpc/platforms/pseries/setup.c        |    2 +-
+ arch/powerpc/platforms/pseries/smp.c          |   17 ++++++++++-----
+ drivers/edac/mpc85xx_edac.c                   |   27 +++++++++++++++++-------
+ 10 files changed, 57 insertions(+), 38 deletions(-)
+
 
