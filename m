@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab1DEQn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:43:27 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54982 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab1DEQn0 convert rfc822-to-8bit (ORCPT
+	id S1754815Ab1DEQqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:46:12 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:53150 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199Ab1DEQqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:43:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Nog2vKAWhQP+1b70/0Cc1qPR7NKEkGFxaN3nAyJFVSqjuG/u6wxAJQKzbWMJbIEtCt
-         doskfIEmNgljjgfA88dg==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTik3Rf_NUNnqQLPxRdokJzFLcZPK9w@mail.gmail.com>
-References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
-	<BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>
-	<4D959058.7010606@codeaurora.org>
-	<BANLkTim8GhUAZ7L-MiJiqi6xM=P_Q8kqfg@mail.gmail.com>
-	<4D981EAB.8070209@codeaurora.org>
-	<BANLkTimhk_G0fapzHAf0Gc-XhqT0qu+VbQ@mail.gmail.com>
-	<BANLkTinvbd9hmcsxhWQtM70uBzgv7sESTQ@mail.gmail.com>
-	<BANLkTik3Rf_NUNnqQLPxRdokJzFLcZPK9w@mail.gmail.com>
-Date: Tue, 5 Apr 2011 09:43:22 -0700
-X-Google-Sender-Auth: ds3ZMnuegw5HuNHJH9ov3dM5LlE
-Message-ID: <BANLkTima5DM6gm-1E_uGsM3cqPGd-U_how@mail.gmail.com>
-Subject: Re: [PATCH] ARM: BUG() dies silently
-From: Simon Glass <sjg@chromium.org>
-To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        lk <linux-kernel@vger.kernel.org>,
-        lak <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 5 Apr 2011 12:46:09 -0400
+Subject: [PATCH] drivers/scsi/mpt2sas: prevent heap overflows and unchecked
+ reads
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: eric.moore@lsi.com, james.bottomley@suse.de, kashyap.desai@lsi.com
+Cc: security@kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Apr 2011 12:45:59 -0400
+Message-ID: <1302021959.2082.8.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 9:02 AM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
-> Hi,
->
-> On Tue, Apr 5, 2011 at 12:46 AM, Simon Glass <sjg@chromium.org> wrote:
->> On Mon, Apr 4, 2011 at 7:29 PM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
->> ...
+At two points in handling device ioctls via /dev/mpt2ctl, user-supplied
+length values are used to copy data from userspace into heap buffers
+without bounds checking, allowing controllable heap corruption and
+subsequently privilege escalation.
 
->>> OTOH, is not like "Use generic BUG() handler" gives the choice of
->>> removing GENERIC_BUG given that it is not prompted in menuconfig and
->>> auto selected, if this is the intention is there any reason to keep
->>> the #else part of /* not CONFIG_GENERIC_BUG */? there is no way we can
->>> use it with this patch, right?
->>
->> Well, er, the intention is that you use the patch. I kept the old code
->> around since people can then simply change the Kconfig option and be
->> back where they were, as indeed you have. I would be happy to remove
->> the old behavior, but I was concerned about a possible roasting in
->> this forum. Changing long-established behavior is sometimes tricky.
->
-> Yes, but you can't change the Kconfig because it is not prompted with
-> your patch, if that was the intention then an option to de/select
-> GENERIC_BUG or not is needed:
->
-> arch/arm/Kconfig
-> @@ -204,6 +204,10 @@ config MMU
->          Select if you want MMU-based virtualised addressing space
->          support by paged memory management. If unsure, say 'Y'.
->
-> +config GENERIC_BUG
-> +       bool "Generic BUG"
-> +       default y
-> +       depends on BUG
+Additionally, user-supplied values are used to determine the size of a
+copy_to_user() as well as the offset into the buffer to be read, with no
+bounds checking, allowing users to read arbitrary kernel memory.
 
-Yes that's right, it is a manual edit. But if there are no objections
-I will create a patch to remove this and replace the old bug
-infrastructure entirely. - Simon
+Compile-tested only.  Thanks to Eric Moore for suggestions on how to fix
+this.
 
->
-> Regards,
->
-> Omar
->
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: stable@kernel.org
+---
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+index e92b77a..3834c95 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+@@ -688,6 +688,13 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPTER *ioc,
+ 		goto out;
+ 	}
+ 
++	/* Check for overflow and wraparound */
++	if (karg.data_sge_offset * 4 > ioc->request_sz ||
++	    karg.data_sge_offset > (UINT_MAX / 4)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
+ 	/* copy in request message frame from user */
+ 	if (copy_from_user(mpi_request, mf, karg.data_sge_offset*4)) {
+ 		printk(KERN_ERR "failure at %s:%d/%s()!\n", __FILE__, __LINE__,
+@@ -1963,7 +1970,7 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
+ 	Mpi2DiagBufferPostReply_t *mpi_reply;
+ 	int rc, i;
+ 	u8 buffer_type;
+-	unsigned long timeleft;
++	unsigned long timeleft, request_size, copy_size;
+ 	u16 smid;
+ 	u16 ioc_status;
+ 	u8 issue_reset = 0;
+@@ -1999,6 +2006,8 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
+ 		return -ENOMEM;
+ 	}
+ 
++	request_size = ioc->diag_buffer_sz[buffer_type];
++
+ 	if ((karg.starting_offset % 4) || (karg.bytes_to_read % 4)) {
+ 		printk(MPT2SAS_ERR_FMT "%s: either the starting_offset "
+ 		    "or bytes_to_read are not 4 byte aligned\n", ioc->name,
+@@ -2006,13 +2015,23 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
+ 		return -EINVAL;
+ 	}
+ 
++	if (karg.starting_offset > request_size)
++		return -EINVAL;
++
+ 	diag_data = (void *)(request_data + karg.starting_offset);
+ 	dctlprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: diag_buffer(%p), "
+ 	    "offset(%d), sz(%d)\n", ioc->name, __func__,
+ 	    diag_data, karg.starting_offset, karg.bytes_to_read));
+ 
++	/* Truncate data on requests that are too large */
++	if ((diag_data + karg.bytes_to_read < diag_data) ||
++	    (diag_data + karg.bytes_to_read > request_data + request_size))
++		copy_size = request_size - karg.starting_offset;
++	else
++		copy_size = karg.bytes_to_read;
++
+ 	if (copy_to_user((void __user *)uarg->diagnostic_data,
+-	    diag_data, karg.bytes_to_read)) {
++	    diag_data, copy_size)) {
+ 		printk(MPT2SAS_ERR_FMT "%s: Unable to write "
+ 		    "mpt_diag_read_buffer_t data @ %p\n", ioc->name,
+ 		    __func__, diag_data);
+
+
+
+
