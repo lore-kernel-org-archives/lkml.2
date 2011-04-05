@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab1DETHN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 15:07:13 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:37424 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753093Ab1DETHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 15:07:10 -0400
-Date: Tue, 5 Apr 2011 22:07:05 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: mourning the loss of David Brownell
-Message-ID: <20110405190704.GB28557@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110405034819.GA7872@kroah.com>
- <Pine.LNX.4.44L0.1104051350480.1972-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104051350480.1972-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754598Ab1DETIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 15:08:46 -0400
+Received: from mail.perches.com ([173.55.12.10]:4512 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753441Ab1DETIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 15:08:43 -0400
+Subject: Re: [PATCH] MAINTAINERS: Resend: Change mail adress of Hans J. Koch
+From: Joe Perches <joe@perches.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110405185621.GE7028@local>
+References: <20110405185621.GE7028@local>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Apr 2011 12:08:40 -0700
+Message-ID: <1302030520.3969.3.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2011-04-05 at 20:56 +0200, Hans J. Koch wrote:
+> My old mail address doesn't exist anymore. This patch changes all occurences
+> in MAINTAINERS to my new address. I already sent this in Oct. 2010, but it
+> somehow never made it to mainline (is there a MAINTAINERS maintainer?)
 
-On Tue, Apr 05, 2011 at 02:10:53PM -0400, Alan Stern wrote:
-> On Mon, 4 Apr 2011, Greg KH wrote:
+The closest thing may be Andrew Morton.
+I send my MAINTAINERS patches through him.
+These patches are typically 1 release delayed.
+
+$ ./scripts/get_maintainer.pl -f MAINTAINERS
+Andrew Morton <akpm@linux-foundation.org> (commit_signer:79/549=14%)
+Joe Perches <joe@perches.com> (commit_signer:50/549=9%)
+linux-kernel@vger.kernel.org (open list)
+
+
+> Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+> ---
+>  MAINTAINERS |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> > As I have seen this tangentally mentioned already a few times
-> > publically, I figured it warranted it's own announcement now.
-> > 
-> > Linux has lost a great developer with the passing of David Brownell
-> > recently and he will be greatly missed.
-> 
-> David made contributions to a large number of areas in the Linux
-> kernel.  Even a quick look through MAINTAINERS will show that he worked
-> on USB controllers (OHCI, EHCI, OMAP and others), USB gadgets, USB
-> networking, and SPI.  He was influential in the core USB design (the
-> HCD "glue" layer and the scatter-gather library) and the development of
-> Power Management (system sleep and the USB PM implementation).  His
-> designs were elegant and his code was always a pleasure to read.
-> 
-> He also was a big help to me personally, assisting in my initial entry
-> to USB core development.  And he was the first person I met at the
-> first Linux conference I attended.  I too will miss him.
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 6b4b9cd..b96f3b3 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1063,7 +1063,7 @@ F:	arch/arm/mach-shmobile/
+>  F:	drivers/sh/
+>  
+>  ARM/TELECHIPS ARM ARCHITECTURE
+> -M:	"Hans J. Koch" <hjk@linutronix.de>
+> +M:	"Hans J. Koch" <hjk@hansjkoch.de>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:	Maintained
+>  F:	arch/arm/plat-tcc/
+> @@ -4077,7 +4077,7 @@ F:	drivers/video/matrox/matroxfb_*
+>  F:	include/linux/matroxfb.h
+>  
+>  MAX6650 HARDWARE MONITOR AND FAN CONTROLLER DRIVER
+> -M:	"Hans J. Koch" <hjk@linutronix.de>
+> +M:	"Hans J. Koch" <hjk@hansjkoch.de>
+>  L:	lm-sensors@lm-sensors.org
+>  S:	Maintained
+>  F:	Documentation/hwmon/max6650
+> @@ -6618,7 +6618,7 @@ F:	fs/hostfs/
+>  F:	fs/hppfs/
+>  
+>  USERSPACE I/O (UIO)
+> -M:	"Hans J. Koch" <hjk@linutronix.de>
+> +M:	"Hans J. Koch" <hjk@hansjkoch.de>
+>  M:	Greg Kroah-Hartman <gregkh@suse.de>
+>  S:	Maintained
+>  F:	Documentation/DocBook/uio-howto.tmpl
 
-I guess many of us have similar experience with Dave. He also helped me
-a lot when I first started doing Linux development. I learned a lot from
-him and will miss him a lot. His teachings, I will always carry with me.
 
-Thanks Dave for all your help. Rest in Peace, my friend.
 
--- 
-balbi
