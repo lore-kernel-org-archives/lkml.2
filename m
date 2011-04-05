@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab1DEPBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:01:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44453 "EHLO mx1.suse.de"
+	id S1754971Ab1DEPBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:01:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56494 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754125Ab1DEO7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754115Ab1DEO7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Apr 2011 10:59:36 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH 13/34] media/radio-maxiradio: Drop __TIME__ usage
-Date: Tue,  5 Apr 2011 16:59:00 +0200
-Message-Id: <1302015561-21047-14-git-send-email-mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Tony Olech <tony.olech@elandigitalsystems.com>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 24/34] usb/u132-hcd: Drop __TIME__ usage
+Date: Tue,  5 Apr 2011 16:59:11 +0200
+Message-Id: <1302015561-21047-25-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
@@ -24,27 +25,27 @@ The kernel already prints its build timestamp during boot, no need to
 repeat it in random drivers and produce different object files each
 time.
 
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-media@vger.kernel.org
+Cc: Tony Olech <tony.olech@elandigitalsystems.com>
+Cc: linux-usb@vger.kernel.org
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- drivers/media/radio/radio-maxiradio.c |    3 +--
+ drivers/usb/host/u132-hcd.c |    3 +--
  1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/radio/radio-maxiradio.c b/drivers/media/radio/radio-maxiradio.c
-index 5c2a905..e83e840 100644
---- a/drivers/media/radio/radio-maxiradio.c
-+++ b/drivers/media/radio/radio-maxiradio.c
-@@ -412,8 +412,7 @@ static int __devinit maxiradio_init_one(struct pci_dev *pdev, const struct pci_d
- 		goto err_out_free_region;
- 	}
- 
--	v4l2_info(v4l2_dev, "version " DRIVER_VERSION
--			" time " __TIME__ "  " __DATE__ "\n");
-+	v4l2_info(v4l2_dev, "version " DRIVER_VERSION "\n");
- 
- 	v4l2_info(v4l2_dev, "found Guillemot MAXI Radio device (io = 0x%x)\n",
- 	       dev->io);
+diff --git a/drivers/usb/host/u132-hcd.c b/drivers/usb/host/u132-hcd.c
+index fab7649..dc6dd22 100644
+--- a/drivers/usb/host/u132-hcd.c
++++ b/drivers/usb/host/u132-hcd.c
+@@ -3229,8 +3229,7 @@ static int __init u132_hcd_init(void)
+ 	mutex_init(&u132_module_lock);
+ 	if (usb_disabled())
+ 		return -ENODEV;
+-	printk(KERN_INFO "driver %s built at %s on %s\n", hcd_name, __TIME__,
+-		__DATE__);
++	printk(KERN_INFO "driver %s\n", hcd_name);
+ 	workqueue = create_singlethread_workqueue("u132");
+ 	retval = platform_driver_register(&u132_platform_driver);
+ 	return retval;
 -- 
 1.7.4.1
 
