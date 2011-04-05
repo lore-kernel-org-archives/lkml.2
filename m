@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab1DFA5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 20:57:47 -0400
-Received: from shutemov.name ([188.40.19.243]:52517 "EHLO shutemov.name"
+	id S1754147Ab1DFBEt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 21:04:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26274 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639Ab1DFA5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 20:57:44 -0400
-Date: Wed, 6 Apr 2011 03:57:43 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Rob Landley <rlandley@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 2/3] Supply network namespace to rpcbind.
-Message-ID: <20110406005743.GB27844@shutemov.name>
-References: <4D94319F.8040005@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D94319F.8040005@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752804Ab1DFBEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 21:04:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,307,1299484800"; 
+   d="scan'208";a="675687549"
+From: Alex Shi <alex.shi@intel.com>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        tim.c.chen@intel.com, shaohua.li@intel.com
+Subject: [PATCH] sched: recover sched_yield task running time increase
+Date: Wed,  6 Apr 2011 06:33:43 +0800
+Message-Id: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 31, 2011 at 02:47:43AM -0500, Rob Landley wrote:
-> From: Rob Landley <rlandley@parallels.com>
-> 
-> The sunrpc code already has some support for network namespaces,
-> but rpcb_create() is still using init_net.  Its arguments include
-> a sockaddr and a port, but not a struct net *.  Add one, and
-> pass in the value from rpc_xprt when calling it.
-> 
-> Signed-off-by: Rob Landley <rlandley@parallels.com>
+commit ac53db596cc08ecb8040c removed the sched_yield task running
+time increase, so the yielded task get more opportunity to be launch
+again. That may not the caller want to be. And this also causes
+volano benchmark drop 50~80 percent performance on core2/NHM/WSM
+machines. This patch recover the sched_yield task vruntime up.
 
-Acked-by: Kirill A. Shutemov <kas@openvz.org>
+Signed-off-by: alex.shi@intel.com
+---
+ kernel/sched_fair.c |   18 +++++++++++++++++-
+ 1 files changed, 17 insertions(+), 1 deletions(-)
 
-BTW, it seems conflicts with my rpc_pipefs patchset. I'll rebase my
-patchset, if your patches will be merged first.
-
-> ---
-> 
->  net/sunrpc/rpcb_clnt.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> index c652e4c..25bb8f9 100644
-> --- a/net/sunrpc/rpcb_clnt.c
-> +++ b/net/sunrpc/rpcb_clnt.c
-> @@ -223,10 +223,11 @@ out:
->  }
->  
->  static struct rpc_clnt *rpcb_create(char *hostname, struct sockaddr *srvaddr,
-> -				    size_t salen, int proto, u32 version)
-> +				    size_t salen, int proto, struct net *net,
-> +				    u32 version)
->  {
->  	struct rpc_create_args args = {
-> -		.net		= &init_net,
-> +		.net		= net,
->  		.protocol	= proto,
->  		.address	= srvaddr,
->  		.addrsize	= salen,
-> @@ -591,7 +592,7 @@ void rpcb_getport_async(struct rpc_task *task)
->  		task->tk_pid, __func__, bind_version);
->  
->  	rpcb_clnt = rpcb_create(clnt->cl_server, sap, salen, xprt->prot,
-> -				bind_version);
-> +				xprt->xprt_net, bind_version);
->  	if (IS_ERR(rpcb_clnt)) {
->  		status = PTR_ERR(rpcb_clnt);
->  		dprintk("RPC: %5u %s: rpcb_create failed, error %ld\n",
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
-
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 3f7ec9e..04d58bb 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1956,7 +1956,7 @@ static void yield_task_fair(struct rq *rq)
+ {
+ 	struct task_struct *curr = rq->curr;
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
+-	struct sched_entity *se = &curr->se;
++	struct sched_entity *se = &curr->se, *rightmost;
+ 
+ 	/*
+ 	 * Are we the only task in the tree?
+@@ -1975,6 +1975,22 @@ static void yield_task_fair(struct rq *rq)
+ 	}
+ 
+ 	set_skip_buddy(se);
++	/*
++	 * Find the rightmost entry in the rbtree:
++	 */
++	rightmost = __pick_last_entity(cfs_rq);
++	/*
++	 * Already in the rightmost position?
++	 */
++	if (unlikely(!rightmost || entity_before(rightmost, se)))
++		return;
++
++	/*
++	 * Minimally necessary key value to be last in the tree:
++	 * Upon rescheduling, sched_class::put_prev_task() will place
++	 * 'current' within the tree based on its new key value.
++	 */
++	se->vruntime = rightmost->vruntime + 1;
+ }
+ 
+ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preempt)
 -- 
- Kirill A. Shutemov
+1.6.0
+
