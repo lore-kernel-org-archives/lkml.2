@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab1DEDGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 23:06:01 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40943 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab1DEDFw (ORCPT
+	id S1752541Ab1DEDU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 23:20:26 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43337 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab1DEDUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 23:05:52 -0400
-Date: Mon, 4 Apr 2011 21:05:43 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Antonio Ospite <ospite@studenti.unina.it>
-Cc: linux-mmc@vger.kernel.org, Daniel Ribeiro <drwyrm@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>, Ernst Schwab <eschwab@online.de>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        openezx-devel@lists.openezx.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] mmc_spi: Add support for regulator framework
-Message-ID: <20110405030543.GC29522@ponder.secretlab.ca>
-References: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
- <20110404115631.67b1f317.ospite@studenti.unina.it>
+	Mon, 4 Apr 2011 23:20:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=txZEQGoQWjI2kCNS0Sixm6ebBasEpDEjneTQHdVJ2UXbFKpwYR2Yk9tdXY4m7nhTKp
+         xWUGi15DzXkgfO6MIm7ize9K1sKEQybRx1vnl0vvp2gqngZJ8SpIUmepOnaX5ol9KGWK
+         sLEsSCOKeEJA9n8+fCcWmIeww1M6c20H5Wnvc=
+Date: Mon, 4 Apr 2011 22:20:14 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: linux-media@vger.kernel.org
+Cc: Huber Andreas <hobrom@corax.at>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, linux-kernel@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Steven Toth <stoth@kernellabs.com>
+Subject: [RFC/PATCH v2 0/7] locking fixes for cx88
+Message-ID: <20110405032014.GA4498@elie>
+References: <20110327150610.4029.95961.reportbug@xen.corax.at>
+ <20110327152810.GA32106@elie>
+ <20110402093856.GA17015@elie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110404115631.67b1f317.ospite@studenti.unina.it>
+In-Reply-To: <20110402093856.GA17015@elie>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 04, 2011 at 11:56:31AM +0200, Antonio Ospite wrote:
-> On Mon, 21 Mar 2011 19:46:38 +0100
-> Antonio Ospite <ospite@studenti.unina.it> wrote:
-> 
-> > Hi,
-> > 
-> > this patchset has the purpose of adding support for the regulator framework to 
-> > the mmc_spi driver. The first three patches are preparatory cleanups to make 
-> > the fourth one more straightforward.
-> > 
-> > Maybe the fourth patch can be improved, I am open to any suggestions about it.
-> >
-> 
-> Ping. I forgot to Cc spi-devel-general on this series, should I resend
-> it?
+Hi again,
 
-Not a bad idea.  It doesn't go via my tree since it is an mmc patch,
-not an spi one, but I don't mind taking a look at the spi bits.
+Jonathan Nieder wrote:
+> Huber Andreas wrote[1]:
 
-g.
+>> Processes that try to open a cx88-blackbird driven MPEG device will hang up.
+>
+> Here's a possible fix based on a patch by Ben Hutchings and
+> corrections from Andi Huber.  Warning: probably full of mistakes (my
+> fault) since I'm not familiar with any of this stuff.  Untested.
+> Review and testing would be welcome.
 
-> 
-> > These changes take strong inspiration from the pxamci driver; they have been 
-> > tested on a Motorola A910, which uses a regulator to powerup the MMC card 
-> > connected to the SPI bus, a test from a current user of the mmc_spi driver 
-> > would not hurt just to be sure no regressions have been introduced.
-> > 
-> > Thanks,
-> >    Antonio
-> > 
-> > Antonio Ospite (4):
-> >   mmc_spi.c: factor out the check for power capability
-> >   mmc_spi.c: factor out the SD card shutdown sequence
-> >   mmc_spi.c: factor out a mmc_spi_setpower() function
-> >   mmc_spi.c: add support for the regulator framework
-> > 
-> >  drivers/mmc/host/mmc_spi.c |  194 +++++++++++++++++++++++++++++---------------
-> >  1 files changed, 129 insertions(+), 65 deletions(-)
-> > 
-> 
-> -- 
-> Antonio Ospite
-> http://ao2.it
-> 
-> PGP public key ID: 0x4553B001
-> 
-> A: Because it messes up the order in which people normally read text.
->    See http://en.wikipedia.org/wiki/Posting_style
-> Q: Why is top-posting such a bad thing?
+A reroll.  As before, the goals are: (1) eliminate deadlock, (2)
+eliminate races, (3) introduce some clarity.  The same caveats as
+last time apply --- this is only compile-tested.  Thanks again to Andi
+for testing the previous series and for other useful feedback.
 
+Patch 1 is meant to protect dev->drvlist against data races.
+Since v1, I removed some clutter in the patch itself and clarified the
+change description to match.
 
+Patch 2 addresses the original deadlock.  The only changes are the
+description and declared authorship of the patch (at Ben's request).
+
+Patch 3 is new.  It fixes the reference count breakage Andi noticed
+(another race previously protected against by the BKL).
+
+Patch 4 fixes a data race noticed by Ben (also from his patch).  It's
+unchanged.
+
+Patches 5, 6, and 7 are cleanups.
+
+Bugs?  Thoughts?
+Jonathan Nieder (7):
+  [media] cx88: protect per-device driver list with device lock
+  [media] cx88: fix locking of sub-driver operations
+  [media] cx88: hold device lock during sub-driver initialization
+  [media] cx88: use a mutex to protect cx8802_devlist
+  [media] cx88: handle attempts to use unregistered cx88-blackbird
+    driver
+  [media] cx88: don't use atomic_t for core->mpeg_users
+  [media] cx88: don't use atomic_t for core->users
+
+ drivers/media/video/cx88/cx88-blackbird.c |   41 +++++++++++++++-------------
+ drivers/media/video/cx88/cx88-dvb.c       |    2 +
+ drivers/media/video/cx88/cx88-mpeg.c      |   40 ++++++++++++++++++----------
+ drivers/media/video/cx88/cx88-video.c     |    5 ++-
+ drivers/media/video/cx88/cx88.h           |   11 +++++--
+ 5 files changed, 61 insertions(+), 38 deletions(-)
