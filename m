@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab1DES23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:28:29 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:20383
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754188Ab1DES2V (ORCPT
+	id S1755588Ab1DES3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 14:29:38 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:42900
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754079Ab1DES3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:28:21 -0400
-X-SpamScore: 3
-X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh95h668h839h61h)
-X-Spam-TCS-SCL: 0:0
+	Tue, 5 Apr 2011 14:29:36 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zz1803Mc8kzz1202hzz8275bhz2dh95h668h839h)
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
 From: John Linn <john.linn@xilinx.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
         <glikely@secretlab.ca>, <jamie@jamieiles.com>, <arnd@arndb.de>,
         <nicolas.pitre@linaro.org>
-CC: John Linn <john.linn@xilinx.com>
-Subject: [PATCH V6 1/5] ARM: Xilinx: Adding Xilinx board support
-Date: Tue, 5 Apr 2011 12:28:02 -0600
+CC: John Linn <john.linn@xilinx.com>,
+        Kiran Sutariya <kiran.sutariya@einfochips.com>
+Subject: [PATCH V6 2/5] ARM: Xilinx: Adding timer support to the platform
+Date: Tue, 5 Apr 2011 12:28:03 -0600
 X-Mailer: git-send-email 1.5.4.7
-In-Reply-To: <1302028086-17603-1-git-send-email-john.linn@xilinx.com>
+In-Reply-To: <1302028086-17603-2-git-send-email-john.linn@xilinx.com>
 References: <1302028086-17603-1-git-send-email-john.linn@xilinx.com>
+ <1302028086-17603-2-git-send-email-john.linn@xilinx.com>
 X-RCIS-Action: ALLOW
 MIME-Version: 1.0
 Content-Type: text/plain
-Message-ID: <7734a2e5-1197-4cbb-8cb7-4be030e71932@VA3EHSMHS022.ehs.local>
+Message-ID: <5deb0846-8633-40bb-b52b-69a445f02c71@VA3EHSMHS031.ehs.local>
 X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 1st board support is minimal to get a system up and running
-on the Xilinx platform.
+The timer driver supports the Xilinx PS Timer Counter IP.
 
+Signed-off-by: Kiran Sutariya <kiran.sutariya@einfochips.com>
 Signed-off-by: John Linn <john.linn@xilinx.com>
 ---
 
@@ -42,11 +43,14 @@ V6 Changes
 	which rippled thru as a minor change.	
 
 V5 Changes
-	Minor cleanup based on input from Jamie Iles.
-	Update to work with code in next merge (PLAT_PHYS_OFFSET).
+	Minor cleanup based on input from Jamie Iles for sparse.
+	Removed CLOCK_TICK_RATE based on input from Arnd.
 
 V4 Changes
 	Minor cleanup based on input from Jamie Iles.
+		Got rid of unused mode.
+		Removed un-needed initialization.
+		Made interrupt handler setup unconditional.
 
 V3 Changes
 
@@ -54,91 +58,55 @@ Updates based on Russell Kings' comments
 	Changed headers to update the license info and remove
 	the address
 
-	Changed the name of functions to include "xilinx" in 
-	common.c and common.h
-
-Changed the Kconfig and Makefile to use MACH_XILINX which
-matches the machine registered.
-
 V2 Changes
 
+The timer code was changed quite a bit based on review inputs. It
+got much smaller and cleaner I think.
+
 Updates based on Russell King's comments	
-	minor cleanups
-	cleaned up physical/virtual addresses in early i/o table		
+	minor cleanups for documentation comments
+	removed the name from the timer structure
+	removed interrupt for clock source 
+	moved to using clock functions provided in the kernel
+		for calculating shift/mult values
+	removed PM code as generic handles it
+
+Updated based on Jamie Iles's comment
+	cleaned up ENABLE_MASK which was confusing
+	now using platform_add_devices() from platform code
+	moved base_addr to void __iomem pointer
+	removed stop of the event timer in one shot mode
 
 
- arch/arm/mach-zynq/Kconfig       |   14 +++++
- arch/arm/mach-zynq/Makefile      |    7 ++
- arch/arm/mach-zynq/Makefile.boot |    3 +
- arch/arm/mach-zynq/board_ep107.c |   85 ++++++++++++++++++++++++++++
- arch/arm/mach-zynq/common.c      |  114 ++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-zynq/common.h      |   30 ++++++++++
- 6 files changed, 253 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-zynq/Kconfig
- create mode 100644 arch/arm/mach-zynq/Makefile
- create mode 100644 arch/arm/mach-zynq/Makefile.boot
- create mode 100644 arch/arm/mach-zynq/board_ep107.c
- create mode 100644 arch/arm/mach-zynq/common.c
- create mode 100644 arch/arm/mach-zynq/common.h
+ arch/arm/mach-zynq/Makefile |    2 +-
+ arch/arm/mach-zynq/timer.c  |  297 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 298 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-zynq/timer.c
 
-diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
-new file mode 100644
-index 0000000..31c10c0
---- /dev/null
-+++ b/arch/arm/mach-zynq/Kconfig
-@@ -0,0 +1,14 @@
-+if ARCH_ZYNQ
-+
-+choice
-+        prompt "Board Selection"
-+	default MACH_XILINX_EP107
-+
-+config MACH_XILINX_EP107
-+	bool "Xilinx EP107 Board"
-+	help
-+	  Select if you are using a Xilinx EP107 board.
-+
-+endchoice
-+
-+endif
 diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefile
-new file mode 100644
-index 0000000..19489e7
---- /dev/null
+index 19489e7..62787ff 100644
+--- a/arch/arm/mach-zynq/Makefile
 +++ b/arch/arm/mach-zynq/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for the linux kernel.
-+#
-+
-+# Common support
-+obj-y 				:= common.o
-+obj-$(CONFIG_MACH_XILINX_EP107)	+= board_ep107.o
-diff --git a/arch/arm/mach-zynq/Makefile.boot b/arch/arm/mach-zynq/Makefile.boot
+@@ -3,5 +3,5 @@
+ #
+ 
+ # Common support
+-obj-y 				:= common.o
++obj-y 				:= common.o timer.o
+ obj-$(CONFIG_MACH_XILINX_EP107)	+= board_ep107.o
+diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
 new file mode 100644
-index 0000000..67039c3
+index 0000000..e9a9f20
 --- /dev/null
-+++ b/arch/arm/mach-zynq/Makefile.boot
-@@ -0,0 +1,3 @@
-+   zreladdr-y	:= 0x00008000
-+params_phys-y	:= 0x00000100
-+initrd_phys-y	:= 0x00800000
-diff --git a/arch/arm/mach-zynq/board_ep107.c b/arch/arm/mach-zynq/board_ep107.c
-new file mode 100644
-index 0000000..3d576d0
---- /dev/null
-+++ b/arch/arm/mach-zynq/board_ep107.c
-@@ -0,0 +1,85 @@
-+/* arch/arm/mach-zynq/board_ep107.c
++++ b/arch/arm/mach-zynq/timer.c
+@@ -0,0 +1,297 @@
++/* arch/arm/mach-zynq/timer.c
 + *
-+ * This file contains code specific to the Xilinx EP107 board.
++ * This file contains driver for the Xilinx PS Timer Counter IP.
 + *
 + *  Copyright (C) 2011 Xilinx
 + *
-+ * based on /arch/arm/mach-realview/core.c
-+ *
-+ *  Copyright (C) 1999 - 2003 ARM Limited
-+ *  Copyright (C) 2000 Deep Blue Solutions Ltd
++ * based on arch/mips/kernel/time.c timer driver
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -150,226 +118,285 @@ index 0000000..3d576d0
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/platform_device.h>
-+#include <linux/clkdev.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/types.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/io.h>
 +
-+#include <asm/mach-types.h>
-+#include <asm/mach/arch.h>
-+
++#include <asm/mach/time.h>
 +#include <mach/zynq_soc.h>
-+#include <mach/irqs.h>
-+#include <mach/memory.h>
 +#include "common.h"
 +
 +/*
-+ * Fixed clocks for now
++ * This driver configures the 2 16-bit count-up timers as follows:
++ *
++ * T1: Timer 1, clocksource for generic timekeeping
++ * T2: Timer 2, clockevent source for hrtimers
++ * T3: Timer 3, <unused>
++ *
++ * The input frequency to the timer module for emulation is 2.5MHz which is
++ * common to all the timer channels (T1, T2, and T3). With a pre-scaler of 32,
++ * the timers are clocked at 78.125KHz (12.8 us resolution).
++ *
++ * The input frequency to the timer module in silicon will be 200MHz. With the
++ * pre-scaler of 32, the timers are clocked at 6.25MHz (160ns resolution).
 + */
++#define XTTCPSS_CLOCKSOURCE	0	/* Timer 1 as a generic timekeeping */
++#define XTTCPSS_CLOCKEVENT	1	/* Timer 2 as a clock event */
 +
-+static struct clk ref50_clk = {
-+	.rate	= 50000000,
++#define XTTCPSS_TIMER_BASE		TTC0_BASE
++#define XTTCPCC_EVENT_TIMER_IRQ		(IRQ_TIMERCOUNTER0 + 1)
++/*
++ * Timer Register Offset Definitions of Timer 1, Increment base address by 4
++ * and use same offsets for Timer 2
++ */
++#define XTTCPSS_CLK_CNTRL_OFFSET	0x00 /* Clock Control Reg, RW */
++#define XTTCPSS_CNT_CNTRL_OFFSET	0x0C /* Counter Control Reg, RW */
++#define XTTCPSS_COUNT_VAL_OFFSET	0x18 /* Counter Value Reg, RO */
++#define XTTCPSS_INTR_VAL_OFFSET		0x24 /* Interval Count Reg, RW */
++#define XTTCPSS_MATCH_1_OFFSET		0x30 /* Match 1 Value Reg, RW */
++#define XTTCPSS_MATCH_2_OFFSET		0x3C /* Match 2 Value Reg, RW */
++#define XTTCPSS_MATCH_3_OFFSET		0x48 /* Match 3 Value Reg, RW */
++#define XTTCPSS_ISR_OFFSET		0x54 /* Interrupt Status Reg, RO */
++#define XTTCPSS_IER_OFFSET		0x60 /* Interrupt Enable Reg, RW */
++
++#define XTTCPSS_CNT_CNTRL_DISABLE_MASK	0x1
++
++/* Setup the timers to use pre-scaling */
++
++#define TIMER_RATE (PERIPHERAL_CLOCK_RATE / 32)
++
++/**
++ * struct xttcpss_timer - This definition defines local timer structure
++ *
++ * @base_addr:	Base address of timer
++ **/
++struct xttcpss_timer {
++	void __iomem *base_addr;
 +};
 +
-+/* Create all the platform devices for the board */
++static struct xttcpss_timer timers[2];
++static struct clock_event_device xttcpss_clockevent;
 +
-+static struct resource uart0[] = {
-+	{
-+		.start = UART0_PHYS,
-+		.end = UART0_PHYS + 0xFFF,
-+		.flags = IORESOURCE_MEM,
-+	}, {
-+		.start = IRQ_UART0,
-+		.end = IRQ_UART0,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
++/**
++ * xttcpss_set_interval - Set the timer interval value
++ *
++ * @timer:	Pointer to the timer instance
++ * @cycles:	Timer interval ticks
++ **/
++static void xttcpss_set_interval(struct xttcpss_timer *timer,
++					unsigned long cycles)
++{
++	u32 ctrl_reg;
 +
-+static struct platform_device uart_device0 = {
-+	.name = "xuartpss",
-+	.id = 0,
-+	.dev = {
-+		.platform_data = &ref50_clk.rate,
-+	},
-+	.resource = uart0,
-+	.num_resources = ARRAY_SIZE(uart0),
-+};
++	/* Disable the counter, set the counter value  and re-enable counter */
++	ctrl_reg = __raw_readl(timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++	ctrl_reg |= XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++	__raw_writel(ctrl_reg, timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
 +
-+static struct platform_device *xilinx_pdevices[] __initdata = {
-+	&uart_device0,
++	__raw_writel(cycles, timer->base_addr + XTTCPSS_INTR_VAL_OFFSET);
++
++	/* Reset the counter (0x10) so that it starts from 0, one-shot
++	   mode makes this needed for timing to be right. */
++	ctrl_reg |= 0x10;
++	ctrl_reg &= ~XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++	__raw_writel(ctrl_reg, timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++}
++
++/**
++ * xttcpss_clock_event_interrupt - Clock event timer interrupt handler
++ *
++ * @irq:	IRQ number of the Timer
++ * @dev_id:	void pointer to the xttcpss_timer instance
++ *
++ * returns: Always IRQ_HANDLED - success
++ **/
++static irqreturn_t xttcpss_clock_event_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = &xttcpss_clockevent;
++	struct xttcpss_timer *timer = dev_id;
++
++	/* Acknowledge the interrupt and call event handler */
++	__raw_writel(__raw_readl(timer->base_addr + XTTCPSS_ISR_OFFSET),
++			timer->base_addr + XTTCPSS_ISR_OFFSET);
++
++	evt->event_handler(evt);
++
++	return IRQ_HANDLED;
++}
++
++static struct irqaction event_timer_irq = {
++	.name	= "xttcpss clockevent",
++	.flags	= IRQF_DISABLED | IRQF_TIMER,
++	.handler = xttcpss_clock_event_interrupt,
 +};
 +
 +/**
-+ * board_ep107_init - Board specific initialization for the Xilinx EP107 board.
++ * xttcpss_timer_hardware_init - Initialize the timer hardware
 + *
++ * Initialize the hardware to start the clock source, get the clock
++ * event timer ready to use, and hook up the interrupt.
 + **/
-+static void __init board_ep107_init(void)
++static void __init xttcpss_timer_hardware_init(void)
 +{
-+	xilinx_system_init();
-+	platform_add_devices(&xilinx_pdevices[0], ARRAY_SIZE(xilinx_pdevices));
++	/* Setup the clock source counter to be an incrementing counter
++	 * with no interrupt and it rolls over at 0xFFFF. Pre-scale
++	   it by 32 also. Let it start running now.
++	 */
++	timers[XTTCPSS_CLOCKSOURCE].base_addr = XTTCPSS_TIMER_BASE;
++
++	__raw_writel(0x0, timers[XTTCPSS_CLOCKSOURCE].base_addr +
++				XTTCPSS_IER_OFFSET);
++	__raw_writel(0x9, timers[XTTCPSS_CLOCKSOURCE].base_addr +
++				XTTCPSS_CLK_CNTRL_OFFSET);
++	__raw_writel(0x10, timers[XTTCPSS_CLOCKSOURCE].base_addr +
++				XTTCPSS_CNT_CNTRL_OFFSET);
++
++	/* Setup the clock event timer to be an interval timer which
++	 * is prescaled by 32 using the interval interrupt. Leave it
++	 * disabled for now.
++	 */
++
++	timers[XTTCPSS_CLOCKEVENT].base_addr = XTTCPSS_TIMER_BASE + 4;
++
++	__raw_writel(0x23, timers[XTTCPSS_CLOCKEVENT].base_addr +
++			XTTCPSS_CNT_CNTRL_OFFSET);
++	__raw_writel(0x9, timers[XTTCPSS_CLOCKEVENT].base_addr +
++			XTTCPSS_CLK_CNTRL_OFFSET);
++	__raw_writel(0x1, timers[XTTCPSS_CLOCKEVENT].base_addr +
++			XTTCPSS_IER_OFFSET);
++
++	/* Setup IRQ the clock event timer */
++	event_timer_irq.dev_id = &timers[XTTCPSS_CLOCKEVENT];
++	setup_irq(XTTCPCC_EVENT_TIMER_IRQ, &event_timer_irq);
 +}
 +
-+MACHINE_START(XILINX_EP107, "Xilinx EP107")
-+	.boot_params    = PLAT_PHYS_OFFSET + 0x00000100,
-+	.map_io         = xilinx_map_io,
-+	.init_irq       = xilinx_irq_init,
-+	.init_machine   = board_ep107_init,
-+	.timer          = &xttcpss_sys_timer,
-+MACHINE_END
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-new file mode 100644
-index 0000000..9a626ba
---- /dev/null
-+++ b/arch/arm/mach-zynq/common.c
-@@ -0,0 +1,114 @@
-+/* arch/arm/mach-zynq/common.c
++/**
++ * __raw_readl_cycles - Reads the timer counter register
 + *
-+ * This file contains common code that is intended to be used across
-+ * boards so that it's not replicated.
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++ * returns: Current timer counter register value
++ **/
++static cycle_t __raw_readl_cycles(struct clocksource *cs)
++{
++	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKSOURCE];
 +
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/cpumask.h>
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
++	return (cycle_t)__raw_readl(timer->base_addr +
++				XTTCPSS_COUNT_VAL_OFFSET);
++}
 +
-+#include <asm/mach/map.h>
-+#include <asm/page.h>
-+#include <asm/hardware/gic.h>
-+#include <asm/hardware/cache-l2x0.h>
-+
-+#include <mach/zynq_soc.h>
-+#include <mach/clkdev.h>
-+#include "common.h"
 +
 +/*
-+ * Clock function infrastructure.
++ * Instantiate and initialize the clock source structure
 + */
-+int clk_enable(struct clk *clk)
++static struct clocksource clocksource_xttcpss = {
++	.name		= "xttcpss_timer1",
++	.rating		= 200,			/* Reasonable clock source */
++	.read		= __raw_readl_cycles,
++	.mask		= CLOCKSOURCE_MASK(16),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
++
++
++/**
++ * xttcpss_set_next_event - Sets the time interval for next event
++ *
++ * @cycles:	Timer interval ticks
++ * @evt:	Address of clock event instance
++ *
++ * returns: Always 0 - success
++ **/
++static int xttcpss_set_next_event(unsigned long cycles,
++					struct clock_event_device *evt)
 +{
++	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
++
++	xttcpss_set_interval(timer, cycles);
 +	return 0;
 +}
 +
-+void clk_disable(struct clk *clk)
-+{
-+}
-+
-+unsigned long clk_get_rate(struct clk *clk)
-+{
-+	return clk->rate;
-+}
-+
 +/**
-+ * system_init - System specific initialization, intended to be called from
-+ *			board specific initialization.
++ * xttcpss_set_mode - Sets the mode of timer
 + *
++ * @mode:	Mode to be set
++ * @evt:	Address of clock event instance
 + **/
-+void __init xilinx_system_init(void)
++static void xttcpss_set_mode(enum clock_event_mode mode,
++					struct clock_event_device *evt)
 +{
-+#ifdef CONFIG_CACHE_L2X0
-+	/*
-+	 * 64KB way size, 8-way associativity, parity disabled
-+	 */
-+	l2x0_init(PL310_L2CC_BASE, 0x02060000, 0xF0F0FFFF);
-+#endif
++	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
++	u32 ctrl_reg;
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		xttcpss_set_interval(timer, TIMER_RATE / HZ);
++		break;
++	case CLOCK_EVT_MODE_ONESHOT:
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		ctrl_reg = __raw_readl(timer->base_addr +
++					XTTCPSS_CNT_CNTRL_OFFSET);
++		ctrl_reg |= XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++		__raw_writel(ctrl_reg,
++				timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++		break;
++	case CLOCK_EVT_MODE_RESUME:
++		ctrl_reg = __raw_readl(timer->base_addr +
++					XTTCPSS_CNT_CNTRL_OFFSET);
++		ctrl_reg &= ~XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++		__raw_writel(ctrl_reg,
++				timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++		break;
++	}
 +}
 +
-+/**
-+ * irq_init - Interrupt controller initialization for the GIC.
-+ *
-+ **/
-+void __init xilinx_irq_init(void)
-+{
-+	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
-+}
-+
-+/* The minimum devices needed to be mapped before the VM system is up and
-+ * running include the GIC, UART and Timer Counter.
++/*
++ * Instantiate and initialize the clock event structure
 + */
-+
-+static struct map_desc io_desc[] __initdata = {
-+	{
-+		.virtual	= TTC0_VIRT,
-+		.pfn		= __phys_to_pfn(TTC0_PHYS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	}, {
-+		.virtual	= SCU_PERIPH_VIRT,
-+		.pfn		= __phys_to_pfn(SCU_PERIPH_PHYS),
-+		.length		= SZ_8K,
-+		.type		= MT_DEVICE,
-+	}, {
-+		.virtual	= PL310_L2CC_VIRT,
-+		.pfn		= __phys_to_pfn(PL310_L2CC_PHYS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	},
-+
-+#ifdef CONFIG_DEBUG_LL
-+	{
-+		.virtual	= UART0_VIRT,
-+		.pfn		= __phys_to_pfn(UART0_PHYS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	},
-+#endif
-+
++static struct clock_event_device xttcpss_clockevent = {
++	.name		= "xttcpss_timer2",
++	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
++	.set_next_event	= xttcpss_set_next_event,
++	.set_mode	= xttcpss_set_mode,
++	.rating		= 200,
 +};
 +
 +/**
-+ * map_io - Create memory mappings needed for early I/O.
++ * xttcpss_timer_init - Initialize the timer
 + *
++ * Initializes the timer hardware and register the clock source and clock event
++ * timers with Linux kernal timer framework
 + **/
-+void __init xilinx_map_io(void)
++static void __init xttcpss_timer_init(void)
 +{
-+	iotable_init(io_desc, ARRAY_SIZE(io_desc));
++	xttcpss_timer_hardware_init();
++	clocksource_register_hz(&clocksource_xttcpss, TIMER_RATE);
++
++	/* Calculate the parameters to allow the clockevent to operate using
++	   integer math
++	*/
++	clockevents_calc_mult_shift(&xttcpss_clockevent, TIMER_RATE, 4);
++
++	xttcpss_clockevent.max_delta_ns =
++		clockevent_delta2ns(0xfffe, &xttcpss_clockevent);
++	xttcpss_clockevent.min_delta_ns =
++		clockevent_delta2ns(1, &xttcpss_clockevent);
++
++	/* Indicate that clock event is on 1st CPU as SMP boot needs it */
++
++	xttcpss_clockevent.cpumask = cpumask_of(0);
++	clockevents_register_device(&xttcpss_clockevent);
 +}
-diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h
-new file mode 100644
-index 0000000..a87bedc
---- /dev/null
-+++ b/arch/arm/mach-zynq/common.h
-@@ -0,0 +1,30 @@
-+/* arch/arm/mach-zynq/common.h
-+ *
-+ * This file contains common function prototypes to avoid externs
-+ * in the c files.
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++
++/*
++ * Instantiate and initialize the system timer structure
 + */
-+
-+#ifndef __MACH_ZYNQ_COMMON_H__
-+#define __MACH_ZYNQ_COMMON_H__
-+
-+#include <linux/init.h>
-+#include <asm/mach/time.h>
-+
-+void __init xilinx_system_init(void);
-+void __init xilinx_irq_init(void);
-+void __init xilinx_map_io(void);
-+
-+extern struct sys_timer xttcpss_sys_timer;
-+
-+#endif
++struct sys_timer xttcpss_sys_timer = {
++	.init		= xttcpss_timer_init,
++};
 -- 
 1.5.4.7
 
