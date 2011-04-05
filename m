@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab1DEWNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 18:13:22 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53564 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab1DEWNR (ORCPT
+	id S1753054Ab1DEWQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 18:16:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38420 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab1DEWQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 18:13:17 -0400
+	Tue, 5 Apr 2011 18:16:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=OPImIO5tvj4s0f7YgprGaPlaClZEQLsg6RrbxgV9Xkipkl+GSVzk7cWgHmUkfqwITf
-         6qtNnjgl15jzw5QEP5PAovn9O9MleSMGkMoB0io/EQfWApCIjr5N8lWXAucqy2VyKPtC
-         TecN9X/3t4d7dfpFOxFbNIyqwSexYu9RctZpM=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Kp426MK7O7sy+2nEhMwPcTch51+Fl+X8LqN4pJ8WCzX0PirzDEDoSmHvPkif3gbj8l
+         TDlzboOaIw/lQugcHbF6Ug5MInywgAhMURrw5GCf4JECfOUwGEyc3SXyH0k9O/Rh2lyl
+         lA4/T4/iuXGmnkqZRRIqMwufwmsLEQeWWe2ck=
 MIME-Version: 1.0
-In-Reply-To: <1292883633-19553-3-git-send-email-sboyd@codeaurora.org>
-References: <1292883633-19553-1-git-send-email-sboyd@codeaurora.org>
-	<1292883633-19553-3-git-send-email-sboyd@codeaurora.org>
-Date: Wed, 6 Apr 2011 00:13:16 +0200
-Message-ID: <BANLkTimz0fZnWdGqOF4c+o3Mp4GrmV2T0Q@mail.gmail.com>
-Subject: Re: [PATCHv4 2/4] ARM: Allow machines to override __delay()
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Brian Swetland <swetland@google.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4D9AB958.5010304@ti.com>
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+	<201104031726.37420.arnd@arndb.de>
+	<20110403160324.GA8050@n2100.arm.linux.org.uk>
+	<201104040259.26601.arnd@arndb.de>
+	<1301915022.15819.28.camel@e102109-lin.cambridge.arm.com>
+	<20110404112104.GB19854@n2100.arm.linux.org.uk>
+	<1301923457.417.34.camel@e102391-lin.cambridge.arm.com>
+	<20110404133104.GA23266@n2100.arm.linux.org.uk>
+	<1301925445.417.54.camel@e102391-lin.cambridge.arm.com>
+	<BANLkTi=d-rQpinSW9YPsZbkh9tDK5FLS+w@mail.gmail.com>
+	<4D9AB958.5010304@ti.com>
+Date: Wed, 6 Apr 2011 00:16:22 +0200
+X-Google-Sender-Auth: cpwD4eThM8RbsSt6diw-wC3W3tE
+Message-ID: <BANLkTinZ+3PqkbbJp3fFs_Z8JBHQdPYM_g@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: david@lang.hm, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        linux-arm-kernel@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Detlef Vollmann <dv@vollmann.ch>,
+        David Brown <davidb@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/20 Stephen Boyd <sboyd@codeaurora.org>:
+2011/4/5 Santosh Shilimkar <santosh.shilimkar@ti.com>:
+> [Me]
+>> (And third it will also eventually need to hook into the timer-based
+>> delay framework that I think Nokia is working on to be really
+>> useful, else all delays become unpredictable.)
+>>
+> Do you mean udelay()/mdelay() here ?
 
-> Some machines want to implement their own __delay() routine based
-> on fixed rate timers. Expose functionality to set the __delay()
-> routine at runtime. This should allow two machines with different
-> __delay() routines to happily co-exist within the same kernel
-> with minimal overhead.
+Yes. Stephen Boyd from Qualcomm has floated patches to fix it for the
+ARM architecture, I just pushed him again. We use it in our
+ST-Ericsson products.
 
-Can't you guys just put this into Russell's patch tracker now?
-I think the issues raised have been adressed.
-
-Unless this happens I will attempt to rebase it and put it in
-the patch tracker myself soon-ish.
+Ideally you'd want that to go along with the A15 timer stuff so that this
+monotonic high-precision timer is also used for udelay()/mdelay().
 
 Yours,
 Linus Walleij
