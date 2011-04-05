@@ -1,101 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab1DECsr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 22:48:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39363 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab1DECsq (ORCPT
+	id S1752244Ab1DECwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 22:52:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60531 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab1DECwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 22:48:46 -0400
-Date: Mon, 4 Apr 2011 20:48:38 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCH] gpio: support for Synopsys DesignWare APB GPIO
-Message-ID: <20110405024838.GA29522@ponder.secretlab.ca>
-References: <1301665638-29841-1-git-send-email-jamie@jamieiles.com>
- <alpine.LFD.2.00.1104022300130.5929@localhost6.localdomain6>
- <20110403025907.GA5670@pulham.picochip.com>
- <BANLkTimCG5t0k0XS=ojj_AqKM-7e=GB6-A@mail.gmail.com>
- <alpine.LFD.2.00.1104031118580.5929@localhost6.localdomain6>
- <20110403120344.GA1540@oksana.dev.rtsoft.ru>
- <20110403140750.GB5670@pulham.picochip.com>
- <BANLkTikoODn75U=DKiqT9xV6kVsjr5T2fA@mail.gmail.com>
- <20110403152244.GC5670@pulham.picochip.com>
+	Mon, 4 Apr 2011 22:52:31 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=wom5GMh1gUkA:10 a=nom54CicfoMA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=tmtSDGaQAAAA:8 a=fxJcL_dCAAAA:8 a=Z4Rwk6OoAAAA:8 a=jaPQE8qQTpe_tep_TIwA:9 a=HI0gMG9irj66izvq2Y8A:7 a=CjuIK1q_8ugA:10 a=jkObVMfX7fAA:10 a=2eKvNQJKnqYA:10 a=W8zGxwfg42hLtmM4:21 a=V6at3Q7sxMfU9M12:21 a=eAWTIsOZi86Vnn5xZOjC/w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.154.172
+Date: Mon, 4 Apr 2011 21:52:28 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Rob Landley <rlandley@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH 1/3] Add network context to struct nfs_client and make
+ NFSv3 use it.
+Message-ID: <20110405025228.GA6764@hallyn.com>
+References: <4D94318A.5050202@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110403152244.GC5670@pulham.picochip.com>
+In-Reply-To: <4D94318A.5050202@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 03, 2011 at 04:22:44PM +0100, Jamie Iles wrote:
-> Hi Grant,
+Quoting Rob Landley (rlandley@parallels.com):
+> From: Rob Landley <rlandley@parallels.com>
 > 
-> On Sun, Apr 03, 2011 at 08:47:25AM -0600, Grant Likely wrote:
-> > On Sun, Apr 3, 2011 at 8:07 AM, Jamie Iles <jamie@jamieiles.com> wrote:
-> > > My first idea would be to have something like:
-> > >
-> > > struct mmio_gpio_bank {
-> > >        unsigned int            ngpio;
-> > >        unsigned long           set_offs;
-> > >        unsigned long           clr_offs;
-> > >        unsigned long           dout_offs;
-> > >        unsigned long           din_offs;
-> > >        unsigned long           dir_offs;
-> > > };
-> > >
-> > > struct mmio_gpio_pdata {
-> > >        size_t                  bus_width_bits;
-> > >        int                     gpio_base;
-> > >        unsigned int            nr_banks;
-> > >        struct mmio_gpio_bank   banks[];
-> > > };
-> > 
-> > As discussed earlier in the thread, you probably don't need to support
-> > multiple banks with this driver.  Instead, create a separate device
-> > instance for each bank.
+> This patch:
 > 
-> The reason I proposed this was for controllers where the registers 
-> aren't grouped together for each bank.  For example, the Synopsys block 
-> has:
+>   Adds struct net *cl_net to struct nfs_client.
+>   Intializes it from mount process context.
+>   Copies it down through nfs_client_initdata and similar.
+>   Replaces existing init_net uses with cl_net.
+>   Adds net_eq() checks to nfs_match_client() and nfs_compare_super_address().
 > 
-> 	0x00-0x08 bank A control registers
-> 	0x0c-0x14 bank B control registers
-> 	...
-> 	0x50	  bank A input register
-> 	0x54	  bank B input register.
+> Remount copies the existing network context rather than any associated with
+> the new mount process.  NFSv4 is still using init_net.  Reference counting
+> for struct net follows the struct nfs_client object lifetimes (pinned by
+> task context outside of that).
 > 
-> So when you mentioned before using a single register resource with 
-> offsets I understood it to be something like what I've proposed 
-> otherwise multiple banks would have overlapping resources (or the 
-> resource would just be used to indicate the start address rather than 
-> start + end).
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
 
-That may be a problem for request_mem_region() which would indeed
-prevent the driver from specifying the full register range with
-offsets inside it.  I suspect that the platform_bus_type will inhibit
-two platform_devices with overlapping regions from getting registered.
-Fair enough, that is a pretty strong argument for Anton's model.  I
-don't think it would be a good idea to try and work around it by
-making the resource only include the start address.
+Sorry for the delay.  Took me two long readings to feel like I've got
+it.
 
-It does mean some gymnastics for a device tree binding to figure out
-which registers are present, but the appropriate behaviour could be
-selected by a set of compatible values for each kind of register
-interface.
+Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
 
+Do you have any testcases coded up for this?
+
+thanks,
+-serge
+
+> ---
 > 
-> Also, it's not clear here but this would create one gpio_chip per bank.
-
-And that's bad why?  :-)
-
-g.
-
+>  fs/nfs/client.c           |   13 ++++++++++++-
+>  fs/nfs/internal.h         |    2 ++
+>  fs/nfs/mount_clnt.c       |    4 ++--
+>  fs/nfs/super.c            |   15 +++++++++++++++
+>  include/linux/nfs_fs_sb.h |    1 +
+>  5 files changed, 32 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> index 139be96..99bfaa6 100644
+> --- a/fs/nfs/client.c
+> +++ b/fs/nfs/client.c
+> @@ -130,6 +130,7 @@ struct rpc_program		nfsacl_program = {
+>  
+>  struct nfs_client_initdata {
+>  	const char *hostname;
+> +	struct net *net;
+>  	const struct sockaddr *addr;
+>  	size_t addrlen;
+>  	const struct nfs_rpc_ops *rpc_ops;
+> @@ -157,6 +158,7 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
+>  	atomic_set(&clp->cl_count, 1);
+>  	clp->cl_cons_state = NFS_CS_INITING;
+>  
+> +	clp->cl_net = get_net(cl_init->net);
+>  	memcpy(&clp->cl_addr, cl_init->addr, cl_init->addrlen);
+>  	clp->cl_addrlen = cl_init->addrlen;
+>  
+> @@ -196,6 +198,7 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
+>  	return clp;
+>  
+>  error_cleanup:
+> +	put_net(clp->cl_net);
+>  	kfree(clp);
+>  error_0:
+>  	return ERR_PTR(err);
+> @@ -290,6 +293,9 @@ static void nfs_free_client(struct nfs_client *clp)
+>  	if (clp->cl_machine_cred != NULL)
+>  		put_rpccred(clp->cl_machine_cred);
+>  
+> +	if (clp->cl_net)
+> +		put_net(clp->cl_net);
+> +
+>  	kfree(clp->cl_hostname);
+>  	kfree(clp);
+>  
+> @@ -473,6 +479,8 @@ static struct nfs_client *nfs_match_client(const struct nfs_client_initdata *dat
+>  		if (clp->cl_minorversion != data->minorversion)
+>  			continue;
+>  		/* Match the full socket address */
+> +		if (!net_eq(clp->cl_net, data->net))
+> +			continue;
+>  		if (!nfs_sockaddr_cmp(sap, clap))
+>  			continue;
+>  
+> @@ -636,7 +644,7 @@ static int nfs_create_rpc_client(struct nfs_client *clp,
+>  {
+>  	struct rpc_clnt		*clnt = NULL;
+>  	struct rpc_create_args args = {
+> -		.net		= &init_net,
+> +		.net		= clp->cl_net,
+>  		.protocol	= clp->cl_proto,
+>  		.address	= (struct sockaddr *)&clp->cl_addr,
+>  		.addrsize	= clp->cl_addrlen,
+> @@ -821,6 +829,7 @@ static int nfs_init_server(struct nfs_server *server,
+>  {
+>  	struct nfs_client_initdata cl_init = {
+>  		.hostname = data->nfs_server.hostname,
+> +		.net = data->net,
+>  		.addr = (const struct sockaddr *)&data->nfs_server.address,
+>  		.addrlen = data->nfs_server.addrlen,
+>  		.rpc_ops = &nfs_v2_clientops,
+> @@ -1386,6 +1395,7 @@ static int nfs4_set_client(struct nfs_server *server,
+>  {
+>  	struct nfs_client_initdata cl_init = {
+>  		.hostname = hostname,
+> +		.net = &init_net,
+>  		.addr = addr,
+>  		.addrlen = addrlen,
+>  		.rpc_ops = &nfs_v4_clientops,
+> @@ -1438,6 +1448,7 @@ struct nfs_client *nfs4_set_ds_client(struct nfs_client* mds_clp,
+>  {
+>  	struct nfs_client_initdata cl_init = {
+>  		.addr = ds_addr,
+> +		.net = &init_net,
+>  		.addrlen = ds_addrlen,
+>  		.rpc_ops = &nfs_v4_clientops,
+>  		.proto = ds_proto,
+> diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+> index 72e0bdd..006ab1a 100644
+> --- a/fs/nfs/internal.h
+> +++ b/fs/nfs/internal.h
+> @@ -86,6 +86,7 @@ struct nfs_parsed_mount_data {
+>  	unsigned int		version;
+>  	unsigned int		minorversion;
+>  	char			*fscache_uniq;
+> +	struct net		*net;
+>  
+>  	struct {
+>  		struct sockaddr_storage	address;
+> @@ -111,6 +112,7 @@ struct nfs_parsed_mount_data {
+>  /* mount_clnt.c */
+>  struct nfs_mount_request {
+>  	struct sockaddr		*sap;
+> +	struct net		*net;
+>  	size_t			salen;
+>  	char			*hostname;
+>  	char			*dirpath;
+> diff --git a/fs/nfs/mount_clnt.c b/fs/nfs/mount_clnt.c
+> index d4c2d6b..4fbe3a8 100644
+> --- a/fs/nfs/mount_clnt.c
+> +++ b/fs/nfs/mount_clnt.c
+> @@ -153,7 +153,7 @@ int nfs_mount(struct nfs_mount_request *info)
+>  		.rpc_resp	= &result,
+>  	};
+>  	struct rpc_create_args args = {
+> -		.net		= &init_net,
+> +		.net		= info->net,
+>  		.protocol	= info->protocol,
+>  		.address	= info->sap,
+>  		.addrsize	= info->salen,
+> @@ -225,7 +225,7 @@ void nfs_umount(const struct nfs_mount_request *info)
+>  		.to_retries = 2,
+>  	};
+>  	struct rpc_create_args args = {
+> -		.net		= &init_net,
+> +		.net		= info->net,
+>  		.protocol	= IPPROTO_UDP,
+>  		.address	= info->sap,
+>  		.addrsize	= info->salen,
+> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+> index 2b8e9a5..b0d869f 100644
+> --- a/fs/nfs/super.c
+> +++ b/fs/nfs/super.c
+> @@ -53,6 +53,7 @@
+>  #include <linux/nfs_xdr.h>
+>  #include <linux/magic.h>
+>  #include <linux/parser.h>
+> +#include <linux/user_namespace.h>
+>  
+>  #include <asm/system.h>
+>  #include <asm/uaccess.h>
+> @@ -1572,6 +1573,7 @@ static int nfs_try_mount(struct nfs_parsed_mount_data *args,
+>  	struct nfs_mount_request request = {
+>  		.sap		= (struct sockaddr *)
+>  						&args->mount_server.address,
+> +		.net		= args->net,
+>  		.dirpath	= args->nfs_server.export_path,
+>  		.protocol	= args->mount_server.protocol,
+>  		.fh		= root_fh,
+> @@ -1726,6 +1728,11 @@ static int nfs_validate_mount_data(void *options,
+>  	if (data == NULL)
+>  		goto out_no_data;
+>  
+> +	/* Grab network context from mount process. We'll increment the
+> +	   reference count when we copy it to nfs_client->cl_net. */
+> +
+> +	args->net = current->nsproxy->net_ns;
+> +
+>  	switch (data->version) {
+>  	case 1:
+>  		data->namlen = 0;
+> @@ -1971,6 +1978,9 @@ nfs_remount(struct super_block *sb, int *flags, char *raw_data)
+>  	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
+>  		data->nfs_server.addrlen);
+>  
+> +	/* Use original mount's network context, not remount process's */
+> +	data->net = nfss->nfs_client->cl_net;
+> +
+>  	/* overwrite those values with any that were specified */
+>  	error = nfs_parse_mount_options((char *)options, data);
+>  	if (error < 0)
+> @@ -2119,6 +2129,9 @@ static int nfs_compare_super_address(struct nfs_server *server1,
+>  	if (sap1->sa_family != sap2->sa_family)
+>  		return 0;
+>  
+> +	if (!net_eq(server1->nfs_client->cl_net, server2->nfs_client->cl_net))
+> +		return 0;
+> +
+>  	switch (sap1->sa_family) {
+>  	case AF_INET: {
+>  		struct sockaddr_in *sin1 = (struct sockaddr_in *)sap1;
+> @@ -2478,6 +2491,8 @@ static int nfs4_validate_mount_data(void *options,
+>  	if (data == NULL)
+>  		goto out_no_data;
+>  
+> +	args->net = &init_net;
+> +
+>  	switch (data->version) {
+>  	case 1:
+>  		if (data->host_addrlen > sizeof(args->nfs_server.address))
+> diff --git a/include/linux/nfs_fs_sb.h b/include/linux/nfs_fs_sb.h
+> index 216cea5..45286dc 100644
+> --- a/include/linux/nfs_fs_sb.h
+> +++ b/include/linux/nfs_fs_sb.h
+> @@ -33,6 +33,7 @@ struct nfs_client {
+>  #define NFS_CS_STOP_RENEW	4		/* no more state to renew */
+>  #define NFS_CS_CHECK_LEASE_TIME	5		/* need to check lease time */
+>  	struct sockaddr_storage	cl_addr;	/* server identifier */
+> +	struct net *		cl_net;		/* network context */
+>  	size_t			cl_addrlen;
+>  	char *			cl_hostname;	/* hostname of server */
+>  	struct list_head	cl_share_link;	/* link in global client list */
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
