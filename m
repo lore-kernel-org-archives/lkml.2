@@ -1,45 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382Ab1DEALE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 20:11:04 -0400
-Received: from gw0.danplanet.com ([71.245.107.82]:46450 "EHLO
-	mail.danplanet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750846Ab1DEALB (ORCPT
+	id S1751356Ab1DEA0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 20:26:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37951 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1DEA0B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 20:11:01 -0400
-X-Greylist: delayed 1722 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Apr 2011 20:11:01 EDT
-From: Dan Smith <danms@us.ibm.com>
-To: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>
-Cc: Nathan Lynch <ntl@pobox.com>, containers@lists.linux-foundation.org,
-        Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
-References: <1298936432-29607-1-git-send-email-ntl@pobox.com>
-	<1298936432-29607-6-git-send-email-ntl@pobox.com>
-	<20110403190324.GD15044@hallyn.com> <1301929228.31531.39.camel@tp-t61>
-	<20110404151017.GA4857@hallyn.com> <1301931608.31531.49.camel@tp-t61>
-	<20110404162753.GA3456@hallyn.com> <4D9A00B1.2080002@cs.columbia.edu>
-	<1301953409.31531.130.camel@tp-t61>
-	<20110404220309.GA10229@peq.hallyn.com>
-Date: Mon, 04 Apr 2011 16:42:16 -0700
-In-Reply-To: <20110404220309.GA10229@peq.hallyn.com> (Serge E. Hallyn's
-	message of "Mon, 4 Apr 2011 17:03:09 -0500")
-Message-ID: <87vcyt4m93.fsf@caffeine.danplanet.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 4 Apr 2011 20:26:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=t6vyyKJh05wujdCNxzxm0hhP+SJQi8+RINyasgQpJosAPBt0uz3y++5iUM6A8N5xQw
+         039Rtx7bJpey2ygFD1lGpMBPMi6COQIJDPnQOPGpOpH4iE6Qj32ztspUiil6C4zpva2D
+         3j409JvkHwENkSZQGgIwuRUJYbMT75Zoo3eU4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110404234448.GA24957@kamineko.org>
+References: <AANLkTi=1xtjEZc2C1=W-v2oYbvvcGH9k_DGGXvJ8=swq@mail.gmail.com>
+	<20110401172241.GA26851@srcf.ucam.org>
+	<BANLkTikPjwowBge82viT+Ma5UnP0fA-pew@mail.gmail.com>
+	<20110402100043.GA5890@kamineko.org>
+	<BANLkTikVGWM3T1y2XvwkHB+Yub5EhG1RPA@mail.gmail.com>
+	<20110402155549.GA6724@kamineko.org>
+	<BANLkTimJa3CSWouTMJD5V0ZuMa67YXy88Q@mail.gmail.com>
+	<20110404234448.GA24957@kamineko.org>
+Date: Mon, 4 Apr 2011 21:26:00 -0300
+Message-ID: <BANLkTinYJHxO4KL6xEzQB1Q-YAdggNL9Wg@mail.gmail.com>
+Subject: Re: sony-laptop: fix early NULL pointer dereference
+From: Thiago Farina <tfransosi@gmail.com>
+To: Mattia Dongili <malattia@linux.it>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Andrea Gelmini <andrea.gelmini@gmail.com>, anssi.hannula@iki.fi,
+        linux-acpi@vger.kernel.org, axel.lin@gmail.com, trenn@suse.de,
+        len.brown@intel.com, linux-kernel@vger.kernel.org,
+        Dan Carpenter <error27@gmail.com>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SH> The API for starting a checkpoint, that I'm not on the fence on.
+On Mon, Apr 4, 2011 at 8:44 PM, Mattia Dongili <malattia@linux.it> wrote:
+> Author: Mattia Dongili <malattia@linux.it>
+> Date:   Fri Apr 1 10:01:41 2011 +0900
+>
+I think most of the patches doesn't include these above lines nor the
+subject line in the description. Also when submitting a patch to the
+list, please don't forget to put [PATCH] on the subject line.
 
-Is that just because it requires a C/R aware container init or for some
-other reason?  I think the stricter API is a lot easier to understand,
-but maybe there's something we can do to avoid that as a hard
-requirement?  At least until "C/R support" becomes a desirable feature
-of $INIT_DE_JOUR :)
+git format-patch should output the right format.
 
--- 
-Dan Smith
-IBM Linux Technology Center
-email: danms@us.ibm.com
+>    sony-laptop: fix early NULL pointer dereference
+>
+>    The SNC acpi driver could get early notifications before it fully
+>    initializes and that could lead to dereferencing the sony_nc_handles
+>    structure pointer that is still NULL at that stage.
+>    Make sure we return early from the handle lookup function in these
+>    cases.
+>
+>    Signed-off-by: Mattia Dongili <malattia@linux.it>
+> ---
+>
+> Hi Matthew,
+> if it's not too late, can you pick this one up instead of the previous
+> one (89ec2feafaedd759e53346d641f60863a14cfb9e)?
+> If it's too late I'll try and do a round of return value fixes later.
+>
+> diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
+> index b2ce172..de79c18 100644
+> --- a/drivers/platform/x86/sony-laptop.c
+> +++ b/drivers/platform/x86/sony-laptop.c
+> @@ -810,6 +810,11 @@ static int sony_nc_handles_cleanup(struct platform_device *pd)
+>  static int sony_find_snc_handle(int handle)
+>  {
+>        int i;
+> +
+> +       /* not initialized yet, return early */
+This comment is useless, it is just repeating what the codes does ;) I
+think you can just remove it.
+
+> +       if (!handles)
+> +               return -EINVAL;
+> +
+>        for (i = 0; i < 0x10; i++) {
+>                if (handles->cap[i] == handle) {
+>                        dprintk("found handle 0x%.4x (offset: 0x%.2x)\n",
+> --
+> mattia
+> :wq!
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
