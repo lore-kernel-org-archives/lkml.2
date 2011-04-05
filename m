@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab1DESh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:37:56 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:65507 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab1DEShy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:37:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ALaj10NvTV1zrPNEswl8uzu60dkOja9gKJ6bDpEtPnkKYPqoapTVmYEXdhzIMLszSI
-         LB1VbXGypwMJFkbwFLqrv9BVsKpEhYWYQyia2+inpJ+FxFeCE+516epZU+ONjhMIG7qT
-         6QtqTns7LioP4QBvzrOFn8HdPen20RbKI5p3E=
+	id S1754230Ab1DESl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 14:41:28 -0400
+Received: from kroah.org ([198.145.64.141]:49115 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753698Ab1DESlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 14:41:25 -0400
+Date: Tue, 5 Apr 2011 11:35:56 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] staging: gma500: Add a test ioctl for issuing 2D
+ accel ops via user space
+Message-ID: <20110405183556.GA594@kroah.com>
+References: <20110401173554.18112.67483.stgit@localhost.localdomain>
+ <20110401174128.18112.72945.stgit@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <1302015561-21047-20-git-send-email-mmarek@suse.cz>
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
-	<1302015561-21047-20-git-send-email-mmarek@suse.cz>
-Date: Tue, 5 Apr 2011 20:37:53 +0200
-Message-ID: <BANLkTimVbujtDnF7uJNgfT-oPYGBfR7WLA@mail.gmail.com>
-Subject: Re: [PATCH 19/34] rt2x00: Drop __TIME__ usage
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110401174128.18112.72945.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 4:59 PM, Michal Marek <mmarek@suse.cz> wrote:
-> The kernel already prints its build timestamp during boot, no need to
-> repeat it in random drivers and produce different object files each
-> time.
->
-> Cc: Ivo van Doorn <IvDoorn@gmail.com>
-> Cc: Gertjan van Wingerde <gwingerde@gmail.com>
-> Cc: linux-wireless@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-
+On Fri, Apr 01, 2011 at 06:41:30PM +0100, Alan Cox wrote:
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 > ---
->  drivers/net/wireless/rt2x00/rt2x00debug.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/wireless/rt2x00/rt2x00debug.c b/drivers/net/wireless/rt2x00/rt2x00debug.c
-> index c92db32..66166ef 100644
-> --- a/drivers/net/wireless/rt2x00/rt2x00debug.c
-> +++ b/drivers/net/wireless/rt2x00/rt2x00debug.c
-> @@ -568,7 +568,6 @@ static struct dentry *rt2x00debug_create_file_driver(const char *name,
->        blob->data = data;
->        data += sprintf(data, "driver:\t%s\n", intf->rt2x00dev->ops->name);
->        data += sprintf(data, "version:\t%s\n", DRV_VERSION);
-> -       data += sprintf(data, "compiled:\t%s %s\n", __DATE__, __TIME__);
->        blob->size = strlen(blob->data);
->
->        return debugfs_create_blob(name, S_IRUSR, intf->driver_folder, blob);
-> --
-> 1.7.4.1
->
->
+> 
+>  drivers/staging/gma500/psb_2d.c  |    2 +-
+>  drivers/staging/gma500/psb_drv.h |    3 +++
+>  drivers/staging/gma500/psb_fb.c  |   26 ++++++++++++++++++++++++++
+>  3 files changed, 30 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/gma500/psb_2d.c b/drivers/staging/gma500/psb_2d.c
+> index 9a0691f..94bce5c 100644
+> --- a/drivers/staging/gma500/psb_2d.c
+> +++ b/drivers/staging/gma500/psb_2d.c
+> @@ -84,7 +84,7 @@ static int psb_2d_wait_available(struct drm_psb_private *dev_priv,
+>  /* FIXME: Remember if we expose the 2D engine to the DRM we need to serialize
+>     it with console use */
+>  
+> -static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
+> +int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
+>  	 	  	   unsigned size)
+>  {
+>  	int ret = 0;
+> diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
+> index 7361fbf..8c1eceb 100644
+> --- a/drivers/staging/gma500/psb_drv.h
+> +++ b/drivers/staging/gma500/psb_drv.h
+> @@ -709,6 +709,9 @@ extern int psbfb_sync(struct fb_info *info);
+>  
+>  extern void psb_spank(struct drm_psb_private *dev_priv);
+>  
+> +extern int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
+> +	 	  	   unsigned size);
+> +
+>  /*
+>   *psb_reset.c
+>   */
+> diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
+> index 6c75df5..6499f28 100644
+> --- a/drivers/staging/gma500/psb_fb.c
+> +++ b/drivers/staging/gma500/psb_fb.c
+> @@ -270,6 +270,31 @@ static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+>  	return 0;
+>  }
+>  
+> +static int psbfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
+> +{
+> +	struct psb_fbdev *fbdev = info->par;
+> +	struct psb_framebuffer *psbfb = fbdev->pfb;
+> +	struct drm_device *dev = psbfb->base.dev;
+> +	struct drm_psb_private *dev_priv = dev->dev_private;
+> +	u32 __user *p = (u32 __user *)arg;
+> +	u32 l;
+> +	u32 buf[32];
+> +	switch (cmd) {
+> +	case 0x12345678:
+> +		if (!capable(CAP_SYS_RAWIO))
+> +			return -EPERM;
+> +		if (get_user(l, p))
+> +			return -EFAULT;
+> +		if (l > 32)
+> +			return -EMSGSIZE;
+> +		if (copy_from_user(buf, p + 1, l))
+> +			return -EFAULT;
+> +		psbfb_2d_submit(dev_priv, buf, l);
+> +		return 0;
+
+What is this used for?  A test version of an x.org driver?  This will go
+away eventually, right?
+
+thanks,
+
+greg k-h
