@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1DESaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:30:55 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:37539
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753907Ab1DESax (ORCPT
+	id S1754158Ab1DESh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 14:37:56 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65507 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab1DEShy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:30:53 -0400
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 14:30:52 EDT
-X-SpamScore: -14
-X-BigFish: VS-14(zz154dM1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 5 Apr 2011 13:15:04 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: <trivial@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>,
-        Harninder Rai <harninder.rai@freescale.com>
-Subject: Re: [RFC 2/5]arch:powerpc:sysdev:Makefile Remove unused config in
- the Makefile.
-Message-ID: <20110405131504.1d182da4@schlenkerla.am.freescale.net>
-In-Reply-To: <1302022702-24541-2-git-send-email-justinmattock@gmail.com>
-References: <1302022702-24541-1-git-send-email-justinmattock@gmail.com>
-	<1302022702-24541-2-git-send-email-justinmattock@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Tue, 5 Apr 2011 14:37:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ALaj10NvTV1zrPNEswl8uzu60dkOja9gKJ6bDpEtPnkKYPqoapTVmYEXdhzIMLszSI
+         LB1VbXGypwMJFkbwFLqrv9BVsKpEhYWYQyia2+inpJ+FxFeCE+516epZU+ONjhMIG7qT
+         6QtqTns7LioP4QBvzrOFn8HdPen20RbKI5p3E=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1302015561-21047-20-git-send-email-mmarek@suse.cz>
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
+	<1302015561-21047-20-git-send-email-mmarek@suse.cz>
+Date: Tue, 5 Apr 2011 20:37:53 +0200
+Message-ID: <BANLkTimVbujtDnF7uJNgfT-oPYGBfR7WLA@mail.gmail.com>
+Subject: Re: [PATCH 19/34] rt2x00: Drop __TIME__ usage
+From: Ivo Van Doorn <ivdoorn@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Apr 2011 09:58:19 -0700
-"Justin P. Mattock" <justinmattock@gmail.com> wrote:
+On Tue, Apr 5, 2011 at 4:59 PM, Michal Marek <mmarek@suse.cz> wrote:
+> The kernel already prints its build timestamp during boot, no need to
+> repeat it in random drivers and produce different object files each
+> time.
+>
+> Cc: Ivo van Doorn <IvDoorn@gmail.com>
+> Cc: Gertjan van Wingerde <gwingerde@gmail.com>
+> Cc: linux-wireless@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-> The patch below removes an unused config variable found by using a kernel
-> cleanup script.
-> Note: I did try to cross compile these but hit erros while doing so..
-> (gcc is not setup to cross compile) and am unsure if anymore needs to be done.
-> Please have a look if/when anybody has free time.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: linuxppc-dev@lists.ozlabs.org
-> 
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+
 > ---
->  arch/powerpc/sysdev/Makefile |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/sysdev/Makefile b/arch/powerpc/sysdev/Makefile
-> index 1e0c933..243b6ad 100644
-> --- a/arch/powerpc/sysdev/Makefile
-> +++ b/arch/powerpc/sysdev/Makefile
-> @@ -18,7 +18,6 @@ obj-$(CONFIG_FSL_PMC)		+= fsl_pmc.o
->  obj-$(CONFIG_FSL_LBC)		+= fsl_lbc.o
->  obj-$(CONFIG_FSL_GTM)		+= fsl_gtm.o
->  obj-$(CONFIG_MPC8xxx_GPIO)	+= mpc8xxx_gpio.o
-> -obj-$(CONFIG_FSL_85XX_CACHE_SRAM)	+= fsl_85xx_l2ctlr.o fsl_85xx_cache_sram.o
->  obj-$(CONFIG_SIMPLE_GPIO)	+= simple_gpio.o
->  obj-$(CONFIG_FSL_RIO)		+= fsl_rio.o
->  obj-$(CONFIG_TSI108_BRIDGE)	+= tsi108_pci.o tsi108_dev.o
-
-Those files do exist, and aren't pulled in by any other means I can see.
-It was introduced by commit 6db92cc9d07db9f713da8554b4bcdfc8e54ad386, whose
-changelog says:
-	Drivers can do the following in Kconfig to use these APIs "select
-FSL_85XX_CACHE_SRAM if MPC85xx"
-
-Now, the absence of such a kconfig option[1] is a problem, but I don't think
-outright removal (labelled "trivial cleanup") is appropriate, unless nobody
-fixes it after the problem is pointed out.  And if it is removed, the files
-should go with it.
-
--Scott
-
-[1] and of any drivers that select it, though this was added fairly
-recently -- perhaps such a driver change is on its way?
-
+>  drivers/net/wireless/rt2x00/rt2x00debug.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rt2x00/rt2x00debug.c b/drivers/net/wireless/rt2x00/rt2x00debug.c
+> index c92db32..66166ef 100644
+> --- a/drivers/net/wireless/rt2x00/rt2x00debug.c
+> +++ b/drivers/net/wireless/rt2x00/rt2x00debug.c
+> @@ -568,7 +568,6 @@ static struct dentry *rt2x00debug_create_file_driver(const char *name,
+>        blob->data = data;
+>        data += sprintf(data, "driver:\t%s\n", intf->rt2x00dev->ops->name);
+>        data += sprintf(data, "version:\t%s\n", DRV_VERSION);
+> -       data += sprintf(data, "compiled:\t%s %s\n", __DATE__, __TIME__);
+>        blob->size = strlen(blob->data);
+>
+>        return debugfs_create_blob(name, S_IRUSR, intf->driver_folder, blob);
+> --
+> 1.7.4.1
+>
+>
