@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab1DEOrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:47:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51836 "EHLO mx1.redhat.com"
+	id S1753756Ab1DEOrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:47:42 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:50598 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753575Ab1DEOrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:47:11 -0400
-Date: Tue, 5 Apr 2011 20:16:51 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
-Message-ID: <20110405144651.GA20671@amit-x200.redhat.com>
-References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
- <20110401154327.GA6593@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110401154327.GA6593@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753694Ab1DEOrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:47:41 -0400
+From: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+To: eric.piel@tremplin-utc.net, mjg@redhat.com
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        samu.p.onkalo@nokia.com, ilkka.koskinen@nokia.com
+Subject: [RFC PATCHv2 0/5] lis3lv02d: Regulator fix & support for multiple devices  
+Date: Tue,  5 Apr 2011 17:45:09 +0300
+Message-Id: <1302014714-7334-1-git-send-email-ilkka.koskinen@nokia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 01 Apr 2011 [17:43:27], Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Mar 31, 2011 at 11:50:04PM +0530, Amit Shah wrote:
-> > After the first GET_EVENT_STATUS_NOTIFICATION command, any new media
-> > notification is reset by the device.  The following is then noticed:
-> > 
-> > 1. insert a CD of a particular size
-> > 2. mount it
-> > 3. note /sys/block/sr0/size
-> > 4. unmount cd
-> > 5. replace cd with a size greater than previous one
-> > 6. mount it
-> > 7. /sys/block/sr0/size isn't updated
-> > 8. copy all files from cd to somewhere; IO errors will pop up where the
-> >    files lie beyond previous CD's geometry
-> > 
-> > The cause is:
-> > 
-> >  cdrom_open()
-> >      open_for_data()
-> >          cdo->drive_status() = sr_drive_status()
-> >              cdrom_get_media_event()
-> >              --> GPCMD_GET_EVENT_STATUS_NOTIFICATION
-> >          --> med.media_present is true, return CDS_DISK_OK
-> >      (success)
-> >  check_disk_change()
-> >     ... -> 2nd call to GPCMD_GET_EVENT_STATUS_NOTIFICATION
-> > 
-> > at this point the device has already reset the new media event and the
-> > call to revalidate_disk() in check_disk_change() is never made.
-> 
-> Hmm... I see.  That's something I didn't expect.
+The first patch fixes a bug in lis3 i2c driver when probe() fails.
 
-...
+The rest of the patches converts statically allocated lis3 device
+to dynamically allocated one, which enables support for multiple
+lis3 devices on board. In addition, this patch set makes it
+possible to load both i2c and spi drivers so that they don't
+disturb each other. hp_accel is hacked to work and, thus, doesn't
+support multiple devices.
 
-> But I don't think this is the correct place to do it.  The problem
-> happens because block layer consumes the event but doesn't remember it
-> when the time for revalidation comes.  It should be done by block
-> layer, not sr.
+I have tested the i2c based driver on target device, but haven't
+the other two.
 
-Hm, only the open call at the start of the call sequence is involved
-from the block layer.  How to pass on such a pending event back?  Some
-kind of an event array with helpers to modify it?
+Changes since v1:
+The patches are rebased on top of 2.6.39-rc1 as requested. That is,
+no code changes. Only the paths of the files were changed.
 
-		Amit
+Cheers, Ilkka
+
+
+Ilkka Koskinen (5):
+  hwmon: lis3: Free regulators if probe() fails.
+  hwmon: lis3: Change naming to consistent
+  hwmon: lis3: Change exported function to use given device
+  hwmon: lis3: Remove the referencies to the global variable in core
+    driver
+  hwmon: lis3: Register hwif and remove references to global variable
+
+ drivers/misc/lis3lv02d/lis3lv02d.c     |  391 ++++++++++++++++++--------------
+ drivers/misc/lis3lv02d/lis3lv02d.h     |   11 +-
+ drivers/misc/lis3lv02d/lis3lv02d_i2c.c |   67 ++++---
+ drivers/misc/lis3lv02d/lis3lv02d_spi.c |   35 ++-
+ drivers/platform/x86/hp_accel.c        |   52 +++--
+ 5 files changed, 319 insertions(+), 237 deletions(-)
+
