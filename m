@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab1DEIWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 04:22:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752568Ab1DEIWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 04:22:45 -0400
-Message-ID: <4D9AD14D.3020705@redhat.com>
-Date: Tue, 05 Apr 2011 11:22:37 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: trivial@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2]arch:x86:kvm:i8254.h Remove base_addresss in kvm_pit
- since it is unused.
-References: <1301504087-3266-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1301504087-3266-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753193Ab1DEIXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 04:23:14 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:54288 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab1DEIXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 04:23:11 -0400
+Subject: Re: Native KVM: can't boot existing Fedora 14 image
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Ahern <dsahern@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 05 Apr 2011 10:23:04 +0200
+In-Reply-To: <4D9A7DF6.1040101@gmail.com>
+References: <4D9A7DF6.1040101@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 2.91.92 (2.91.92-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1301991791.1923.12.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2011 06:54 PM, Justin P. Mattock wrote:
-> The patch below removes unsigned long base_addresss; in i8254.h
-> since it is unused.
->
+On Mon, 2011-04-04 at 20:27 -0600, David Ahern wrote:
+> At that point it loops over a few iterations of the last few lines and I
+> kill it. Any ideas why?
 
-Applied, thanks.
+What happens if you remove the (hardcoded) "root=vda" kernel parameter
+from the commandline (in tools/kvm/main.c)?
 
--- 
-error compiling committee.c: too many arguments to function
+
+PUal Bolle
 
