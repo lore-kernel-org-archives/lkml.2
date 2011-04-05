@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab1DEOmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:42:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44168 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753303Ab1DEOmg (ORCPT
+	id S1753550Ab1DEOnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:43:50 -0400
+Received: from brother.balabit.com ([195.70.62.219]:40891 "EHLO
+	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab1DEOnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:42:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <b7da2f$qvoau5@fmsmga001.fm.intel.com>
-References: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com>
- <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
- <20110401114429.GA3526@viiv.ffwll.ch> <AANLkTik6njOQTLGsB4KzPP-J=fE=p4CHopAyvsDzdDSF@mail.gmail.com>
- <BANLkTimUZY+2E=kXG-as8-moAAS4+F5bTg@mail.gmail.com> <b7da2f$qvoau5@fmsmga001.fm.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 5 Apr 2011 07:42:14 -0700
-Message-ID: <BANLkTinXZVOy9-j4TiJ7HMcTvv9Q8RS+DA@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Disable all outputs early, before
- KMS takeover
-To: Chris Wilson <chris@chris-wilson.co.uk>, Keith Packard <keithp@keithp.com>
-Cc: Tomas Winkler <tomasw@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Apr 2011 10:43:49 -0400
+Subject: Re: [PATCH] netfilter: Fix build failure when ipv6 but xt_tproxy
+ is built in
+From: KOVACS Krisztian <hidden@balabit.hu>
+To: Patrick McHardy <kaber@trash.net>
+Cc: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <4D99CDA0.3030305@trash.net>
+References: <1301451199.14261.327.camel@gandalf.stny.rr.com>
+	 <20110329.223536.245392030.davem@davemloft.net>
+	 <4D99CDA0.3030305@trash.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Apr 2011 16:43:46 +0200
+Message-ID: <1302014626.67568.1.camel@nienna.balabit>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 3:30 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, 5 Apr 2011 13:21:08 +0300, Tomas Winkler <tomasw@gmail.com> wrote:
->> On Fri, Apr 1, 2011 at 2:51 PM, Pekka Enberg <penberg@kernel.org> wrote:
->> > Unfortunately I get a blank screen with after boot:
->> > Nacked-by: Pekka Enberg <penberg@kernel.org>
->
-> But until you can tell me where it explodes on your system, we fix
-> issues on several other machines...
+Hi,
 
-NO.
+On Mon, 2011-04-04 at 15:54 +0200, Patrick McHardy wrote:
+> >> net/built-in.o: In function `tproxy_tg6_v1':
+> >> /home/rostedt/work/autotest/nobackup/linux-test.git/net/netfilter/xt_TPROXY.c:288: undefined reference to `ipv6_find_hdr'
+> >>
+> >> This happened because the xt_TPROXY code was compiled into the kernel
+> >> proper, but the ipv6 netfilter was compiled as a module. The fix is to
+> >> only enter the code that calls ipv6_find_hdr if ipv6 netfilter is
+> >> compiled into the kernel, or if it is a module, so is the xt_TPROXY
+> >> code.
+> 
+> I don't think this is a good fix for the problem since it may lead to
+> the confusing situation that both TPROXY and ip6tables are enabled,
+> but TPROXY has no IPv6 support.
+> 
+> I think we should solve this by either adding a Kconfig dependency
+> on (IP6_NF_IPTABLES || IP6_NF_IPTABLES=n) or using ipv6_skip_exthdr()
+> instead of ipv6_find_hdr().
+> 
+> Krisztian, what do you think?
 
-Chris, you need to understand the issue of "NO REGRESSIONS".
+I'd definitely prefer using ipv6_skip_exthdr() instead of playing
+various tricks with the config preprocessor macros.
 
-It's a very simple rule: it DOES NOT MATTER ONE WHIT how many machines
-you fix. You never ever regress. Patches that cause regressions are
-reverted.
+What about something like this?
 
-There are multiple reasons for that rule, but the basic one ends up
-being very simple: you only _think_ you fix more machines than you
-break. Why? Because the people who test out your patches are the
-"active" people - and often predominantly the active people who have
-problems. In contrast, the people for whom things already work aren't
-even testing your patches in the first place. Then, six months later,
-when they update to a new Fedora version, things suddenly don't work
-for them, and it turns out that yes, you fixed ten active testers, but
-you broke a thousand random people.
+diff --git a/net/netfilter/xt_TPROXY.c b/net/netfilter/xt_TPROXY.c
+index dcfd57e..1ef0e56 100644
+--- a/net/netfilter/xt_TPROXY.c
++++ b/net/netfilter/xt_TPROXY.c
+@@ -283,10 +283,10 @@ tproxy_tg6_v1(struct sk_buff *skb, const struct xt_action_param *par)
+        const struct in6_addr *laddr;
+        __be16 lport;
+        int thoff;
+-       int tproto;
++       u8 tproto = iph->nexthdr;
+ 
+-       tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
+-       if (tproto < 0) {
++       thoff = ipv6_skip_exthdr(skb, sizeof(*iph), &tproto);
++       if (thoff < 0) {
+                pr_debug("unable to find transport header in IPv6 packet, dropping\n");
+                return NF_DROP;
+        }
 
-So even _one_ person saying "this is a regression" is a total blocker.
-Really. It's that simple.
+--
+KOVACS Krisztian
 
-YOU NEVER EVER BREAK WORKING MACHINES.
-
-Seriously. We had this for years in ACPI-land and with suspend/resume
-with "one step forward, two steps back", and nobody ever knew if we
-were doing any real progress at all, because machines that had working
-suspend/resume one kernel version would be broken again the next.
-There was no real pattern of improvement, there was just a random
-pattern of "things get fixed on one machine, and break on another".
-
-We introduced the "no regressions" rule, and things got seriously
-better. Suddenly things started getting _reliably_ better.
-
-The whole situation with i915 has been pretty damn random lately, and
-you really really need to understand that this is simply not how it's
-done. Your cavalier attitude ("but it fixes things for others") is
-absolutely not acceptable.
-
-Keith Cc'd, because that patch had better not show up in my tree.
-
-                       Linus
