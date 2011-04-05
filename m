@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab1DEO7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:59:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44431 "EHLO mx1.suse.de"
+	id S1754132Ab1DEO7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:59:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56447 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab1DEO73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:59:29 -0400
+	id S1754035Ab1DEO7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:59:31 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/34] kconfig: Do not record timestamp in auto.conf and autoconf.h
-Date: Tue,  5 Apr 2011 16:58:48 +0200
-Message-Id: <1302015561-21047-2-git-send-email-mmarek@suse.cz>
+Subject: [PATCH 02/34] kbuild: Call gzip with -n
+Date: Tue,  5 Apr 2011 16:58:49 +0200
+Message-Id: <1302015561-21047-3-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
@@ -19,50 +19,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Timestamps in file data are useless and there is already one in .config
+The timestamps recorded in the .gz files add no value.
 
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- scripts/kconfig/confdata.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ scripts/Makefile.lib          |    2 +-
+ scripts/gen_initramfs_list.sh |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index 61c35bf..834eecb 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -784,7 +784,6 @@ int conf_write_autoconf(void)
- 	const char *str;
- 	const char *name;
- 	FILE *out, *tristate, *out_h;
--	time_t now;
- 	int i;
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 1c702ca..93b2b59 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -197,7 +197,7 @@ cmd_objcopy = $(OBJCOPY) $(OBJCOPYFLAGS) $(OBJCOPYFLAGS_$(@F)) $< $@
+ # ---------------------------------------------------------------------------
  
- 	sym_clear_all_valid();
-@@ -811,22 +810,19 @@ int conf_write_autoconf(void)
- 		return 1;
- 	}
+ quiet_cmd_gzip = GZIP    $@
+-cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -f -9 > $@) || \
++cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
+ 	(rm -f $@ ; false)
  
--	time(&now);
- 	fprintf(out, "#\n"
- 		     "# Automatically generated make config: don't edit\n"
- 		     "# %s\n"
--		     "# %s"
- 		     "#\n",
--		     rootmenu.prompt->text, ctime(&now));
-+		     rootmenu.prompt->text);
- 	fprintf(tristate, "#\n"
- 			  "# Automatically generated - do not edit\n"
- 			  "\n");
- 	fprintf(out_h, "/*\n"
- 		       " * Automatically generated C config: don't edit\n"
- 		       " * %s\n"
--		       " * %s"
- 		       " */\n",
--		       rootmenu.prompt->text, ctime(&now));
-+		       rootmenu.prompt->text);
+ # DTC
+diff --git a/scripts/gen_initramfs_list.sh b/scripts/gen_initramfs_list.sh
+index 55caecd..4a43fe1 100644
+--- a/scripts/gen_initramfs_list.sh
++++ b/scripts/gen_initramfs_list.sh
+@@ -226,7 +226,7 @@ cpio_list=
+ output="/dev/stdout"
+ output_file=""
+ is_cpio_compressed=
+-compr="gzip -9 -f"
++compr="gzip -n -9 -f"
  
- 	for_all_symbols(i, sym) {
- 		sym_calc_value(sym);
+ arg="$1"
+ case "$arg" in
+@@ -240,7 +240,7 @@ case "$arg" in
+ 		output_file="$1"
+ 		cpio_list="$(mktemp ${TMPDIR:-/tmp}/cpiolist.XXXXXX)"
+ 		output=${cpio_list}
+-		echo "$output_file" | grep -q "\.gz$" && compr="gzip -9 -f"
++		echo "$output_file" | grep -q "\.gz$" && compr="gzip -n -9 -f"
+ 		echo "$output_file" | grep -q "\.bz2$" && compr="bzip2 -9 -f"
+ 		echo "$output_file" | grep -q "\.lzma$" && compr="lzma -9 -f"
+ 		echo "$output_file" | grep -q "\.xz$" && \
 -- 
 1.7.4.1
 
