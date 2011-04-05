@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab1DERcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 13:32:12 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:14002 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab1DERcI convert rfc822-to-8bit (ORCPT
+	id S1754637Ab1DERgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 13:36:41 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54420 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868Ab1DERgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 13:32:08 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: Hank Janssen <hjanssen@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        stable <stable@kernel.org>, Mike Surcouf <mike@surcouf.co.uk>
-Subject: RE: [PATCH] staging: hv: Fix GARP not sent after Quick Migration
-Thread-Topic: [PATCH] staging: hv: Fix GARP not sent after Quick Migration
-Thread-Index: AQHL86xcBVaiLlf0BUaEiRWbBY7rVZRP6XwA//+YKQA=
-Date: Tue, 5 Apr 2011 17:32:07 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC03FB0458@TK5EX14MBXC223.redmond.corp.microsoft.com>
-References: <1302020655-27133-1-git-send-email-haiyangz@microsoft.com>
- <20110405162306.GA1800@kroah.com>
-In-Reply-To: <20110405162306.GA1800@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Apr 2011 13:36:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6307"; a="84111541"
+Message-ID: <4D9B5327.1070709@codeaurora.org>
+Date: Tue, 05 Apr 2011 10:36:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Simon Glass <sjg@chromium.org>
+CC: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        lk <linux-kernel@vger.kernel.org>,
+        lak <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: BUG() dies silently
+References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>	<BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>	<4D959058.7010606@codeaurora.org>	<BANLkTim8GhUAZ7L-MiJiqi6xM=P_Q8kqfg@mail.gmail.com>	<4D981EAB.8070209@codeaurora.org> <BANLkTimJkQ9afnO=6gKiBqWUo+Uv=hWx2Q@mail.gmail.com>
+In-Reply-To: <BANLkTimJkQ9afnO=6gKiBqWUo+Uv=hWx2Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, April 05, 2011 12:23 PM
-> Instead, use a proper timer as you do know how long you need to wait,
-> right?  Don't abuse workqueues for something they were not designed for.
+On 4/4/2011 6:55 PM, Simon Glass wrote:
+> On Sun, Apr 3, 2011 at 12:15 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> Yes I've seen your patch (and even posted comments on it which have not
+>> been responded to).
+> Hi Stephen,
+>
+> Not yet! Don't worry I will get to it. I like the suggestion and am
+> pleased that you pointed me to it, thank you.
+>
 
-Thanks for the suggestion, I will add an msleep. And, yes, this delay will
-be removed if the Hyper-V side is fixed.
+Great!
 
-Thanks,
-- Haiyang
+>> Correct me if I'm wrong, but that patch with CONFIG_BUG=n would lead to
+>> the same error that Omar is seeing because the code only modifies the
+>> bug infrastructure when CONFIG_BUG=y.
+> Well if CONFIG_BUG=n then there is no bug infrastructure, The whole
+> file is skipped and it falls back to the asm-generic/bug.h which has
+> even more #ifdefs in it. But I think we end up here:
+>
+> #define BUG() do {} while(0)
+>
+> After all the patch removes the *(int*)0 = 0 code by virtue of
+> CONFIG_GENERIC_BUG=y, right? If I have this wrong then I will have to
+> break out the C preprocessor...
+>
+
+Ah you're right. Too many ifdefs going on there.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
