@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab1DECQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 22:16:24 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46123 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751552Ab1DECQW (ORCPT
+	id S1752226Ab1DECR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 22:17:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:51266 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab1DECRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 22:16:22 -0400
-Message-ID: <4D9A7B9D.7060604@metafoo.de>
-Date: Tue, 05 Apr 2011 04:17:01 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	Mon, 4 Apr 2011 22:17:19 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=wom5GMh1gUkA:10 a=qfFVHXmYx5UA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=VnNF1IyMAAAA:8 a=eQx54m0IHPEuaUsJkCoA:9 a=CjuIK1q_8ugA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.154.172
+Date: Mon, 4 Apr 2011 21:17:16 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Dan Smith <danms@us.ibm.com>
+Cc: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>, Nathan Lynch <ntl@pobox.com>,
+        containers@lists.linux-foundation.org,
+        Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
+Message-ID: <20110405021716.GA16672@hallyn.com>
+References: <1298936432-29607-6-git-send-email-ntl@pobox.com>
+ <20110403190324.GD15044@hallyn.com>
+ <1301929228.31531.39.camel@tp-t61>
+ <20110404151017.GA4857@hallyn.com>
+ <1301931608.31531.49.camel@tp-t61>
+ <20110404162753.GA3456@hallyn.com>
+ <4D9A00B1.2080002@cs.columbia.edu>
+ <1301953409.31531.130.camel@tp-t61>
+ <20110404220309.GA10229@peq.hallyn.com>
+ <87vcyt4m93.fsf@caffeine.danplanet.com>
 MIME-Version: 1.0
-To: Timur Tabi <timur@freescale.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Ok to call disable_irq before request_irq?
-References: <BANLkTikQk0OAS+41g=pk9BaqAWaVhQB9rg@mail.gmail.com>
-In-Reply-To: <BANLkTikQk0OAS+41g=pk9BaqAWaVhQB9rg@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------050003040805000501050900"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vcyt4m93.fsf@caffeine.danplanet.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050003040805000501050900
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 04/05/2011 02:53 AM, Timur Tabi wrote:
-> Is it okay to call disable_irq() before calling request_irq()?  My
-> device creates lots of spurious interrupts, and so I want the
-> interrupt enable only when I expect a real interrupt to occur.  It
-> seems to work, but I just want to make sure it's a proper technique.
+Quoting Dan Smith (danms@us.ibm.com):
+> SH> The API for starting a checkpoint, that I'm not on the fence on.
 > 
+> Is that just because it requires a C/R aware container init or for some
 
-It might work in your case, but in general that would certainly be really bad
-practice.
-If the irq was not requested before request_irq should enable the IRQ
-regardless of whether irq_disable was called or not.
+Yup, that's it.
 
-I have a patch which adds the IRQF_NOAUTOEN flag, which allows you to request a
-IRQ without automatically enabling it. Unfortunately the current version of the
-patch will fail if your irq_chip implements the irq_startup callback. I've
-attached the patch.
+Which is why I'd be fine with it as a short-term workaround, if it might
+actually help with upstreaming.
 
-- Lars
-
---------------050003040805000501050900
-Content-Type: text/x-diff;
- name="irqf_noautoen.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="irqf_noautoen.patch"
-
-commit 0fefae8354e9045e720def1233bfe51592e2dc90
-Author: Lars-Peter Clausen <lars@metafoo.de>
-Date:   Thu Mar 31 19:47:41 2011 +0200
-
-    IRQF_NOAUTOEN
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 943c9b5..d596640 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -59,6 +59,7 @@
-  * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-  * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
-  * IRQF_NO_THREAD - Interrupt cannot be threaded
-+ * IRQF_NOAUTOEN - Do not enable the interrupt on request
-  */
- #define IRQF_DISABLED		0x00000020
- #define IRQF_SAMPLE_RANDOM	0x00000040
-@@ -72,6 +73,7 @@
- #define IRQF_NO_SUSPEND		0x00004000
- #define IRQF_FORCE_RESUME	0x00008000
- #define IRQF_NO_THREAD		0x00010000
-+#define IRQF_NOAUTOEN		0x00020000
- 
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND | IRQF_NO_THREAD)
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 12a80fd..e5c538f 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -863,6 +863,10 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	int ret, nested, shared = 0;
- 	cpumask_var_t mask;
- 
-+	if (new->flags & (IRQF_NOAUTOEN | IRQF_SHARED) ==
-+		(IRQF_NOAUTOEN | IRQF_SHARED))
-+		return -EINVAL;
-+
- 	if (!desc)
- 		return -EINVAL;
- 
-@@ -998,7 +1002,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		if (new->flags & IRQF_ONESHOT)
- 			desc->istate |= IRQS_ONESHOT;
- 
--		if (irq_settings_can_autoenable(desc))
-+		if (irq_settings_can_autoenable(desc) &&
-+			!(new->flags & IRQF_NOAUTOEN))
- 			irq_startup(desc);
- 		else
- 			/* Undo nested disables: */
-
---------------050003040805000501050900--
+-serge
