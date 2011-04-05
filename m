@@ -1,90 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab1DEBCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 21:02:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36976 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab1DEBCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 21:02:49 -0400
-Date: Tue, 5 Apr 2011 02:02:18 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm fixes
-In-Reply-To: <alpine.DEB.2.00.1104050137040.8684@skynet.skynet.ie>
-Message-ID: <alpine.DEB.2.00.1104050200270.8684@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1104050137040.8684@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751673Ab1DEBKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 21:10:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47977 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751199Ab1DEBKq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 21:10:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <yun4o6dik8g.fsf@aiko.keithp.com>
+References: <alpine.DEB.2.00.1104050137040.8684@skynet.skynet.ie> <yun4o6dik8g.fsf@aiko.keithp.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 4 Apr 2011 18:09:55 -0700
+Message-ID: <BANLkTimtAy7wTq8dbhy3LKVHAM=pS6A4-w@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 4, 2011 at 6:02 PM, Keith Packard <keithp@keithp.com> wrote:
+> On Tue, 5 Apr 2011 01:38:31 +0100 (IST), Dave Airlie <airlied@linux.ie> wrote:
+>
+>>       drm/i915: Reset GMBUS controller after NAK
+>
+> We've got a report of a regression from this patch and have a fix in
+> review right now. Please don't merge this to master until that fix has
+> been verified and added to this sequence.
 
-> 
-> Hi Linus,
-> 
-> Nothing too major, the radeon sanity checks and i915 fixes probably the 
-> most important.
+Gaah. Too late. I had already pulled and pushed out.
 
-Oh in a shock to me the i915 fixes break VGA detect which is doing 
-something really stdupid.
+I'm not doing an -rc2 until tomorrow, though, so hopefully the issue
+will be resolved and a fix pushed to me by then.
 
-so please hold off on this until Chris/Keith can get the correct patch,
-and I'll send a new one.
-
-Dave.
-
-> 
-> Dave.
-> 
-> The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
-> 
->   Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
-> 
-> are available in the git repository at:
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-> 
-> Alex Deucher (3):
->       drm/radeon/kms: Add support for tv-out dongle on G5 9600
->       drm/radeon/kms: pageflipping cleanup for avivo+
->       drm/radeon/kms: add some new ontario pci ids
-> 
-> Ben Skeggs (1):
->       drm: export drm_find_cea_extension to drivers
-> 
-> Chris Wilson (3):
->       drm/i915/lvds: Always return connected in the absence of better information
->       drm/i915: Busy-spin wait_for condition in atomic contexts
->       drm/i915: Reset GMBUS controller after NAK
-> 
-> Dave Airlie (1):
->       Merge remote branch 'keithp/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
-> 
-> Jan Engelhardt (1):
->       drm: fix "persistant" typo
-> 
-> John Lindgren (1):
->       drm/radeon/kms: add some sanity checks to obj info record parsingi (v2)
-> 
->  drivers/gpu/drm/drm_edid.c               |    3 ++-
->  drivers/gpu/drm/i915/intel_drv.h         |    2 +-
->  drivers/gpu/drm/i915/intel_i2c.c         |   25 +++++++++++++++++++++----
->  drivers/gpu/drm/i915/intel_lvds.c        |   10 ++--------
->  drivers/gpu/drm/nouveau/nouveau_gem.c    |    2 +-
->  drivers/gpu/drm/radeon/atombios_crtc.c   |   20 ++++++++++++++++++++
->  drivers/gpu/drm/radeon/evergreen.c       |   11 -----------
->  drivers/gpu/drm/radeon/radeon_atombios.c |   13 +++++++------
->  drivers/gpu/drm/radeon/radeon_combios.c  |   13 +++++++++++++
->  drivers/gpu/drm/radeon/rs600.c           |   11 -----------
->  drivers/gpu/drm/ttm/ttm_bo.c             |   10 +++++-----
->  drivers/gpu/drm/ttm/ttm_tt.c             |   16 ++++++++--------
->  include/drm/drm_crtc.h                   |    1 +
->  include/drm/drm_pciids.h                 |    2 ++
->  include/drm/ttm/ttm_bo_api.h             |   18 +++++++++---------
->  include/drm/ttm/ttm_bo_driver.h          |    4 ++--
->  16 files changed, 94 insertions(+), 67 deletions(-)
-> 
+                        Linus
