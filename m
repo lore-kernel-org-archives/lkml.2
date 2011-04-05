@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab1DECR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 22:17:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:51266 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab1DECRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 22:17:19 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=wom5GMh1gUkA:10 a=qfFVHXmYx5UA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=VnNF1IyMAAAA:8 a=eQx54m0IHPEuaUsJkCoA:9 a=CjuIK1q_8ugA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.154.172
-Date: Mon, 4 Apr 2011 21:17:16 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Dan Smith <danms@us.ibm.com>
-Cc: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>, Nathan Lynch <ntl@pobox.com>,
-        containers@lists.linux-foundation.org,
-        Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/10] Core checkpoint/restart support code
-Message-ID: <20110405021716.GA16672@hallyn.com>
-References: <1298936432-29607-6-git-send-email-ntl@pobox.com>
- <20110403190324.GD15044@hallyn.com>
- <1301929228.31531.39.camel@tp-t61>
- <20110404151017.GA4857@hallyn.com>
- <1301931608.31531.49.camel@tp-t61>
- <20110404162753.GA3456@hallyn.com>
- <4D9A00B1.2080002@cs.columbia.edu>
- <1301953409.31531.130.camel@tp-t61>
- <20110404220309.GA10229@peq.hallyn.com>
- <87vcyt4m93.fsf@caffeine.danplanet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vcyt4m93.fsf@caffeine.danplanet.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752093Ab1DECVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 22:21:51 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41910 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552Ab1DECVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 22:21:50 -0400
+Date: Tue, 5 Apr 2011 12:21:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: linux-next: manual merge of the wireless tree with the
+ wireless-current tree
+Message-Id: <20110405122138.0c807ec2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__5_Apr_2011_12_21_38_+1000_3ln5PANXJPbDdC8D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Dan Smith (danms@us.ibm.com):
-> SH> The API for starting a checkpoint, that I'm not on the fence on.
-> 
-> Is that just because it requires a C/R aware container init or for some
+--Signature=_Tue__5_Apr_2011_12_21_38_+1000_3ln5PANXJPbDdC8D
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yup, that's it.
+Hi John,
 
-Which is why I'd be fine with it as a short-term workaround, if it might
-actually help with upstreaming.
+Today's linux-next merge of the wireless tree got a conflict in
+drivers/net/wireless/rtlwifi/efuse.c between commit 2e3e66e3bbcd
+("rtlwifi: Fix some warnings/bugs") from the wireless-current tree and
+commit 324732848c42 ("rtlwifi: Remove unused/unneeded variables") from
+the wireless tree.
 
--serge
+The latter removes the line that the former modified, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__5_Apr_2011_12_21_38_+1000_3ln5PANXJPbDdC8D
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNmnyyAAoJEDMEi1NhKgbsf3sH/1EyF4mx8RTaL4vL1cXaFdBN
+zkO007Xp+RCLy4vudbGWeHmodDRC62Ph0zj7m6E7Zt1efVBuN7VnYNYHBXeKrr+7
+Bhuk1xf3cEl5NiK5rk3xwnWqbUm0RyoiuSZO7qM6SSrnwBvW3aGtFx+tb5ArdQSw
+cpAHroo1yjnt8LaBNLvmrvIFYwUnnbanEhNTijXtMnk/VZiPq2VD52zR0GIQQg9G
+xmkfUAnsfdA2NFl7Yzjyx4aYGsiQo5paHMyqcT49bf8d6GGOxT03mzOmXHsyddNq
+5J4QYPRw3zKE/8u4daA4TnkmM7SLK/LF58gSAF1WokTvPqGpi0gtWmz04OkAwGU=
+=bNqZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__5_Apr_2011_12_21_38_+1000_3ln5PANXJPbDdC8D--
