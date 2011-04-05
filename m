@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab1DEOt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:49:29 -0400
-Received: from stinky.trash.net ([213.144.137.162]:41603 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab1DEOt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:49:27 -0400
-Message-ID: <4D9B2BF2.2010606@trash.net>
-Date: Tue, 05 Apr 2011 16:49:22 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1754004Ab1DEOtg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:49:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753174Ab1DEOt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:49:28 -0400
+Date: Tue, 5 Apr 2011 16:48:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richard.cochran@omicron.at>, ben@iagu.net
+Subject: Re: [PATCH] posix-timers: RCU conversion
+Message-ID: <20110405144836.GA17490@redhat.com>
+References: <4D8773AA.8030408@redhat.com> <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com> <1300726498.2884.493.camel@edumazet-laptop> <4D8784A9.8040303@redhat.com> <1300727545.2884.513.camel@edumazet-laptop> <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com> <1300746429.2837.20.camel@edumazet-laptop> <1300777760.2837.38.camel@edumazet-laptop> <1301849660.2837.211.camel@edumazet-laptop> <1301940501.2319.25.camel@work-vm>
 MIME-Version: 1.0
-To: KOVACS Krisztian <hidden@balabit.hu>
-CC: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix build failure when ipv6 but xt_tproxy
- is built in
-References: <1301451199.14261.327.camel@gandalf.stny.rr.com>	 <20110329.223536.245392030.davem@davemloft.net>	 <4D99CDA0.3030305@trash.net> <1302014626.67568.1.camel@nienna.balabit>
-In-Reply-To: <1302014626.67568.1.camel@nienna.balabit>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301940501.2319.25.camel@work-vm>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.04.2011 16:43, schrieb KOVACS Krisztian:
-> Hi,
-> 
-> On Mon, 2011-04-04 at 15:54 +0200, Patrick McHardy wrote:
->>>> net/built-in.o: In function `tproxy_tg6_v1':
->>>> /home/rostedt/work/autotest/nobackup/linux-test.git/net/netfilter/xt_TPROXY.c:288: undefined reference to `ipv6_find_hdr'
->>>>
->>>> This happened because the xt_TPROXY code was compiled into the kernel
->>>> proper, but the ipv6 netfilter was compiled as a module. The fix is to
->>>> only enter the code that calls ipv6_find_hdr if ipv6 netfilter is
->>>> compiled into the kernel, or if it is a module, so is the xt_TPROXY
->>>> code.
->>
->> I don't think this is a good fix for the problem since it may lead to
->> the confusing situation that both TPROXY and ip6tables are enabled,
->> but TPROXY has no IPv6 support.
->>
->> I think we should solve this by either adding a Kconfig dependency
->> on (IP6_NF_IPTABLES || IP6_NF_IPTABLES=n) or using ipv6_skip_exthdr()
->> instead of ipv6_find_hdr().
->>
->> Krisztian, what do you think?
-> 
-> I'd definitely prefer using ipv6_skip_exthdr() instead of playing
-> various tricks with the config preprocessor macros.
-> 
-> What about something like this?
-> 
-> diff --git a/net/netfilter/xt_TPROXY.c b/net/netfilter/xt_TPROXY.c
-> index dcfd57e..1ef0e56 100644
-> --- a/net/netfilter/xt_TPROXY.c
-> +++ b/net/netfilter/xt_TPROXY.c
-> @@ -283,10 +283,10 @@ tproxy_tg6_v1(struct sk_buff *skb, const struct xt_action_param *par)
->         const struct in6_addr *laddr;
->         __be16 lport;
->         int thoff;
-> -       int tproto;
-> +       u8 tproto = iph->nexthdr;
->  
-> -       tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
-> -       if (tproto < 0) {
-> +       thoff = ipv6_skip_exthdr(skb, sizeof(*iph), &tproto);
-> +       if (thoff < 0) {
->                 pr_debug("unable to find transport header in IPv6 packet, dropping\n");
->                 return NF_DROP;
->         }
+On 04/04, john stultz wrote:
+>
+> On Sun, 2011-04-03 at 18:54 +0200, Eric Dumazet wrote:
+> > --- a/include/linux/posix-timers.h
+> > +++ b/include/linux/posix-timers.h
+> > @@ -81,6 +81,7 @@ struct k_itimer {
+> >  			unsigned long expires;
+> >  		} mmtimer;
+> >  	} it;
+> > +	struct rcu_head rcu;
+> >  };
 
-Looks good to me. Please formally submit this including a Signed-off-by:
-line and I'll push it upstream.
+Can't we move this rcu_head into the union above?
+
+> >  struct k_clock {
+> > diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+> > index 4c01249..acb9be9 100644
+> > --- a/kernel/posix-timers.c
+> > +++ b/kernel/posix-timers.c
+> > @@ -491,6 +491,13 @@ static struct k_itimer * alloc_posix_timer(void)
+> >  	return tmr;
+> >  }
+> >
+> > +static void k_itimer_rcu_free(struct rcu_head *head)
+> > +{
+> > +	struct k_itimer *tmr = container_of(head, struct k_itimer, rcu);
+> > +
+> > +	kmem_cache_free(posix_timers_cache, tmr);
+> > +}
+
+Not that I really think it makes sense to change the patch... but we
+could even use SLAB_DESTROY_BY_RCU, this is more effective. All we
+need is ctor which sets ->it_signal = NULL and initializes ->it_lock
+for lock_timer().
+
+> >  static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+> >  {
+> >  	struct k_itimer *timr;
+> > -	/*
+> > -	 * Watch out here.  We do a irqsave on the idr_lock and pass the
+> > -	 * flags part over to the timer lock.  Must not let interrupts in
+> > -	 * while we are moving the lock.
+> > -	 */
+> > -	spin_lock_irqsave(&idr_lock, *flags);
+> > +
+> > +	rcu_read_lock();
+> >  	timr = idr_find(&posix_timers_id, (int)timer_id);
+> >  	if (timr) {
+> > -		spin_lock(&timr->it_lock);
+> > +		spin_lock_irqsave(&timr->it_lock, *flags);
+> >  		if (timr->it_signal == current->signal) {
+> > -			spin_unlock(&idr_lock);
+> > +			rcu_read_unlock();
+> >  			return timr;
+> >  		}
+> > -		spin_unlock(&timr->it_lock);
+> > +		spin_unlock_irqrestore(&timr->it_lock, *flags);
+> >  	}
+> > -	spin_unlock_irqrestore(&idr_lock, *flags);
+> > +	rcu_read_unlock();
+
+I think this is correct.
+
+The question is, why do we use the global database for the timer ids.
+All timers live in signal_struct->posix_timers anyway, perhaps we could
+use a per-process array instead.
+
+Oleg.
+
