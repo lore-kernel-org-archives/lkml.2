@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab1DEQDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:03:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41801 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab1DEQDD (ORCPT
+	id S1754914Ab1DEQEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:04:33 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43405 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab1DEQEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:03:03 -0400
+	Tue, 5 Apr 2011 12:04:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=LYymiZBETjp4J+5IDQNNd/1JYS8AAn17R34DYX/i+7FqcB4LvqvemV/bGxJT745xAn
-         hEMdfNA71G0qXfESpVakTpzDgfezwuadXqnvIe6F2X1OF9kY0b3ZUCDl0BOboO8hBXDl
-         yXTSI//GIl1UspAGXbjpBwzRjmGpOkuJqeC0M=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: rdunlap@xenotime.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: =?UTF-8?q?=5BRFC=5DDocumentation=3Aaccounting=3Agetdelays=2Ec=20Fix=3A=20warning=3A=20variable=20=E2=80=98i=E2=80=99=20set=20but=20not=20used?=
-Date: Tue,  5 Apr 2011 09:02:50 -0700
-Message-Id: <1302019370-7101-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.4.2
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:organization:message-id:in-reply-to
+         :user-agent;
+        b=QzrOxJ7VIIZB5askqLYbRxmMhjeA2ebyUvgKund2cyTAuoZOMeW3SIcHV3ssiXlzIS
+         mQtVWoESFS83ilWpJN3Zp9M2lw5dRVTpGls096CKGSs4FmdqcKM1SvaoyFelhKjMx8uf
+         Xe9bdSG/fqjouAxJcRTo502ViLNM7t6DLzoCQ=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] usb: gadget: f_mass_storage: If 'ro'/'cdrom'
+ specified, open file as read-only
+References: <1302017802-16614-1-git-send-email-roger.quadros@nokia.com>
+ <1302017802-16614-3-git-send-email-roger.quadros@nokia.com>
+Date: Tue, 05 Apr 2011 18:04:28 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Organization: Google
+Message-ID: <op.vtg2xqrt3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1302017802-16614-3-git-send-email-roger.quadros@nokia.com>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below patch takes care of the warning, but keep in mind am unsure if this is a correct way
-to resolve this issue.
-Documentation/accounting/getdelays.c: In function ‘main’:
-Documentation/accounting/getdelays.c:436:7: warning: variable ‘i’ set but not used [-Wunused-but-set-variable]
+On Tue, 05 Apr 2011 17:36:39 +0200, Roger Quadros  
+<roger.quadros@nokia.com> wrote:
+> If we don't need Write access then attempt to open backing file in Read  
+> Only mode instead of bailing out too soon.
+>
+> Signed-off-by: Roger Quadros <roger.quadros@nokia.com>
 
-Keep in mind there is another warning with this file, but need am unsure what might be the best solution:
-Documentation/accounting/getdelays.c: In function ‘get_family_id’:
-Documentation/accounting/getdelays.c:172:14: warning: variable ‘rc’ set but not used [-Wunused-but-set-variable]
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> --- a/drivers/usb/gadget/f_mass_storage.c
+> +++ b/drivers/usb/gadget/f_mass_storage.c
+> @@ -2810,6 +2810,7 @@ static struct fsg_common *fsg_common_init(struct  
+> fsg_common *common,
+>  	for (i = 0, lcfg = cfg->luns; i < nluns; ++i, ++curlun, ++lcfg) {
+>  		curlun->cdrom = !!lcfg->cdrom;
+>  		curlun->ro = lcfg->cdrom || lcfg->ro;
+> +		curlun->initially_ro = curlun->ro;
+>  		curlun->removable = lcfg->removable;
+>  		curlun->dev.release = fsg_lun_release;
+>  		curlun->dev.parent = &gadget->dev;
 
----
- Documentation/accounting/getdelays.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/accounting/getdelays.c b/Documentation/accounting/getdelays.c
-index e9c7778..16e16d5 100644
---- a/Documentation/accounting/getdelays.c
-+++ b/Documentation/accounting/getdelays.c
-@@ -433,8 +433,6 @@ int main(int argc, char *argv[])
- 	}
- 
- 	do {
--		int i;
--
- 		rep_len = recv(nl_sd, &msg, sizeof(msg), 0);
- 		PRINTF("received %d bytes\n", rep_len);
- 
-@@ -459,7 +457,6 @@ int main(int argc, char *argv[])
- 
- 		na = (struct nlattr *) GENLMSG_DATA(&msg);
- 		len = 0;
--		i = 0;
- 		while (len < rep_len) {
- 			len += NLA_ALIGN(na->nla_len);
- 			switch (na->nla_type) {
 -- 
-1.7.4.2
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
