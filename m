@@ -1,132 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab1DEOs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:48:27 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:50660 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793Ab1DEOrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:47:47 -0400
-From: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-To: eric.piel@tremplin-utc.net, mjg@redhat.com
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        samu.p.onkalo@nokia.com, ilkka.koskinen@nokia.com
-Subject: [RFC PATCHv2 3/5] hwmon: lis3: Change exported function to use given device
-Date: Tue,  5 Apr 2011 17:45:12 +0300
-Message-Id: <1302014714-7334-4-git-send-email-ilkka.koskinen@nokia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1302014714-7334-1-git-send-email-ilkka.koskinen@nokia.com>
-References: <1302014714-7334-1-git-send-email-ilkka.koskinen@nokia.com>
-X-Nokia-AV: Clean
+	id S1753554Ab1DEOt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:49:29 -0400
+Received: from stinky.trash.net ([213.144.137.162]:41603 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab1DEOt1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:49:27 -0400
+Message-ID: <4D9B2BF2.2010606@trash.net>
+Date: Tue, 05 Apr 2011 16:49:22 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: KOVACS Krisztian <hidden@balabit.hu>
+CC: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] netfilter: Fix build failure when ipv6 but xt_tproxy
+ is built in
+References: <1301451199.14261.327.camel@gandalf.stny.rr.com>	 <20110329.223536.245392030.davem@davemloft.net>	 <4D99CDA0.3030305@trash.net> <1302014626.67568.1.camel@nienna.balabit>
+In-Reply-To: <1302014626.67568.1.camel@nienna.balabit>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change exported functions to use the device given as parameter
-instead of the global one.
+Am 05.04.2011 16:43, schrieb KOVACS Krisztian:
+> Hi,
+> 
+> On Mon, 2011-04-04 at 15:54 +0200, Patrick McHardy wrote:
+>>>> net/built-in.o: In function `tproxy_tg6_v1':
+>>>> /home/rostedt/work/autotest/nobackup/linux-test.git/net/netfilter/xt_TPROXY.c:288: undefined reference to `ipv6_find_hdr'
+>>>>
+>>>> This happened because the xt_TPROXY code was compiled into the kernel
+>>>> proper, but the ipv6 netfilter was compiled as a module. The fix is to
+>>>> only enter the code that calls ipv6_find_hdr if ipv6 netfilter is
+>>>> compiled into the kernel, or if it is a module, so is the xt_TPROXY
+>>>> code.
+>>
+>> I don't think this is a good fix for the problem since it may lead to
+>> the confusing situation that both TPROXY and ip6tables are enabled,
+>> but TPROXY has no IPv6 support.
+>>
+>> I think we should solve this by either adding a Kconfig dependency
+>> on (IP6_NF_IPTABLES || IP6_NF_IPTABLES=n) or using ipv6_skip_exthdr()
+>> instead of ipv6_find_hdr().
+>>
+>> Krisztian, what do you think?
+> 
+> I'd definitely prefer using ipv6_skip_exthdr() instead of playing
+> various tricks with the config preprocessor macros.
+> 
+> What about something like this?
+> 
+> diff --git a/net/netfilter/xt_TPROXY.c b/net/netfilter/xt_TPROXY.c
+> index dcfd57e..1ef0e56 100644
+> --- a/net/netfilter/xt_TPROXY.c
+> +++ b/net/netfilter/xt_TPROXY.c
+> @@ -283,10 +283,10 @@ tproxy_tg6_v1(struct sk_buff *skb, const struct xt_action_param *par)
+>         const struct in6_addr *laddr;
+>         __be16 lport;
+>         int thoff;
+> -       int tproto;
+> +       u8 tproto = iph->nexthdr;
+>  
+> -       tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
+> -       if (tproto < 0) {
+> +       thoff = ipv6_skip_exthdr(skb, sizeof(*iph), &tproto);
+> +       if (thoff < 0) {
+>                 pr_debug("unable to find transport header in IPv6 packet, dropping\n");
+>                 return NF_DROP;
+>         }
 
-Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
----
- drivers/misc/lis3lv02d/lis3lv02d.c     |    6 +++---
- drivers/misc/lis3lv02d/lis3lv02d.h     |    4 ++--
- drivers/misc/lis3lv02d/lis3lv02d_i2c.c |    2 +-
- drivers/misc/lis3lv02d/lis3lv02d_spi.c |    2 +-
- drivers/platform/x86/hp_accel.c        |    4 ++--
- 5 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
-index cb32945..b548afc 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-@@ -609,7 +609,7 @@ static struct miscdevice lis3lv02d_misc_device = {
- 	.fops    = &lis3lv02d_misc_fops,
- };
- 
--int lis3lv02d_joystick_enable(void)
-+int lis3lv02d_joystick_enable(struct lis3lv02d *lis3)
- {
- 	struct input_dev *input_dev;
- 	int err;
-@@ -667,7 +667,7 @@ int lis3lv02d_joystick_enable(void)
- }
- EXPORT_SYMBOL_GPL(lis3lv02d_joystick_enable);
- 
--void lis3lv02d_joystick_disable(void)
-+void lis3lv02d_joystick_disable(struct lis3lv02d *lis3)
- {
- 	if (lis3_dev.irq)
- 		free_irq(lis3_dev.irq, &lis3_dev);
-@@ -933,7 +933,7 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
- 		pm_runtime_enable(lis3->pm_dev);
- 	}
- 
--	if (lis3lv02d_joystick_enable())
-+	if (lis3lv02d_joystick_enable(lis3))
- 		pr_err("joystick initialization failed\n");
- 
- 	/* passing in platform specific data is purely optional and only
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
-index a193958..49cb1f1 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.h
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.h
-@@ -282,8 +282,8 @@ struct lis3lv02d {
- };
- 
- int lis3lv02d_init_device(struct lis3lv02d *lis3);
--int lis3lv02d_joystick_enable(void);
--void lis3lv02d_joystick_disable(void);
-+int lis3lv02d_joystick_enable(struct lis3lv02d *lis3);
-+void lis3lv02d_joystick_disable(struct lis3lv02d *lis3);
- void lis3lv02d_poweroff(struct lis3lv02d *lis3);
- void lis3lv02d_poweron(struct lis3lv02d *lis3);
- int lis3lv02d_remove_fs(struct lis3lv02d *lis3);
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-index ea9159c..6cdc38f 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-@@ -182,7 +182,7 @@ static int __devexit lis3lv02d_i2c_remove(struct i2c_client *client)
- 	if (pdata && pdata->release_resources)
- 		pdata->release_resources();
- 
--	lis3lv02d_joystick_disable();
-+	lis3lv02d_joystick_disable(lis3);
- 	lis3lv02d_remove_fs(&lis3_dev);
- 
- 	if (lis3_dev.reg_ctrl)
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d_spi.c b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-index c1f8a8f..b2c1be1 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-@@ -83,7 +83,7 @@ static int __devinit lis302dl_spi_probe(struct spi_device *spi)
- static int __devexit lis302dl_spi_remove(struct spi_device *spi)
- {
- 	struct lis3lv02d *lis3 = spi_get_drvdata(spi);
--	lis3lv02d_joystick_disable();
-+	lis3lv02d_joystick_disable(lis3);
- 	lis3lv02d_poweroff(lis3);
- 
- 	return lis3lv02d_remove_fs(&lis3_dev);
-diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
-index 1b52d00..2148d77 100644
---- a/drivers/platform/x86/hp_accel.c
-+++ b/drivers/platform/x86/hp_accel.c
-@@ -320,7 +320,7 @@ static int lis3lv02d_add(struct acpi_device *device)
- 	INIT_WORK(&hpled_led.work, delayed_set_status_worker);
- 	ret = led_classdev_register(NULL, &hpled_led.led_classdev);
- 	if (ret) {
--		lis3lv02d_joystick_disable();
-+		lis3lv02d_joystick_disable(&lis3_dev);
- 		lis3lv02d_poweroff(&lis3_dev);
- 		flush_work(&hpled_led.work);
- 		return ret;
-@@ -334,7 +334,7 @@ static int lis3lv02d_remove(struct acpi_device *device, int type)
- 	if (!device)
- 		return -EINVAL;
- 
--	lis3lv02d_joystick_disable();
-+	lis3lv02d_joystick_disable(&lis3_dev);
- 	lis3lv02d_poweroff(&lis3_dev);
- 
- 	led_classdev_unregister(&hpled_led.led_classdev);
--- 
-1.7.0.4
-
+Looks good to me. Please formally submit this including a Signed-off-by:
+line and I'll push it upstream.
