@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab1DFFcT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 01:32:19 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57234 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751300Ab1DFFcR (ORCPT
+	id S1753083Ab1DFFjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 01:39:06 -0400
+Received: from e3.20.79ae.static.theplanet.com ([174.121.32.227]:33817 "EHLO
+	host.fountium.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab1DFFjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 01:32:17 -0400
-Date: Wed, 6 Apr 2011 07:32:16 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Subject: Re: [RESEND Patch] acpi: remove acpi_sleep=s4_nonvs
-Message-ID: <20110406053216.GA24325@elf.ucw.cz>
-References: <1302067724-14795-1-git-send-email-amwang@redhat.com>
+	Wed, 6 Apr 2011 01:39:05 -0400
+X-Greylist: delayed 29340 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Apr 2011 01:39:05 EDT
+Message-ID: <3f951343fb1a2cf9c27b3528a888aa7d.squirrel@webmail.konkommtelecomslimited.com>
+Date: Tue, 5 Apr 2011 17:00:10 -0400
+Subject: HELLO!
+From: "Wong Hui" <lingyoung56@yahoo.com.hk>
+Reply-To: wonghui26@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302067724-14795-1-git-send-email-amwang@redhat.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host.fountium.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - yahoo.com.hk
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2011-04-06 13:28:44, Amerigo Wang wrote:
-> First post is here: https://lkml.org/lkml/2011/1/19/4
-> 
-> acpi_sleep=s4_nonvs is superseded by acpi_sleep=nonvs.
-> 
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> Cc: Len Brown <len.brown@intel.com>
+Please I would like you to keep this proposal as a top secret and delete
+it if you are not interested and get back to me if you are interested for
+details as regards to the transfer of $24,500,000 to you. this money
+initially belongs to a client who died and had no next of kin in his
+account-opening package. in other to achieve this, I shall require your
+full name, and telephone number to reach you.Most importantly, a
+confirmation of acceptance from you after which I shall furnish you with
+the full details of this transaction. Reply via this email only:
+wonghui26@yahoo.com.hk
 
-ACK.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+regards,
+Mr L.Young.
+
+
+
+
