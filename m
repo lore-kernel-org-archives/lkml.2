@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab1DEBxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 21:53:05 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:33878 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab1DEBwz (ORCPT
+	id S1751728Ab1DEBzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 21:55:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:40274 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab1DEBzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 21:52:55 -0400
+	Mon, 4 Apr 2011 21:55:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=google.com; s=beta;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=cwytOb4C9LtRyK5+E/Xkg1hjWbp2jSXLmoj1r1vfI1165n9cu0u8ijaJqvXeSgdh3r
-         8NzKSsDGy+z5Zr+NHn1fsyE2Op4nrIDyAWYEVHcAu8fOh+YpgzNOmHgKo+SjeSXik+yq
-         Yy5eGt4XEKDq37swkF9JaJGdWU88vVuhL9Mw0=
+        b=e7BDytRuxKxY559mWhkTYmwNzEeADMVSfuecYS0LtFf0uOhN2dvd2h0s36PxXCiKWR
+         qjJi8emi+Dlrh0syqERQ==
 MIME-Version: 1.0
-In-Reply-To: <4D998DC9.3040109@mimc.co.uk>
-References: <4D998DC9.3040109@mimc.co.uk>
-Date: Mon, 4 Apr 2011 18:52:53 -0700
-X-Google-Sender-Auth: XEBiRAOYWzSa0ona2P_WUVDstKA
-Message-ID: <BANLkTi=-LoPdE3U9__MRi4j4L_c8zk5VpA@mail.gmail.com>
-Subject: Re: [regression] 2.6.39-rc1 - Beagleboard usbnet broken
-From: john stultz <johnstul@us.ibm.com>
-To: Mark Jackson <mpfj-list@mimc.co.uk>
-Cc: linux-omap@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D981EAB.8070209@codeaurora.org>
+References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
+	<BANLkTimtAcPLmcFKoHkCtWcJipy+rSSP+A@mail.gmail.com>
+	<4D959058.7010606@codeaurora.org>
+	<BANLkTim8GhUAZ7L-MiJiqi6xM=P_Q8kqfg@mail.gmail.com>
+	<4D981EAB.8070209@codeaurora.org>
+Date: Mon, 4 Apr 2011 18:55:31 -0700
+X-Google-Sender-Auth: cj1RHyrITE4DGS_vkjFLr3pLaKw
+Message-ID: <BANLkTimJkQ9afnO=6gKiBqWUo+Uv=hWx2Q@mail.gmail.com>
+Subject: Re: [PATCH] ARM: BUG() dies silently
+From: Simon Glass <sjg@chromium.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        lk <linux-kernel@vger.kernel.org>,
+        lak <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 4, 2011 at 2:22 AM, Mark Jackson <mpfj-list@mimc.co.uk> wrote:
-> Running 2.6.38 on my beagleboard, I can boot using nfs:-
-[snip]
-> I have just tried out 2.6.39-rc1, and the usbnet is no longer detected:-
+On Sun, Apr 3, 2011 at 12:15 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> (Please stop top posting)
+>
+> On 4/1/2011 3:29 PM, Simon Glass wrote:
+>> Hi Stephen,
+>>
+>> Sorry for the confusion, but in fact I was talking about the patch to
+>> make ARM use the generic bug handling via an undef instruction instead
+>> of calling ______bug() or writing to memory address 0. Please see
+>> here:
+>>
+>> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6808/1
+>
+> Yes I've seen your patch (and even posted comments on it which have not
+> been responded to).
 
-Yea, I hit something similar, where on the beagleboard I only see the
-root hubs, and not any of the devices (no usb, no keyboard, etc).
+Hi Stephen,
 
-I bisected it down to:
-commit 9e64bb1e9f0613093b3e34ac5402fcfef0dcc35a
-Author: Keshava Munegowda <keshava_mgowda@ti.com>
-Date:   Tue Mar 1 20:08:19 2011 +0530
+Not yet! Don't worry I will get to it. I like the suggestion and am
+pleased that you pointed me to it, thank you.
 
-    arm: omap: usb: Invoke usbhs core device initialization
+> Correct me if I'm wrong, but that patch with CONFIG_BUG=n would lead to
+> the same error that Omar is seeing because the code only modifies the
+> bug infrastructure when CONFIG_BUG=y.
 
-thanks
--john
+Well if CONFIG_BUG=n then there is no bug infrastructure, The whole
+file is skipped and it falls back to the asm-generic/bug.h which has
+even more #ifdefs in it. But I think we end up here:
+
+#define BUG() do {} while(0)
+
+After all the patch removes the *(int*)0 = 0 code by virtue of
+CONFIG_GENERIC_BUG=y, right? If I have this wrong then I will have to
+break out the C preprocessor...
+
+Regards,
+Simon
+
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>
+>
