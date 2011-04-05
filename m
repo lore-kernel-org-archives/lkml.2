@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab1DEGni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 02:43:38 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50204 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab1DEGng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 02:43:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-Date: Tue, 5 Apr 2011 08:43:38 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
-        stable kernel team <stable@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <201104050829.58474.rjw@sisk.pl> <4D9AB8B7.9020708@zytor.com>
-In-Reply-To: <4D9AB8B7.9020708@zytor.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1752766Ab1DEGpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 02:45:33 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:40796 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab1DEGpb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 02:45:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:references:subject:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=H8o+oqFx3jZt+yTB7ZWsRA+djJBciA6qfHNMeC7i7fF5ZFPDkltGnTtoCEycvR8iXP
+         IwA+em86bacpWpOYI1/c51qJ9Jy6Xm/Ql0oVG6coKKXd++WAR+O3ZpsZk4NVqIX3EpYj
+         8HsdvEZCpIMhV0n8lWO/B+ZPIBIsMubP1nIsg=
+Date: Tue, 5 Apr 2011 14:45:16 +0800
+From: "=?utf-8?B?d2FubG9uZy5nYW8=?=" <wanlong.gao@gmail.com>
+To: "=?utf-8?B?RXJpYyBEdW1hemV0?=" <eric.dumazet@gmail.com>
+Cc: "=?utf-8?B?bGludXgta2VybmVs?=" <linux-kernel@vger.kernel.org>,
+        "=?utf-8?B?UmFmYWVsIEouIFd5c29ja2k=?=" <rjw@sisk.pl>,
+        "=?utf-8?B?VGhvbWFzIEdsZWl4bmVy?=" <tglx@linutronix.de>,
+        "=?utf-8?B?SW5nbyBNb2xuYXI=?=" <mingo@elte.hu>
+References: <201104050339475463862@gmail.com>,
+ <201104051340535622833@gmail.com>,
+ <1301983377.3021.628.camel@edumazet-laptop>
+Subject: =?utf-8?B?UmU6IFJlOiBSZTogWDg2XzMyOiBHb3QgYSBrZXJuZWwgcGFuaWMgd2hlbiBwb3dlcm9mZg==?=
+Message-ID: <201104051445108759198@gmail.com>
+X-mailer: Foxmail 6, 15, 201, 23 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104050843.39246.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 05, 2011, H. Peter Anvin wrote:
-> On 04/04/2011 11:29 PM, Rafael J. Wysocki wrote:
-> >>
-> >> Peter very consciously did not mark the fix for this commit as -stable 
-> >> material. It was ineligible for -stable for multiple reasons: it by no means 
-> >> fixed a 2.6.39 regression and the fix was literally just a few days old.
-> > 
-> > Has this issue been resolved in the mainline, BTW?
-> > 
-> 
-> Just to refresh my memory... is this an issue in mainline, or is it only
-> a problem in the backport (I'm wondering if the trampoline unification
-> patches might have accidentally solved the issue)?
+It fixed now .
+Just pull your tree .
+cheers.
+Thanks
 
-
-The problem is in mainline too, please fix ASAP.
-
-Thanks,
-Rafael
