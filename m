@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1DENql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 09:46:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34191 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab1DENqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 09:46:40 -0400
-Date: Tue, 5 Apr 2011 07:46:35 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Antonio Ospite <ospite@studenti.unina.it>
-Cc: linux-mmc@vger.kernel.org, Daniel Ribeiro <drwyrm@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>, Ernst Schwab <eschwab@online.de>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        openezx-devel@lists.openezx.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] mmc_spi: Add support for regulator framework
-Message-ID: <20110405134635.GA30849@ponder.secretlab.ca>
-References: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
- <20110404115631.67b1f317.ospite@studenti.unina.it>
- <20110405030543.GC29522@ponder.secretlab.ca>
- <20110405104347.0f93ab97.ospite@studenti.unina.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110405104347.0f93ab97.ospite@studenti.unina.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752804Ab1DENxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 09:53:13 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:41449
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751213Ab1DENxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 09:53:10 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [RESEND PATCH 00/22] Staging: hv: Cleanup-storage-drivers-phase-II 
+Date: Tue,  5 Apr 2011 07:04:21 -0700
+Message-Id: <1302012261-21236-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 05, 2011 at 10:43:47AM +0200, Antonio Ospite wrote:
-> On Mon, 4 Apr 2011 21:05:43 -0600
-> Grant Likely <grant.likely@secretlab.ca> wrote:
-> 
-> > On Mon, Apr 04, 2011 at 11:56:31AM +0200, Antonio Ospite wrote:
-> > > On Mon, 21 Mar 2011 19:46:38 +0100
-> > > Antonio Ospite <ospite@studenti.unina.it> wrote:
-> > > 
-> > > > Hi,
-> > > > 
-> > > > this patchset has the purpose of adding support for the regulator framework to 
-> > > > the mmc_spi driver. The first three patches are preparatory cleanups to make 
-> > > > the fourth one more straightforward.
-> > > > 
-> > > > Maybe the fourth patch can be improved, I am open to any suggestions about it.
-> > > >
-> > > 
-> > > Ping. I forgot to Cc spi-devel-general on this series, should I resend
-> > > it?
-> > 
-> > Not a bad idea.  It doesn't go via my tree since it is an mmc patch,
-> > not an spi one, but I don't mind taking a look at the spi bits.
-> > 
-> 
-> Grant you were on Cc from the start so you should have the patches
-> somewhere; please tell me if you don't.
-> I'd avoid resending if not strictly necessary.
 
-Ah, then I probably scanned it briefly and decided I didn't need to
-respond to it.  Don't worry about reposting.
+This patch-set restructures and cleans up struct hv_storvsc_request.
+In the current code, two data structures: struct hv_storvsc_request
+and struct storvsc_request_extension together are used to carry
+the I/O state and there are many issues with this current
+architecture:
 
-g.
+	1) The memory for extension data structure 
+	   is allocatted just after the data buffer
+	   field in struct hv_storvsc_request resulting in comments
+	   such as this in struct blkvsc_request (blkvsc_drv.c):
+
+	/*
+	 * !!!DO NOT ADD ANYTHING BELOW HERE!!! Otherwise, memory can overlap,
+	 * because - The extension buffer falls right here and is pointed to by
+	 * request.Extension;
+	 * Which sounds like a horrible idea, who designed this?
+	 */
+
+
+	2) State is unnecessarily replicated in both struct hv_storvsc_request
+	   and the struct vstor_packet that is embedded in 
+	   struct storvsc_request_extension.
+
+This patch-set addresses the above issues by geting rid of replicated
+state and consolidating all necessary state into a single data structure.
+We also deal with a range of other cleanups in this patch-set:
+
+	1) Use completion primitives to wait for completion.
+	2) Get rid of the synch primitive in struct blkvsc_request
+	3) Get rid of the need for struct hv_device to be the first
+	   element of struct host_device_context.
+
+
+Regards,
+
+K. Y
 
