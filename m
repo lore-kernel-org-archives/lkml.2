@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab1DEHij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 03:38:39 -0400
-Received: from kroah.org ([198.145.64.141]:46503 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab1DEHig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 03:38:36 -0400
-Date: Mon, 4 Apr 2011 23:08:44 -0700
-From: Greg KH <greg@kroah.com>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
-        Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: Re: [PATCH v3] staging: Add ST-Ericsson CG2900 driver
-Message-ID: <20110405060844.GA15065@kroah.com>
-References: <1301399358-10783-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1301399358-10783-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752743Ab1DEHl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 03:41:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58207 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1DEHl2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 03:41:28 -0400
+Subject: Re: BUG: sleeping function called from invalid context at
+ kernel/mutex.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Xiaotian Feng <dfeng@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <alpine.LFD.2.00.1104021653010.22266@localhost6.localdomain6>
+References: <4D970CB6.3070604@redhat.com>
+	 <alpine.LFD.2.00.1104021653010.22266@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Apr 2011 09:41:16 +0200
+Message-ID: <1301989276.2225.1.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 01:49:18PM +0200, Par-Gunnar Hjalmdahl wrote:
-> +config CG2900_UART
-> +	tristate "Support CG2900 UART transport"
-> +	depends on CG2900
-> +	select BT
-> +	select BT_HCIUART
+On Sat, 2011-04-02 at 21:12 +0200, Thomas Gleixner wrote:
+> 
+> And it is safe enough for the resume case as well, it simply cannot go
+> to sleep because nothing else can hold that mutex in the early resume
+> code. We take the mutex during early boot as well, but there the might
+> sleep checks are disabled. And we should do the very same thing in the
+> early resume code as well. Rafael, PeterZ ??? 
 
-No, depend on this, don't have a staging driver select any other config
-options, sorry.
-
-Care to fix this up, and your drivers/staging/Kconfig fuzz in the patch
-and resend it?
-
-thanks,
-
-greg k-h
+the $subject text sound like it triggered might_sleep(), and that had a
+system_state != SYSTEM_RUNNING bail condition, but then, I've no clue
+what resume looks like.
