@@ -1,138 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab1DELNQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 07:13:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44145 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab1DELNO convert rfc822-to-8bit (ORCPT
+	id S1753332Ab1DELSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 07:18:16 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:15068 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab1DELSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 07:13:14 -0400
+	Tue, 5 Apr 2011 07:18:15 -0400
+X-IronPort-AV: E=Sophos;i="4.63,303,1299456000"; 
+   d="scan'208";a="5143510"
+Date: Tue, 5 Apr 2011 12:19:27 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH] xen: do not clear and mask evtchns in
+ __xen_evtchn_do_upcall
+In-Reply-To: <20110404171739.GA15070@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1104051211420.16492@kaball-desktop>
+References: <alpine.DEB.2.00.1103291505090.16492@kaball-desktop> <20110330154630.GA17427@dumpdata.com> <alpine.DEB.2.00.1104041521370.16492@kaball-desktop> <20110404171739.GA15070@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [203.101.61.10]
-In-Reply-To: <1301665592.2160.19.camel@gandalf.stny.rr.com>
-References: <AANLkTi=FrmB=u09wvLoXzQstnV3h-U58R728t3k6_-B-@mail.gmail.com>
-	<20110331112559.090948a7@lxorguk.ukuu.org.uk>
-	<AANLkTimyVsoRYqoXWYMQz_AN3Uo31NBifmiwDUijWnvS@mail.gmail.com>
-	<20110331143329.GA14441@home.goodmis.org>
-	<AANLkTi=orUZrXHQSYXdrOWTJ35vd+41BKD5Crx16n4B1@mail.gmail.com>
-	<1301665592.2160.19.camel@gandalf.stny.rr.com>
-Date: Tue, 5 Apr 2011 16:43:13 +0530
-Message-ID: <BANLkTik5MGz9YgU0oh30ZUesv+c3QEB+rA@mail.gmail.com>
-Subject: Re: locks inside receive_buf
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 1, 2011 at 7:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2011-04-01 at 12:42 +0530, Pavan Savoy wrote:
->> On Thu, Mar 31, 2011 at 8:03 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Thu, Mar 31, 2011 at 04:48:29PM +0530, Pavan Savoy wrote:
->> >>
->> >> Alright, so I see the work gets into the default kthread queue I suppose...?
->> >> However, I am quite puzzled by this kind of OOPS (pasted below...)
->> >>
->> >> Where I know the TTY called my receive_buf (which is st_tty_receive) -
->> >> which internally calls my parsing function st_int_recv() .....
->> >> I was just wondering, whether it is worth making this internal parsing
->> >> function a tasklet by itself ?
->> >>
->> >> I kind of do lot of stuff inside the st_int_recv() - including doing a
->> >> tty->ops->write....
->> >> copy in and out of skb queues - So are all this long enough sleeps?
->> >>
->> >> PC is at st_int_recv+0x2a0/0x354 [st_drv]
->> >> LR is at schedule+0x414/0x4e8
->> >
->> > Um, what was the cause of the oops? You did not include that.
->>
->> How do I understand this ? a NULL pointer exception occurred in
->> function schedule?
->
-> It did not happen in the scheduler, it happened in st_int_recv.
->
->>
->> Unable to handle kernel NULL pointer dereference at virtual address 0000001a
->> pgd = c0004000
->> [0000001a] *pgd=00000000
->> Internal error: Oops: 17 [#1] PREEMPT SMP
->> last sysfs file: /sys/devices/virtual/bluetooth/hci0/rfkill0/state
->> Modules linked in: tiwlan_drv test_drv(P) gps_drv(C) fm_drv(C)
->> btwilink st_drv [last unloaded: tiwlan_drv]
->> CPU: 0    Tainted: P        WC   (2.6.35.7-00242-ga4e3b34-dirty #1)
->> PC is at st_int_recv+0x2a0/0x354 [st_drv]
->
-> The program counter is at st_int_recv+0x2a0 when this happened, so that
-> function is probably where you accessed some structure that was not
-> initialized.
->
->        foo->bar
->
-> if foo is NULL, you'll get that error.
->
->> LR is at schedule+0x414/0x4e8
->
-> LR is Link Register, or where this function was called from.
->
-> Now why is the scheduler calling your function, I have no idea.
+On Mon, 4 Apr 2011, Konrad Rzeszutek Wilk wrote:
+> > I reworded this part of the commit message, see below updated patch.
+> > 
+> [looking]
+> .. snip..
+> > > Can you expand? As in for the GSI? Or for the MSI/MSI-X?
+> > 
+> > Linux on native would use handle_edge_irq for edge irqs and msis, and
+> > handle_fasteoi_irq for everything else.
+> 
+> What about per_cpu one?
+> 
 
-Well this is exactly the problem I have and hence the question
-regarding sleep in tty's receive_buf function.
+That is the simplest case, we are already using the same semantic as in
+the native code.
 
-the function called st_recv or st_int_recv() is basically my line
-discipline's receive_buf function - which happens like zillions of
-times properly with tty->disc_data being populated with what I
-need....
 
-However on a corner case - when I perform some operation - which has
-absolutely NO relation to TTY (at most may be console is using 1 uart)
-- Everything breaks loose...
+> > > OK. You need a big comment about this in the code. Explain
+> > > why this is happening. B/c if you look at this from code
+> > > it seems like wrong thing to do for gsi's (as in you would
+> > > think handle_level_irq would the right choice).
+> > 
+> > Except handle_level_irq is not used anymore anywhere in the kernel, give
+> > a look at arch/x86/kernel/apic/io_apic.c:ioapic_register_intr.
+> 
+> 'make_8259A_irq' ? But yeah, I don't think we will hit machines with
+> that architecture anymore.
 
-If I bump into a NULL pointer it is because the tty->disc_data is NULL ....
-However my check for tty->disc_data being NULL also is fine - i.e when
-I do get this error - my disc_data is NOT null ... But not sure what
-(which data) is NULL ??
+Actually I was looking at:
 
-So now back to the question - What cannot I do inside tty's receive_buf ?
+setup_IO_APIC_irqs -> __io_apic_setup_irqs -> io_apic_setup_irq_pin
 
 
 
->> pc : [<bf000fc0>]    lr : [<c04c3ff0>]    psr: 80000013
->> sp : efc55ed0  ip : efc55dc0  fp : efc55f0c
->> r10: 00000008  r9 : eec4de60  r8 : 00000004
->> r7 : 00000000  r6 : 00000007  r5 : ee77bc8f  r4 : ef0f3480
->> r3 : 00000000  r2 : 00000000  r1 : 00000020  r0 : 0000001f
->> Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
->> Control: 10c53c7d  Table: af3a004a  DAC: 00000015
->>
->
-> [ snip ]
->
->> Backtrace:
->> [<bf000d20>] (st_int_recv+0x0/0x354 [st_drv]) from [<bf000170>]
->> (st_tty_receive+0x70/0x9c [st_drv])
->> [<bf000100>] (st_tty_receive+0x0/0x9c [st_drv]) from [<c02616b4>]
->> (flush_to_ldisc+0xfc/0x170)
->>  r6:ef10e8f0 r5:ef10e8a4 r4:ef10e800
->> [<c02615b8>] (flush_to_ldisc+0x0/0x170) from [<c009bf30>]
->> (worker_thread+0x154/0x1e0)
->> [<c009bddc>] (worker_thread+0x0/0x1e0) from [<c009fce0>] (kthread+0x84/0x8c)
->> [<c009fc5c>] (kthread+0x0/0x8c) from [<c008d6bc>] (do_exit+0x0/0x5f0)
->>  r7:00000013 r6:c008d6bc r5:c009fc5c r4:efc41f10
->> Code: e288a004 e3a01020 e3a02000 e794310a (e1d301ba)
->> ---[ end trace 34f2f99c655b5328 ]---
->> Kernel panic - not syncing: Fatal exception
->
-> The backtrace does not even show the scheduler, so that may just be due
-> to some other kind of corruption.
->
-> Looks like something is not right with the st_drv code.
->
-> -- Steve
->
->
->
+> > Updated patch, rebased on 2.6.39-rc1 follows:
+> > 
+> > ---
+> > 
+> > 
+> > commit 6978531913b45abf3aff048475a2174a2cdaf288
+> > Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Date:   Tue Mar 29 14:15:06 2011 +0000
+> > 
+> >     xen: do not clear and mask evtchns in __xen_evtchn_do_upcall
+> >     
+> >     Change the irq handler of virqs and pirqs that don't need EOI (pirqs
+> >     that correspond to physical edge interrupts) to handle_edge_irq.
+> >     
+> >     Use handle_fasteoi_irq for pirqs that need eoi (they generally
+> >     correspond to level triggered irqs), no risk in loosing interrupts
+> >     because we have to EOI the irq anyway.
+> >     
+> >     This change has the following benefits:
+> >     
+> >     - it uses the very same handlers that Linux would use on native for the
+> >     same irqs (handle_edge_irq for edge irqs and msis, and
+>                                                    ^^^-'MSIs/MSI-Xs'
+> >     handle_fasteoi_irq for everything else);
+> >     
+> >     - it uses these handlers in the same way Linux would use them: it let
+>                                                                            ^- 's'
+> 
+> >     Linux mask\unmask and ack the irq when Linux want to mask\unmask and ack
+>                                                        ^- 's'
+> >     the irq;
+> >     
+> >     See genericirq in the kernel docbook docs for more informations.
+> 
+> Say 'Documentation/DocBook/genericirq.tmpl'
+> 
+> [edit: The patch looks OK to me, but let me think about this some more over this
+> week and sketch out the flow].
+
+done
+
