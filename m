@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab1DETXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 15:23:17 -0400
-Received: from kroah.org ([198.145.64.141]:33444 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605Ab1DETXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 15:23:15 -0400
-Date: Tue, 5 Apr 2011 12:21:30 -0700
-From: Greg KH <greg@kroah.com>
-To: cliff.cai@analog.com
-Cc: gregkh@suse.de, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jic23@cam.ac.uk, device-drivers-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 1/2] staging: IIO driver for Analog Devices Digital
- Output Gyroscope ADXRS450
-Message-ID: <20110405192130.GA10106@kroah.com>
-References: <1301025958-2175-1-git-send-email-cliff.cai@analog.com>
+	id S1754285Ab1DEThv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 15:37:51 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:43989 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954Ab1DEThu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 15:37:50 -0400
+Date: Tue, 5 Apr 2011 15:37:47 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Charles Samuels <charles@cariden.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Queuing of disk writes
+Message-ID: <20110405193747.GG2832@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Charles Samuels <charles@cariden.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201104011259.53936.charles@cariden.com>
+ <20110404020235.GA4706@thunk.org>
+ <201104041050.12731.charles@cariden.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1301025958-2175-1-git-send-email-cliff.cai@analog.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201104041050.12731.charles@cariden.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 12:05:57PM +0800, cliff.cai@analog.com wrote:
-> From: Cliff Cai <cliff.cai@analog.com>
+On Mon, Apr 04, 2011 at 10:50:12AM -0700, Charles Samuels wrote:
 > 
-> Add new IIO driver for Analog Devices digital output gyroscope ADXRS450
+> > Who or what is calling fsync()?  Is it being called by your
+> > application because you want to initiate writeout?  Or is it being
+> > called by some completely unrelated process?
 > 
-> Signed-off-by: Cliff Cai <cliff.cai@analog.com>
-> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> It's being called by my own process. When fsync finishes, I update
+> another file with some offset counters, fsync that, and with some
+> luck, my writes are transactional.
 
-This breaks the build:
-  CC [M]  drivers/staging/iio/gyro/adxrs450_core.o
-drivers/staging/iio/gyro/adxrs450_core.c:329:70: error: expected ‘)’ before numeric constant
-drivers/staging/iio/gyro/adxrs450_core.c:337:3: error: ‘iio_dev_attr_gyro_z_quadrature_correction_raw’ undeclared here (not in a function)
-drivers/staging/iio/gyro/adxrs450_core.c:216:16: warning: ‘adxrs450_read_quad’ defined but not used
+OK, how often are you calling fsync()?  Is this something where you
+are trying to get transactional guarantees by calling fsync() between
+each transaction?  And if so, how big are you transactions?  If you
+are trying to call fsync() 10+ times/second, then your only hope
+really is going to be a battery-backed RAID controller card, as David
+Lang has already suggested.
 
-Please test your patches before you send them out, it wastes everyone's
-time when you don't :(
+> What would be good use of sync_file_range? It looks pretty useful,
+> but I don't know how to make good use of it.  For example,
+> SYNC_FILE_RANGE_WRITE, wouldn't linux start this pretty much
+> immediately?
 
-thanks,
+No, not necessarily.  Generally Linux will pause for a bit to
+hopefully allow writes to coalesce.
 
-greg k-h
+The reason why I suggested sync_file_range() is because you mentioned
+that you tried waiting until there was a large amount of data in the
+page cache, and then you called fsync() and that was taking forever.
+I assumed from that you didn't necessarily had ACID or transactional
+requirements.
+
+The advantage of using sync_file_range() is that instead of forcing a
+blocking write for *all* of the data pages, you can only do it on part
+of the your data pages.  This would allow the writing from interfering
+with subsequent reads that was taking place to your database.
+
+All of this goes by the boards if you need data integrity guarantees,
+of course; in that case you need to call fsync() after each atomic
+transaction update...
+
+						- Ted
