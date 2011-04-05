@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab1DEPjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:39:05 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:35626 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab1DEPjB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:39:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:date:in-reply-to:references:content-type
-         :x-mailer:content-transfer-encoding:message-id:mime-version;
-        b=o4kyExsQVrooMGscgBNe1iXKwy6LvJNDQsyLoB7SjWMAT358/SKmOoHkRY3evQFe8t
-         u4mVhWbSISeE3Za8WwVuqDzKl5ZhOI+Xj8HKKOG6fHkfqt7lP43wh4Wxpu2Q/k9kv+cx
-         P3B5nOXsboRrrvFko/NMRhb91zL/T1HMkm77E=
-Subject: Re: [PATCH v2]arch:x86:kvm:i8254.h Remove base_addresss in kvm_pit
- since it is unused.
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: trivial@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 05 Apr 2011 08:38:47 -0700
-In-Reply-To: <4D9AD14D.3020705@redhat.com>
-References: <1301504087-3266-1-git-send-email-justinmattock@gmail.com>
-	 <4D9AD14D.3020705@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.92 (2.91.92-2.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1302017931.1888.8.camel@Linux-2>
-Mime-Version: 1.0
+	id S1754770Ab1DEPmD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:42:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753373Ab1DEPl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 11:41:59 -0400
+Date: Tue, 5 Apr 2011 18:41:49 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: Re: [PATCHv2] Fix EDD3.0 data verification.
+Message-ID: <20110405154149.GA5395@redhat.com>
+References: <20110203122948.GX14984@redhat.com>
+ <20110208145301.GO14984@redhat.com>
+ <20110216150933.GE14984@redhat.com>
+ <4D5C1DFD.5010108@zytor.com>
+ <20110316085704.GD10151@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110316085704.GD10151@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-05 at 11:22 +0300, Avi Kivity wrote:
-> On 03/30/2011 06:54 PM, Justin P. Mattock wrote:
-> > The patch below removes unsigned long base_addresss; in i8254.h
-> > since it is unused.
-> >
+On Wed, Mar 16, 2011 at 10:57:04AM +0200, Gleb Natapov wrote:
+> On Wed, Feb 16, 2011 at 10:57:01AM -0800, H. Peter Anvin wrote:
+> > On 02/16/2011 07:09 AM, Gleb Natapov wrote:
+> > > On Tue, Feb 08, 2011 at 04:53:01PM +0200, Gleb Natapov wrote:
+> > >> Peter, ping.
+> > >>
+> > >> Is this version acceptable?
+> > >>
+> > > Ping?
+> > > 
+> > 
+> > Yes, looks good... I'll try to pull it into the tree today.
+> > 
+> Hi Peter,
 > 
-> Applied, thanks.
+> Was this applied? Will it go to 2.6.39?
 > 
+Ping. The patch is still not applied it seams.
 
-o.k. avi... your welcome, and thank you for being patient with me..
-(I'm not the best at code, but am willing to learn and work at it to get
-better).
-
-Justin P. Mattock
-
+--
+			Gleb.
