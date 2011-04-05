@@ -1,85 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab1DEPdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:33:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41897 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab1DEPdh (ORCPT
+	id S1754757Ab1DEPbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:31:36 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58003 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754631Ab1DEPbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:33:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=AwVmawkj1sF+bblbImCPISxMT7QgoE40xWZaACrVZ7qVwx5K3JgPgpZIvqm7NwWofF
-         oiHi2P1vQy8owMVa+67oKR1xG+9SwNnJ3LkBNGd6yfPe1Q9VB8q/BeBmeS47KEDSNWv8
-         7MJNuKHcq2E1a2+Huk77JkbXK06w20FPk0pQI=
-Message-ID: <4D9B3639.80205@vexillium.org>
-Date: Tue, 05 Apr 2011 16:33:13 +0100
-From: Unavowed <unavowed@vexillium.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Lightning/1.0b3pre Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Add NOGET quirk for the CH Pro Throttle
-References: <4d988b60.29c6ec0a.0716.ffffa4bf@mx.google.com> <alpine.LNX.2.00.1104041105250.28516@pobox.suse.cz> <4D999177.4010401@vexillium.org> <alpine.LNX.2.00.1104041340080.28516@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1104041340080.28516@pobox.suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Apr 2011 11:31:32 -0400
+Message-Id: <20110405152728.826338173@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Tue, 05 Apr 2011 17:23:41 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 03/21] mutex: Use p->on_cpu for the adaptive spin
+References: <20110405152338.692966333@chello.nl>
+Content-Disposition: inline; filename=sched-on_cpu-use.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/11 12:41, Jiri Kosina wrote:
-> On Mon, 4 Apr 2011, Unavowed wrote:
-> 
->>>> The CH Pro Throttle needs the NOGET quirk flag to work, just like other CH
->>>> Products devices which already have the flag set.
->>>>
->>>> Signed-off-by: Unavowed <unavowed@vexillium.org>
->>>
->>> Hi,
->>>
->>> thanks a lot for the patch.
->>>
->>> Would it please be possible to have a real name to attribute for patch 
->>> authorship and Signed-off-by line?
->>
->> Hi,
->>
->> Thanks for such a quick response.
->>
->> I'm sorry, but I only ever write contributions under a pseudonym.  Is
->> this not acceptable, especially for such a trivial patch?
-> 
-> Well, see paragraph 12) of Documentation/SubmittingPatches. Especially the 
-> part with "sorry, no pseudonyms or anonymous contributions".
-> 
-> Now, I agree that trivial USB ID addition such as this really is 
-> a bit borderline ... 
+Since we now have p->on_cpu unconditionally available, use it to
+re-implement mutex_spin_on_owner.
 
-If that's the case then I would like to report a bug.  The HID device:
+Requested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
+---
+ include/linux/mutex.h |    2 -
+ include/linux/sched.h |    2 -
+ kernel/mutex-debug.c  |    2 -
+ kernel/mutex-debug.h  |    2 -
+ kernel/mutex.c        |    2 -
+ kernel/mutex.h        |    2 -
+ kernel/sched.c        |   83 +++++++++++++++++++-------------------------------
+ 7 files changed, 39 insertions(+), 56 deletions(-)
 
-068e:00f1 CH Products, Inc. Pro Throttle
+Index: linux-2.6/include/linux/mutex.h
+===================================================================
+--- linux-2.6.orig/include/linux/mutex.h
++++ linux-2.6/include/linux/mutex.h
+@@ -51,7 +51,7 @@ struct mutex {
+ 	spinlock_t		wait_lock;
+ 	struct list_head	wait_list;
+ #if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_SMP)
+-	struct thread_info	*owner;
++	struct task_struct	*owner;
+ #endif
+ #ifdef CONFIG_DEBUG_MUTEXES
+ 	const char 		*name;
+Index: linux-2.6/kernel/mutex-debug.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex-debug.c
++++ linux-2.6/kernel/mutex-debug.c
+@@ -75,7 +75,7 @@ void debug_mutex_unlock(struct mutex *lo
+ 		return;
+ 
+ 	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
+-	DEBUG_LOCKS_WARN_ON(lock->owner != current_thread_info());
++	DEBUG_LOCKS_WARN_ON(lock->owner != current);
+ 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+ 	mutex_clear_owner(lock);
+ }
+Index: linux-2.6/kernel/mutex-debug.h
+===================================================================
+--- linux-2.6.orig/kernel/mutex-debug.h
++++ linux-2.6/kernel/mutex-debug.h
+@@ -29,7 +29,7 @@ extern void debug_mutex_init(struct mute
+ 
+ static inline void mutex_set_owner(struct mutex *lock)
+ {
+-	lock->owner = current_thread_info();
++	lock->owner = current;
+ }
+ 
+ static inline void mutex_clear_owner(struct mutex *lock)
+Index: linux-2.6/kernel/mutex.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex.c
++++ linux-2.6/kernel/mutex.c
+@@ -160,7 +160,7 @@ __mutex_lock_common(struct mutex *lock, 
+ 	 */
+ 
+ 	for (;;) {
+-		struct thread_info *owner;
++		struct task_struct *owner;
+ 
+ 		/*
+ 		 * If we own the BKL, then don't spin. The owner of
+Index: linux-2.6/kernel/mutex.h
+===================================================================
+--- linux-2.6.orig/kernel/mutex.h
++++ linux-2.6/kernel/mutex.h
+@@ -19,7 +19,7 @@
+ #ifdef CONFIG_SMP
+ static inline void mutex_set_owner(struct mutex *lock)
+ {
+-	lock->owner = current_thread_info();
++	lock->owner = current;
+ }
+ 
+ static inline void mutex_clear_owner(struct mutex *lock)
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -4034,70 +4034,53 @@ asmlinkage void __sched schedule(void)
+ EXPORT_SYMBOL(schedule);
+ 
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-/*
+- * Look out! "owner" is an entirely speculative pointer
+- * access and not reliable.
+- */
+-int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+-{
+-	unsigned int cpu;
+-	struct rq *rq;
+ 
+-	if (!sched_feat(OWNER_SPIN))
+-		return 0;
++static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
++{
++	bool ret = false;
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-	/*
+-	 * Need to access the cpu field knowing that
+-	 * DEBUG_PAGEALLOC could have unmapped it if
+-	 * the mutex owner just released it and exited.
+-	 */
+-	if (probe_kernel_address(&owner->cpu, cpu))
+-		return 0;
+-#else
+-	cpu = owner->cpu;
+-#endif
++	rcu_read_lock();
++	if (lock->owner != owner)
++		goto fail;
+ 
+ 	/*
+-	 * Even if the access succeeded (likely case),
+-	 * the cpu field may no longer be valid.
++	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
++	 * lock->owner still matches owner, if that fails, owner might
++	 * point to free()d memory, if it still matches, the rcu_read_lock()
++	 * ensures the memory stays valid.
+ 	 */
+-	if (cpu >= nr_cpumask_bits)
+-		return 0;
++	barrier();
+ 
+-	/*
+-	 * We need to validate that we can do a
+-	 * get_cpu() and that we have the percpu area.
+-	 */
+-	if (!cpu_online(cpu))
+-		return 0;
++	ret = owner->on_cpu;
++fail:
++	rcu_read_unlock();
+ 
+-	rq = cpu_rq(cpu);
++	return ret;
++}
+ 
+-	for (;;) {
+-		/*
+-		 * Owner changed, break to re-assess state.
+-		 */
+-		if (lock->owner != owner) {
+-			/*
+-			 * If the lock has switched to a different owner,
+-			 * we likely have heavy contention. Return 0 to quit
+-			 * optimistic spinning and not contend further:
+-			 */
+-			if (lock->owner)
+-				return 0;
+-			break;
+-		}
++/*
++ * Look out! "owner" is an entirely speculative pointer
++ * access and not reliable.
++ */
++int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
++{
++	if (!sched_feat(OWNER_SPIN))
++		return 0;
+ 
+-		/*
+-		 * Is that owner really running on that cpu?
+-		 */
+-		if (task_thread_info(rq->curr) != owner || need_resched())
++	while (owner_running(lock, owner)) {
++		if (need_resched())
+ 			return 0;
+ 
+ 		arch_mutex_cpu_relax();
+ 	}
+ 
++	/*
++	 * If the owner changed to another task there is likely
++	 * heavy contention, stop spinning.
++	 */
++	if (lock->owner)
++		return 0;
++
+ 	return 1;
+ }
+ #endif
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -360,7 +360,7 @@ extern signed long schedule_timeout_inte
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+-extern int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner);
++extern int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner);
+ 
+ struct nsproxy;
+ struct user_namespace;
 
-doesn't work with Linux.  After plugging in the device, it is recognised
-but pressing buttons or moving axes doesn't trigger any events.  Adding
-an entry to the HID blacklist with the HID_QUIRK_NOGET flag fixes the
-problem.
 
-I, and probably other flight sim fans running Linux, would be very happy
-if someone could fix write a patch fixing this.
-
-And if I may comment on that "no pseudonyms" policy, I don't fully
-understand the motivation behind it.  After all, there have been many
-authors of copyrighted works who created them without revealing their
-real name[1].  Is this something to please the lawyers of Linux's
-corporate overlords?
-
-Thanks,
-
-Unavowed
-
-[1] http://en.wikipedia.org/wiki/List_of_pseudonyms
