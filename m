@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1DEG3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 02:29:43 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50150 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751538Ab1DEG3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 02:29:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-Date: Tue, 5 Apr 2011 08:29:58 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
-        stable kernel team <stable@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <alpine.DEB.2.00.1104041616550.16492@kaball-desktop> <20110404162516.GA31241@elte.hu>
-In-Reply-To: <20110404162516.GA31241@elte.hu>
+	id S1752415Ab1DEGh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 02:37:59 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53203 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1DEGh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 02:37:58 -0400
+Message-ID: <34890DB1679E41119ADB156E2CFEC4C9@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
+        <nsekhar@ti.com>, "open list" <linux-kernel@vger.kernel.org>,
+        <m-watkins@ti.com>, "Marc Kleine-Budde" <mkl@pengutronix.de>,
+        "Stalin Srinivasan" <stalin.s@mistralsolutions.com>
+References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com> <201103111628.57549.arnd@arndb.de> <17BF3847C06240EC921FB684D3120DEC@subhasishg> <201103301259.28483.arnd@arndb.de>
+In-Reply-To: <201103301259.28483.arnd@arndb.de>
+Subject: Re: [PATCH v3 1/7] mfd: add pruss mfd driver.
+Date: Tue, 5 Apr 2011 12:10:46 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104050829.58474.rjw@sisk.pl>
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 04, 2011, Ingo Molnar wrote:
-> 
-> * Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> 
-> > On Mon, 4 Apr 2011, Ingo Molnar wrote:
-> > > 
-> > > * Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > > 
-> > > > Just to clarify the situation the patch "x86-64: finish cleanup_highmaps()'s 
-> > > > job wrt. _brk_end" was backported to the stable trees [...]
-> > > 
-> > > There's no commit with such a title upstream - there's not even one that is 
-> > > close. Could you cite the sha1 you refer to?
-> > 
-> > The commit id upstream is 498343967613183611ac37dccb2846496d954c06
-> 
-> That commit is from the v2.6.30 era:
-> 
->  |
->  | commit 498343967613183611ac37dccb2846496d954c06
->  | Author:     Jan Beulich <jbeulich@novell.com>
->  | AuthorDate: Wed May 6 13:06:47 2009 +0100
->  | Commit:     H. Peter Anvin <hpa@zytor.com>
->  | CommitDate: Thu May 7 21:51:34 2009 -0700
->  |
->  |    x86-64: finish cleanup_highmaps()'s job wrt. _brk_end
->  |
-> 
-> ... i.e. the bug is almost 2 years and 8 -stable cycles old!
-> 
-> Peter very consciously did not mark the fix for this commit as -stable 
-> material. It was ineligible for -stable for multiple reasons: it by no means 
-> fixed a 2.6.39 regression and the fix was literally just a few days old.
 
-Has this issue been resolved in the mainline, BTW?
+> On Wednesday 30 March 2011, Subhasish Ghosh wrote:
+>>
+>> >> +s32 pruss_disable(struct device *dev, u8 pruss_num)
+>> >> +{
+>> >> + struct da8xx_pruss *pruss = dev_get_drvdata(dev->parent);
+>> >> + struct da8xx_prusscore_regs *h_pruss;
+>> >> + struct pruss_map *pruss_mmap = (struct pruss_map *)pruss->ioaddr;
+>> >> + u32 temp_reg;
+>> >> + u32 delay_cnt;
+>> >
+>> > Can you explain the significance of pruss_num? As far as I
+>> > can tell, you always pass constants in here, so it should
+>> > be possible to determine the number from the device.
+>>
+>> SG - The number is not programmed in the device, I need something to 
+>> decide
+>> which PRU to disable or enable.
+>
+> I still don't understand. Please explain how the devices
+> relate to the multiple PRUs in hardware.
 
-Rafael
+There are two devices, CAN and UART, in our case we use the PRU as follows:
+1. CAN-TX on PRU0, CAN-RX on PRU1
+2. SUART-TX on PRU0, SUART-RX on PRU1
+3. SUART-TXRX on PRU0, SUART-TXRX on PRU1
+
+
+ 
+
