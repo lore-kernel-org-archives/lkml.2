@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab1DEMwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 08:52:32 -0400
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:34450 "EHLO
-	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab1DEMw3 (ORCPT
+	id S1752571Ab1DEM6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 08:58:53 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:62158 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab1DEM6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 08:52:29 -0400
-X-AuditID: b753bd60-a46baba000004916-7e-4d9b100753e9
-X-AuditID: b753bd60-a46baba000004916-7e-4d9b100753e9
-From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Subject: [PATCH 2/2] SCSI: modify SCSI subsystem
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-hotplug@vger.kernel.org
-Cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Date: Tue, 05 Apr 2011 21:50:10 +0900
-Message-ID: <20110405125010.7969.51857.stgit@ltc233.sdl.hitachi.co.jp>
-In-Reply-To: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
-References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Tue, 5 Apr 2011 08:58:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=eBYM6vh+edCmfypnGlQVV9/EtX6EtjNNjfyYehxyx/HAgRjsgVhLZzn68bp6UmqKT0
+         cdlAlzuMXfpdI1YojlH+bGZUc94sIzhY4A1Jn7EsKb+MECdYAmuosICSpZqcdpc9qRax
+         G/2hy3xc2Cii28OnLRx5C4Gme4LkeK8iSYW18=
+Message-ID: <4D9B120A.2060305@gmail.com>
+Date: Tue, 05 Apr 2011 06:58:50 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Native KVM: can't boot existing Fedora 14 image
+References: <4D9A7DF6.1040101@gmail.com> <1301991791.1923.12.camel@t41.thuisdomein>
+In-Reply-To: <1301991791.1923.12.camel@t41.thuisdomein>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a SCSI option for persistent device names in Kernel.
 
-If scsi_mod.persistent_name=1, device names is assigned by udev.
-If scsi_mod.persistent_name=0, device names is assigned the order
-of logical unit recognizing.
 
-Signed-off-by: Nao Nishijima <nao.nishijima.xt@hitachi.com>
----
+On 04/05/11 02:23, Paul Bolle wrote:
+> On Mon, 2011-04-04 at 20:27 -0600, David Ahern wrote:
+>> At that point it loops over a few iterations of the last few lines and I
+>> kill it. Any ideas why?
+> 
+> What happens if you remove the (hardcoded) "root=vda" kernel parameter
+> from the commandline (in tools/kvm/main.c)?
 
- drivers/scsi/sd.c |   10 +++++++---
- drivers/scsi/sr.c |    4 +++-
- drivers/scsi/st.c |    4 +++-
- 3 files changed, 13 insertions(+), 5 deletions(-)
+It boots. :-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index b61ebec..94ad290 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -65,6 +65,7 @@
- 
- #include "sd.h"
- #include "scsi_logging.h"
-+#include "scsi_unnamed.h"
- 
- MODULE_AUTHOR("Eric Youngdale");
- MODULE_DESCRIPTION("SCSI disk (sd) driver");
-@@ -2554,9 +2555,12 @@ static int sd_probe(struct device *dev)
- 		goto out_free_index;
- 	}
- 
--	error = sd_format_disk_name("sd", index, gd->disk_name, DISK_NAME_LEN);
--	if (error)
--		goto out_free_index;
-+	if (!copy_persistent_name(gd->disk_name, dev)) {
-+		error = sd_format_disk_name("sd", index,
-+				gd->disk_name, DISK_NAME_LEN);
-+		if (error)
-+			goto out_free_index;
-+	}
- 
- 	sdkp->device = sdp;
- 	sdkp->driver = &sd_template;
-diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-index aefadc6..682b1a4 100644
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -58,6 +58,7 @@
- 
- #include "scsi_logging.h"
- #include "sr.h"
-+#include "scsi_unnamed.h"
- 
- 
- MODULE_DESCRIPTION("SCSI cdrom (sr) driver");
-@@ -634,7 +635,8 @@ static int sr_probe(struct device *dev)
- 
- 	disk->major = SCSI_CDROM_MAJOR;
- 	disk->first_minor = minor;
--	sprintf(disk->disk_name, "sr%d", minor);
-+	if (!copy_persistent_name(disk->disk_name, dev))
-+		sprintf(disk->disk_name, "sr%d", minor);
- 	disk->fops = &sr_bdops;
- 	disk->flags = GENHD_FL_CD;
- 	disk->events = DISK_EVENT_MEDIA_CHANGE | DISK_EVENT_EJECT_REQUEST;
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index 1871b8a..9acf8b2 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -74,6 +74,7 @@ static const char *verstr = "20101219";
- 
- #include "st_options.h"
- #include "st.h"
-+#include "scsi_unnamed.h"
- 
- static DEFINE_MUTEX(st_mutex);
- static int buffer_kbs;
-@@ -4051,7 +4052,8 @@ static int st_probe(struct device *dev)
- 	}
- 	kref_init(&tpnt->kref);
- 	tpnt->disk = disk;
--	sprintf(disk->disk_name, "st%d", i);
-+	if (!copy_persistent_name(disk->disk_name, dev))
-+		sprintf(disk->disk_name, "st%d", i);
- 	disk->private_data = &tpnt->driver;
- 	disk->queue = SDp->request_queue;
- 	tpnt->driver = &st_template;
+Thanks,
 
+David
+
+> 
+> 
+> PUal Bolle
+> 
