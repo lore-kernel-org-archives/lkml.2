@@ -1,69 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab1DEObM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:31:12 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:33436 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab1DEObL convert rfc822-to-8bit (ORCPT
+	id S1752939Ab1DEOe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 10:34:28 -0400
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:57078
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752049Ab1DEOe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:31:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=c7HJ5PHrJWZm0NyEJ3ogK3Gu5Z6PQhoexNkMgJJV01HrBy8e7c8FQSmswurRjS+xmA
-         ndACYxg39ddNjs/KVJbOC9xgLeCRREvN5P7z73cDte6dEspTAoJiyKMWTx8OxXY8fprK
-         sEX89mnSk+XyGe0KXxD2KgnYDMs4IrVPt2/Gs=
-MIME-Version: 1.0
-In-Reply-To: <1bdc18$k44m31@fmsmga002.fm.intel.com>
-References: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com>
-	<1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
-	<20110401114429.GA3526@viiv.ffwll.ch>
-	<AANLkTik6njOQTLGsB4KzPP-J=fE=p4CHopAyvsDzdDSF@mail.gmail.com>
-	<BANLkTimUZY+2E=kXG-as8-moAAS4+F5bTg@mail.gmail.com>
-	<b7da2f$qvoau5@fmsmga001.fm.intel.com>
-	<BANLkTi=kXod21RUukrTuMzP5TFqgo4NxRw@mail.gmail.com>
-	<BANLkTins76X1mOFepqXEQjMEh_hd4Vgw1Q@mail.gmail.com>
-	<1bdc18$k44m31@fmsmga002.fm.intel.com>
-Date: Tue, 5 Apr 2011 17:31:10 +0300
-X-Google-Sender-Auth: 184Vf84AQW-SJF4H42TDURwcLIA
-Message-ID: <BANLkTik-bAeJKw0GdTdxRYSP+Hes3ua9vw@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Disable all outputs early, before
- KMS takeover
-From: Pekka Enberg <penberg@kernel.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Tomas Winkler <tomasw@gmail.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Apr 2011 10:34:27 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Disable all outputs early, before KMS takeover
+Date: Tue,  5 Apr 2011 15:34:15 +0100
+Message-Id: <1302014055-13708-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <BANLkTins76X1mOFepqXEQjMEh_hd4Vgw1Q@mail.gmail.com>
+References: <BANLkTins76X1mOFepqXEQjMEh_hd4Vgw1Q@mail.gmail.com>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 5:27 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, 5 Apr 2011 17:11:56 +0300, Pekka Enberg <penberg@kernel.org> wrote:
->> [    9.310010]  <IRQ>  [<ffffffff8168cd0c>] panic+0x91/0x19e
->> [    9.310010]  [<ffffffff816909ea>] oops_end+0xea/0xf0
->> [    9.310010]  [<ffffffff8106afbb>] no_context+0xfb/0x260
->> [    9.310010]  [<ffffffff8106b245>] __bad_area_nosemaphore+0x125/0x1e0
->> [    9.310010]  [<ffffffff8106b313>] bad_area_nosemaphore+0x13/0x20
->> [    9.310010]  [<ffffffff816930c0>] do_page_fault+0x310/0x4c0
->> [    9.310010]  [<ffffffff810ac06f>] ? up+0x2f/0x50
->> [    9.310010]  [<ffffffff8108652f>] ? console_unlock+0x17f/0x1d0
->> [    9.310010]  [<ffffffff8168fd25>] page_fault+0x25/0x30
->> [    9.310010]  [<ffffffffa0061628>] ? i915_handle_error+0x198/0xed0 [i915]
->> [    9.310010]  [<ffffffff8137d04a>] ? scsi_next_command+0x4a/0x60
->> [    9.310010]  [<ffffffff8137ddd6>] ? scsi_io_completion+0x2f6/0x630
->> [    9.310010]  [<ffffffffa0064c62>] i915_driver_irq_handler+0x472/0x17f0 [i915]
->>
->> This is the same pre-2.6.39-rc1 kernel with the two patches applied.
->> I'll try latest Linus master next to see if the same problem triggers.
->
-> Hmm. Looks like we don't prevent the PGTBL_ER with those patches (or we
-> provoke another), and trigger the error before we can handle it.
+If the outputs are active and continuing to access the GATT when we
+teardown the PTEs, then there is a potential for us to hang the GPU.
+The hang tends to be a PGTBL_ER with either an invalid host access or
+an invalid display plane fetch.
 
-I'm guessing it's the same PGTBL_ER I've seen for the past two-three
-kernel releases during boot. It seems to be harmless otherwise.
+v2: Reorder IRQ initialisation to defer until after GEM is setup.
+
+Reported-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch> (855GM)
+---
+ drivers/gpu/drm/i915/i915_dma.c      |   31 ++++++++++++++++++++++---------
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |   17 +++++++++++------
+ drivers/gpu/drm/i915/intel_dp.c      |    9 +++++++++
+ 4 files changed, 43 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 7273037..b28e023 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1176,11 +1176,11 @@ static bool i915_switcheroo_can_switch(struct pci_dev *pdev)
+ 	return can_switch;
+ }
+ 
+-static int i915_load_modeset_init(struct drm_device *dev)
++static int i915_load_gem_init(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	unsigned long prealloc_size, gtt_size, mappable_size;
+-	int ret = 0;
++	int ret;
+ 
+ 	prealloc_size = dev_priv->mm.gtt->stolen_size;
+ 	gtt_size = dev_priv->mm.gtt->gtt_total_entries << PAGE_SHIFT;
+@@ -1204,7 +1204,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	ret = i915_gem_init_ringbuffer(dev);
+ 	mutex_unlock(&dev->struct_mutex);
+ 	if (ret)
+-		goto out;
++		return ret;
+ 
+ 	/* Try to set up FBC with a reasonable compressed buffer size */
+ 	if (I915_HAS_FBC(dev) && i915_powersave) {
+@@ -1222,6 +1222,13 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 
+ 	/* Allow hardware batchbuffers unless told otherwise. */
+ 	dev_priv->allow_batchbuffer = 1;
++	return 0;
++}
++
++static int i915_load_modeset_init(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	int ret;
+ 
+ 	ret = intel_parse_bios(dev);
+ 	if (ret)
+@@ -1236,7 +1243,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	 */
+ 	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+ 	if (ret && ret != -ENODEV)
+-		goto cleanup_ringbuffer;
++		goto out;
+ 
+ 	intel_register_dsm_handler();
+ 
+@@ -1253,10 +1260,16 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 
+ 	intel_modeset_init(dev);
+ 
+-	ret = drm_irq_install(dev);
++	ret = i915_load_gem_init(dev);
+ 	if (ret)
+ 		goto cleanup_vga_switcheroo;
+ 
++	intel_modeset_gem_init(dev);
++
++	ret = drm_irq_install(dev);
++	if (ret)
++		goto cleanup_gem;
++
+ 	/* Always safe in the mode setting case. */
+ 	/* FIXME: do pre/post-mode set stuff in core KMS code */
+ 	dev->vblank_disable_allowed = 1;
+@@ -1274,14 +1287,14 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 
+ cleanup_irq:
+ 	drm_irq_uninstall(dev);
++cleanup_gem:
++	mutex_lock(&dev->struct_mutex);
++	i915_gem_cleanup_ringbuffer(dev);
++	mutex_unlock(&dev->struct_mutex);
+ cleanup_vga_switcheroo:
+ 	vga_switcheroo_unregister_client(dev->pdev);
+ cleanup_vga_client:
+ 	vga_client_register(dev->pdev, NULL, NULL, NULL);
+-cleanup_ringbuffer:
+-	mutex_lock(&dev->struct_mutex);
+-	i915_gem_cleanup_ringbuffer(dev);
+-	mutex_unlock(&dev->struct_mutex);
+ out:
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 359ddce..60ebd79 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1268,6 +1268,7 @@ static inline void intel_unregister_dsm_handler(void) { return; }
+ 
+ /* modesetting */
+ extern void intel_modeset_init(struct drm_device *dev);
++extern void intel_modeset_gem_init(struct drm_device *dev);
+ extern void intel_modeset_cleanup(struct drm_device *dev);
+ extern int intel_modeset_vga_set_state(struct drm_device *dev, bool state);
+ extern void i8xx_disable_fbc(struct drm_device *dev);
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 432fc04..5c7385b 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6497,6 +6497,9 @@ static void intel_setup_outputs(struct drm_device *dev)
+ 	}
+ 
+ 	intel_panel_setup_backlight(dev);
++
++	/* disable all the possible outputs/crtcs before entering KMS mode */
++	drm_helper_disable_unused_functions(dev);
+ }
+ 
+ static void intel_user_framebuffer_destroy(struct drm_framebuffer *fb)
+@@ -7432,13 +7435,12 @@ void intel_modeset_init(struct drm_device *dev)
+ 		intel_crtc_init(dev, i);
+ 	}
+ 
++	/* Just disable it once at startup */
++	i915_disable_vga(dev);
+ 	intel_setup_outputs(dev);
+ 
+ 	intel_enable_clock_gating(dev);
+ 
+-	/* Just disable it once at startup */
+-	i915_disable_vga(dev);
+-
+ 	if (IS_IRONLAKE_M(dev)) {
+ 		ironlake_enable_drps(dev);
+ 		intel_init_emon(dev);
+@@ -7447,12 +7449,15 @@ void intel_modeset_init(struct drm_device *dev)
+ 	if (IS_GEN6(dev))
+ 		gen6_enable_rps(dev_priv);
+ 
+-	if (IS_IRONLAKE_M(dev))
+-		ironlake_enable_rc6(dev);
+-
+ 	INIT_WORK(&dev_priv->idle_work, intel_idle_update);
+ 	setup_timer(&dev_priv->idle_timer, intel_gpu_idle_timer,
+ 		    (unsigned long)dev);
++}
++
++void intel_modeset_gem_init(struct drm_device *dev)
++{
++	if (IS_IRONLAKE_M(dev))
++		ironlake_enable_rc6(dev);
+ 
+ 	intel_setup_overlay(dev);
+ }
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 0daefca..6caeabb 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -218,7 +218,16 @@ intel_dp_mode_valid(struct drm_connector *connector,
+ 	if (!is_edp(intel_dp) &&
+ 	    (intel_dp_link_required(connector->dev, intel_dp, mode->clock)
+ 	     > intel_dp_max_data_rate(max_link_clock, max_lanes)))
++	{
++		DRM_DEBUG_KMS("mode exceeds DP bandwidth: required=%d, max=%d [clock=%d, lanes=%d]\n",
++			      intel_dp_link_required(connector->dev,
++						     intel_dp,
++						     mode->clock),
++			      intel_dp_max_data_rate(max_link_clock,
++						     max_lanes),
++			      max_link_clock, max_lanes);
+ 		return MODE_CLOCK_HIGH;
++	}
+ 
+ 	if (mode->clock < 10000)
+ 		return MODE_CLOCK_LOW;
+-- 
+1.7.4.1
+
