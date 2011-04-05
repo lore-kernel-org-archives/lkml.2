@@ -1,49 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1DEPmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:42:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753373Ab1DEPl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:41:59 -0400
-Date: Tue, 5 Apr 2011 18:41:49 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
-Subject: Re: [PATCHv2] Fix EDD3.0 data verification.
-Message-ID: <20110405154149.GA5395@redhat.com>
-References: <20110203122948.GX14984@redhat.com>
- <20110208145301.GO14984@redhat.com>
- <20110216150933.GE14984@redhat.com>
- <4D5C1DFD.5010108@zytor.com>
- <20110316085704.GD10151@redhat.com>
+	id S1754664Ab1DEPn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:43:27 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53777 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab1DEPnY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 11:43:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:organization:message-id:in-reply-to
+         :user-agent;
+        b=qNCi1pFG9msmga+HliLXwD5M/FeWqbKkpPBEJQtY/e07ZRkMVPwTAV+plSGv8i6mSv
+         pPnAtmW7+LG7Zo8YP1/DLRhjcqG0qWMJCGDiOhmNyypmnhdSZy73BwdIfzVf6fCN0saC
+         kMeWx4xGNb+AR7jjdYdumG4JC20zb9cJ7JPzQ=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
+Cc: stern@rowland.harvard.edu, sshtylyov@mvista.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] usb: gadget: storage: Add fsg_get_toc helper
+References: <1302015569-9668-1-git-send-email-roger.quadros@nokia.com>
+ <1302015569-9668-2-git-send-email-roger.quadros@nokia.com>
+Date: Tue, 05 Apr 2011 17:43:20 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110316085704.GD10151@redhat.com>
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Organization: Google
+Message-ID: <op.vtg1yhef3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1302015569-9668-2-git-send-email-roger.quadros@nokia.com>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 10:57:04AM +0200, Gleb Natapov wrote:
-> On Wed, Feb 16, 2011 at 10:57:01AM -0800, H. Peter Anvin wrote:
-> > On 02/16/2011 07:09 AM, Gleb Natapov wrote:
-> > > On Tue, Feb 08, 2011 at 04:53:01PM +0200, Gleb Natapov wrote:
-> > >> Peter, ping.
-> > >>
-> > >> Is this version acceptable?
-> > >>
-> > > Ping?
-> > > 
-> > 
-> > Yes, looks good... I'll try to pull it into the tree today.
-> > 
-> Hi Peter,
-> 
-> Was this applied? Will it go to 2.6.39?
-> 
-Ping. The patch is still not applied it seams.
+On Tue, 05 Apr 2011 16:59:27 +0200, Roger Quadros  
+<roger.quadros@nokia.com> wrote:
+> --- a/drivers/usb/gadget/storage_common.c
+> +++ b/drivers/usb/gadget/storage_common.c
 
---
-			Gleb.
+> +static int fsg_get_toc(struct fsg_lun *curlun, int msf, int format, u8  
+> *buf)
+> +{
+> +	int i, len;
+> +	switch (format) {
+> +	case 0:
+> +		/* Formatted TOC */
+> +		len = 4 + 2*8;		/* 4 byte header + 2 descriptors */
+> +		memset(buf, 0, len);
+> +		buf[1] = len - 2;	/* TOC Length excludes length field */
+> +		buf[2] = 1;		/* First track number */
+> +		buf[3] = 1;		/* Last track number */
+> +		buf[5] = 0x16;		/* Data track, copying allowed */
+> +		buf[6] = 0x01;		/* Only track is number 1 */
+> +		store_cdrom_address(&buf[8], msf, 0);
+> +
+> +		buf[13] = 0x16;		/* Lead-out track is data */
+> +		buf[14] = 0xAA;		/* Lead-out track number */
+> +		store_cdrom_address(&buf[16], msf, curlun->num_sectors);
+> +		return len;
+> +		break;
+
+Useless break.  Or, you could put "return len;" at the end of the function.
+
+> +
+> +	case 2:
+> +		/* Raw TOC */
+> +		len = 4 + 3*11;		/* 4 byte header + 3 descriptors */
+> +		memset(buf, 0, len);	/* Header + A0, A1 & A2 descriptors */
+> +		buf[1] = len - 2;	/* TOC Length excludes length field */
+> +		buf[2] = 1;		/* First complete session */
+> +		buf[3] = 1;		/* Last complete session */
+> +
+> +		buf += 4;
+> +		/* fill in A0, A1 and A2 points */
+> +		for (i = 0; i < 3; i++) {
+> +			buf[0] = 1;	/* Session number */
+> +			buf[1] = 0x16;	/* Data track, copying allowed */
+> +			/* 2 - Track number 0 ->  TOC */
+> +			buf[3] = 0xA0 + i; /* A0, A1, A2 point */
+> +			/* 4, 5, 6 - Min, sec, frame is zero */
+> +			buf[8] = 1;	/* Pmin: last track number */
+> +			buf += 11;	/* go to next track descriptor */
+> +		}
+> +		buf -= 11;		/* go back to A2 descriptor */
+> +
+> +		/* For A2, 7, 8, 9, 10 - zero, Pmin, Psec, Pframe of Lead out */
+> +		store_cdrom_address(&buf[7], msf, curlun->num_sectors);
+> +		return len;
+> +		break;
+
+Same here.
+
+> +	default:
+> +		/* Multi-session, PMA, ATIP, CD-TEXT not supported/required */
+> +		return -EINVAL;
+
+Can we fall back to the old behaviour here?
+
+> +		break;
+
+And here.
+
+> +	}
+> +}
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
