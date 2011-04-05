@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1DEQEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:04:33 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43405 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab1DEQEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:04:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:organization:message-id:in-reply-to
-         :user-agent;
-        b=QzrOxJ7VIIZB5askqLYbRxmMhjeA2ebyUvgKund2cyTAuoZOMeW3SIcHV3ssiXlzIS
-         mQtVWoESFS83ilWpJN3Zp9M2lw5dRVTpGls096CKGSs4FmdqcKM1SvaoyFelhKjMx8uf
-         Xe9bdSG/fqjouAxJcRTo502ViLNM7t6DLzoCQ=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] usb: gadget: f_mass_storage: If 'ro'/'cdrom'
- specified, open file as read-only
-References: <1302017802-16614-1-git-send-email-roger.quadros@nokia.com>
- <1302017802-16614-3-git-send-email-roger.quadros@nokia.com>
-Date: Tue, 05 Apr 2011 18:04:28 +0200
+	id S1754095Ab1DEQHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:07:09 -0400
+Received: from mx1.melware.net ([78.47.171.162]:51237 "EHLO mx1.melware.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751507Ab1DEQHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 12:07:07 -0400
+Date: Tue, 5 Apr 2011 18:07:05 +0200 (CEST)
+From: Armin Schindler <armin@melware.de>
+To: Ben Hutchings <bhutchings@solarflare.com>
+cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 12/34] isdn/diva: Drop __TIME__ usage
+In-Reply-To: <1302017861.2932.13.camel@bwh-desktop>
+Message-ID: <alpine.DEB.2.00.1104051806230.7624@justus.melware.de>
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>  <1302015561-21047-13-git-send-email-mmarek@suse.cz>  <alpine.DEB.2.00.1104051709040.7262@justus.melware.de> <1302017861.2932.13.camel@bwh-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: Cytronics & Melware
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Organization: Google
-Message-ID: <op.vtg2xqrt3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1302017802-16614-3-git-send-email-roger.quadros@nokia.com>
-User-Agent: Opera Mail/11.01 (Linux)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Apr 2011 17:36:39 +0200, Roger Quadros  
-<roger.quadros@nokia.com> wrote:
-> If we don't need Write access then attempt to open backing file in Read  
-> Only mode instead of bailing out too soon.
+On Tue, 5 Apr 2011, Ben Hutchings wrote:
+> On Tue, 2011-04-05 at 17:10 +0200, Armin Schindler wrote:
+>> On Tue, 5 Apr 2011, Michal Marek wrote:
+>>> The kernel already prints its build timestamp during boot, no need to
+>>> repeat it in random drivers and produce different object files each
+>>> time.
+>>
+>> The module can be build separately from the kernel, therefore it can have
+>> an own build timestamp.
+> [...]
 >
-> Signed-off-by: Roger Quadros <roger.quadros@nokia.com>
+> If you want to distribute an out-of-tree version, that's your own
+> business.  It shouldn't limit what is done with the in-tree version.
+> Perhaps we could make modpost add a build timestamp to OOT modules,
+> though.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+I know out-of-tree stuff doesn't matter here. But I'm thinking
+about just doing 'make modules'.
 
-> --- a/drivers/usb/gadget/f_mass_storage.c
-> +++ b/drivers/usb/gadget/f_mass_storage.c
-> @@ -2810,6 +2810,7 @@ static struct fsg_common *fsg_common_init(struct  
-> fsg_common *common,
->  	for (i = 0, lcfg = cfg->luns; i < nluns; ++i, ++curlun, ++lcfg) {
->  		curlun->cdrom = !!lcfg->cdrom;
->  		curlun->ro = lcfg->cdrom || lcfg->ro;
-> +		curlun->initially_ro = curlun->ro;
->  		curlun->removable = lcfg->removable;
->  		curlun->dev.release = fsg_lun_release;
->  		curlun->dev.parent = &gadget->dev;
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Armin
