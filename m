@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab1DEPoj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:44:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754252Ab1DEPoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:44:37 -0400
-Date: Tue, 5 Apr 2011 17:43:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: john stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>, ben@iagu.net
-Subject: Re: [PATCH v2] posix-timers: RCU conversion
-Message-ID: <20110405154318.GA20080@redhat.com>
-References: <1300726498.2884.493.camel@edumazet-laptop> <4D8784A9.8040303@redhat.com> <1300727545.2884.513.camel@edumazet-laptop> <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com> <1300746429.2837.20.camel@edumazet-laptop> <1300777760.2837.38.camel@edumazet-laptop> <1301849660.2837.211.camel@edumazet-laptop> <1301940501.2319.25.camel@work-vm> <20110405144836.GA17490@redhat.com> <1302016682.3171.19.camel@edumazet-laptop>
+	id S1754455Ab1DEPp4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:45:56 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62511 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab1DEPpx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 11:45:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:organization:message-id:in-reply-to
+         :user-agent;
+        b=PbIOVbY7OdyX7ttcGHBxh0SCmflvICjHKyHhYALCob4dn93Fv1jLhyKgJ8DlNs5tYH
+         Manmtm6EyUPMV5lax7kO7JQtpcTmxw1rWCBxhuGsz31rORnc8QOJJE1aOTIzbcw/9i2N
+         jKY/OOIUvB0ee6evPaloP5nnUKgRAsQy6hGG0=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
+Cc: stern@rowland.harvard.edu, sshtylyov@mvista.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v3 2/3] usb: gadget: file_storage: Make CD-ROM emulation
+ work with Mac OS-X
+References: <1302015569-9668-1-git-send-email-roger.quadros@nokia.com>
+ <1302015569-9668-3-git-send-email-roger.quadros@nokia.com>
+Date: Tue, 05 Apr 2011 17:45:50 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302016682.3171.19.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Organization: Google
+Message-ID: <op.vtg12opj3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1302015569-9668-3-git-send-email-roger.quadros@nokia.com>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05, Eric Dumazet wrote:
->
-> Le mardi 05 avril 2011 � 16:48 +0200, Oleg Nesterov a �crit :
-> >
-> > Not that I really think it makes sense to change the patch... but we
-> > could even use SLAB_DESTROY_BY_RCU, this is more effective. All we
-> > need is ctor which sets ->it_signal = NULL and initializes ->it_lock
-> > for lock_timer().
-> >
->
-> I considered this, but this means SLUB cannot merge the
-> posix_timers_cache anymore.
+On Tue, 05 Apr 2011 16:59:28 +0200, Roger Quadros  
+<roger.quadros@nokia.com> wrote:
+> --- a/drivers/usb/gadget/file_storage.c
+> +++ b/drivers/usb/gadget/file_storage.c
+> @@ -1703,18 +1705,21 @@ static int do_read_toc(struct fsg_dev *fsg,  
+> struct fsg_buffhd *bh)
+>  		return -EINVAL;
+>  	}
+> -	memset(buf, 0, 20);
+> -	buf[1] = (20-2);		/* TOC data length */
+> -	buf[2] = 1;			/* First track number */
+> -	buf[3] = 1;			/* Last track number */
+> -	buf[5] = 0x16;			/* Data track, copying allowed */
+> -	buf[6] = 0x01;			/* Only track is number 1 */
+> -	store_cdrom_address(&buf[8], msf, 0);
+> +	format = fsg->cmnd[2] & 0xf;
+> +	/*
+> +	 * Check if CDB is old style SFF-8020i
+> +	 * i.e. format is in 2 MSBs of byte 9
+> +	 * Mac OS-X host sends us this.
+> +	 */
+> +	if (format == 0)
+> +		format = (fsg->cmnd[9] >> 6) & 0x3;
+> -	buf[13] = 0x16;			/* Lead-out track is data */
+> -	buf[14] = 0xAA;			/* Lead-out track number */
+> -	store_cdrom_address(&buf[16], msf, curlun->num_sectors);
+> -	return 20;
+> +	ret = fsg_get_toc(curlun, msf, format, buf);
+> +	if (ret < 0) {
+> +		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
+> +		return -EINVAL;
+> +	}
 
-OK, I see.
+I'd drop the “return -EINVAL;” and let “return ret;” below handle it.
+This obviously also apply to patch to f_mass_storage.c (BTW. I would
+merge the two patches).
 
-> > The question is, why do we use the global database for the timer ids.
-> > All timers live in signal_struct->posix_timers anyway, perhaps we could
-> > use a per-process array instead.
-> >
->
-> This would add some overhead at process creation (to initialize the
-> 'array' or whatever tree root).
+> +	return ret;
+>  }
 
-I am not sure. This initialization should be as simple as
-"p->timers_array = NULL".
-
-But,
-
-> It would help some workloads, (create/delete timers from lot of
-> different processes/cpus). I am not sure we really need this right now,
-> since we waited 2011 before even trying to optimize read side ;)
-
-Yes, agreed.
-
-So, I think the patch is fine.
-
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
