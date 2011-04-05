@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab1DEO7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 10:59:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56499 "EHLO mx2.suse.de"
+	id S1754465Ab1DEPAl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:00:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56504 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754135Ab1DEO7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 10:59:37 -0400
+	id S1754197Ab1DEO7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 10:59:42 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-Subject: [PATCH 28/34] atm: Drop __TIME__ usage
-Date: Tue,  5 Apr 2011 16:59:15 +0200
-Message-Id: <1302015561-21047-29-git-send-email-mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Marc Singer <elf@buici.com>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH 33/34] usb/lh7a40x_udc: Drop __DATE__ usage
+Date: Tue,  5 Apr 2011 16:59:20 +0200
+Message-Id: <1302015561-21047-34-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
 References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
@@ -24,40 +24,48 @@ The kernel already prints its build timestamp during boot, no need to
 repeat it in random drivers and produce different object files each
 time.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
+Cc: Marc Singer <elf@buici.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-usb@vger.kernel.org
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- net/atm/lec.c |    2 +-
- net/atm/mpc.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/lh7a40x_udc.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/net/atm/lec.c b/net/atm/lec.c
-index 38754fd..cb14ddf 100644
---- a/net/atm/lec.c
-+++ b/net/atm/lec.c
-@@ -1173,7 +1173,7 @@ static int __init lane_module_init(void)
+diff --git a/drivers/usb/gadget/lh7a40x_udc.c b/drivers/usb/gadget/lh7a40x_udc.c
+index 6b58bd8..1e99e03 100644
+--- a/drivers/usb/gadget/lh7a40x_udc.c
++++ b/drivers/usb/gadget/lh7a40x_udc.c
+@@ -42,7 +42,6 @@
  #endif
  
- 	register_atm_ioctl(&lane_ioctl_ops);
--	pr_info("lec.c: " __DATE__ " " __TIME__ " initialized\n");
-+	pr_info("lec.c: initialized\n");
- 	return 0;
+ #define	DRIVER_DESC			"LH7A40x USB Device Controller"
+-#define	DRIVER_VERSION		__DATE__
+ 
+ #ifndef _BIT			/* FIXME - what happended to _BIT in 2.6.7bk18? */
+ #define _BIT(x) (1<<(x))
+@@ -209,10 +208,10 @@ udc_proc_read(char *page, char **start, off_t off, int count,
+ 	/* basic device status */
+ 	t = scnprintf(next, size,
+ 		      DRIVER_DESC "\n"
+-		      "%s version: %s\n"
++		      "%s\n"
+ 		      "Gadget driver: %s\n"
+ 		      "Host: %s\n\n",
+-		      driver_name, DRIVER_VERSION,
++		      driver_name,
+ 		      dev->driver ? dev->driver->driver.name : "(none)",
+ 		      is_usb_connected()? "full speed" : "disconnected");
+ 	size -= t;
+@@ -2134,7 +2133,7 @@ static struct platform_driver udc_driver = {
+ 
+ static int __init udc_init(void)
+ {
+-	DEBUG("%s: %s version %s\n", __func__, driver_name, DRIVER_VERSION);
++	DEBUG("%s: %s\n", __func__, driver_name);
+ 	return platform_driver_register(&udc_driver);
  }
  
-diff --git a/net/atm/mpc.c b/net/atm/mpc.c
-index 644cdf0..3ccca42 100644
---- a/net/atm/mpc.c
-+++ b/net/atm/mpc.c
-@@ -1482,7 +1482,7 @@ static __init int atm_mpoa_init(void)
- 	if (mpc_proc_init() != 0)
- 		pr_info("failed to initialize /proc/mpoa\n");
- 
--	pr_info("mpc.c: " __DATE__ " " __TIME__ " initialized\n");
-+	pr_info("mpc.c: initialized\n");
- 
- 	return 0;
- }
 -- 
 1.7.4.1
 
