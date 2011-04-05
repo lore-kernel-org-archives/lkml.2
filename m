@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab1DEUUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 16:20:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39351 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751996Ab1DEUUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 16:20:36 -0400
-Date: Tue, 5 Apr 2011 22:19:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>
-Subject: Re: [RFC][PATCH 1/5] signals: Always place SIGCONT and SIGSTOP on
-	'shared_pending'
-Message-ID: <20110405201958.GA1404@redhat.com>
-References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-2-git-send-email-matt@console-pimps.org>
+	id S1754845Ab1DEUYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 16:24:25 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45946 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab1DEUYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 16:24:24 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de
+Subject: [PATCH v2] leds: provide helper to register "leds-gpio" devices
+Date: Tue,  5 Apr 2011 22:24:08 +0200
+Message-Id: <1302035048-25819-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20110405163338.GA11832@n2100.arm.linux.org.uk>
+References: <20110405163338.GA11832@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302031310-1765-2-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
+This function makes a deep copy of the platform data to allow it to live
+in init memory.
+The definition cannot go into leds-gpio.c because it needs to be builtin
+to be usable by platforms.
 
-I'll try to study this series, but not before Friday, sorry.
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+changes since v1:
+ - don't add __init to the declaration of gpio_led_register_device
 
-Only one thing,
+ drivers/leds/led-core.c |   27 ++++++++++++++++++++++++++-
+ include/linux/leds.h    |   12 ++++++++++++
+ 2 files changed, 38 insertions(+), 1 deletions(-)
 
-On 04/05, Matt Fleming wrote:
-> 
-> Because SIGCONT and SIGSTOP affect an entire thread group,
-
-Yes, the effect is global, but
-
-> we can
-> place them on the 'shared_pending' queue.
-
-I don't think we can.
-
- -	pending = group ? &t->signal->shared_pending : &t->pending;
-> +	/*
-> +	 * We always enqueue SIGSTOP or SIGCONT signals on the shared
-> +	 * queue. This means that a SIGSTOP or SIGCONT signal _cannot_
-> +	 * be present on a thread's private pending queue.
-> +	 *
-> +	 * This makes prepare_signal() more optimal as we do not have
-> +	 * to remove signals from each thread's pending queue and so
-> +	 * can avoid iterating over all threads in the thread group
-> +	 * (and therefore avoid the locking that would be necessary to
-> +	 * do that safely).
-> +	 */
-> +	if (group || sig_kernel_stop(sig) || sig == SIGCONT)
-> +		pending = &t->signal->shared_pending;
-> +	else
-> +		pending = &t->pending;
-
-How so? Suppose the process has a handler for SIGCONT. Suppose this
-process is not stopped. tkill(SIGCONT) should deliver the signal to
-the right thread.
-
-SIGSTOP can't have the handler, still we shouldn't place it on the
-shared list, debuggers won't be happy.
-
-Also. This code was changed very much, please do these changes on
-top of
-http://git.kernel.org/?p=linux/kernel/git/tj/misc.git;a=shortlog;h=refs/heads/ptrace
-
-Oleg.
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 016d19f..a9a762e 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -2,8 +2,10 @@
+  * LED Class Core
+  *
+  * Copyright 2005-2006 Openedhand Ltd.
++ * Richard Purdie <rpurdie@openedhand.com>
+  *
+- * Author: Richard Purdie <rpurdie@openedhand.com>
++ * Copyright (C) 2009-2010 Pengutronix
++ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -16,6 +18,9 @@
+ #include <linux/module.h>
+ #include <linux/rwsem.h>
+ #include <linux/leds.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
+ #include "leds.h"
+ 
+ DECLARE_RWSEM(leds_list_lock);
+@@ -23,3 +28,23 @@ EXPORT_SYMBOL_GPL(leds_list_lock);
+ 
+ LIST_HEAD(leds_list);
+ EXPORT_SYMBOL_GPL(leds_list);
++
++struct platform_device *__init gpio_led_register_device(
++                const struct gpio_led_platform_data *pdata)
++{
++	struct platform_device *ret = ERR_PTR(-ENOMEM);
++	struct gpio_led_platform_data _pdata = *pdata;
++	_pdata.leds = kmemdup(pdata->leds,
++			pdata->num_leds * sizeof(*pdata->leds), GFP_KERNEL);
++
++	if (!_pdata.leds)
++		return ERR_PTR(-ENOMEM);
++
++	ret = platform_device_register_resndata(NULL, "leds-gpio", -1,
++			NULL, 0, &_pdata, sizeof(_pdata));
++
++	if (IS_ERR(ret))
++		kfree(_pdata.leds);
++
++	return ret;
++}
+diff --git a/include/linux/leds.h b/include/linux/leds.h
+index 61e0340..1c82006 100644
+--- a/include/linux/leds.h
++++ b/include/linux/leds.h
+@@ -207,5 +207,17 @@ struct gpio_led_platform_data {
+ 					unsigned long *delay_off);
+ };
+ 
++/**
++ * gpio_led_register_device - register a gpio-led device
++ * @pdata: the platform data used for the new device
++ *
++ * Use this function instead of platform_device_add()ing a static struct
++ * platform_device.
++ *
++ * Note: as pdata and pdata->leds is copied these usually can and should be
++ * __initdata.
++ */
++struct platform_device *gpio_led_register_device(
++		const struct gpio_led_platform_data *pdata);
+ 
+ #endif		/* __LINUX_LEDS_H_INCLUDED */
+-- 
+1.7.2.3
 
