@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab1DEAev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 20:34:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54497 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab1DEAet convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 20:34:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110404224611.GA2783@core.coreip.homeip.net>
-References: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
- <1301727259-5185-4-git-send-email-jeffbrown@android.com> <20110404213659.GC984@core.coreip.homeip.net>
- <BANLkTi=0q6DbXki5RhE8eakermnVixN67g@mail.gmail.com> <20110404224611.GA2783@core.coreip.homeip.net>
-From: Jeffrey Brown <jeffbrown@android.com>
-Date: Mon, 4 Apr 2011 17:34:09 -0700
-Message-ID: <BANLkTinLcXsZpHm3_uzRUEdrJQsbozgghA@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] input: evdev: Make device readable only when it
- contains a complete packet.
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: rydberg@euromail.se, djkurtz@google.com, linux-input@vger.kernel.org,
+	id S1751273Ab1DEAjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 20:39:08 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45193 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab1DEAjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 20:39:03 -0400
+Date: Tue, 5 Apr 2011 01:38:31 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1104050137040.8684@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry,
 
-On Mon, Apr 4, 2011 at 3:46 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Mon, Apr 04, 2011 at 03:16:13PM -0700, Jeffrey Brown wrote:
->> bool full_sync = (type == EV_SYN && code == SYN_REPORT);
->
-> I am not sure what is cheaper - 2 conditionals or stack manipulation
-> needed to push another argument if we happed to be register-starved.
+Hi Linus,
 
-Not a question of the computational cost.  It was mostly done to avoid
-repeating the same predicate in multiple places.  This was one of the
-suggested improvements to my earlier patch.
+Nothing too major, the radeon sanity checks and i915 fixes probably the 
+most important.
 
->> This comment for last_syn is not quite right.  We need last_syn to
->> refer to the position just beyond the last sync.  Otherwise the device
->> will not become readable until another event is written there.  The
->> invariants for last_syn should be similar to those for head.
->
-> Hm, yes, comment is incorrect. Given this fact I do not like the name
-> anymore either (nor do I like 'end'). Need to think about something
-> better.
+Dave.
 
-Heh, I faced this very same dilemma.  I tried 'last_sync',
-'readable_tail', 'read_end', and others before settling on 'end' and a
-descriptive comment.
+The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
 
->> Should use client->head here so that the SYN_DROPPED is readable.
->
-> It is readable, but we do not want to signal on it.
+  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
 
-I think we do want to signal on it.  We should signal whenever the
-device becomes readable.
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
-Signaling on dropped is useful in the case where a misbehaving device
-driver fails to ever call input_sync.  If that happens, we might
-enqueue a dropped event and then never wake up the client which makes
-the issue hard to diagnose.
+Alex Deucher (3):
+      drm/radeon/kms: Add support for tv-out dongle on G5 9600
+      drm/radeon/kms: pageflipping cleanup for avivo+
+      drm/radeon/kms: add some new ontario pci ids
 
->> I don't think it's safe to modify last_syn outside of the spin lock.
->> This should be done above.
->
-> This is the only writer, plus we are running under event_lock with
-> interrupts off, so it is safe.
+Ben Skeggs (1):
+      drm: export drm_find_cea_extension to drivers
 
-The value will be read concurrently by evdev_fetch_next_event.  So if
-this were safe, then we wouldn't need the spin lock at all.
+Chris Wilson (3):
+      drm/i915/lvds: Always return connected in the absence of better information
+      drm/i915: Busy-spin wait_for condition in atomic contexts
+      drm/i915: Reset GMBUS controller after NAK
 
-At the very least for the sake of consistency, I think we should keep
-the buffer manipulations within the guarded region.
+Dave Airlie (1):
+      Merge remote branch 'keithp/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
 
-Jeff.
+Jan Engelhardt (1):
+      drm: fix "persistant" typo
+
+John Lindgren (1):
+      drm/radeon/kms: add some sanity checks to obj info record parsingi (v2)
+
+ drivers/gpu/drm/drm_edid.c               |    3 ++-
+ drivers/gpu/drm/i915/intel_drv.h         |    2 +-
+ drivers/gpu/drm/i915/intel_i2c.c         |   25 +++++++++++++++++++++----
+ drivers/gpu/drm/i915/intel_lvds.c        |   10 ++--------
+ drivers/gpu/drm/nouveau/nouveau_gem.c    |    2 +-
+ drivers/gpu/drm/radeon/atombios_crtc.c   |   20 ++++++++++++++++++++
+ drivers/gpu/drm/radeon/evergreen.c       |   11 -----------
+ drivers/gpu/drm/radeon/radeon_atombios.c |   13 +++++++------
+ drivers/gpu/drm/radeon/radeon_combios.c  |   13 +++++++++++++
+ drivers/gpu/drm/radeon/rs600.c           |   11 -----------
+ drivers/gpu/drm/ttm/ttm_bo.c             |   10 +++++-----
+ drivers/gpu/drm/ttm/ttm_tt.c             |   16 ++++++++--------
+ include/drm/drm_crtc.h                   |    1 +
+ include/drm/drm_pciids.h                 |    2 ++
+ include/drm/ttm/ttm_bo_api.h             |   18 +++++++++---------
+ include/drm/ttm/ttm_bo_driver.h          |    4 ++--
+ 16 files changed, 94 insertions(+), 67 deletions(-)
