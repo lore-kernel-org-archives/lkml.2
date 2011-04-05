@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1DEUC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 16:02:29 -0400
-Received: from smtp-iron2.puc.cl ([146.155.1.37]:60316 "EHLO smtp2.puc.cl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752972Ab1DEUC0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 16:02:26 -0400
-X-Greylist: delayed 624 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 16:02:25 EDT
-X-IronPort-AV: E=Sophos;i="4.63,306,1299466800"; 
-   d="scan'208";a="39378465"
-From: =?iso-8859-1?Q?Technische_Universit=E4t_Wien?= <ahavez@uc.cl>
-Subject: =?iso-8859-1?Q?Ihre_Webmail-Quote_hat_die_Menge_=FCberschritten?=
-Thread-Topic: =?iso-8859-1?Q?Ihre_Webmail-Quote_hat_die_Menge_=FCberschritten?=
-Thread-Index: AcvzyxtgbAk72T1/S7u0xyhFILrKqw==
-Date: Tue, 5 Apr 2011 19:53:17 +0000
-Message-ID: <256DE54A08AF4D4DB24E87FDACDB6CFC1306E1CE@Eros.ad.uc.cl>
-Accept-Language: es-CL, en-US
-Content-Language: es-CL
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1754700Ab1DEUJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 16:09:38 -0400
+Received: from messager.iut-bm.univ-fcomte.fr ([194.57.86.195]:57211 "EHLO
+	messager.iut-bm.univ-fcomte.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754505Ab1DEUJh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 16:09:37 -0400
+X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 16:09:36 EDT
+From: Arnaud Giersch <arnaud.giersch@free.fr>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 20/34] parport: Drop __TIME__ usage
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
+	<1302015561-21047-21-git-send-email-mmarek@suse.cz>
+Date: Tue, 05 Apr 2011 22:00:14 +0200
+In-Reply-To: <1302015561-21047-21-git-send-email-mmarek@suse.cz> (Michal
+	Marek's message of "Tue, 5 Apr 2011 16:59:07 +0200")
+Message-ID: <wwetyeclb8x.fsf@powwow.iut-bm.univ-fcomte.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mardi 05 avril 2011, vers 16:59:07 (+0200), Michal Marek a Ã©critÂ :
 
+> The kernel already prints its build timestamp during boot, no need to
+> repeat it in random drivers and produce different object files each
+> time.
+>
+> Cc: Arnaud Giersch <arnaud.giersch@free.fr>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  drivers/parport/parport_ip32.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 
+I do not use this module anymore, but anyway...
 
+Acked-by: Arnaud Giersch <arnaud.giersch@free.fr>
 
-Ihre Webmail-Quote hat die Menge Quote, die 2GB überschritten wird.Sie sind derzeit auf 2.4 GB.
-
-Um wieder zu aktivieren und steigern Sie Ihre Webmail-Quote Bitteüberprüfen und aktualisieren Sie Ihr Webmail-Konto
-
-Um wieder zu aktivieren und steigern Sie Ihre Webmail-Quote auf denLink unten.
-
-http://fd8.formdesk.com/tuwien/webservice
-
-Andernfalls kann die Löschung Ihrer Webmail-Accounts führen.
-
-Vielen Dank und sorry für die Unannehmlichkeiten
-
-Administrator / Webmaster / Local Host
+Arnaud
