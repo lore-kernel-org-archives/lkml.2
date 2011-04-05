@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab1DEPgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:36:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58006 "EHLO
+	id S1755422Ab1DEPgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:36:13 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58004 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab1DEPbd (ORCPT
+	with ESMTP id S1754124Ab1DEPbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:31:33 -0400
-Message-Id: <20110405152728.785452014@chello.nl>
+	Tue, 5 Apr 2011 11:31:32 -0400
+Message-Id: <20110405152729.354401150@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 05 Apr 2011 17:23:40 +0200
+Date: Tue, 05 Apr 2011 17:23:54 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,144 +17,147 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 02/21] sched: Always provide p->on_cpu
+Subject: [PATCH 16/21] sched: Remove rq->lock from the first half of ttwu()
 References: <20110405152338.692966333@chello.nl>
-Content-Disposition: inline; filename=sched-on_cpu.patch
+Content-Disposition: inline; filename=sched-ttwu-optimize.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always provide p->on_cpu so that we can determine if its on a cpu
-without having to lock the rq.
+Currently ttwu() does two rq->lock acquisitions, once on the task's
+old rq, holding it over the p->state fiddling and load-balance pass.
+Then it drops the old rq->lock to acquire the new rq->lock.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+By having serialized ttwu(), p->sched_class, p->cpus_allowed with
+p->pi_lock, we can now drop the whole first rq->lock acquisition.
+
+The p->pi_lock serializing concurrent ttwu() calls protects p->state,
+which we will set to TASK_WAKING to bridge possible p->pi_lock to
+rq->lock gaps and serialize set_task_cpu() calls against
+task_rq_lock().
+
+The p->pi_lock serialization of p->sched_class allows us to call
+scheduling class methods without holding the rq->lock, and the
+serialization of p->cpus_allowed allows us to do the load-balancing
+bits without races.
+
 Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/sched.h |    4 +---
- kernel/sched.c        |   46 +++++++++++++++++++++++++++++-----------------
- 2 files changed, 30 insertions(+), 20 deletions(-)
+ kernel/sched.c |   65 ++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 37 insertions(+), 28 deletions(-)
 
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -845,18 +845,39 @@ static inline int task_current(struct rq
- 	return rq->curr == p;
- }
+@@ -2485,70 +2485,79 @@ ttwu_post_activation(struct task_struct 
+  * Returns %true if @p was woken up, %false if it was already running
+  * or @state didn't match @p's state.
+  */
+-static int try_to_wake_up(struct task_struct *p, unsigned int state,
+-			  int wake_flags)
++static int
++try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ {
+-	int cpu, orig_cpu, this_cpu, success = 0;
++	int cpu, this_cpu, success = 0;
+ 	unsigned long flags;
+-	unsigned long en_flags = ENQUEUE_WAKEUP;
+ 	struct rq *rq;
  
--#ifndef __ARCH_WANT_UNLOCKED_CTXSW
- static inline int task_running(struct rq *rq, struct task_struct *p)
- {
-+#ifdef CONFIG_SMP
-+	return p->on_cpu;
-+#else
- 	return task_current(rq, p);
-+#endif
- }
+ 	this_cpu = get_cpu();
  
-+#ifndef __ARCH_WANT_UNLOCKED_CTXSW
- static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
- {
-+#ifdef CONFIG_SMP
-+	/*
-+	 * We can optimise this out completely for !SMP, because the
-+	 * SMP rebalancing from interrupt is the only thing that cares
-+	 * here.
-+	 */
-+	next->on_cpu = 1;
-+#endif
- }
- 
- static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- {
-+#ifdef CONFIG_SMP
-+	/*
-+	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
-+	 * We must ensure this doesn't happen until the switch is completely
-+	 * finished.
-+	 */
-+	smp_wmb();
-+	prev->on_cpu = 0;
-+#endif
- #ifdef CONFIG_DEBUG_SPINLOCK
- 	/* this is a valid case when another task releases the spinlock */
- 	rq->lock.owner = current;
-@@ -872,15 +893,6 @@ static inline void finish_lock_switch(st
- }
- 
- #else /* __ARCH_WANT_UNLOCKED_CTXSW */
--static inline int task_running(struct rq *rq, struct task_struct *p)
--{
--#ifdef CONFIG_SMP
--	return p->oncpu;
--#else
--	return task_current(rq, p);
--#endif
--}
--
- static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
- {
- #ifdef CONFIG_SMP
-@@ -889,7 +901,7 @@ static inline void prepare_lock_switch(s
- 	 * SMP rebalancing from interrupt is the only thing that cares
- 	 * here.
- 	 */
--	next->oncpu = 1;
-+	next->on_cpu = 1;
- #endif
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	raw_spin_unlock_irq(&rq->lock);
-@@ -902,12 +914,12 @@ static inline void finish_lock_switch(st
- {
- #ifdef CONFIG_SMP
- 	/*
--	 * After ->oncpu is cleared, the task can be moved to a different CPU.
-+	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
- 	 * We must ensure this doesn't happen until the switch is completely
- 	 * finished.
- 	 */
  	smp_wmb();
--	prev->oncpu = 0;
-+	prev->on_cpu = 0;
- #endif
- #ifndef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	local_irq_enable();
-@@ -2645,8 +2657,8 @@ void sched_fork(struct task_struct *p, i
- 	if (likely(sched_info_on()))
- 		memset(&p->sched_info, 0, sizeof(p->sched_info));
- #endif
--#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
--	p->oncpu = 0;
-+#if defined(CONFIG_SMP)
-+	p->on_cpu = 0;
- #endif
- #ifdef CONFIG_PREEMPT
- 	/* Want to start with kernel preemption disabled. */
-@@ -5557,8 +5569,8 @@ void __cpuinit init_idle(struct task_str
- 	rcu_read_unlock();
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+-	rq = __task_rq_lock(p);
+ 	if (!(p->state & state))
+ 		goto out;
  
- 	rq->curr = rq->idle = idle;
--#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
--	idle->oncpu = 1;
-+#if defined(CONFIG_SMP)
-+	idle->on_cpu = 1;
- #endif
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 	cpu = task_cpu(p);
  
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1198,9 +1198,7 @@ struct task_struct {
- 	int lock_depth;		/* BKL lock depth */
+-	if (p->on_rq)
+-		goto out_running;
++	if (p->on_rq) {
++		rq = __task_rq_lock(p);
++		if (p->on_rq)
++			goto out_running;
++		__task_rq_unlock(rq);
++	}
  
+-	orig_cpu = cpu;
  #ifdef CONFIG_SMP
--#ifdef __ARCH_WANT_UNLOCKED_CTXSW
--	int oncpu;
--#endif
-+	int on_cpu;
- #endif
+-	if (unlikely(task_running(rq, p)))
+-		goto out_activate;
++	while (p->on_cpu) {
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++		/*
++		 * If called from interrupt context we could have landed in the
++		 * middle of schedule(), in this case we should take care not
++		 * to spin on ->on_cpu if p is current, since that would
++		 * deadlock.
++		 */
++		if (p == current)
++			goto out_activate;
++#endif
++		cpu_relax();
++	}
++	/*
++	 * Pairs with the smp_wmb() in finish_lock_switch().
++	 */
++	smp_rmb();
  
- 	int prio, static_prio, normal_prio;
+ 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
+ 	p->state = TASK_WAKING;
+ 
+-	if (p->sched_class->task_waking) {
++	if (p->sched_class->task_waking)
+ 		p->sched_class->task_waking(p);
+-		en_flags |= ENQUEUE_WAKING;
+-	}
+ 
+ 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+-	if (cpu != orig_cpu)
+-		set_task_cpu(p, cpu);
+-	__task_rq_unlock(rq);
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++out_activate:
++#endif
++#endif /* CONFIG_SMP */
+ 
+ 	rq = cpu_rq(cpu);
+ 	raw_spin_lock(&rq->lock);
+ 
+-	/*
+-	 * We migrated the task without holding either rq->lock, however
+-	 * since the task is not on the task list itself, nobody else
+-	 * will try and migrate the task, hence the rq should match the
+-	 * cpu we just moved it to.
+-	 */
+-	WARN_ON(task_cpu(p) != cpu);
+-	WARN_ON(p->state != TASK_WAKING);
++#ifdef CONFIG_SMP
++	if (cpu != task_cpu(p))
++		set_task_cpu(p, cpu);
+ 
+ 	if (p->sched_contributes_to_load)
+ 		rq->nr_uninterruptible--;
++#endif
+ 
+-out_activate:
+-#endif /* CONFIG_SMP */
+-	activate_task(rq, p, en_flags);
++	activate_task(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
+ 	p->on_rq = 1;
+ out_running:
+ 	ttwu_post_activation(p, rq, wake_flags);
+ 	ttwu_stat(rq, p, cpu, wake_flags);
+ 	success = 1;
+-out:
+ 	__task_rq_unlock(rq);
++out:
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 	put_cpu();
+ 
 
 
