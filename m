@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714Ab1DEHYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 03:24:49 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:21028 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab1DEHYr convert rfc822-to-8bit (ORCPT
+	id S1751141Ab1DEHaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 03:30:10 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:35965 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751479Ab1DEHaJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 03:24:47 -0400
-Date: Tue, 05 Apr 2011 09:23:53 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 04/12] mm: alloc_contig_freed_pages() added
-In-reply-to: <op.vte0fgez3l0zgt@mnazarewicz-glaptop>
-To: "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
-Message-id: <008b01cbf362$6fb52c40$4f1f84c0$%szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=UTF-8
-Content-language: pl
-Content-transfer-encoding: 8BIT
-Thread-index: AcvyylaTzr5AggNETr2RhEnUyORDGAAk+7Sg
-References: <1301577368-16095-1-git-send-email-m.szyprowski@samsung.com>
- <1301577368-16095-5-git-send-email-m.szyprowski@samsung.com>
- <1301587083.31087.1032.camel@nimitz> <op.vs77qfx03l0zgt@mnazarewicz-glaptop>
- <1301606078.31087.1275.camel@nimitz> <op.vs8awkrx3l0zgt@mnazarewicz-glaptop>
- <1301610411.30870.29.camel@nimitz> <op.vs8cf5xd3l0zgt@mnazarewicz-glaptop>
- <1301666596.30870.176.camel@nimitz> <op.vte0fgez3l0zgt@mnazarewicz-glaptop>
+	Tue, 5 Apr 2011 03:30:09 -0400
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+From: Marc Zyngier <Marc.Zyngier@arm.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, david@lang.hm,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Detlef Vollmann <dv@vollmann.ch>,
+        David Brown <davidb@codeaurora.org>
+In-Reply-To: <BANLkTi=d-rQpinSW9YPsZbkh9tDK5FLS+w@mail.gmail.com>
+References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home>
+	 <201104031726.37420.arnd@arndb.de>
+	 <20110403160324.GA8050@n2100.arm.linux.org.uk>
+	 <201104040259.26601.arnd@arndb.de>
+	 <1301915022.15819.28.camel@e102109-lin.cambridge.arm.com>
+	 <20110404112104.GB19854@n2100.arm.linux.org.uk>
+	 <1301923457.417.34.camel@e102391-lin.cambridge.arm.com>
+	 <20110404133104.GA23266@n2100.arm.linux.org.uk>
+	 <1301925445.417.54.camel@e102391-lin.cambridge.arm.com>
+	 <BANLkTi=d-rQpinSW9YPsZbkh9tDK5FLS+w@mail.gmail.com>
+Organization: ARM Ltd
+Date: Tue, 05 Apr 2011 08:30:24 +0100
+Message-ID: <1301988624.417.71.camel@e102391-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+X-OriginalArrivalTime: 05 Apr 2011 07:29:58.0365 (UTC) FILETIME=[4450D0D0:01CBF363]
+X-MC-Unique: 111040508300300101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Monday, April 04, 2011 3:15 PM Michał Nazarewicz wrote:
-
-> > What kind of success have you had running this in practice?  I'd be
-> > worried that some silly task or a sticky dentry would end up in the
-> > range that you want to allocate in.
+On Mon, 2011-04-04 at 22:08 +0200, Linus Walleij wrote:
+> 2011/4/4 Marc Zyngier <Marc.Zyngier@arm.com>:
+> > On Mon, 2011-04-04 at 14:31 +0100, Russell King - ARM Linux wrote:
+> >>
+> >> If ARM are going to architect a set of timers into the hardware, let's
+> >> make sure that all such hardware has them so we can dig ourselves out
+> >> of this crappy mess that we find ourselves in today.
+> >
+> > As far as I know, A15 always has a set of generic timers.
+> >
+> > It may be that they are not available (frequency not programmed into the
+> > CNTFREQ register), or that someone decided to use a better alternative
+> > (for some particular interpretation of "better").
 > 
-> I'm not sure what you are asking.
+> I guess this thing is inside that A15 core?
 > 
-> The function requires the range to be marked as MIGRATE_ISOLATE and all
-> pages being free, so nothing can be allocated there while the function
-> is running.
-> 
-> If you are asking about CMA in general, the range that CMA uses is marked
-> as MIGRATE_CMA (a new migrate type) which means that only MIGRATE_MOVABLE
-> pages can be allocated there.  This means, that in theory, if there is
-> enough memory the pages can always be moved out of the region.  At leasts
-> that's my understanding of the type.  If this is correct, the allocation
-> should always succeed provided enough memory for the pages within the
-> region to be moved to is available.
-> 
-> As of practice, I have run some simple test to see if the code works and
-> they succeeded.  Also, Marek has run some test with actual hardware and
-> those worked well as well (but I'll let Marek talk about any details).
+> First, what happens the day any vendors start making SoCs on this is
+> they turn the A15 core off whenever it is not used, loosing all state
+> including this timer, I believe.
 
-We did the tests with real multimedia drivers - video codec and video
-converter (s5p-mfc and s5p-fimc). These drivers allocate large contiguous 
-buffers for video data. The allocation is performed when driver is opened
-by user space application. 
+The main counter is located in an ALWAYS_ON power domain, and should
+keep going whatever happens in the system.
 
-First we consumed system memory by running a set of simple applications
-that just did some malloc() and filled memory with random pattern to consume
-free pages. Then some of that memory has been freed and we ran the video
-decoding application. Multimedia drivers successfully managed to allocate
-required contiguous buffers from MIGRATE_CMA ranges.
+[...]
 
-The tests have been performed with different system usage patterns (malloc(),
-heavy filesystem load, anonymous memory mapping). In all these cases CMA
-worked surprisingly good allowing the drivers to allocate the required 
-contiguous buffers.
+> Second, have you taken into account the effect of changing the
+> frequency of the A15 core, which is something every vendor also
+> does, as you know Colin Cross already has a patch pending
+> for that on the TWD localtimer which has not yet reached
+> the kernel. (Or is A15 fixed frequency? Forgive my ignorance...)
 
-Best regards
---
-Marek Szyprowski
-Samsung Poland R&D Center
+Fixed frequency, with a minimal roll-over time of 40 years.
+
+	M.
+-- 
+Reality is an implementation detail.
 
 
