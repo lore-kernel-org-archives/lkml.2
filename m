@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab1DEIvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 04:51:39 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:48677 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab1DEIvh (ORCPT
+	id S1753160Ab1DEI4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 04:56:30 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:60044 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752700Ab1DEI43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 04:51:37 -0400
-X-IronPort-AV: E=Sophos;i="4.63,303,1299456000"; 
-   d="scan'208";a="5139580"
-Subject: Re: [Xen-devel] Re: [PATCH] xen: do not clear and mask evtchns in
- __xen_evtchn_do_upcall
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1104041521370.16492@kaball-desktop>
-References: <alpine.DEB.2.00.1103291505090.16492@kaball-desktop>
-	 <20110330154630.GA17427@dumpdata.com>
-	 <alpine.DEB.2.00.1104041521370.16492@kaball-desktop>
+	Tue, 5 Apr 2011 04:56:29 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19YAqdf4VVYTsPwRyV6oQZmT21rjbQyIfQJ8vhXoJ
+	ld7x6d4uUwe6Qg
+Subject: Re: [PATCH] posix-timers: RCU conversion
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Avi Kivity <avi@redhat.com>, ben@iagu.net,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richard.cochran@omicron.at>
+In-Reply-To: <1301993300.2225.26.camel@twins>
+References: <AANLkTikZZ4MXZjx_+6u-vKVSgxULQo2BkQKRO6K_vzFy@mail.gmail.com>
+	 <20110318123031.GB6066@8bytes.org>
+	 <AANLkTin2k1ZSLa0NG6pKBvHYnKEV21t8pEqzeJWNn_rR@mail.gmail.com>
+	 <4D871F6C.40207@redhat.com>
+	 <AANLkTintxnKRQ4rD4Wo8_MHU4yJVzYaRhR=GjnDMGwNj@mail.gmail.com>
+	 <AANLkTin8ZoUAVR2ajoV6cBFiUSe_Dof0_k60dcAGW3r-@mail.gmail.com>
+	 <4D875842.9050308@redhat.com>
+	 <AANLkTikWQS281kTtJ32-qo5U+w_BAak7qUwVhUQgOxxv@mail.gmail.com>
+	 <4D8773AA.8030408@redhat.com>
+	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
+	 <1300726498.2884.493.camel@edumazet-laptop>	<4D8784A9.8040303@redhat.com>
+	 <1300727545.2884.513.camel@edumazet-laptop>
+	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
+	 <1300746429.2837.20.camel@edumazet-laptop>
+	 <1300777760.2837.38.camel@edumazet-laptop>
+	 <AANLkTik-Rt-Fy-2fKQTr2JBB9f7U2cbc0FmTZOoXc1+5@mail.gmail.com>
+	 <4D887B6A.2020102@redhat.com>  <1301993300.2225.26.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Tue, 5 Apr 2011 09:51:35 +0100
-Message-ID: <1301993495.23887.128.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Date: Tue, 05 Apr 2011 10:56:22 +0200
+Message-ID: <1301993782.11410.3.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this patch revolves around the interaction with the irq core I
-think it would be worth running it by tglx as well as xen-devel for the
-next iteration.
-
-Does something about the switch of handler type fix the issue with
-drivers which call disable_irq() in their interrupt handler and leave it
-disabled until a later time? (e.g. the userspace evtchn driver). I think
-I know why this is the case but it would be useful to mention in the
-commit message.
-
-On Mon, 2011-04-04 at 17:46 +0100, Stefano Stabellini wrote:
+On Tue, 2011-04-05 at 10:48 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-03-22 at 12:35 +0200, Avi Kivity wrote:
+> >> Here's top with 96 idle guests running:
 > 
->     - it uses these handlers in the same way Linux would use them: it let
->     Linux mask\unmask and ack the irq when Linux want to mask\unmask and ack
->     the irq;
+> On some hacked up 2.6.38 kernel...
+> 
+> > > Start of perf report -g
+> > >      55.26%            kvm  [kernel.kallsyms]     [k] __ticket_spin_lock
+> > >                        |
+> > >                        --- __ticket_spin_lock
+> > >                           |
+> > >                           |--94.68%-- _raw_spin_lock
+> > >                           |          |
+> > >                           |          |--97.55%-- double_rq_lock
+> > >                           |          |          load_balance
+> > >                           |          |          idle_balance
+> > >                           |          |          schedule
+> > >                           |          |          |
+> > >                           |          |          |--60.56%-- schedule_hrtimeout_range_clock
+> > >                           |          |          |          schedule_hrtimeout_range
+> > >                           |          |          |          poll_schedule_timeout
+> > >                           |          |          |          do_select
+> > >                           |          |          |          core_sys_select
+> > >                           |          |          |          sys_select
+> > >                           |          |          |          system_call_fastpath
+> 
+> Looks like your workload and idle balancing don't much like each-other.
+> 
+> What I think is happening is that all your 'idle' qemu thingies keep
+> waking up frequently and because you've got like twice the number of
+> qemu instances as you've got cpus there's a fair chance you'll have a
+> cpu with a pending task while another one goes idle.
+> 
+> (Why does qemu keep waking if its idle? broken NOHZ?)
+> 
+> So idle balancing is called when the cpu goes idle (context switch to
+> the idle thread) and tries to steal a pending task from another cpu,
+> clearly it keeps finding these tasks otherwise it wouldn't try to take
+> that lock.
+> 
+> Mike, you build in some idle balance throttle logic, but that seems
+> defeated here (possible because it keeps finding pending tasks to
+> migrate? still need morning juice).
 
-This code is in Linux, perhaps you mean "the same way native code would
-use them" or "with the semantics which the generic code defines" or
-something along those lines.
+Hm.  Maybe someone set sysctl_sched_migration_cost to 0, or wakeups
+aren't arriving that frequently is all that pops to mind atm.
 
-> +       pirq_query_unmask(irq);
-> +       /* we try to follow the same convention as Linux on native:
+	-Mike
 
-That's basically a coincidence, isn't it?
-
-What we are actually trying to do is use the handler with the
-appropriate semantics for the type of interrupt, e.g. event channels are
-naturally edge triggered but some event channels can be bound to pirqs
-with configurations that require an EOI and therefore have a level of
-levelness about them.
-
-> +        * handle_edge_irq for edge irqs and handle_fasteoi_irq for level
-> +        * irqs
-
-should probably mention the relationship between pirq_needs_eoi=>level
-triggering.
-
-Is there any relationship between pirq_needs_eoi and the trigger value
-passed to PHYSDEVOP_setup_gsi at setup time?
-
-> , see ioapic_register_intr (handle_level_irq is not used
-> +        * anymore).
-> +        */
-> +       if (pirq_needs_eoi(irq))
-> +               irq_set_chip_and_handler_name(irq, &xen_pirq_chip,
-> +                               handle_fasteoi_irq, name);
-> +       else
-> +               irq_set_chip_and_handler_name(irq, &xen_pirq_chip,
-> +                               handle_edge_irq, name);
-> +
->  out:
->         spin_unlock(&irq_mapping_update_lock);
-
-Ian.
 
