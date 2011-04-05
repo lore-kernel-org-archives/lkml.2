@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab1DEQHR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:07:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53988 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab1DEQHN (ORCPT
+	id S1754690Ab1DEQJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:09:50 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39834 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab1DEQJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:07:13 -0400
+	Tue, 5 Apr 2011 12:09:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=roCuIN7JpNHuEMgtBRi8v3SmQplyc6lKOeB5mitwBQcg9qmKIAllgFmUL3j0CkeSDo
-         0RUFlMSoiajF+E4vWd6kDo0RwG+knMgtPkzFUN4HhNR8YT7G5+9736wQx4fWpZ/nr+0J
-         Oo+15WQBJQBLjbGNO1/vPGA72cSuhd9PvsZ9A=
-Date: Tue, 5 Apr 2011 09:07:09 -0700
-From: Tejun Heo <tj@kernel.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: Separate out drain_workqueue() from
- destroy_workqueue()
-Message-ID: <20110405160709.GA12015@mtj.dyndns.org>
-References: <20110405143522.GA9621@mtj.dyndns.org>
- <1302014822.2924.0.camel@mulgrave.site>
+        h=sender:content-type:to:cc:subject:references:mime-version
+         :content-transfer-encoding:from:organization:date:message-id
+         :in-reply-to:user-agent;
+        b=rEzyeRKvkk4RTuf/+lMU7toafYMGtblgnYnLA0gdfOiqAMOlJjADJ/ajm6SjLL4hOs
+         QlehwOBF9vR7CXUph75jtjdYoY8QWnmSMtLbnxDOYvAbG/9fYVfyYjA8bW16NrHlayF7
+         RIVwH5ejiadaatEOu9E1UQxWZ4pbcSKAGpaMM=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] usb: gadget: f_mass_storage: Fix Bulk-only RESET
+ handling
+References: <1302017802-16614-1-git-send-email-roger.quadros@nokia.com>
+ <1302017802-16614-2-git-send-email-roger.quadros@nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302014822.2924.0.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Organization: Google
+Date: Tue, 05 Apr 2011 18:09:44 +0200
+Message-ID: <op.vtg26ick3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1302017802-16614-2-git-send-email-roger.quadros@nokia.com>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 05, 2011 at 07:47:01AM -0700, James Bottomley wrote:
-> > James, does this seem to fit your use cases?
-> 
-> Perfectly, thanks.  It makes sure we have eliminated all work the
-> workqueues generated before we return.  This is needed in some of the
-> SCSI waits where we want all discovery to complete, not just the piece
-> the WQ started.
+On Tue, 05 Apr 2011 17:36:38 +0200, Roger Quadros  
+<roger.quadros@nokia.com> wrote:
+> The ep0 request tag was not recorded thus resulting in phase
+> problems while sending status/response in handle_execption() handler.
+> This was resulting in MSC compliance test failures with USBCV tool.
+>
+> With this patch, the Bulk-Only Mass storage RESET request is
+> handled correctly and the MSC compliance tests pass.
+>
+> Signed-off-by: Roger Quadros <roger.quadros@nokia.com>
 
-Cool, applied to wq#for-2.6.40 with minor printk adjustments.  Please
-feel free to pull into SCSI if necessary.  It's a stable branch and
-currently contains only the single commit.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-2.6.40
-
-Thanks.
+> --- a/drivers/usb/gadget/f_mass_storage.c
+> +++ b/drivers/usb/gadget/f_mass_storage.c
+> @@ -613,6 +613,11 @@ static int fsg_setup(struct usb_function *f,
+>  	if (!fsg_is_set(fsg->common))
+>  		return -EOPNOTSUPP;
+> +	++fsg->common->ep0_req_tag;	/* Record arrival of a new request */
+> +	req->context = NULL;
+> +	req->length = 0;
+> +	dump_msg(fsg, "ep0-setup", (u8 *) ctrl, sizeof(*ctrl));
+> +
+>  	switch (ctrl->bRequest) {
+> 	case USB_BULK_RESET_REQUEST:
 
 -- 
-tejun
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
