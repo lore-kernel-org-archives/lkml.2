@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab1DEI4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 04:56:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700Ab1DEI4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 04:56:53 -0400
-Message-ID: <4D9AD92D.401@redhat.com>
-Date: Tue, 05 Apr 2011 11:56:13 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1753194Ab1DEI5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 04:57:32 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:60487 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab1DEI5b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 04:57:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=oHDzTKIz2EI9ZyyLEnCF+Z5wuCLEkl/haJGaT2aalVTiZjxaL5Eiy1diQ2JgzlX/aO
+         Zktvq3REVV+jnwZGkKJ8YBcWyDRJln2b59v1gPzDHk/Ikp/mXOgjVERjMaoGSuLfXCwB
+         h9sDOJDQimnqh+g/AJSeG7rQvbIVhIN+rsqMs=
+Date: Tue, 5 Apr 2011 16:57:12 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: gaowanlong@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: mourning the loss of David Brownell
+Message-ID: <20110405085708.GA5260@gmail.com>
+Mail-Followup-To: Greg KH <greg@kroah.com>, gaowanlong@gmail.com,
+	linux-kernel@vger.kernel.org
+References: <20110405034819.GA7872@kroah.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: ben@iagu.net, Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] posix-timers: RCU conversion
-References: <AANLkTikZZ4MXZjx_+6u-vKVSgxULQo2BkQKRO6K_vzFy@mail.gmail.com>	 <20110318123031.GB6066@8bytes.org>	 <AANLkTin2k1ZSLa0NG6pKBvHYnKEV21t8pEqzeJWNn_rR@mail.gmail.com>	 <4D871F6C.40207@redhat.com>	 <AANLkTintxnKRQ4rD4Wo8_MHU4yJVzYaRhR=GjnDMGwNj@mail.gmail.com>	 <AANLkTin8ZoUAVR2ajoV6cBFiUSe_Dof0_k60dcAGW3r-@mail.gmail.com>	 <4D875842.9050308@redhat.com>	 <AANLkTikWQS281kTtJ32-qo5U+w_BAak7qUwVhUQgOxxv@mail.gmail.com>	 <4D8773AA.8030408@redhat.com>	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>	 <1300726498.2884.493.camel@edumazet-laptop>	<4D8784A9.8040303@redhat.com>	 <1300727545.2884.513.camel@edumazet-laptop>	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>	 <1300746429.2837.20.camel@edumazet-laptop>	 <1300777760.2837.38.camel@edumazet-laptop>	 <AANLkTik-Rt-Fy-2fKQTr2JBB9f7U2cbc0FmTZOoXc1+5@mail.gmail.com>	 <4D887B6A.2020102@redhat.com> <1301993300.2225.26.camel@twins>
-In-Reply-To: <1301993300.2225.26.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110405034819.GA7872@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2011 11:48 AM, Peter Zijlstra wrote:
-> What I think is happening is that all your 'idle' qemu thingies keep
-> waking up frequently and because you've got like twice the number of
-> qemu instances as you've got cpus there's a fair chance you'll have a
-> cpu with a pending task while another one goes idle.
-
-Those qemus have two threads each (one vcpu thread, one io thread).
-
-> (Why does qemu keep waking if its idle? broken NOHZ?)
-
-Could be waking up due to guest wakeups, or qemu internal wakeups 
-(display refresh) or due to guest timer sources which are masked away in 
-the guest (if that's the case we should optimize it away).
-
--- 
-error compiling committee.c: too many arguments to function
-
+On Mon, Apr 04, 2011 at 08:48:19PM -0700, Greg KH wrote:
+> As I have seen this tangentally mentioned already a few times
+> publically, I figured it warranted it's own announcement now.
+> 
+> Linux has lost a great developer with the passing of David Brownell
+> recently and he will be greatly missed.
+Sadly :(
+> 
+> sadly,
+> 
+> greg k -h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
