@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab1DENzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 09:55:43 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:37986
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1753939Ab1DENzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 09:55:41 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:55480
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753002Ab1DENxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753053Ab1DENxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Apr 2011 09:53:53 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 19/22] Staging: hv: Get rid of the bytes_xfer field from struct hv_storvsc_request
-Date: Tue,  5 Apr 2011 07:05:03 -0700
-Message-Id: <1302012306-21277-19-git-send-email-kys@microsoft.com>
+Subject: [PATCH 10/22] Staging: hv: Get rid of the target_id from struct hv_storvsc_request
+Date: Tue,  5 Apr 2011 07:04:54 -0700
+Message-Id: <1302012306-21277-10-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302012306-21277-1-git-send-email-kys@microsoft.com>
 References: <1302012261-21236-1-git-send-email-kys@microsoft.com>
@@ -25,61 +25,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation of consolidating all I/O request state,
-get rid of the  bytes_xfer field from struct hv_storvsc_request
-and instead use the state in the struct vmscsi_request directly.
+In preparation for consolidating all I/O request state, get rid of the
+target_id field from struct hv_storvsc_request and instead use the
+equivalent  state in struct vmscsi_request - target_id field.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc.c     |    4 ++--
- drivers/staging/hv/storvsc_api.h |    2 --
+ drivers/staging/hv/blkvsc_drv.c  |    2 +-
+ drivers/staging/hv/storvsc.c     |    5 ++---
+ drivers/staging/hv/storvsc_api.h |    1 -
  drivers/staging/hv/storvsc_drv.c |    2 +-
- 3 files changed, 3 insertions(+), 5 deletions(-)
+ 4 files changed, 4 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index a679e18..ec01662 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -943,7 +943,7 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
+ 
+ 	vm_srb->port_number = blkdev->port;
+ 	vm_srb->path_id = blkdev->path;
+-	storvsc_req->target_id = blkdev->target;
++	vm_srb->target_id = blkdev->target;
+ 	storvsc_req->lun_id = 0;	 /* this is not really used at all */
+ 
+ 	storvsc_req->cdb_len = blkvsc_req->cmd_len;
 diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index cee1fe9..c71481f 100644
+index 4d202f6..6083cdb 100644
 --- a/drivers/staging/hv/storvsc.c
 +++ b/drivers/staging/hv/storvsc.c
-@@ -327,8 +327,8 @@ static void stor_vsc_on_io_completion(struct hv_device *device,
- 		}
- 	}
+@@ -531,9 +531,9 @@ int stor_vsc_on_io_request(struct hv_device *device,
+ 		   "Extension %p", device, stor_device, request,
+ 		   request_extension);
  
--	/* TODO: */
--	request->bytes_xfer = vstor_packet->vm_srb.data_transfer_length;
-+	stor_pkt->vm_srb.data_transfer_length =
-+	vstor_packet->vm_srb.data_transfer_length;
+-	DPRINT_DBG(STORVSC, "req %p len %d  target %d, lun %d cdblen %d",
++	DPRINT_DBG(STORVSC, "req %p len %d lun %d cdblen %d",
+ 		   request, request->data_buffer.len,
+-		   request->target_id, request->lun_id, request->cdb_len);
++		   request->lun_id, request->cdb_len);
  
- 	request->extension.on_io_completion(request);
+ 	if (!stor_device) {
+ 		DPRINT_ERR(STORVSC, "unable to get stor device..."
+@@ -550,7 +550,6 @@ int stor_vsc_on_io_request(struct hv_device *device,
  
+ 	vstor_packet->vm_srb.length = sizeof(struct vmscsi_request);
+ 
+-	vstor_packet->vm_srb.target_id = request->target_id;
+ 	vstor_packet->vm_srb.lun = request->lun_id;
+ 
+ 	vstor_packet->vm_srb.sense_info_length = SENSE_BUFFER_SIZE;
 diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index 3cfae2d..738627c 100644
+index 07a391b..54690ad 100644
 --- a/drivers/staging/hv/storvsc_api.h
 +++ b/drivers/staging/hv/storvsc_api.h
-@@ -70,8 +70,6 @@ struct storvsc_request_extension {
+@@ -66,7 +66,6 @@ struct storvsc_request_extension {
  };
  
  struct hv_storvsc_request {
--	u32 bytes_xfer;
--
- 	struct storvsc_request_extension extension;
- 
- 	struct hv_multipage_buffer data_buffer;
+-	u32 target_id;
+ 	u32 lun_id;
+ 	u8 *cdb;
+ 	u32 cdb_len;
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 05ff110..fbeec70 100644
+index faadc8c..aa8496c 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -485,7 +485,7 @@ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
+@@ -776,7 +776,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 	/* request->PortId = scmnd->device->channel; */
+ 	vm_srb->port_number = host_device_ctx->port;
+ 	vm_srb->path_id = scmnd->device->channel;
+-	request->target_id = scmnd->device->id;
++	vm_srb->target_id = scmnd->device->id;
+ 	request->lun_id = scmnd->device->lun;
  
- 	/* ASSERT(request->BytesXfer <= request->data_buffer.Length); */
- 	scsi_set_resid(scmnd,
--		request->data_buffer.len - request->bytes_xfer);
-+		request->data_buffer.len - vm_srb->data_transfer_length);
- 
- 	scsi_done_fn = scmnd->scsi_done;
- 
+ 	/* ASSERT(scmnd->cmd_len <= 16); */
 -- 
 1.7.4.1
 
