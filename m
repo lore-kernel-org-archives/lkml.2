@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab1DES5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:57:50 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42484 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab1DES5p convert rfc822-to-8bit (ORCPT
+	id S1753688Ab1DETAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 15:00:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48481 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab1DETAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:57:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Lp7yiFw5evLCijAT0Pufk4v9O6xHOaCmWYjQ88SCrvHwhWyvna/pFwcLVpFY4Ok+ZH
-         BEjRan7fkdnYc6/TmhdsM7KFZCbfNHwFqs6QnQ4hshU5QsdGUJQ9y7hq3CLI3bXUTJ62
-         irBYX2wSG47fwVdiQeUAnIRjmpeBC1A56mWcQ=
+	Tue, 5 Apr 2011 15:00:10 -0400
+Message-ID: <4D9B669E.2020907@kernel.org>
+Date: Tue, 05 Apr 2011 11:59:42 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <1302015561-21047-2-git-send-email-mmarek@suse.cz>
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
-	<1302015561-21047-2-git-send-email-mmarek@suse.cz>
-Date: Tue, 5 Apr 2011 14:57:44 -0400
-Message-ID: <BANLkTinwKzasKmB_fFzXd+W7F6GGuPO6+g@mail.gmail.com>
-Subject: Re: [PATCH 01/34] kconfig: Do not record timestamp in auto.conf and autoconf.h
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/14] x86-32, NUMA: Move remapping for remap allocator
+ into init_alloc_remap()
+References: <1301955840-7246-1-git-send-email-tj@kernel.org> <1301955840-7246-11-git-send-email-tj@kernel.org>
+In-Reply-To: <1301955840-7246-11-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D9B66A9.0057,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Apr 5, 2011 at 10:58 AM, Michal Marek <mmarek@suse.cz> wrote:
-> Timestamps in file data are useless and there is already one in .config
+On 04/04/2011 03:23 PM, Tejun Heo wrote:
+> There's no reason to perform the actual remapping separately.
+> Collapse remap_numa_kva() into init_alloc_remap() and, while at it,
+> make it less verbose.
 >
-hum, shouldn't this be tunable via KCONFIG_NOTIMESTAMP ? This might be
-useful to know when the file was generated, independently of the
-.config, as conf_write() and conf_write_autoconf() are independent
-from one another.
-
- - Arnaud
-
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+> Cc: Yinghai Lu<yinghai@kernel.org>
+> Cc: David Rientjes<rientjes@google.com>
+> Cc: Thomas Gleixner<tglx@linutronix.de
+> Cc: Ingo Molnar<mingo@redhat.com>
+> Cc: "H. Peter Anvin"<hpa@zytor.com>
 > ---
->  scripts/kconfig/confdata.c |    8 ++------
->  1 files changed, 2 insertions(+), 6 deletions(-)
+>   arch/x86/mm/numa_32.c |   29 +++++++----------------------
+>   1 files changed, 7 insertions(+), 22 deletions(-)
 >
-> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-> index 61c35bf..834eecb 100644
-> --- a/scripts/kconfig/confdata.c
-> +++ b/scripts/kconfig/confdata.c
-> @@ -784,7 +784,6 @@ int conf_write_autoconf(void)
->        const char *str;
->        const char *name;
->        FILE *out, *tristate, *out_h;
-> -       time_t now;
->        int i;
+> diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+> index 12bb34c..53ec13a 100644
+> --- a/arch/x86/mm/numa_32.c
+> +++ b/arch/x86/mm/numa_32.c
+> @@ -205,26 +205,6 @@ void *alloc_remap(int nid, unsigned long size)
+>   	return allocation;
+>   }
 >
->        sym_clear_all_valid();
-> @@ -811,22 +810,19 @@ int conf_write_autoconf(void)
->                return 1;
->        }
+> -static void __init remap_numa_kva(void)
+> -{
+> -	void *vaddr;
+> -	unsigned long pfn;
+> -	int node;
+> -
+> -	for_each_online_node(node) {
+> -		printk(KERN_DEBUG "remap_numa_kva: node %d\n", node);
+> -		for (pfn=0; pfn<  node_remap_size[node]; pfn += PTRS_PER_PTE) {
+> -			vaddr = node_remap_start_vaddr[node]+(pfn<<PAGE_SHIFT);
+> -			printk(KERN_DEBUG "remap_numa_kva: %08lx to pfn %08lx\n",
+> -				(unsigned long)vaddr,
+> -				node_remap_start_pfn[node] + pfn);
+> -			set_pmd_pfn((ulong) vaddr,
+> -				node_remap_start_pfn[node] + pfn,
+> -				PAGE_KERNEL_LARGE);
+> -		}
+> -	}
+> -}
+> -
+>   #ifdef CONFIG_HIBERNATION
+>   /**
+>    * resume_map_numa_kva - add KVA mapping to the temporary page tables created
+> @@ -262,7 +242,7 @@ void resume_map_numa_kva(pgd_t *pgd_base)
 >
-> -       time(&now);
->        fprintf(out, "#\n"
->                     "# Automatically generated make config: don't edit\n"
->                     "# %s\n"
-> -                    "# %s"
->                     "#\n",
-> -                    rootmenu.prompt->text, ctime(&now));
-> +                    rootmenu.prompt->text);
->        fprintf(tristate, "#\n"
->                          "# Automatically generated - do not edit\n"
->                          "\n");
->        fprintf(out_h, "/*\n"
->                       " * Automatically generated C config: don't edit\n"
->                       " * %s\n"
-> -                      " * %s"
->                       " */\n",
-> -                      rootmenu.prompt->text, ctime(&now));
-> +                      rootmenu.prompt->text);
+>   static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+>   {
+> -	unsigned long size;
+> +	unsigned long size, pfn;
+>   	u64 node_pa, remap_pa;
+>   	void *remap_va;
 >
->        for_all_symbols(i, sym) {
->                sym_calc_value(sym);
-> --
-> 1.7.4.1
+> @@ -308,6 +288,12 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
+>   	memblock_x86_reserve_range(remap_pa, remap_pa + size, "KVA PG");
+>   	remap_va = phys_to_virt(remap_pa);
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +	/* perform actual remap */
+> +	for (pfn = 0; pfn<  size>>  PAGE_SHIFT; pfn += PTRS_PER_PTE)
+> +		set_pmd_pfn((unsigned long)remap_va + (pfn<<  PAGE_SHIFT),
+> +			    (node_pa>>  PAGE_SHIFT) + pfn,
+> +			    PAGE_KERNEL_LARGE);
+> +
+>   	/* initialize remap allocator parameters */
+>   	node_remap_start_pfn[nid] = node_pa>>  PAGE_SHIFT;
+>   	node_remap_size[nid] = size>>  PAGE_SHIFT;
+> @@ -363,7 +349,6 @@ void __init initmem_init(void)
+>   			(ulong) pfn_to_kaddr(max_low_pfn));
+>   	for_each_online_node(nid)
+>   		allocate_pgdat(nid);
+> -	remap_numa_kva();
 >
+>   	printk(KERN_DEBUG "High memory starts at vaddr %08lx\n",
+>   			(ulong) pfn_to_kaddr(highstart_pfn));
+
+Acked-by: Yinghai Lu <yinghai@kernel.org>
