@@ -1,195 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab1DEPSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 11:18:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55599 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab1DEPSK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:18:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Jbh9kz1v7/DnZYVovcS1HM+SsfkOu+WlFfktqy459qMHq+BXhllkeAYXPTUk7n9OBa
-         v8virsQx0z5L/oQmeis1TtgJ+CIcatNYhAo9e1Kpd55NaW7qnDM2iEx+OwYXzkTxGZFt
-         cz81Ce26CpkLTvVXjACukfZWM9FbIr3Ap4SUo=
-Subject: [PATCH v2] posix-timers: RCU conversion
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: john stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>, ben@iagu.net
-In-Reply-To: <20110405144836.GA17490@redhat.com>
-References: <4D8773AA.8030408@redhat.com>
-	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
-	 <1300726498.2884.493.camel@edumazet-laptop> <4D8784A9.8040303@redhat.com>
-	 <1300727545.2884.513.camel@edumazet-laptop>
-	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
-	 <1300746429.2837.20.camel@edumazet-laptop>
-	 <1300777760.2837.38.camel@edumazet-laptop>
-	 <1301849660.2837.211.camel@edumazet-laptop>
-	 <1301940501.2319.25.camel@work-vm>  <20110405144836.GA17490@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Apr 2011 17:18:02 +0200
-Message-ID: <1302016682.3171.19.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753949Ab1DEPYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 11:24:25 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:45789
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753373Ab1DEPYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 11:24:24 -0400
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 11:24:24 EDT
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
+        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Cc: Mike Surcouf <mike@surcouf.co.uk>, stable <stable@kernel.org>
+Subject: [PATCH] staging: hv: Fix GARP not sent after Quick Migration
+Date: Tue,  5 Apr 2011 08:27:48 -0700
+Message-Id: <1302017268-22913-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 05 avril 2011 à 16:48 +0200, Oleg Nesterov a écrit :
+After Quick Migration, the network is not immediately operational in the
+current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, I put
+the netif_notify_peers() into a scheduled work, otherwise GARP packet will
+not be sent after quick migration, and cause network disconnection.
 
-> Can't we move this rcu_head into the union above?
-> 
+Thanks to Mike Surcouf <mike@surcouf.co.uk> for reporting the bug and
+testing the patch.
 
-Yes, you're right.
+This patch should also be backported to stable kernel 2.6.32 and later.
 
-
-> 
-> Not that I really think it makes sense to change the patch... but we
-> could even use SLAB_DESTROY_BY_RCU, this is more effective. All we
-> need is ctor which sets ->it_signal = NULL and initializes ->it_lock
-> for lock_timer().
-> 
-
-I considered this, but this means SLUB cannot merge the
-posix_timers_cache anymore.
-
-This wastes more ram (each cpu has its own slab caches),
-and considering posix-timers are seldom used...
-
-
-> The question is, why do we use the global database for the timer ids.
-> All timers live in signal_struct->posix_timers anyway, perhaps we could
-> use a per-process array instead.
-> 
-
-This would add some overhead at process creation (to initialize the
-'array' or whatever tree root).
-
-It would help some workloads, (create/delete timers from lot of
-different processes/cpus). I am not sure we really need this right now,
-since we waited 2011 before even trying to optimize read side ;)
-
-Thanks
-
-[PATCH v2] posix-timers: RCU conversion
-
-Ben Nagy reported a scalability problem with KVM/QEMU that hit very hard
-a single spinlock (idr_lock) in posix-timers code, on its 48 core
-machine.
-
-Even on a 16 cpu machine (2x4x2), a single test can show 98% of cpu time
-used in ticket_spin_lock, from lock_timer
-
-Ref: http://www.spinics.net/lists/kvm/msg51526.html
-
-Switching to RCU is quite easy, IDR being already RCU ready.
-
-idr_lock should be locked only for an insert/delete, not a lookup.
-
-Benchmark on a 2x4x2 machine, 16 processes calling timer_gettime().
-
-Before :
-
-real    1m18.669s
-user    0m1.346s
-sys     1m17.180s
-
-After :
-
-real    0m3.296s
-user    0m1.366s
-sys     0m1.926s
-
-Reported-by: Ben Nagy <ben@iagu.net>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Tested-by: Ben Nagy <ben@iagu.net>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Richard Cochran <richard.cochran@omicron.at>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Mike Surcouf <mike@surcouf.co.uk>
+Cc: stable <stable@kernel.org>
 ---
-V2 : rcu_head put in the 'it' union, as Oleg suggested.
+ drivers/staging/hv/netvsc_drv.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
- include/linux/posix-timers.h |    1 +
- kernel/posix-timers.c        |   25 ++++++++++++++-----------
- 2 files changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index d51243a..ea0db16 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -80,6 +80,7 @@ struct k_itimer {
- 			unsigned long incr;
- 			unsigned long expires;
- 		} mmtimer;
-+		struct rcu_head rcu;
- 	} it;
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 2d40f5f..417e5f7 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -46,6 +46,7 @@ struct net_device_context {
+ 	/* point back to our device context */
+ 	struct hv_device *device_ctx;
+ 	unsigned long avail;
++	struct work_struct work;
  };
  
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 4c01249..4a428b0 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -491,6 +491,13 @@ static struct k_itimer * alloc_posix_timer(void)
- 	return tmr;
- }
  
-+static void k_itimer_rcu_free(struct rcu_head *head)
+@@ -219,6 +220,7 @@ static void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ 				       unsigned int status)
+ {
+ 	struct net_device *net = dev_get_drvdata(&device_obj->device);
++	struct net_device_context *ndev_ctx;
+ 
+ 	if (!net) {
+ 		DPRINT_ERR(NETVSC_DRV, "got link status but net device "
+@@ -229,7 +231,8 @@ static void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
+-		netif_notify_peers(net);
++		ndev_ctx = netdev_priv(net);
++		schedule_work(&ndev_ctx->work);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
+@@ -328,6 +331,17 @@ static const struct net_device_ops device_ops = {
+ 	.ndo_set_mac_address =		eth_mac_addr,
+ };
+ 
++static void netvsc_send_garp(struct work_struct *w)
 +{
-+	struct k_itimer *tmr = container_of(head, struct k_itimer, it.rcu);
++	struct net_device_context *ndev_ctx;
++	struct net_device *net;
 +
-+	kmem_cache_free(posix_timers_cache, tmr);
++	ndev_ctx = container_of(w, struct net_device_context, work);
++	net = dev_get_drvdata(&ndev_ctx->device_ctx->device);
++	netif_notify_peers(net);
 +}
 +
- #define IT_ID_SET	1
- #define IT_ID_NOT_SET	0
- static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
-@@ -503,7 +510,7 @@ static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
- 	}
- 	put_pid(tmr->it_pid);
- 	sigqueue_free(tmr->sigq);
--	kmem_cache_free(posix_timers_cache, tmr);
-+	call_rcu(&tmr->it.rcu, k_itimer_rcu_free);
- }
- 
- static struct k_clock *clockid_to_kclock(const clockid_t id)
-@@ -631,22 +638,18 @@ out:
- static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
- {
- 	struct k_itimer *timr;
--	/*
--	 * Watch out here.  We do a irqsave on the idr_lock and pass the
--	 * flags part over to the timer lock.  Must not let interrupts in
--	 * while we are moving the lock.
--	 */
--	spin_lock_irqsave(&idr_lock, *flags);
 +
-+	rcu_read_lock();
- 	timr = idr_find(&posix_timers_id, (int)timer_id);
- 	if (timr) {
--		spin_lock(&timr->it_lock);
-+		spin_lock_irqsave(&timr->it_lock, *flags);
- 		if (timr->it_signal == current->signal) {
--			spin_unlock(&idr_lock);
-+			rcu_read_unlock();
- 			return timr;
- 		}
--		spin_unlock(&timr->it_lock);
-+		spin_unlock_irqrestore(&timr->it_lock, *flags);
- 	}
--	spin_unlock_irqrestore(&idr_lock, *flags);
-+	rcu_read_unlock();
+ static int netvsc_probe(struct device *device)
+ {
+ 	struct hv_driver *drv =
+@@ -353,6 +367,7 @@ static int netvsc_probe(struct device *device)
+ 	net_device_ctx->device_ctx = device_obj;
+ 	net_device_ctx->avail = ring_size;
+ 	dev_set_drvdata(device, net);
++	INIT_WORK(&net_device_ctx->work, netvsc_send_garp);
  
- 	return NULL;
- }
-
+ 	/* Notify the netvsc driver of the new device */
+ 	ret = net_drv_obj->base.dev_add(device_obj, &device_info);
+-- 
+1.6.3.2
 
