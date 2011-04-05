@@ -1,74 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab1DEQAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:00:00 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41753 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab1DEP75 (ORCPT
+	id S1754838Ab1DEQAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:00:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41718 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab1DEQAn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 11:59:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:organization:message-id:in-reply-to
-         :user-agent;
-        b=U0XLkyi2k/XiKf1kEPbj1mAa3eRp3htZ4O4azUC04xrVYkiSvPjoRGDBWX6JZyiu7F
-         Wkr36z+seUET6gSXwZgXRinWtpMm22UVArI74Bm4V3oO7ORSY/uPFTmNo1OZyHXHJc42
-         s6Ljip8UB1VQCA0NXGYkbiSSD3tspy/qnCoNU=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: gregkh@suse.de, "Roger Quadros" <roger.quadros@nokia.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] usb: gadget: f_mass_storage: Fix potential memory
- leak
-References: <1302017802-16614-1-git-send-email-roger.quadros@nokia.com>
- <1302017802-16614-5-git-send-email-roger.quadros@nokia.com>
-Date: Tue, 05 Apr 2011 17:59:54 +0200
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Organization: Google
-Message-ID: <op.vtg2p4fl3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1302017802-16614-5-git-send-email-roger.quadros@nokia.com>
-User-Agent: Opera Mail/11.01 (Linux)
+	Tue, 5 Apr 2011 12:00:43 -0400
+Subject: Re: [PATCH 00/21] sched: Reduce runqueue lock contention -v6
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110405152338.692966333@chello.nl>
+References: <20110405152338.692966333@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Apr 2011 17:59:48 +0200
+Message-ID: <1302019188.2225.1348.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Apr 2011 17:36:41 +0200, Roger Quadros  
-<roger.quadros@nokia.com> wrote:
+On Tue, 2011-04-05 at 17:23 +0200, Peter Zijlstra wrote:
+> 
+> unpatched: run time 30 seconds 647278 worker burns per second
+> patched:   run time 30 seconds 816715 worker burns per second 
 
-> If allocation of multiple buffers would fail then we would leak memory.
-> Fix that.
->
-> Signed-off-by: Roger Quadros <roger.quadros@nokia.com>
-> ---
->  drivers/usb/gadget/f_mass_storage.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/usb/gadget/f_mass_storage.c  
-> b/drivers/usb/gadget/f_mass_storage.c
-> index f6bd001..60b4df9 100644
-> --- a/drivers/usb/gadget/f_mass_storage.c
-> +++ b/drivers/usb/gadget/f_mass_storage.c
-> @@ -2863,6 +2863,12 @@ buffhds_first_it:
->  		bh->buf = kmalloc(FSG_BUFLEN, GFP_KERNEL);
->  		if (unlikely(!bh->buf)) {
->  			rc = -ENOMEM;
-> +			/* clean up */
-> +			while (i < FSG_NUM_BUFFERS) {
-> +				bh--;
-> +				kfree(bh->buf);
-> +				i++;
-> +			}
->  			goto error_release;
->  		}
->  	} while (--i);
-
-This is handled in fsg_common_release(), isn't it?  Feel free to
-send a patch with a comment explaining that.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Obviously bigger is better :-), the above means 26% more wakeups
+processed in the 30 seconds.
