@@ -1,123 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab1DELzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 07:55:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37241 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab1DELzL convert rfc822-to-8bit (ORCPT
+	id S1753385Ab1DEMCh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 08:02:37 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:42815 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab1DEMCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 07:55:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=n50SwBhPPZCplpyNe2KZGDHPfmAXrt/kV9awxRTH3hEr9N79YO4odar/zbn02uXlxg
-         KNXzS8vmeD20Q+F7FlXL7MT7n4qWQiSiS03SKsl1m5Pl8/Kv1n5emCjk4Q02XbYM4PnO
-         kGWUz4iIA1OfsSzTVKMas3UIlRPbXWOg0+vYY=
+	Tue, 5 Apr 2011 08:02:35 -0400
+X-Greylist: delayed 1302 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 08:02:35 EDT
+X-SENDER-IP: [85.230.173.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuNEADz/mk1V5q1yPGdsb2JhbACJFZxUCwEBAQE3Moh5uhINhV4EkQuCKA
+X-IronPort-AV: E=Sophos;i="4.63,303,1299452400"; 
+   d="scan'208";a="179969703"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 5 Apr 2011 13:41:18 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jeff Brown <jeffbrown@android.com>, djkurtz@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Brown <jeffbrown@google.com>
+Subject: Re: [PATCH v2 3/4] input: evdev: Indicate buffer overrun with
+ SYN_DROPPED.
+Message-ID: <20110405114118.GA19217@polaris.bitmath.org>
+References: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
+ <1301727259-5185-3-git-send-email-jeffbrown@android.com>
+ <20110404213338.GB984@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=kXod21RUukrTuMzP5TFqgo4NxRw@mail.gmail.com>
-References: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com>
-	<1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk>
-	<20110401114429.GA3526@viiv.ffwll.ch>
-	<AANLkTik6njOQTLGsB4KzPP-J=fE=p4CHopAyvsDzdDSF@mail.gmail.com>
-	<BANLkTimUZY+2E=kXG-as8-moAAS4+F5bTg@mail.gmail.com>
-	<b7da2f$qvoau5@fmsmga001.fm.intel.com>
-	<BANLkTi=kXod21RUukrTuMzP5TFqgo4NxRw@mail.gmail.com>
-Date: Tue, 5 Apr 2011 14:55:10 +0300
-Message-ID: <BANLkTimhs1vZMbD4eiuCxBnU35bijj91tw@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Disable all outputs early, before
- KMS takeover
-From: Tomas Winkler <tomasw@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110404213338.GB984@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 1:37 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> Hi Chris!
->
-> On Tue, Apr 5, 2011 at 1:30 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> On Tue, 5 Apr 2011 13:21:08 +0300, Tomas Winkler <tomasw@gmail.com> wrote:
->>> On Fri, Apr 1, 2011 at 2:51 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>> > Unfortunately I get a blank screen with after boot:
->>> > Nacked-by: Pekka Enberg <penberg@kernel.org>
->>
->> But until you can tell me where it explodes on your system, we fix
->> issues on several other machines...
->
-> Oh, that's nice, you first made the damn thing flicker in 2.6.39-rc1
-> and now you're fixing it for others by giving me a blank screen after
-> boot?
->
-> I guess I don't need to tell you that I am not at all happy especially
-> since you keep breaking i915 in almost every damn release!
->
->>> Not sure this is related, but when I enable DRM_I915_KMS=y I'm got
->>> stuck after boot too. When KMS is disabled I can at least get to the
->>> console (no graphics)
->>> This is with kernel 2.6.39-rc1.  It worked fine with 2.6.38. I don't
->>> have much time bisect and reboot.  Shell I  try to pull drm-fixes for
->>> rc2 or use try this patch?
+> Input: evdev - indicate buffer overrun with SYN_DROPPED
+> 
+> From: Jeff Brown <jeffbrown@google.com>
+> 
+> Add a new EV_SYN code, SYN_DROPPED, to inform the client when input
+> events have been dropped from the evdev input buffer due to a
+> buffer overrun.  The client should use this event as a hint to
+> reset its state or ignore all following events until the next
+> packet begins.
+> 
+> Signed-off-by: Jeff Brown <jeffbrown@android.com>
+> [dtor@mail.ru: Implement Henrik's suggestion and drop old events in
+>  case of overflow.]
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> ---
+> 
+>  Documentation/input/event-codes.txt |    6 ++++++
+>  drivers/input/evdev.c               |   33 +++++++++++++++++++++------------
+>  include/linux/input.h               |    1 +
+>  3 files changed, 28 insertions(+), 12 deletions(-)
+> 
+> 
+> diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
+> index d6732a4..e0326a0 100644
+> --- a/Documentation/input/event-codes.txt
+> +++ b/Documentation/input/event-codes.txt
+> @@ -79,6 +79,12 @@ defined only by when they are sent in the evdev event stream.
+>    - Used to synchronize and separate touch events. See the
+>      multi-touch-protocol.txt document for more information.
+>  
+> +* SYN_DROPPED:
+> +  - Used to indicate buffer overrun in the evdev client's event queue.
+> +    Client should ignore all events up to and including next SYN_REPORT
+> +    event and query the device (using EVIOCG* ioctls) to obtain its
+> +    current state.
+> +
+>  EV_KEY:
+>  ----------
+>  EV_KEY events take the form KEY_<name> or BTN_<name>. For example, KEY_A is used
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index 7f42d3a..f1c0910 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -39,13 +39,13 @@ struct evdev {
+>  };
+>  
+>  struct evdev_client {
+> -	int head;
+> -	int tail;
+> +	unsigned int head;
+> +	unsigned int tail;
+>  	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
+>  	struct fasync_struct *fasync;
+>  	struct evdev *evdev;
+>  	struct list_head node;
+> -	int bufsize;
+> +	unsigned int bufsize;
+>  	struct input_event buffer[];
+>  };
+>  
+> @@ -55,16 +55,25 @@ static DEFINE_MUTEX(evdev_table_mutex);
+>  static void evdev_pass_event(struct evdev_client *client,
+>  			     struct input_event *event)
+>  {
+> -	/*
+> -	 * Interrupts are disabled, just acquire the lock.
+> -	 * Make sure we don't leave with the client buffer
+> -	 * "empty" by having client->head == client->tail.
+> -	 */
+> +	/* Interrupts are disabled, just acquire the lock. */
+>  	spin_lock(&client->buffer_lock);
+> -	do {
+> -		client->buffer[client->head++] = *event;
+> -		client->head &= client->bufsize - 1;
+> -	} while (client->head == client->tail);
+> +
+> +	client->buffer[client->head++] = *event;
+> +	client->head &= client->bufsize - 1;
+> +
+> +	if (unlikely(client->head == client->tail)) {
+> +		/*
+> +		 * This effectively "drops" all unconsumed events, leaving
+> +		 * EV_SYN/SYN_DROPPED plus the newest event in the queue.
+> +		 */
+> +		client->tail = (client->head - 2) & (client->bufsize - 1);
+> +
+> +		client->buffer[client->tail].time = event->time;
+> +		client->buffer[client->tail].type = EV_SYN;
+> +		client->buffer[client->tail].code = SYN_DROPPED;
+> +		client->buffer[client->tail].value = 0;
+> +	}
+> +
+>  	spin_unlock(&client->buffer_lock);
+>  
+>  	if (event->type == EV_SYN)
+> diff --git a/include/linux/input.h b/include/linux/input.h
+> index f3a7794..71d3651 100644
+> --- a/include/linux/input.h
+> +++ b/include/linux/input.h
+> @@ -167,6 +167,7 @@ struct input_keymap_entry {
+>  #define SYN_REPORT		0
+>  #define SYN_CONFIG		1
+>  #define SYN_MT_REPORT		2
+> +#define SYN_DROPPED		3
+>  
+>  /*
+>   * Keys and buttons
 
-merging drm-fixes for rc2 definitely helped booting.
+    Acked-by: Henrik Rydberg <rydberg@euromail.se>
 
->> Add drm.debug=0xe to your grub kernel parameters and attach the dmesg for
->> the failing boot. From that I should be able to recommend a course of
->> action.
-
-There are some error messages
-
-   4.311738] [drm:intel_crt_init], pch crt adpa set to 0xf40000
-[    4.311792] [drm:intel_dp_i2c_init], i2c_init DPDDC-C
-[    4.312300] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[    4.312302] [drm:intel_dp_i2c_aux_ch], aux_ch failed -110
-[    4.312814] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[    4.312815] [drm:intel_dp_i2c_aux_ch], aux_ch failed -110
-[    4.312848] [drm:intel_dp_i2c_init], i2c_init DPDDC-D
-[    4.313357] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[    4.313358] [drm:intel_dp_i2c_aux_ch], aux_ch failed -110
-[    4.313866] [drm:intel_dp_aux_ch], dp_aux_ch timeout status 0x5145003e
-[    4.313868] [drm:intel_dp_i2c_aux_ch], aux_ch failed -110
-[    4.313886] [drm:intel_panel_get_backlight], get backlight PWM = 0
-[    4.313891] vgaarb: device changed decodes:
-PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-[    4.314378] [drm:ironlake_crtc_dpms], crtc 0/0 dpms off
-[    4.314381] [drm:i915_get_vblank_timestamp], crtc 0 is disabled
-[    4.343908] [drm:intel_update_fbc],
-[    4.343910] [drm:ironlake_crtc_dpms], crtc 1/1 dpms off
-[    4.343912] [drm:gm45_get_vblank_counter], trying to get vblank
-count for disabled pipe B
-[    4.343914] [drm:i915_get_vblank_timestamp], crtc 1 is disabled
-[    4.343916] [drm:gm45_get_vblank_counter], trying to get vblank
-count for disabled pipe B
-[    4.344555] [drm:intel_update_fbc],
-[    4.344559] [drm:drm_helper_probe_single_connector_modes],
-[CONNECTOR:5:VGA-1]
-[    4.344562] [drm:intel_ironlake_crt_detect_hotplug], trigger
-hotplug detect cycle: adpa=0xf40000
-[    4.354477] [drm:intel_ironlake_crt_detect_hotplug], ironlake
-hotplug adpa=0xf40000, result 0
-[    4.354483] [drm:intel_crt_detect], CRT not detected via hotplug
-[    4.354488] [drm:drm_helper_probe_single_connector_modes],
-[CONNECTOR:5:VGA-1] disconnected
-[    4.354493] [drm:drm_helper_probe_single_connector_modes],
-[CONNECTOR:8:HDMI-A-1]
-[    4.364484] [drm:drm_helper_probe_single_connector_modes],
-[CONNECTOR:8:HDMI-A-1] disconnected
-[    4.364491] [drm:drm_helper_probe_single_connector_modes],
-[CONNECTOR:12:HDMI-A-2]
-[    4.416299] [drm] GMBUS timed out, falling back to bit banging on
-pin 7 [i915 gmbus dpd]
-[    4.537460] [drm:drm_helper_probe_single_connector_modes],
-[CONNECTOR:12:HDMI-A-2] probed modes :
-[    4.537462] [drm:drm_mode_debug_printmodeline], Modeline
-21:"1280x1024" 60 108000 1280 1328 1440 1688 1024 1025 1028 1066 0x48
-0x5
-
-Tomas
+Thanks,
+Henrik
