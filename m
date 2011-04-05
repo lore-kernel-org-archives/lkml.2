@@ -1,33 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1DEQZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:25:26 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55977 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab1DEQZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:25:24 -0400
-Date: Tue, 5 Apr 2011 17:25:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Singer <elf@buici.com>
-Subject: Re: [PATCH 33/34] usb/lh7a40x_udc: Drop __DATE__ usage
-Message-ID: <20110405162512.GB11737@n2100.arm.linux.org.uk>
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-34-git-send-email-mmarek@suse.cz>
+	id S1755273Ab1DEQZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:25:44 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:56779 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754771Ab1DEQZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 12:25:25 -0400
+X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 12:25:24 EDT
+From: Gene Heskett <gene.heskett@gmail.com>
+To: Greg KH <greg@kroah.com>
+Subject: Re: mourning the loss of David Brownell
+Date: Tue, 5 Apr 2011 12:17:58 -0400
+User-Agent: KMail/1.13.6 (Linux/2.6.37; KDE/4.6.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+References: <20110405034819.GA7872@kroah.com>
+In-Reply-To: <20110405034819.GA7872@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302015561-21047-34-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104051217.58890.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 05, 2011 at 04:59:20PM +0200, Michal Marek wrote:
-> The kernel already prints its build timestamp during boot, no need to
-> repeat it in random drivers and produce different object files each
-> time.
+On Monday, April 04, 2011, Greg KH wrote:
+>As I have seen this tangentally mentioned already a few times
+>publically, I figured it warranted it's own announcement now.
+>
+>Linux has lost a great developer with the passing of David Brownell
+>recently and he will be greatly missed.
+>
+>sadly,
+>
+>greg k -h
 
-This file no longer exists.
+Thank you for the heads up Greg.
+
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+<http://tinyurl.com/ddg5bz>
+<http://www.cantrip.org/gatto.html>
+We don't know one millionth of one percent about anything.
