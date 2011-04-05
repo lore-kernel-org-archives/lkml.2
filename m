@@ -1,407 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab1DES3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:29:38 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:42900
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754079Ab1DES3g (ORCPT
+	id S1754709Ab1DESaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 14:30:55 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:37539
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753907Ab1DESax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:29:36 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zz1803Mc8kzz1202hzz8275bhz2dh95h668h839h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-From: John Linn <john.linn@xilinx.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <glikely@secretlab.ca>, <jamie@jamieiles.com>, <arnd@arndb.de>,
-        <nicolas.pitre@linaro.org>
-CC: John Linn <john.linn@xilinx.com>,
-        Kiran Sutariya <kiran.sutariya@einfochips.com>
-Subject: [PATCH V6 2/5] ARM: Xilinx: Adding timer support to the platform
-Date: Tue, 5 Apr 2011 12:28:03 -0600
-X-Mailer: git-send-email 1.5.4.7
-In-Reply-To: <1302028086-17603-2-git-send-email-john.linn@xilinx.com>
-References: <1302028086-17603-1-git-send-email-john.linn@xilinx.com>
- <1302028086-17603-2-git-send-email-john.linn@xilinx.com>
-X-RCIS-Action: ALLOW
+	Tue, 5 Apr 2011 14:30:53 -0400
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 14:30:52 EDT
+X-SpamScore: -14
+X-BigFish: VS-14(zz154dM1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 5 Apr 2011 13:15:04 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: <trivial@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Harninder Rai <harninder.rai@freescale.com>
+Subject: Re: [RFC 2/5]arch:powerpc:sysdev:Makefile Remove unused config in
+ the Makefile.
+Message-ID: <20110405131504.1d182da4@schlenkerla.am.freescale.net>
+In-Reply-To: <1302022702-24541-2-git-send-email-justinmattock@gmail.com>
+References: <1302022702-24541-1-git-send-email-justinmattock@gmail.com>
+	<1302022702-24541-2-git-send-email-justinmattock@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-Message-ID: <5deb0846-8633-40bb-b52b-69a445f02c71@VA3EHSMHS031.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timer driver supports the Xilinx PS Timer Counter IP.
+On Tue, 5 Apr 2011 09:58:19 -0700
+"Justin P. Mattock" <justinmattock@gmail.com> wrote:
 
-Signed-off-by: Kiran Sutariya <kiran.sutariya@einfochips.com>
-Signed-off-by: John Linn <john.linn@xilinx.com>
----
+> The patch below removes an unused config variable found by using a kernel
+> cleanup script.
+> Note: I did try to cross compile these but hit erros while doing so..
+> (gcc is not setup to cross compile) and am unsure if anymore needs to be done.
+> Please have a look if/when anybody has free time.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: linuxppc-dev@lists.ozlabs.org
+> 
+> ---
+>  arch/powerpc/sysdev/Makefile |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/powerpc/sysdev/Makefile b/arch/powerpc/sysdev/Makefile
+> index 1e0c933..243b6ad 100644
+> --- a/arch/powerpc/sysdev/Makefile
+> +++ b/arch/powerpc/sysdev/Makefile
+> @@ -18,7 +18,6 @@ obj-$(CONFIG_FSL_PMC)		+= fsl_pmc.o
+>  obj-$(CONFIG_FSL_LBC)		+= fsl_lbc.o
+>  obj-$(CONFIG_FSL_GTM)		+= fsl_gtm.o
+>  obj-$(CONFIG_MPC8xxx_GPIO)	+= mpc8xxx_gpio.o
+> -obj-$(CONFIG_FSL_85XX_CACHE_SRAM)	+= fsl_85xx_l2ctlr.o fsl_85xx_cache_sram.o
+>  obj-$(CONFIG_SIMPLE_GPIO)	+= simple_gpio.o
+>  obj-$(CONFIG_FSL_RIO)		+= fsl_rio.o
+>  obj-$(CONFIG_TSI108_BRIDGE)	+= tsi108_pci.o tsi108_dev.o
 
-V6 Changes
-	Only change was the renaming of mach-xilinx to mach-zynq
-	which rippled thru as a minor change.	
+Those files do exist, and aren't pulled in by any other means I can see.
+It was introduced by commit 6db92cc9d07db9f713da8554b4bcdfc8e54ad386, whose
+changelog says:
+	Drivers can do the following in Kconfig to use these APIs "select
+FSL_85XX_CACHE_SRAM if MPC85xx"
 
-V5 Changes
-	Minor cleanup based on input from Jamie Iles for sparse.
-	Removed CLOCK_TICK_RATE based on input from Arnd.
+Now, the absence of such a kconfig option[1] is a problem, but I don't think
+outright removal (labelled "trivial cleanup") is appropriate, unless nobody
+fixes it after the problem is pointed out.  And if it is removed, the files
+should go with it.
 
-V4 Changes
-	Minor cleanup based on input from Jamie Iles.
-		Got rid of unused mode.
-		Removed un-needed initialization.
-		Made interrupt handler setup unconditional.
+-Scott
 
-V3 Changes
-
-Updates based on Russell Kings' comments
-	Changed headers to update the license info and remove
-	the address
-
-V2 Changes
-
-The timer code was changed quite a bit based on review inputs. It
-got much smaller and cleaner I think.
-
-Updates based on Russell King's comments	
-	minor cleanups for documentation comments
-	removed the name from the timer structure
-	removed interrupt for clock source 
-	moved to using clock functions provided in the kernel
-		for calculating shift/mult values
-	removed PM code as generic handles it
-
-Updated based on Jamie Iles's comment
-	cleaned up ENABLE_MASK which was confusing
-	now using platform_add_devices() from platform code
-	moved base_addr to void __iomem pointer
-	removed stop of the event timer in one shot mode
-
-
- arch/arm/mach-zynq/Makefile |    2 +-
- arch/arm/mach-zynq/timer.c  |  297 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 298 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-zynq/timer.c
-
-diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefile
-index 19489e7..62787ff 100644
---- a/arch/arm/mach-zynq/Makefile
-+++ b/arch/arm/mach-zynq/Makefile
-@@ -3,5 +3,5 @@
- #
- 
- # Common support
--obj-y 				:= common.o
-+obj-y 				:= common.o timer.o
- obj-$(CONFIG_MACH_XILINX_EP107)	+= board_ep107.o
-diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
-new file mode 100644
-index 0000000..e9a9f20
---- /dev/null
-+++ b/arch/arm/mach-zynq/timer.c
-@@ -0,0 +1,297 @@
-+/* arch/arm/mach-zynq/timer.c
-+ *
-+ * This file contains driver for the Xilinx PS Timer Counter IP.
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * based on arch/mips/kernel/time.c timer driver
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/types.h>
-+#include <linux/clocksource.h>
-+#include <linux/clockchips.h>
-+#include <linux/io.h>
-+
-+#include <asm/mach/time.h>
-+#include <mach/zynq_soc.h>
-+#include "common.h"
-+
-+/*
-+ * This driver configures the 2 16-bit count-up timers as follows:
-+ *
-+ * T1: Timer 1, clocksource for generic timekeeping
-+ * T2: Timer 2, clockevent source for hrtimers
-+ * T3: Timer 3, <unused>
-+ *
-+ * The input frequency to the timer module for emulation is 2.5MHz which is
-+ * common to all the timer channels (T1, T2, and T3). With a pre-scaler of 32,
-+ * the timers are clocked at 78.125KHz (12.8 us resolution).
-+ *
-+ * The input frequency to the timer module in silicon will be 200MHz. With the
-+ * pre-scaler of 32, the timers are clocked at 6.25MHz (160ns resolution).
-+ */
-+#define XTTCPSS_CLOCKSOURCE	0	/* Timer 1 as a generic timekeeping */
-+#define XTTCPSS_CLOCKEVENT	1	/* Timer 2 as a clock event */
-+
-+#define XTTCPSS_TIMER_BASE		TTC0_BASE
-+#define XTTCPCC_EVENT_TIMER_IRQ		(IRQ_TIMERCOUNTER0 + 1)
-+/*
-+ * Timer Register Offset Definitions of Timer 1, Increment base address by 4
-+ * and use same offsets for Timer 2
-+ */
-+#define XTTCPSS_CLK_CNTRL_OFFSET	0x00 /* Clock Control Reg, RW */
-+#define XTTCPSS_CNT_CNTRL_OFFSET	0x0C /* Counter Control Reg, RW */
-+#define XTTCPSS_COUNT_VAL_OFFSET	0x18 /* Counter Value Reg, RO */
-+#define XTTCPSS_INTR_VAL_OFFSET		0x24 /* Interval Count Reg, RW */
-+#define XTTCPSS_MATCH_1_OFFSET		0x30 /* Match 1 Value Reg, RW */
-+#define XTTCPSS_MATCH_2_OFFSET		0x3C /* Match 2 Value Reg, RW */
-+#define XTTCPSS_MATCH_3_OFFSET		0x48 /* Match 3 Value Reg, RW */
-+#define XTTCPSS_ISR_OFFSET		0x54 /* Interrupt Status Reg, RO */
-+#define XTTCPSS_IER_OFFSET		0x60 /* Interrupt Enable Reg, RW */
-+
-+#define XTTCPSS_CNT_CNTRL_DISABLE_MASK	0x1
-+
-+/* Setup the timers to use pre-scaling */
-+
-+#define TIMER_RATE (PERIPHERAL_CLOCK_RATE / 32)
-+
-+/**
-+ * struct xttcpss_timer - This definition defines local timer structure
-+ *
-+ * @base_addr:	Base address of timer
-+ **/
-+struct xttcpss_timer {
-+	void __iomem *base_addr;
-+};
-+
-+static struct xttcpss_timer timers[2];
-+static struct clock_event_device xttcpss_clockevent;
-+
-+/**
-+ * xttcpss_set_interval - Set the timer interval value
-+ *
-+ * @timer:	Pointer to the timer instance
-+ * @cycles:	Timer interval ticks
-+ **/
-+static void xttcpss_set_interval(struct xttcpss_timer *timer,
-+					unsigned long cycles)
-+{
-+	u32 ctrl_reg;
-+
-+	/* Disable the counter, set the counter value  and re-enable counter */
-+	ctrl_reg = __raw_readl(timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
-+	ctrl_reg |= XTTCPSS_CNT_CNTRL_DISABLE_MASK;
-+	__raw_writel(ctrl_reg, timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
-+
-+	__raw_writel(cycles, timer->base_addr + XTTCPSS_INTR_VAL_OFFSET);
-+
-+	/* Reset the counter (0x10) so that it starts from 0, one-shot
-+	   mode makes this needed for timing to be right. */
-+	ctrl_reg |= 0x10;
-+	ctrl_reg &= ~XTTCPSS_CNT_CNTRL_DISABLE_MASK;
-+	__raw_writel(ctrl_reg, timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
-+}
-+
-+/**
-+ * xttcpss_clock_event_interrupt - Clock event timer interrupt handler
-+ *
-+ * @irq:	IRQ number of the Timer
-+ * @dev_id:	void pointer to the xttcpss_timer instance
-+ *
-+ * returns: Always IRQ_HANDLED - success
-+ **/
-+static irqreturn_t xttcpss_clock_event_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *evt = &xttcpss_clockevent;
-+	struct xttcpss_timer *timer = dev_id;
-+
-+	/* Acknowledge the interrupt and call event handler */
-+	__raw_writel(__raw_readl(timer->base_addr + XTTCPSS_ISR_OFFSET),
-+			timer->base_addr + XTTCPSS_ISR_OFFSET);
-+
-+	evt->event_handler(evt);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct irqaction event_timer_irq = {
-+	.name	= "xttcpss clockevent",
-+	.flags	= IRQF_DISABLED | IRQF_TIMER,
-+	.handler = xttcpss_clock_event_interrupt,
-+};
-+
-+/**
-+ * xttcpss_timer_hardware_init - Initialize the timer hardware
-+ *
-+ * Initialize the hardware to start the clock source, get the clock
-+ * event timer ready to use, and hook up the interrupt.
-+ **/
-+static void __init xttcpss_timer_hardware_init(void)
-+{
-+	/* Setup the clock source counter to be an incrementing counter
-+	 * with no interrupt and it rolls over at 0xFFFF. Pre-scale
-+	   it by 32 also. Let it start running now.
-+	 */
-+	timers[XTTCPSS_CLOCKSOURCE].base_addr = XTTCPSS_TIMER_BASE;
-+
-+	__raw_writel(0x0, timers[XTTCPSS_CLOCKSOURCE].base_addr +
-+				XTTCPSS_IER_OFFSET);
-+	__raw_writel(0x9, timers[XTTCPSS_CLOCKSOURCE].base_addr +
-+				XTTCPSS_CLK_CNTRL_OFFSET);
-+	__raw_writel(0x10, timers[XTTCPSS_CLOCKSOURCE].base_addr +
-+				XTTCPSS_CNT_CNTRL_OFFSET);
-+
-+	/* Setup the clock event timer to be an interval timer which
-+	 * is prescaled by 32 using the interval interrupt. Leave it
-+	 * disabled for now.
-+	 */
-+
-+	timers[XTTCPSS_CLOCKEVENT].base_addr = XTTCPSS_TIMER_BASE + 4;
-+
-+	__raw_writel(0x23, timers[XTTCPSS_CLOCKEVENT].base_addr +
-+			XTTCPSS_CNT_CNTRL_OFFSET);
-+	__raw_writel(0x9, timers[XTTCPSS_CLOCKEVENT].base_addr +
-+			XTTCPSS_CLK_CNTRL_OFFSET);
-+	__raw_writel(0x1, timers[XTTCPSS_CLOCKEVENT].base_addr +
-+			XTTCPSS_IER_OFFSET);
-+
-+	/* Setup IRQ the clock event timer */
-+	event_timer_irq.dev_id = &timers[XTTCPSS_CLOCKEVENT];
-+	setup_irq(XTTCPCC_EVENT_TIMER_IRQ, &event_timer_irq);
-+}
-+
-+/**
-+ * __raw_readl_cycles - Reads the timer counter register
-+ *
-+ * returns: Current timer counter register value
-+ **/
-+static cycle_t __raw_readl_cycles(struct clocksource *cs)
-+{
-+	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKSOURCE];
-+
-+	return (cycle_t)__raw_readl(timer->base_addr +
-+				XTTCPSS_COUNT_VAL_OFFSET);
-+}
-+
-+
-+/*
-+ * Instantiate and initialize the clock source structure
-+ */
-+static struct clocksource clocksource_xttcpss = {
-+	.name		= "xttcpss_timer1",
-+	.rating		= 200,			/* Reasonable clock source */
-+	.read		= __raw_readl_cycles,
-+	.mask		= CLOCKSOURCE_MASK(16),
-+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
-+};
-+
-+
-+/**
-+ * xttcpss_set_next_event - Sets the time interval for next event
-+ *
-+ * @cycles:	Timer interval ticks
-+ * @evt:	Address of clock event instance
-+ *
-+ * returns: Always 0 - success
-+ **/
-+static int xttcpss_set_next_event(unsigned long cycles,
-+					struct clock_event_device *evt)
-+{
-+	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
-+
-+	xttcpss_set_interval(timer, cycles);
-+	return 0;
-+}
-+
-+/**
-+ * xttcpss_set_mode - Sets the mode of timer
-+ *
-+ * @mode:	Mode to be set
-+ * @evt:	Address of clock event instance
-+ **/
-+static void xttcpss_set_mode(enum clock_event_mode mode,
-+					struct clock_event_device *evt)
-+{
-+	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
-+	u32 ctrl_reg;
-+
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		xttcpss_set_interval(timer, TIMER_RATE / HZ);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		ctrl_reg = __raw_readl(timer->base_addr +
-+					XTTCPSS_CNT_CNTRL_OFFSET);
-+		ctrl_reg |= XTTCPSS_CNT_CNTRL_DISABLE_MASK;
-+		__raw_writel(ctrl_reg,
-+				timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
-+		break;
-+	case CLOCK_EVT_MODE_RESUME:
-+		ctrl_reg = __raw_readl(timer->base_addr +
-+					XTTCPSS_CNT_CNTRL_OFFSET);
-+		ctrl_reg &= ~XTTCPSS_CNT_CNTRL_DISABLE_MASK;
-+		__raw_writel(ctrl_reg,
-+				timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
-+		break;
-+	}
-+}
-+
-+/*
-+ * Instantiate and initialize the clock event structure
-+ */
-+static struct clock_event_device xttcpss_clockevent = {
-+	.name		= "xttcpss_timer2",
-+	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-+	.set_next_event	= xttcpss_set_next_event,
-+	.set_mode	= xttcpss_set_mode,
-+	.rating		= 200,
-+};
-+
-+/**
-+ * xttcpss_timer_init - Initialize the timer
-+ *
-+ * Initializes the timer hardware and register the clock source and clock event
-+ * timers with Linux kernal timer framework
-+ **/
-+static void __init xttcpss_timer_init(void)
-+{
-+	xttcpss_timer_hardware_init();
-+	clocksource_register_hz(&clocksource_xttcpss, TIMER_RATE);
-+
-+	/* Calculate the parameters to allow the clockevent to operate using
-+	   integer math
-+	*/
-+	clockevents_calc_mult_shift(&xttcpss_clockevent, TIMER_RATE, 4);
-+
-+	xttcpss_clockevent.max_delta_ns =
-+		clockevent_delta2ns(0xfffe, &xttcpss_clockevent);
-+	xttcpss_clockevent.min_delta_ns =
-+		clockevent_delta2ns(1, &xttcpss_clockevent);
-+
-+	/* Indicate that clock event is on 1st CPU as SMP boot needs it */
-+
-+	xttcpss_clockevent.cpumask = cpumask_of(0);
-+	clockevents_register_device(&xttcpss_clockevent);
-+}
-+
-+/*
-+ * Instantiate and initialize the system timer structure
-+ */
-+struct sys_timer xttcpss_sys_timer = {
-+	.init		= xttcpss_timer_init,
-+};
--- 
-1.5.4.7
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
+[1] and of any drivers that select it, though this was added fairly
+recently -- perhaps such a driver change is on its way?
 
