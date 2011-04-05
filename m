@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab1DEDao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 23:30:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62881 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab1DEDal (ORCPT
+	id S1752730Ab1DEDb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 23:31:27 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:33263 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab1DEDbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 23:30:41 -0400
+	Mon, 4 Apr 2011 23:31:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=lPnroZ99P8HKU0bgR1e/hJou3JFUfnXHygAK3yq4uGNOl14ogKbkXHeU8bHMZt9Ifa
-         YwUx3NBFAQGsCbFPCMMah5lqO0zHeW6j4XLQDSZSzVO25iagaiyk+luT2bIyXQK1XdYg
-         cv6O8QlZKlJTbDm8jnhZihYuOTyJatnS/5QJw=
-Date: Mon, 4 Apr 2011 22:30:35 -0500
+        b=Rix8M1gwhz2MFOPF5Y84OIJIPumLcccAprq/7mwH4xRphnYzg2jsIkG/ySyXcPM64I
+         zG15fmYkgR3gr9Q3PEu7lrupVm9dyuk7Nu5+timGn7hGal7PYWNPfEGi2p2itAAd4j9k
+         S5YlBse79UkiWQY/BrbNrUjdQtpVk3MiDgDK8=
+Date: Mon, 4 Apr 2011 22:31:15 -0500
 From: Jonathan Nieder <jrnieder@gmail.com>
 To: linux-media@vger.kernel.org
 Cc: Huber Andreas <hobrom@corax.at>,
@@ -22,8 +22,8 @@ Cc: Huber Andreas <hobrom@corax.at>,
         Hans Verkuil <hverkuil@xs4all.nl>, linux-kernel@vger.kernel.org,
         Ben Hutchings <ben@decadent.org.uk>,
         Steven Toth <stoth@kernellabs.com>
-Subject: [PATCH 6/7] [media] cx88: don't use atomic_t for core->mpeg_users
-Message-ID: <20110405033035.GG4498@elie>
+Subject: [PATCH 7/7] [mpeg] cx88: don't use atomic_t for core->users
+Message-ID: <20110405033114.GH4498@elie>
 References: <20110327150610.4029.95961.reportbug@xen.corax.at>
  <20110327152810.GA32106@elie>
  <20110402093856.GA17015@elie>
@@ -37,79 +37,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mpeg_users is always read or written with core->lock held except
-in mpeg_release (where it looks like a bug).  A plain int is simpler
-and faster.
+users is always read or written with core->lock held.  A plain int is
+simpler and faster.
 
 Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 ---
- drivers/media/video/cx88/cx88-blackbird.c |   11 ++++++-----
- drivers/media/video/cx88/cx88.h           |    2 +-
- 2 files changed, 7 insertions(+), 6 deletions(-)
+Thanks for reading.
 
-diff --git a/drivers/media/video/cx88/cx88-blackbird.c b/drivers/media/video/cx88/cx88-blackbird.c
-index fa8e347..11e49bb 100644
---- a/drivers/media/video/cx88/cx88-blackbird.c
-+++ b/drivers/media/video/cx88/cx88-blackbird.c
-@@ -1073,7 +1073,7 @@ static int mpeg_open(struct file *file)
- 		return err;
+ drivers/media/video/cx88/cx88-video.c |    5 +++--
+ drivers/media/video/cx88/cx88.h       |    2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/video/cx88/cx88-video.c b/drivers/media/video/cx88/cx88-video.c
+index 287a41e..d719d12 100644
+--- a/drivers/media/video/cx88/cx88-video.c
++++ b/drivers/media/video/cx88/cx88-video.c
+@@ -824,7 +824,7 @@ static int video_open(struct file *file)
+ 		call_all(core, tuner, s_radio);
  	}
  
--	if (!atomic_read(&dev->core->mpeg_users) && blackbird_initialize_codec(dev) < 0) {
-+	if (!dev->core->mpeg_users && blackbird_initialize_codec(dev) < 0) {
- 		drv->request_release(drv);
- 		mutex_unlock(&dev->core->lock);
- 		return -EINVAL;
-@@ -1101,7 +1101,7 @@ static int mpeg_open(struct file *file)
- 	cx88_set_scale(dev->core, dev->width, dev->height,
- 			fh->mpegq.field);
+-	atomic_inc(&core->users);
++	core->users++;
+ 	mutex_unlock(&core->lock);
  
--	atomic_inc(&dev->core->mpeg_users);
-+	dev->core->mpeg_users++;
- 	mutex_unlock(&dev->core->lock);
  	return 0;
- }
-@@ -1112,7 +1112,9 @@ static int mpeg_release(struct file *file)
- 	struct cx8802_dev *dev = fh->dev;
- 	struct cx8802_driver *drv = NULL;
- 
--	if (dev->mpeg_active && atomic_read(&dev->core->mpeg_users) == 1)
-+	mutex_lock(&dev->core->lock);
-+
-+	if (dev->mpeg_active && dev->core->mpeg_users == 1)
- 		blackbird_stop_codec(dev);
- 
- 	cx8802_cancel_buffers(fh->dev);
-@@ -1121,7 +1123,6 @@ static int mpeg_release(struct file *file)
- 
- 	videobuf_mmap_free(&fh->mpegq);
- 
--	mutex_lock(&dev->core->lock);
+@@ -922,7 +922,8 @@ static int video_release(struct file *file)
  	file->private_data = NULL;
  	kfree(fh);
  
-@@ -1131,7 +1132,7 @@ static int mpeg_release(struct file *file)
- 	if (drv)
- 		drv->request_release(drv);
- 
--	atomic_dec(&dev->core->mpeg_users);
-+	dev->core->mpeg_users--;
- 
+-	if(atomic_dec_and_test(&dev->core->users))
++	dev->core->users--;
++	if (!dev->core->users)
+ 		call_all(dev->core, core, s_power, 0);
  	mutex_unlock(&dev->core->lock);
  
 diff --git a/drivers/media/video/cx88/cx88.h b/drivers/media/video/cx88/cx88.h
-index 3d32f4a..9e8176e 100644
+index 9e8176e..a399a8b 100644
 --- a/drivers/media/video/cx88/cx88.h
 +++ b/drivers/media/video/cx88/cx88.h
-@@ -390,7 +390,7 @@ struct cx88_core {
+@@ -389,7 +389,7 @@ struct cx88_core {
+ 	struct mutex               lock;
  	/* various v4l controls */
  	u32                        freq;
- 	atomic_t		   users;
--	atomic_t                   mpeg_users;
-+	int                        mpeg_users;
+-	atomic_t		   users;
++	int                        users;
+ 	int                        mpeg_users;
  
  	/* cx88-video needs to access cx8802 for hybrid tuner pll access. */
- 	struct cx8802_dev          *dvbdev;
 -- 
 1.7.5.rc0
 
