@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab1DEDFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 23:05:53 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47547 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab1DEDFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 23:05:50 -0400
-Date: Tue, 5 Apr 2011 13:05:41 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, dm-devel@redhat.com
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110405130541.6c2b5f86@notabene.brown>
-In-Reply-To: <20110310005810.GA17911@redhat.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
-	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
-	<20110303221353.GA10366@redhat.com>
-	<4D761E0D.8050200@fusionio.com>
-	<20110308202100.GA31744@redhat.com>
-	<4D76912C.9040705@fusionio.com>
-	<20110308220526.GA393@redhat.com>
-	<20110310005810.GA17911@redhat.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752579Ab1DEDGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 23:06:01 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40943 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab1DEDFw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 23:05:52 -0400
+Date: Mon, 4 Apr 2011 21:05:43 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Antonio Ospite <ospite@studenti.unina.it>
+Cc: linux-mmc@vger.kernel.org, Daniel Ribeiro <drwyrm@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>, Ernst Schwab <eschwab@online.de>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        openezx-devel@lists.openezx.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] mmc_spi: Add support for regulator framework
+Message-ID: <20110405030543.GC29522@ponder.secretlab.ca>
+References: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
+ <20110404115631.67b1f317.ospite@studenti.unina.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110404115631.67b1f317.ospite@studenti.unina.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Mar 2011 19:58:10 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
+On Mon, Apr 04, 2011 at 11:56:31AM +0200, Antonio Ospite wrote:
+> On Mon, 21 Mar 2011 19:46:38 +0100
+> Antonio Ospite <ospite@studenti.unina.it> wrote:
+> 
+> > Hi,
+> > 
+> > this patchset has the purpose of adding support for the regulator framework to 
+> > the mmc_spi driver. The first three patches are preparatory cleanups to make 
+> > the fourth one more straightforward.
+> > 
+> > Maybe the fourth patch can be improved, I am open to any suggestions about it.
+> >
+> 
+> Ping. I forgot to Cc spi-devel-general on this series, should I resend
+> it?
 
-> Also, in your MD changes, you removed all calls to md_unplug() but
-> didn't remove md_unplug().  Seems it should be removed along with the
-> 'plug' member of 'struct mddev_t'?  Neil?
+Not a bad idea.  It doesn't go via my tree since it is an mmc patch,
+not an spi one, but I don't mind taking a look at the spi bits.
 
-I've been distracted by other things and only just managed to have a look at
-this.
+g.
 
-The new plugging code seems to completely ignore the needs of stacked devices
-- or at least my needs in md.
+> 
+> > These changes take strong inspiration from the pxamci driver; they have been 
+> > tested on a Motorola A910, which uses a regulator to powerup the MMC card 
+> > connected to the SPI bus, a test from a current user of the mmc_spi driver 
+> > would not hurt just to be sure no regressions have been introduced.
+> > 
+> > Thanks,
+> >    Antonio
+> > 
+> > Antonio Ospite (4):
+> >   mmc_spi.c: factor out the check for power capability
+> >   mmc_spi.c: factor out the SD card shutdown sequence
+> >   mmc_spi.c: factor out a mmc_spi_setpower() function
+> >   mmc_spi.c: add support for the regulator framework
+> > 
+> >  drivers/mmc/host/mmc_spi.c |  194 +++++++++++++++++++++++++++++---------------
+> >  1 files changed, 129 insertions(+), 65 deletions(-)
+> > 
+> 
+> -- 
+> Antonio Ospite
+> http://ao2.it
+> 
+> PGP public key ID: 0x4553B001
+> 
+> A: Because it messes up the order in which people normally read text.
+>    See http://en.wikipedia.org/wiki/Posting_style
+> Q: Why is top-posting such a bad thing?
 
-For RAID1 with a write-intent-bitmap, I queue all write requests and then on
-an unplug I update the write-intent-bitmap to mark all the relevant blocks
-and then release the writes.
 
-With the new code there is no way for an unplug event to wake up the raid1d
-thread to start the writeout - I haven't tested it but I suspect it will just
-hang.
-
-Similarly for RAID5 I gather write bios (long before they become 'struct
-request' which is what the plugging code understands) and on an unplug event
-I release the writes - hopefully with enough bios per stripe so that we don't
-need to pre-read.
-
-Possibly the simplest fix would be to have a second list_head in 'struct
-blk_plug' which contained callbacks (a function pointer a list_head in a
-struct which is passed as an arg to the function!).
-blk_finish_plug could then walk the list and call the call-backs.
-It would be quite easy to hook into that.
-
-
-I suspect I also need to add blk_start_plug/blk_finish_plug around the loop
-in raid1d/raid5d/raid10d, but that is pretty straight forward.
-
-Am I missing something important?
-Is there a better way to get an unplug event to md?
-
-Thanks,
-NeilBrown
