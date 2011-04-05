@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682Ab1DEIoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 04:44:06 -0400
-Received: from smtp204.alice.it ([82.57.200.100]:60128 "EHLO smtp204.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095Ab1DEIoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 04:44:04 -0400
-Date: Tue, 5 Apr 2011 10:43:47 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-mmc@vger.kernel.org, Daniel Ribeiro <drwyrm@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>, Ernst Schwab <eschwab@online.de>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        openezx-devel@lists.openezx.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] mmc_spi: Add support for regulator framework
-Message-Id: <20110405104347.0f93ab97.ospite@studenti.unina.it>
-In-Reply-To: <20110405030543.GC29522@ponder.secretlab.ca>
-References: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
-	<20110404115631.67b1f317.ospite@studenti.unina.it>
-	<20110405030543.GC29522@ponder.secretlab.ca>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; x86_64-unknown-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S1752426Ab1DEIso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 04:48:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49420 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab1DEIsl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 04:48:41 -0400
+Subject: Re: [PATCH] posix-timers: RCU conversion
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Avi Kivity <avi@redhat.com>
+Cc: ben@iagu.net, Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Mike Galbraith <efault@gmx.de>
+In-Reply-To: <4D887B6A.2020102@redhat.com>
+References: <AANLkTikZZ4MXZjx_+6u-vKVSgxULQo2BkQKRO6K_vzFy@mail.gmail.com>
+	 <20110318123031.GB6066@8bytes.org>
+	 <AANLkTin2k1ZSLa0NG6pKBvHYnKEV21t8pEqzeJWNn_rR@mail.gmail.com>
+	 <4D871F6C.40207@redhat.com>
+	 <AANLkTintxnKRQ4rD4Wo8_MHU4yJVzYaRhR=GjnDMGwNj@mail.gmail.com>
+	 <AANLkTin8ZoUAVR2ajoV6cBFiUSe_Dof0_k60dcAGW3r-@mail.gmail.com>
+	 <4D875842.9050308@redhat.com>
+	 <AANLkTikWQS281kTtJ32-qo5U+w_BAak7qUwVhUQgOxxv@mail.gmail.com>
+	 <4D8773AA.8030408@redhat.com>
+	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
+	 <1300726498.2884.493.camel@edumazet-laptop>	<4D8784A9.8040303@redhat.com>
+	 <1300727545.2884.513.camel@edumazet-laptop>
+	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
+	 <1300746429.2837.20.camel@edumazet-laptop>
+	 <1300777760.2837.38.camel@edumazet-laptop>
+	 <AANLkTik-Rt-Fy-2fKQTr2JBB9f7U2cbc0FmTZOoXc1+5@mail.gmail.com>
+	 <4D887B6A.2020102@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Apr 2011 10:48:20 +0200
+Message-ID: <1301993300.2225.26.camel@twins>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz"
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-03-22 at 12:35 +0200, Avi Kivity wrote:
+>> Here's top with 96 idle guests running:
 
-On Mon, 4 Apr 2011 21:05:43 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
+On some hacked up 2.6.38 kernel...
 
-> On Mon, Apr 04, 2011 at 11:56:31AM +0200, Antonio Ospite wrote:
-> > On Mon, 21 Mar 2011 19:46:38 +0100
-> > Antonio Ospite <ospite@studenti.unina.it> wrote:
-> >=20
-> > > Hi,
-> > >=20
-> > > this patchset has the purpose of adding support for the regulator fra=
-mework to=20
-> > > the mmc_spi driver. The first three patches are preparatory cleanups =
-to make=20
-> > > the fourth one more straightforward.
-> > >=20
-> > > Maybe the fourth patch can be improved, I am open to any suggestions =
-about it.
-> > >
-> >=20
-> > Ping. I forgot to Cc spi-devel-general on this series, should I resend
-> > it?
->=20
-> Not a bad idea.  It doesn't go via my tree since it is an mmc patch,
-> not an spi one, but I don't mind taking a look at the spi bits.
->=20
+> > Start of perf report -g
+> >      55.26%            kvm  [kernel.kallsyms]     [k] __ticket_spin_lock
+> >                        |
+> >                        --- __ticket_spin_lock
+> >                           |
+> >                           |--94.68%-- _raw_spin_lock
+> >                           |          |
+> >                           |          |--97.55%-- double_rq_lock
+> >                           |          |          load_balance
+> >                           |          |          idle_balance
+> >                           |          |          schedule
+> >                           |          |          |
+> >                           |          |          |--60.56%-- schedule_hrtimeout_range_clock
+> >                           |          |          |          schedule_hrtimeout_range
+> >                           |          |          |          poll_schedule_timeout
+> >                           |          |          |          do_select
+> >                           |          |          |          core_sys_select
+> >                           |          |          |          sys_select
+> >                           |          |          |          system_call_fastpath
 
-Grant you were on Cc from the start so you should have the patches
-somewhere; please tell me if you don't.
-I'd avoid resending if not strictly necessary.
+Looks like your workload and idle balancing don't much like each-other.
 
-Regards,
-   Antonio
+What I think is happening is that all your 'idle' qemu thingies keep
+waking up frequently and because you've got like twice the number of
+qemu instances as you've got cpus there's a fair chance you'll have a
+cpu with a pending task while another one goes idle.
 
---=20
-Antonio Ospite
-http://ao2.it
+(Why does qemu keep waking if its idle? broken NOHZ?)
 
-PGP public key ID: 0x4553B001
+So idle balancing is called when the cpu goes idle (context switch to
+the idle thread) and tries to steal a pending task from another cpu,
+clearly it keeps finding these tasks otherwise it wouldn't try to take
+that lock.
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+Mike, you build in some idle balance throttle logic, but that seems
+defeated here (possible because it keeps finding pending tasks to
+migrate? still need morning juice).
 
---Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk2a1kMACgkQ5xr2akVTsAHgCwCeLlslXpMUNWY1y3U2oGqF2IM9
-EoIAoJwgDQ7vYXZulTip4xWMQ31NVVaE
-=3yV6
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz--
