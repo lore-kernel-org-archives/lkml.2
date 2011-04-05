@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab1DEAy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Apr 2011 20:54:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47603 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750920Ab1DEAyZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Apr 2011 20:54:25 -0400
+	id S1751470Ab1DEBCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Apr 2011 21:02:12 -0400
+Received: from home.keithp.com ([63.227.221.253]:34667 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053Ab1DEBCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Apr 2011 21:02:11 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] drm fixes
+In-Reply-To: <alpine.DEB.2.00.1104050137040.8684@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1104050137040.8684@skynet.skynet.ie>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
+Date: Mon, 04 Apr 2011 18:02:07 -0700
+Message-ID: <yun4o6dik8g.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <20110404150846.54034f1b.rdunlap@xenotime.net>
-References: <20110404145803.8663081d.rdunlap@xenotime.net> <20110404150846.54034f1b.rdunlap@xenotime.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 4 Apr 2011 17:54:04 -0700
-Message-ID: <BANLkTikSbTgsH1zHm+mEu6C3R5dEsw2ogA@mail.gmail.com>
-Subject: Re: [PATCH 7/8] Documentation: consolidate leds files to leds/ subdir
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        akpm <akpm@linux-foundation.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 4, 2011 at 3:08 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->
-> Changes since v1:
->  - don't use git renames
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Actually, I think it would make it much easier to validate the patches
-if you used git rename patches for things like this.
+On Tue, 5 Apr 2011 01:38:31 +0100 (IST), Dave Airlie <airlied@linux.ie> wro=
+te:
 
-As a traditional patch, it's impossible to see that "yes, it's a
-rename". There might be tons of changes hiding in the add/remove pair.
+>       drm/i915: Reset GMBUS controller after NAK
 
-                          Linus
+We've got a report of a regression from this patch and have a fix in
+review right now. Please don't merge this to master until that fix has
+been verified and added to this sequence.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFNmmoPQp8BWwlsTdMRAmk/AKC89qQmWDVVQG0hJVxZUHaQyZ3D9ACgns76
+D6gkPUNhgNLOCi8tH0CBq7k=
+=+Ugz
+-----END PGP SIGNATURE-----
+--=-=-=--
