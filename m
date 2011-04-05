@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab1DEQRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:17:38 -0400
-Received: from kroah.org ([198.145.64.141]:43683 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887Ab1DEQRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:17:30 -0400
-Date: Tue, 5 Apr 2011 09:14:54 -0700
-From: Greg KH <greg@kroah.com>
-To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
- in Kernel.
-Message-ID: <20110405161454.GB885@kroah.com>
-References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
+	id S1752754Ab1DEQRw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:17:52 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38696 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755096Ab1DEQRu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 12:17:50 -0400
+From: Alan Cox <alan@linux.jf.intel.com>
+Subject: [PATCH] gma500: Add oaktrail
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Tue, 05 Apr 2011 16:55:26 +0100
+Message-ID: <20110405155512.15143.44918.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 05, 2011 at 09:49:46PM +0900, Nao Nishijima wrote:
-> This patch series provides a SCSI option for persistent device
-> names in kernel. With this option, user can always assign a
-> same device name (e.g. sda) to a specific device according to
-> udev rules and device id.
-> 
-> Issue:
-> Recently, kernel registers block devices in parallel. As a result,
-> different device names will be assigned at each boot time. This
-> will confuse file-system mounter, thus we usually use persistent
-> symbolic links provided by udev. However, dmesg and procfs outputs
-> show device names instead of the symbolic link names. This causes
-> a serious problem when managing multiple devices (e.g. on a
-> large-scale storage), because usually, device errors are output
-> with device names on dmesg. We also concern about some commands
-> which output device names, as well as kernel messages.
-> 
-> Solution:
-> To assign a persistent device name, I create unnamed devices (not
-> a block device, but an intermediate device. users cannot read/write
-> this device). When scsi device driver finds a LU, the LU is registered
-> as an unnamed device and inform to udev. After udev finds the unnamed
-> device, udev assigns a persistent device name to a specific device
-> according to udev rules and registers it as a block device. Hence,
-> this is just a naming, not a renaming.
-> 
-> Some users are satisfied with current udev solution. Therefore, my
-> proposal is implemented as an option.
-> 
-> If using this option, add the following kernel parameter.
-> 
-> 	scsi_mod.persistent_name=1
-> 
-> Also, if you want to assign a device name with sda, add the
-> following udev rules.
-> 
-> SUBSYSTEM=="scsi_unnamed", ATTR{disk_id}=="xxx", PROGRAM="/bin/sh
-> -c 'echo -n sda > /sys/%p/disk_name'"
+Oaktrail needs a couple of slight plumbing tweaks
 
-Also, where is the "real" program you have created to properly name
-devices from userspace?  You need that to properly test this patch,
-right?
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-thanks,
+ drivers/staging/gma500/Kconfig     |    2 +-
+ drivers/staging/gma500/mrst_lvds.c |   11 ++++++++++-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/staging/gma500/Kconfig b/drivers/staging/gma500/Kconfig
+index 5501eb9..ce8beda 100644
+--- a/drivers/staging/gma500/Kconfig
++++ b/drivers/staging/gma500/Kconfig
+@@ -1,6 +1,6 @@
+ config DRM_PSB
+ 	tristate "Intel GMA500 KMS Framebuffer"
+-	depends on DRM && PCI
++	depends on DRM && PCI && X86
+ 	select FB_CFB_COPYAREA
+         select FB_CFB_FILLRECT
+         select FB_CFB_IMAGEBLIT
+diff --git a/drivers/staging/gma500/mrst_lvds.c b/drivers/staging/gma500/mrst_lvds.c
+index 21b9056..4a08b74 100644
+--- a/drivers/staging/gma500/mrst_lvds.c
++++ b/drivers/staging/gma500/mrst_lvds.c
+@@ -22,6 +22,7 @@
+ 
+ #include <linux/i2c.h>
+ #include <drm/drmP.h>
++#include <asm/mrst.h>
+ 
+ #include "psb_intel_bios.h"
+ #include "psb_drv.h"
+@@ -300,7 +301,15 @@ void mrst_lvds_init(struct drm_device *dev,
+ 	 * 4) make sure lid is open
+ 	 *    if closed, act like it's not there for now
+ 	 */
+-	i2c_adap = i2c_get_adapter(2);
++
++	 /* This ifdef can go once the cpu ident stuff is cleaned up in arch */
++#if defined(CONFIG_X86_MRST)
++	if (mrst_identify_cpu())
++        	i2c_adap = i2c_get_adapter(2);
++        else	/* Oaktrail uses I2C 1 */
++#endif        
++        	i2c_adap = i2c_get_adapter(1);
++
+ 	if (i2c_adap == NULL)
+ 		printk(KERN_ALERT "No ddc adapter available!\n");
+ 	/*
+
