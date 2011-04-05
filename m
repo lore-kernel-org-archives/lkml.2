@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab1DENx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 09:53:57 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42395
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1753117Ab1DENxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 09:53:54 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42385
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752867Ab1DENxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752817Ab1DENxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Apr 2011 09:53:51 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 05/22] Staging: hv: Use struct completion in struct storvsc_request_extension
-Date: Tue,  5 Apr 2011 07:04:49 -0700
-Message-Id: <1302012306-21277-5-git-send-email-kys@microsoft.com>
+Subject: [PATCH 03/22] Staging: hv: Get rid of request_ext_size from struct storvsc_driver_object
+Date: Tue,  5 Apr 2011 07:04:47 -0700
+Message-Id: <1302012306-21277-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302012306-21277-1-git-send-email-kys@microsoft.com>
 References: <1302012261-21236-1-git-send-email-kys@microsoft.com>
@@ -25,198 +25,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the wait_queue mechanism for synchronization in
-struct storvsc_request_extension and instead use completion
-mechanism.
+Now that struct storvsc_request_extension is part of struct hv_storvsc_request
+get rid of the field request_ext_size from struct storvsc_driver_object.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc.c     |   34 ++++++++++++----------------------
- drivers/staging/hv/storvsc_api.h |    3 +--
- drivers/staging/hv/storvsc_drv.c |   10 ++++------
- 3 files changed, 17 insertions(+), 30 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c  |    5 +----
+ drivers/staging/hv/storvsc_api.h |    3 ---
+ drivers/staging/hv/storvsc_drv.c |   11 +++--------
+ 3 files changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 5cea331..8dc17b9 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -20,7 +20,7 @@
-  */
- #include <linux/kernel.h>
- #include <linux/sched.h>
--#include <linux/wait.h>
-+#include <linux/completion.h>
- #include <linux/string.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
-@@ -107,7 +107,7 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	struct storvsc_device *stor_device;
- 	struct storvsc_request_extension *request;
- 	struct vstor_packet *vstor_packet;
--	int ret;
-+	int ret, t;
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index 9ceaa99..3672e15 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -162,8 +162,6 @@ static int blk_vsc_initialize(struct hv_driver *driver)
+ 	driver->name = g_blk_driver_name;
+ 	memcpy(&driver->dev_type, &g_blk_device_type, sizeof(struct hv_guid));
  
- 	stor_device = get_stor_device(device);
- 	if (!stor_device) {
-@@ -124,13 +124,12 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	 * channel
- 	 */
- 	memset(request, 0, sizeof(struct storvsc_request_extension));
--	init_waitqueue_head(&request->wait_event);
-+	init_completion(&request->wait_event);
- 	vstor_packet->operation = VSTOR_OPERATION_BEGIN_INITIALIZATION;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
+-	stor_driver->request_ext_size =
+-	sizeof(struct storvsc_request_extension);
  
- 	DPRINT_INFO(STORVSC, "BEGIN_INITIALIZATION_OPERATION...");
+ 	/*
+ 	 * Divide the ring buffer data size (which is 1 page less than the ring
+@@ -346,8 +344,7 @@ static int blkvsc_probe(struct device *device)
+ 	/* 	sizeof(struct blkvsc_request)); */
  
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -142,14 +141,12 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
- 
--
- 	if (vstor_packet->operation != VSTOR_OPERATION_COMPLETE_IO ||
- 	    vstor_packet->status != 0) {
- 		DPRINT_ERR(STORVSC, "BEGIN_INITIALIZATION_OPERATION failed "
-@@ -168,7 +165,6 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	vstor_packet->version.major_minor = VMSTOR_PROTOCOL_VERSION_CURRENT;
- 	FILL_VMSTOR_REVISION(vstor_packet->version.revision);
- 
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -180,9 +176,8 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
-@@ -205,7 +200,6 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	vstor_packet->storage_channel_properties.port_number =
- 					stor_device->port_number;
- 
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -218,9 +212,8 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
-@@ -248,7 +241,6 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 	vstor_packet->operation = VSTOR_OPERATION_END_INITIALIZATION;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
- 
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)request,
-@@ -261,9 +253,8 @@ static int stor_vsc_channel_init(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
-@@ -397,8 +388,7 @@ static void stor_vsc_on_channel_callback(void *context)
- 
- 				memcpy(&request->vstor_packet, packet,
- 				       sizeof(struct vstor_packet));
--				request->wait_condition = 1;
--				wake_up(&request->wait_event);
-+				complete(&request->wait_event);
- 			} else {
- 				stor_vsc_on_receive(device,
- 						(struct vstor_packet *)packet,
+ 	blkdev->request_pool = kmem_cache_create(dev_name(&device_obj->device),
+-					sizeof(struct blkvsc_request) +
+-					storvsc_drv_obj->request_ext_size, 0,
++					sizeof(struct blkvsc_request), 0,
+ 					SLAB_HWCACHE_ALIGN, NULL);
+ 	if (!blkdev->request_pool) {
+ 		ret = -ENOMEM;
 diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index 5c80cdb..cdef1c7 100644
+index e41b68b..eeaeaef 100644
 --- a/drivers/staging/hv/storvsc_api.h
 +++ b/drivers/staging/hv/storvsc_api.h
-@@ -60,8 +60,7 @@ struct storvsc_request_extension {
- 	struct hv_device *device;
+@@ -97,9 +97,6 @@ struct storvsc_driver_object {
+ 	/* Set by caller (in bytes) */
+ 	u32 ring_buffer_size;
  
- 	/* Synchronize the request/response if needed */
--	int wait_condition;
--	wait_queue_head_t wait_event;
-+	struct completion wait_event;
+-	/* Allocate this much private extension for each I/O request */
+-	u32 request_ext_size;
+-
+ 	/* Maximum # of requests in flight per channel/device */
+ 	u32 max_outstanding_req_per_channel;
  
- 	struct vstor_packet vstor_packet;
- };
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 268c607..c2a3a5b 100644
+index 58d12e0..1d13f1b 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -231,7 +231,7 @@ static int stor_vsc_on_host_reset(struct hv_device *device)
- 	struct storvsc_device *stor_device;
- 	struct storvsc_request_extension *request;
- 	struct vstor_packet *vstor_packet;
--	int ret;
-+	int ret, t;
+@@ -96,8 +96,6 @@ static int stor_vsc_initialize(struct hv_driver *driver)
+ 	memcpy(&driver->dev_type, &gStorVscDeviceType,
+ 	       sizeof(struct hv_guid));
  
- 	DPRINT_INFO(STORVSC, "resetting host adapter...");
+-	stor_driver->request_ext_size =
+-			sizeof(struct storvsc_request_extension);
  
-@@ -245,13 +245,12 @@ static int stor_vsc_on_host_reset(struct hv_device *device)
- 	request = &stor_device->reset_request;
- 	vstor_packet = &request->vstor_packet;
+ 	/*
+ 	 * Divide the ring buffer data size (which is 1 page less
+@@ -203,8 +201,7 @@ static int storvsc_drv_init(void)
+ 	drv->priv = storvsc_drv_obj;
  
--	init_waitqueue_head(&request->wait_event);
-+	init_completion(&request->wait_event);
+ 	DPRINT_INFO(STORVSC_DRV,
+-		    "request extension size %u, max outstanding reqs %u",
+-		    storvsc_drv_obj->request_ext_size,
++		    "max outstanding reqs %u",
+ 		    storvsc_drv_obj->max_outstanding_req_per_channel);
  
- 	vstor_packet->operation = VSTOR_OPERATION_RESET_BUS;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
- 	vstor_packet->vm_srb.path_id = stor_device->path_id;
+ 	if (storvsc_drv_obj->max_outstanding_req_per_channel <
+@@ -359,8 +356,7 @@ static int storvsc_probe(struct device *device)
  
--	request->wait_condition = 0;
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
- 			       sizeof(struct vstor_packet),
- 			       (unsigned long)&stor_device->reset_request,
-@@ -263,9 +262,8 @@ static int stor_vsc_on_host_reset(struct hv_device *device)
- 		goto cleanup;
- 	}
+ 	host_device_ctx->request_pool =
+ 				kmem_cache_create(dev_name(&device_obj->device),
+-					sizeof(struct storvsc_cmd_request) +
+-					storvsc_drv_obj->request_ext_size, 0,
++					sizeof(struct storvsc_cmd_request), 0,
+ 					SLAB_HWCACHE_ALIGN, NULL);
  
--	wait_event_timeout(request->wait_event, request->wait_condition,
--			msecs_to_jiffies(1000));
--	if (request->wait_condition == 0) {
-+	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
+ 	if (!host_device_ctx->request_pool) {
+@@ -759,8 +755,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 
+ 	request = &cmd_request->request;
+ 
+-	DPRINT_DBG(STORVSC_DRV, "req %p size %d ext %d", request, request_size,
+-		   storvsc_drv_obj->request_ext_size);
++	DPRINT_DBG(STORVSC_DRV, "req %p size %d", request, request_size);
+ 
+ 	/* Build the SRB */
+ 	switch (scmnd->sc_data_direction) {
 -- 
 1.7.4.1
 
