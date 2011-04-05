@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab1DEG4K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 02:56:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37284 "EHLO mail.zytor.com"
+	id S1752902Ab1DEHDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 03:03:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48271 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752702Ab1DEG4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 02:56:07 -0400
-Message-ID: <4D9ABCED.30606@zytor.com>
-Date: Mon, 04 Apr 2011 23:55:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-1.fc15 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
-        stable kernel team <stable@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <201104050829.58474.rjw@sisk.pl> <4D9AB8B7.9020708@zytor.com> <201104050843.39246.rjw@sisk.pl>
-In-Reply-To: <201104050843.39246.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752077Ab1DEHDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 03:03:09 -0400
+From: Hemant Pedanekar <hemantp@ti.com>
+To: jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org, Hemant Pedanekar <hemantp@ti.com>
+Subject: [PATCH] pci: Add quirk for setting valid class for TI816X Endpoint
+Date: Tue,  5 Apr 2011 12:32:50 +0530
+Message-Id: <1301986970-16482-1-git-send-email-hemantp@ti.com>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2011 11:43 PM, Rafael J. Wysocki wrote:
->>
->> Just to refresh my memory... is this an issue in mainline, or is it only
->> a problem in the backport (I'm wondering if the trampoline unification
->> patches might have accidentally solved the issue)?
-> 
-> The problem is in mainline too, please fix ASAP.
+TI816X (common name for DM816x/C6A816x/AM389x family) devices configured to boot
+as PCIe Endpoint have class code = 0. This makes kernel PCI bus code to skip
+allocating BARs to these devices resulting into following type of error when
+trying to enable them:
 
-Thanks for confirming, will look at it in the morning.  Just looking for
-the sanest place to put the save/restore (it really should be done at
-the same places where we save/restore MISC_ENABLE.)
+"Device 0000:01:00.0 not available because of resource collisions"
 
-	-hpa
+The device cannot be operated because of the above issue.
 
+This patch adds a ID specific (TI VENDOR ID and 816X DEVICE ID based) 'early'
+fixup quirk to replace class code with PCI_CLASS_MULTIMEDIA_VIDEO as class.
+
+Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
+---
+ drivers/pci/quirks.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index bd80f63..a1e4f61 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2784,6 +2784,16 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x342e, vtd_mask_spec_errors);
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3c28, vtd_mask_spec_errors);
+ #endif
+ 
++static void __devinit fixup_ti816x_class(struct pci_dev* dev)
++{
++	/* TI 816x devices do not have class code set when in PCIe boot mode */
++	if (dev->class == PCI_CLASS_NOT_DEFINED) {
++		dev_info(&dev->dev, "Setting PCI class for 816x PCIe device\n");
++		dev->class = PCI_CLASS_MULTIMEDIA_VIDEO;
++	}
++}
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.3.5
 
