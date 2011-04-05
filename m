@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab1DEUuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 16:50:08 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:38907 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753354Ab1DEUuH (ORCPT
+	id S1754943Ab1DEVSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 17:18:12 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:59492 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab1DEVSJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 16:50:07 -0400
-Date: Tue, 5 Apr 2011 21:50:03 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>
-Subject: Re: [RFC][PATCH 1/5] signals: Always place SIGCONT and SIGSTOP on
- 'shared_pending'
-Message-ID: <20110405215003.636e950b@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110405201958.GA1404@redhat.com>
-References: <1302031310-1765-1-git-send-email-matt@console-pimps.org>
-	<1302031310-1765-2-git-send-email-matt@console-pimps.org>
-	<20110405201958.GA1404@redhat.com>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Apr 2011 17:18:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wov964UOFIAvEGn7zs7K+0OZ6DTz3x3n5ayRAjjdu7xIkg2UvKsCpIU5ZQ0M7wK8T7
+         xNt1AXuNKXABOeqYKaHgyYXr3OIt4Ad919xseu08EZP7bE3C1NgPum5M/l5DuqJZTGMw
+         1lLuZcTEHUFaWzBuSjiMEThqIbAss+ezaOklk=
+MIME-Version: 1.0
+In-Reply-To: <yunsjtwfo4l.fsf@aiko.keithp.com>
+References: <yunsjtwfo4l.fsf@aiko.keithp.com>
+Date: Wed, 6 Apr 2011 07:18:07 +1000
+Message-ID: <BANLkTinw5+uOtmW9vagb1s_4UyNjDknMgQ@mail.gmail.com>
+Subject: Re: i915 fixes for VGA and LVDS DDC probing
+From: Dave Airlie <airlied@gmail.com>
+To: Keith Packard <keithp@keithp.com>,
+        "Torvalds, Linus" <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Apr 2011 22:19:58 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+Hi Linus
 
-> Hi Matt,
-> 
-> I'll try to study this series, but not before Friday, sorry.
+can you pull these directly, as they are required for -rc2 and I'm
+just adding latency.
 
-No problem!
+Thanks,
 
-> Only one thing,
-> 
-> On 04/05, Matt Fleming wrote:
-> > 
-> > Because SIGCONT and SIGSTOP affect an entire thread group,
-> 
-> Yes, the effect is global, but
-> 
-> > we can
-> > place them on the 'shared_pending' queue.
-> 
-> I don't think we can.
-> 
->  -	pending = group ? &t->signal->shared_pending : &t->pending;
-> > +	/*
-> > +	 * We always enqueue SIGSTOP or SIGCONT signals on the
-> > shared
-> > +	 * queue. This means that a SIGSTOP or SIGCONT signal
-> > _cannot_
-> > +	 * be present on a thread's private pending queue.
-> > +	 *
-> > +	 * This makes prepare_signal() more optimal as we do not
-> > have
-> > +	 * to remove signals from each thread's pending queue and
-> > so
-> > +	 * can avoid iterating over all threads in the thread group
-> > +	 * (and therefore avoid the locking that would be
-> > necessary to
-> > +	 * do that safely).
-> > +	 */
-> > +	if (group || sig_kernel_stop(sig) || sig == SIGCONT)
-> > +		pending = &t->signal->shared_pending;
-> > +	else
-> > +		pending = &t->pending;
-> 
-> How so? Suppose the process has a handler for SIGCONT. Suppose this
-> process is not stopped. tkill(SIGCONT) should deliver the signal to
-> the right thread.
+Dave.
 
-D'oh, yes. I think I got confused here. You're right, this won't work.
- 
-> SIGSTOP can't have the handler, still we shouldn't place it on the
-> shared list, debuggers won't be happy.
-
-Urgh, debuggers actually peek at shared_pending and pending?
-
-> Also. This code was changed very much, please do these changes on
-> top of
-> http://git.kernel.org/?p=linux/kernel/git/tj/misc.git;a=shortlog;h=refs/heads/ptrace
-
-My patches are already based on that tree.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+On Wed, Apr 6, 2011 at 6:18 AM, Keith Packard <keithp@keithp.com> wrote:
+>
+> Hi Dave,
+>
+> Please pull two fixes from
+>
+>        git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6 drm-intel-fixes
+>
+> The first resolves a regression https://bugzilla.kernel.org/show_bug.cgi?id=32612
+> with VGA detection.
+>
+> The second removes the same bogus code from the LVDS detection path.
+>
+> Changelog:
+> ---------
+>
+> Chris Wilson (2):
+>      drm/i915/crt: Remove 0xa0 probe for VGA
+>      drm/i915/lvds: Remove 0xa0 DDC probe for LVDS
+>
+> Diffstat
+> --------
+>
+>  intel_crt.c  |   20 --------------------
+>  intel_lvds.c |   24 ------------------------
+>  2 files changed, 44 deletions(-)
+>
+> --
+> keith.packard@intel.com
+>
