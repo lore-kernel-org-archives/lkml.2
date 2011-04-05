@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab1DEQ7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 12:59:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55450 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab1DEQ7B (ORCPT
+	id S1755446Ab1DEQ7C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 12:59:02 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59830 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab1DEQ65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:59:01 -0400
+	Tue, 5 Apr 2011 12:58:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=mOLMwmv8EAvv7u+DoFq72q3Oj9eOtuo+HhgVHX2PQwJKE7kMWa7oRApCPOzR++oGF3
-         kXuE5oCQzr+Nu/Xy6czmOCltwnXMxbbiEawaIBy6oFdDoeiUg0ScTDd+EKjcHJj7X0Wq
-         B5FaJLcPBUrE1RgOD2utSUPLHFODN2n6SW9zs=
+        b=QUgE/9dGlklhDfPsbjFndiUjGXIcLQVnjAXUVAaM1hZTWdTwRuf15Bf0Dk2bGDPl+L
+         p33TtVKV4vnjKhNfoyZoPwu78p6k3tBBD24Mujl+00fCiigFzNIdv6akbbGUiwAc8gcg
+         hFHl34Qy0OMwj5yxLf2avHVTi+HuVZkoZPTzM=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>,
-        David Howells <dhowells@redhat.com>, linux-am33-list@redhat.com
-Subject: [RFC 4/5]arch:mn10300:kernel:Makefile Remove unused config in the Makefile.
-Date: Tue,  5 Apr 2011 09:58:21 -0700
-Message-Id: <1302022702-24541-4-git-send-email-justinmattock@gmail.com>
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [RFC 3/5]arch:mips:pmc-sierra:msp71xx:Makefile Remove unused config in the Makefile.
+Date: Tue,  5 Apr 2011 09:58:20 -0700
+Message-Id: <1302022702-24541-3-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1302022702-24541-1-git-send-email-justinmattock@gmail.com>
 References: <1302022702-24541-1-git-send-email-justinmattock@gmail.com>
@@ -35,25 +35,25 @@ Note: I did try to cross compile these but hit erros while doing so..
 Please have a look if/when anybody has free time.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-CC: David Howells <dhowells@redhat.com> 
-CC: linux-am33-list@redhat.com
+CC: Ralf Baechle <ralf@linux-mips.org>
+CC: linux-mips@linux-mips.org
 
 ---
- arch/mn10300/kernel/Makefile |    1 -
+ arch/mips/pmc-sierra/msp71xx/Makefile |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/mn10300/kernel/Makefile b/arch/mn10300/kernel/Makefile
-index 47ed30f..74b20ad 100644
---- a/arch/mn10300/kernel/Makefile
-+++ b/arch/mn10300/kernel/Makefile
-@@ -22,7 +22,6 @@ obj-$(CONFIG_GDBSTUB_ON_TTYSx) += gdb-io-serial.o gdb-io-serial-low.o
- obj-$(CONFIG_GDBSTUB_ON_TTYSMx) += gdb-io-ttysm.o gdb-io-ttysm-low.o
- 
- obj-$(CONFIG_MN10300_RTC) += rtc.o
--obj-$(CONFIG_PROFILE) += profile.o profile-low.o
- obj-$(CONFIG_MODULES) += module.o
- obj-$(CONFIG_KPROBES) += kprobes.o
- obj-$(CONFIG_KGDB) += kgdb.o
+diff --git a/arch/mips/pmc-sierra/msp71xx/Makefile b/arch/mips/pmc-sierra/msp71xx/Makefile
+index cefba77..9201c8b 100644
+--- a/arch/mips/pmc-sierra/msp71xx/Makefile
++++ b/arch/mips/pmc-sierra/msp71xx/Makefile
+@@ -3,7 +3,6 @@
+ #
+ obj-y += msp_prom.o msp_setup.o msp_irq.o \
+ 	 msp_time.o msp_serial.o msp_elb.o
+-obj-$(CONFIG_HAVE_GPIO_LIB) += gpio.o gpio_extended.o
+ obj-$(CONFIG_PMC_MSP7120_GW) += msp_hwbutton.o
+ obj-$(CONFIG_IRQ_MSP_SLP) += msp_irq_slp.o
+ obj-$(CONFIG_IRQ_MSP_CIC) += msp_irq_cic.o msp_irq_per.o
 -- 
 1.7.4.2
 
