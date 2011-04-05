@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab1DEKax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 06:30:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26753 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab1DEKav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 06:30:51 -0400
-Message-Id: <b7da2f$qvoau5@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,303,1299484800"; 
-   d="scan'208";a="905718725"
-Date: Tue, 05 Apr 2011 11:30:47 +0100
-To: Tomas Winkler <tomasw@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Disable all outputs early, before KMS takeover
-References: <AANLkTi=VqkYjdiDLJvM-OfmBSGx-EkRkt=4XCDEnvZsU@mail.gmail.com> <1301395589-8121-1-git-send-email-chris@chris-wilson.co.uk> <20110401114429.GA3526@viiv.ffwll.ch> <AANLkTik6njOQTLGsB4KzPP-J=fE=p4CHopAyvsDzdDSF@mail.gmail.com> <BANLkTimUZY+2E=kXG-as8-moAAS4+F5bTg@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <BANLkTimUZY+2E=kXG-as8-moAAS4+F5bTg@mail.gmail.com>
+	id S1753101Ab1DEKe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 06:34:58 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40472 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1DEKe5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 06:34:57 -0400
+Subject: [PATCH] tmpfs: fix race between umount and writepage
+To: Hugh Dickins <hughd@google.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Date: Tue, 5 Apr 2011 14:34:52 +0400
+Message-ID: <20110405103452.18737.28363.stgit@localhost6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Apr 2011 13:21:08 +0300, Tomas Winkler <tomasw@gmail.com> wrote:
-> On Fri, Apr 1, 2011 at 2:51 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> > Unfortunately I get a blank screen with after boot:
-> > Nacked-by: Pekka Enberg <penberg@kernel.org>
+shmem_writepage() call igrab() on the inode for the page which is came from
+reclaimer to add it later into shmem_swaplist for swap-unuse operation.
 
-But until you can tell me where it explodes on your system, we fix
-issues on several other machines...
+This igrab() can race with super-block deactivating process:
+
+shrink_inactive_list()		deactivate_super()
+pageout()			tmpfs_fs_type->kill_sb()
+shmem_writepage()		kill_litter_super()
+				generic_shutdown_super()
+				 evict_inodes()
+ igrab()
+				  atomic_read(&inode->i_count)
+				   skip-inode
+ iput()
+				 if (!list_empty(&sb->s_inodes))
+					printk("VFS: Busy inodes after...
+
+To avoid this race after this patch shmem_writepage() also try grab sb->s_active.
+
+If sb->s_active == 0 adding to the shmem_swaplist not required, because
+super-block deactivation in progress and swap-entries will be released soon.
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ mm/shmem.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 58da7c1..1f49c03 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1038,11 +1038,13 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
+ 	struct address_space *mapping;
+ 	unsigned long index;
+ 	struct inode *inode;
++	struct super_block *sb;
  
-> Not sure this is related, but when I enable DRM_I915_KMS=y I'm got
-> stuck after boot too. When KMS is disabled I can at least get to the
-> console (no graphics)
-> This is with kernel 2.6.39-rc1.  It worked fine with 2.6.38. I don't
-> have much time bisect and reboot.  Shell I  try to pull drm-fixes for
-> rc2 or use try this patch?
+ 	BUG_ON(!PageLocked(page));
+ 	mapping = page->mapping;
+ 	index = page->index;
+ 	inode = mapping->host;
++	sb = inode->i_sb;
+ 	info = SHMEM_I(inode);
+ 	if (info->flags & VM_LOCKED)
+ 		goto redirty;
+@@ -1083,7 +1085,10 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
+ 		delete_from_page_cache(page);
+ 		shmem_swp_set(info, entry, swap.val);
+ 		shmem_swp_unmap(entry);
+-		if (list_empty(&info->swaplist))
++		if (!list_empty(&info->swaplist) ||
++				!atomic_inc_not_zero(&sb->s_active))
++			sb = NULL;
++		if (sb)
+ 			inode = igrab(inode);
+ 		else
+ 			inode = NULL;
+@@ -1098,6 +1103,8 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
+ 			mutex_unlock(&shmem_swaplist_mutex);
+ 			iput(inode);
+ 		}
++		if (sb)
++			deactivate_super(sb);
+ 		return 0;
+ 	}
+ 
 
-Add drm.debug=0xe to your grub kernel parameters and attach the dmesg for
-the failing boot. From that I should be able to recommend a course of
-action.
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
