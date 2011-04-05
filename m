@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab1DEIso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 04:48:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49420 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab1DEIsl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 04:48:41 -0400
-Subject: Re: [PATCH] posix-timers: RCU conversion
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: ben@iagu.net, Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <4D887B6A.2020102@redhat.com>
-References: <AANLkTikZZ4MXZjx_+6u-vKVSgxULQo2BkQKRO6K_vzFy@mail.gmail.com>
-	 <20110318123031.GB6066@8bytes.org>
-	 <AANLkTin2k1ZSLa0NG6pKBvHYnKEV21t8pEqzeJWNn_rR@mail.gmail.com>
-	 <4D871F6C.40207@redhat.com>
-	 <AANLkTintxnKRQ4rD4Wo8_MHU4yJVzYaRhR=GjnDMGwNj@mail.gmail.com>
-	 <AANLkTin8ZoUAVR2ajoV6cBFiUSe_Dof0_k60dcAGW3r-@mail.gmail.com>
-	 <4D875842.9050308@redhat.com>
-	 <AANLkTikWQS281kTtJ32-qo5U+w_BAak7qUwVhUQgOxxv@mail.gmail.com>
-	 <4D8773AA.8030408@redhat.com>
-	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
-	 <1300726498.2884.493.camel@edumazet-laptop>	<4D8784A9.8040303@redhat.com>
-	 <1300727545.2884.513.camel@edumazet-laptop>
-	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
-	 <1300746429.2837.20.camel@edumazet-laptop>
-	 <1300777760.2837.38.camel@edumazet-laptop>
-	 <AANLkTik-Rt-Fy-2fKQTr2JBB9f7U2cbc0FmTZOoXc1+5@mail.gmail.com>
-	 <4D887B6A.2020102@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 05 Apr 2011 10:48:20 +0200
-Message-ID: <1301993300.2225.26.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753047Ab1DEItk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 04:49:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54353 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab1DEIth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 04:49:37 -0400
+Date: Tue, 5 Apr 2011 08:48:56 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1301991265.2225.12.camel@twins>
+References: <1301991265.2225.12.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Clean up rebalance_domains() load-balance interval calculation
+Message-ID: <tip-49c022e657fbe661460d191fbe776a387132e2b3@git.kernel.org>
+Git-Commit-ID: 49c022e657fbe661460d191fbe776a387132e2b3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Apr 2011 08:49:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-22 at 12:35 +0200, Avi Kivity wrote:
->> Here's top with 96 idle guests running:
+Commit-ID:  49c022e657fbe661460d191fbe776a387132e2b3
+Gitweb:     http://git.kernel.org/tip/49c022e657fbe661460d191fbe776a387132e2b3
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 5 Apr 2011 10:14:25 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 5 Apr 2011 10:29:36 +0200
 
-On some hacked up 2.6.38 kernel...
+sched: Clean up rebalance_domains() load-balance interval calculation
 
-> > Start of perf report -g
-> >      55.26%            kvm  [kernel.kallsyms]     [k] __ticket_spin_lock
-> >                        |
-> >                        --- __ticket_spin_lock
-> >                           |
-> >                           |--94.68%-- _raw_spin_lock
-> >                           |          |
-> >                           |          |--97.55%-- double_rq_lock
-> >                           |          |          load_balance
-> >                           |          |          idle_balance
-> >                           |          |          schedule
-> >                           |          |          |
-> >                           |          |          |--60.56%-- schedule_hrtimeout_range_clock
-> >                           |          |          |          schedule_hrtimeout_range
-> >                           |          |          |          poll_schedule_timeout
-> >                           |          |          |          do_select
-> >                           |          |          |          core_sys_select
-> >                           |          |          |          sys_select
-> >                           |          |          |          system_call_fastpath
+Instead of the possible multiple-evaluation of num_online_cpus()
+in rebalance_domains() that Linus reported, avoid it altogether
+in the normal case since it's implemented with a Hamming weight
+function over a cpu bitmask which can be darn expensive for those
+with big iron.
 
-Looks like your workload and idle balancing don't much like each-other.
+This also makes it cleaner, smaller and documents the code.
 
-What I think is happening is that all your 'idle' qemu thingies keep
-waking up frequently and because you've got like twice the number of
-qemu instances as you've got cpus there's a fair chance you'll have a
-cpu with a pending task while another one goes idle.
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1301991265.2225.12.camel@twins>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c      |    3 +++
+ kernel/sched_fair.c |   16 ++++++++++++----
+ 2 files changed, 15 insertions(+), 4 deletions(-)
 
-(Why does qemu keep waking if its idle? broken NOHZ?)
-
-So idle balancing is called when the cpu goes idle (context switch to
-the idle thread) and tries to steal a pending task from another cpu,
-clearly it keeps finding these tasks otherwise it wouldn't try to take
-that lock.
-
-Mike, you build in some idle balance throttle logic, but that seems
-defeated here (possible because it keeps finding pending tasks to
-migrate? still need morning juice).
-
-
+diff --git a/kernel/sched.c b/kernel/sched.c
+index a884551..17b4d22 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6331,6 +6331,9 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
+ #endif
+ 	}
++
++	update_max_interval();
++
+ 	return NOTIFY_OK;
+ }
+ 
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index c7ec5c8..80ecd09 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3820,6 +3820,17 @@ void select_nohz_load_balancer(int stop_tick)
+ 
+ static DEFINE_SPINLOCK(balancing);
+ 
++static unsigned long __read_mostly max_load_balance_interval = HZ/10;
++
++/*
++ * Scale the max load_balance interval with the number of CPUs in the system.
++ * This trades load-balance latency on larger machines for less cross talk.
++ */
++static void update_max_interval(void)
++{
++	max_load_balance_interval = HZ*num_online_cpus()/10;
++}
++
+ /*
+  * It checks each scheduling domain to see if it is due to be balanced,
+  * and initiates a balancing operation if so.
+@@ -3849,10 +3860,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 
+ 		/* scale ms to jiffies */
+ 		interval = msecs_to_jiffies(interval);
+-		if (unlikely(!interval))
+-			interval = 1;
+-		if (interval > HZ*num_online_cpus()/10)
+-			interval = HZ*num_online_cpus()/10;
++		interval = clamp(interval, 1UL, max_load_balance_interval);
+ 
+ 		need_serialize = sd->flags & SD_SERIALIZE;
+ 
