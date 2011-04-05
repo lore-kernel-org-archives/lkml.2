@@ -1,131 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1DEIhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 04:37:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46539 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab1DEIhu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 04:37:50 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de
-Subject: [PATCH] leds: provide helper to register "leds-gpio" devices
-Date: Tue,  5 Apr 2011 10:37:35 +0200
-Message-Id: <1301992655-8514-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20110405073030.GI13963@pengutronix.de>
-References: <20110405073030.GI13963@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1751682Ab1DEIoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 04:44:06 -0400
+Received: from smtp204.alice.it ([82.57.200.100]:60128 "EHLO smtp204.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751095Ab1DEIoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 04:44:04 -0400
+Date: Tue, 5 Apr 2011 10:43:47 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-mmc@vger.kernel.org, Daniel Ribeiro <drwyrm@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>, Ernst Schwab <eschwab@online.de>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        openezx-devel@lists.openezx.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] mmc_spi: Add support for regulator framework
+Message-Id: <20110405104347.0f93ab97.ospite@studenti.unina.it>
+In-Reply-To: <20110405030543.GC29522@ponder.secretlab.ca>
+References: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
+	<20110404115631.67b1f317.ospite@studenti.unina.it>
+	<20110405030543.GC29522@ponder.secretlab.ca>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; x86_64-unknown-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function makes a deep copy of the platform data to allow it to live
-in init memory.
-The definition cannot go into leds-gpio.c because it needs to be builtin
-to be usable by platforms.
+--Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-Hello,
+On Mon, 4 Apr 2011 21:05:43 -0600
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-I choosed to put this into drivers/leds/led-core.c because I consider
-drivers/leds/leds-register.c or even something leds-gpio specific overkill.
+> On Mon, Apr 04, 2011 at 11:56:31AM +0200, Antonio Ospite wrote:
+> > On Mon, 21 Mar 2011 19:46:38 +0100
+> > Antonio Ospite <ospite@studenti.unina.it> wrote:
+> >=20
+> > > Hi,
+> > >=20
+> > > this patchset has the purpose of adding support for the regulator fra=
+mework to=20
+> > > the mmc_spi driver. The first three patches are preparatory cleanups =
+to make=20
+> > > the fourth one more straightforward.
+> > >=20
+> > > Maybe the fourth patch can be improved, I am open to any suggestions =
+about it.
+> > >
+> >=20
+> > Ping. I forgot to Cc spi-devel-general on this series, should I resend
+> > it?
+>=20
+> Not a bad idea.  It doesn't go via my tree since it is an mmc patch,
+> not an spi one, but I don't mind taking a look at the spi bits.
+>=20
 
-But I'm open to discuss where to put it best.
+Grant you were on Cc from the start so you should have the patches
+somewhere; please tell me if you don't.
+I'd avoid resending if not strictly necessary.
 
-Best regards
-Uwe
+Regards,
+   Antonio
 
- drivers/leds/led-core.c |   27 ++++++++++++++++++++++++++-
- include/linux/leds.h    |   12 ++++++++++++
- 2 files changed, 38 insertions(+), 1 deletions(-)
+--=20
+Antonio Ospite
+http://ao2.it
 
-diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-index 016d19f..a9a762e 100644
---- a/drivers/leds/led-core.c
-+++ b/drivers/leds/led-core.c
-@@ -2,8 +2,10 @@
-  * LED Class Core
-  *
-  * Copyright 2005-2006 Openedhand Ltd.
-+ * Richard Purdie <rpurdie@openedhand.com>
-  *
-- * Author: Richard Purdie <rpurdie@openedhand.com>
-+ * Copyright (C) 2009-2010 Pengutronix
-+ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -16,6 +18,9 @@
- #include <linux/module.h>
- #include <linux/rwsem.h>
- #include <linux/leds.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
- #include "leds.h"
- 
- DECLARE_RWSEM(leds_list_lock);
-@@ -23,3 +28,23 @@ EXPORT_SYMBOL_GPL(leds_list_lock);
- 
- LIST_HEAD(leds_list);
- EXPORT_SYMBOL_GPL(leds_list);
-+
-+struct platform_device *__init gpio_led_register_device(
-+                const struct gpio_led_platform_data *pdata)
-+{
-+	struct platform_device *ret = ERR_PTR(-ENOMEM);
-+	struct gpio_led_platform_data _pdata = *pdata;
-+	_pdata.leds = kmemdup(pdata->leds,
-+			pdata->num_leds * sizeof(*pdata->leds), GFP_KERNEL);
-+
-+	if (!_pdata.leds)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ret = platform_device_register_resndata(NULL, "leds-gpio", -1,
-+			NULL, 0, &_pdata, sizeof(_pdata));
-+
-+	if (IS_ERR(ret))
-+		kfree(_pdata.leds);
-+
-+	return ret;
-+}
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 61e0340..e6897d9 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -207,5 +207,17 @@ struct gpio_led_platform_data {
- 					unsigned long *delay_off);
- };
- 
-+/**
-+ * gpio_led_register_device - register a gpio-led device
-+ * @pdata: the platform data used for the new device
-+ *
-+ * Use this function instead of platform_device_add()ing a static struct
-+ * platform_device.
-+ *
-+ * Note: as pdata and pdata->leds is copied these usually can and should be
-+ * __initdata.
-+ */
-+struct platform_device *__init gpio_led_register_device(
-+		const struct gpio_led_platform_data *pdata);
- 
- #endif		/* __LINUX_LEDS_H_INCLUDED */
--- 
-1.7.2.3
+PGP public key ID: 0x4553B001
 
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk2a1kMACgkQ5xr2akVTsAHgCwCeLlslXpMUNWY1y3U2oGqF2IM9
+EoIAoJwgDQ7vYXZulTip4xWMQ31NVVaE
+=3yV6
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__5_Apr_2011_10_43_47_+0200_z7N73p8uiIR.ADUz--
