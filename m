@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1DESIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 14:08:05 -0400
-Received: from adsl-67-113-118-6.dsl.sndg02.pacbell.net ([67.113.118.6]:33540
-	"EHLO multivac.one-eyed-alien.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752546Ab1DESID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 14:08:03 -0400
-X-Greylist: delayed 1061 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 14:08:02 EDT
-Date: Tue, 5 Apr 2011 10:50:10 -0700
-From: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Olech <tony.olech@elandigitalsystems.com>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 25/34] usb/ftdi-elan: Drop __TIME__ usage
-Message-ID: <20110405175010.GB22862@one-eyed-alien.net>
-Mail-Followup-To: Michal Marek <mmarek@suse.cz>,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Tony Olech <tony.olech@elandigitalsystems.com>,
-	linux-usb@vger.kernel.org
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-26-git-send-email-mmarek@suse.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4SFOXa2GPu3tIq4H"
-Content-Disposition: inline
-In-Reply-To: <1302015561-21047-26-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.4.2.3i
-Organization: One Eyed Alien Networks
-X-Copyright: (C) 2011 Matthew Dharm, all rights reserved.
-X-Message-Flag: Get a real e-mail client.  http://www.mutt.org/
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (multivac.one-eyed-alien.net [127.0.0.1]); Tue, 05 Apr 2011 10:50:10 -0700 (PDT)
+	id S1755632Ab1DESJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 14:09:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34700 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab1DESJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 14:09:07 -0400
+Message-ID: <4D9B5AC4.70103@suse.cz>
+Date: Tue, 05 Apr 2011 20:09:08 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/34] kbuild: Allow to override LINUX_COMPILE_BY and
+ LINUX_COMPILE_HOST macros
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-8-git-send-email-mmarek@suse.cz> <4D9B3AA4.5090402@fastmail.fm>
+In-Reply-To: <4D9B3AA4.5090402@fastmail.fm>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dne 5.4.2011 17:52, Jack Stone napsal(a):
+> On 05/04/2011 15:58, Michal Marek wrote:
+>> -  echo \#define LINUX_COMPILE_BY \"`whoami`\"
+>> -  echo \#define LINUX_COMPILE_HOST \"`hostname | $UTS_TRUNCATE`\"
+>> +  echo \#define LINUX_COMPILE_BY \"`echo $KBUILD_BUILD_USER | $UTS_TRUNCATE`\"
+>> +  echo \#define LINUX_COMPILE_HOST \"`echo $KBUILD_BUILD_HOST | $UTS_TRUNCATE`\"
+>
+> Shouldn't these be the variables defined above otherwise we get empty
+> LINUX_COMPILE_{BY,HOST} in the case the corresponding environment
+> variable is unset.
 
---4SFOXa2GPu3tIq4H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good catch. I'll fix it.
 
-On Tue, Apr 05, 2011 at 04:59:12PM +0200, Michal Marek wrote:
-> The kernel already prints its build timestamp during boot, no need to
-> repeat it in random drivers and produce different object files each
-> time.
+Thanks for the review.
 
-What about drivers built as modules, which may be compiled at a different
-time than the rest of the kernel?
-
-Matt
-
---=20
-Matthew Dharm                              Home: mdharm-usb@one-eyed-alien.=
-net=20
-Maintainer, Linux USB Mass Storage Driver
-
-Why am I talking to a toilet brush?
-					-- CEO
-User Friendly, 4/30/1998
-
---4SFOXa2GPu3tIq4H
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (GNU/Linux)
-
-iD8DBQFNm1ZS3gL8qCooyc4RAnqaAJ0fjD3MHj2nnJrU/1GyWZ/uT4+llQCfdwVJ
-1b5NneGgtex0pZVmMXIfdsY=
-=xC/n
------END PGP SIGNATURE-----
-
---4SFOXa2GPu3tIq4H--
+Michal
