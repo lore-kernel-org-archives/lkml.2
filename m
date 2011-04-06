@@ -1,236 +1,775 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab1DFWFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:05:22 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:60560 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab1DFWFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:05:16 -0400
-Date: Wed, 6 Apr 2011 18:05:12 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: David Miller <davem@davemloft.net>
-Cc: dave@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, kaber@trash.net,
-        zbr@ioremap.net, gregkh@suse.de, ksrinivasan@novell.com,
-        netdev@vger.kernel.org
-Subject: Re: 2.6.39-rc2 boot crash
-Message-ID: <20110406220512.GA2460@mgebm.net>
-References: <20110406184753.GA7691@mgebm.net>
- <1302115953.8094.217.camel@nimitz>
- <20110406212041.GA2596@mgebm.net>
- <20110406.142157.68145422.davem@davemloft.net>
+	id S1756744Ab1DFWFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:05:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50699 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756643Ab1DFWFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 18:05:21 -0400
+Date: Wed, 6 Apr 2011 22:05:08 GMT
+From: tip-bot for Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: linux-kernel@vger.kernel.org, hans.rosenfeld@amd.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, hans.rosenfeld@amd.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: 1302018656-586370-5-git-send-email-hans.rosenfeld@amd.com
+References: 1302018656-586370-5-git-send-email-hans.rosenfeld@amd.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/xsave] x86, xsave: remove unused code
+Message-ID: <tip-2efd67935eb7aa6ee4c124e7315d964245a1bfe8@git.kernel.org>
+Git-Commit-ID: 2efd67935eb7aa6ee4c124e7315d964245a1bfe8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110406.142157.68145422.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 06 Apr 2011 22:05:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  2efd67935eb7aa6ee4c124e7315d964245a1bfe8
+Gitweb:     http://git.kernel.org/tip/2efd67935eb7aa6ee4c124e7315d964245a1bfe8
+Author:     Hans Rosenfeld <hans.rosenfeld@amd.com>
+AuthorDate: Tue, 5 Apr 2011 17:50:52 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 6 Apr 2011 14:15:18 -0700
 
---WIyZ46R2i8wDzkSu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+x86, xsave: remove unused code
 
-On Wed, 06 Apr 2011, David Miller wrote:
+The patches to rework the fpu/xsave handling and signal frame setup have
+made a lot of code unused. This patch removes all this now useless stuff.
 
-> From: Eric B Munson <emunson@mgebm.net>
-> Date: Wed, 6 Apr 2011 17:20:41 -0400
->=20
-> > A bisect points at commit 04f482faf50535229a5a5c8d629cf963899f857c for =
-the
-> > first bad one.  Unfortunately, I have not made netconsole work yet and =
-the
-> > hang is happening mostly right when X starts so I can't even see the co=
-nsole.
-> > I will keep at the netconsole and see if I can get it functioning, also=
- I will
-> > try to boot this kernel in a VM and see if that helps.
->=20
-> Patrick, please help Eric so we can fix this bug.
->=20
-> Thanks.
->=20
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Link: http://lkml.kernel.org/r/1302018656-586370-5-git-send-email-hans.rosenfeld@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/i387.h  |  155 ++----------------------------
+ arch/x86/include/asm/xsave.h |   51 ----------
+ arch/x86/kernel/i387.c       |  221 ------------------------------------------
+ arch/x86/kernel/traps.c      |   22 ----
+ arch/x86/kernel/xsave.c      |  163 -------------------------------
+ 5 files changed, 7 insertions(+), 605 deletions(-)
 
-I have a useful trace now from netconsole:
-
-[   18.029521] BUG: sleeping function called from invalid context at arch/x=
-86/mm/fault.c:1087
-[   18.029527] in_atomic(): 0, irqs_disabled(): 1, pid: 2018, name: cgrules=
-engd
-[   18.029693] BUG: unable to handle kernel paging request at 0000100000000=
-000
-[   18.029730] IP: [<ffffffff814c3db8>] __skb_recv_datagram+0x128/0x2b0
-[   18.029756] PGD 0=20
-[   18.029768] Oops: 0002 [#1] SMP=20
-[   18.029790] last sysfs file: /sys/devices/pci0000:00/0000:00:02.0/0000:0=
-2:00.0/usb10/10-0:1.0/bInterfaceClass
-[   18.029824] CPU 0=20
-[   18.029833] Modules linked in: kvm_intel kvm parport_pc ppdev snd_hda_co=
-dec_hdmi snd_hda_codec_realtek nfs lockd fscache auth_rpcgss nfs_acl sunrpc=
- radeon deflate zlib_deflate ctr twofish_generic twofish_x86_64 twofish_com=
-mon ttm camellia serpent drm_kms_helper snd_usb_audio blowfish cast5 snd_hd=
-a_intel drm des_generic snd_hda_codec snd_hwdep aesni_intel snd_usbmidi_lib=
- cryptd aes_x86_64 aes_generic snd_pcm xcbc snd_seq_midi rmd160 snd_rawmidi=
- sha512_generic sha256_generic uvcvideo snd_seq_midi_event sha1_generic snd=
-_seq snd_timer crypto_null snd_seq_device snd af_key xhci_hcd i7core_edac v=
-ideodev joydev psmouse edac_core v4l2_compat_ioctl32 w83627ehf soundcore se=
-rio_raw hwmon_vid snd_page_alloc max6650 hid_microsoft i2c_algo_bit lp parp=
-ort asus_atk0110 usbhid hid firewire_ohci firewire_core crc_itu_t
-[   18.030424]=20
-[   18.030432] Pid: 2018, comm: cgrulesengd Not tainted 2.6.39-rc2+ #52 Sys=
-tem manufacturer System Product Name/P6X58D PREMIUM
-[   18.030477] RIP: 0010:[<ffffffff814c3db8>]  [<ffffffff814c3db8>] __skb_r=
-ecv_datagram+0x128/0x2b0
-[   18.030510] RSP: 0018:ffff880326f03b28  EFLAGS: 00010002
-[   18.030528] RAX: 0000000000000286 RBX: ffff8803204c5100 RCX: 00001000000=
-00000
-[   18.030552] RDX: ffff88031fe47200 RSI: ffff880326f03bf4 RDI: 00000000000=
-00046
-[   18.030576] RBP: ffff880326f03bd8 R08: 0000000000000000 R09: 00000000000=
-00000
-[   18.030599] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880327d=
-6e928
-[   18.030623] R13: ffff880326f03b78 R14: ffff880326f03b90 R15: ffff880327d=
-6e940
-[   18.030646] FS:  00007f3bf9173b20(0000) GS:ffff880331600000(0000) knlGS:=
-0000000000000000
-[   18.030673] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   18.030693] CR2: 0000100000000000 CR3: 0000000326dda000 CR4: 00000000000=
-006f0
-[   18.030716] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000=
-00000
-[   18.030740] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000=
-00400
-[   18.030763] Process cgrulesengd (pid: 2018, threadinfo ffff880326f02000,=
- task ffff8803275aa300)
-[   18.030794] Stack:
-[   18.030803]  ffff880300000000 ffff8803275aa338 ffff880327d6ebd0 ffff8803=
-275aa300
-[   18.030839]  7fffffffffffffff ffff880326f03c74 ffff880326f03bf4 00000000=
-00000001
-[   18.030872]  ffff8803275aa300 ffff880327d6e940 00000000000001f7 00000000=
-00000001
-[   18.030905] Call Trace:
-[   18.030916]  [<ffffffff81009833>] ? native_sched_clock+0x13/0x60
-[   18.030936]  [<ffffffff814c3f64>] skb_recv_datagram+0x24/0x30
-[   18.030956]  [<ffffffff814f463c>] netlink_recvmsg+0x7c/0x430
-[   18.030975]  [<ffffffff814bc185>] ? sock_update_classid+0x65/0x100
-[   18.030996]  [<ffffffff814bc19d>] ? sock_update_classid+0x7d/0x100
-[   18.031016]  [<ffffffff814bc1c0>] ? sock_update_classid+0xa0/0x100
-[   18.031037]  [<ffffffff814b7c1d>] sock_recvmsg+0xfd/0x130
-[   18.031055]  [<ffffffff81178af8>] ? set_fd_set+0x48/0x60
-[   18.031073]  [<ffffffff8117a25b>] ? core_sys_select+0x26b/0x330
-[   18.031093]  [<ffffffff8117a03d>] ? core_sys_select+0x4d/0x330
-[   18.031112]  [<ffffffff8108cc05>] ? lock_release_holdtime+0x35/0x160
-[   18.031133]  [<ffffffff814b7da1>] sys_recvfrom+0xf1/0x170
-[   18.031152]  [<ffffffff815d40ba>] ? sysret_check+0x2e/0x69
-[   18.031171]  [<ffffffff812f02de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   18.031193]  [<ffffffff815d4082>] system_call_fastpath+0x16/0x1b
-[   18.031212] Code: 41 5d 41 5e 41 5f c9 c3 eb 01 90 ff 8b 38 01 00 00 48 =
-8b 1a 48 8b 4a 08 48 c7 02 00 00 00 00 48 c7 42 08 00 00 00 00 48 89 4b 08=
-=20
-[   18.031494]  89 19 eb aa eb 01 90 48 8b 83 f0 03 00 00 48 89 85 70 ff ff=
-=20
-[   18.031601] RIP  [<ffffffff814c3db8>] __skb_recv_datagram+0x128/0x2b0
-[   18.031625]  RSP <ffff880326f03b28>
-[   18.031637] CR2: 0000100000000000
-[   18.039388] ---[ end trace 0e3e016130139f1b ]---
-[   18.112703] BUG: unable to handle kernel NULL pointer dereference at    =
-       (null)
-[   18.112738] IP: [<ffffffff814befed>] skb_queue_tail+0x3d/0x60
-[   18.112763] PGD 0=20
-[   18.112775] Oops: 0002 [#2] SMP=20
-[   18.112796] last sysfs file: /sys/devices/pci0000:00/0000:00:02.0/0000:0=
-2:00.0/usb10/10-0:1.0/bInterfaceClass
-[   18.112828] CPU 0=20
-[   18.112837] Modules linked in: kvm_intel kvm parport_pc ppdev snd_hda_co=
-dec_hdmi snd_hda_codec_realtek nfs lockd fscache auth_rpcgss nfs_acl sunrpc=
- radeon deflate zlib_deflate ctr twofish_generic twofish_x86_64 twofish_com=
-mon ttm camellia serpent drm_kms_helper snd_usb_audio blowfish cast5 snd_hd=
-a_intel drm des_generic snd_hda_codec snd_hwdep aesni_intel snd_usbmidi_lib=
- cryptd aes_x86_64 aes_generic snd_pcm xcbc snd_seq_midi rmd160 snd_rawmidi=
- sha512_generic sha256_generic uvcvideo snd_seq_midi_event sha1_generic snd=
-_seq snd_timer crypto_null snd_seq_device snd af_key xhci_hcd i7core_edac v=
-ideodev joydev psmouse edac_core v4l2_compat_ioctl32 w83627ehf soundcore se=
-rio_raw hwmon_vid snd_page_alloc max6650 hid_microsoft i2c_algo_bit lp parp=
-ort asus_atk0110 usbhid hid firewire_ohci firewire_core crc_itu_t
-[   18.115476]=20
-[   18.117533] Pid: 2178, comm: 0dns-down Tainted: G      D     2.6.39-rc2+=
- #52 System manufacturer System Product Name/P6X58D PREMIUM
-[   18.119646] RIP: 0010:[<ffffffff814befed>]  [<ffffffff814befed>] skb_que=
-ue_tail+0x3d/0x60
-[   18.121757] RSP: 0018:ffff88032666bd08  EFLAGS: 00010096
-[   18.123845] RAX: 0000000000000282 RBX: ffff880327d6e928 RCX: 000000000ac=
-c7db8
-[   18.125948] RDX: 0000000000000000 RSI: 0000000000000282 RDI: ffff880327d=
-6e940
-[   18.128046] RBP: ffff88032666bd28 R08: 0000000000000000 R09: 00000000000=
-00001
-[   18.130171] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880327d=
-6e940
-[   18.132281] R13: ffff880320929b00 R14: ffff880327d6e818 R15: ffff880327d=
-6e800
-[   18.134388] FS:  0000000000000000(0000) GS:ffff880331600000(0000) knlGS:=
-0000000000000000
-[   18.136498] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   18.138610] CR2: 0000000000000000 CR3: 0000000001a03000 CR4: 00000000000=
-006f0
-[   18.140732] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000=
-00000
-[   18.142839] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000=
-00400
-[   18.144953] Process 0dns-down (pid: 2178, threadinfo ffff88032666a000, t=
-ask ffff880326f0a300)
-[   18.147057] Stack:
-[   18.149156]  ffff88032666bd28 0000000000000000 ffff88032a7fa800 00000000=
-00000000
-[   18.151256]  ffff88032666bdb8 ffffffff814f4d12 0000000000000000 ffff8803=
-20929b00
-[   18.153365]  ffff880327d6e84c ffff880320929bec 0000000026f0a300 00000000=
-00000000
-[   18.155464] Call Trace:
-[   18.157539]  [<ffffffff814f4d12>] netlink_broadcast_filtered+0x322/0x480
-[   18.159575]  [<ffffffff814f4e8d>] netlink_broadcast+0x1d/0x20
-[   18.161568]  [<ffffffff813a0223>] cn_netlink_send+0x1a3/0x1c0
-[   18.163515]  [<ffffffff813a044a>] proc_exit_connector+0xda/0x100
-[   18.165538]  [<ffffffff81055a08>] do_exit+0x1d8/0x870
-[   18.167428]  [<ffffffff810570fe>] ? sys_wait4+0xae/0x100
-[   18.169287]  [<ffffffff812f0354>] ? lockdep_sys_exit_thunk+0x35/0x67
-[   18.171133]  [<ffffffff810560fe>] do_group_exit+0x5e/0xd0
-[   18.172965]  [<ffffffff81056187>] sys_exit_group+0x17/0x20
-[   18.174782]  [<ffffffff815d4082>] system_call_fastpath+0x16/0x1b
-[   18.176600] Code: 6d f8 0f 1f 44 00 00 49 89 f5 48 89 fb 4c 8d 67 18 4c =
-89 e7 e8 65 c6 10 00 48 8b 53 08 4c 89 e7 49 89 5d 00 49 89 55 08 48 89 c6 =
-<4c> 89 2a 4c 89 6b 08 ff 43 10 e8 54 cf 10 00 48 8b 5d e8 4c 8b=20
-[   18.178889] RIP  [<ffffffff814befed>] skb_queue_tail+0x3d/0x60
-[   18.180925]  RSP <ffff88032666bd08>
-[   18.182948] CR2: 0000000000000000
-[   18.184969] ---[ end trace 0e3e016130139f1c ]---
-[   18.184972] Fixing recursive fault but reboot is needed!
-
-I haven't dug into it at all, but I am happy to help test potential fixes.
-
-Eric
-
---WIyZ46R2i8wDzkSu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNnOOYAAoJEH65iIruGRnNLoQIAL6KI8h0jameMGq8WtS1UHB4
-Iu6NbYjL7bxeO3Y03eOft6lt8pNLloeMvO90+lOsCyMVfWheo0G+OwwOk9JAeMKl
-Lr1abqnguaRmXUmApi9ZllE4IRaOmAkK7HCG+HJIB77f2OkEyCEakhnPBJjJ+qNC
-C8f4oYinLrNlKydikLcK2AWcNJ0WI1OHWXXmlPQ6nv4CU2RA1tG3ENKTteruEdvm
-XKzbBJLCjqMD6+RlsaF+nXOh/6QPzvavj/S38bva3LtKFhbBJJHrxK0ebwnx4JUE
-lrXlfOltqFy8YRV7YS6yyTiHtDbKUuVpJLaPVzpuKOGh6gmzZ8kEefgAdxa2M5w=
-=uCed
------END PGP SIGNATURE-----
-
---WIyZ46R2i8wDzkSu--
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index fc716bc..75c0800 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -29,8 +29,6 @@
+ # include <asm/sigcontext32.h>
+ # include <asm/user32.h>
+ #else
+-# define save_i387_xstate_ia32		save_i387_xstate
+-# define restore_i387_xstate_ia32	restore_i387_xstate
+ # define _fpstate_ia32		_fpstate
+ # define _xstate_ia32		_xstate
+ # define sig_xstate_ia32_size   sig_xstate_size
+@@ -108,75 +106,16 @@ static inline void sanitize_i387_state(struct task_struct *tsk)
+ }
+ 
+ #ifdef CONFIG_X86_64
+-static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
++static inline void fxrstor(struct i387_fxsave_struct *fx)
+ {
+-	int err;
+-
+-	/* See comment in fxsave() below. */
+-#ifdef CONFIG_AS_FXSAVEQ
+-	asm volatile("1:  fxrstorq %[fx]\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : [fx] "m" (*fx), "0" (0));
+-#else
+-	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : [fx] "R" (fx), "m" (*fx), "0" (0));
+-#endif
+-	return err;
+-}
+-
+-static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
+-{
+-	int err;
+-
+-	/*
+-	 * Clear the bytes not touched by the fxsave and reserved
+-	 * for the SW usage.
+-	 */
+-	err = __clear_user(&fx->sw_reserved,
+-			   sizeof(struct _fpx_sw_bytes));
+-	if (unlikely(err))
+-		return -EFAULT;
+-
+ 	/* See comment in fxsave() below. */
+ #ifdef CONFIG_AS_FXSAVEQ
+-	asm volatile("1:  fxsaveq %[fx]\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err), [fx] "=m" (*fx)
+-		     : "0" (0));
++	asm volatile("fxrstorq %[fx]\n\t"
++		     : : [fx] "m" (*fx));
+ #else
+-	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err), "=m" (*fx)
+-		     : [fx] "R" (fx), "0" (0));
++	asm volatile("rex64/fxrstor (%[fx])\n\t"
++		     : : [fx] "R" (fx), "m" (*fx));
+ #endif
+-	if (unlikely(err) &&
+-	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
+-		err = -EFAULT;
+-	/* No need to clear here because the caller clears USED_MATH */
+-	return err;
+ }
+ 
+ static inline void fpu_fxsave(struct fpu *fpu)
+@@ -209,7 +148,7 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ #else  /* CONFIG_X86_32 */
+ 
+ /* perform fxrstor iff the processor has extended states, otherwise frstor */
+-static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
++static inline void fxrstor(struct i387_fxsave_struct *fx)
+ {
+ 	/*
+ 	 * The "nop" is needed to make the instructions the same
+@@ -220,8 +159,6 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+ 		"fxrstor %1",
+ 		X86_FEATURE_FXSR,
+ 		"m" (*fx));
+-
+-	return 0;
+ }
+ 
+ static inline void fpu_fxsave(struct fpu *fpu)
+@@ -246,7 +183,7 @@ static inline void fpu_fxsave(struct fpu *fpu)
+  */
+ static inline void fpu_restore(struct fpu *fpu)
+ {
+-	fxrstor_checking(&fpu->state->fxsave);
++	fxrstor(&fpu->state->fxsave);
+ }
+ 
+ static inline void fpu_save(struct fpu *fpu)
+@@ -278,69 +215,6 @@ static inline void fpu_clean(struct fpu *fpu)
+ 		[addr] "m" (safe_address));
+ }
+ 
+-static inline void fpu_save_init(struct fpu *fpu)
+-{
+-	if (use_xsave()) {
+-		struct xsave_struct *xstate = &fpu->state->xsave;
+-
+-		fpu_xsave(xstate, -1);
+-
+-		/*
+-		 * xsave header may indicate the init state of the FP.
+-		 */
+-		if (!(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
+-			return;
+-	} else if (use_fxsr()) {
+-		fpu_fxsave(fpu);
+-	} else {
+-		asm volatile("fsave %[fx]; fwait"
+-			     : [fx] "=m" (fpu->state->fsave));
+-		return;
+-	}
+-
+-	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
+-		asm volatile("fnclex");
+-
+-	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+-	   is pending.  Clear the x87 state here by setting it to fixed
+-	   values. safe_address is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"	  	/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (safe_address));
+-}
+-
+-static inline void __save_init_fpu(struct task_struct *tsk)
+-{
+-	fpu_save_init(&tsk->thread.fpu);
+-	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-}
+-
+-static inline int fpu_restore_checking(struct fpu *fpu)
+-{
+-	if (use_xsave())
+-		return xrstor_checking(&fpu->state->xsave, -1);
+-	else
+-		return fxrstor_checking(&fpu->state->fxsave);
+-}
+-
+-/*
+- * Signal frame handlers...
+- */
+-extern int save_i387_xstate(void __user *buf);
+-extern int restore_i387_xstate(void __user *buf);
+-
+-static inline void __unlazy_fpu(struct task_struct *tsk)
+-{
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+-		__save_init_fpu(tsk);
+-		stts();
+-	} else
+-		tsk->fpu_counter = 0;
+-}
+-
+ static inline void __clear_fpu(struct task_struct *tsk)
+ {
+ 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+@@ -409,21 +283,6 @@ static inline void irq_ts_restore(int TS_state)
+ /*
+  * These disable preemption on their own and are safe
+  */
+-static inline void save_init_fpu(struct task_struct *tsk)
+-{
+-	preempt_disable();
+-	__save_init_fpu(tsk);
+-	stts();
+-	preempt_enable();
+-}
+-
+-static inline void unlazy_fpu(struct task_struct *tsk)
+-{
+-	preempt_disable();
+-	__unlazy_fpu(tsk);
+-	preempt_enable();
+-}
+-
+ static inline void clear_fpu(struct task_struct *tsk)
+ {
+ 	preempt_disable();
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index 200c56d..742da4a 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -51,26 +51,6 @@ extern int check_for_xstate(struct i387_fxsave_struct __user *buf,
+ 			    unsigned int size,
+ 			    struct _fpx_sw_bytes *sw);
+ 
+-static inline int xrstor_checking(struct xsave_struct *fx, u64 mask)
+-{
+-	int err;
+-	u32 lmask = mask;
+-	u32 hmask = mask >> 32;
+-
+-	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask), "0" (0)
+-		     : "memory");
+-
+-	return err;
+-}
+-
+ static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
+ {
+ 	u32 lmask = mask;
+@@ -81,37 +61,6 @@ static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
+ 		     :   "memory");
+ }
+ 
+-static inline int xsave_checking(struct xsave_struct __user *buf)
+-{
+-	int err;
+-
+-	/*
+-	 * Clear the xsave header first, so that reserved fields are
+-	 * initialized to zero.
+-	 */
+-	err = __clear_user(&buf->xsave_hdr,
+-			   sizeof(struct xsave_hdr_struct));
+-	if (unlikely(err))
+-		return -EFAULT;
+-
+-	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b,3b)
+-		     : [err] "=r" (err)
+-		     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
+-		     : "memory");
+-
+-	if (unlikely(err) && __clear_user(buf, xstate_size))
+-		err = -EFAULT;
+-
+-	/* No need to clear here because the caller clears USED_MATH */
+-	return err;
+-}
+-
+ static inline void xsave_state(struct xsave_struct *fx, u64 mask)
+ {
+ 	u32 lmask = mask;
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 69625a8..ca33c0b 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -490,227 +490,6 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
+ }
+ 
+ /*
+- * Signal frame handlers.
+- */
+-
+-static inline int save_i387_fsave(struct _fpstate_ia32 __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	struct i387_fsave_struct *fp = &tsk->thread.fpu.state->fsave;
+-
+-	fp->status = fp->swd;
+-	if (__copy_to_user(buf, fp, sizeof(struct i387_fsave_struct)))
+-		return -1;
+-	return 1;
+-}
+-
+-static int save_i387_fxsave(struct _fpstate_ia32 __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	struct i387_fxsave_struct *fx = &tsk->thread.fpu.state->fxsave;
+-	struct user_i387_ia32_struct env;
+-	int err = 0;
+-
+-	convert_from_fxsr(&env, tsk);
+-	if (__copy_to_user(buf, &env, sizeof(env)))
+-		return -1;
+-
+-	err |= __put_user(fx->swd, &buf->status);
+-	err |= __put_user(X86_FXSR_MAGIC, &buf->magic);
+-	if (err)
+-		return -1;
+-
+-	if (__copy_to_user(&buf->_fxsr_env[0], fx, xstate_size))
+-		return -1;
+-	return 1;
+-}
+-
+-static int save_i387_xsave(void __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	struct _fpstate_ia32 __user *fx = buf;
+-	int err = 0;
+-
+-
+-	sanitize_i387_state(tsk);
+-
+-	/*
+-	 * For legacy compatible, we always set FP/SSE bits in the bit
+-	 * vector while saving the state to the user context.
+-	 * This will enable us capturing any changes(during sigreturn) to
+-	 * the FP/SSE bits by the legacy applications which don't touch
+-	 * xstate_bv in the xsave header.
+-	 *
+-	 * xsave aware applications can change the xstate_bv in the xsave
+-	 * header as well as change any contents in the memory layout.
+-	 * xrestore as part of sigreturn will capture all the changes.
+-	 */
+-	tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv |= XSTATE_FPSSE;
+-
+-	if (save_i387_fxsave(fx) < 0)
+-		return -1;
+-
+-	err = __copy_to_user(&fx->sw_reserved, &fx_sw_reserved_ia32,
+-			     sizeof(struct _fpx_sw_bytes));
+-	err |= __put_user(FP_XSTATE_MAGIC2,
+-			  (__u32 __user *) (buf + sig_xstate_ia32_size
+-					    - FP_XSTATE_MAGIC2_SIZE));
+-	if (err)
+-		return -1;
+-
+-	return 1;
+-}
+-
+-int save_i387_xstate_ia32(void __user *buf)
+-{
+-	struct _fpstate_ia32 __user *fp = (struct _fpstate_ia32 __user *) buf;
+-	struct task_struct *tsk = current;
+-
+-	if (!used_math())
+-		return 0;
+-
+-	if (!access_ok(VERIFY_WRITE, buf, sig_xstate_ia32_size))
+-		return -EACCES;
+-	/*
+-	 * This will cause a "finit" to be triggered by the next
+-	 * attempted FPU operation by the 'current' process.
+-	 */
+-	clear_used_math();
+-
+-	if (!HAVE_HWFP) {
+-		return fpregs_soft_get(current, NULL,
+-				       0, sizeof(struct user_i387_ia32_struct),
+-				       NULL, fp) ? -1 : 1;
+-	}
+-
+-	preempt_disable();
+-	save_xstates(tsk);
+-	preempt_enable();
+-
+-	if (cpu_has_xsave)
+-		return save_i387_xsave(fp);
+-	if (cpu_has_fxsr)
+-		return save_i387_fxsave(fp);
+-	else
+-		return save_i387_fsave(fp);
+-}
+-
+-static inline int restore_i387_fsave(struct _fpstate_ia32 __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-
+-	return __copy_from_user(&tsk->thread.fpu.state->fsave, buf,
+-				sizeof(struct i387_fsave_struct));
+-}
+-
+-static int restore_i387_fxsave(struct _fpstate_ia32 __user *buf,
+-			       unsigned int size)
+-{
+-	struct task_struct *tsk = current;
+-	struct user_i387_ia32_struct env;
+-	int err;
+-
+-	err = __copy_from_user(&tsk->thread.fpu.state->fxsave, &buf->_fxsr_env[0],
+-			       size);
+-	/* mxcsr reserved bits must be masked to zero for security reasons */
+-	tsk->thread.fpu.state->fxsave.mxcsr &= mxcsr_feature_mask;
+-	if (err || __copy_from_user(&env, buf, sizeof(env)))
+-		return 1;
+-	convert_to_fxsr(tsk, &env);
+-
+-	return 0;
+-}
+-
+-static int restore_i387_xsave(void __user *buf)
+-{
+-	struct _fpx_sw_bytes fx_sw_user;
+-	struct _fpstate_ia32 __user *fx_user =
+-			((struct _fpstate_ia32 __user *) buf);
+-	struct i387_fxsave_struct __user *fx =
+-		(struct i387_fxsave_struct __user *) &fx_user->_fxsr_env[0];
+-	struct xsave_hdr_struct *xsave_hdr =
+-				&current->thread.fpu.state->xsave.xsave_hdr;
+-	u64 mask;
+-	int err;
+-
+-	if (check_for_xstate(fx, sig_xstate_ia32_size -
+-			     offsetof(struct _fpstate_ia32, _fxsr_env),
+-			     &fx_sw_user))
+-		goto fx_only;
+-
+-	mask = fx_sw_user.xstate_bv;
+-
+-	err = restore_i387_fxsave(buf, fx_sw_user.xstate_size);
+-
+-	xsave_hdr->xstate_bv &= pcntxt_mask;
+-	/*
+-	 * These bits must be zero.
+-	 */
+-	xsave_hdr->reserved1[0] = xsave_hdr->reserved1[1] = 0;
+-
+-	/*
+-	 * Init the state that is not present in the memory layout
+-	 * and enabled by the OS.
+-	 */
+-	mask = ~(pcntxt_mask & ~mask);
+-	xsave_hdr->xstate_bv &= mask;
+-
+-	return err;
+-fx_only:
+-	/*
+-	 * Couldn't find the extended state information in the memory
+-	 * layout. Restore the FP/SSE and init the other extended state
+-	 * enabled by the OS.
+-	 */
+-	xsave_hdr->xstate_bv = XSTATE_FPSSE;
+-	return restore_i387_fxsave(buf, sizeof(struct i387_fxsave_struct));
+-}
+-
+-int restore_i387_xstate_ia32(void __user *buf)
+-{
+-	int err;
+-	struct task_struct *tsk = current;
+-	struct _fpstate_ia32 __user *fp = (struct _fpstate_ia32 __user *) buf;
+-
+-	if (HAVE_HWFP)
+-		clear_fpu(tsk);
+-
+-	if (!buf) {
+-		if (used_math()) {
+-			clear_fpu(tsk);
+-			clear_used_math();
+-		}
+-
+-		return 0;
+-	} else
+-		if (!access_ok(VERIFY_READ, buf, sig_xstate_ia32_size))
+-			return -EACCES;
+-
+-	if (!used_math()) {
+-		err = init_fpu(tsk);
+-		if (err)
+-			return err;
+-	}
+-
+-	if (HAVE_HWFP) {
+-		if (cpu_has_xsave)
+-			err = restore_i387_xsave(buf);
+-		else if (cpu_has_fxsr)
+-			err = restore_i387_fxsave(fp, sizeof(struct
+-							   i387_fxsave_struct));
+-		else
+-			err = restore_i387_fsave(fp);
+-	} else {
+-		err = fpregs_soft_set(current, NULL,
+-				      0, sizeof(struct user_i387_ia32_struct),
+-				      NULL, fp) != 0;
+-	}
+-	set_used_math();
+-
+-	return err;
+-}
+-
+-/*
+  * FPU state for core dumps.
+  * This is only used for a.out dumps now.
+  * It is declared generically using elf_fpregset_t (which is
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 072c30e..872fc78 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -720,28 +720,6 @@ asmlinkage void __attribute__((weak)) smp_threshold_interrupt(void)
+ }
+ 
+ /*
+- * __math_state_restore assumes that cr0.TS is already clear and the
+- * fpu state is all ready for use.  Used during context switch.
+- */
+-void __math_state_restore(void)
+-{
+-	struct thread_info *thread = current_thread_info();
+-	struct task_struct *tsk = thread->task;
+-
+-	/*
+-	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
+-	 */
+-	if (unlikely(fpu_restore_checking(&tsk->thread.fpu))) {
+-		stts();
+-		force_sig(SIGSEGV, tsk);
+-		return;
+-	}
+-
+-	thread->status |= TS_USEDFPU;   /* So we fnsave on switch_to() */
+-	tsk->fpu_counter++;
+-}
+-
+-/*
+  * 'math_state_restore()' saves the current math information in the
+  * old math state array, and gets the new ones from the current task
+  *
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 08b2fe8..9ecc791 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -249,169 +249,6 @@ int save_xstates_sigframe(void __user *buf, unsigned int size)
+ 	return 1;
+ }
+ 
+-#ifdef CONFIG_X86_64
+-int save_i387_xstate(void __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	int err = 0;
+-
+-	if (!access_ok(VERIFY_WRITE, buf, sig_xstate_size))
+-		return -EACCES;
+-
+-	BUG_ON(sig_xstate_size < xstate_size);
+-
+-	if ((unsigned long)buf % 64)
+-		printk("save_i387_xstate: bad fpstate %p\n", buf);
+-
+-	if (!used_math())
+-		return 0;
+-
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+-		if (use_xsave())
+-			err = xsave_checking(buf);
+-		else
+-			err = fxsave_user(buf);
+-
+-		if (err)
+-			return err;
+-		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-		stts();
+-	} else {
+-		sanitize_i387_state(tsk);
+-		if (__copy_to_user(buf, &tsk->thread.fpu.state->fxsave,
+-				   xstate_size))
+-			return -1;
+-	}
+-
+-	clear_used_math(); /* trigger finit */
+-
+-	if (use_xsave()) {
+-		struct _fpstate __user *fx = buf;
+-		struct _xstate __user *x = buf;
+-		u64 xstate_bv;
+-
+-		err = __copy_to_user(&fx->sw_reserved, &fx_sw_reserved,
+-				     sizeof(struct _fpx_sw_bytes));
+-
+-		err |= __put_user(FP_XSTATE_MAGIC2,
+-				  (__u32 __user *) (buf + sig_xstate_size
+-						    - FP_XSTATE_MAGIC2_SIZE));
+-
+-		/*
+-		 * Read the xstate_bv which we copied (directly from the cpu or
+-		 * from the state in task struct) to the user buffers and
+-		 * set the FP/SSE bits.
+-		 */
+-		err |= __get_user(xstate_bv, &x->xstate_hdr.xstate_bv);
+-
+-		/*
+-		 * For legacy compatible, we always set FP/SSE bits in the bit
+-		 * vector while saving the state to the user context. This will
+-		 * enable us capturing any changes(during sigreturn) to
+-		 * the FP/SSE bits by the legacy applications which don't touch
+-		 * xstate_bv in the xsave header.
+-		 *
+-		 * xsave aware apps can change the xstate_bv in the xsave
+-		 * header as well as change any contents in the memory layout.
+-		 * xrestore as part of sigreturn will capture all the changes.
+-		 */
+-		xstate_bv |= XSTATE_FPSSE;
+-
+-		err |= __put_user(xstate_bv, &x->xstate_hdr.xstate_bv);
+-
+-		if (err)
+-			return err;
+-	}
+-
+-	return 1;
+-}
+-
+-/*
+- * Restore the extended state if present. Otherwise, restore the FP/SSE
+- * state.
+- */
+-static int restore_user_xstate(void __user *buf)
+-{
+-	struct _fpx_sw_bytes fx_sw_user;
+-	u64 mask;
+-	int err;
+-
+-	if (((unsigned long)buf % 64) ||
+-	     check_for_xstate(buf, sig_xstate_size, &fx_sw_user))
+-		goto fx_only;
+-
+-	mask = fx_sw_user.xstate_bv;
+-
+-	/*
+-	 * restore the state passed by the user.
+-	 */
+-	err = xrstor_checking((__force struct xsave_struct *)buf, mask);
+-	if (err)
+-		return err;
+-
+-	/*
+-	 * init the state skipped by the user.
+-	 */
+-	mask = pcntxt_mask & ~mask;
+-	if (unlikely(mask))
+-		xrstor_state(init_xstate_buf, mask);
+-
+-	return 0;
+-
+-fx_only:
+-	/*
+-	 * couldn't find the extended state information in the
+-	 * memory layout. Restore just the FP/SSE and init all
+-	 * the other extended state.
+-	 */
+-	xrstor_state(init_xstate_buf, pcntxt_mask & ~XSTATE_FPSSE);
+-	return fxrstor_checking((__force struct i387_fxsave_struct *)buf);
+-}
+-
+-/*
+- * This restores directly out of user space. Exceptions are handled.
+- */
+-int restore_i387_xstate(void __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	int err = 0;
+-
+-	if (!buf) {
+-		if (used_math())
+-			goto clear;
+-		return 0;
+-	} else
+-		if (!access_ok(VERIFY_READ, buf, sig_xstate_size))
+-			return -EACCES;
+-
+-	if (!used_math()) {
+-		err = init_fpu(tsk);
+-		if (err)
+-			return err;
+-	}
+-
+-	if (!(task_thread_info(current)->status & TS_USEDFPU)) {
+-		clts();
+-		task_thread_info(current)->status |= TS_USEDFPU;
+-	}
+-	if (use_xsave())
+-		err = restore_user_xstate(buf);
+-	else
+-		err = fxrstor_checking((__force struct i387_fxsave_struct *)
+-				       buf);
+-	if (unlikely(err)) {
+-		/*
+-		 * Encountered an error while doing the restore from the
+-		 * user buffer, clear the fpu state.
+-		 */
+-clear:
+-		clear_fpu(tsk);
+-		clear_used_math();
+-	}
+-	return err;
+-}
+-#endif
+-
+ int restore_xstates_sigframe(void __user *buf, unsigned int size)
+ {
+ #if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
