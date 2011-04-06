@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab1DFVD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:03:59 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54068 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab1DFVD5 (ORCPT
+	id S1756858Ab1DFVGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:06:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40629
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752164Ab1DFVGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:03:57 -0400
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Michal Marek <mmarek@suse.cz>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <20110406201350.GA9378@linux.vnet.ibm.com>
-References: <4D93D29C.5010702@cn.fujitsu.com>
-	 <1301558691.2250.486.camel@laptop> <4D944E60.8080704@cn.fujitsu.com>
-	 <1301570320.4859.242.camel@twins> <4D953121.6090901@cn.fujitsu.com>
-	 <1301657749.4859.531.camel@twins>
-	 <20110405215450.GK2247@linux.vnet.ibm.com>
-	 <20110405230745.GA5972@linux.vnet.ibm.com>
-	 <1302077428.2225.1365.camel@twins>
-	 <20110406192119.GB2265@linux.vnet.ibm.com>
-	 <20110406201350.GA9378@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Apr 2011 23:06:10 +0200
-Message-ID: <1302123970.2207.4.camel@laptop>
+	Wed, 6 Apr 2011 17:06:19 -0400
+Date: Wed, 06 Apr 2011 14:05:43 -0700 (PDT)
+Message-Id: <20110406.140543.02286734.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2011-04-06
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110406200032.GK11941@tuxdriver.com>
+References: <20110406200032.GK11941@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-06 at 13:13 -0700, Paul E. McKenney wrote:
-> And the following patch builds correctly for defconfig x86 builds,
-> while allowing rcupdate.h to see the sched.h definitions as needed
-> to inline rcu_read_lock() and rcu_read_unlock().
-> 
-Looks like an entirely reasonable patch to me ;-)
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 6 Apr 2011 16:00:33 -0400
 
+> Here is another batch of fixes intended for 2.6.39...
+> 
+> This includes a fix to avoid receiving duplicate frames in "cooked"
+> monitor mode, a mac80211 documentation fix to avoid developer
+> confusion, an rt2x00 fix to avoid cancelling some uninitialized work,
+> a wl12xx buffer overflow fix, an email address correction for wl12xx
+> module info, a zd1211rw regression fix, a zd1211rw WARNING fix,
+> and rtlwifi fix to avoid using some uninitialized variables, a fix
+> to broaden the iwl600 hardware supported by iwlagn to match what the
+> Windows driver is supporting, a b43 fix to allocate properly sized
+> receive buffers, and some stuff related to device IDs.
+> 
+> Please let me know if there are problems!
+
+Pulled, thanks John.
