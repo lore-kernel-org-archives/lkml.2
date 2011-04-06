@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1DFGi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 02:38:26 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.184]:59054
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751861Ab1DFGiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 02:38:25 -0400
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Aisheng Dong <b29396@freescale.com>
-To: <hjk@hansjkoch.de>, <greg@kroah.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 1/1] uio: clean uioinfo when uninstall uio driver
-Date: Wed, 6 Apr 2011 14:42:40 +0800
-Message-ID: <1302072160-6483-1-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	id S1753083Ab1DFGkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 02:40:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24292 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751994Ab1DFGkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 02:40:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,309,1299484800"; 
+   d="scan'208";a="906149829"
+From: Youquan Song <youquan.song@intel.com>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH] fix build fail for hv_mouse indefine udelay
+Date: Wed,  6 Apr 2011 14:35:12 +0800
+Message-Id: <1302071712-13677-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jie Zhou <b30303@freescale.com>
+Fix build failure issue for hv_mouse
+When build 2.6.39-rc1 kernel, it will be blocked at build hv_mouse. 
 
-The uioinfo should be cleaned up when uninstall, otherwise re-install
-failure of uio_pdrv_genirq.ko will happen.
+  CC [M]  drivers/staging/hv/hv_mouse.o
+drivers/staging/hv/hv_mouse.c: In function ‘ReleaseInputDevice’:
+drivers/staging/hv/hv_mouse.c:293: error: implicit declaration of function ‘udelay’
+make[3]: *** [drivers/staging/hv/hv_mouse.o] Error 1
+make[2]: *** [drivers/staging/hv] Error 2
 
-Signed-off-by: Jie Zhou <b30303@freescale.com>
-Signed-off-by: Aisheng Dong <b29396@freescale.com>
 
+Signed-off-by: Youquan Song <youquan.song@intel.com>
 ---
-Changes for v2:
- Address the comments from Hans:
-   - The uioinfo->irq_flags and uioinfo->priv do not have to be cleaned
----
- drivers/uio/uio_pdrv_genirq.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/staging/hv/hv_mouse.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 7174d51..0f424af 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -189,6 +189,10 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
+diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+index 50147f8..9c6d4d2 100644
+--- a/drivers/staging/hv/hv_mouse.c
++++ b/drivers/staging/hv/hv_mouse.c
+@@ -23,6 +23,7 @@
+ #include <linux/hiddev.h>
+ #include <linux/pci.h>
+ #include <linux/dmi.h>
++#include <linux/delay.h>
  
- 	uio_unregister_device(priv->uioinfo);
- 	pm_runtime_disable(&pdev->dev);
-+
-+	priv->uioinfo->handler = NULL;
-+	priv->uioinfo->irqcontrol = NULL;
-+
- 	kfree(priv);
- 	return 0;
- }
+ #include "hv_api.h"
+ #include "logging.h"
 -- 
-1.7.0.4
-
+1.6.4.2
 
