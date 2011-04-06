@@ -1,44 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab1DFVGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:06:21 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40629
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752164Ab1DFVGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:06:19 -0400
-Date: Wed, 06 Apr 2011 14:05:43 -0700 (PDT)
-Message-Id: <20110406.140543.02286734.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2011-04-06
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110406200032.GK11941@tuxdriver.com>
-References: <20110406200032.GK11941@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S932172Ab1DFVIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:08:50 -0400
+Received: from 80-190-117-144.ip-home.de ([80.190.117.144]:53806 "EHLO
+	bu3sch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752164Ab1DFVIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 17:08:48 -0400
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+From: Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTimGSoYzp0Z4vyCS_H5PDKhgjYuLBA@mail.gmail.com> (sfid-20110406_230206_684163_663F35B6)
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+	 <op.vtisojsk3ri7v4@arend-laptop>
+	 <BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
+	 <op.vti9ote53ri7v4@arend-laptop>
+	 <BANLkTin-u=U_-cUH9oCco0LjEBuQmh4wag@mail.gmail.com>
+	 <BANLkTi=x89+52cMeutOB7J--QQta+mX_wg@mail.gmail.com>
+	 <1302123428.20093.6.camel@maggie>
+	 <BANLkTimGSoYzp0Z4vyCS_H5PDKhgjYuLBA@mail.gmail.com>
+	 (sfid-20110406_230206_684163_663F35B6)
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Apr 2011 23:08:32 +0200
+Message-ID: <1302124112.20093.11.camel@maggie>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 6 Apr 2011 16:00:33 -0400
-
-> Here is another batch of fixes intended for 2.6.39...
+On Wed, 2011-04-06 at 23:01 +0200, Rafał Miłecki wrote: 
+> W dniu 6 kwietnia 2011 22:57 użytkownik Michael Büsch <mb@bu3sch.de> napisał:
+> > On Wed, 2011-04-06 at 22:42 +0200, Rafał Miłecki wrote:
+> >> 2011/4/6 Rafał Miłecki <zajec5@gmail.com>:
+> >> > If we want to have two drivers working on two (different) cores
+> >> > simultaneously, we will have to add trivial mutex to group core
+> >> > switching with core operation (read/write).
+> >>
+> >> With a little of work we could avoid switching and mutexes on no-host
+> >> boards. MMIO is not limited to one core at once in such a case.
+> >
+> > I don't think that this is a problem at all.
+> > All that magic does happen inside of the bus I/O handlers.
+> > Just like SSB does it.
+> > From a driver point of view, the I/O functions just need to
+> > be atomic.
+> >
+> > For SSB it's not always 100% atomic, but we're always safe
+> > due to some assumptions being made. But this is an SSB implementation
+> > detail that is different from AXI. So don't look too closely
+> > at the SSB implementation of the I/O functions. You certainly want
+> > to implement them slightly differently in AXI. SSB currently doesn't
+> > make use of the additional sliding windows, because they are not
+> > available in the majority of SSB devices.
+> >
+> > The AXI bus subsystem will manage the sliding windows and the driver
+> > doesn't know about the details.
 > 
-> This includes a fix to avoid receiving duplicate frames in "cooked"
-> monitor mode, a mac80211 documentation fix to avoid developer
-> confusion, an rt2x00 fix to avoid cancelling some uninitialized work,
-> a wl12xx buffer overflow fix, an email address correction for wl12xx
-> module info, a zd1211rw regression fix, a zd1211rw WARNING fix,
-> and rtlwifi fix to avoid using some uninitialized variables, a fix
-> to broaden the iwl600 hardware supported by iwlagn to match what the
-> Windows driver is supporting, a b43 fix to allocate properly sized
-> receive buffers, and some stuff related to device IDs.
+> Sure, I've meant mutex inside bcmai (or whatever name), not on the driver side!
 > 
-> Please let me know if there are problems!
+> In BCMAI:
+> bcmai_read() {
+> mutex_get();
+> switch_core();
+> ioread();
+> mutex_release();
+> }
 
-Pulled, thanks John.
+Yeah that basically is the idea. But it's a little bit harder than that.
+The problem is that the mutex cannot be taken in interrupt context.
+A spinlock probably is a bit hairy, too, depending on how heavy
+a core switch is on AXI.
+
+On SSB we workaround this with some (dirty but working) assumptions.
+
+On AXI you probably can do lockless I/O, if you use the two windows
+(how many windows are there?) in a clever way to avoid core switching
+completely after the system was initialized.
+
+-- 
+Greetings Michael.
+
