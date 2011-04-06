@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab1DFOFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 10:05:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49337 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755986Ab1DFOFU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 10:05:20 -0400
-Date: Wed, 6 Apr 2011 23:05:26 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun Chen <Dajun.Chen@diasemi.com>
-Subject: Re: [PATCHv1 5/11] REGULATOR: Regulator module of DA9052 PMIC driver
-Message-ID: <20110406140525.GB2810@opensource.wolfsonmicro.com>
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451F17@KCINPUNHJCMS01.kpit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451F17@KCINPUNHJCMS01.kpit.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756155Ab1DFOH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 10:07:26 -0400
+Received: from smtp209.alice.it ([82.57.200.105]:50599 "EHLO smtp209.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755952Ab1DFOHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 10:07:25 -0400
+Date: Wed, 6 Apr 2011 16:06:54 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
+        "John W . Linville" <linville@tuxdriver.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
+        Guiming Zhuo <gmzhuo@gmail.com>
+Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
+Message-Id: <20110406160654.e629dfde.ospite@studenti.unina.it>
+In-Reply-To: <1302082178.3811.7.camel@jlt3.sipsolutions.net>
+References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
+	<1302082178.3811.7.camel@jlt3.sipsolutions.net>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; x86_64-unknown-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__6_Apr_2011_16_06_54_+0200_BgR7JzPikK0uFaxl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 06:19:15PM +0530, Ashish Jangam wrote:
+--Signature=_Wed__6_Apr_2011_16_06_54_+0200_BgR7JzPikK0uFaxl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Linux Kernel Version: 2.6.37
+On Wed, 06 Apr 2011 11:29:38 +0200
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-There is no point in submitting against old kernel versions, new drivers
-can only be included in current development kernls (current development
-targets 2.6.40).  The 2.6.37 code is getting on for a year out of date
-here.  There's some API updates required before the driver will compile
-with current kernels.
+> On Wed, 2011-04-06 at 11:21 +0200, Antonio Ospite wrote:
+>=20
+> > +	if (regulator_is_enabled(vcc)) {
+> > +		dev_dbg(&pdev->dev, "Regulator already enabled\n");
+> > +		rfkill_data->reg_enabled =3D 1;
+> > +	}
+> > +	rfkill_init_sw_state(rf_kill, !rfkill_data->reg_enabled);
+> > +
+> > +	ret =3D rfkill_register(rf_kill);
+>=20
+> We recently had a thread about how rfkill_init_sw_state() isn't quite
+> working the right way. Also, it is indented to be used for devices that
+> keep their state over resume. I think you should remove it here and rely
+> on rfkill to sync you after registration.
+>=20
+> Cf. the long thread here:
+> http://thread.gmane.org/gmane.linux.acpi.devel/49577
+>
 
-> +struct da9052_regulator_info da9052_regulator_info[] = {
-> +	/* Buck1 - 4*/
-> +	DA9052_DCDC(0, 25, 6, 6),
-> +
-> +	DA9052_DCDC(1, 25, 6, 6),
-> +
-> +	DA9052_DCDC(2, 25, 6, 6),
-> +
-> +	DA9052_DCDC(3, 50, 5, 6),
+Ok, but I still need to replace that call with a rfkill_set_sw_state()
+to expose the initial status of the regulator to the rfkill system,
+right?
 
-You should be able to loose a lot of the blank lines in this table.
+> Other than that, no comments from me from an rfkill POV.
+>=20
+> johannes
+>=20
 
-> +static inline int da9052_regulator_uvolts_to_regVal(struct regulator_dev *rdev,
-> +						unsigned int val)
+Thanks I am waiting a couple of days before sending a v2.
 
-MixedCase identifiers aren't the Linux kernel style.
+Regards,
+   Antonio
 
-> +static int da9052_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
-> +				 int max_uV)
-> +{
-> +	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct regulation_constraints *constraints = rdev->constraints;
-> +	int offset = rdev_get_id(rdev);
-> +	int ret;
-> +	int reg_val = 0;
-> +
-> +	/* Compare voltage range */
-> +	if (min_uV > max_uV)
-> +		return -EINVAL;
-> +
-> +	if (min_uV < constraints->min_uV || min_uV > constraints->max_uV)
-> +		return -EINVAL;
-> +	if (max_uV < constraints->min_uV || max_uV > constraints->max_uV)
-> +		return -EINVAL;
+--=20
+Antonio Ospite
+http://ao2.it
 
-The core will take care of all this for you.
+PGP public key ID: 0x4553B001
 
-> +	/* Set the GO LDO/BUCk bits so that the voltage changes */
-> +	switch (offset) {
-> +	case DA9052_LDO2:
-> +		ret = da9052_reg_update(regulator->da9052,
-> +				DA9052_SUPPLY_REG, 0,
-> +				DA9052_SUPPLY_VLDO2GO);
-> +		if (ret < 0)
-> +			return -EIO;
-> +	break;
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
 
-This case statement looks like it should be looking up information in
-the driver private data instead.
+--Signature=_Wed__6_Apr_2011_16_06_54_+0200_BgR7JzPikK0uFaxl
+Content-Type: application/pgp-signature
 
-> +static struct regulator_ops da9052_regulator_ops = {
-> +	.is_enabled		= da9052_regulator_is_enabled,
-> +	.enable		= da9052_regulator_enable,
-> +	.disable		= da9052_regulator_disable,
-> +	.get_voltage	= da9052_regulator_get_voltage,
-> +	.set_voltage	= da9052_regulator_set_voltage,
-> +};
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-You should also implement list_voltage().
+iEYEARECAAYFAk2cc34ACgkQ5xr2akVTsAEX/QCgiqleQlOE24P70b6zDpJVQEUP
+NyEAn1yDa6vzoDR3LrxB0O/yJ0Yq8ZBk
+=x5n3
+-----END PGP SIGNATURE-----
 
-> +	for (i = 0; i < ARRAY_SIZE(da9052_regulator_info); i++) {
-> +		init_data = &da9052_regulators_init[i];
-> +		init_data->driver_data = da9052;
-> +		pdev->dev.platform_data = init_data;
-> +		regulator->regulators[i] = regulator_register(
-> +					&da9052_regulator_info[i].reg_desc,
-> +					&pdev->dev,
-> +					pdev->dev.platform_data,
-> +					regulator
-> +					);
-> +		if (IS_ERR(regulator->regulators[i])) {
-> +			ret = PTR_ERR(regulator->regulators[i]);
-> +			dev_err(da9052->dev, "Failed to register regulator[%d] \
-> +					   %d \n", i+1, ret);
-> +			goto err;
-> +		}
-
-It's easier and less error prone to just register all the regulators
-then look the constraints up in a flat array.
+--Signature=_Wed__6_Apr_2011_16_06_54_+0200_BgR7JzPikK0uFaxl--
