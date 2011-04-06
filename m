@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1DFUwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 16:52:09 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:60232 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754523Ab1DFUwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 16:52:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAF/RnE1Ld/sX/2dsb2JhbAAMhD7VB5ECgSiBWIF0eASTVQ
-X-IronPort-AV: E=Sophos;i="4.63,312,1299474000"; 
-   d="scan'208";a="103472672"
-Message-ID: <4D9CD275.9000002@teksavvy.com>
-Date: Wed, 06 Apr 2011 16:52:05 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1755596Ab1DFU5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 16:57:09 -0400
+Received: from mail.klingt.org ([86.59.21.178]:56534 "EHLO klingt.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754523Ab1DFU5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 16:57:08 -0400
+X-Greylist: delayed 515 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Apr 2011 16:57:07 EDT
+From: Tim Blechmann <tim@klingt.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [2.6.39-rc2] perf top fails to mmap
+Date: Wed, 6 Apr 2011 22:48:23 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc2; KDE/4.6.1; x86_64; ; )
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
+References: <inhgjs$54a$1@dough.gmane.org> <4D9C84D5.6090303@gmail.com> <20110406175217.GC4987@ghostprotocols.net>
+In-Reply-To: <20110406175217.GC4987@ghostprotocols.net>
 MIME-Version: 1.0
-To: Bruce Stenning <b.stenning@indigovision.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com> <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart1903665.V4RLcxk7Aq";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha256
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104062248.23853.tim@klingt.org>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.8 (klingt.org [86.59.21.178]); Wed, 06 Apr 2011 22:48:26 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-06 10:57 AM, Bruce Stenning wrote:
-> Please accept my most humble apologies for the lack of line breaks in
-> my previous email.  Here it is again, this time in a more readable
-> format:
-> 
-> Hello,
-> 
-> We have a bespoke platform utilising a Marvell MV88SX6041 SATA controller
-> on which we have been running Linux 2.6.26 and using the sata_mv driver.
-> 
-> We have noticed problems with SATA ports occasionally locking up (on
-> hotplug events) and remaining unresponsive.  The normal kernel logging
-> that occurs on hotplug events is no longer emitted for the locked ports
-> (but will be emitted for the other sata ports that have not exhibited
-> the problem.)  The disks attached to the locked ports are completely
-> unresponsive.  The condition can be cleared by removing the sata_mv
-> kernel module from memory and reloading it, after which the kernel
-> logging becomes active (and the disks are usable) for all ports.
-> 
-> The following changeset was seen as a strong candidate for addressing
-> this problem:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=933cb8e5fcdebd4b666165e3f039f814d62b0e52
+--nextPart1903665.V4RLcxk7Aq
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
+> > David
+> >=20
+> > > this happens when running perf as the same process as the process and
+> > > when running perf as root.
+>=20
+> yep, works for me as well:
+>=20
+> [acme@emilia ~]$ cat vsyscall.c
 
-That changeset is already in upstream kernels (kernel.org).
-Does the latest kernel (2.6.38) w/ sata_mv work ?
+after including unistd.h, this compiles and works fine. however i cannot pr=
+ofile=20
+any multithreaded program. does this work for you?
+
+tim
+
+=2D-=20
+tim@klingt.org
+http://tim.klingt.org
+
+The most wonderful opportunity which life offers is to be human.
+  Henry Miller
+
+--nextPart1903665.V4RLcxk7Aq
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iF4EABEIAAYFAk2c0ZcACgkQMLNj2qIwZ4V9swD/c7ulLfRk4N0m3U66ROuhWRYO
+W/BR+NJrcCzZy315eN4BAKMg+sE2jQwa+week/MV7QEFIJZvO7Knp0xjQnOQaNGW
+=fJzL
+-----END PGP SIGNATURE-----
+
+--nextPart1903665.V4RLcxk7Aq--
