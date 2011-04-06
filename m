@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab1DFQDM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 12:03:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39905 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756151Ab1DFQDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 12:03:10 -0400
-Date: Wed, 6 Apr 2011 08:58:05 -0700
-From: Greg KH <gregkh@suse.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Mocean Laboratories <info@mocean-labs.com>
-Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
- to drivers
-Message-ID: <20110406155805.GA20095@suse.de>
-References: <20110202200812.3d8d6cba@queued.net>
- <20110331230522.GI437@ponder.secretlab.ca>
- <20110401112030.GA3447@sortiz-mobl>
- <20110401104756.2f5c6f7a@debxo>
- <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
- <20110401235239.GE29397@sortiz-mobl>
- <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
- <20110404100314.GC2751@sortiz-mobl>
- <20110405030428.GB29522@ponder.secretlab.ca>
- <20110406152322.GA2757@sortiz-mobl>
+	id S1754764Ab1DFQDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 12:03:51 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:56271
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751202Ab1DFQDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 12:03:49 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 6 Apr 2011 11:03:35 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: Justin Mattock <justinmattock@gmail.com>
+CC: <trivial@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Harninder Rai <harninder.rai@freescale.com>
+Subject: Re: [RFC 2/5]arch:powerpc:sysdev:Makefile Remove unused config in
+ the Makefile.
+Message-ID: <20110406110335.0f2d5f4c@schlenkerla.am.freescale.net>
+In-Reply-To: <BANLkTi=5A1P-WAFvCyjbT7RVva9K9d=gQQ@mail.gmail.com>
+References: <1302022702-24541-1-git-send-email-justinmattock@gmail.com>
+	<1302022702-24541-2-git-send-email-justinmattock@gmail.com>
+	<20110405131504.1d182da4@schlenkerla.am.freescale.net>
+	<BANLkTi=5A1P-WAFvCyjbT7RVva9K9d=gQQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110406152322.GA2757@sortiz-mobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 05:23:23PM +0200, Samuel Ortiz wrote:
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -33,6 +33,7 @@ struct class;
->  struct subsys_private;
->  struct bus_type;
->  struct device_node;
-> +struct mfd_cell;
->  
->  struct bus_attribute {
->  	struct attribute	attr;
-> @@ -444,6 +445,8 @@ struct device {
->  	struct device_node	*of_node; /* associated device tree node */
->  	const struct of_device_id *of_match; /* matching of_device_id from driver */
->  
-> +	struct mfd_cell	*mfd_cell; /* MFD cell pointer */
-> +
+On Wed, 6 Apr 2011 08:07:58 -0700
+Justin Mattock <justinmattock@gmail.com> wrote:
 
-What is a "MFD cell pointer" and why is it needed in struct device?
+> ahh.. so the:  fsl_85xx_l2ctlr.o fsl_85xx_cache_sram.o is still in use
+> even though FSL_85XX_CACHE_SRAM is not really used, but really is used!!
+> 
+> but might be wrong with this.
 
-thanks,
+More like there are plans to use it, or possibly out-of-tree users.  We
+should prod people a bit to submit the driver patches that use this before
+we just yank it out.
 
-greg k-h
+-Scott
+
