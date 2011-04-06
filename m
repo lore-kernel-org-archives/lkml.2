@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab1DFW0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:26:31 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:51092 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756493Ab1DFW0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:26:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EALrnnE15LHHJ/2dsb2JhbACESqE0eLJ2kRQNgRuDTHgEk1U
-Date: Thu, 7 Apr 2011 08:26:24 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alex Elder <aelder@sgi.com>, xfs@oss.sgi.com,
-        Dave Chinner <dchinner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xfs: remove unused 'bdi' variable in
- xfs_buf_readahead()
-Message-ID: <20110406222624.GG31057@dastard>
-References: <alpine.LNX.2.00.1104061311450.5855@pobox.suse.cz>
+	id S1756947Ab1DFW12 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:27:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51618 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755481Ab1DFW1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 18:27:25 -0400
+Date: Wed, 6 Apr 2011 15:09:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+Message-ID: <20110406220900.GA16117@suse.de>
+References: <20110401235239.GE29397@sortiz-mobl>
+ <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
+ <20110404100314.GC2751@sortiz-mobl>
+ <20110405030428.GB29522@ponder.secretlab.ca>
+ <20110406152322.GA2757@sortiz-mobl>
+ <20110406155805.GA20095@suse.de>
+ <20110406170537.GB2757@sortiz-mobl>
+ <20110406175647.GA8048@suse.de>
+ <20110406184733.GD2757@sortiz-mobl>
+ <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1104061311450.5855@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 01:15:50PM -0700, Jiri Kosina wrote:
-> Gets rid of 
+On Wed, Apr 06, 2011 at 09:59:02PM +0300, Felipe Balbi wrote:
+> Hi,
 > 
-> 	fs/xfs/linux-2.6/xfs_buf.c: In function ‘xfs_buf_readahead’:
-> 	fs/xfs/linux-2.6/xfs_buf.c:660: warning: unused variable ‘bdi’
+> On Wed, Apr 06, 2011 at 08:47:34PM +0200, Samuel Ortiz wrote:
+> > > > > What is a "MFD cell pointer" and why is it needed in struct device?
+> > > > An MFD cell is an MFD instantiated device.
+> > > > MFD (Multi Function Device) drivers instantiate platform devices. Those
+> > > > devices drivers sometimes need a platform data pointer, sometimes an MFD
+> > > > specific pointer, and sometimes both. Also, some of those drivers have been
+> > > > implemented as MFD sub drivers, while others know nothing about MFD and just
+> > > > expect a plain platform_data pointer.
+> > > 
+> > > That sounds like a bug in those drivers, why not fix them to properly
+> > > pass in the correct pointer?
+> > Because they're drivers for generic IPs, not MFD ones. By forcing them to use
+> > MFD specific structure and APIs, we make it more difficult for platform code
+> > to instantiate them.
 > 
-> The variable has been unused since 0e6e847ffe ("xfs: stop using the page 
-> cache to back the buffer cache")
+> I agree. What I do on those cases is to have a simple platform_device
+> for the core IP driver and use platform_device_id tables to do runtime
+> checks of the small differences. If one platform X doesn't use a
+> platform_bus, it uses e.g. PCI, then you make a PCI "bridge" which
+> allocates a platform_device with the correct name and adds that to the
+> driver model.
+> 
+> See [1] (for the core driver) and [2] (for a PCI bridge driver) for an
+> example of what I'm talking about.
 
-There's already a patch in the XFS tree for this.
+Yes, thanks for providing a real example, this is the best way to handle
+this.
 
-Cheers,
+thanks,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+greg k-h
