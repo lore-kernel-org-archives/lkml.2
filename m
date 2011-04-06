@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab1DFLZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:25:26 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60540 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab1DFLZY convert rfc822-to-8bit (ORCPT
+	id S1755784Ab1DFL0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:26:38 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45759 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab1DFL0h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:25:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Iafw4PW32tcTh3OHyGBXsaJAtqYlVzTvkJB1C0/7EXy1da6wIHafzt10q/tvXq8WUK
-         RvGtV2sYsQaeZogFGqpWtcm/OOZ3pBNf+euau+Tkho9ct2KkJzpa4RDfybN+Pghf+pEO
-         qja622mM68V79aJk6t6CG1PnQbV0KNq4hE3cE=
-MIME-Version: 1.0
-In-Reply-To: <20110406110623.GC13963@pengutronix.de>
-References: <20110301153438.GB15633@suse.de> <1302081865-2962-5-git-send-email-u.kleine-koenig@pengutronix.de>
- <BANLkTikVpacjh1EsQQoaQRN3j-kxxjr7qA@mail.gmail.com> <20110406110623.GC13963@pengutronix.de>
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-Date: Wed, 6 Apr 2011 13:25:04 +0200
-Message-ID: <BANLkTi=MjDqawZx=+fKjaAs5SPfGQDEgVQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] driver core: let dev_set_drvdata return int instead
- of void as it can fail
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Greg KH <gregkh@suse.de>, linux-arm-kernel@lists.infradead.org,
-        shiraz.hashim@st.com, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Content-Type: text/plain; charset=ISO-8859-2
+	Wed, 6 Apr 2011 07:26:37 -0400
+Subject: Re: [patch 13/15] sched: expire slack quota using generation
+ counters
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+In-Reply-To: <BANLkTimOP_EtyxEZ9pOEpgJPqEEic21eCA@mail.gmail.com>
+References: <20110323030326.789836913@google.com>
+	 <20110323030449.941304760@google.com> <1302010089.2225.1313.camel@twins>
+	 <BANLkTimOP_EtyxEZ9pOEpgJPqEEic21eCA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Wed, 06 Apr 2011 13:26:21 +0200
+Message-ID: <1302089181.2225.1380.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/6 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> Hello,
-> On Wed, Apr 06, 2011 at 11:36:46AM +0200, Micha³ Miros³aw wrote:
->> 2011/4/6 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
->> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->> > ---
->> > Hello,
->> >
->> > I wasn't sure what to return when dev_set_drvdata is called with
->> > dev=NULL.  I choosed 0, but -EINVAL would be OK for me, too. What do you
->> > think?
->> Why not just BUG_ON(!dev)? Is there a case when you might call this
->> with dev==NULL that's not a driver bug?
-> I think BUG_ON is too harsh. Will resend with -EINVAL.
+On Wed, 2011-04-06 at 00:22 -0700, Paul Turner wrote:
+> 
+> scratches head... erm right, I meant to pair this with a read barrier
+> on querying the generation but balked when I realized that still
+> yields an lfence on x86 since I didn't want to introduce that to the
+> update_curr() path.
+> 
+> While we can probably do away with the barrier completely (it's not
+> critical that we line them up perfectly with the new generation), I've
+> been thinking about this one and I think I have something a little
+> nicer that also reduces the shared cache hits.
+> 
+> We can take advantage of the fact that sched_clocks are already
+> synchronized within 2 jiffies and store the quota's expiration,
+> instead of a generation, when we refresh.
+> 
+> This effectively yields a fairly simple control flow (we can use
+> rq->clock since we're always paired with update_rq_clock operations):
+> a) our rq->clock < expiration always implies quota is valid
+> 
+> Obviously if our cpu clock is ahead of the one that issued the quota,
+> our quota is still valid since the real deadline is even further
+> behind
+> Even if our cpu's clock is behind the max 1.99 jiffies the amount of
+> time that the stale quota can remain valid is basically already within
+> our potential margin of error since for a long running process we
+> check on each tick edge anyway.
+> 
+>  b) our rq->clock > expiration
+> 
+> Again there's two cases, if our cpu clock is behind (or equal) then
+> the deadline has indeed passed and the quota is expired.  This can be
+> confirmed by comparing the global deadline with our local one (the
+> global expiration will have advanced with quota refresh for this to be
+> true).
+> 
+> We can also catch that our cpu is potentially ahead -- by the fact
+> that our rq->clock > expiration but that the global expiration has not
+> yet advanced.  In this case we recognize that our quota is still valid
+> and extend our local expiration time by either the maximum margin of
+> error or some fraction there of (say 1 jiffy) which is guaranteed to
+> push us back in case a) above.  Again this is within our existing
+> margin of error due to entity_tick() alignment.
+> 
+> This ends up looking a lot simpler and avoids much of the pressure on
+> the global variable since we need to compare against it in the case
+> where our clock passes expiration, once a quota period (as the
+> extension will put us in case a where we know we don't need to
+> consider it).
+> 
+> This ends up simpler than the generation muck and can be introduced
+> cleanly earlier in the series, avoiding the churn mentioned above.
+> 
+> Make sense? 
 
-Maybe just WARN_ON, then? Please? ;-)
-
-Error return with no other visible sign is easy to miss for driver
-writers. Big bad backtrace in dmesg on the other hand attracts
-attention.
-
-Best Regards,
-Micha³ Miros³aw
+Yes, that ought to work.
