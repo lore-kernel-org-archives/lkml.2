@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab1DFWmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:42:07 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:35791 "EHLO e6.ny.us.ibm.com"
+	id S1755619Ab1DFWoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:44:12 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:50183 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049Ab1DFWmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:42:05 -0400
-Date: Thu, 7 Apr 2011 04:11:48 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 26/26] 26: uprobes: filter chain
-Message-ID: <20110406224148.GA5806@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
- <20110401143737.15455.30181.sendpatchset@localhost6.localdomain6>
- <4D9A6FE8.2010301@hitachi.com>
+	id S1752996Ab1DFWoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 18:44:10 -0400
+Date: Wed, 6 Apr 2011 15:44:10 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] Add inode checksum support to ext4
+Message-ID: <20110406224410.GB24354@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D9A6FE8.2010301@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static bool filter_chain(struct uprobe *uprobe, struct task_struct *t)
-> > +{
-> > +	struct uprobe_consumer *consumer;
-> > +	bool ret = false;
-> > +
-> > +	down_read(&uprobe->consumer_rwsem);
-> > +	for (consumer = uprobe->consumers; consumer;
-> > +					consumer = consumer->next) {
-> > +		if (!consumer->filter || consumer->filter(consumer, t)) {
-> > +			ret = true;
-> > +			break;
-> > +		}
-> > +	}
-> > +	up_read(&uprobe->consumer_rwsem);
-> > +	return ret;
-> > +}
-> > +
-> 
-> Where this function is called from ? This patch seems the last one of this series...
-> 
+Hi all,
 
-Sorry for the delayed reply, I was travelling to LFCS.
-Still I have to connect the filter from trace/perf probe. 
-Thats listed as todo and thats the next thing I am planning to work on.
-Once we have the connect, this filter_chain and filters that we defined
-will be used. Till then these two patches, One that defines filter_chain
-and one that defines filters are useless.
+I spent last week analyzing a client's corrupted ext3 image to see if I could
+determine what had gone wrong and caused the filesystem to blow apart.  As best
+as I could tell, a data block got miswritten into a different sector ... which
+happened to be an indirect block.  Some time later the indirect block, which
+now pointed at one of the inode tables (among other things that shouldn't ever
+become file data) was loaded as part of a file write, which caused that inode
+table to be blown to smithereens.  Just for fun I tried reading from one of
+these busted-inode files and ... failed to encounter any errors.  Somehow, they
+didn't find it funny that ext3 would read block numbers from a table with the
+contents "ibm.com" with a straight face.  Fortunately there were backups. :)
 
--- 
-Thanks and Regards
-Srikar
+The client at this point asked if ext4 would do a better job of sanity
+checking, which got me to wonder why ext4 checksums block groups but not
+inodes.  It's on Ted's todo list, but apparently nobody wrote any patch, so I
+did.  The following two patches are a first draft of adding inode checksum
+support to both the kernel driver and to the various e2fsprogs.
+
+If you have an existing ext* fs with 256-byte inodes, you ought to be able to
+"tune2fs -O inode_csum /dev/XXX", fsck /dev/XXX, and mount the filesystem with
+checksumming enabled.  It seems to work for me (i386/x86-64), but I'm looking
+for comments for improvement and perhaps some more testing (ppc64 is still
+building).  This inode checksum feature is not enabled by default.
+
+--D
