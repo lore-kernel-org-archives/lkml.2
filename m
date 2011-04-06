@@ -1,164 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab1DFUZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 16:25:50 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:3639 "EHLO MMS3.broadcom.com"
+	id S1756839Ab1DFU2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 16:28:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57715 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168Ab1DFUZs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 16:25:48 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        =?utf-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "George Kashperko" <george@znau.edu.ua>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Russell King" <rmk@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
-References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
- <op.vtisojsk3ri7v4@arend-laptop>
- <BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
-Date: Wed, 6 Apr 2011 22:25:33 +0200
+	id S1755805Ab1DFU2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 16:28:33 -0400
+Date: Wed, 6 Apr 2011 20:28:00 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, stefano.stabellini@eu.citrix.com,
+        tglx@linutronix.de, hpa@linux.intel.com, rjw@sisk.pl
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, stefano.stabellini@eu.citrix.com,
+        tglx@linutronix.de, hpa@linux.intel.com, rjw@sisk.pl
+In-Reply-To: <201104020154.57136.rjw@sisk.pl>
+References: <201104020154.57136.rjw@sisk.pl>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, hibernate: Initialize mmu_cr4_features during boot
+Message-ID: <tip-4da9484bdece39ab0b098fa711e095e3e9fc8684@git.kernel.org>
+Git-Commit-ID: 4da9484bdece39ab0b098fa711e095e3e9fc8684
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vti9ote53ri7v4@arend-laptop>
-In-Reply-To: <BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
-User-Agent: Opera Mail/11.01 (Linux)
-X-WSS-ID: 618213663I87187204-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 06 Apr 2011 20:28:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Apr 2011 20:02:20 +0200, Rafał Miłecki <zajec5@gmail.com> wrote:
+Commit-ID:  4da9484bdece39ab0b098fa711e095e3e9fc8684
+Gitweb:     http://git.kernel.org/tip/4da9484bdece39ab0b098fa711e095e3e9fc8684
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 6 Apr 2011 13:10:02 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 6 Apr 2011 13:10:02 -0700
 
-> 2011/4/6 Arend van Spriel <arend@broadcom.com>:
->> 1. Term Broadcom AI
->>
->
-> I'm still little confused with that, let me read old mails, google a
-> little, etc. I though AMBA AXI is AI on ARM host, give me some time
-> for this.
+x86, hibernate: Initialize mmu_cr4_features during boot
 
-It is the interconnect or backplane which the cores in the chip are hooked  
-up to. See the ARM website for some more info:  
-http://www.arm.com/products/system-ip/interconnect/axi/index.php
+Restore the initialization of mmu_cr4_features during boot, which was
+removed without comment in checkin e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e
 
->
->> 2. Bus registration
->>
->
-> You should drop initialization (to do not perform it twice), but
-> ChipCommon ops are still allowed. See: bcmai_cc_read32,
-> bcmai_cc_write32, bcmai_cc_mask32, bcmai_cc_set32, bcmai_cc_maskset32.
->
-> You can simply call:
-> bcmai_cc_read32(mydev->bus.drv_cc, CC_REGISTER);
->
-> There is nothing stopping you from registering one driver for few
-> cores. We do this in b43 for old SSBs with 2 wireless cores. Of course
-> this is not possible to use 2 drivers for 1 core at the same time.
+x86: Cleanup highmap after brk is concluded
 
-So in theory 2 drivers for 2 separate cores can both call  
-bcmai_cc_read32(). 2 drivers for 1 core indeed seems a 'little awkward' ;-)
+thereby breaking resume from hibernate.  This restores previous
+functionality in approximately the same place, and corrects the
+reading of %cr4 on pre-CPUID hardware (%cr4 exists if and only if
+CPUID is supported.)
 
->
->> 3. Device identification
->>
->> The cores are identified by manufacturer, core id and revision in your
->> patch. I would not use the revision because 4 out of 5 times a revision
->> change does indicate a hardware change but no change in programming
->> interface. The enumeration data does contain a more selective field
->> indicating the core class (4 bits following the core identifier). I  
->> suggest
->> to replace the revision field by this class field.
->
-> Please tell me sth more about "core class (4 bits following the core
-> identifier)". BCMAI_CC_ID_ID is 0x0000FFFF, did you really mean
-> 0x000F0000 which is revision? I guess you meant 0x00F00000 which is
-> package? Thank you for pointing this, it may be very important. For
-> the same reasons I want to have revision, I do not want to miss
-> something else that is important. I think we should add package as one
-> another core attribute.
->
+However, part of the problem is that the hibernate suspend/resume
+sequence should manage the save/restore of %cr4 explicitly.
 
-You found my comment in the code on this. So given your argument above  
-that this is an ABI set in stone I propose to add the component class  
-instead of having it replace the revision.
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <201104020154.57136.rjw@sisk.pl>
+---
+ arch/x86/kernel/setup.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
->
->> 4. PCI Host interface
->>
->
-> No, it is not for b43 only. You are right of course, I'll rename this.
-> It's pretty simple (dumb) driver which is just here just to auto-load
-> bcmai module for given PCI IDs. You could just register driver for
-> 802.11 core and work fine with b43_pci_ai_bridge aside, but it is not
-> correct name for this anyway.
->
-
-ack.
-
->
->> Now for the code comments, see inline remarks below.
->
->> Probably a different name would be better. bcm suggests this is broadcom
->> specific, but it is hardware functionality provided by ARM. Suggestions:
->> axi, axidmp,amba_axi.
->
-> Let me read more abouth this.
->
->
->>> +static u32 bcmai_host_pci_aread32(struct bcmai_device *core, u16  
->>> offset)
->>> +{
->>> +       if (unlikely(core->bus->mapped_core != core))
->>> +               bcmai_host_pci_switch_core(core);
->>> +       return ioread32(core->bus->mmio + 0x1000 + offset);
->>> +}
->>
->> Maybe you can replace the 0x1000 with BCMAI_CORE_SIZE (if that was the
->> correct define).
->
-> I agree. Probably something like (1 * BCMAI_CORE_SIZE) would be even
-> more self-explaining for new developers.
->
-
-great.
-
->
->
->>> +       bcmai_scan_switch_core(bus, BCMAI_ADDR_BASE);
->>
->> Is BCMAI_ADDR_BASE used in other source file in this module? Otherwise,  
->> it
->> could be defined in this source file only instead of in a header file.
->
-> I though we prefer to keep defines in .h in Linux, let me check (Google)  
-> for it.
->
->>
->> Probably this list includes some cores that were in old chips, but will
->> never show up in bcmai chips.
->
-> Can you point which cores we should keep/drop?
-
-I have that question pending over here.
-
-Gr. AvS
--- 
-"The most merciful thing in the world, I think, is the inability of the  
-human
-mind to correlate all its contents." - "The Call of Cthulhu"
-
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 5a0484a..4be9b39 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -976,6 +976,11 @@ void __init setup_arch(char **cmdline_p)
+ 	paging_init();
+ 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
+ 
++	if (boot_cpu_data.cpuid_level >= 0) {
++		/* A CPU has %cr4 if and only if it has CPUID */
++		mmu_cr4_features = read_cr4();
++	}
++
+ #ifdef CONFIG_X86_32
+ 	/* sync back kernel address range */
+ 	clone_pgd_range(initial_page_table + KERNEL_PGD_BOUNDARY,
