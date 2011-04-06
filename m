@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab1DFLLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:11:10 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53156 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753994Ab1DFLLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:11:09 -0400
-Date: Wed, 6 Apr 2011 13:10:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/5] perf/urgent fixes
-Message-ID: <20110406111054.GA24706@elte.hu>
-References: <1302087623-14724-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302087623-14724-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755541Ab1DFLLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:11:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52680 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab1DFLLL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 07:11:11 -0400
+From: Jamie Iles <jamie@jamieiles.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux@arm.linux.org.uk, tglx@linutronix.de, cbouatmailru@gmail.com,
+        grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net,
+        Jamie Iles <jamie@jamieiles.com>
+Subject: [RFC PATCH 0/7] gpio: extend basic_mmio_gpio for different controllers
+Date: Wed,  6 Apr 2011 12:10:56 +0100
+Message-Id: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series extends the basic_mmio_gpio driver to support
+controllers with different register sets and number of GPIOs.  There are
+also changes to configure more at probe time rather than runtime
+evaluation.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+I've tested this on an out-of-tree platform with a Synopsys DesignWare
+GPIO controller.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> 
-> Masami Hiramatsu (5):
->   perf probe: Fix to ensure function declared file
->   perf probe: Fix to remove redundant close
->   perf probe: Fix multiple --vars options behavior
->   perf probe: Fix to find recursively inlined function
->   perf probe: Fix listing incorrect line number with inline function
-> 
->  tools/perf/util/probe-event.c  |   19 ++---
->  tools/perf/util/probe-finder.c |  159 ++++++++++++++++++++++++++--------------
->  2 files changed, 113 insertions(+), 65 deletions(-)
+Jamie Iles (7):
+  basic_mmio_gpio: remove runtime width/endianness evaluation
+  basic_mmio_gpio: convert to platform_{get,set}_drvdata()
+  basic_mmio_gpio: allow overriding number of gpio
+  basic_mmio_gpio: request register regions
+  basic_mmio_gpio: detect output method at probe time
+  basic_mmio_gpio: support different input/output registers
+  basic_mmio_gpio: support direction registers
 
-Pulled, thanks a lot Arnaldo!
+ drivers/gpio/basic_mmio_gpio.c  |  386 ++++++++++++++++++++++++++++++--------
+ include/linux/basic_mmio_gpio.h |    1 +
+ 2 files changed, 305 insertions(+), 82 deletions(-)
 
-	Ingo
+-- 
+1.7.4
+
