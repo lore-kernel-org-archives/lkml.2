@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab1DFLBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:01:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51559 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab1DFLAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:00:35 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/5] perf probe: Fix to find recursively inlined function
-Date: Wed,  6 Apr 2011 08:00:22 -0300
-Message-Id: <1302087623-14724-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1302087623-14724-1-git-send-email-acme@infradead.org>
-References: <1302087623-14724-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754664Ab1DFLCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:02:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752339Ab1DFLCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 07:02:52 -0400
+Date: Wed, 6 Apr 2011 16:32:36 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
+Message-ID: <20110406110236.GL20671@amit-x200.redhat.com>
+References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
+ <20110401154327.GA6593@mtj.dyndns.org>
+ <20110405065129.GC2872@amit-x200.redhat.com>
+ <20110406100620.GA4142@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406100620.GA4142@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On (Wed) 06 Apr 2011 [03:06:20], Tejun Heo wrote:
+> On Tue, Apr 05, 2011 at 12:21:30PM +0530, Amit Shah wrote:
+> > > But I don't think this is the correct place to do it.  The problem
+> > > happens because block layer consumes the event but doesn't remember it
+> > > when the time for revalidation comes.  It should be done by block
+> > > layer, not sr.  Hmmm... looking at the code, the new disk event code
+> > > should handle this correctly.  Was 2.6.38 showing the problem too?
+> > 
+> > Yes, 2.6.38 shows the same problem.  I went back to ancient kernels
+> > (2.6.31 on Fedora 11-alpha) which had the previous media_changed
+> > infrastructure and those places too show the same behaviour (with the
+> > TEST_UNIT_READY way of detecting media changes).
+> 
+> Can you please the patch attached in the following bz and see whether
+> it makes any difference?
+> 
+>  https://bugzilla.kernel.org/show_bug.cgi?id=13029
 
-Fix die_find_inlinefunc() to return correct innermost inlined function
-at given address. Without this fix, it returns the outermost inlined
-function.
+Yes, this works.
 
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20110330092559.2132.78634.stgit@ltc236.sdl.hitachi.co.jp>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/probe-finder.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+You can add Tested-by: Amit Shah <amit.shah@redhat.com>
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 5473f11..689ab46 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -497,7 +497,20 @@ static int __die_find_inline_cb(Dwarf_Die *die_mem, void *data)
- static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
- 				      Dwarf_Die *die_mem)
- {
--	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
-+	Dwarf_Die tmp_die;
-+
-+	sp_die = die_find_child(sp_die, __die_find_inline_cb, &addr, &tmp_die);
-+	if (!sp_die)
-+		return NULL;
-+
-+	/* Inlined function could be recursive. Trace it until fail */
-+	while (sp_die) {
-+		memcpy(die_mem, sp_die, sizeof(Dwarf_Die));
-+		sp_die = die_find_child(sp_die, __die_find_inline_cb, &addr,
-+					&tmp_die);
-+	}
-+
-+	return die_mem;
- }
- 
- /* Walker on lines (Note: line number will not be sorted) */
--- 
-1.6.2.5
+Thanks!
 
+		Amit
