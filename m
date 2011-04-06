@@ -1,533 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab1DFMtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:49:52 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.186]:17844
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755763Ab1DFMtv (ORCPT
+	id S1755993Ab1DFMub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:50:31 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:31988 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763Ab1DFMu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:49:51 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cK936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun Chen <Dajun.Chen@diasemi.com>
-Date: Wed, 6 Apr 2011 18:19:15 +0530
-Subject: [PATCHv1 5/11] REGULATOR: Regulator module of DA9052 PMIC driver
-Thread-Topic: [PATCHv1 5/11] REGULATOR: Regulator module of DA9052 PMIC
- driver
-Thread-Index: Acv0WQkyOYGmLFS+RhGQGE/ihn2F5g==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451F17@KCINPUNHJCMS01.kpit.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 6 Apr 2011 08:50:29 -0400
+Message-ID: <4D9C618A.9020708@atmel.com>
+Date: Wed, 06 Apr 2011 14:50:18 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+To: "Koul, Vinod" <vinod.koul@intel.com>
+CC: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] dmaengine: at_hdmac: add cyclic DMA operation support
+References: <3ee5a0e314a22339ad7a15a5425045f5ed244eab.1301678094.git.nicolas.ferre@atmel.com>	 <426a1091ec74342f259f76ce404472b189730269.1301678094.git.nicolas.ferre@atmel.com> <1302084507.27103.0.camel@vkoul-udesk3>
+In-Reply-To: <1302084507.27103.0.camel@vkoul-udesk3>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p36Co2iM000782
 
-Hi Mark,
+Le 06/04/2011 12:08, Koul, Vinod :
+> On Fri, 2011-04-01 at 19:19 +0200, Nicolas Ferre wrote:
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  drivers/dma/at_hdmac.c      |  188 +++++++++++++++++++++++++++++++++++++++---
+>>  drivers/dma/at_hdmac_regs.h |   14 +++-
+>>  2 files changed, 186 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+>> index 13050e6..fe9e1de 100644
+>> --- a/drivers/dma/at_hdmac.c
+>> +++ b/drivers/dma/at_hdmac.c
+>> @@ -14,6 +14,8 @@
+>>   * The driver has currently been tested with the Atmel AT91SAM9RL
+>>   * and AT91SAM9G45 series.
+>>   */
+>> +#define DEBUG 12
+>> +#define VERBOSE_DEBUG 12
+> Please don't define here and use debug options available for build
 
-Regulator Driver for Dialog Semiconductor DA9052 PMICs.
+Yes, sure sorry.
 
-Changes made since last submission:
-. read and write operation moved to MFD
-. added macros
+>> +/**
+>> + * atc_handle_cyclic - at the end of a period, run callback function
+>> + * @atchan: channel used for cyclic operations
+>> + *
+>> + * Called with atchan->lock held and bh disabled
+>> + */
+>> +static void atc_handle_cyclic(struct at_dma_chan *atchan)
+>> +{
+>> +	struct at_desc			*first = atc_first_active(atchan);
+>> +	struct dma_async_tx_descriptor	*txd = &first->txd;
+>> +	dma_async_tx_callback		callback = txd->callback;
+>> +	void				*param = txd->callback_param;
+>> +
+>> +	dev_vdbg(chan2dev(&atchan->chan_common),
+>> +			"new cyclic period llp 0x%08x\n",
+>> +			channel_readl(atchan, DSCR));
+>> +
+>> +	if (callback)
+>> +		callback(param);
+>> +}
+> You dont seem to be doing much expect calling callback, so doesn't it
+> make sense to write so much code for just calling callback? 
 
-Some additional information of this patch:
-. This patch is tested with the Samsung 6410 board using sysfs interface. 
+I do not totally follow you here: you mean that I should reduce the
+amount of variables in this function or is it a more global comment
+about my way of handling cyclic operations?
 
-Linux Kernel Version: 2.6.37
+>>  
+>>  /*--  IRQ & Tasklet  ---------------------------------------------------*/
+>>  
+>> @@ -434,8 +459,10 @@ static void atc_tasklet(unsigned long data)
+>>  	}
+>>  
+>>  	spin_lock(&atchan->lock);
+>> -	if (test_and_clear_bit(0, &atchan->error_status))
+>> +	if (test_and_clear_bit(ATC_IS_ERROR, &atchan->status))
+>>  		atc_handle_error(atchan);
+>> +	else if (test_bit(ATC_IS_CYCLIC, &atchan->status))
+>> +		atc_handle_cyclic(atchan);
+>>  	else
+>>  		atc_advance_work(atchan);
+>>  
+>> @@ -469,7 +496,7 @@ static irqreturn_t at_dma_interrupt(int irq, void *dev_id)
+>>  					/* Disable channel on AHB error */
+>>  					dma_writel(atdma, CHDR, atchan->mask);
+>>  					/* Give information to tasklet */
+>> -					set_bit(0, &atchan->error_status);
+>> +					set_bit(ATC_IS_ERROR, &atchan->status);
+>>  				}
+>>  				tasklet_schedule(&atchan->tasklet);
+>>  				ret = IRQ_HANDLED;
+>> @@ -759,6 +786,127 @@ err_desc_get:
+>>  	return NULL;
+>>  }
+>>  
+>> +/**
+>> + * atc_dma_cyclic_prep - prepare the cyclic DMA transfer
+>> + * @chan: the DMA channel to prepare
+>> + * @buf_addr: physical DMA address where the buffer starts
+>> + * @buf_len: total number of bytes for the entire buffer
+>> + * @period_len: number of bytes for each period
+>> + * @direction: transfer direction, to or from device
+>> + */
+>> +static struct dma_async_tx_descriptor *
+>> +atc_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>> +		size_t period_len, enum dma_data_direction direction)
+>> +{
+>> +	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+>> +	struct at_dma_slave	*atslave = chan->private;
+>> +	struct at_desc		*first = NULL;
+>> +	struct at_desc		*prev = NULL;
+>> +	unsigned long		was_cyclic;
+>> +	unsigned int		periods = buf_len / period_len;
+>> +	unsigned int		reg_width;
+>> +	u32			ctrla;
+>> +	u32			ctrlb;
+>> +	unsigned int		i;
+>> +
+>> +	dev_vdbg(chan2dev(chan), "prep_dma_cyclic: %s buf@0x%08x - %d (%d/%d)\n",
+>> +			direction == DMA_TO_DEVICE ? "TO DEVICE" : "FROM DEVICE",
+>> +			buf_addr,
+>> +			periods, buf_len, period_len);
+>> +
+>> +	if (unlikely(!atslave || !buf_len || !period_len)) {
+>> +		dev_dbg(chan2dev(chan), "prep_dma_cyclic: length is zero!\n");
+>> +		return NULL;
+>> +	}
+>> +
+>> +	was_cyclic = test_and_set_bit(ATC_IS_CYCLIC, &atchan->status);
+>> +	if (was_cyclic) {
+>> +		dev_dbg(chan2dev(chan), "prep_dma_cyclic: channel in use!\n");
+>> +		return NULL;
+>> +	}
+>> +
+>> +	reg_width = atslave->reg_width;
+>> +
+>> +	/* Check for too big/unaligned periods and unaligned DMA buffer */
+>> +	if (period_len > (ATC_BTSIZE_MAX << reg_width))
+>> +		goto err_out;
+>> +	if (unlikely(period_len & ((1 << reg_width) - 1)))
+>> +		goto err_out;
+>> +	if (unlikely(buf_addr & ((1 << reg_width) - 1)))
+>> +		goto err_out;
+>> +	if (unlikely(!(direction & (DMA_TO_DEVICE | DMA_FROM_DEVICE))))
+>> +		goto err_out;
+>> +
+>> +	/* prepare common CRTLA/CTRLB values */
+>> +	ctrla =   ATC_DEFAULT_CTRLA | atslave->ctrla
+>> +		| ATC_DST_WIDTH(reg_width)
+>> +		| ATC_SRC_WIDTH(reg_width)
+>> +		| period_len >> reg_width;
+>> +	ctrlb = ATC_DEFAULT_CTRLB;
+>> +
+>> +	/* build cyclic linked list */
+>> +	for (i = 0; i < periods; i++) {
+> would help making code look cleaner if you split this one to seprate
+> function
 
-Signed-off-by: D. Chen <dchen@diasemi.com>
----
-diff -Naur orig_linux-2.6.37/drivers/regulator/da9052-regulator.c linux-2.6.37/drivers/regulator/da9052-regulator.c
---- orig_linux-2.6.37/drivers/regulator/da9052-regulator.c	1970-01-01 05:00:00.000000000 +0500
-+++ linux-2.6.37/drivers/regulator/da9052-regulator.c	2011-03-31 21:49:02.000000000 +0500
-@@ -0,0 +1,442 @@
-+/*
-+* da9052-regulator.c: Regulator driver for DA9052
-+*
-+* Copyright(c) 2009 Dialog Semiconductor Ltd.
-+*
-+*Author: Dajun Chen <dchen@diasemi.com>
-+*
-+* This program is free software; you can redistribute it and/or modify
-+* it under the terms of the GNU General Public License as published by
-+* the Free Software Foundation; either version 2 of the License, or
-+* (at your option) any later version.
-+*
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/reg.h>
-+#include <linux/mfd/da9052/pm.h>
-+
-+/* LDO and Buck index */
-+#define DA9052_BUCK_CORE		0
-+#define DA9052_BUCK_PRO		1
-+#define DA9052_BUCK_MEM		2
-+#define DA9052_BUCK_PERI		3
-+
-+#define DA9052_LDO2			4
-+#define DA9052_LDO3			5
-+
-+/* Buck step size Macros */
-+#define DA9052_BUCK_PERI_3uV_STEP		100000
-+#define DA9052_BUCK_PERI_REG_MAP_UPTO_3uV	24
-+#define DA9052_CONST_3uV			3000000
-+
-+static struct regulator_ops da9052_regulator_ops;
-+
-+static struct regulator_consumer_supply da9052_vddarm_consumers[] = {
-+	{
-+		.supply = "vcc",
-+	}
-+};
-+
-+#define DA9052_BUCKCORE_INIT(max, min) \
-+{\
-+	.constraints = {\
-+		.max_uV		= (max) * 1000,\
-+		.min_uV		= (min) * 1000,\
-+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE\
-+		|REGULATOR_CHANGE_STATUS | REGULATOR_CHANGE_MODE,\
-+		.valid_modes_mask = REGULATOR_MODE_NORMAL,\
-+	},\
-+	.num_consumer_supplies = ARRAY_SIZE(da9052_vddarm_consumers),\
-+	.consumer_supplies = da9052_vddarm_consumers,\
-+}
-+
-+
-+#define DA9052_REGULATOR_INIT(max, min) \
-+{\
-+	.constraints = {\
-+		.max_uV		= (max) * 1000,\
-+		.min_uV		= (min) * 1000,\
-+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE\
-+		|REGULATOR_CHANGE_STATUS | REGULATOR_CHANGE_MODE,\
-+		.valid_modes_mask = REGULATOR_MODE_NORMAL,\
-+	},\
-+}
-+
-+struct regulator_init_data da9052_regulators_init[] = {
-+	/* BUCKS */
-+	DA9052_BUCKCORE_INIT(2075, 500),
-+	DA9052_REGULATOR_INIT(2075, 500),
-+	DA9052_REGULATOR_INIT(2500, 925),
-+	DA9052_REGULATOR_INIT(3600, 1800),
-+
-+	/* LDO */
-+	DA9052_REGULATOR_INIT(1800, 600),
-+	DA9052_REGULATOR_INIT(1800, 600),
-+	DA9052_REGULATOR_INIT(3300, 1725),
-+	DA9052_REGULATOR_INIT(3300, 1725),
-+	DA9052_REGULATOR_INIT(3600, 1200),
-+	DA9052_REGULATOR_INIT(3600, 1200),
-+	DA9052_REGULATOR_INIT(3600, 1200),
-+	DA9052_REGULATOR_INIT(3600, 1200),
-+	DA9052_REGULATOR_INIT(3650, 1250),
-+	DA9052_REGULATOR_INIT(3600, 1200),
-+
-+};
-+
-+
-+#define DA9052_LDO(_id, step, sbits, ebits) \
-+{\
-+		.reg_desc	= {\
-+		.name		= "LDO" #_id,\
-+		.ops		= &da9052_regulator_ops,\
-+		.type		= REGULATOR_VOLTAGE,\
-+		.id		= _id,\
-+		.owner		= THIS_MODULE,\
-+	},\
-+		.step_uV		= (step) * 1000,\
-+		.volt_shift		= (sbits),\
-+		.enable_bit		= (ebits),\
-+}
-+
-+#define DA9052_DCDC(_id, step, sbits, ebits) \
-+{\
-+		.reg_desc	= {\
-+		.name		= "BUCK" #_id,\
-+		.ops		= &da9052_regulator_ops,\
-+		.type		= REGULATOR_VOLTAGE,\
-+		.id		= _id,\
-+		.owner		= THIS_MODULE,\
-+	},\
-+		.step_uV		= (step) * 1000,\
-+		.volt_shift		= (sbits),\
-+		.enable_bit		= (ebits),\
-+}
-+
-+struct da9052_regulator_info {
-+	struct regulator_desc reg_desc;
-+	int step_uV;
-+	unsigned char volt_shift;
-+	unsigned char enable_bit;
-+};
-+
-+struct da9052_regulator {
-+	struct da9052 *da9052;
-+	struct regulator_dev *regulators[];
-+};
-+
-+struct da9052_regulator_info da9052_regulator_info[] = {
-+	/* Buck1 - 4*/
-+	DA9052_DCDC(0, 25, 6, 6),
-+
-+	DA9052_DCDC(1, 25, 6, 6),
-+
-+	DA9052_DCDC(2, 25, 6, 6),
-+
-+	DA9052_DCDC(3, 50, 5, 6),
-+
-+	/* LD01 - LDO10*/
-+	DA9052_LDO(4, 50, 5, 6),
-+
-+	DA9052_LDO(5 , 25, 6, 6),
-+
-+	DA9052_LDO(6, 25, 6, 6),
-+
-+	DA9052_LDO(7, 25, 6, 6),
-+
-+	DA9052_LDO(8, 50, 6, 6),
-+
-+	DA9052_LDO(9, 50, 6, 6),
-+
-+	DA9052_LDO(10, 50, 6, 6),
-+
-+	DA9052_LDO(11, 50, 6, 6),
-+
-+	DA9052_LDO(12, 50, 6, 6),
-+
-+	DA9052_LDO(13, 50, 6, 6),
-+
-+};
-+
-+static inline int da9052_regulator_uvolts_to_regVal(struct regulator_dev *rdev,
-+						unsigned int val)
-+{
-+	struct regulation_constraints *constraints = rdev->constraints;
-+	int offset = rdev_get_id(rdev);
-+	int reg_val = 0;
-+
-+	/* Care for the varying step size of BUCK PERI */
-+	if ((offset == DA9052_BUCK_PERI) && (val >= DA9052_CONST_3uV)) {
-+		reg_val = (DA9052_CONST_3uV - constraints->min_uV)/
-+				  (da9052_regulator_info[offset].step_uV);
-+		reg_val += ((val - DA9052_CONST_3uV) /
-+					(DA9052_BUCK_PERI_3uV_STEP));
-+	} else{
-+		reg_val = (val - constraints->min_uV)/
-+				  (da9052_regulator_info[offset].step_uV);
-+
-+		/* Validate reg_val */
-+		if ((reg_val * da9052_regulator_info[offset].step_uV) +
-+			constraints->min_uV > constraints->max_uV)
-+			return -EINVAL;
-+	}
-+
-+	return reg_val;
-+
-+}
-+
-+static inline int da9052_regulator_val_to_uvolts(struct regulator_dev *rdev,
-+						unsigned int regval)
-+{
-+	struct regulation_constraints *constraints = rdev->constraints;
-+	int offset = rdev_get_id(rdev);
-+	int regval_uV = 0;
-+
-+	if (offset == DA9052_BUCK_PERI) {
-+		if (regval >= DA9052_BUCK_PERI_REG_MAP_UPTO_3uV) {
-+			regval_uV = ((DA9052_BUCK_PERI_REG_MAP_UPTO_3uV *
-+				da9052_regulator_info[offset].step_uV)
-+				+ constraints->min_uV);
-+			regval_uV += (regval -
-+				DA9052_BUCK_PERI_REG_MAP_UPTO_3uV)
-+				*(DA9052_BUCK_PERI_3uV_STEP);
-+		} else {
-+			regval_uV =
-+				(regval * da9052_regulator_info[offset].step_uV)
-+				+ constraints->min_uV;
-+		}
-+	} else {
-+		regval_uV = (regval * da9052_regulator_info[offset].step_uV) +
-+				constraints->min_uV;
-+	}
-+
-+	return regval_uV;
-+}
-+
-+static int da9052_regulator_enable(struct regulator_dev *rdev)
-+{
-+	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-+	int offset = rdev_get_id(rdev);
-+	int ret = 0;
-+
-+	ret = da9052_reg_update(regulator->da9052,
-+			DA9052_BUCKCORE_REG + offset,
-+			1 << da9052_regulator_info[offset].enable_bit,
-+			1 << da9052_regulator_info[offset].enable_bit);
-+	if (ret < 0)
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+static int da9052_regulator_disable(struct regulator_dev *rdev)
-+{
-+	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-+	int offset = rdev_get_id(rdev);
-+	int ret = 0;
-+
-+	ret = da9052_reg_update(regulator->da9052,
-+			DA9052_BUCKCORE_REG + offset,
-+			1 << da9052_regulator_info[offset].enable_bit,
-+			0);
-+	if (ret < 0)
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+static int da9052_regulator_is_enabled(struct regulator_dev *rdev)
-+{
-+	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-+	int offset = rdev_get_id(rdev);
-+	int ret;
-+
-+	ret = da9052_reg_read(regulator->da9052,
-+			      DA9052_BUCKCORE_REG + offset);
-+
-+	if (ret < 0)
-+		return -EIO;
-+
-+	return ret & (1 << da9052_regulator_info[offset].enable_bit);
-+
-+}
-+
-+static int da9052_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
-+				 int max_uV)
-+{
-+	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct regulation_constraints *constraints = rdev->constraints;
-+	int offset = rdev_get_id(rdev);
-+	int ret;
-+	int reg_val = 0;
-+
-+	/* Compare voltage range */
-+	if (min_uV > max_uV)
-+		return -EINVAL;
-+
-+	if (min_uV < constraints->min_uV || min_uV > constraints->max_uV)
-+		return -EINVAL;
-+	if (max_uV < constraints->min_uV || max_uV > constraints->max_uV)
-+		return -EINVAL;
-+
-+	reg_val = da9052_regulator_uvolts_to_regVal(rdev, min_uV);
-+
-+	ret = da9052_reg_update(regulator->da9052,
-+			DA9052_BUCKCORE_REG + offset,
-+			(1 << da9052_regulator_info[offset].volt_shift) - 1,
-+			reg_val);
-+	if (ret < 0)
-+		return -EIO;
-+
-+	/* Set the GO LDO/BUCk bits so that the voltage changes */
-+	switch (offset) {
-+	case DA9052_LDO2:
-+		ret = da9052_reg_update(regulator->da9052,
-+				DA9052_SUPPLY_REG, 0,
-+				DA9052_SUPPLY_VLDO2GO);
-+		if (ret < 0)
-+			return -EIO;
-+	break;
-+	case DA9052_LDO3:
-+		ret = da9052_reg_update(regulator->da9052,
-+				DA9052_SUPPLY_REG, 0,
-+				DA9052_SUPPLY_VLDO3GO);
-+		if (ret < 0)
-+			return -EIO;
-+	break;
-+	case DA9052_BUCK_CORE:
-+		ret = da9052_reg_update(regulator->da9052,
-+				DA9052_SUPPLY_REG, 0,
-+				DA9052_SUPPLY_VBCOREGO);
-+		if (ret < 0)
-+			return -EIO;
-+	break;
-+	case DA9052_BUCK_PRO:
-+		ret = da9052_reg_update(regulator->da9052,
-+				DA9052_SUPPLY_REG, 0,
-+				DA9052_SUPPLY_VBPROGO);
-+		if (ret < 0)
-+			return -EIO;
-+	break;
-+	case DA9052_BUCK_MEM:
-+		ret = da9052_reg_update(regulator->da9052,
-+				DA9052_SUPPLY_REG, 0,
-+				DA9052_SUPPLY_VBMEMGO);
-+		if (ret  < 0)
-+			return -EIO;
-+	break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int da9052_regulator_get_voltage(struct regulator_dev *rdev)
-+{
-+	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-+	int offset = rdev_get_id(rdev);
-+	int ret;
-+
-+	ret = da9052_reg_read(regulator->da9052,
-+			DA9052_BUCKCORE_REG + offset);
-+	if (ret < 0)
-+		return -EIO;
-+
-+	return da9052_regulator_val_to_uvolts(rdev,
-+		ret &
-+		((1 << da9052_regulator_info[offset].volt_shift) - 1));
-+}
-+
-+static struct regulator_ops da9052_regulator_ops = {
-+	.is_enabled		= da9052_regulator_is_enabled,
-+	.enable		= da9052_regulator_enable,
-+	.disable		= da9052_regulator_disable,
-+	.get_voltage	= da9052_regulator_get_voltage,
-+	.set_voltage	= da9052_regulator_set_voltage,
-+};
-+
-+static int __devinit da9052_regulator_probe(struct platform_device *pdev)
-+{
-+	struct da9052_regulator *regulator;
-+	struct da9052 *da9052 = dev_get_drvdata(pdev->dev.parent);
-+	struct regulator_init_data  *init_data;
-+	int i, ret = 0;
-+
-+	regulator = kzalloc(sizeof(struct da9052_regulator), GFP_KERNEL);
-+	if (!regulator)
-+		return -ENOMEM;
-+
-+	regulator->da9052 = da9052;
-+
-+	for (i = 0; i < ARRAY_SIZE(da9052_regulator_info); i++) {
-+		init_data = &da9052_regulators_init[i];
-+		init_data->driver_data = da9052;
-+		pdev->dev.platform_data = init_data;
-+		regulator->regulators[i] = regulator_register(
-+					&da9052_regulator_info[i].reg_desc,
-+					&pdev->dev,
-+					pdev->dev.platform_data,
-+					regulator
-+					);
-+		if (IS_ERR(regulator->regulators[i])) {
-+			ret = PTR_ERR(regulator->regulators[i]);
-+			dev_err(da9052->dev, "Failed to register regulator[%d] \
-+					   %d \n", i+1, ret);
-+			goto err;
-+		}
-+	}
-+
-+	platform_set_drvdata(pdev, regulator);
-+
-+	return 0;
-+err:
-+	while (--i >= 0)
-+		regulator_unregister(regulator->regulators[i]);
-+	kfree(regulator);
-+	return ret;
-+}
-+
-+static int __devexit da9052_regulator_remove(struct platform_device *pdev)
-+{
-+	struct da9052_regulator *regulator = platform_get_drvdata(pdev);
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(da9052_regulator_info); i++)
-+		regulator_unregister(regulator->regulators[i]);
-+
-+	kfree(regulator);
-+	return 0;
-+}
-+
-+static struct platform_driver da9052_regulator_driver = {
-+	.driver.name	= "da9052-regulator",
-+	.driver.owner	= THIS_MODULE,
-+	.probe		= da9052_regulator_probe,
-+	.remove		= __devexit_p(da9052_regulator_remove),
-+};
-+
-+static int __init da9052_regulator_init(void)
-+{
-+	return platform_driver_register(&da9052_regulator_driver);
-+}
-+subsys_initcall(da9052_regulator_init);
-+
-+static void __exit da9052_regulator_exit(void)
-+{
-+	platform_driver_unregister(&da9052_regulator_driver);
-+}
-+module_exit(da9052_regulator_exit);
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("Power Regulator driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9052-regulator");
-diff -Naur orig_linux-2.6.37/drivers/regulator/Kconfig linux-2.6.37/drivers/regulator/Kconfig
---- orig_linux-2.6.37/drivers/regulator/Kconfig	2011-01-05 05:50:19.000000000 +0500
-+++ linux-2.6.37/drivers/regulator/Kconfig	2011-03-31 21:48:51.000000000 +0500
-@@ -158,6 +158,13 @@
- 	  Say y here to support the BUCKs and LDOs regulators found on
- 	  Dialog Semiconductor DA9030/DA9034 PMIC.
+Ok, I will see what I can do... and will post a v2 soon.
 
-+config REGULATOR_DA9052
-+	tristate "Dialog DA9052 regulators"
-+	depends on PMIC_DA9052
-+	help
-+	  Say y here to support the BUCKs and LDOs regulators found on
-+	  Dialog Semiconductor DA9052 PMIC.
-+
- config REGULATOR_PCF50633
- 	tristate "PCF50633 regulator driver"
-         depends on MFD_PCF50633
-diff -Naur orig_linux-2.6.37/drivers/regulator/Makefile linux-2.6.37/drivers/regulator/Makefile
---- orig_linux-2.6.37/drivers/regulator/Makefile	2011-01-05 05:50:19.000000000 +0500
-+++ linux-2.6.37/drivers/regulator/Makefile	2011-03-31 21:48:45.000000000 +0500
-@@ -27,6 +27,7 @@
- obj-$(CONFIG_REGULATOR_WM8994) 	+= wm8994-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6586X)	+= tps6586x-regulator.o
- obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
-+obj-$(CONFIG_REGULATOR_DA9052)  	+= da9052-regulator.o
- obj-$(CONFIG_REGULATOR_PCF50633) 	+= pcf50633-regulator.o
- obj-$(CONFIG_REGULATOR_PCAP) 	+= pcap-regulator.o
- obj-$(CONFIG_REGULATOR_MC13783) 	+= mc13783-regulator.o
-
-Regards,
-Ashish
+>> +		struct at_desc	*desc;
+>> +
+>> +		desc = atc_desc_get(atchan);
+>> +		if (!desc)
+>> +			goto err_desc_get;
+>> +
+>> +		switch (direction) {
+>> +		case DMA_TO_DEVICE:
+>> +			desc->lli.saddr = buf_addr + (period_len * i);
+>> +			desc->lli.daddr = atslave->tx_reg;
+>> +			desc->lli.ctrla = ctrla;
+>> +			desc->lli.ctrlb = ctrlb
+>> +					| ATC_DST_ADDR_MODE_FIXED
+>> +					| ATC_SRC_ADDR_MODE_INCR
+>> +					| ATC_FC_MEM2PER;
+>> +			break;
+>> +
+>> +		case DMA_FROM_DEVICE:
+>> +			desc->lli.saddr = atslave->rx_reg;
+>> +			desc->lli.daddr = buf_addr + (period_len * i);
+>> +			desc->lli.ctrla = ctrla;
+>> +			desc->lli.ctrlb = ctrlb
+>> +					| ATC_DST_ADDR_MODE_INCR
+>> +					| ATC_SRC_ADDR_MODE_FIXED
+>> +					| ATC_FC_PER2MEM;
+>> +			break;
+>> +
+>> +		default:
+>> +			return NULL;
+>> +		}
+>> +
+>> +		if (!first) {
+>> +			first = desc;
+>> +		} else {
+>> +			/* inform the HW lli about chaining */
+>> +			prev->lli.dscr = desc->txd.phys;
+>> +			/* insert the link descriptor to the LD ring */
+>> +			list_add_tail(&desc->desc_node,
+>> +					&first->tx_list);
+>> +		}
+>> +		prev = desc;
+>> +	}
+>> +
+>> +	/* lets make a cyclic list */
+>> +	prev->lli.dscr = first->txd.phys;
+>> +
+>> +	/* First descriptor of the chain embedds additional information */
+>> +	first->txd.cookie = -EBUSY;
+>> +	first->len = buf_len;
+>> +
+>> +	return &first->txd;
+>> +
+>> +err_desc_get:
+>> +	dev_err(chan2dev(chan), "not enough descriptors available\n");
+>> +	atc_desc_put(atchan, first);
+>> +err_out:
+>> +	clear_bit(ATC_IS_CYCLIC, &atchan->status);
+>> +	return NULL;
+>> +}
+>> +
+>> +
+>>  static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>>  		       unsigned long arg)
+>>  {
+>> @@ -793,6 +941,9 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>>  	list_for_each_entry_safe(desc, _desc, &list, desc_node)
+>>  		atc_chain_complete(atchan, desc);
+>>  
+>> +	/* if channel dedicated to cyclic operations, free it */
+>> +	clear_bit(ATC_IS_CYCLIC, &atchan->status);
+>> +
+>>  	spin_unlock_bh(&atchan->lock);
+>>  
+>>  	return 0;
+>> @@ -853,6 +1004,10 @@ static void atc_issue_pending(struct dma_chan *chan)
+>>  
+>>  	dev_vdbg(chan2dev(chan), "issue_pending\n");
+>>  
+>> +	/* Not needed for cyclic transfers */
+>> +	if (test_bit(ATC_IS_CYCLIC, &atchan->status))
+>> +		return;
+>> +
+>>  	spin_lock_bh(&atchan->lock);
+>>  	if (!atc_chan_is_enabled(atchan)) {
+>>  		atc_advance_work(atchan);
+>> @@ -1092,10 +1247,15 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>  	if (dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask))
+>>  		atdma->dma_common.device_prep_dma_memcpy = atc_prep_dma_memcpy;
+>>  
+>> -	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)) {
+>> +	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask))
+>>  		atdma->dma_common.device_prep_slave_sg = atc_prep_slave_sg;
+>> +
+>> +	if (dma_has_cap(DMA_CYCLIC, atdma->dma_common.cap_mask))
+>> +		atdma->dma_common.device_prep_dma_cyclic = atc_prep_dma_cyclic;
+>> +
+>> +	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask) ||
+>> +	    dma_has_cap(DMA_CYCLIC, atdma->dma_common.cap_mask))
+>>  		atdma->dma_common.device_control = atc_control;
+>> -	}
+>>  
+>>  	dma_writel(atdma, EN, AT_DMA_ENABLE);
+>>  
+>> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+>> index 8303306..c79a9e0 100644
+>> --- a/drivers/dma/at_hdmac_regs.h
+>> +++ b/drivers/dma/at_hdmac_regs.h
+>> @@ -181,12 +181,22 @@ txd_to_at_desc(struct dma_async_tx_descriptor *txd)
+>>  /*--  Channels  --------------------------------------------------------*/
+>>  
+>>  /**
+>> + * atc_status - information bits stored in channel status flag
+>> + *
+>> + * Manipulated with atomic operations.
+>> + */
+>> +enum atc_status {
+>> +	ATC_IS_ERROR = 0,
+>> +	ATC_IS_CYCLIC = 24,
+>> +};
+>> +
+>> +/**
+>>   * struct at_dma_chan - internal representation of an Atmel HDMAC channel
+>>   * @chan_common: common dmaengine channel object members
+>>   * @device: parent device
+>>   * @ch_regs: memory mapped register base
+>>   * @mask: channel index in a mask
+>> - * @error_status: transmit error status information from irq handler
+>> + * @status: transmit status information from irq/prep* functions
+>>   *                to tasklet (use atomic operations)
+>>   * @tasklet: bottom half to finish transaction work
+>>   * @lock: serializes enqueue/dequeue operations to descriptors lists
+>> @@ -201,7 +211,7 @@ struct at_dma_chan {
+>>  	struct at_dma		*device;
+>>  	void __iomem		*ch_regs;
+>>  	u8			mask;
+>> -	unsigned long		error_status;
+>> +	unsigned long		status;
+>>  	struct tasklet_struct	tasklet;
+>>  
+>>  	spinlock_t		lock;
 
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Thanks for your review, best regards,
+-- 
+Nicolas Ferre
+
