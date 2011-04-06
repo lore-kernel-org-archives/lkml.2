@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab1DFO3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 10:29:12 -0400
-Received: from smtp209.alice.it ([82.57.200.105]:44960 "EHLO smtp209.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755952Ab1DFO3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 10:29:10 -0400
-Date: Wed, 6 Apr 2011 16:29:01 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
-        "John W . Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Marek Vasut <marek.vasut@gmail.com>, Guiming Zhuo <gmzhuo@gmail.com>
-Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
-Message-Id: <20110406162901.0efa11ad.ospite@studenti.unina.it>
-In-Reply-To: <20110406141131.GC2810@opensource.wolfsonmicro.com>
-References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
-	<20110406141131.GC2810@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; x86_64-unknown-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__6_Apr_2011_16_29_01_+0200_y1Jge.GaRKe2jFhV"
+	id S1756237Ab1DFOaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 10:30:15 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:59749 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755952Ab1DFOaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 10:30:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=e/VsfbvJQsj1tXPk+cXdNVW4UHaEgL2Hr+cXf/0yHpEITmIjL5m1/3vdMOyJ+sT4u4
+         h4iH/Jyve008hot9ebrQaOldzfv5ev2Rg/o8LP3FWvH7AbRFnxLXnMQs3co02KjLqoKL
+         yH8g8qxkpiU8be+0UDjlZ//df6BUoqiSrV19o=
+Date: Wed, 6 Apr 2011 16:30:06 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
+Message-ID: <20110406143003.GD1867@nowhere>
+References: <4D8B79E6.2050603@gmail.com>
+ <4D8C6B1B.70409@hitachi.com>
+ <4D8CAE74.9080805@gmail.com>
+ <4D906450.1040809@hitachi.com>
+ <4D909BBB.5020500@gmail.com>
+ <20110401151313.GC2335@nowhere>
+ <4D96072E.4060902@gmail.com>
+ <20110406121501.GA1867@nowhere>
+ <20110406140958.GA4987@ghostprotocols.net>
+ <1302099301.2225.1381.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302099301.2225.1381.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Apr_2011_16_29_01_+0200_y1Jge.GaRKe2jFhV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 06, 2011 at 04:15:01PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-04-06 at 11:09 -0300, Arnaldo Carvalho de Melo wrote:
+> > > What we seem to need for that is to bring a pagefault tracepoint. We had
+> > > propositions for that in the past, but work on this is in pause mode it
+> > > seems. 
+> 
+> Huh, whot? You can get that using PERF_COUNT_SW_PAGE_FAULT and
+> PERF_SAMPLE_ADDR.
 
-On Wed, 6 Apr 2011 23:11:33 +0900
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-
-> On Wed, Apr 06, 2011 at 11:21:19AM +0200, Antonio Ospite wrote:
->=20
-> > +	tristate "Generic rfkill regulator driver"
-> > +	depends on RFKILL || !RFKILL
->=20
-> That looks *odd*.
-
-Taken from Documentation/rfkill.txt section 3.  Kernel API.
-I guess I can drop it if we want to be stricter and just require RFKILL
-to be enabled. Johannes?
-
-> Otherwise this looks fine from a regulator API point
-> of view.  You use an exclusive get() so you could get away without
-> remembering the enable state as nothing else could hold the device open
-> but there's no harm in doing so and it's defensive against silly
-> constraints that force the regulator on.
->=20
-
-Thanks Mark.
-
-Regards,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Wed__6_Apr_2011_16_29_01_+0200_y1Jge.GaRKe2jFhV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk2ceK0ACgkQ5xr2akVTsAHw8wCeJ1SFlc0FYqYQifw4c35qs3qn
-fPUAni64Tm91GrqZMb7LCsOVE+rT2eld
-=Pc7K
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Apr_2011_16_29_01_+0200_y1Jge.GaRKe2jFhV--
+Where are we doing that? I can't find the code that handles it.
