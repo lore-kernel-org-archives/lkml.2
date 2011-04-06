@@ -1,252 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab1DFLMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:12:37 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33212 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab1DFLLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:11:13 -0400
-From: Jamie Iles <jamie@jamieiles.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux@arm.linux.org.uk, tglx@linutronix.de, cbouatmailru@gmail.com,
-        grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net,
-        Jamie Iles <jamie@jamieiles.com>
-Subject: [RFC PATCH 1/7] basic_mmio_gpio: remove runtime width/endianness evaluation
-Date: Wed,  6 Apr 2011 12:10:57 +0100
-Message-Id: <1302088263-12714-2-git-send-email-jamie@jamieiles.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
-References: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
+	id S1755616Ab1DFLNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:13:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42857 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754743Ab1DFLNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 07:13:15 -0400
+Date: Wed, 6 Apr 2011 11:12:52 GMT
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, peterz@infradead.org,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com,
+        peterz@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110330092541.2132.3584.stgit@ltc236.sdl.hitachi.co.jp>
+References: <20110330092541.2132.3584.stgit@ltc236.sdl.hitachi.co.jp>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf probe: Fix to ensure function declared file
+Message-ID: <tip-7d21635ac5c78abe162fb3f56b37c30bcbfa019f@git.kernel.org>
+Git-Commit-ID: 7d21635ac5c78abe162fb3f56b37c30bcbfa019f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 06 Apr 2011 11:12:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove endianness/width calculations at runtime by installing function
-pointers for bit-to-mask conversion and register accessors.
+Commit-ID:  7d21635ac5c78abe162fb3f56b37c30bcbfa019f
+Gitweb:     http://git.kernel.org/tip/7d21635ac5c78abe162fb3f56b37c30bcbfa019f
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Wed, 30 Mar 2011 18:25:41 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 5 Apr 2011 15:34:53 -0300
 
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
+perf probe: Fix to ensure function declared file
+
+Fix to ensure function declared file matches given file name. This fixes
+a potential bug.
+
+As I've commented on Lin Ming's fastpath enhancement, decl_file should
+be checked on each probe point if user gives a probe point as func@file.
+
+Cc: 2nddept-manager@sdl.hitachi.co.jp
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <20110330092541.2132.3584.stgit@ltc236.sdl.hitachi.co.jp>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/gpio/basic_mmio_gpio.c |  140 +++++++++++++++++++++++++++-------------
- 1 files changed, 94 insertions(+), 46 deletions(-)
+ tools/perf/util/probe-finder.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-index 3addea6..26f84e2 100644
---- a/drivers/gpio/basic_mmio_gpio.c
-+++ b/drivers/gpio/basic_mmio_gpio.c
-@@ -63,6 +63,10 @@ o        `                     ~~~~\___/~~~~    ` controller in FPGA is ,.`
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 194f9e2..3bcd140 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1395,6 +1395,10 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+ 	    !die_compare_name(sp_die, pp->function))
+ 		return DWARF_CB_OK;
  
- struct bgpio_chip {
- 	struct gpio_chip gc;
++	/* Check declared file */
++	if (pp->file && strtailcmp(pp->file, dwarf_decl_file(sp_die)))
++		return DWARF_CB_OK;
 +
-+	unsigned long (*read_reg)(void __iomem *reg);
-+	void (*write_reg)(void __iomem *reg, unsigned long data);
+ 	pf->fname = dwarf_decl_file(sp_die);
+ 	if (pp->line) { /* Function relative line */
+ 		dwarf_decl_line(sp_die, &pf->lno);
+@@ -1840,6 +1844,10 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+ 	struct line_finder *lf = param->data;
+ 	struct line_range *lr = lf->lr;
+ 
++	/* Check declared file */
++	if (lr->file && strtailcmp(lr->file, dwarf_decl_file(sp_die)))
++		return DWARF_CB_OK;
 +
- 	void __iomem *reg_dat;
- 	void __iomem *reg_set;
- 	void __iomem *reg_clr;
-@@ -74,7 +78,8 @@ struct bgpio_chip {
- 	 * Some GPIO controllers work with the big-endian bits notation,
- 	 * e.g. in a 8-bits register, GPIO7 is the least significant bit.
- 	 */
--	int big_endian_bits;
-+	unsigned long (*pin2mask)(struct bgpio_chip *bgc, unsigned int pin);
-+
- 
- 	/*
- 	 * Used to lock bgpio_chip->data. Also, this is needed to keep
-@@ -91,70 +96,77 @@ static struct bgpio_chip *to_bgpio_chip(struct gpio_chip *gc)
- 	return container_of(gc, struct bgpio_chip, gc);
- }
- 
--static unsigned long bgpio_in(struct bgpio_chip *bgc)
-+static void bgpio_write8(void __iomem *reg, unsigned long data)
- {
--	switch (bgc->bits) {
--	case 8:
--		return __raw_readb(bgc->reg_dat);
--	case 16:
--		return __raw_readw(bgc->reg_dat);
--	case 32:
--		return __raw_readl(bgc->reg_dat);
--#if BITS_PER_LONG >= 64
--	case 64:
--		return __raw_readq(bgc->reg_dat);
--#endif
--	}
--	return -EINVAL;
-+	__raw_writeb(data, reg);
- }
- 
--static void bgpio_out(struct bgpio_chip *bgc, void __iomem *reg,
--		      unsigned long data)
-+static unsigned long bgpio_read8(void __iomem *reg)
- {
--	switch (bgc->bits) {
--	case 8:
--		__raw_writeb(data, reg);
--		return;
--	case 16:
--		__raw_writew(data, reg);
--		return;
--	case 32:
--		__raw_writel(data, reg);
--		return;
-+	return __raw_readb(reg);
-+}
-+
-+static void bgpio_write16(void __iomem *reg, unsigned long data)
-+{
-+	__raw_writew(data, reg);
-+}
-+
-+static unsigned long bgpio_read16(void __iomem *reg)
-+{
-+	return __raw_readw(reg);
-+}
-+
-+static void bgpio_write32(void __iomem *reg, unsigned long data)
-+{
-+	__raw_writel(data, reg);
-+}
-+
-+static unsigned long bgpio_read32(void __iomem *reg)
-+{
-+	return __raw_readl(reg);
-+}
-+
- #if BITS_PER_LONG >= 64
--	case 64:
--		__raw_writeq(data, reg);
--		return;
--#endif
--	}
-+static unsigned long bgpio_write64(void __iomem *reg, unsigned long data)
-+{
-+	return __raw_writeq(data, reg);
-+}
-+
-+static unsigned long bgpio_read64(void __iomem *reg)
-+{
-+	return __raw_readq(reg);
- }
-+#endif /* BITS_PER_LONG >= 64 */
- 
- static unsigned long bgpio_pin2mask(struct bgpio_chip *bgc, unsigned int pin)
- {
--	if (bgc->big_endian_bits)
--		return 1 << (bgc->bits - 1 - pin);
--	else
--		return 1 << pin;
-+	return 1 << pin;
-+}
-+
-+static unsigned long bgpio_pin2mask_be(struct bgpio_chip *bgc,
-+				       unsigned int pin)
-+{
-+	return 1 << (bgc->bits - 1 - pin);
- }
- 
- static int bgpio_get(struct gpio_chip *gc, unsigned int gpio)
- {
- 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
- 
--	return bgpio_in(bgc) & bgpio_pin2mask(bgc, gpio);
-+	return bgc->read_reg(bgc->reg_dat) & bgc->pin2mask(bgc, gpio);
- }
- 
- static void bgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
- {
- 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
--	unsigned long mask = bgpio_pin2mask(bgc, gpio);
-+	unsigned long mask = bgc->pin2mask(bgc, gpio);
- 	unsigned long flags;
- 
- 	if (bgc->reg_set) {
- 		if (val)
--			bgpio_out(bgc, bgc->reg_set, mask);
-+			bgc->write_reg(bgc->reg_set, mask);
- 		else
--			bgpio_out(bgc, bgc->reg_clr, mask);
-+			bgc->write_reg(bgc->reg_clr, mask);
- 		return;
- 	}
- 
-@@ -165,7 +177,7 @@ static void bgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
- 	else
- 		bgc->data &= ~mask;
- 
--	bgpio_out(bgc, bgc->reg_dat, bgc->data);
-+	bgc->write_reg(bgc->reg_dat, bgc->data);
- 
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- }
-@@ -181,9 +193,44 @@ static int bgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
- 	return 0;
- }
- 
--static int __devinit bgpio_probe(struct platform_device *pdev)
-+static int bgpio_setup_accessors(struct platform_device *pdev,
-+				 struct bgpio_chip *bgc)
- {
- 	const struct platform_device_id *platid = platform_get_device_id(pdev);
-+
-+	switch (bgc->bits) {
-+	case 8:
-+		bgc->read_reg	= bgpio_read8;
-+		bgc->write_reg	= bgpio_write8;
-+		break;
-+	case 16:
-+		bgc->read_reg	= bgpio_read16;
-+		bgc->write_reg	= bgpio_write16;
-+		break;
-+	case 32:
-+		bgc->read_reg	= bgpio_read32;
-+		bgc->write_reg	= bgpio_write32;
-+		break;
-+#if BITS_PER_LONG >= 64
-+	case 64:
-+		bgc->read_reg	= bgpio_read64;
-+		bgc->write_reg	= bgpio_write64;
-+		break;
-+#endif /* BITS_PER_LONG >= 64 */
-+	default:
-+		dev_err(&pdev->dev, "unsupported data width %u bits\n",
-+			bgc->bits);
-+		return -EINVAL;
-+	}
-+
-+	bgc->pin2mask = strcmp(platid->name, "basic-mmio-gpio-be") ?
-+		bgpio_pin2mask : bgpio_pin2mask_be;
-+
-+	return 0;
-+}
-+
-+static int __devinit bgpio_probe(struct platform_device *pdev)
-+{
- 	struct device *dev = &pdev->dev;
- 	struct bgpio_pdata *pdata = dev_get_platdata(dev);
- 	struct bgpio_chip *bgc;
-@@ -229,12 +276,13 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	spin_lock_init(&bgc->lock);
--
- 	bgc->bits = bits;
--	bgc->big_endian_bits = !strcmp(platid->name, "basic-mmio-gpio-be");
--	bgc->data = bgpio_in(bgc);
-+	ret = bgpio_setup_accessors(pdev, bgc);
-+	if (ret)
-+		return ret;
- 
-+	spin_lock_init(&bgc->lock);
-+	bgc->data = bgc->read_reg(bgc->reg_dat);
- 	bgc->gc.ngpio = bits;
- 	bgc->gc.direction_input = bgpio_dir_in;
- 	bgc->gc.direction_output = bgpio_dir_out;
--- 
-1.7.4
-
+ 	if (dwarf_tag(sp_die) == DW_TAG_subprogram &&
+ 	    die_compare_name(sp_die, lr->function)) {
+ 		lf->fname = dwarf_decl_file(sp_die);
