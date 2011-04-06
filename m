@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1DFMSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:18:15 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:51896 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab1DFMSO (ORCPT
+	id S1755667Ab1DFMTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:19:51 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47857 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab1DFMTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:18:14 -0400
+	Wed, 6 Apr 2011 08:19:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LgEWQ6A1RXTiJwZeizTiQUa+amBwJ+7xQzarl1XDZ8kQ+AdtYsIx5MG5SXYi2MVo1K
-         acujv8JeK9/f6PA5u5Efi28LDX41+w3bHZ2v13g/jxzE7Tbv2/L8+/Enf59dCfYlsLHI
-         /dy5wGLU2KAbD8uSkYrxajxqUNG5UugeJ0WgY=
-Date: Wed, 6 Apr 2011 16:18:09 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net
-Subject: Re: [RFC PATCH 3/7] basic_mmio_gpio: allow overriding number of
- gpio
-Message-ID: <20110406121809.GA8385@oksana.dev.rtsoft.ru>
-References: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
- <1302088263-12714-4-git-send-email-jamie@jamieiles.com>
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=a5l5aAlGQCkVgh/6lub1mf7RabGkJwZRhWrHMtSBKvMBUrMw7KbICzq18JUrFZUhQv
+         qAg4uxWDJoYawcVx+QK+T5YUIIOu+TQXsbsy0jOTAvINIv3YUFOAtHNbQ1nnS9Mb3Uvy
+         oxLLuq0nG+UFtExMloj1MaBu1m1Wi/FIUItPo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1302088263-12714-4-git-send-email-jamie@jamieiles.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110406152915.bdc2ecd3.sfr@canb.auug.org.au>
+References: <20110406152915.bdc2ecd3.sfr@canb.auug.org.au>
+Date: Wed, 6 Apr 2011 14:19:48 +0200
+Message-ID: <BANLkTikG0=JbtbAQTOj9ij7EGPKb58sUbA@mail.gmail.com>
+Subject: Re: linux-next: Tree for April 6
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 12:10:59PM +0100, Jamie Iles wrote:
-[...]
-> +	if (pdata) {
-> +		bgc->gc.base = pdata->base;
-> +		if (pdata->ngpio > 0)
-> +			ngpio = pdata->ngpio;
-> +	} else
-> +		bgc->gc.base = -1;
+On Wed, Apr 6, 2011 at 7:29 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> [The kernel.org mirroring is being slow.]
+>
+> Changes since 20110405:
+>
+> Dropped tree: xen
+>
+> The staging tree gained a conflict against the staging.current tree.
+>
+> ----------------------------------------------------------------------------
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).
 
-Just a minor comstic nit: 'else' case should be with braces as well.
-I.e. '} else {'.
+Where is it?
+No updates, only the US kernel-mirror in [3] has a patch.
 
-But techincally, the patch looks perfect,
+In general:
 
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+Whom to contact in case of this GeoIP-related(?!) slowness to
+kernel-mirrors for people from Europe?
+This problem still exists here, since end of 2010 (so called
+"android-stuff-sync").
+"Here" means Wild Wild South-West Germany: *.kernel.org -> *.eu.k.o
+I am now only taking the US-URLs to clone/pull/get my stuff.
+Can you explain what's going on?
 
-Thanks,
+- Sedat -
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+[1] http://www.kernel.org/pub/linux/kernel/v2.6/next/?C=M;O=D
+[2] http://git.eu.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=summary
+[3] http://www.us.kernel.org/pub/linux/kernel/v2.6/next/patch-v2.6.39-rc1-next-20110406.gz
