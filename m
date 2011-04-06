@@ -1,122 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab1DFV1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:27:38 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59132 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162Ab1DFV1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:27:37 -0400
-Date: Wed, 6 Apr 2011 17:27:33 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, anton@samba.org
-Subject: Re: [PATCH] POWER: perf_event: Skip updating kernel counters if
- register value shrinks
-Message-ID: <20110406212733.GB2596@mgebm.net>
-References: <1301059689-4556-1-git-send-email-emunson@mgebm.net>
- <1301378637.2402.671.camel@pasglop>
- <20110329142519.GA3527@mgebm.net>
- <1301433165.2402.689.camel@pasglop>
- <20110330183656.GA2564@mgebm.net>
- <1301551476.2407.61.camel@pasglop>
+	id S932306Ab1DFV1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:27:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37191 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932162Ab1DFV1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 17:27:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,312,1299484800"; 
+   d="scan'208";a="676109785"
+Message-ID: <4D9CDACB.9050705@linux.intel.com>
+Date: Wed, 06 Apr 2011 14:27:39 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pvezYHf7grwyp3Bc"
-Content-Disposition: inline
-In-Reply-To: <1301551476.2407.61.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: paulmck@linux.vnet.ibm.com, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michal Marek <mmarek@suse.cz>, Jan Beulich <JBeulich@novell.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+References: <4D93D29C.5010702@cn.fujitsu.com>	 <1301558691.2250.486.camel@laptop> <4D944E60.8080704@cn.fujitsu.com>	 <1301570320.4859.242.camel@twins> <4D953121.6090901@cn.fujitsu.com>	 <1301657749.4859.531.camel@twins>	 <20110405215450.GK2247@linux.vnet.ibm.com>	 <20110405230745.GA5972@linux.vnet.ibm.com>	 <1302077428.2225.1365.camel@twins>	 <20110406192119.GB2265@linux.vnet.ibm.com>	 <20110406201350.GA9378@linux.vnet.ibm.com> <1302123970.2207.4.camel@laptop>
+In-Reply-To: <1302123970.2207.4.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/06/2011 02:06 PM, Peter Zijlstra wrote:
+> On Wed, 2011-04-06 at 13:13 -0700, Paul E. McKenney wrote:
+>> And the following patch builds correctly for defconfig x86 builds,
+>> while allowing rcupdate.h to see the sched.h definitions as needed
+>> to inline rcu_read_lock() and rcu_read_unlock().
+>>
+> Looks like an entirely reasonable patch to me ;-)
+> 
 
---pvezYHf7grwyp3Bc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Quite... a lot better than the original proposal!
 
-On Thu, 31 Mar 2011, Benjamin Herrenschmidt wrote:
+	-hpa
 
-> On Wed, 2011-03-30 at 14:36 -0400, Eric B Munson wrote:
-> > On Wed, 30 Mar 2011, Benjamin Herrenschmidt wrote:
-> >=20
-> > > On Tue, 2011-03-29 at 10:25 -0400, Eric B Munson wrote:
-> > > > Here I made the assumption that the hardware would never remove mor=
-e events in
-> > > > a speculative roll back than it had added.  This is not a situation=
- I
-> > > > encoutered in my limited testing, so I didn't think underflow was p=
-ossible.  I
-> > > > will send out a V2 using the signed 32 bit delta and remeber to CC =
-stable
-> > > > this time.=20
-> > >=20
-> > > I'm not thinking about underflow but rollover... or that isn't possib=
-le
-> > > with those counters ? IE. They don't wrap back to 0 after hitting
-> > > ffffffff ?
-> > >=20
-> >=20
-> > They do roll over to 0 after ffffffff, but I thought that case was alre=
-ady
-> > covered by the perf_event_interrupt.  Are you concerned that we will re=
-set a
-> > counter and speculative roll back will underflow that counter?
->=20
-> No, but take this part of the patch:
->=20
-> > --- a/arch/powerpc/kernel/perf_event.c
-> > +++ b/arch/powerpc/kernel/perf_event.c
-> > @@ -416,6 +416,15 @@ static void power_pmu_read(struct perf_event *even=
-t)
-> >  		prev =3D local64_read(&event->hw.prev_count);
-> >  		barrier();
-> >  		val =3D read_pmc(event->hw.idx);
-> > +		/*
-> > +		 * POWER7 can roll back counter values, if the new value is
-> > +		 * smaller than the previous value it will cause the delta
-> > +		 * and the counter to have bogus values.  If this is the
-> > +		 * case skip updating anything until the counter grows again.
-> > +		 * This can lead to a small lack of precision in the counters.
-> > +		 */
-> > +		if (val < prev)
-> > +			return;
-> >  	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) !=3D prev);
->=20
-> Doesn't that mean that power_pmu_read() can only ever increase the value =
-of
-> the perf_event and so will essentially -stop- once the counter rolls over=
- ?
->=20
-> Similar comments every where you do this type of comparison.
->=20
-> Cheers,
-> Ben.
-
-Sorry for the nag, but am I missing something about the way the register and
-the previous values are reset in the overflow interrupt handler?
-
-Thanks,
-Eric
-
---pvezYHf7grwyp3Bc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNnNrFAAoJEH65iIruGRnNDSgIANiVEWRw2KhUErflFUPV0Gs4
-w8+7Bz1xPAdiPprxe7DbYn9GxEyvJ23kCmnCxetFrixX1+o0SPT0iyVip4GRfWHw
-oLDXuRCuqrOjctugNIfJM+CFAxlOtzooKjedXjlRsTCW+BMv7CvjahQR0+ecpunh
-0462K+CUTJh42ZBbJaRiomiWWMveRvInXpKYVarHaOO6OfqYl7p21UvFomTUyu8Z
-NTk0X38TG4KEfpghr3aIHKwYFCBE53bRE54A3LnQijq0P1CxHWEQgpRulHwRZZwz
-r4uPrs23gBuMeh5I/lToWGRv1G+QW4TVh5wqGkHR85XussvYA4Bpm29WpR8cX5Y=
-=X0/4
------END PGP SIGNATURE-----
-
---pvezYHf7grwyp3Bc--
