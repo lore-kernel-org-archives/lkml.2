@@ -1,199 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab1DFFWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 01:22:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60735 "EHLO mx1.redhat.com"
+	id S1752139Ab1DFF30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 01:29:26 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40544 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab1DFFWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 01:22:01 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, David Howells <dhowells@redhat.com>,
-        WANG Cong <amwang@redhat.com>, linux-cachefs@redhat.com
-Subject: [RESEND Patch] fscache: remove dead code of CONFIG_WORKQUEUE_DEBUGFS
-Date: Wed,  6 Apr 2011 13:21:34 +0800
-Message-Id: <1302067295-14275-1-git-send-email-amwang@redhat.com>
+	id S1751191Ab1DFF3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 01:29:24 -0400
+Date: Wed, 6 Apr 2011 15:29:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for April 6
+Message-Id: <20110406152915.bdc2ecd3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__6_Apr_2011_15_29_15_+1000_Mp_6sAvHxkNsLawm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no CONFIG_WORKQUEUE_DEBUGFS any more, these code are dead,
-remove them.
+--Signature=_Wed__6_Apr_2011_15_29_15_+1000_Mp_6sAvHxkNsLawm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: WANG Cong <amwang@redhat.com>
+Hi all,
 
----
- fs/fscache/operation.c        |   10 ----------
- fs/fscache/page.c             |   13 -------------
- include/linux/fscache-cache.h |   12 ------------
- 3 files changed, 0 insertions(+), 35 deletions(-)
+[The kernel.org mirroring is being slow.]
 
-diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
-index 48a18f1..30afdfa 100644
---- a/fs/fscache/operation.c
-+++ b/fs/fscache/operation.c
-@@ -33,8 +33,6 @@ void fscache_enqueue_operation(struct fscache_operation *op)
- 	_enter("{OBJ%x OP%x,%u}",
- 	       op->object->debug_id, op->debug_id, atomic_read(&op->usage));
- 
--	fscache_set_op_state(op, "EnQ");
--
- 	ASSERT(list_empty(&op->pend_link));
- 	ASSERT(op->processor != NULL);
- 	ASSERTCMP(op->object->state, >=, FSCACHE_OBJECT_AVAILABLE);
-@@ -66,8 +64,6 @@ EXPORT_SYMBOL(fscache_enqueue_operation);
- static void fscache_run_op(struct fscache_object *object,
- 			   struct fscache_operation *op)
- {
--	fscache_set_op_state(op, "Run");
--
- 	object->n_in_progress++;
- 	if (test_and_clear_bit(FSCACHE_OP_WAITING, &op->flags))
- 		wake_up_bit(&op->flags, FSCACHE_OP_WAITING);
-@@ -88,8 +84,6 @@ int fscache_submit_exclusive_op(struct fscache_object *object,
- 
- 	_enter("{OBJ%x OP%x},", object->debug_id, op->debug_id);
- 
--	fscache_set_op_state(op, "SubmitX");
--
- 	spin_lock(&object->lock);
- 	ASSERTCMP(object->n_ops, >=, object->n_in_progress);
- 	ASSERTCMP(object->n_ops, >=, object->n_exclusive);
-@@ -194,8 +188,6 @@ int fscache_submit_op(struct fscache_object *object,
- 
- 	ASSERTCMP(atomic_read(&op->usage), >, 0);
- 
--	fscache_set_op_state(op, "Submit");
--
- 	spin_lock(&object->lock);
- 	ASSERTCMP(object->n_ops, >=, object->n_in_progress);
- 	ASSERTCMP(object->n_ops, >=, object->n_exclusive);
-@@ -335,8 +327,6 @@ void fscache_put_operation(struct fscache_operation *op)
- 	if (!atomic_dec_and_test(&op->usage))
- 		return;
- 
--	fscache_set_op_state(op, "Put");
--
- 	_debug("PUT OP");
- 	if (test_and_set_bit(FSCACHE_OP_DEAD, &op->flags))
- 		BUG();
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 41c441c..a2a5d19 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -155,11 +155,9 @@ static void fscache_attr_changed_op(struct fscache_operation *op)
- 	fscache_stat(&fscache_n_attr_changed_calls);
- 
- 	if (fscache_object_is_active(object)) {
--		fscache_set_op_state(op, "CallFS");
- 		fscache_stat(&fscache_n_cop_attr_changed);
- 		ret = object->cache->ops->attr_changed(object);
- 		fscache_stat_d(&fscache_n_cop_attr_changed);
--		fscache_set_op_state(op, "Done");
- 		if (ret < 0)
- 			fscache_abort_object(object);
- 	}
-@@ -190,7 +188,6 @@ int __fscache_attr_changed(struct fscache_cookie *cookie)
- 
- 	fscache_operation_init(op, fscache_attr_changed_op, NULL);
- 	op->flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_EXCLUSIVE);
--	fscache_set_op_name(op, "Attr");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -257,7 +254,6 @@ static struct fscache_retrieval *fscache_alloc_retrieval(
- 	op->context	= context;
- 	op->start_time	= jiffies;
- 	INIT_LIST_HEAD(&op->to_do);
--	fscache_set_op_name(&op->op, "Retr");
- 	return op;
- }
- 
-@@ -368,7 +364,6 @@ int __fscache_read_or_alloc_page(struct fscache_cookie *cookie,
- 		_leave(" = -ENOMEM");
- 		return -ENOMEM;
- 	}
--	fscache_set_op_name(&op->op, "RetrRA1");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -487,7 +482,6 @@ int __fscache_read_or_alloc_pages(struct fscache_cookie *cookie,
- 	op = fscache_alloc_retrieval(mapping, end_io_func, context);
- 	if (!op)
- 		return -ENOMEM;
--	fscache_set_op_name(&op->op, "RetrRAN");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -589,7 +583,6 @@ int __fscache_alloc_page(struct fscache_cookie *cookie,
- 	op = fscache_alloc_retrieval(page->mapping, NULL, NULL);
- 	if (!op)
- 		return -ENOMEM;
--	fscache_set_op_name(&op->op, "RetrAL1");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -662,8 +655,6 @@ static void fscache_write_op(struct fscache_operation *_op)
- 
- 	_enter("{OP%x,%d}", op->op.debug_id, atomic_read(&op->op.usage));
- 
--	fscache_set_op_state(&op->op, "GetPage");
--
- 	spin_lock(&object->lock);
- 	cookie = object->cookie;
- 
-@@ -698,15 +689,12 @@ static void fscache_write_op(struct fscache_operation *_op)
- 	spin_unlock(&cookie->stores_lock);
- 	spin_unlock(&object->lock);
- 
--	fscache_set_op_state(&op->op, "Store");
- 	fscache_stat(&fscache_n_store_pages);
- 	fscache_stat(&fscache_n_cop_write_page);
- 	ret = object->cache->ops->write_page(op, page);
- 	fscache_stat_d(&fscache_n_cop_write_page);
--	fscache_set_op_state(&op->op, "EndWrite");
- 	fscache_end_page_write(object, page);
- 	if (ret < 0) {
--		fscache_set_op_state(&op->op, "Abort");
- 		fscache_abort_object(object);
- 	} else {
- 		fscache_enqueue_operation(&op->op);
-@@ -778,7 +766,6 @@ int __fscache_write_page(struct fscache_cookie *cookie,
- 	fscache_operation_init(&op->op, fscache_write_op,
- 			       fscache_release_write_op);
- 	op->op.flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_WAITING);
--	fscache_set_op_name(&op->op, "Write1");
- 
- 	ret = radix_tree_preload(gfp & ~__GFP_HIGHMEM);
- 	if (ret < 0)
-diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
-index b8581c0..31b18a7 100644
---- a/include/linux/fscache-cache.h
-+++ b/include/linux/fscache-cache.h
-@@ -100,17 +100,6 @@ struct fscache_operation {
- 
- 	/* operation releaser */
- 	fscache_operation_release_t release;
--
--#ifdef CONFIG_WORKQUEUE_DEBUGFS
--	struct work_struct put_work;	/* work to delay operation put */
--	const char *name;		/* operation name */
--	const char *state;		/* operation state */
--#define fscache_set_op_name(OP, N)	do { (OP)->name  = (N); } while(0)
--#define fscache_set_op_state(OP, S)	do { (OP)->state = (S); } while(0)
--#else
--#define fscache_set_op_name(OP, N)	do { } while(0)
--#define fscache_set_op_state(OP, S)	do { } while(0)
--#endif
- };
- 
- extern atomic_t fscache_op_debug_id;
-@@ -137,7 +126,6 @@ static inline void fscache_operation_init(struct fscache_operation *op,
- 	op->processor = processor;
- 	op->release = release;
- 	INIT_LIST_HEAD(&op->pend_link);
--	fscache_set_op_state(op, "Init");
- }
- 
- /*
+Changes since 20110405:
+
+Dropped tree: xen
+
+The staging tree gained a conflict against the staging.current tree.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 185 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-mxs/mach-mx28evk.c
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+CONFLICT (content): Merge conflict in fs/ecryptfs/ecryptfs_kernel.h
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+CONFLICT (content): Merge conflict in fs/gfs2/log.c
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
+Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+CONFLICT (content): Merge conflict in drivers/staging/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/easycap/easycap_ioctl=
+.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/efuse.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/rtl8192c=
+/fw_common.c
+Merging bluetooth/master
+CONFLICT (content): Merge conflict in net/bluetooth/mgmt.c
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in drivers/ide/ide-io.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in arch/x86/Kconfig
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Applying: x86 idle: merge fix for mwait move
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/hv/vmbus_drv.c
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+CONFLICT (content): Merge conflict in mm/truncate.c
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Wed__6_Apr_2011_15_29_15_+1000_Mp_6sAvHxkNsLawm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNm/orAAoJEDMEi1NhKgbs+18H/2e5nIJkJiYZJ7RP7eOhGR5+
+C0kBsP6vsFu3sdAbuxFfhDozJ1yINcqbXrEJxDgz+aGLJ+xFJw45Enwx6F/aifdz
+mA3rjH5ypRtwB4Eer6LgCG0rlrQxq8j7YPkVSB22oLls5mfTyirCUUBKFwPI3bIn
+DHbawR9LOI+ZJoloP6Cw9S9WyEiTy6vBqQxzwr3MBcmA1kww4zfet5qa1RDF19ON
+0RDSrBvxGPeV7CtyVqmMrxUy91+y8P6+AoEMxQu3a8tQu1JHppZte5ZWAFlK7h0k
++y8c+elm6gMkJvW7TxLXo58B2LJgH4EUzbFGjQn6XKHcvXVUOibnWn9dB3yRPYA=
+=wWIO
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Apr_2011_15_29_15_+1000_Mp_6sAvHxkNsLawm--
