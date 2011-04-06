@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab1DFNE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 09:04:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50900 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871Ab1DFNE1 (ORCPT
+	id S1756029Ab1DFNJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 09:09:39 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52772 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872Ab1DFNJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 09:04:27 -0400
+	Wed, 6 Apr 2011 09:09:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=NXjwJWOEWmuhELAf4v41QekC0QZrxOiUYLH9iXbSpyukNKly/2AsXt40MK9Epr1nQy
-         tRlEgFbTp7Wc5Uc59r8oOAKjmxolRHjmTp0C14VcaFbdPFQLDlS6l/3s81eKpdf+6SAe
-         cmg+bQhbB1f2fP4q7hJRP0HxedvGTvYcF7+6A=
-Date: Wed, 6 Apr 2011 06:04:23 -0700
+        b=SoOJdcTnHt6zd2w8D2uPrqoeeHmHzR6OO0iyBjMLTHQ0hnZD0YNzgRVIMhIwSNAgmD
+         LZe1ZPqcBmALaxmCX5NXddQqaoD+1SK1vmVfqIDgkPG6idQpYEI2uR1Vw08KJxEoHSrP
+         lpH/jMXHuXe+QXqqu2fkFKBhhqRJrxREKkQsk=
+Date: Wed, 6 Apr 2011 06:09:28 -0700
 From: Tejun Heo <tj@kernel.org>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
-Message-ID: <20110406130423.GE4142@mtj.dyndns.org>
-References: <20110404211604.GB6133@sucs.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [RFC][PATCH 1/5] signals: Always place SIGCONT and SIGSTOP on
+ 'shared_pending'
+Message-ID: <20110406130928.GF4142@mtj.dyndns.org>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org>
+ <1302031310-1765-2-git-send-email-matt@console-pimps.org>
+ <20110405201958.GA1404@redhat.com>
+ <20110405215003.636e950b@mfleming-mobl1.ger.corp.intel.com>
+ <20110406125757.GA12099@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110404211604.GB6133@sucs.org>
+In-Reply-To: <20110406125757.GA12099@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think disk_block_events was a bit too agressive with optimization.
-Can you please test the following patch and see whether the problem
-goes away?
+Hey, guys.
 
-Thanks.
+On Wed, Apr 06, 2011 at 02:57:57PM +0200, Oleg Nesterov wrote:
+> But even SIGSTOP should be routed properly. If the process is ptraced,
+> the tracee reports SIGSTOP to the debugger first. This means that
+> tkill(SIGSTOP) should be delivered to the right target.
 
-diff --git a/block/genhd.c b/block/genhd.c
-index c91a2da..ae4079a 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1418,18 +1418,15 @@ static void __disk_block_events(struct gendisk *disk, bool sync)
- {
- 	struct disk_events *ev = disk->ev;
- 	unsigned long flags;
--	bool cancel;
- 
- 	spin_lock_irqsave(&ev->lock, flags);
--	cancel = !ev->block++;
-+	ev->block++;
- 	spin_unlock_irqrestore(&ev->lock, flags);
- 
--	if (cancel) {
--		if (sync)
--			cancel_delayed_work_sync(&disk->ev->dwork);
--		else
--			cancel_delayed_work(&disk->ev->dwork);
--	}
-+	if (sync)
-+		cancel_delayed_work_sync(&disk->ev->dwork);
-+	else
-+		cancel_delayed_work(&disk->ev->dwork);
- }
- 
- static void __disk_unblock_events(struct gendisk *disk, bool check_now)
+I think the more important part is that there really isn't much point
+in optimizing SIGSTOP/CONT.  They inherently involve heavy,
+walk-every-thread operations of putting them to sleep and reversing it
+and there isn't much point in optimizing sending SIGSTOP to stopped
+processes or CONT to running ones.  In addition, STOP/CONT interaction
+is already scary enough so I'd like to avoid adding complexities there
+if at all possible.
+
+I think it would be better to concentrate on more usual signals.
+
+Thank you.
+
+-- 
+tejun
