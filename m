@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab1DFWHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:07:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64116 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab1DFWHI (ORCPT
+	id S932256Ab1DFWH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:07:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:60242 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab1DFWHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:07:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pPMkvf4K+aoS9aEwCn3uiGN8XZACwUNMkxH4FsB6s+FcRa/xMLvVJz82gF8ZL4/3S+
-         F24tcgo1yaotiwxrnoxKaTxTFV4ll2bnDILBIjr0VmfMRElhXncp9+Kau+3fN4yar0uy
-         UlLAAQ9QpAHdgRLpndYoKmowCylo1k8Yy0gew=
-Date: Wed, 6 Apr 2011 15:07:01 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Nikolai Kondrashov <spbnick@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Bagwell <chris@cnpbagwell.com>
-Subject: Re: [PATCH v4] Documentation: Add evdev type and code definitions
-Message-ID: <20110406220701.GA11611@core.coreip.homeip.net>
-References: <1302121172-16703-1-git-send-email-chase.douglas@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302121172-16703-1-git-send-email-chase.douglas@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Apr 2011 18:07:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6308"; a="84168017"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Michal Marek <mmarek@suse.cz>, Roman Zippel <zippel@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Nir Tzachar <nir.tzachar@gmail.com>
+Subject: [PATCH] nconfig: Silence unused return values from wattrset
+Date: Wed,  6 Apr 2011 15:07:49 -0700
+Message-Id: <1302127669-15272-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.rc0.131.gfa38c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chase,
+Ignore the return value from wattrset since we ignore the return
+value in nconf.gui.c as well.
 
-On Wed, Apr 06, 2011 at 04:19:31PM -0400, Chase Douglas wrote:
-> This commit adds the file Documentation/input/evdev-codes.txt.
-> 
-> Cc: Henrik Rydberg <rydberg@euromail.se>
-> Cc: Peter Hutterer <peter.hutterer@who-t.net>
-> Cc: Nikolai Kondrashov <spbnick@gmail.com>
-> Cc: linux-input@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Acked-by: Henrik Rydberg <rydberg@euromail.se>
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+scripts/kconfig/nconf.c: In function 'print_function_line':
+scripts/kconfig/nconf.c:376: warning: value computed is not used
+scripts/kconfig/nconf.c:380: warning: value computed is not used
+scripts/kconfig/nconf.c:387: warning: value computed is not used
+scripts/kconfig/nconf.c: In function 'show_menu':
+scripts/kconfig/nconf.c:956: warning: value computed is not used
+scripts/kconfig/nconf.c:961: warning: value computed is not used
+scripts/kconfig/nconf.c:963: warning: value computed is not used
+scripts/kconfig/nconf.c:965: warning: value computed is not used
 
-Thank you very much for doing this. I am very happy with the state of
-document at the moment and I want to apply it and get in .39.
+Cc: Nir Tzachar <nir.tzachar@gmail.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ scripts/kconfig/nconf.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-The only 2 changes I'd like (I'll do them on my side) is renaming the
-file from evdev-codes to event-codes and evdev protocol to input
-protocol since the data applicable not only to evdev but to entire input
-core.
-
-Thanks.
-
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index db56377..488dd74 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -373,18 +373,18 @@ static void print_function_line(void)
+ 	const int skip = 1;
+ 
+ 	for (i = 0; i < function_keys_num; i++) {
+-		wattrset(main_window, attributes[FUNCTION_HIGHLIGHT]);
++		(void) wattrset(main_window, attributes[FUNCTION_HIGHLIGHT]);
+ 		mvwprintw(main_window, LINES-3, offset,
+ 				"%s",
+ 				function_keys[i].key_str);
+-		wattrset(main_window, attributes[FUNCTION_TEXT]);
++		(void) wattrset(main_window, attributes[FUNCTION_TEXT]);
+ 		offset += strlen(function_keys[i].key_str);
+ 		mvwprintw(main_window, LINES-3,
+ 				offset, "%s",
+ 				function_keys[i].func);
+ 		offset += strlen(function_keys[i].func) + skip;
+ 	}
+-	wattrset(main_window, attributes[NORMAL]);
++	(void) wattrset(main_window, attributes[NORMAL]);
+ }
+ 
+ /* help */
+@@ -953,16 +953,16 @@ static void show_menu(const char *prompt, const char *instructions,
+ 	current_instructions = instructions;
+ 
+ 	clear();
+-	wattrset(main_window, attributes[NORMAL]);
++	(void) wattrset(main_window, attributes[NORMAL]);
+ 	print_in_middle(stdscr, 1, 0, COLS,
+ 			menu_backtitle,
+ 			attributes[MAIN_HEADING]);
+ 
+-	wattrset(main_window, attributes[MAIN_MENU_BOX]);
++	(void) wattrset(main_window, attributes[MAIN_MENU_BOX]);
+ 	box(main_window, 0, 0);
+-	wattrset(main_window, attributes[MAIN_MENU_HEADING]);
++	(void) wattrset(main_window, attributes[MAIN_MENU_HEADING]);
+ 	mvwprintw(main_window, 0, 3, " %s ", prompt);
+-	wattrset(main_window, attributes[NORMAL]);
++	(void) wattrset(main_window, attributes[NORMAL]);
+ 
+ 	set_menu_items(curses_menu, curses_menu_items);
+ 
 -- 
-Dmitry
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
