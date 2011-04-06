@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab1DFOeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 10:34:31 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:41582 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab1DFOea (ORCPT
+	id S1756287Ab1DFOer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 10:34:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37988 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756259Ab1DFOeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 10:34:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Ws8sVDwxyl9X2F2xsPbODRjM7EHNWyHyjVDKQsr1FZPBPaAPEcffuTOxnRDKzZ3Hn5
-         6YvxDVrt+CF1ETPg867ThVPPPV1PsI5hz32PtmKYdwv6EmVTX4bvZ7uEVf44n8Inz5Hm
-         +GhI2ApxjrTIhz9YD9YJIK7kFgWxmfy5DmFLk=
-Message-ID: <4D9C79F1.2060308@gmail.com>
-Date: Wed, 06 Apr 2011 08:34:25 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	Wed, 6 Apr 2011 10:34:46 -0400
+Date: Wed, 6 Apr 2011 16:34:41 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Will Schmidt <will_schmidt@vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Milton Miller <miltonm@bga.com>
+Subject: Re: [PATCH v2] trivial: make comment about vs{n,cn,}printf more
+ understandable
+Message-ID: <20110406143441.GE13963@pengutronix.de>
+References: <1290567844_20137@mail4.comsite.net>
+ <1290625833-32576-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
-References: <4D8B79E6.2050603@gmail.com> <4D8C6B1B.70409@hitachi.com> <4D8CAE74.9080805@gmail.com> <4D906450.1040809@hitachi.com> <4D909BBB.5020500@gmail.com> <20110401151313.GC2335@nowhere> <4D96072E.4060902@gmail.com> <20110406121501.GA1867@nowhere> <20110406140958.GA4987@ghostprotocols.net> <1302099301.2225.1381.camel@twins> <20110406143003.GD1867@nowhere>
-In-Reply-To: <20110406143003.GD1867@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1290625833-32576-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Jiri,
 
+On Wed, Nov 24, 2010 at 08:10:33PM +0100, Uwe Kleine-König wrote:
+> "You probably want ... instead." sounds like a recommendation better
+> not to use the v... functions.
+you didn't take this patch. Did you skip it on purpose?
 
-On 04/06/11 08:30, Frederic Weisbecker wrote:
-> On Wed, Apr 06, 2011 at 04:15:01PM +0200, Peter Zijlstra wrote:
->> On Wed, 2011-04-06 at 11:09 -0300, Arnaldo Carvalho de Melo wrote:
->>>> What we seem to need for that is to bring a pagefault tracepoint. We had
->>>> propositions for that in the past, but work on this is in pause mode it
->>>> seems. 
->>
->> Huh, whot? You can get that using PERF_COUNT_SW_PAGE_FAULT and
->> PERF_SAMPLE_ADDR.
+Best regards
+Uwe
+
 > 
-> Where are we doing that? I can't find the code that handles it.
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+> Hello,
+> 
+> this is Milton's alternative suggestion plus an added "using".
+> 
+> Thanks
+> Uwe
+> 
+>  lib/vsprintf.c |    9 +++------
+>  1 files changed, 3 insertions(+), 6 deletions(-)
+> 
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index c150d3d..6c46e0f 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -1279,8 +1279,7 @@ qualifier:
+>   * return is greater than or equal to @size, the resulting
+>   * string is truncated.
+>   *
+> - * Call this function if you are already dealing with a va_list.
+> - * You probably want snprintf() instead.
+> + * If you're not already dealing with a va_list consider using snprintf().
+>   */
+>  int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+>  {
+> @@ -1454,8 +1453,7 @@ EXPORT_SYMBOL(vsnprintf);
+>   * the @buf not including the trailing '\0'. If @size is <= 0 the function
+>   * returns 0.
+>   *
+> - * Call this function if you are already dealing with a va_list.
+> - * You probably want scnprintf() instead.
+> + * If you're not already dealing with a va_list consider using scnprintf().
+>   *
+>   * See the vsnprintf() documentation for format string extensions over C99.
+>   */
+> @@ -1534,8 +1532,7 @@ EXPORT_SYMBOL(scnprintf);
+>   * into @buf. Use vsnprintf() or vscnprintf() in order to avoid
+>   * buffer overflows.
+>   *
+> - * Call this function if you are already dealing with a va_list.
+> - * You probably want sprintf() instead.
+> + * If you're not already dealing with a va_list consider using sprintf().
+>   *
+>   * See the vsnprintf() documentation for format string extensions over C99.
+>   */
+> -- 
+> 1.7.2.3
+> 
+> 
 
-That's what the other email thread was about, and the solution is just
-that - perf record -e faults -c 1 -d ... Then it comes to dumping the
-information. That's easy with the current perf-script.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
