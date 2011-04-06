@@ -1,194 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1DFHXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 03:23:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:9418 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab1DFHXD convert rfc822-to-8bit (ORCPT
+	id S1754250Ab1DFHYK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 03:24:10 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:8275 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab1DFHYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 03:23:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=sJKeCx1cbvoW3vWeurCucLlFAqyILlQdyqy5yYXcBNChwTMxTsTglp4/Yc9JtcL8B4
-         lX8acYYRWXyUJhS1ilIw==
-MIME-Version: 1.0
-In-Reply-To: <1302010089.2225.1313.camel@twins>
-References: <20110323030326.789836913@google.com> <20110323030449.941304760@google.com>
- <1302010089.2225.1313.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 6 Apr 2011 00:22:29 -0700
-Message-ID: <BANLkTimOP_EtyxEZ9pOEpgJPqEEic21eCA@mail.gmail.com>
-Subject: Re: [patch 13/15] sched: expire slack quota using generation counters
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 6 Apr 2011 03:24:09 -0400
+Date: Wed, 6 Apr 2011 09:23:58 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: <achew@nvidia.com>
+Cc: <guenter.roeck@ericsson.com>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>, <w30289@motorola.com>,
+        <toddpoynor@google.com>, <wni@nvidia.com>, <olofj@chromium.org>
+Subject: Re: [PATCH 1/1] [hwmon] nct1008: Initial NCT1008 driver
+Message-ID: <20110406092358.07e8ca78@endymion.delvare>
+In-Reply-To: <1302059183-29631-1-git-send-email-achew@nvidia.com>
+References: <1302059183-29631-1-git-send-email-achew@nvidia.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 6:28 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2011-03-22 at 20:03 -0700, Paul Turner wrote:
->
-> Argh, this patch is terrible for the reason that it changes the whole
-> accounting just introduced and me having to re-open all the previous
-> patches to look up hth stuff worked before.
+Hi Andrew,
 
-I didn't think it was too drastic -- the introduction of the
-generation is more incremental.  However I agree it does cause
-unnecessary churn within the accounting functions across the series.
-Given that expiring quota is a requirement, this can be streamlined by
-introducing some of these notions earlier in the series as opposed to
-bootstrapping them at the end here -- will clean it up.
+On Tue, 5 Apr 2011 20:06:23 -0700, achew@nvidia.com wrote:
+> From: Andrew Chew <achew@nvidia.com>
+> 
+> This is a digital temperature sensor I2C peripheral from ON Semiconductor.
+> 
+> Signed-off-by: Andrew Chew <achew@nvidia.com>
+> ---
+>  drivers/hwmon/Kconfig   |   11 ++
+>  drivers/hwmon/Makefile  |    1 +
+>  drivers/hwmon/nct1008.c |  423 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 435 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/hwmon/nct1008.c
+> 
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 060ef63..daa6159 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -738,6 +738,17 @@ config SENSORS_MAX6650
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called max6650.
+>  
+> +config SENSORS_NCT1008
+> +	tristate "ON Semiconductor Temperature Sensor"
+> +	default n
 
->
->> @@ -436,8 +438,10 @@ void init_cfs_bandwidth(struct cfs_bandw
->>       raw_spin_lock_init(&cfs_b->lock);
->>       cfs_b->quota = cfs_b->runtime = quota;
->>       cfs_b->period = ns_to_ktime(period);
->> +     cfs_b->quota_generation = 0;
->>       INIT_LIST_HEAD(&cfs_b->throttled_cfs_rq);
->>
->> +
->>       hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
->>       cfs_b->period_timer.function = sched_cfs_period_timer;
->
-> We're in desperate need of more whitespace there? :-)
+Default n is the default, so there's no point mentioning it.
 
-8< 8<
+> +	depends on I2C
+> +	help
+> +	  Say yes here if you wish to include the ON Semiconductor
+> +	  NCT1008 Temperature sensor.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called nct1008.
+> +
+>  config SENSORS_PC87360
+>  	tristate "National Semiconductor PC87360 family"
+>  	select HWMON_VID
+> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> index 967d0ea..803893c 100644
+> --- a/drivers/hwmon/Makefile
+> +++ b/drivers/hwmon/Makefile
+> @@ -87,6 +87,7 @@ obj-$(CONFIG_SENSORS_MAX1619)	+= max1619.o
+>  obj-$(CONFIG_SENSORS_MAX6639)	+= max6639.o
+>  obj-$(CONFIG_SENSORS_MAX6650)	+= max6650.o
+>  obj-$(CONFIG_SENSORS_MC13783_ADC)+= mc13783-adc.o
+> +obj-$(CONFIG_SENSORS_NCT1008)	+= nct1008.o
+>  obj-$(CONFIG_SENSORS_PC87360)	+= pc87360.o
+>  obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
+>  obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
+> diff --git a/drivers/hwmon/nct1008.c b/drivers/hwmon/nct1008.c
+> new file mode 100644
+> index 0000000..ebae3b6
+> --- /dev/null
+> +++ b/drivers/hwmon/nct1008.c
+> @@ -0,0 +1,423 @@
+> +/*
+> + * Driver for NCT1008, temperature monitoring device from ON Semiconductors
+> + *
+> + * Copyright (c) 2010, NVIDIA Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+> + */
+> +
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/mutex.h>
+> +#include <linux/module.h>
+> +#include <linux/i2c.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/gpio.h>
+> +
+> +#include <linux/nct1008.h>
+> +#include <linux/hwmon.h>
+> +
+> +#define DRIVER_NAME "nct1008"
+> +
+> +/* Register Addresses */
+> +#define LOCAL_TEMP_RD			0x00
+> +#define EXT_HI_TEMP_RD			0x01
+> +#define EXT_LO_TEMP_RD			0x10
+> +#define STATUS_RD			0x02
+> +#define CONFIG_RD			0x03
+> +
+> +#define CONFIG_WR			0x09
+> +#define CONV_RATE_WR			0x0A
+> +#define LOCAL_TEMP_HI_LIMIT_WR		0x0B
+> +#define EXT_TEMP_HI_LIMIT_HI_BYTE	0x0D
+> +#define OFFSET_WR			0x11
+> +#define EXT_THERM_LIMIT_WR		0x19
+> +#define LOCAL_THERM_LIMIT_WR		0x20
+> +#define THERM_HYSTERESIS_WR		0x21
 
->
->> @@ -9333,6 +9337,8 @@ static int tg_set_cfs_bandwidth(struct t
->>       raw_spin_lock_irq(&cfs_b->lock);
->>       cfs_b->period = ns_to_ktime(period);
->>       cfs_b->runtime = cfs_b->quota = quota;
->> +
->> +     cfs_bump_quota_generation(cfs_b);
->>       raw_spin_unlock_irq(&cfs_b->lock);
->>
->>       for_each_possible_cpu(i) {
->> Index: tip/kernel/sched_fair.c
->> ===================================================================
->> --- tip.orig/kernel/sched_fair.c
->> +++ tip/kernel/sched_fair.c
->> @@ -1331,11 +1331,25 @@ static void check_cfs_rq_quota(struct cf
->>       resched_task(rq_of(cfs_rq)->curr);
->>  }
->>
->> +static void cfs_bump_quota_generation(struct cfs_bandwidth *cfs_b)
->> +{
->> +     cfs_b->quota_generation++;
->> +     smp_mb();
->> +}
->
-> Memory barriers come in pairs and with a comment, you fail on both
-> counts.
->
+These register definitions look very familiar to me. Have you looked at
+the lm90 driver to check has difficult it would be to add support for
+the NCT1008? I bet it will only take a few lines of code.
 
-scratches head... erm right, I meant to pair this with a read barrier
-on querying the generation but balked when I realized that still
-yields an lfence on x86 since I didn't want to introduce that to the
-update_curr() path.
-
-While we can probably do away with the barrier completely (it's not
-critical that we line them up perfectly with the new generation), I've
-been thinking about this one and I think I have something a little
-nicer that also reduces the shared cache hits.
-
-We can take advantage of the fact that sched_clocks are already
-synchronized within 2 jiffies and store the quota's expiration,
-instead of a generation, when we refresh.
-
-This effectively yields a fairly simple control flow (we can use
-rq->clock since we're always paired with update_rq_clock operations):
-a) our rq->clock < expiration always implies quota is valid
-
-Obviously if our cpu clock is ahead of the one that issued the quota,
-our quota is still valid since the real deadline is even further
-behind
-Even if our cpu's clock is behind the max 1.99 jiffies the amount of
-time that the stale quota can remain valid is basically already within
-our potential margin of error since for a long running process we
-check on each tick edge anyway.
-
- b) our rq->clock > expiration
-
-Again there's two cases, if our cpu clock is behind (or equal) then
-the deadline has indeed passed and the quota is expired.  This can be
-confirmed by comparing the global deadline with our local one (the
-global expiration will have advanced with quota refresh for this to be
-true).
-
-We can also catch that our cpu is potentially ahead -- by the fact
-that our rq->clock > expiration but that the global expiration has not
-yet advanced.  In this case we recognize that our quota is still valid
-and extend our local expiration time by either the maximum margin of
-error or some fraction there of (say 1 jiffy) which is guaranteed to
-push us back in case a) above.  Again this is within our existing
-margin of error due to entity_tick() alignment.
-
-This ends up looking a lot simpler and avoids much of the pressure on
-the global variable since we need to compare against it in the case
-where our clock passes expiration, once a quota period (as the
-extension will put us in case a where we know we don't need to
-consider it).
-
-This ends up simpler than the generation muck and can be introduced
-cleanly earlier in the series, avoiding the churn mentioned above.
-
-Make sense?
-
->> +
->> +static inline int cfs_rq_quota_current(struct cfs_rq *cfs_rq)
->> +{
->> +     struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
->> +
->> +     return cfs_rq->quota_generation == cfs_b->quota_generation;
->> +}
->> +
->>  static void request_cfs_rq_quota(struct cfs_rq *cfs_rq)
->>  {
->>       struct task_group *tg = cfs_rq->tg;
->>       struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
->>       u64 amount = 0, min_amount;
->> +     int generation;
->
-> Not initialized,
->
->>       min_amount = sched_cfs_bandwidth_slice() + (-cfs_rq->quota_remaining);
->>
->> @@ -1347,10 +1361,18 @@ static void request_cfs_rq_quota(struct
->>               } else {
->>                       amount = min_amount;
->>               }
->> +             generation = cfs_b->quota_generation;
->>               raw_spin_unlock(&cfs_b->lock);
->>       }
->
-> and since there's an if there, one can fail it, leaving generation
-> uninitialized,
->
->>
->> +     /* a deficit should be carried forwards, surplus should be dropped */
->> +
->> +     if (generation != cfs_rq->quota_generation &&
->> +         cfs_rq->quota_remaining > 0)
->> +             cfs_rq->quota_remaining = 0;
->> +
->>       cfs_rq->quota_remaining += amount;
->> +     cfs_rq->quota_generation = generation;
->>  }
->
-> Resulting in uninitialized usage right there.
->
-
-Truth
+-- 
+Jean Delvare
