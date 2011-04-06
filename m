@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1DFGeZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 02:34:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab1DFGeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 02:34:24 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        WANG Cong <amwang@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [Patch v2] rcu: update the CONFIG logic in include/linux/pagemap.h
-Date: Wed,  6 Apr 2011 14:32:48 +0800
-Message-Id: <1302071569-23217-1-git-send-email-amwang@redhat.com>
+	id S1752853Ab1DFGi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 02:38:26 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.184]:59054
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751861Ab1DFGiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 02:38:25 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275bhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Aisheng Dong <b29396@freescale.com>
+To: <hjk@hansjkoch.de>, <greg@kroah.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2 1/1] uio: clean uioinfo when uninstall uio driver
+Date: Wed, 6 Apr 2011 14:42:40 +0800
+Message-ID: <1302072160-6483-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TREE_RCU depends on !PREEMPT && SMP, when !CONFIG_SMP is true, CONFIG_TREE_RCU
-will be false, thus "!defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)"
-is always false.
+From: Jie Zhou <b30303@freescale.com>
 
-Paul suggested to update the logic to
-!defined(CONFIG_SMP) && defined(CONFIG_TREE_PREEMPT_RCU).
+The uioinfo should be cleaned up when uninstall, otherwise re-install
+failure of uio_pdrv_genirq.ko will happen.
 
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: WANG Cong <amwang@redhat.com>
+Signed-off-by: Jie Zhou <b30303@freescale.com>
+Signed-off-by: Aisheng Dong <b29396@freescale.com>
 
 ---
- include/linux/pagemap.h |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+Changes for v2:
+ Address the comments from Hans:
+   - The uioinfo->irq_flags and uioinfo->priv do not have to be cleaned
+---
+ drivers/uio/uio_pdrv_genirq.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index c119506..a296d7c 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -133,10 +133,9 @@ static inline int page_cache_get_speculative(struct page *page)
- {
- 	VM_BUG_ON(in_interrupt());
+diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+index 7174d51..0f424af 100644
+--- a/drivers/uio/uio_pdrv_genirq.c
++++ b/drivers/uio/uio_pdrv_genirq.c
+@@ -189,6 +189,10 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
  
--#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
--# ifdef CONFIG_PREEMPT
-+#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_PREEMPT_RCU)
-+	/* Must have CONFIG_PREEMPT here, implied by CONFIG_TREE_PREEMPT_RCU. */
- 	VM_BUG_ON(!in_atomic());
--# endif
- 	/*
- 	 * Preempt must be disabled here - we rely on rcu_read_lock doing
- 	 * this for us.
-@@ -171,10 +170,8 @@ static inline int page_cache_add_speculative(struct page *page, int count)
- {
- 	VM_BUG_ON(in_interrupt());
- 
--#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
--# ifdef CONFIG_PREEMPT
-+#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_PREEMPT_RCU)
- 	VM_BUG_ON(!in_atomic());
--# endif
- 	VM_BUG_ON(page_count(page) == 0);
- 	atomic_add(count, &page->_count);
- 
+ 	uio_unregister_device(priv->uioinfo);
+ 	pm_runtime_disable(&pdev->dev);
++
++	priv->uioinfo->handler = NULL;
++	priv->uioinfo->irqcontrol = NULL;
++
+ 	kfree(priv);
+ 	return 0;
+ }
+-- 
+1.7.0.4
+
+
