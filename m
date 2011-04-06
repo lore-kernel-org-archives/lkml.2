@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab1DFAzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 20:55:53 -0400
-Received: from shutemov.name ([188.40.19.243]:52508 "EHLO shutemov.name"
+	id S1754258Ab1DFA5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 20:57:47 -0400
+Received: from shutemov.name ([188.40.19.243]:52517 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752102Ab1DFAzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 20:55:52 -0400
-Date: Wed, 6 Apr 2011 03:55:51 +0300
-From: "Kirill A. Shutemov" <kas@openvz.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "Kirill A. Shutemov" <kas@openvz.org>, Neil Brown <neilb@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Rob Landley <rlandley@parallels.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3, RESEND 00/16] make rpc_pipefs be mountable multiple
- time
-Message-ID: <20110406005551.GA28120@shutemov.name>
-References: <1297190527-19925-1-git-send-email-kas@openvz.org>
- <20110302170622.GA4143@shutemov.name>
+	id S1752639Ab1DFA5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 20:57:44 -0400
+Date: Wed, 6 Apr 2011 03:57:43 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Rob Landley <rlandley@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH 2/3] Supply network namespace to rpcbind.
+Message-ID: <20110406005743.GB27844@shutemov.name>
+References: <4D94319F.8040005@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110302170622.GA4143@shutemov.name>
+In-Reply-To: <4D94319F.8040005@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 07:06:22PM +0200, Kirill A. Shutemov wrote:
-> Any chanse to get it in .39?
+On Thu, Mar 31, 2011 at 02:47:43AM -0500, Rob Landley wrote:
+> From: Rob Landley <rlandley@parallels.com>
+> 
+> The sunrpc code already has some support for network namespaces,
+> but rpcb_create() is still using init_net.  Its arguments include
+> a sockaddr and a port, but not a struct net *.  Add one, and
+> pass in the value from rpc_xprt when calling it.
+> 
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
 
-What about .40? ;)
+Acked-by: Kirill A. Shutemov <kas@openvz.org>
 
-Should I rebase it?
+BTW, it seems conflicts with my rpc_pipefs patchset. I'll rebase my
+patchset, if your patches will be merged first.
+
+> ---
+> 
+>  net/sunrpc/rpcb_clnt.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> index c652e4c..25bb8f9 100644
+> --- a/net/sunrpc/rpcb_clnt.c
+> +++ b/net/sunrpc/rpcb_clnt.c
+> @@ -223,10 +223,11 @@ out:
+>  }
+>  
+>  static struct rpc_clnt *rpcb_create(char *hostname, struct sockaddr *srvaddr,
+> -				    size_t salen, int proto, u32 version)
+> +				    size_t salen, int proto, struct net *net,
+> +				    u32 version)
+>  {
+>  	struct rpc_create_args args = {
+> -		.net		= &init_net,
+> +		.net		= net,
+>  		.protocol	= proto,
+>  		.address	= srvaddr,
+>  		.addrsize	= salen,
+> @@ -591,7 +592,7 @@ void rpcb_getport_async(struct rpc_task *task)
+>  		task->tk_pid, __func__, bind_version);
+>  
+>  	rpcb_clnt = rpcb_create(clnt->cl_server, sap, salen, xprt->prot,
+> -				bind_version);
+> +				xprt->xprt_net, bind_version);
+>  	if (IS_ERR(rpcb_clnt)) {
+>  		status = PTR_ERR(rpcb_clnt);
+>  		dprintk("RPC: %5u %s: rpcb_create failed, error %ld\n",
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
 
 -- 
  Kirill A. Shutemov
