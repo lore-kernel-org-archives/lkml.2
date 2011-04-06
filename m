@@ -1,37 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab1DFSpX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:45:23 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:46458 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab1DFSpV (ORCPT
+	id S932072Ab1DFSqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:46:43 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:37606 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756448Ab1DFSqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:45:21 -0400
-Date: Wed, 6 Apr 2011 14:38:38 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
+	Wed, 6 Apr 2011 14:46:42 -0400
+Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
+From: Johannes Berg <johannes@sipsolutions.net>
 To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Antonio Ospite <ospite@studenti.unina.it>,
         linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
+        "John W . Linville" <linville@tuxdriver.com>,
         Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
         Marek Vasut <marek.vasut@gmail.com>, Guiming Zhuo <gmzhuo@gmail.com>
-Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
-Message-ID: <20110406183837.GI11941@tuxdriver.com>
-References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
- <20110406141131.GC2810@opensource.wolfsonmicro.com>
- <1302099669.4090.1.camel@jlt3.sipsolutions.net>
- <1302113542.22852.7.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <1302113542.22852.7.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
+	 <20110406141131.GC2810@opensource.wolfsonmicro.com>
+	 <1302099669.4090.1.camel@jlt3.sipsolutions.net>
+	 <1302113542.22852.7.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Apr 2011 20:46:37 +0200
+Message-ID: <1302115597.4090.11.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 08:12:22PM +0200, Paul Bolle wrote:
+On Wed, 2011-04-06 at 20:12 +0200, Paul Bolle wrote:
 > On Wed, 2011-04-06 at 16:21 +0200, Johannes Berg wrote:
 > > On Wed, 2011-04-06 at 23:11 +0900, Mark Brown wrote:
 > > > On Wed, Apr 06, 2011 at 11:21:19AM +0200, Antonio Ospite wrote:
@@ -51,13 +51,8 @@ On Wed, Apr 06, 2011 at 08:12:22PM +0200, Paul Bolle wrote:
 > 
 > always evaluate to true when running "make *config"? (Even if RFKILL is
 > an unknown symbol when that expression is parsed!)
-> 
-> I'd say that dependencies such as this one might as well be dropped from
-> their Kconfig file.
 
-The syntax may seem strange, but basically it just says "don't let
-me by y if RFKILL is m".
+No, it will not, you're forgetting that these things are tristate.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+johannes
+
