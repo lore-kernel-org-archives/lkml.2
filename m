@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab1DFGvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 02:51:17 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:39285 "EHLO
+	id S1754553Ab1DFGvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 02:51:22 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:39223 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab1DFGuu (ORCPT
+	with ESMTP id S1752949Ab1DFGup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 02:50:50 -0400
-X-ASG-Debug-ID: 1302072650-082e1f460001-xx1T2L
+	Wed, 6 Apr 2011 02:50:45 -0400
+X-ASG-Debug-ID: 1302072644-082d1f3c0001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: haojian.zhuang@gmail.com, dmitry.torokhov@gmail.com, ddtor@mail.ru,
         a.zummo@towertech.it, johnpol@2ka.mipt.ru, sameo@linux.intel.com,
         linux-kernel@vger.kernel.org
 Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH 5/6] w1: add DS278x slave driver
-Subject: [PATCH 5/6] w1: add DS278x slave driver
-Date: Wed,  6 Apr 2011 14:46:45 +0800
-X-ASG-Orig-Subj: [PATCH 5/6] w1: add DS278x slave driver
-Message-Id: <1302072406-21459-5-git-send-email-haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH 2/6] input: touchscreen: move initialization in 88pm860x
+Subject: [PATCH 2/6] input: touchscreen: move initialization in 88pm860x
+Date: Wed,  6 Apr 2011 14:46:42 +0800
+X-ASG-Orig-Subj: [PATCH 2/6] input: touchscreen: move initialization in 88pm860x
+Message-Id: <1302072406-21459-2-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1302072406-21459-4-git-send-email-haojian.zhuang@marvell.com>
+In-Reply-To: <1302072406-21459-1-git-send-email-haojian.zhuang@marvell.com>
 References: <2011040601>
  <1302072406-21459-1-git-send-email-haojian.zhuang@marvell.com>
- <1302072406-21459-2-git-send-email-haojian.zhuang@marvell.com>
- <1302072406-21459-3-git-send-email-haojian.zhuang@marvell.com>
- <1302072406-21459-4-git-send-email-haojian.zhuang@marvell.com>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1302072650
+X-Barracuda-Start-Time: 1302072644
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -35,255 +32,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Append DS278x slave driver.
+Move the GPADC initialization code from mfd driver to touch driver.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
 ---
- drivers/w1/slaves/Kconfig     |   13 +++
- drivers/w1/slaves/Makefile    |    1 +
- drivers/w1/slaves/w1_ds278x.c |  184 +++++++++++++++++++++++++++++++++++++++++
- drivers/w1/w1_family.h        |    3 +
- 4 files changed, 201 insertions(+), 0 deletions(-)
- create mode 100644 drivers/w1/slaves/w1_ds278x.c
+ drivers/input/touchscreen/88pm860x-ts.c |   44 +++++++++++++++++++++-----
+ drivers/mfd/88pm860x-core.c             |   51 -------------------------------
+ 2 files changed, 35 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/w1/slaves/Kconfig b/drivers/w1/slaves/Kconfig
-index f0c9096..d737aa9 100644
---- a/drivers/w1/slaves/Kconfig
-+++ b/drivers/w1/slaves/Kconfig
-@@ -61,6 +61,19 @@ config W1_SLAVE_DS2760
+diff --git a/drivers/input/touchscreen/88pm860x-ts.c b/drivers/input/touchscreen/88pm860x-ts.c
+index fe12f61..ea7abaa 100644
+--- a/drivers/input/touchscreen/88pm860x-ts.c
++++ b/drivers/input/touchscreen/88pm860x-ts.c
+@@ -14,6 +14,7 @@
+ #include <linux/i2c.h>
+ #include <linux/slab.h>
+ #include <linux/input.h>
++#include <linux/mfd/core.h>
+ #include <linux/mfd/88pm860x.h>
  
- 	  If you are unsure, say N.
+ #define MEAS_LEN		(8)
+@@ -154,11 +155,40 @@ static void pm860x_touch_close(struct input_dev *dev)
+ 	pm860x_set_bits(touch->i2c, MEAS_EN3, data, 0);
+ }
  
-+config W1_SLAVE_DS278x
-+	tristate "Dallas 278x battery monitor chip"
-+	depends on W1
-+	help
-+	  If you enable this you will have the DS278x battery monitor
-+	  chip support.
-+
-+	  The battery monitor chip is used in many batteries/devices
-+	  as the one who is responsible for charging/discharging/monitoring
-+	  Li+ batteries.
-+
-+	  If you are unsure, say N.
-+
- config W1_SLAVE_BQ27000
- 	tristate "BQ27000 slave support"
- 	depends on W1
-diff --git a/drivers/w1/slaves/Makefile b/drivers/w1/slaves/Makefile
-index 3c76350..bcc134b 100644
---- a/drivers/w1/slaves/Makefile
-+++ b/drivers/w1/slaves/Makefile
-@@ -8,4 +8,5 @@ obj-$(CONFIG_W1_SLAVE_DS2423)	+= w1_ds2423.o
- obj-$(CONFIG_W1_SLAVE_DS2431)	+= w1_ds2431.o
- obj-$(CONFIG_W1_SLAVE_DS2433)	+= w1_ds2433.o
- obj-$(CONFIG_W1_SLAVE_DS2760)	+= w1_ds2760.o
-+obj-$(CONFIG_W1_SLAVE_DS278x)	+= w1_ds278x.o
- obj-$(CONFIG_W1_SLAVE_BQ27000)	+= w1_bq27000.o
-diff --git a/drivers/w1/slaves/w1_ds278x.c b/drivers/w1/slaves/w1_ds278x.c
-new file mode 100644
-index 0000000..9da94bb
---- /dev/null
-+++ b/drivers/w1/slaves/w1_ds278x.c
-@@ -0,0 +1,184 @@
-+/*
-+ *	w1_ds278x.c - w1 family 27 (DS2780/DS2781) driver
-+ *
-+ * Copyright (c) Intel 2006 Stanley Cai <stanley.cai@intel.com>
-+ * Copyright (c) Marvell 2007 Paul Shen <bo.a.shen@marvell.com>
-+ *
-+ * Modified from w1_ds2433 driver
-+ *
-+ * Copyright (c) 2005 Ben Gardner <bgardner@wabtec.com>
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2. See the file COPYING for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/device.h>
-+#include <linux/types.h>
-+#include <linux/delay.h>
-+
-+#include "../w1.h"
-+#include "../w1_int.h"
-+#include "../w1_family.h"
-+
-+#define W1_REG_SIZE		256
-+
-+#define W1_F27_READ_REG		0x69
-+#define W1_F27_WRITE_REG	0x6C
-+#define W1_F27_COPY_REG		0x48
-+#define W1_F27_RECALL_REG	0xB8
-+#define W1_F27_LOCK_REG		0x6A
-+
-+struct w1_f27_data {
-+	u8 memory[W1_REG_SIZE];
-+	u32 validcrc;
-+};
-+
-+/**
-+ * Check the file size bounds and adjusts count as needed.
-+ * This would not be needed if the file size didn't reset to 0 after a write.
-+ */
-+static inline size_t w1_f27_fix_count(loff_t off, size_t count,
-+				      size_t size)
++static void __devinit pm860x_gpadc_init(struct i2c_client *i2c,
++					struct pm860x_touch_pdata *pdata)
 +{
-+	if (off > size)
-+		return 0;
++	int data;
 +
-+	if ((off + count) > size)
-+		return (size - off);
++	/* set GPADC MISC1 register */
++	data = 0;
++	data |= (pdata->gpadc_prebias << 1) & PM8607_GPADC_PREBIAS_MASK;
++	data |= (pdata->slot_cycle << 3) & PM8607_GPADC_SLOT_CYCLE_MASK;
++	data |= (pdata->off_scale << 5) & PM8607_GPADC_OFF_SCALE_MASK;
++	data |= (pdata->sw_cal << 7) & PM8607_GPADC_SW_CAL_MASK;
++	if (data)
++		pm860x_reg_write(i2c, PM8607_GPADC_MISC1, data);
 +
-+	return count;
-+}
-+
-+static ssize_t w1_f27_read_bin(struct file *fp, struct kobject *kobj,
-+			       struct bin_attribute *bin_attr,
-+			       char *buf, loff_t off, size_t count)
-+{
-+	struct w1_slave *sl = kobj_to_w1_slave(kobj);
-+	u8 wrbuf[2];
-+
-+	count = w1_f27_fix_count(off, count, W1_REG_SIZE);
-+	if (count == 0)
-+		return 0;
-+
-+	atomic_inc(&sl->refcnt);
-+	mutex_lock(&sl->master->mutex);
-+
-+	/* read directly from the REG */
-+	if (w1_reset_select_slave(sl)) {
-+		count = -EIO;
-+		goto out_mutex_unlock;
++	/* set tsi prebias time */
++	if (pdata->tsi_prebias) {
++		data = pdata->tsi_prebias;
++		pm860x_reg_write(i2c, PM8607_TSI_PREBIAS, data);
 +	}
 +
-+	wrbuf[0] = W1_F27_READ_REG;
-+	wrbuf[1] = off & 0xff;
-+	w1_write_block(sl->master, wrbuf, 2);
-+	w1_read_block(sl->master, buf, count);
++	/* set prebias & prechg time of pen detect */
++	data = 0;
++	data |= pdata->pen_prebias & PM8607_PD_PREBIAS_MASK;
++	data |= (pdata->pen_prechg << 5) & PM8607_PD_PRECHG_MASK;
++	if (data)
++		pm860x_reg_write(i2c, PM8607_PD_PREBIAS, data);
 +
-+out_mutex_unlock:
-+	mutex_unlock(&sl->master->mutex);
-+	atomic_dec(&sl->refcnt);
-+
-+	return count;
++	pm860x_set_bits(i2c, PM8607_GPADC_MISC1,
++			PM8607_GPADC_EN, PM8607_GPADC_EN);
 +}
 +
-+static ssize_t w1_f27_write_bin(struct file *fp, struct kobject *kobj,
-+				struct bin_attribute *bin_attr,
-+				char *buf, loff_t off, size_t count)
-+{
-+	struct w1_slave *sl = kobj_to_w1_slave(kobj);
-+	char wrbuf[2];
-+
-+	count = w1_f27_fix_count(off, count, W1_REG_SIZE);
-+	if (count == 0)
-+		return 0;
-+
-+	atomic_inc(&sl->refcnt);
-+	mutex_lock(&sl->master->mutex);
-+
-+	if (w1_reset_select_slave(sl)) {
-+		count = -EIO;
-+		goto out_mutex_unlock;
-+	}
-+
-+	wrbuf[0] = W1_F27_WRITE_REG;
-+	wrbuf[1] = off & 0xff;
-+	w1_write_block(sl->master, wrbuf, 2);
-+	w1_write_block(sl->master, buf, count);
-+
-+out_mutex_unlock:
-+	mutex_unlock(&sl->master->mutex);
-+	atomic_dec(&sl->refcnt);
-+
-+	return count;
-+}
-+
-+static struct bin_attribute w1_f27_bin_attr = {
-+	.attr = {
-+		.name = "registers",
-+		.mode = S_IRUGO | S_IWUSR,
-+	},
-+	.size = W1_REG_SIZE,
-+	.read = w1_f27_read_bin,
-+	.write = w1_f27_write_bin,
-+};
-+
-+static int w1_f27_add_slave(struct w1_slave *sl)
-+{
-+	int err;
-+
-+	err = sysfs_create_bin_file(&sl->dev.kobj, &w1_f27_bin_attr);
-+
-+	return err;
-+}
-+
-+static void w1_f27_remove_slave(struct w1_slave *sl)
-+{
-+	sysfs_remove_bin_file(&sl->dev.kobj, &w1_f27_bin_attr);
-+}
-+
-+static struct w1_family_ops w1_f27_fops = {
-+	.add_slave = w1_f27_add_slave,
-+	.remove_slave = w1_f27_remove_slave,
-+};
-+
-+static struct w1_family w1_family_2780 = {
-+	.fid = W1_BATTMON_DS2780,
-+	.fops = &w1_f27_fops,
-+};
-+
-+static struct w1_family w1_family_2781 = {
-+	.fid = W1_BATTMON_DS2781,
-+	.fops = &w1_f27_fops,
-+};
-+
-+static struct w1_family w1_family_2783 = {
-+	.fid = W1_BATTMON_DS2783,
-+	.fops = &w1_f27_fops,
-+};
-+
-+
-+static int __init w1_f27_init(void)
-+{
-+	pr_info("1-Wire driver for the DS278x battery monitor...\n");
-+	return (w1_register_family(&w1_family_2780) |
-+		w1_register_family(&w1_family_2781) |
-+		w1_register_family(&w1_family_2783));
-+}
-+
-+static void __exit w1_f27_fini(void)
-+{
-+	w1_unregister_family(&w1_family_2781);
-+	w1_unregister_family(&w1_family_2780);
-+	w1_unregister_family(&w1_family_2783);
-+}
-+
-+module_init(w1_f27_init);
-+module_exit(w1_f27_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Paul Shen <bo.a.shen@marvell.com>");
-+MODULE_DESCRIPTION("w1 family 27 driver for DS2780 & DS2781,"
-+		   " Stand-Alone Fuel Gauge IC");
-diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
-index f3b636d..0f0b58c 100644
---- a/drivers/w1/w1_family.h
-+++ b/drivers/w1/w1_family.h
-@@ -36,6 +36,9 @@
- #define W1_THERM_DS18B20 	0x28
- #define W1_EEPROM_DS2431	0x2D
- #define W1_FAMILY_DS2760	0x30
-+#define W1_BATTMON_DS2780	0x32
-+#define W1_BATTMON_DS2781	0x3D
-+#define W1_BATTMON_DS2783	0x34
+ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ {
+ 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
+-	struct pm860x_platform_data *pm860x_pdata =		\
+-				pdev->dev.parent->platform_data;
+ 	struct pm860x_touch_pdata *pdata = NULL;
+ 	struct pm860x_touch *touch;
+ 	int irq, ret;
+@@ -169,13 +199,8 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
  
- #define MAXNAMELEN		32
+-	if (!pm860x_pdata) {
+-		dev_err(&pdev->dev, "platform data is missing\n");
+-		return -EINVAL;
+-	}
+-
+-	pdata = pm860x_pdata->touch;
+-	if (!pdata) {
++	pdata = mfd_get_data(pdev);
++	if (pdata == NULL) {
+ 		dev_err(&pdev->dev, "touchscreen data is missing\n");
+ 		return -EINVAL;
+ 	}
+@@ -229,6 +254,7 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ 		goto out_rg;
+ 	}
  
++	pm860x_gpadc_init(touch->i2c, pdata);
+ 	platform_set_drvdata(pdev, touch);
+ 	INIT_DELAYED_WORK(&touch->poll_work, pm860x_poll_work);
+ 	return 0;
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index 011cb6c..c73ffdf 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -362,53 +362,6 @@ static struct irq_chip pm860x_irq_chip = {
+ 	.irq_disable	= pm860x_irq_disable,
+ };
+ 
+-static int __devinit device_gpadc_init(struct pm860x_chip *chip,
+-				       struct pm860x_platform_data *pdata)
+-{
+-	struct i2c_client *i2c = (chip->id == CHIP_PM8607) ? chip->client \
+-				: chip->companion;
+-	int data;
+-	int ret;
+-
+-	/* initialize GPADC without activating it */
+-
+-	if (!pdata || !pdata->touch)
+-		return -EINVAL;
+-
+-	/* set GPADC MISC1 register */
+-	data = 0;
+-	data |= (pdata->touch->gpadc_prebias << 1) & PM8607_GPADC_PREBIAS_MASK;
+-	data |= (pdata->touch->slot_cycle << 3) & PM8607_GPADC_SLOT_CYCLE_MASK;
+-	data |= (pdata->touch->off_scale << 5) & PM8607_GPADC_OFF_SCALE_MASK;
+-	data |= (pdata->touch->sw_cal << 7) & PM8607_GPADC_SW_CAL_MASK;
+-	if (data) {
+-		ret = pm860x_reg_write(i2c, PM8607_GPADC_MISC1, data);
+-		if (ret < 0)
+-			goto out;
+-	}
+-	/* set tsi prebias time */
+-	if (pdata->touch->tsi_prebias) {
+-		data = pdata->touch->tsi_prebias;
+-		ret = pm860x_reg_write(i2c, PM8607_TSI_PREBIAS, data);
+-		if (ret < 0)
+-			goto out;
+-	}
+-	/* set prebias & prechg time of pen detect */
+-	data = 0;
+-	data |= pdata->touch->pen_prebias & PM8607_PD_PREBIAS_MASK;
+-	data |= (pdata->touch->pen_prechg << 5) & PM8607_PD_PRECHG_MASK;
+-	if (data) {
+-		ret = pm860x_reg_write(i2c, PM8607_PD_PREBIAS, data);
+-		if (ret < 0)
+-			goto out;
+-	}
+-
+-	ret = pm860x_set_bits(i2c, PM8607_GPADC_MISC1,
+-			      PM8607_GPADC_EN, PM8607_GPADC_EN);
+-out:
+-	return ret;
+-}
+-
+ static int __devinit device_irq_init(struct pm860x_chip *chip,
+ 				     struct pm860x_platform_data *pdata)
+ {
+@@ -755,10 +708,6 @@ static void __devinit device_8607_init(struct pm860x_chip *chip,
+ 		goto out;
+ 	}
+ 
+-	ret = device_gpadc_init(chip, pdata);
+-	if (ret < 0)
+-		goto out;
+-
+ 	ret = device_irq_init(chip, pdata);
+ 	if (ret < 0)
+ 		goto out;
 -- 
 1.5.6.5
 
