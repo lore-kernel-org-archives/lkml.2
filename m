@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab1DFRSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 13:18:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38436 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab1DFRSa (ORCPT
+	id S1755861Ab1DFReb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 13:34:31 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:26069 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502Ab1DFRea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 13:18:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=NEjfPNylp5RH0qsaTre1gQpZgQ4tGmEpWK8IvJ09FDId25eJSqUy0A/6Tfp9X0CuNH
-         GhzAcfCYxMK9ZgUWUKkncFBbVhmCY6t1wmpXk4sQmwbXt8Lm9NTwJE5+pKCMEenGzc3b
-         lj9hdtKt+OvSXI0tj81Q1dggA9K+zijnhGjVI=
-Date: Wed, 6 Apr 2011 14:18:21 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
-Message-ID: <20110406171821.GB4987@ghostprotocols.net>
-References: <4D8B79E6.2050603@gmail.com>
- <4D8C6B1B.70409@hitachi.com>
- <4D8CAE74.9080805@gmail.com>
- <4D906450.1040809@hitachi.com>
- <4D909BBB.5020500@gmail.com>
- <20110401151313.GC2335@nowhere>
- <4D96072E.4060902@gmail.com>
- <20110406121501.GA1867@nowhere>
- <20110406140958.GA4987@ghostprotocols.net>
- <20110406145521.GG1867@nowhere>
+	Wed, 6 Apr 2011 13:34:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6308"; a="84113094"
+Message-ID: <4D9CA418.2030107@codeaurora.org>
+Date: Wed, 06 Apr 2011 10:34:16 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110406145521.GG1867@nowhere>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCHv5 1/3] ARM: Translate delay.S into (mostly) C
+References: <1302047800-26720-1-git-send-email-sboyd@codeaurora.org> <1302047800-26720-2-git-send-email-sboyd@codeaurora.org> <4D9C2910.6020309@stericsson.com>
+In-Reply-To: <4D9C2910.6020309@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 06, 2011 at 04:55:23PM +0200, Frederic Weisbecker escreveu:
-> On Wed, Apr 06, 2011 at 11:09:58AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Isn't there one in the 'tip/tmp.perf/trace' tmp branch? Lemme see...
-> > 
-> > Yeah, and it is even yours ;-)
-> > 
-> > commit 6a824e89c0dfe6bce3d7e85f987ec9c8e7304b34
-> > Author: Frederic Weisbecker <fweisbec@gmail.com>
-> > Date:   Fri Nov 12 05:35:06 2010 +0100
-> > 
-> >     perf, mm: Add fault tracing
-> >     
-> >     Part of that are two modified patches from Jiri Olsa who added the
-> >     fault tracepoints. I had to split them in two tracepoints so that we get
-> >     the faults handling duration.
-> >     
-> >     Originally-from: Frederic Weisbecker <fweisbec@gmail.com>
-> >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> >     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> That forgets to mention it's based on Jiri Olsa's patch :)
-> 
-> "tracing,mm - add kernel pagefault tracepoint for x86 & x86_64"
-> 
-> (Message id <1289466549-7602-3-git-send-email-jolsa@redhat.com>).
-> 
-> > 
-> > Can we dust this one off and get the ball rolling again? 
-> 
-> I prefer someone comes with a real need before me or Jiri respin
-> that. There was perf trace but its development seems to be stale
-> now.
+On 04/06/2011 01:49 AM, Mattias Wallin wrote:
+> On 04/06/2011 01:56 AM, Stephen Boyd wrote:
+>> +void __udelay(unsigned long usecs)
+>> +{
+>> +    __const_udelay(usecs * ((2199023*HZ)>>11));
+>
+> This will overflow if HZ=1000.
+> If I remember correct I fixed it like this:
+> __const_udelay(usecs * ((2199023UL*HZ)>>11));
+>
 
-Yeah, I need to resume work on it, sidetracked now tho.
- 
-> The page fault software event seem to be enough for basic
-> dump requests. I don't like software events and prefer tracepoints
-> in general but as long as the current implementation is enough
-> and people don't need to measure page fault servicing time,
-> write scripts or so, we are probably fine.
+Thanks. I see that my compiler spits out a warning when HZ is 1000.
 
-- ARnaldo
+I'll squash this in before sending to the tracker. Care to send a Tested-by?
+
+----->8-----8<-----
+
+diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
+index f664002..e7229bf 100644
+--- a/arch/arm/lib/delay.c
++++ b/arch/arm/lib/delay.c
+@@ -80,6 +80,6 @@ EXPORT_SYMBOL(__const_udelay);
+  */
+ void __udelay(unsigned long usecs)
+ {
+-       __const_udelay(usecs * ((2199023*HZ)>>11));
++       __const_udelay(usecs * ((2199023UL*HZ)>>11));
+ }
+ EXPORT_SYMBOL(__udelay);
+
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
