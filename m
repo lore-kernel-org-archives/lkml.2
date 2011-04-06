@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab1DFJA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 05:00:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754965Ab1DFJAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 05:00:53 -0400
-From: Markus Armbruster <armbru@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-kernel@vger.kernel.org, aarcange@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, joro@8bytes.org, penberg@cs.helsinki.fi,
-        asias.hejun@gmail.com, gorcunov@gmail.com, mingo@elte.hu
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-References: <1301592656.586.15.camel@jaguar> <4D982E89.8070502@redhat.com>
-	<BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com>
-	<4D9847BC.9060906@redhat.com> <4D98716D.9040307@codemonkey.ws>
-Date: Wed, 06 Apr 2011 10:59:45 +0200
-In-Reply-To: <4D98716D.9040307@codemonkey.ws> (Anthony Liguori's message of
-	"Sun, 03 Apr 2011 08:09:01 -0500")
-Message-ID: <m3liznkb5q.fsf@blackfin.pond.sub.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755249Ab1DFJG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 05:06:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60873 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab1DFJG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 05:06:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=fJKSPNnCgP9cBfz4HyaJ8JojYf83wRz1BlnvrjmTeAwengs24vYtSMiWe7AxIWC0Dh
+         s/fpRLkWwXr0o5vIFROr+FR3DMn+dKM4olV73dUn+cXWRXgsKP5A8Q6u3Xz17eRVlEgz
+         i82VMuhxVmauA5DYvAzjeAQSFJconnjoeuKJc=
+Subject: Re: [PATCH 00/34] Make kernel build deterministic
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20110406085712.GA16597@elte.hu>
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
+	 <20110405154918.GA31337@suse.de> <1302031447.2608.41.camel@koala>
+	 <20110406085712.GA16597@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Apr 2011 12:04:13 +0300
+Message-ID: <1302080653.2742.32.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anthony Liguori <anthony@codemonkey.ws> writes:
+[Removed CCs to spam people less]
 
-> On 04/03/2011 05:11 AM, Avi Kivity wrote:
->> On 04/03/2011 12:59 PM, Pekka Enberg wrote:
->>> Hi Avi,
->>>
->>> On Sun, Apr 3, 2011 at 11:23 AM, Avi Kivity<avi@redhat.com>  wrote:
->>> >>  Note that this is a development prototype for the time being:
->>> there's no
->>> >>  networking support and no graphics support, amongst other missing
->>> >>  essentials.
->>> >
->>> >  Mind posting a roadmap?  I would put smp support near the top.
->>> This sort of
->>> >  thing has to be designed in, otherwise you wind up with a big
->>> lock like
->>> >  qemu.
->>>
->>> What are the pain points with qemu at the moment?
->>
->> It's an ugly gooball.
->
-> Because it solves a lot of very difficult problems.
+On Wed, 2011-04-06 at 10:57 +0200, Ingo Molnar wrote:
+>   checkpatch: Warn about usage of __DATE__, __TIME__ and __TIMESTAMP__
 
-And the solutions emerged / evolved over a long time.  Meanwhile, goals
-shifted.  It wasn't designed as user space for KVM, it got shoehorned
-into that role (successfully).
+Great, thanks, did not see this!
 
-It has some solutions it should have left to other tools.  For instance,
-it shouldn't be in the network configuration business.
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-> You could drop all of the TCG support and it'd still be an ugly gooball.
->
-> Supporting lots of different emulated hardware devices, live
-> migration, tons of different types of networking and image formats,
-> etc., all adds up over time.
-
-It does.  Still, a fresh start could lead to a less ugly gooball.
-
->>> SMP, networking, and simpler guest to host communication from shell
->>> are most interesting missing features for me.
->>
->> If it is to be more than a toy, then Windows (really generic guest)
->> support, manageability, live migration, hotplug, etc. are all
->> crucial.
->
-> I concur that SMP is probably one of those features you need to start
-> with if you're designing something from scratch.
-
-Certainly.  Another one that doesn't like retrofitting is security.
