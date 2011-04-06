@@ -1,121 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab1DFMWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:22:53 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58642 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731Ab1DFMWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:22:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=elcvYxxENvBJGYNMQiM98Dr4r8fZM4E0zkAYlwzeTUXZsl0HjdIcp3w7UWYIL73ELV
-         y3OheJ9klFarembOgCoifV3TbIbo3QizS92weW1cbYgadgp4VKyHQIcAEPGs58nGPpWs
-         CYzE3HPqJsObjh08E4CofdUDj5HlngWrHsVgw=
-Date: Wed, 6 Apr 2011 05:22:44 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] block: rescan partitions on invalidated devices on
- -ENOMEDIA too
-Message-ID: <20110406122244.GD4142@mtj.dyndns.org>
-References: <20110406121920.GC4142@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110406121920.GC4142@mtj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755899Ab1DFMYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:24:35 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:54782 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752339Ab1DFMYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 08:24:34 -0400
+X-Greylist: delayed 1847 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Apr 2011 08:24:33 EDT
+Subject: Re: [PATCH v2] leds: provide helper to register "leds-gpio" devices
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de
+In-Reply-To: <1302035048-25819-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <20110405163338.GA11832@n2100.arm.linux.org.uk>
+	 <1302035048-25819-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Apr 2011 04:52:18 -0700
+Message-ID: <1302090738.22904.8.camel@rex>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__blkdev_get() doesn't rescan partitions if disk->fops->open() fails,
-which leads to ghost partition devices lingering after medimum removal
-is known to both the kernel and userland.  The behavior also creates a
-subtle inconsistency where O_NONBLOCK open, which doesn't fail even if
-there's no medium, clears the ghots partitions, which is exploited to
-work around the problem from userland.
+On Tue, 2011-04-05 at 22:24 +0200, Uwe Kleine-König wrote:
+> This function makes a deep copy of the platform data to allow it to live
+> in init memory.
+> The definition cannot go into leds-gpio.c because it needs to be builtin
+> to be usable by platforms.
+> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+> changes since v1:
+>  - don't add __init to the declaration of gpio_led_register_device
+> 
+>  drivers/leds/led-core.c |   27 ++++++++++++++++++++++++++-
+>  include/linux/leds.h    |   12 ++++++++++++
+>  2 files changed, 38 insertions(+), 1 deletions(-)
 
-Fix it by updating __blkdev_get() to issue partition rescan after
--ENOMEDIA too.
+Can you explain the reasoning for this a little further please? It
+sounds like instead of leaving the platform data in memory (which is
+reasonable since we need it), we're now adding code to make a copy of
+this data so we can remove the original. Why?
 
-This was reported in the following bz.
+I have a rather strong dislike of adding "always builtin" functions as
+they suggest something is wrong with the approach. led-core.c has always
+been intentionally as minimal as we could get it.
 
- https://bugzilla.kernel.org/show_bug.cgi?id=13029
+In times when things like boot time are important it also seems like bad
+form to be copying data around just so we can throw one copy away during
+the boot process. What memory savings (which I assume is the
+motivation?) is this giving us at what cost?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: David Zeuthen <zeuthen@gmail.com>
-Reported-by: Martin Pitt <martin.pitt@ubuntu.com>
-Reported-by: Kay Sievers <kay.sievers@vrfy.org>
-Tested-by: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
----
- fs/block_dev.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+I guess the motivation might be that if a given platform has many
+different LED configurations, you're trying to remove the ones you don't
+need from memory? Given all the above I'd suggest that this function
+should really be added to the platform device code if anywhere and
+doesn't belong in the LED subsystem as its not an LED specific problem.
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index c1511c6..a926ad4 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1102,6 +1102,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 			if (!bdev->bd_part)
- 				goto out_clear;
- 
-+			ret = 0;
- 			if (disk->fops->open) {
- 				ret = disk->fops->open(bdev, mode);
- 				if (ret == -ERESTARTSYS) {
-@@ -1118,9 +1119,18 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 					put_disk(disk);
- 					goto restart;
- 				}
--				if (ret)
--					goto out_clear;
- 			}
-+			/*
-+			 * If the device is invalidated, rescan partition
-+			 * if open succeeded or failed with -ENOMEDIUM.
-+			 * The latter is necessary to prevent ghost
-+			 * partitions on a removed medium.
-+			 */
-+			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
-+				rescan_partitions(disk, bdev);
-+			if (ret)
-+				goto out_clear;
-+
- 			if (!bdev->bd_openers) {
- 				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
- 				bdi = blk_get_backing_dev_info(bdev);
-@@ -1128,8 +1138,6 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 					bdi = &default_backing_dev_info;
- 				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
- 			}
--			if (bdev->bd_invalidated)
--				rescan_partitions(disk, bdev);
- 		} else {
- 			struct block_device *whole;
- 			whole = bdget_disk(disk, 0);
-@@ -1153,13 +1161,14 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 		}
- 	} else {
- 		if (bdev->bd_contains == bdev) {
--			if (bdev->bd_disk->fops->open) {
-+			ret = 0;
-+			if (bdev->bd_disk->fops->open)
- 				ret = bdev->bd_disk->fops->open(bdev, mode);
--				if (ret)
--					goto out_unlock_bdev;
--			}
--			if (bdev->bd_invalidated)
-+			/* the same as first opener case, read comment there */
-+			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
- 				rescan_partitions(bdev->bd_disk, bdev);
-+			if (ret)
-+				goto out_unlock_bdev;
- 		}
- 		/* only one opener holds refs to the module and disk */
- 		module_put(disk->fops->owner);
+Cheers,
+
+Richard
+
+-- 
+Linux Foundation
+http://www.yoctoproject.org/
+
