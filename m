@@ -1,321 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab1DFVOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:14:00 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:10128 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab1DFVN5 (ORCPT
+	id S932225Ab1DFVQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:16:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34078 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab1DFVQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:13:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=MaRZn5L9rIqnEKTDwk9WtziKuF/PAJ/o4KGCxp3reaj2TH3VeQeeBgR9r5pjg2sDw
-	P1Go0JWmrR2liUzivAoJg==
-From: Nat Gurumoorthy <natg@google.com>
-To: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Cc: Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        Nat Gurumoorthy <natg@google.com>
-Subject: [PATCH 2/3] Make all it87 drivers SMP safe.
-Date: Wed,  6 Apr 2011 14:13:05 -0700
-Message-Id: <1302124385-22417-1-git-send-email-natg@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Wed, 6 Apr 2011 17:16:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:x-mailer:mime-version:content-type;
+        b=b7Rv+b/56+sdLyGcXWMrDiERloYLeMSvRabD9shK0N1FAa1VUdyGUESt/0pBKbc7Vm
+         dwGdIvp/tzV4pWs+w+/buN/4mRBkH6ppFftekDOYUIdWky2NAqAXoGMVNxSWTQYdu0Yz
+         G3flc1/AKRy+/Bzx0WIFSBnuuD2V0htUoayXc=
+Date: Thu, 7 Apr 2011 00:18:37 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] [RFC] um: x86: unbreak build by reintroducing
+ this_cpu_cmpxchg16b_emu
+Message-ID: <20110407001837.12e6f01c@sf.home>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Ny9MwLaR9EtgbIi4WWPXtqr"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-02 - Adds changes to watchdog drivers to use the new lock.
+--Sig_/Ny9MwLaR9EtgbIi4WWPXtqr
+Content-Type: multipart/mixed; boundary="MP_/Wyi1zXQ2o+_Y3x+fDwvHPFe"
 
-Signed-off-by: Nat Gurumoorthy <natg@google.com>
+--MP_/Wyi1zXQ2o+_Y3x+fDwvHPFe
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
+
+I'm sure fix can be nices, but initial patch should express an idea.
+
+The main offender is privileged 'cli'.
+
+Thanks!
+
+--=20
+
+  Sergei
+
+--MP_/Wyi1zXQ2o+_Y3x+fDwvHPFe
+Content-Type: text/x-patch
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+ filename=0001-RFC-um-x86-unbreak-build-by-reintroducing-this_cpu_c.patch
+
+=46rom 59c59c76b0238ff2469bb7f4201b9b88ec436df4 Mon Sep 17 00:00:00 2001
+From: Sergei Trofimovich <slyfox@gentoo.org>
+Date: Thu, 7 Apr 2011 00:09:37 +0300
+Subject: [PATCH] [RFC] um: x86: unbreak build by reintroducing this_cpu_cmp=
+xchg16b_emu
+
+  LD      .tmp_vmlinux1
+mm/built-in.o: In function `slab_free':
+/home/slyfox/linux-2.6/mm/slub.c:2148: undefined reference to `this_cpu_cmp=
+xchg16b_emu'
+/home/slyfox/linux-2.6/mm/slub.c:2148: undefined reference to `this_cpu_cmp=
+xchg16b_emu'
+mm/built-in.o: In function `slab_alloc':
+/home/slyfox/linux-2.6/mm/slub.c:1943: undefined reference to `this_cpu_cmp=
+xchg16b_emu'
+/home/slyfox/linux-2.6/mm/slub.c:1943: undefined reference to `this_cpu_cmp=
+xchg16b_emu'
+/home/slyfox/linux-2.6/mm/slub.c:1943: undefined reference to `this_cpu_cmp=
+xchg16b_emu'
+
+Original implementation of this_cpu_cmpxchg16b_emu contained privileged 'cl=
+i' instruction
+so copied implementation to private um/ space. Tested on x86_64, untested o=
+n i386.
+
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
 ---
+ arch/um/sys-i386/Makefile              |    2 +-
+ arch/um/sys-i386/cmpxchg8b_emu_um.S    |   56 ++++++++++++++++++++++++++++
+ arch/um/sys-x86_64/Makefile            |    2 +-
+ arch/um/sys-x86_64/cmpxchg16b_emu_um.S |   64 ++++++++++++++++++++++++++++=
+++++
+ 4 files changed, 122 insertions(+), 2 deletions(-)
+ create mode 100644 arch/um/sys-i386/cmpxchg8b_emu_um.S
+ create mode 100644 arch/um/sys-x86_64/cmpxchg16b_emu_um.S
 
-diff --git a/drivers/watchdog/it8712f_wdt.c b/drivers/watchdog/it8712f_wdt.c
-index b32c6c0..03a3e89 100644
---- a/drivers/watchdog/it8712f_wdt.c
-+++ b/drivers/watchdog/it8712f_wdt.c
-@@ -32,6 +32,7 @@
- #include <linux/spinlock.h>
- #include <linux/uaccess.h>
- #include <linux/io.h>
-+#include <linux/it87_lock.h>
- 
- #define NAME "it8712f_wdt"
- 
-@@ -51,7 +52,6 @@ MODULE_PARM_DESC(nowayout, "Disable watchdog shutdown on close");
- 
- static unsigned long wdt_open;
- static unsigned expect_close;
--static spinlock_t io_lock;
- static unsigned char revision;
- 
- /* Dog Food address - We use the game port address */
-@@ -122,8 +122,9 @@ static inline void superio_select(int ldn)
- }
- 
- static inline void superio_enter(void)
-+__acquires(&it87_io_lock)
- {
--	spin_lock(&io_lock);
-+	spin_lock(&it87_io_lock);
- 	outb(0x87, REG);
- 	outb(0x01, REG);
- 	outb(0x55, REG);
-@@ -131,10 +132,11 @@ static inline void superio_enter(void)
- }
- 
- static inline void superio_exit(void)
-+__releases(&it87_io_lock)
- {
- 	outb(0x02, REG);
- 	outb(0x02, VAL);
--	spin_unlock(&io_lock);
-+	spin_unlock(&it87_io_lock);
- }
- 
- static inline void it8712f_wdt_ping(void)
-@@ -382,8 +384,6 @@ static int __init it8712f_wdt_init(void)
- {
- 	int err = 0;
- 
--	spin_lock_init(&io_lock);
--
- 	if (it8712f_wdt_find(&address))
- 		return -ENODEV;
- 
-diff --git a/drivers/watchdog/it87_wdt.c b/drivers/watchdog/it87_wdt.c
-index dad2924..87ac31d 100644
---- a/drivers/watchdog/it87_wdt.c
-+++ b/drivers/watchdog/it87_wdt.c
-@@ -42,6 +42,7 @@
- #include <linux/reboot.h>
- #include <linux/uaccess.h>
- #include <linux/io.h>
-+#include <linux/it87_lock.h>
- 
- #include <asm/system.h>
- 
-@@ -136,7 +137,6 @@
- 
- static	unsigned int base, gpact, ciract, max_units;
- static	unsigned long wdt_status;
--static	DEFINE_SPINLOCK(spinlock);
- 
- static	int nogameport = DEFAULT_NOGAMEPORT;
- static	int exclusive  = DEFAULT_EXCLUSIVE;
-@@ -163,7 +163,9 @@ MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started, default="
- /* Superio Chip */
- 
- static inline void superio_enter(void)
-+__acquires(&it87_io_lock)
- {
-+	spin_lock(&it87_io_lock);
- 	outb(0x87, REG);
- 	outb(0x01, REG);
- 	outb(0x55, REG);
-@@ -171,9 +173,11 @@ static inline void superio_enter(void)
- }
- 
- static inline void superio_exit(void)
-+__releases(&it87_io_lock)
- {
- 	outb(0x02, REG);
- 	outb(0x02, VAL);
-+	spin_unlock(&it87_io_lock);
- }
- 
- static inline void superio_select(int ldn)
-@@ -253,9 +257,6 @@ static void wdt_keepalive(void)
- 
- static void wdt_start(void)
- {
--	unsigned long flags;
--
--	spin_lock_irqsave(&spinlock, flags);
- 	superio_enter();
- 
- 	superio_select(GPIO);
-@@ -266,14 +267,10 @@ static void wdt_start(void)
- 	wdt_update_timeout();
- 
- 	superio_exit();
--	spin_unlock_irqrestore(&spinlock, flags);
- }
- 
- static void wdt_stop(void)
- {
--	unsigned long flags;
--
--	spin_lock_irqsave(&spinlock, flags);
- 	superio_enter();
- 
- 	superio_select(GPIO);
-@@ -284,7 +281,6 @@ static void wdt_stop(void)
- 		superio_outb(0x00, WDTVALMSB);
- 
- 	superio_exit();
--	spin_unlock_irqrestore(&spinlock, flags);
- }
- 
- /**
-@@ -299,8 +295,6 @@ static void wdt_stop(void)
- 
- static int wdt_set_timeout(int t)
- {
--	unsigned long flags;
--
- 	if (t < 1 || t > max_units * 60)
- 		return -EINVAL;
- 
-@@ -309,14 +303,12 @@ static int wdt_set_timeout(int t)
- 	else
- 		timeout = t;
- 
--	spin_lock_irqsave(&spinlock, flags);
- 	if (test_bit(WDTS_TIMER_RUN, &wdt_status)) {
- 		superio_enter();
- 		superio_select(GPIO);
- 		wdt_update_timeout();
- 		superio_exit();
- 	}
--	spin_unlock_irqrestore(&spinlock, flags);
- 	return 0;
- }
- 
-@@ -335,11 +327,8 @@ static int wdt_set_timeout(int t)
- 
- static int wdt_get_status(int *status)
- {
--	unsigned long flags;
--
- 	*status = 0;
- 	if (testmode) {
--		spin_lock_irqsave(&spinlock, flags);
- 		superio_enter();
- 		superio_select(GPIO);
- 		if (superio_inb(WDTCTRL) & WDT_ZERO) {
-@@ -349,7 +338,6 @@ static int wdt_get_status(int *status)
- 		}
- 
- 		superio_exit();
--		spin_unlock_irqrestore(&spinlock, flags);
- 	}
- 	if (test_and_clear_bit(WDTS_KEEPALIVE, &wdt_status))
- 		*status |= WDIOF_KEEPALIVEPING;
-@@ -557,16 +545,13 @@ static int __init it87_wdt_init(void)
- 	int try_gameport = !nogameport;
- 	u16 chip_type;
- 	u8  chip_rev;
--	unsigned long flags;
- 
- 	wdt_status = 0;
- 
--	spin_lock_irqsave(&spinlock, flags);
- 	superio_enter();
- 	chip_type = superio_inw(CHIPID);
- 	chip_rev  = superio_inb(CHIPREV) & 0x0f;
- 	superio_exit();
--	spin_unlock_irqrestore(&spinlock, flags);
- 
- 	switch (chip_type) {
- 	case IT8702_ID:
-@@ -599,7 +584,6 @@ static int __init it87_wdt_init(void)
- 		return -ENODEV;
- 	}
- 
--	spin_lock_irqsave(&spinlock, flags);
- 	superio_enter();
- 
- 	superio_select(GPIO);
-@@ -617,14 +601,12 @@ static int __init it87_wdt_init(void)
- 		gpact = superio_inb(ACTREG);
- 		superio_outb(0x01, ACTREG);
- 		superio_exit();
--		spin_unlock_irqrestore(&spinlock, flags);
- 		if (request_region(base, 1, WATCHDOG_NAME))
- 			set_bit(WDTS_USE_GP, &wdt_status);
- 		else
- 			rc = -EIO;
- 	} else {
- 		superio_exit();
--		spin_unlock_irqrestore(&spinlock, flags);
- 	}
- 
- 	/* If we haven't Gameport support, try to get CIR support */
-@@ -642,7 +624,6 @@ static int __init it87_wdt_init(void)
- 			goto err_out;
- 		}
- 		base = CIR_BASE;
--		spin_lock_irqsave(&spinlock, flags);
- 		superio_enter();
- 
- 		superio_select(CIR);
-@@ -656,7 +637,6 @@ static int __init it87_wdt_init(void)
- 		}
- 
- 		superio_exit();
--		spin_unlock_irqrestore(&spinlock, flags);
- 	}
- 
- 	if (timeout < 1 || timeout > max_units * 60) {
-@@ -686,6 +666,7 @@ static int __init it87_wdt_init(void)
- 
- 	/* Initialize CIR to use it as keepalive source */
- 	if (!test_bit(WDTS_USE_GP, &wdt_status)) {
-+		spin_lock(&it87_io_lock);
- 		outb(0x00, CIR_RCR(base));
- 		outb(0xc0, CIR_TCR1(base));
- 		outb(0x5c, CIR_TCR2(base));
-@@ -693,6 +674,7 @@ static int __init it87_wdt_init(void)
- 		outb(0x00, CIR_BDHR(base));
- 		outb(0x01, CIR_BDLR(base));
- 		outb(0x09, CIR_IER(base));
-+		spin_unlock(&it87_io_lock);
- 	}
- 
- 	printk(KERN_INFO PFX "Chip IT%04x revision %d initialized. "
-@@ -707,21 +689,17 @@ err_out_reboot:
- err_out_region:
- 	release_region(base, test_bit(WDTS_USE_GP, &wdt_status) ? 1 : 8);
- 	if (!test_bit(WDTS_USE_GP, &wdt_status)) {
--		spin_lock_irqsave(&spinlock, flags);
- 		superio_enter();
- 		superio_select(CIR);
- 		superio_outb(ciract, ACTREG);
- 		superio_exit();
--		spin_unlock_irqrestore(&spinlock, flags);
- 	}
- err_out:
- 	if (try_gameport) {
--		spin_lock_irqsave(&spinlock, flags);
- 		superio_enter();
- 		superio_select(GAMEPORT);
- 		superio_outb(gpact, ACTREG);
- 		superio_exit();
--		spin_unlock_irqrestore(&spinlock, flags);
- 	}
- 
- 	return rc;
-@@ -729,10 +707,6 @@ err_out:
- 
- static void __exit it87_wdt_exit(void)
- {
--	unsigned long flags;
--	int nolock;
--
--	nolock = !spin_trylock_irqsave(&spinlock, flags);
- 	superio_enter();
- 	superio_select(GPIO);
- 	superio_outb(0x00, WDTCTRL);
-@@ -748,8 +722,6 @@ static void __exit it87_wdt_exit(void)
- 		superio_outb(ciract, ACTREG);
- 	}
- 	superio_exit();
--	if (!nolock)
--		spin_unlock_irqrestore(&spinlock, flags);
- 
- 	misc_deregister(&wdt_miscdev);
- 	unregister_reboot_notifier(&wdt_notifier);
--- 
+diff --git a/arch/um/sys-i386/Makefile b/arch/um/sys-i386/Makefile
+index 804b28d..40d7940 100644
+--- a/arch/um/sys-i386/Makefile
++++ b/arch/um/sys-i386/Makefile
+@@ -4,7 +4,7 @@
+=20
+ obj-y =3D bug.o bugs.o checksum.o delay.o fault.o ksyms.o ldt.o ptrace.o \
+ 	ptrace_user.o setjmp.o signal.o stub.o stub_segv.o syscalls.o sysrq.o \
+-	sys_call_table.o tls.o
++	sys_call_table.o tls.o cmpxchg8b_emu_um.o
+=20
+ obj-$(CONFIG_BINFMT_ELF) +=3D elfcore.o
+=20
+diff --git a/arch/um/sys-i386/cmpxchg8b_emu_um.S b/arch/um/sys-i386/cmpxchg=
+8b_emu_um.S
+new file mode 100644
+index 0000000..b2f0d5f
+--- /dev/null
++++ b/arch/um/sys-i386/cmpxchg8b_emu_um.S
+@@ -0,0 +1,56 @@
++/*
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	as published by the Free Software Foundation; version 2
++ *	of the License.
++ *
++ */
++
++#include <linux/linkage.h>
++#include <asm/alternative-asm.h>
++#include <asm/frame.h>
++#include <asm/dwarf2.h>
++
++
++.text
++
++/*
++ * Inputs:
++ * %esi : memory location to compare
++ * %eax : low 32 bits of old value
++ * %edx : high 32 bits of old value
++ * %ebx : low 32 bits of new value
++ * %ecx : high 32 bits of new value
++ */
++ENTRY(cmpxchg8b_emu)
++CFI_STARTPROC
++
++#
++# Emulate 'cmpxchg8b (%esi)' on UP except we don't
++# set the whole ZF thing (caller will just compare
++# eax:edx with the expected value)
++#
++cmpxchg8b_emu:
++	pushfl
++
++	cmpl  (%esi), %eax
++	jne not_same
++	cmpl 4(%esi), %edx
++	jne half_same
++
++	movl %ebx,  (%esi)
++	movl %ecx, 4(%esi)
++
++	popfl
++	ret
++
++ not_same:
++	movl  (%esi), %eax
++ half_same:
++	movl 4(%esi), %edx
++
++	popfl
++	ret
++
++CFI_ENDPROC
++ENDPROC(cmpxchg8b_emu)
+diff --git a/arch/um/sys-x86_64/Makefile b/arch/um/sys-x86_64/Makefile
+index c1ea9eb..3259f54 100644
+--- a/arch/um/sys-x86_64/Makefile
++++ b/arch/um/sys-x86_64/Makefile
+@@ -6,7 +6,7 @@
+=20
+ obj-y =3D bug.o bugs.o delay.o fault.o ldt.o mem.o ptrace.o ptrace_user.o \
+ 	setjmp.o signal.o stub.o stub_segv.o syscalls.o syscall_table.o \
+-	sysrq.o ksyms.o tls.o
++	sysrq.o ksyms.o tls.o cmpxchg16b_emu_um.o
+=20
+ subarch-obj-y =3D lib/csum-partial_64.o lib/memcpy_64.o lib/thunk_64.o \
+ 		lib/rwsem_64.o
+diff --git a/arch/um/sys-x86_64/cmpxchg16b_emu_um.S b/arch/um/sys-x86_64/cm=
+pxchg16b_emu_um.S
+new file mode 100644
+index 0000000..e954084
+--- /dev/null
++++ b/arch/um/sys-x86_64/cmpxchg16b_emu_um.S
+@@ -0,0 +1,64 @@
++/*
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	as published by the Free Software Foundation; version 2
++ *	of the License.
++ *
++ */
++#include <linux/linkage.h>
++#include <asm/alternative-asm.h>
++#include <asm/frame.h>
++#include <asm/dwarf2.h>
++
++#ifdef CONFIG_SMP
++#define SEG_PREFIX %gs:
++#else
++#define SEG_PREFIX
++#endif
++
++.text
++
++/*
++ * Inputs:
++ * %rsi : memory location to compare
++ * %rax : low 64 bits of old value
++ * %rdx : high 64 bits of old value
++ * %rbx : low 64 bits of new value
++ * %rcx : high 64 bits of new value
++ * %al  : Operation successful
++ */
++ENTRY(this_cpu_cmpxchg16b_emu)
++CFI_STARTPROC
++
++#
++# Emulate 'cmpxchg16b %gs:(%rsi)' except we return the result in %al not
++# via the ZF.  Caller will access %al to get result.
++#
++# Note that this is only useful for a cpuops operation.  Meaning that we
++# do *not* have a fully atomic operation but just an operation that is
++# *atomic* on a single cpu (as provided by the this_cpu_xx class of
++# macros).
++#
++this_cpu_cmpxchg16b_emu:
++	pushf
++
++	cmpq SEG_PREFIX(%rsi), %rax
++	jne not_same
++	cmpq SEG_PREFIX 8(%rsi), %rdx
++	jne not_same
++
++	movq %rbx, SEG_PREFIX(%rsi)
++	movq %rcx, SEG_PREFIX 8(%rsi)
++
++	popf
++	mov $1, %al
++	ret
++
++ not_same:
++	popf
++	xor %al,%al
++	ret
++
++CFI_ENDPROC
++
++ENDPROC(this_cpu_cmpxchg16b_emu)
+--=20
+1.7.3.4
 
+
+--MP_/Wyi1zXQ2o+_Y3x+fDwvHPFe--
+
+--Sig_/Ny9MwLaR9EtgbIi4WWPXtqr
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk2c2LIACgkQcaHudmEf86qRhQCfT8B9w2mjLnr1UHHQJmszDu3t
+kEgAmwQgmWlp1h93+qhN1W6fZQ4J1yA7
+=vlgw
+-----END PGP SIGNATURE-----
+
+--Sig_/Ny9MwLaR9EtgbIi4WWPXtqr--
