@@ -1,84 +1,504 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab1DFDFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 23:05:54 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:51040 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab1DFDFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 23:05:53 -0400
-X-ASG-Debug-ID: 1302059150-01de284cf810ddd0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D9BD88C.3030807@fusionio.com>
-Date: Wed, 6 Apr 2011 05:05:48 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754486Ab1DFDG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 23:06:27 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9969 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558Ab1DFDGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 23:06:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 05 Apr 2011 20:06:15 -0700
+From: <achew@nvidia.com>
+To: <khali@linux-fr.org>, <guenter.roeck@ericsson.com>
+CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <w30289@motorola.com>, <toddpoynor@google.com>, <wni@nvidia.com>,
+        <olofj@chromium.org>, Andrew Chew <achew@nvidia.com>
+Subject: [PATCH 1/1] [hwmon] nct1008: Initial NCT1008 driver
+Date: Tue, 5 Apr 2011 20:06:23 -0700
+Message-ID: <1302059183-29631-1-git-send-email-achew@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Takuma Umeya <tumeya@redhat.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, john cooper <john.cooper@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] virtio_blk: decrement index when blockdevice is removed
-References: <1969774563.659835.1301978981017.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <4D9AA3BC.6030907@fusionio.com> <87hbacw4fb.fsf@rustcorp.com.au>
-X-ASG-Orig-Subj: Re: [PATCH] virtio_blk: decrement index when blockdevice is removed
-In-Reply-To: <87hbacw4fb.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1302059150
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60030
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-06 03:32, Rusty Russell wrote:
-> On Tue, 05 Apr 2011 07:08:12 +0200, Jens Axboe <jaxboe@fusionio.com> wrote:
->> On 2011-04-05 06:49, Takuma Umeya wrote:
->>> When virtio block device is removed, index does not get decremented. When 
->>> another virtio disk is attached it uses the next device letter to the 
->>> one that is suppose to be available. 
->>>
->>> Signed-off-by: Takuma Umeya <tumeya@redhat.com>
->>>
->>> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
->>> index 6ecf89c..730e7af 100644
->>> --- a/drivers/block/virtio_blk.c
->>> +++ b/drivers/block/virtio_blk.c
->>> @@ -489,6 +489,7 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
->>>         mempool_destroy(vblk->pool);
->>>         vdev->config->del_vqs(vdev);
->>>         kfree(vblk);
->>> +       index--;
->>>  }
->>>  
->>>  static const struct virtio_device_id id_table[] = {
->>
->> What happens when you delete a device that isn't the last one?
-> 
-> Obviously we should do something cleverer for assigning drives.
-> 
-> It might be a cute if genhd gave us a function to get the next free
-> index for a given major number, and format it for us, like so:
-> 
->       /* Return the next available minor for a given @major, at least
->        * @spacing after the previous and, and append appropriate letters
->        * to @name if it's not NULL.  -ve errno on fail (-ENOSPC?). */
->       int disk_next_minor(int major, unsigned spacing, char *name);
-> 
-> A trivial optimization would be to remember the last major and max minor
-> (resetting that if any disks are removed).
-> 
-> This could clean up other code, too.
+From: Andrew Chew <achew@nvidia.com>
 
-Something like idr would be a good fit for this. But yes, adding some
-helpers for this might not hurt...
+This is a digital temperature sensor I2C peripheral from ON Semiconductor.
 
+Signed-off-by: Andrew Chew <achew@nvidia.com>
+---
+ drivers/hwmon/Kconfig   |   11 ++
+ drivers/hwmon/Makefile  |    1 +
+ drivers/hwmon/nct1008.c |  423 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 435 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/nct1008.c
+
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 060ef63..daa6159 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -738,6 +738,17 @@ config SENSORS_MAX6650
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called max6650.
+ 
++config SENSORS_NCT1008
++	tristate "ON Semiconductor Temperature Sensor"
++	default n
++	depends on I2C
++	help
++	  Say yes here if you wish to include the ON Semiconductor
++	  NCT1008 Temperature sensor.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called nct1008.
++
+ config SENSORS_PC87360
+ 	tristate "National Semiconductor PC87360 family"
+ 	select HWMON_VID
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 967d0ea..803893c 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -87,6 +87,7 @@ obj-$(CONFIG_SENSORS_MAX1619)	+= max1619.o
+ obj-$(CONFIG_SENSORS_MAX6639)	+= max6639.o
+ obj-$(CONFIG_SENSORS_MAX6650)	+= max6650.o
+ obj-$(CONFIG_SENSORS_MC13783_ADC)+= mc13783-adc.o
++obj-$(CONFIG_SENSORS_NCT1008)	+= nct1008.o
+ obj-$(CONFIG_SENSORS_PC87360)	+= pc87360.o
+ obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
+ obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
+diff --git a/drivers/hwmon/nct1008.c b/drivers/hwmon/nct1008.c
+new file mode 100644
+index 0000000..ebae3b6
+--- /dev/null
++++ b/drivers/hwmon/nct1008.c
+@@ -0,0 +1,423 @@
++/*
++ * Driver for NCT1008, temperature monitoring device from ON Semiconductors
++ *
++ * Copyright (c) 2010, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
++
++
++#include <linux/interrupt.h>
++#include <linux/mutex.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++
++#include <linux/nct1008.h>
++#include <linux/hwmon.h>
++
++#define DRIVER_NAME "nct1008"
++
++/* Register Addresses */
++#define LOCAL_TEMP_RD			0x00
++#define EXT_HI_TEMP_RD			0x01
++#define EXT_LO_TEMP_RD			0x10
++#define STATUS_RD			0x02
++#define CONFIG_RD			0x03
++
++#define CONFIG_WR			0x09
++#define CONV_RATE_WR			0x0A
++#define LOCAL_TEMP_HI_LIMIT_WR		0x0B
++#define EXT_TEMP_HI_LIMIT_HI_BYTE	0x0D
++#define OFFSET_WR			0x11
++#define EXT_THERM_LIMIT_WR		0x19
++#define LOCAL_THERM_LIMIT_WR		0x20
++#define THERM_HYSTERESIS_WR		0x21
++
++/* Configuration Register Bits */
++#define EXTENDED_RANGE_BIT		(0x1 << 2)
++#define THERM2_BIT			(0x1 << 5)
++#define STANDBY_BIT			(0x1 << 6)
++
++/* Max Temperature Measurements */
++#define EXTENDED_RANGE_OFFSET		64U
++#define STANDARD_RANGE_MAX		127U
++#define EXTENDED_RANGE_MAX		(150U + EXTENDED_RANGE_OFFSET)
++
++static inline u8 temperature_to_value(bool extended, u8 temp);
++
++struct nct1008_data {
++	struct device *hwmon_dev;
++	struct work_struct work;
++	struct i2c_client *client;
++	struct mutex mutex;
++	u8 config;
++	void (*alarm_fn)(bool raised);
++};
++
++static ssize_t nct1008_show_temp(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	signed int temp_value = 0;
++	u8 data = 0;
++
++	if (!dev || !buf || !attr)
++		return -EINVAL;
++
++	data = i2c_smbus_read_byte_data(client, LOCAL_TEMP_RD);
++	if (data < 0) {
++		dev_err(&client->dev, "%s: failed to read "
++			"temperature\n", __func__);
++		return -EINVAL;
++	}
++
++	temp_value = (signed int)data;
++	return sprintf(buf, "%d\n", temp_value);
++}
++
++static ssize_t nct1008_show_ext_temp(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	signed int temp_value = 0;
++	u8 data = 0;
++
++	if (!dev || !buf || !attr)
++		return -EINVAL;
++
++	data = i2c_smbus_read_byte_data(client, EXT_HI_TEMP_RD);
++	if (data < 0) {
++		dev_err(&client->dev, "%s: failed to read "
++			"ext_temperature\n", __func__);
++		return -EINVAL;
++	}
++
++	temp_value = (signed int)data;
++
++	data = i2c_smbus_read_byte_data(client, EXT_LO_TEMP_RD);
++
++	return sprintf(buf, "%d.%d\n", temp_value, (25 * (data >> 6)));
++}
++
++static ssize_t nct1008_store_throttle_ext_limit(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct nct1008_platform_data *pdata = client->dev.platform_data;
++	unsigned long res;
++	u8 ext_limit;
++	u8 value;
++	int err;
++
++	err = strict_strtoul(buf, 0, &res);
++	if (err)
++		return -EINVAL;
++
++	ext_limit = (u8)res;
++
++	/* External Temperature Throttling limit */
++	value = temperature_to_value(pdata->ext_range, ext_limit);
++	err = i2c_smbus_write_byte_data(client,
++					EXT_TEMP_HI_LIMIT_HI_BYTE, value);
++	if (err < 0)
++		return -EINVAL;
++
++	pdata->throttling_ext_limit = ext_limit;
++	return count;
++}
++
++static ssize_t nct1008_show_throttle_ext_limit(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct nct1008_platform_data *pdata = client->dev.platform_data;
++	u8 ext_limit = 0;
++
++	if (!dev || !buf || !attr)
++		return -EINVAL;
++
++	ext_limit = pdata->throttling_ext_limit;
++
++	return sprintf(buf, "%d\n", ext_limit);
++}
++
++static DEVICE_ATTR(temperature, S_IRUGO, nct1008_show_temp, NULL);
++static DEVICE_ATTR(ext_temperature, S_IRUGO, nct1008_show_ext_temp, NULL);
++static DEVICE_ATTR(throttle_ext_limit, S_IRUGO | S_IWUSR,
++		   nct1008_show_throttle_ext_limit,
++		   nct1008_store_throttle_ext_limit);
++
++static struct attribute *nct1008_attributes[] = {
++	&dev_attr_temperature.attr,
++	&dev_attr_ext_temperature.attr,
++	&dev_attr_throttle_ext_limit.attr,
++	NULL
++};
++
++static const struct attribute_group nct1008_attr_group = {
++	.attrs = nct1008_attributes,
++};
++
++static void nct1008_enable(struct i2c_client *client)
++{
++	struct nct1008_data *data = i2c_get_clientdata(client);
++
++	i2c_smbus_write_byte_data(client, CONFIG_WR,
++				  data->config & ~STANDBY_BIT);
++}
++
++static void nct1008_disable(struct i2c_client *client)
++{
++	struct nct1008_data *data = i2c_get_clientdata(client);
++
++	i2c_smbus_write_byte_data(client, CONFIG_WR,
++				  data->config | STANDBY_BIT);
++}
++
++
++static void nct1008_work_func(struct work_struct *work)
++{
++	struct nct1008_data *data =
++		container_of(work, struct nct1008_data, work);
++	int irq = data->client->irq;
++
++	mutex_lock(&data->mutex);
++
++	if (data->alarm_fn) {
++		/* Therm2 line is active low */
++		data->alarm_fn(!gpio_get_value(irq_to_gpio(irq)));
++	}
++
++	mutex_unlock(&data->mutex);
++}
++
++static irqreturn_t nct1008_irq(int irq, void *dev_id)
++{
++	struct nct1008_data *data = dev_id;
++	schedule_work(&data->work);
++
++	return IRQ_HANDLED;
++}
++
++static inline u8 value_to_temperature(bool extended, u8 value)
++{
++	return extended ? (u8)(value - EXTENDED_RANGE_OFFSET) : value;
++}
++
++static inline u8 temperature_to_value(bool extended, u8 temp)
++{
++	return extended ? (u8)(temp + EXTENDED_RANGE_OFFSET) : temp;
++}
++
++static int __devinit nct1008_configure_sensor(struct nct1008_data* data)
++{
++	struct i2c_client *client           = data->client;
++	struct nct1008_platform_data *pdata = client->dev.platform_data;
++	u8 value;
++	int err;
++
++	if (!pdata || !pdata->supported_hwrev)
++		return -ENODEV;
++
++	/*
++	 * Initial Configuration - device is placed in standby and
++	 * ALERT/THERM2 pin is configured as THERM2
++	 */
++	data->config = value = pdata->ext_range ?
++		(STANDBY_BIT | THERM2_BIT | EXTENDED_RANGE_BIT) :
++		(STANDBY_BIT | THERM2_BIT);
++
++	err = i2c_smbus_write_byte_data(client, CONFIG_WR, value);
++	if (err < 0)
++		goto error;
++
++	/* Temperature conversion rate */
++	err = i2c_smbus_write_byte_data(client, CONV_RATE_WR, pdata->conv_rate);
++	if (err < 0)
++		goto error;
++
++	/* External temperature h/w shutdown limit */
++	value = temperature_to_value(pdata->ext_range,
++				     pdata->shutdown_ext_limit);
++	err = i2c_smbus_write_byte_data(client, EXT_THERM_LIMIT_WR, value);
++	if (err < 0)
++		goto error;
++
++	/* Local temperature h/w shutdown limit */
++	value = temperature_to_value(pdata->ext_range,
++				     pdata->shutdown_local_limit);
++	err = i2c_smbus_write_byte_data(client, LOCAL_THERM_LIMIT_WR, value);
++	if (err < 0)
++		goto error;
++
++	/* External Temperature Throttling limit */
++	value = temperature_to_value(pdata->ext_range,
++				     pdata->throttling_ext_limit);
++	err = i2c_smbus_write_byte_data(client, EXT_TEMP_HI_LIMIT_HI_BYTE,
++					value);
++	if (err < 0)
++		goto error;
++
++	/* Local Temperature Throttling limit */
++	value = pdata->ext_range ? EXTENDED_RANGE_MAX : STANDARD_RANGE_MAX;
++	err = i2c_smbus_write_byte_data(client, LOCAL_TEMP_HI_LIMIT_WR, value);
++	if (err < 0)
++		goto error;
++
++	/* Remote channel offset */
++	err = i2c_smbus_write_byte_data(client, OFFSET_WR, pdata->offset);
++	if (err < 0)
++		goto error;
++
++	/* THERM hysteresis */
++	err = i2c_smbus_write_byte_data(client, THERM_HYSTERESIS_WR,
++					pdata->hysteresis);
++	if (err < 0)
++		goto error;
++
++	data->alarm_fn = pdata->alarm_fn;
++	return 0;
++error:
++	return err;
++}
++
++static int __devinit nct1008_configure_irq(struct nct1008_data *data)
++{
++	INIT_WORK(&data->work, nct1008_work_func);
++
++	return request_irq(data->client->irq, nct1008_irq, IRQF_TRIGGER_RISING |
++				IRQF_TRIGGER_FALLING, DRIVER_NAME, data);
++}
++
++static int __devinit nct1008_probe(struct i2c_client *client,
++				   const struct i2c_device_id *id)
++{
++	struct nct1008_data *data;
++	int err;
++
++	data = kzalloc(sizeof(struct nct1008_data), GFP_KERNEL);
++
++	if (!data)
++		return -ENOMEM;
++
++	data->client = client;
++	i2c_set_clientdata(client, data);
++	mutex_init(&data->mutex);
++
++	err = nct1008_configure_sensor(data);	/* sensor is in standby */
++	if (err < 0)
++		goto error;
++
++	err = nct1008_configure_irq(data);
++	if (err < 0)
++		goto error;
++
++	data->hwmon_dev = hwmon_device_register(&client->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		err = PTR_ERR(data->hwmon_dev);
++		dev_err(&client->dev, "%s: hwmon_device_register "
++			"failed\n", __func__);
++		goto error;
++	}
++
++	/* register sysfs hooks */
++	err = sysfs_create_group(&client->dev.kobj, &nct1008_attr_group);
++	if (err < 0)
++		goto fail_sys;
++
++	nct1008_enable(client);		/* sensor is running */
++
++	schedule_work(&data->work);		/* check initial state */
++
++	return 0;
++
++fail_sys:
++	hwmon_device_unregister(data->hwmon_dev);
++error:
++	kfree(data);
++	return err;
++}
++
++static int __devexit nct1008_remove(struct i2c_client *client)
++{
++	struct nct1008_data *data = i2c_get_clientdata(client);
++
++	free_irq(data->client->irq, data);
++	cancel_work_sync(&data->work);
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&client->dev.kobj, &nct1008_attr_group);
++	kfree(data);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int nct1008_suspend(struct i2c_client *client, pm_message_t state)
++{
++	disable_irq(client->irq);
++	nct1008_disable(client);
++
++	return 0;
++}
++
++static int nct1008_resume(struct i2c_client *client)
++{
++	struct nct1008_data *data = i2c_get_clientdata(client);
++
++	nct1008_enable(client);
++	enable_irq(client->irq);
++	schedule_work(&data->work);
++
++	return 0;
++}
++#endif
++
++static const struct i2c_device_id nct1008_id[] = {
++	{ DRIVER_NAME, 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, nct1008_id);
++
++static struct i2c_driver nct1008_driver = {
++	.driver = {
++		.name	= DRIVER_NAME,
++	},
++	.probe		= nct1008_probe,
++	.remove		= __devexit_p(nct1008_remove),
++	.id_table	= nct1008_id,
++#ifdef CONFIG_PM
++	.suspend	= nct1008_suspend,
++	.resume		= nct1008_resume,
++#endif
++};
++
++static int __init nct1008_init(void)
++{
++	return i2c_add_driver(&nct1008_driver);
++}
++
++static void __exit nct1008_exit(void)
++{
++	i2c_del_driver(&nct1008_driver);
++}
++
++MODULE_DESCRIPTION("Temperature sensor driver for OnSemi NCT1008");
++MODULE_LICENSE("GPL");
++
++module_init(nct1008_init);
++module_exit(nct1008_exit);
 -- 
-Jens Axboe
+1.7.0.4
+
