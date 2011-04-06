@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab1DFLCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:02:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47162 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab1DFLCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:02:52 -0400
-Date: Wed, 6 Apr 2011 16:32:36 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
-Message-ID: <20110406110236.GL20671@amit-x200.redhat.com>
-References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
- <20110401154327.GA6593@mtj.dyndns.org>
- <20110405065129.GC2872@amit-x200.redhat.com>
- <20110406100620.GA4142@mtj.dyndns.org>
+	id S1754565Ab1DFLGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:06:30 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60201 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab1DFLGa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 07:06:30 -0400
+Date: Wed, 6 Apr 2011 13:06:23 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-arm-kernel@lists.infradead.org,
+        shiraz.hashim@st.com, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH 5/5] driver core: let dev_set_drvdata return int
+ instead of void as it can fail
+Message-ID: <20110406110623.GC13963@pengutronix.de>
+References: <20110301153438.GB15633@suse.de>
+ <1302081865-2962-5-git-send-email-u.kleine-koenig@pengutronix.de>
+ <BANLkTikVpacjh1EsQQoaQRN3j-kxxjr7qA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110406100620.GA4142@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikVpacjh1EsQQoaQRN3j-kxxjr7qA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 06 Apr 2011 [03:06:20], Tejun Heo wrote:
-> On Tue, Apr 05, 2011 at 12:21:30PM +0530, Amit Shah wrote:
-> > > But I don't think this is the correct place to do it.  The problem
-> > > happens because block layer consumes the event but doesn't remember it
-> > > when the time for revalidation comes.  It should be done by block
-> > > layer, not sr.  Hmmm... looking at the code, the new disk event code
-> > > should handle this correctly.  Was 2.6.38 showing the problem too?
-> > 
-> > Yes, 2.6.38 shows the same problem.  I went back to ancient kernels
-> > (2.6.31 on Fedora 11-alpha) which had the previous media_changed
-> > infrastructure and those places too show the same behaviour (with the
-> > TEST_UNIT_READY way of detecting media changes).
+Hello,
+
+On Wed, Apr 06, 2011 at 11:36:46AM +0200, Michał Mirosław wrote:
+> 2011/4/6 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > ---
+> > Hello,
+> >
+> > I wasn't sure what to return when dev_set_drvdata is called with
+> > dev=NULL.  I choosed 0, but -EINVAL would be OK for me, too. What do you
+> > think?
 > 
-> Can you please the patch attached in the following bz and see whether
-> it makes any difference?
-> 
->  https://bugzilla.kernel.org/show_bug.cgi?id=13029
+> Why not just BUG_ON(!dev)? Is there a case when you might call this
+> with dev==NULL that's not a driver bug?
+I think BUG_ON is too harsh. Will resend with -EINVAL.
 
-Yes, this works.
+Best regards
+Uwe
 
-You can add Tested-by: Amit Shah <amit.shah@redhat.com>
-
-Thanks!
-
-		Amit
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
