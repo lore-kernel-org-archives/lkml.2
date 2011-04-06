@@ -1,75 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab1DFVpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:45:31 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:20534 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab1DFVpa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:45:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=clRqdMFwASTCIL7SreTfxmuFSn87O1WxXFrFGFkFWSnzRPUGHfgTm218AL91J75+rU
-         tqL/VTOcQzU4KEfugcDQ==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimeAh3pm=Z73hYPPfAJfu8J5=tPpw@mail.gmail.com>
-References: <1302038697-28985-1-git-send-email-natg@google.com>
-	<20110405223814.GA21350@ericsson.com>
-	<BANLkTimQDVYe53K-M173iQtmkHzKg6Djyg@mail.gmail.com>
-	<20110406000528.GB21350@ericsson.com>
-	<BANLkTi==zj3PoNuqf2=THaHzevvHHsuh=w@mail.gmail.com>
-	<20110406004312.GA21882@ericsson.com>
-	<BANLkTinSAOxNkjxMGewfPUc0-bjf9MesGA@mail.gmail.com>
-	<20110406030220.GB22535@ericsson.com>
-	<BANLkTimTfWrx-ezyerRTtZHrLdOOf2V19w@mail.gmail.com>
-	<BANLkTimeAh3pm=Z73hYPPfAJfu8J5=tPpw@mail.gmail.com>
-Date: Wed, 6 Apr 2011 14:45:21 -0700
-Message-ID: <BANLkTinT1td=kovSFRu=j5-qwHJ7na6v0Q@mail.gmail.com>
-Subject: Re: [PATCH] Make all it87 drivers SMP safe.
-From: Natarajan Gurumoorthy <natg@google.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Mike Waychison <mikew@google.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S932350Ab1DFVr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:47:58 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:34712
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756920Ab1DFVr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 17:47:57 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 10/22] Staging: hv: Get rid of the forward declaration of blkvsc_remove()
+Date: Wed,  6 Apr 2011 14:35:08 -0700
+Message-Id: <1302125720-10808-10-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1302125720-10808-1-git-send-email-kys@microsoft.com>
+References: <1302125655-10741-1-git-send-email-kys@microsoft.com>
+ <1302125720-10808-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul,
-     Comments are below.
+Get rid of the forward declaration of blkvsc_remove() by moving the code around.
 
-On Wed, Apr 6, 2011 at 2:35 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On Wed, Apr 6, 2011 at 3:04 AM, Natarajan Gurumoorthy <natg@google.com> wrote:
->> Guenter,
->>      Thank you for your feedback. I found an easier way to deal with
->> the it87_lock.c file. I do not need to move it to the driver/misc
->> directory. The easier thing to do was to move the IT87_LOCK entry to
->> the beginning of the drivers/watchdog/Kconfig file. This moves the
->> entry before the "menuconfig WATCHDOG" entry. They use the exact same
->> trick in drivers/misc/Kconfig file. The very first lines of
->> drivers/watchdog/Kconfig file will look something like this:
->
-> Is the Kconfig even warranted?  I mean, if there is a shared resource
-> and it needs locking, then just apply the locking.   Where is the value
-> in adding another Kconfig?
->
-The reason we are forced to do this is that all the it87 drivers are
-usually modules. We need a global lock that is compiled into the
-kernel if one or more of these drivers are selected. If none of them
-are specified then the lock is not built into the kernel. The Kconfig
-entry that I have put is not human selectable. When any IT87 driver is
-selected it will select IT87_LOCK there by compiling the lock into the
-kernel.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+---
+ drivers/staging/hv/blkvsc_drv.c |  130 +++++++++++++++++++-------------------
+ 1 files changed, 65 insertions(+), 65 deletions(-)
 
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index 2829266..a98ed8f 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -580,9 +580,73 @@ out:
+ 	return ret;
+ }
+ 
++
++/*
++ * blkvsc_remove() - Callback when our device is removed
++ */
++static int blkvsc_remove(struct device *device)
++{
++	struct hv_driver *drv =
++				drv_to_hv_drv(device->driver);
++	struct storvsc_driver_object *storvsc_drv_obj =
++				drv->priv;
++	struct hv_device *device_obj = device_to_hv_device(device);
++	struct block_device_context *blkdev = dev_get_drvdata(device);
++	unsigned long flags;
++	int ret;
++
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_remove()\n");
++
++	if (!storvsc_drv_obj->base.dev_rm)
++		return -1;
++
++	/*
++	 * Call to the vsc driver to let it know that the device is being
++	 * removed
++	 */
++	ret = storvsc_drv_obj->base.dev_rm(device_obj);
++	if (ret != 0) {
++		/* TODO: */
++		DPRINT_ERR(BLKVSC_DRV,
++			   "unable to remove blkvsc device (ret %d)", ret);
++	}
++
++	/* Get to a known state */
++	spin_lock_irqsave(&blkdev->lock, flags);
++
++	blkdev->shutting_down = 1;
++
++	blk_stop_queue(blkdev->gd->queue);
++
++	spin_unlock_irqrestore(&blkdev->lock, flags);
++
++	while (blkdev->num_outstanding_reqs) {
++		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
++			    blkdev->num_outstanding_reqs);
++		udelay(100);
++	}
++
++	blkvsc_do_flush(blkdev);
++
++	spin_lock_irqsave(&blkdev->lock, flags);
++
++	blkvsc_cancel_pending_reqs(blkdev);
++
++	spin_unlock_irqrestore(&blkdev->lock, flags);
++
++	blk_cleanup_queue(blkdev->gd->queue);
++
++	del_gendisk(blkdev->gd);
++
++	kmem_cache_destroy(blkdev->request_pool);
++
++	kfree(blkdev);
++
++	return ret;
++}
++
+ /* Static decl */
+ static int blkvsc_probe(struct device *dev);
+-static int blkvsc_remove(struct device *device);
+ static void blkvsc_shutdown(struct device *device);
+ 
+ static int blkvsc_release(struct gendisk *disk, fmode_t mode);
+@@ -1120,70 +1184,6 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
+ }
+ 
+ /*
+- * blkvsc_remove() - Callback when our device is removed
+- */
+-static int blkvsc_remove(struct device *device)
+-{
+-	struct hv_driver *drv =
+-				drv_to_hv_drv(device->driver);
+-	struct storvsc_driver_object *storvsc_drv_obj =
+-				drv->priv;
+-	struct hv_device *device_obj = device_to_hv_device(device);
+-	struct block_device_context *blkdev = dev_get_drvdata(device);
+-	unsigned long flags;
+-	int ret;
+-
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_remove()\n");
+-
+-	if (!storvsc_drv_obj->base.dev_rm)
+-		return -1;
+-
+-	/*
+-	 * Call to the vsc driver to let it know that the device is being
+-	 * removed
+-	 */
+-	ret = storvsc_drv_obj->base.dev_rm(device_obj);
+-	if (ret != 0) {
+-		/* TODO: */
+-		DPRINT_ERR(BLKVSC_DRV,
+-			   "unable to remove blkvsc device (ret %d)", ret);
+-	}
+-
+-	/* Get to a known state */
+-	spin_lock_irqsave(&blkdev->lock, flags);
+-
+-	blkdev->shutting_down = 1;
+-
+-	blk_stop_queue(blkdev->gd->queue);
+-
+-	spin_unlock_irqrestore(&blkdev->lock, flags);
+-
+-	while (blkdev->num_outstanding_reqs) {
+-		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
+-			    blkdev->num_outstanding_reqs);
+-		udelay(100);
+-	}
+-
+-	blkvsc_do_flush(blkdev);
+-
+-	spin_lock_irqsave(&blkdev->lock, flags);
+-
+-	blkvsc_cancel_pending_reqs(blkdev);
+-
+-	spin_unlock_irqrestore(&blkdev->lock, flags);
+-
+-	blk_cleanup_queue(blkdev->gd->queue);
+-
+-	del_gendisk(blkdev->gd);
+-
+-	kmem_cache_destroy(blkdev->request_pool);
+-
+-	kfree(blkdev);
+-
+-	return ret;
+-}
+-
+-/*
+  * We break the request into 1 or more blkvsc_requests and submit
+  * them.  If we cant submit them all, we put them on the
+  * pending_list. The blkvsc_request() will work on the pending_list.
 -- 
-Regards
-Nat Gurumoorthy AB6SJ
+1.7.4.1
+
