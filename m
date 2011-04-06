@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab1DFVgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:36:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39046 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab1DFVgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:36:46 -0400
-Date: Wed, 6 Apr 2011 14:36:45 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1104061431340.5855@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756916Ab1DFVhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:37:24 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:61849 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755465Ab1DFVhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 17:37:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vfpA1jI14mVZhQ6dCxcsOVBnAWVXqzFGWDiqvBJSq6JUfHHsiQEsDwpQ0KnHjPRkf5
+         jzc2pdAuWITmSNSgOFvAX2QpBGiqoRf/Ti3eD9FMmOX1A/8RVX1yLwzsp/2faJdVhtf3
+         J2Oy8I0JLCgqqpiXGTWtJFcDNe7fXKV8ZqLPU=
+Date: Wed, 6 Apr 2011 14:37:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
+Message-ID: <20110406213718.GA14139@mtj.dyndns.org>
+References: <20110404211604.GB6133@sucs.org>
+ <20110406130423.GE4142@mtj.dyndns.org>
+ <20110406212611.GA5131@sucs.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406212611.GA5131@sucs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Apr 06, 2011 at 10:26:11PM +0100, Sitsofe Wheeler wrote:
+> On Wed, Apr 06, 2011 at 06:04:23AM -0700, Tejun Heo wrote:
+> > I think disk_block_events was a bit too agressive with optimization.
+> > Can you please test the following patch and see whether the problem
+> > goes away?
+> 
+> With the 2.6.39-rc2 the warning has mysteriously disappeared all by
+> itself. Could it be that other parts of the kernel were causing this to
+> manifest itself?
 
-please pull from 'for-linus' branch at
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-
-to receive update for HID layer.
-
-Most important change is Chase's patch which makes sure that no events are 
-being lost when using more fingers simultaneously. This matches what we 
-already do for other multitouch devices.
-
-Other than that, it's only a few USB ID additions and a typo fix.
+The problem would be quite timing dependent.  It would be great if you
+can prepare a setup where you can reproduce the problem on some
+regular basis and make sure that the problem goes away with the patch
+applied.
 
 Thanks.
 
-Chase Douglas (1):
-      HID: hid-magicmouse: Increase evdev buffer size
-
-Jiri Kosina (2):
-      HID: add support for Skycable 0x3f07 wireless presenter
-      HID: Add support for CH Pro Throttle
-
-Simon Wood (1):
-      HID: add FF support for Logitech G25/G27
-
-Stefan Achatz (1):
-      HID: roccat: Add support for wireless variant of Pyra
-
-Stephen Boyd (1):
-      HID: Fix typo Keyoutch -> Keytouch
-
- drivers/hid/Kconfig             |   13 ++++++++++---
- drivers/hid/hid-core.c          |    2 ++
- drivers/hid/hid-ids.h           |    4 ++++
- drivers/hid/hid-lgff.c          |    2 ++
- drivers/hid/hid-magicmouse.c    |    2 ++
- drivers/hid/hid-ortek.c         |   16 +++++++++++++---
- drivers/hid/hid-roccat-pyra.c   |    3 ++-
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 8 files changed, 36 insertions(+), 7 deletions(-)
+-- 
+tejun
