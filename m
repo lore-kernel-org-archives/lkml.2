@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1DFMYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:24:35 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:54782 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab1DFMYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:24:34 -0400
-X-Greylist: delayed 1847 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Apr 2011 08:24:33 EDT
-Subject: Re: [PATCH v2] leds: provide helper to register "leds-gpio" devices
-From: Richard Purdie <rpurdie@rpsys.net>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de
-In-Reply-To: <1302035048-25819-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <20110405163338.GA11832@n2100.arm.linux.org.uk>
-	 <1302035048-25819-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Apr 2011 04:52:18 -0700
-Message-ID: <1302090738.22904.8.camel@rex>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1755895Ab1DFM0e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:26:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10316 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752483Ab1DFM0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 08:26:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,310,1299484800"; 
+   d="scan'208";a="675909010"
+From: Youquan Song <youquan.song@intel.com>
+To: linux-kernel@vger.kernel.org, hpa@linux.intel.com
+Cc: suresh.b.siddha@intel.com, yong.y.wang@linux.intel.com, joe@perches.com,
+        jbaron@redhat.com, trenn@suse.de, kent.liu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH v4 1/2] apic: Fix error interrupt report at all APs
+Date: Wed,  6 Apr 2011 20:20:44 +0800
+Message-Id: <1302092445-8521-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-05 at 22:24 +0200, Uwe Kleine-König wrote:
-> This function makes a deep copy of the platform data to allow it to live
-> in init memory.
-> The definition cannot go into leds-gpio.c because it needs to be builtin
-> to be usable by platforms.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
-> changes since v1:
->  - don't add __init to the declaration of gpio_led_register_device
-> 
->  drivers/leds/led-core.c |   27 ++++++++++++++++++++++++++-
->  include/linux/leds.h    |   12 ++++++++++++
->  2 files changed, 38 insertions(+), 1 deletions(-)
+Recently, customer report that once machine boot, there are many error interrupt
+reported with exact number of all APs. 
 
-Can you explain the reasoning for this a little further please? It
-sounds like instead of leaving the platform data in memory (which is
-reasonable since we need it), we're now adding code to make a copy of
-this data so we can remove the original. Why?
+The root cause is Local APIC will generate error interrupt when it detect
+the illegal vector (one in 0 ~ 15) in an interrupt message received or
+interrupt generate from local vector table or self IPI. SDM3A.chapter 10.
 
-I have a rather strong dislike of adding "always builtin" functions as
-they suggest something is wrong with the approach. led-core.c has always
-been intentionally as minimal as we could get it.
+AP LAPIC thermal sensor register will be reset to 0x10000, if thermal throttling
+interrupt take over by BIOS, it need restore AP with the thermal sensor register
+value of geting from BSP, otherwise cause system issue. If BIOS does not take
+over the thermal interrupt, The restore value will be CPU rest value of 0x10000,
+which means the interrupt vector is zero. After writing 0x10000 to thermal
+sensor LVT, the processor will recieve the error interrupt report if the APIC
+error interrupt is also set.
 
-In times when things like boot time are important it also seems like bad
-form to be copying data around just so we can throw one copy away during
-the boot process. What memory savings (which I assume is the
-motivation?) is this giving us at what cost?
+This patch add check the BIOS whether take over the thermal interrupt by look
+at interrupt delivery mode not fixed mode(BIOS handle will be SMI mode) before
+restore AP's thermal LVT. So the agony noise of error interrupt will dismiss
+when boot on machine that BIOS does not handle thermal interrupt..  
 
-I guess the motivation might be that if a given platform has many
-different LED configurations, you're trying to remove the ones you don't
-need from memory? Given all the above I'd suggest that this function
-should really be added to the platform device code if anywhere and
-doesn't belong in the LED subsystem as its not an LED specific problem.
 
-Cheers,
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Yong Wang <yong.y.wang@intel.com>
+---
+ arch/x86/include/asm/apicdef.h           |    1 +
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
-Richard
-
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index d87988b..34595d5 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -78,6 +78,7 @@
+ #define		APIC_DEST_LOGICAL	0x00800
+ #define		APIC_DEST_PHYSICAL	0x00000
+ #define		APIC_DM_FIXED		0x00000
++#define		APIC_DM_FIXED_MASK	0x00700
+ #define		APIC_DM_LOWEST		0x00100
+ #define		APIC_DM_SMI		0x00200
+ #define		APIC_DM_REMRD		0x00300
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 6f8c5e9..22c212a 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -446,18 +446,20 @@ void intel_init_thermal(struct cpuinfo_x86 *c)
+ 	 */
+ 	rdmsr(MSR_IA32_MISC_ENABLE, l, h);
+ 
++	h = lvtthmr_init;
+ 	/*
+ 	 * The initial value of thermal LVT entries on all APs always reads
+ 	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
+ 	 * sequence to them and LVT registers are reset to 0s except for
+ 	 * the mask bits which are set to 1s when APs receive INIT IPI.
+-	 * Always restore the value that BIOS has programmed on AP based on
+-	 * BSP's info we saved since BIOS is always setting the same value
+-	 * for all threads/cores
++	 * If BIOS take over the thermal interrupt and set its interrupt
++	 * delivery mode to SMI not fixed, it restore the value that BIOS has
++	 * programmed on AP based on BSP's info we saved since BIOS is always
++	 * setting the same value for all threads/cores.
+ 	 */
+-	apic_write(APIC_LVTTHMR, lvtthmr_init);
++	if ((h & APIC_DM_FIXED_MASK) != APIC_DM_FIXED)
++		apic_write(APIC_LVTTHMR, lvtthmr_init);
+ 
+-	h = lvtthmr_init;
+ 
+ 	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
+ 		printk(KERN_DEBUG
 -- 
-Linux Foundation
-http://www.yoctoproject.org/
+1.6.4.2
 
