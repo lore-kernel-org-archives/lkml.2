@@ -1,102 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab1DFUKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 16:10:43 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:59434 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab1DFUKm convert rfc822-to-8bit (ORCPT
+	id S1756801Ab1DFUOA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 16:14:00 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44326 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab1DFUN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 16:10:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=jzm6DPGybMBEZCQorN+60og12cyJPNSApdXzbfP9Cgzn8UI1FHS5BdFR3jW+PkQ05x
-         behRMXm47Krhzh4FgFjXeqm+g6MORw4z0+X2k6N6lGRdxJWjtps/pRugkCqFl1AQEb2d
-         ZlC806wU9sUuivVC808xmpWha67Bv5cAoQm8g=
+	Wed, 6 Apr 2011 16:13:59 -0400
+Date: Wed, 6 Apr 2011 13:13:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110406201350.GA9378@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D93D29C.5010702@cn.fujitsu.com>
+ <1301558691.2250.486.camel@laptop>
+ <4D944E60.8080704@cn.fujitsu.com>
+ <1301570320.4859.242.camel@twins>
+ <4D953121.6090901@cn.fujitsu.com>
+ <1301657749.4859.531.camel@twins>
+ <20110405215450.GK2247@linux.vnet.ibm.com>
+ <20110405230745.GA5972@linux.vnet.ibm.com>
+ <1302077428.2225.1365.camel@twins>
+ <20110406192119.GB2265@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <m2mxk35ji7.fsf@firstfloor.org>
-References: <cover.1301324270.git.luto@mit.edu> <m2mxk35ji7.fsf@firstfloor.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 6 Apr 2011 16:10:22 -0400
-X-Google-Sender-Auth: EbamlFyX3v3o4YGf7QZfQaLm8x8
-Message-ID: <BANLkTi=g96=Q_OOBeejcsZ1eWGZ9cZYLYA@mail.gmail.com>
-Subject: Re: [PATCH 0/6] x86-64: Micro-optimize vclock_gettime
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406192119.GB2265@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 6, 2011 at 2:20 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> Andy Lutomirski <luto@MIT.EDU> writes:
->
->> This series speeds up vclock_gettime(CLOCK_MONOTONIC) on by almost 30%
->> (tested on Sandy Bridge).  They're ordered in roughly decreasing order
->> of improvement.
->>
->> These are meant for 2.6.40, but if anyone wants to take some of them
->> for 2.6.39 I won't object.
->
-> I read all the patchkit and it looks good to me.  I felt a bit uneasy
-> about the barrier changes though, it may be worth running of the
-> paranoid "check monotonicity on lots of cpus" test cases to double check
-> on different CPUs.  The interesting cases are: P4-Prescott, Merom
-> (C2Duo), AMD K8.
+On Wed, Apr 06, 2011 at 12:21:19PM -0700, Paul E. McKenney wrote:
+> On Wed, Apr 06, 2011 at 10:10:28AM +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-04-05 at 16:07 -0700, Paul E. McKenney wrote:
+> > > 
+> > > The next layer on this onion is the use of the ctl_table typedef
+> > > in include/linux/key.h -- which is defined to be struct ctl_table.
+> > > Anyone know where struct ctl_table is defined?  Color me blind, but I
+> > > am not seeing it... 
+> > 
+> > include/linux/sysctl.h:1015
+> 
+> Thank you!
 
-I ran Ingo's time-warp-test w/ 6, 7, and 8 threads on Sandy Bridge and
-on a Xeon 5600 series chip.  My C2D laptop thinks that its TSC halts
-in idle and my only AMD system has unsynchronized TSCs.
+And the following patch builds correctly for defconfig x86 builds,
+while allowing rcupdate.h to see the sched.h definitions as needed
+to inline rcu_read_lock() and rcu_read_unlock().
 
-I couldn't even make it fail without the barrier trick after the rdtsc
-at all, probably because after the lfence the rdtsc runs pretty much
-immediately in practice.
+I will try allyesconfig builds and see what else breaks.
 
->
-> Thanks for doing these optimizations again. Before generic clock source
-> these functions used to be somewhat faster, but they regressed
-> significantly back then. It may be worth comparing the current
-> asm code against these old code and see if there's still something
-> obvious missing.
->
-> Possible more optimizations if you're still motivated:
->
-> - Move all the timer state/seqlock into one cache line and start
-> with a prefetch.
-> I did a similar attempt recently for the in kernel timers.
-> You won't see any difference in a micro benchmark loop, but you may
-> in a workload that dirties lots of cache between timer calls.
+							Thanx, Paul
 
-For CLOCK_REALTIME they're already in one cache line.  I tried the
-prefetch and couldn't measure a speedup even after playing with
-clflush for a bit.
+ include/linux/pid.h      |    2 +-
+ include/linux/rcupdate.h |   27 +++++++++------------------
+ include/linux/rcutree.h  |    2 ++
+ include/linux/sched.h    |   10 ++++------
+ include/linux/sem.h      |    2 +-
+ include/linux/sysctl.h   |    5 +++--
+ include/linux/types.h    |   10 ++++++++++
+ kernel/pid_namespace.c   |    2 ++
+ 8 files changed, 32 insertions(+), 28 deletions(-)
 
-For CLOCK_MONOTONIC, there's an obvious speedup available, though:
-pre-add the offset.
-
->
-> - Replace the indirect call in vread() with a if ( timer == TSC)
-> inline() else indirect_call
-> (manual devirtualization essentially)
->
-> - Replace the sysctl checks with code patching use the new
-> static branch frameworks
-
-Agreed.  In fact, I could do both in one fell swoop: have a flag for
-the mode and have one option be "just issue the syscall."  Static
-branch stuff scares me because this stuff runs in userspace and, in
-theory, userspace might have COWed the page with this code in it.
-
-v2 of the patchkit coming in a few days.  It'll be a lot cleaner, I
-think, although it'll generate the same code.  I'll play with further
-optimizations after this stuff gets merged somewhere if I'm motivated
-enough.
-
-The other thing to do down the line is to fix the in-kernel implementation.
-
---Andy
+diff --git a/include/linux/pid.h b/include/linux/pid.h
+index efceda0..3c5719b 100644
+--- a/include/linux/pid.h
++++ b/include/linux/pid.h
+@@ -1,7 +1,7 @@
+ #ifndef _LINUX_PID_H
+ #define _LINUX_PID_H
+ 
+-#include <linux/rcupdate.h>
++#include <linux/types.h>
+ 
+ enum pid_type
+ {
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index ff422d2..2fe6402 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -33,6 +33,7 @@
+ #ifndef __LINUX_RCUPDATE_H
+ #define __LINUX_RCUPDATE_H
+ 
++#include <linux/types.h>
+ #include <linux/cache.h>
+ #include <linux/spinlock.h>
+ #include <linux/threads.h>
+@@ -52,16 +53,6 @@ extern int rcutorture_runnable; /* for sysctl */
+ #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+ #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
+ 
+-/**
+- * struct rcu_head - callback structure for use with RCU
+- * @next: next update requests in a list
+- * @func: actual update function to call after the grace period.
+- */
+-struct rcu_head {
+-	struct rcu_head *next;
+-	void (*func)(struct rcu_head *head);
+-};
+-
+ /* Exported common interfaces */
+ extern void call_rcu_sched(struct rcu_head *head,
+ 			   void (*func)(struct rcu_head *rcu));
+@@ -141,14 +132,6 @@ static inline void rcu_exit_nohz(void)
+ 
+ #endif /* #else #ifdef CONFIG_NO_HZ */
+ 
+-#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+-#include <linux/rcutree.h>
+-#elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
+-#include <linux/rcutiny.h>
+-#else
+-#error "Unknown RCU implementation specified to kernel configuration"
+-#endif
+-
+ /*
+  * init_rcu_head_on_stack()/destroy_rcu_head_on_stack() are needed for dynamic
+  * initialization and destruction of rcu_head on the stack. rcu_head structures
+@@ -797,4 +780,12 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+ }
+ #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ 
++#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
++#include <linux/rcutree.h>
++#elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
++#include <linux/rcutiny.h>
++#else
++#error "Unknown RCU implementation specified to kernel configuration"
++#endif
++
+ #endif /* __LINUX_RCUPDATE_H */
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 3a93348..c317eec 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -30,6 +30,8 @@
+ #ifndef __LINUX_RCUTREE_H
+ #define __LINUX_RCUTREE_H
+ 
++#include <linux/sched.h>
++
+ extern void rcu_init(void);
+ extern void rcu_note_context_switch(int cpu);
+ extern int rcu_needs_cpu(int cpu);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 83bd2e2..30a4444 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -78,7 +78,7 @@ struct sched_param {
+ #include <linux/topology.h>
+ #include <linux/proportions.h>
+ #include <linux/seccomp.h>
+-#include <linux/rcupdate.h>
++#include <linux/types.h>
+ #include <linux/rculist.h>
+ #include <linux/rtmutex.h>
+ 
+@@ -2241,11 +2241,9 @@ int same_thread_group(struct task_struct *p1, struct task_struct *p2)
+ 	return p1->tgid == p2->tgid;
+ }
+ 
+-static inline struct task_struct *next_thread(const struct task_struct *p)
+-{
+-	return list_entry_rcu(p->thread_group.next,
+-			      struct task_struct, thread_group);
+-}
++/* Avoid #include hell for inlining rcu_read_lock(). */
++#define next_thread(p) \
++	list_entry_rcu((p)->thread_group.next, struct task_struct, thread_group)
+ 
+ static inline int thread_group_empty(struct task_struct *p)
+ {
+diff --git a/include/linux/sem.h b/include/linux/sem.h
+index f2961af..8489a1f 100644
+--- a/include/linux/sem.h
++++ b/include/linux/sem.h
+@@ -78,7 +78,7 @@ struct  seminfo {
+ 
+ #ifdef __KERNEL__
+ #include <asm/atomic.h>
+-#include <linux/rcupdate.h>
++#include <linux/types.h>
+ #include <linux/cache.h>
+ 
+ struct task_struct;
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 11684d9..be80a59 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -19,6 +19,8 @@
+  ****************************************************************
+  */
+ 
++#include <linux/key.h>
++
+ #ifndef _LINUX_SYSCTL_H
+ #define _LINUX_SYSCTL_H
+ 
+@@ -1012,8 +1014,7 @@ extern int proc_do_large_bitmap(struct ctl_table *, int,
+  */
+ 
+ /* A sysctl table is an array of struct ctl_table: */
+-struct ctl_table 
+-{
++struct ctl_table {
+ 	const char *procname;		/* Text ID for /proc/sys, or zero */
+ 	void *data;
+ 	int maxlen;
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 176da8c..868ef8b 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -231,6 +231,16 @@ struct hlist_node {
+ 	struct hlist_node *next, **pprev;
+ };
+ 
++/**
++ * struct rcu_head - callback structure for use with RCU
++ * @next: next update requests in a list
++ * @func: actual update function to call after the grace period.
++ */
++struct rcu_head {
++	struct rcu_head *next;
++	void (*func)(struct rcu_head *head);
++};
++
+ struct ustat {
+ 	__kernel_daddr_t	f_tfree;
+ 	__kernel_ino_t		f_tinode;
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index e9c9adc..bfa75df 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -8,6 +8,8 @@
+  *
+  */
+ 
++#include <linux/types.h>
++#include <asm/atomic.h>
+ #include <linux/pid.h>
+ #include <linux/pid_namespace.h>
+ #include <linux/syscalls.h>
