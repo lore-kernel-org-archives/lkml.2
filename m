@@ -1,251 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1DFLOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:14:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42917 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755380Ab1DFLOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:14:46 -0400
-Date: Wed, 6 Apr 2011 11:14:24 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, peterz@infradead.org,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        peterz@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20110330092605.2132.11629.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20110330092605.2132.11629.stgit@ltc236.sdl.hitachi.co.jp>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf probe: Fix listing incorrect line number with inline function
-Message-ID: <tip-1d46ea2a6a405196435ffcc2adb3ef5402a30b3a@git.kernel.org>
-Git-Commit-ID: 1d46ea2a6a405196435ffcc2adb3ef5402a30b3a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755625Ab1DFLVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:21:32 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.183]:20227
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754224Ab1DFLVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 07:21:30 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bh8275dhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJ8A7M-01-3B1-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, <stable@kernel.org>
+Subject: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+Date: Wed, 6 Apr 2011 13:21:18 +0200
+Message-ID: <1302088878-25740-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 06 Apr 2011 11:14:25 +0000 (UTC)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1d46ea2a6a405196435ffcc2adb3ef5402a30b3a
-Gitweb:     http://git.kernel.org/tip/1d46ea2a6a405196435ffcc2adb3ef5402a30b3a
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Wed, 30 Mar 2011 18:26:05 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 5 Apr 2011 15:38:12 -0300
+Booting 2.6.38 on my test machine produces a lockdep warning
+from the usb_amd_find_chipset_info() function:
 
-perf probe: Fix listing incorrect line number with inline function
+ WARNING: at /data/lemmy/linux.trees.git/kernel/lockdep.c:2465 lockdep_trace_alloc+0x95/0xc2()
+ Hardware name: Snook
+ Modules linked in:
+ Pid: 959, comm: work_for_cpu Not tainted 2.6.39-rc2+ #22
+ Call Trace:
+  [<ffffffff8103c0d4>] warn_slowpath_common+0x80/0x98
+  [<ffffffff812387e6>] ? T.492+0x24/0x26
+  [<ffffffff8103c101>] warn_slowpath_null+0x15/0x17
+  [<ffffffff81068667>] lockdep_trace_alloc+0x95/0xc2
+  [<ffffffff810ed9ac>] slab_pre_alloc_hook+0x18/0x3b
+  [<ffffffff810ef227>] kmem_cache_alloc_trace+0x25/0xba
+  [<ffffffff812387e6>] T.492+0x24/0x26
+  [<ffffffff81238816>] pci_get_subsys+0x2e/0x73
+ sr0: scsi3-mmc drive: 48x/48x writer dvd-ram cd/rw xa/form2 cdda tray
+  [<ffffffff8123886c>] pci_get_device+0x11/0x13
+  [<ffffffff814082a9>] usb_amd_find_chipset_info+0x3f/0x18a
+...
 
-Fix a bug showing incorrect line number when a probe is put on the head of an
-inline function. This patch updates find_perf_probe_point() and introduces new
-rules to get correct line number.
+It turns out that this function calls pci_get_device under a spin_lock
+with irqs disabled, but the pci_get_device function is only allowed in
+preemptible context.
 
- - If debuginfo doesn't have a correct file name, we shouldn't return line
-   number too, because, without file name, line number is meaningless.
+This patch fixes this by using temporary variables in the quirk
+algorithm and commiting them later to the struct under the lock. This
+moves all pci_get_device() invocations out of the spin_lock and fixes
+the lockdep warning for me.
 
- - If the address is in a function, it stores the function name and the offset
-   from the function entry.
-
-   - If the address is on a line, it tries to get the relative line number from
-     the function entry line, except for the address is same as the entry
-     address of the function (in this case, the relative line number should
-     be 0).
-
-     - If the address is in an inline function entry (call-site), it uses the
-       inline function call line number as the line on which the address is.
-
-   - If the address is in an inline function body, it stores the inline
-     function name and offset from the inline function call site instead of the
-     (non-inlined) function.
-
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20110330092605.2132.11629.stgit@ltc236.sdl.hitachi.co.jp>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- tools/perf/util/probe-finder.c |  134 ++++++++++++++++++++++++----------------
- 1 files changed, 81 insertions(+), 53 deletions(-)
+ drivers/usb/host/pci-quirks.c |   67 +++++++++++++++++++++++-----------------
+ 1 files changed, 38 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 689ab46..b7c85ce 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -273,6 +273,25 @@ static const char *cu_get_comp_dir(Dwarf_Die *cu_die)
- 	return dwarf_formstring(&attr);
- }
- 
-+/* Get a line number and file name for given address */
-+static int cu_find_lineinfo(Dwarf_Die *cudie, unsigned long addr,
-+			    const char **fname, int *lineno)
-+{
-+	Dwarf_Line *line;
-+	Dwarf_Addr laddr;
-+
-+	line = dwarf_getsrc_die(cudie, (Dwarf_Addr)addr);
-+	if (line && dwarf_lineaddr(line, &laddr) == 0 &&
-+	    addr == (unsigned long)laddr && dwarf_lineno(line, lineno) == 0) {
-+		*fname = dwarf_linesrc(line, NULL, NULL);
-+		if (!*fname)
-+			/* line number is useless without filename */
-+			*lineno = 0;
-+	}
-+
-+	return *lineno ?: -ENOENT;
-+}
-+
- /* Compare diename and tname */
- static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 1d586d4..d3e5cf3 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -84,64 +84,73 @@ int usb_amd_find_chipset_info(void)
  {
-@@ -1704,11 +1723,9 @@ int find_perf_probe_point(unsigned long addr, struct perf_probe_point *ppt)
- 	Dwarf_Die cudie, spdie, indie;
- 	Dwarf *dbg = NULL;
- 	Dwfl *dwfl = NULL;
--	Dwarf_Line *line;
--	Dwarf_Addr laddr, eaddr, bias = 0;
--	const char *tmp;
--	int lineno, ret = 0;
--	bool found = false;
-+	Dwarf_Addr _addr, baseaddr, bias = 0;
-+	const char *fname = NULL, *func = NULL, *tmp;
-+	int baseline = 0, lineno = 0, ret = 0;
+ 	u8 rev = 0;
+ 	unsigned long flags;
++	struct pci_dev *nb_dev, *smbus_dev;
++	int nb_type, sb_type;
  
- 	/* Open the live linux kernel */
- 	dbg = dwfl_init_live_kernel_dwarf(addr, &dwfl, &bias);
-@@ -1729,68 +1746,79 @@ int find_perf_probe_point(unsigned long addr, struct perf_probe_point *ppt)
- 		goto end;
+ 	spin_lock_irqsave(&amd_lock, flags);
+-
+ 	amd_chipset.probe_count++;
+ 	/* probe only once */
+ 	if (amd_chipset.probe_count > 1) {
+ 		spin_unlock_irqrestore(&amd_lock, flags);
+ 		return amd_chipset.probe_result;
+ 	}
++	spin_unlock_irqrestore(&amd_lock, flags);
+ 
+-	amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
+-	if (amd_chipset.smbus_dev) {
+-		rev = amd_chipset.smbus_dev->revision;
++	sb_type   = 0;
++	smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
++	if (smbus_dev) {
++		rev = smbus_dev->revision;
+ 		if (rev >= 0x40)
+-			amd_chipset.sb_type = 1;
++			sb_type = 1;
+ 		else if (rev >= 0x30 && rev <= 0x3b)
+-			amd_chipset.sb_type = 3;
++			sb_type = 3;
+ 	} else {
+-		amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-							0x780b, NULL);
+-		if (!amd_chipset.smbus_dev) {
++		smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
++		if (smbus_dev) {
++			spin_lock_irqsave(&amd_lock, flags);
++			amd_chipset.smbus_dev = smbus_dev;
+ 			spin_unlock_irqrestore(&amd_lock, flags);
+ 			return 0;
+ 		}
+-		rev = amd_chipset.smbus_dev->revision;
++		rev = smbus_dev->revision;
+ 		if (rev >= 0x11 && rev <= 0x18)
+-			amd_chipset.sb_type = 2;
++			sb_type = 2;
  	}
  
--	/* Find a corresponding line */
--	line = dwarf_getsrc_die(&cudie, (Dwarf_Addr)addr);
--	if (line) {
--		if (dwarf_lineaddr(line, &laddr) == 0 &&
--		    (Dwarf_Addr)addr == laddr &&
--		    dwarf_lineno(line, &lineno) == 0) {
--			tmp = dwarf_linesrc(line, NULL, NULL);
--			if (tmp) {
--				ppt->line = lineno;
--				ppt->file = strdup(tmp);
--				if (ppt->file == NULL) {
--					ret = -ENOMEM;
--					goto end;
--				}
--				found = true;
--			}
--		}
--	}
-+	/* Find a corresponding line (filename and lineno) */
-+	cu_find_lineinfo(&cudie, addr, &fname, &lineno);
-+	/* Don't care whether it failed or not */
- 
--	/* Find a corresponding function */
-+	/* Find a corresponding function (name, baseline and baseaddr) */
- 	if (die_find_real_subprogram(&cudie, (Dwarf_Addr)addr, &spdie)) {
-+		/* Get function entry information */
- 		tmp = dwarf_diename(&spdie);
--		if (!tmp || dwarf_entrypc(&spdie, &eaddr) != 0)
--			goto end;
--
--		if (ppt->line) {
--			if (die_find_inlinefunc(&spdie, (Dwarf_Addr)addr,
--						&indie)) {
--				/* addr in an inline function */
-+		if (!tmp ||
-+		    dwarf_entrypc(&spdie, &baseaddr) != 0 ||
-+		    dwarf_decl_line(&spdie, &baseline) != 0)
-+			goto post;
-+		func = tmp;
-+
-+		if (addr == (unsigned long)baseaddr)
-+			/* Function entry - Relative line number is 0 */
-+			lineno = baseline;
-+		else if (die_find_inlinefunc(&spdie, (Dwarf_Addr)addr,
-+					     &indie)) {
-+			if (dwarf_entrypc(&indie, &_addr) == 0 &&
-+			    _addr == addr)
-+				/*
-+				 * addr is at an inline function entry.
-+				 * In this case, lineno should be the call-site
-+				 * line number.
-+				 */
-+				lineno = die_get_call_lineno(&indie);
-+			else {
-+				/*
-+				 * addr is in an inline function body.
-+				 * Since lineno points one of the lines
-+				 * of the inline function, baseline should
-+				 * be the entry line of the inline function.
-+				 */
- 				tmp = dwarf_diename(&indie);
--				if (!tmp)
--					goto end;
--				ret = dwarf_decl_line(&indie, &lineno);
--			} else {
--				if (eaddr == addr) {	/* Function entry */
--					lineno = ppt->line;
--					ret = 0;
--				} else
--					ret = dwarf_decl_line(&spdie, &lineno);
--			}
--			if (ret == 0) {
--				/* Make a relative line number */
--				ppt->line -= lineno;
--				goto found;
-+				if (tmp &&
-+				    dwarf_decl_line(&spdie, &baseline) == 0)
-+					func = tmp;
- 			}
+-	if (amd_chipset.sb_type == 0) {
+-		if (amd_chipset.smbus_dev) {
+-			pci_dev_put(amd_chipset.smbus_dev);
+-			amd_chipset.smbus_dev = NULL;
++	if (sb_type == 0) {
++		if (smbus_dev) {
++			pci_dev_put(smbus_dev);
++			smbus_dev = NULL;
  		}
--		/* We don't have a line number, let's use offset */
--		ppt->offset = addr - (unsigned long)eaddr;
--found:
--		ppt->function = strdup(tmp);
-+	}
-+
-+post:
-+	/* Make a relative line number or an offset */
-+	if (lineno)
-+		ppt->line = lineno - baseline;
-+	else if (func)
-+		ppt->offset = addr - (unsigned long)baseaddr;
-+
-+	/* Duplicate strings */
-+	if (func) {
-+		ppt->function = strdup(func);
- 		if (ppt->function == NULL) {
- 			ret = -ENOMEM;
- 			goto end;
- 		}
--		found = true;
+-		spin_unlock_irqrestore(&amd_lock, flags);
+ 		return 0;
  	}
--
-+	if (fname) {
-+		ppt->file = strdup(fname);
-+		if (ppt->file == NULL) {
-+			if (ppt->function) {
-+				free(ppt->function);
-+				ppt->function = NULL;
-+			}
-+			ret = -ENOMEM;
-+			goto end;
-+		}
-+	}
- end:
- 	if (dwfl)
- 		dwfl_end(dwfl);
--	if (ret >= 0)
--		ret = found ? 1 : 0;
-+	if (ret == 0 && (fname || func))
-+		ret = 1;	/* Found a point */
- 	return ret;
+ 
+-	amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
+-	if (amd_chipset.nb_dev) {
+-		amd_chipset.nb_type = 1;
++	nb_type = 0;
++	nb_dev  = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
++	if (nb_dev) {
++		nb_type = 1;
+ 	} else {
+-		amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-							0x1510, NULL);
+-		if (amd_chipset.nb_dev) {
+-			amd_chipset.nb_type = 2;
+-		} else  {
+-			amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-								0x9600, NULL);
+-			if (amd_chipset.nb_dev)
+-				amd_chipset.nb_type = 3;
++		nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
++		if (nb_dev) {
++			nb_type = 2;
++		} else {
++			nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
++						0x9600, NULL);
++			if (nb_dev)
++				nb_type = 3;
+ 		}
+ 	}
+ 
++	spin_lock_irqsave(&amd_lock, flags);
++	amd_chipset.smbus_dev    = smbus_dev;
++	amd_chipset.sb_type      = sb_type;
++	amd_chipset.nb_dev       = nb_dev;
++	amd_chipset.nb_type      = nb_type;
+ 	amd_chipset.probe_result = 1;
++	spin_unlock_irqrestore(&amd_lock, flags);
++
+ 	printk(KERN_DEBUG "QUIRK: Enable AMD PLL fix\n");
+ 
+-	spin_unlock_irqrestore(&amd_lock, flags);
+ 	return amd_chipset.probe_result;
  }
- 
+ EXPORT_SYMBOL_GPL(usb_amd_find_chipset_info);
+-- 
+1.7.1
+
+
