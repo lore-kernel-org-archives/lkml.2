@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1DFOhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 10:37:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36336 "EHLO mx2.suse.de"
+	id S1756278Ab1DFOjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 10:39:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45290 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755952Ab1DFOhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 10:37:37 -0400
-Date: Wed, 6 Apr 2011 07:37:34 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Will Schmidt <will_schmidt@vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH v2] trivial: make comment about vs{n,cn,}printf more
- understandable
-In-Reply-To: <20110406143441.GE13963@pengutronix.de>
-Message-ID: <alpine.LNX.2.00.1104060736510.5855@pobox.suse.cz>
-References: <1290567844_20137@mail4.comsite.net> <1290625833-32576-1-git-send-email-u.kleine-koenig@pengutronix.de> <20110406143441.GE13963@pengutronix.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756054Ab1DFOje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 10:39:34 -0400
+Message-ID: <4D9C7BE1.6010502@redhat.com>
+Date: Wed, 06 Apr 2011 10:42:41 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Alex Shi <alex.shi@intel.com>, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        tim.c.chen@intel.com, shaohua.li@intel.com
+Subject: Re: [PATCH] sched: recover sched_yield task running time increase
+References: <1302042823-23022-1-git-send-email-alex.shi@intel.com> <1302077064.2225.1357.camel@twins>
+In-Reply-To: <1302077064.2225.1357.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Apr 2011, Uwe Kleine-König wrote:
+On 04/06/2011 04:04 AM, Peter Zijlstra wrote:
+> On Wed, 2011-04-06 at 06:33 +0800, Alex Shi wrote:
+>> commit ac53db596cc08ecb8040c removed the sched_yield task running
+>> time increase, so the yielded task get more opportunity to be launch
+>> again. That may not the caller want to be. And this also causes
+>> volano benchmark drop 50~80 percent performance on core2/NHM/WSM
+>> machines. This patch recover the sched_yield task vruntime up.
+>
+> You do know that any app that relies on sched_yield behaviour is more
+> than broken? Using sched_yield() for anything other than SCHED_FIFO
+> tasks is well outside spec.
+>
+> Furthermore, apparently you used sysctl_sched_compat_yield, which was
+> bound to disappear some time, since with the default settings the yield
+> semantics didn't actually change.
+>
+> So no, I'm not much inclined to accept this. The Java people have had
+> every opportunity to go fix their crap, them not doing so will
+> eventually (preferably now) stop being my problem.
 
-> Hello Jiri,
-> 
-> On Wed, Nov 24, 2010 at 08:10:33PM +0100, Uwe Kleine-König wrote:
-> > "You probably want ... instead." sounds like a recommendation better
-> > not to use the v... functions.
-> you didn't take this patch. Did you skip it on purpose?
+It appears they might not have figured out how to fix
+their stuff :)
 
-Hi,
+Would you have any hints on what the Java folks should
+replace their calls to sched_yield with?
 
-I don't see it in the trivial 'todo' queue. Either I though someone else 
-is taking it, or I just missed it. Could you please re-bounce it to 
-trivial@kernel.org, and I will apply it?
+Proper use of futexes from inside the JVM perhaps?
 
-Thanks.
-
-> 
-> Best regards
-> Uwe
-> 
-> > 
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> > Hello,
-> > 
-> > this is Milton's alternative suggestion plus an added "using".
-> > 
-> > Thanks
-> > Uwe
-> > 
-> >  lib/vsprintf.c |    9 +++------
-> >  1 files changed, 3 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> > index c150d3d..6c46e0f 100644
-> > --- a/lib/vsprintf.c
-> > +++ b/lib/vsprintf.c
-> > @@ -1279,8 +1279,7 @@ qualifier:
-> >   * return is greater than or equal to @size, the resulting
-> >   * string is truncated.
-> >   *
-> > - * Call this function if you are already dealing with a va_list.
-> > - * You probably want snprintf() instead.
-> > + * If you're not already dealing with a va_list consider using snprintf().
-> >   */
-> >  int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
-> >  {
-> > @@ -1454,8 +1453,7 @@ EXPORT_SYMBOL(vsnprintf);
-> >   * the @buf not including the trailing '\0'. If @size is <= 0 the function
-> >   * returns 0.
-> >   *
-> > - * Call this function if you are already dealing with a va_list.
-> > - * You probably want scnprintf() instead.
-> > + * If you're not already dealing with a va_list consider using scnprintf().
-> >   *
-> >   * See the vsnprintf() documentation for format string extensions over C99.
-> >   */
-> > @@ -1534,8 +1532,7 @@ EXPORT_SYMBOL(scnprintf);
-> >   * into @buf. Use vsnprintf() or vscnprintf() in order to avoid
-> >   * buffer overflows.
-> >   *
-> > - * Call this function if you are already dealing with a va_list.
-> > - * You probably want sprintf() instead.
-> > + * If you're not already dealing with a va_list consider using sprintf().
-> >   *
-> >   * See the vsnprintf() documentation for format string extensions over C99.
-> >   */
-> > -- 
-> > 1.7.2.3
-> > 
-> > 
-> 
-> -- 
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> 
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Or should we export yield_to to userspace and have
+them use that? :)   *runs*
