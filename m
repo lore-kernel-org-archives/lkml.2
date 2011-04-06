@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab1DFOVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 10:21:15 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:39181 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab1DFOVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 10:21:13 -0400
-Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Antonio Ospite <ospite@studenti.unina.it>, linux-wireless@vger.kernel.org,
-        openezx-devel@lists.openezx.org,
-        "John W . Linville" <linville@tuxdriver.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Marek Vasut <marek.vasut@gmail.com>, Guiming Zhuo <gmzhuo@gmail.com>
-In-Reply-To: <20110406141131.GC2810@opensource.wolfsonmicro.com>
-References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
-	 <20110406141131.GC2810@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Apr 2011 16:21:09 +0200
-Message-ID: <1302099669.4090.1.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756230Ab1DFOWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 10:22:00 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:33832 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756152Ab1DFOV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 10:21:59 -0400
+Date: Wed, 6 Apr 2011 10:21:55 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.39-rc2
+Message-ID: <20110406142155.GM2832@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <BANLkTinJZB145o9_g4o=5pFUX39P0tpv-g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinJZB145o9_g4o=5pFUX39P0tpv-g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-06 at 23:11 +0900, Mark Brown wrote:
-> On Wed, Apr 06, 2011 at 11:21:19AM +0200, Antonio Ospite wrote:
+On Tue, Apr 05, 2011 at 07:00:12PM -0700, Linus Torvalds wrote:
+> It's been an uncommonly calm -rc2, which should make me really happy,
+> but quite honestly just makes me really suspicious.
 > 
-> > +	tristate "Generic rfkill regulator driver"
-> > +	depends on RFKILL || !RFKILL
-> 
-> That looks *odd*.
+> You guys are up to something, aren't you?
 
-That's normal for rfkill -- if RFKILL==n then this can be anything since
-the rfkill API goes all no-op inlines, but if RFKILL==m then this can't
-be ==y. "depends on !RFKILL" covers the former, "depends on RFKILL" the
-latter.
+The fact that the Linux File System, Storage, and MM summit is taking
+place in San Francisco these past two days (and folks have had to be
+travelling, preparing, etc.) for said summit probably has had
+something to do with it.  So yeah, some of us have been doing a lot of
+plotting and planning.  :-)
 
-johannes
+A summary of the first day:     http://lwn.net/Articles/436871/
 
+						- Ted
