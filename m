@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab1DFOR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 10:17:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35606 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755986Ab1DFOR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 10:17:56 -0400
-Date: Wed, 6 Apr 2011 07:03:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: hv_mouse: Fix build error
-Message-ID: <20110406140326.GA20688@suse.de>
-References: <1302084896-25250-1-git-send-email-joerg.roedel@amd.com>
+	id S1756221Ab1DFOSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 10:18:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49488 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986Ab1DFOSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 10:18:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302084896-25250-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110331144400.GA2618@vigoh>
+References: <20110331032307.GA27999@vigoh> <20110331062949.GA29526@elte.hu> <20110331144400.GA2618@vigoh>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Wed, 6 Apr 2011 11:17:53 -0300
+Message-ID: <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Fix common misspellings
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        lucas.de.marchi@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 12:14:56PM +0200, Joerg Roedel wrote:
-> The compiler argues about the implictly declared udelay
-> function. Fix it by adding the appropriate include.
-> 
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Hi Linus,
 
-Already queued up to go to Linus in the linux-next tree.
+On Thu, Mar 31, 2011 at 11:44 AM, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+> I've created a new patch, removing the copyright changes. New
+> patch can be pulled from:
+>
+> git://git.profusion.mobi/users/lucas/linux-2.6.git for-linus2
 
-thanks,
+Maybe you could consider this patch now that rc2 is out? It still
+applies cleanly on top of -rc2.
 
-greg k-h
+regards,
+Lucas De Marchi
