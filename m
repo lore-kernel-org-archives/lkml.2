@@ -1,113 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1DFQvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 12:51:00 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:7387 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab1DFQu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 12:50:59 -0400
-Date: Wed, 6 Apr 2011 18:50:44 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Thomas Renninger <trenn@suse.de>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: [PATCH v3] hwmon: Add driver for AMD family 15h processor power
-  information
-Message-ID: <20110406185044.16e5f92a@endymion.delvare>
-In-Reply-To: <20110406135424.GC2177@alberich.amd.com>
-References: <20110404160733.GA11818@alberich.amd.com>
-	<20110405144536.GA5054@alberich.amd.com>
-	<20110406135424.GC2177@alberich.amd.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1755321Ab1DFRC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 13:02:27 -0400
+Received: from linux-sh.org ([111.68.239.195]:51273 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753846Ab1DFRCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 13:02:25 -0400
+Date: Thu, 7 Apr 2011 02:01:59 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] s3fb: add DDC support
+Message-ID: <20110406170155.GF11820@linux-sh.org>
+References: <201104032236.18936.linux@rainbow-software.org> <20110404083316.GB9431@localhost> <20110404084200.GD28208@linux-sh.org> <201104041125.36404.linux@rainbow-software.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104041125.36404.linux@rainbow-software.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andreas,
-
-On Wed, 6 Apr 2011 15:54:24 +0200, Andreas Herrmann wrote:
-> --- /dev/null
-> +++ b/Documentation/hwmon/f15h_power
-> @@ -0,0 +1,37 @@
-> +Kernel driver f15h_power
-> +========================
-> +
-> +Supported chips:
-> +* AMD Family 15h Processors
-> +
-> +  Prefix: 'f15h_power'
-> +  Addresses scanned: PCI space
-> +  Datasheets:
-> +  BIOS and Kernel Developer's Guide (BKDG) For AMD Family 15h Processors
-> +    (not yet published)
-> +
-> +Author: Andreas Herrmann <andreas.herrmann3@amd.com>
-
-BTW, please consider adding an entry in MAINTAINERS.
-
-> +
-> +Description
-> +-----------
-> +
-> +This driver permits reading of registers providing power information
-> +of AMD Family 15h processors.
-> +
-> +For AMD Family 15h processors the following power values can be
-> +calculated using different processor northbridge function registers
-
-A trailing ":" would be nice.
-
-> +
-> +* BasePwrWatts: Specifies in watts the maximum amount of power
-> +  consumed by the processor for NB and logic external to the core.
-> +* ProcessorPwrWatts: Specifies in watts the maximum amount of power
-> +  the processor can support.
-> +* CurrPwrWatts: Specifies in watts the current amount of power being
-> +  consumed by the processor.
-> +
-> +This driver provides ProcessorPwrWatts and CurrPwrWatts:
-> +* power1_max (ProcessorPwrWatts)
-
-I see you changed this name once already, but... What is expected to
-happen if the power consumed exceeds this limit? If you expect the CPU
-to get damaged, then power1_crit would be more appropriate.
-
-Another way to decide if _max or _crit is more appropriate is by
-answering the question: if a second limit was added in the future,
-would it more likely be below or above this one?
-
-> +* power1_input (CurrPwrWatts)
-> +
-> +On multi-node processors the calculated value is for the entire
-> +package and not for a single node. Thus the driver creates sysfs
-> +attributes only for internal node0 of a multi-node processor.
-
-> (...)
-> +	return sprintf(buf, "%u\n", (u32) ptdp);
-
-Maybe I'm just nitpicking, but I still don't think it's correct. %u
-wants unsigned int, not u32. It might be the same but that's by luck.
-
-> --- a/drivers/hwmon/k10temp.c
-> +++ b/drivers/hwmon/k10temp.c
-> @@ -205,7 +205,7 @@ static void __devexit k10temp_remove(struct pci_dev *pdev)
->  	dev_set_drvdata(&pdev->dev, NULL);
->  }
->  
-> -static const struct pci_device_id k10temp_id_table[] = {
-> +static DEFINE_PCI_DEVICE_TABLE(k10temp_id_table) = {
->  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
->  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_11H_NB_MISC) },
->  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
-
-Such cleanups should go to separate patches, as they don't have
-anything to do with your initial effort. And that way you can fix
-k8temp i5k_amb too.
-
--- 
-Jean Delvare
+On Mon, Apr 04, 2011 at 11:25:36AM +0200, Ondrej Zary wrote:
+> On Monday 04 April 2011, Paul Mundt wrote:
+> > On Mon, Apr 04, 2011 at 10:33:16AM +0200, Ondrej Zajicek wrote:
+> > > On Sun, Apr 03, 2011 at 10:36:15PM +0200, Ondrej Zary wrote:
+> > > > Add I2C support for the DDC bus and also default mode initialization by
+> > > > reading monitor EDID to the s3fb driver.
+> > > >
+> > > > Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
+> > > > Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
+> > > >
+> > > > Will probably not work on Trio32 - my 2 cards have DDC support in BIOS
+> > > > that looks different from the other cards but the DDC pins on the VGA
+> > > > connector are not connected.
+> > > >
+> > > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > >
+> > > Acked-by: Ondrej Zajicek <santiago@crfreenet.org>
+> >
+> > Is there much reason to leave this optional? Or are you simply waiting
+> > for testing feedback from Trio32 users before default-enabling it?
+> >
+> > It would generally be nice to avoid these sorts of config options for a
+> > specific driver if it already is quite capable of handling the
+> > unsupported cases and has a reasonable fallback on defaults via the error
+> > path.
+> 
+> If the config option is not desired, I'll remove it, I don't like it either. 
+> Just did it like some other fb drivers do. The only reason why someone would 
+> want to disable DDC is probably to have I2C-less kernel.
+> 
+Oh, that's right, i2c is one of those pain in the ass subsystems that
+refuses to provide a stubbed implementation of the API for i2c disabled
+systems. Lets just stick with the first version for now.
