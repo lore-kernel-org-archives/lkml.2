@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab1DFNSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 09:18:04 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:33583 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754743Ab1DFNSA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 09:18:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lT3F5ACLaO0DSXR2CZZfpQTgk5a9VxxW6nrCYUHA55JTxznGsgDRxUHwB58kMZ60ws
-         1oRIDzfh07KjdvdwnrFBu2cjhKrHo2cz1IxQAoRYBgekoJ+JHnCV0yAXkoncBz/wcAoA
-         z/O8vq37QbSGWOeEhYwhZZr5v91b0zk8IXTzA=
+	id S1756115Ab1DFNSU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 09:18:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50389 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756067Ab1DFNSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 09:18:15 -0400
+Date: Wed, 6 Apr 2011 06:18:13 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jeffrey Brown <jeffbrown@android.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Simon Budig <simon@budig.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] hid-magicmouse: Increase evdev buffer size
+In-Reply-To: <4D9B7164.5070309@canonical.com>
+Message-ID: <alpine.LNX.2.00.1104060617521.5855@pobox.suse.cz>
+References: <1301691819-2090-1-git-send-email-chase.douglas@canonical.com> <AANLkTim-tN=siA8tJVCzNZHs+oM0hN-N8Ckc+9ynnNpb@mail.gmail.com> <alpine.LNX.2.00.1104041441530.28516@pobox.suse.cz> <BANLkTikG-ku9mDebcaPKTwv3X0N+OKiyYQ@mail.gmail.com>
+ <4D9A1407.6030308@canonical.com> <20110404213910.GD984@core.coreip.homeip.net> <4D9B7164.5070309@canonical.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1301630392-20793-3-git-send-email-bgat@billgatliff.com>
-References: <1301630392-20793-1-git-send-email-bgat@billgatliff.com>
-	<1301630392-20793-3-git-send-email-bgat@billgatliff.com>
-Date: Wed, 6 Apr 2011 09:17:58 -0400
-Message-ID: <BANLkTikzBHJxToLPXQZCLN-GjbYHMfASLw@mail.gmail.com>
-Subject: Re: [PWM v9 2/3] PWM: GPIO+hrtimer device emulation
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Bill Gatliff <bgat@billgatliff.com>
-Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bill,
+On Tue, 5 Apr 2011, Chase Douglas wrote:
 
-I tested this series on da850evm from commit
-60124de319dc2800c0f75f44bf84471a8de0dbc5 of
-git://git.billgatliff.com/pwm.git.
+> >>>> I'd happuly take Chase's patch, but want to make sure that we don't cause
+> >>>> any changes that would make backwards compatilibity an issue later.
+> >>>
+> >>> There should be no compatibility issues.  However, we might be better
+> >>> off in the long term taking (some variation of) these patches instead.
+> >>
+> >> I like the proposed changes, but I want to ensure stable kernel releases
+> >> aren't left out of the fix for hid-magicmouse. I don't know the best way
+> >> forward, but here's one possibility:
+> >>
+> >> 1. Apply my patch to manually set the buffer size hint
+> >> 2. It gets sent to stable trees due to the 'Cc: stable@kernel.org' line
+> >> 3. Apply Jeffrey's patches, including a reversion of my buffer size hint
+> >>
+> >> Obviously the extra application and reversion is odd, but this seems the
+> >> easiest way forward given that the patches already exist and can be
+> >> applied without issue.
+> >>
+> > 
+> > Or, once Jeffrey's patches hit mainline, send your change to stable with
+> > the explanation why it is needed for stable but not for mainline.
+> 
+> One thing that crossed my mind is that Jeffrey's patches wouldn't be
+> merged until 2.6.40, right? If so, even 2.6.39 will be released with
+> this bug, which makes me want to go with the plan I outlined above.
 
-With the following commands I was able to observe the production of a
-100Hz 50% output on a GPIO (specifically GPIO #125 which is GPIO7[13]
-on the SoC and J15[13] on the baseboard for other da850 users).
+OK, applied. Thanks everybody.
 
-     mount config /config -t configfs
-     mkdir /config/gpio_pwm/125
-     echo 1 > /sys/class/pwm/gpio_pwm\:125/export
-     echo 10000000 > /sys/class/pwm/gpio_pwm\:125/period_ns
-     echo 5000000 > /sys/class/pwm/gpio_pwm\:125/duty_ns
-     echo 1 > /sys/class/pwm/gpio_pwm\:125/run
-
-I noticed that the following command did not stop the pwm output.
-     echo 0 > /sys/class/pwm/gpio_pwm\:125/run
-
-But the following command did (and I did not need to echo 1 >
-/sys/class/pwm/gpio_pwm\:125/unexport first)
-     rm -rf /config/gpio_pwm/125
-
-The observations from my testing above are repeated in context below:
-
-On Thu, Mar 31, 2011 at 11:59 PM, Bill Gatliff <bgat@billgatliff.com> wrote:
-> Emulates a PWM device using a GPIO pin and an hrtimer.  Subject
-> to CPU, scheduler and hardware limitations, can support many
-> PWM outputs, e.g. as many as you have GPIO pins available for.
->
-> On a 200 MHz ARM9 processor, a PWM frequency of 100 Hz can be attained
-> with this code so long as the duty cycle remains between about 20-80%.
-> At higher or lower duty cycles, the transition events may arrive too
-> close for the scheduler and CPU to reliably service.
->
-> This driver supports creation of new GPIO+hrtimer PWM devices via
-> configfs:
->
->   # mount config /config -t configfs
->   # mkdir /config/gpio-pwm/<gpio number>
-
-minor: I observed that the configfs directory was 'gpio_pwm' not 'gpio-pwm.'
-
-> The new PWM device will appear as /sys/class/pwm/gpio-pwm.<gpio number>.
->
-> Caveats:
->   * The GPIO pin number must be valid, not already in use
->   * The output state of the GPIO pin is configured when the PWM starts
->     running i.e. not immediately upon request, because the polarity of
->     the inactive state of the pin isn't known until the pwm device's
->     'polarity' attribute is configured
->   * After creating and binding the pwm device, you must then request
->     it by writing to /sys/class/pwm/gpio-pwm.<gpio number>/export
->
-> Unbind and destroy the pwm device by first stopping and unexporting
-> the pwm device under sysfs as usual; then do:
-
-I observed that
-
-# echo 0 > /sys/class/pwm/gpio_pwm\:125/run
-
-did not stop the pwm output and that
-
-# echo 1 > /sys/class/pwm/gpio_pwm\:125/unexport
-
-was not required before rm -rf'ing the /config directory:
->   # rm -rf /config/gpio-pwm/<gpio number>
-
-> Signed-off-by: Bill Gatliff <bgat@billgatliff.com>
-
-Overall this is a really easy to user userspace interface -- it was a
-pleasure to setup and test.
-
-Tested-by: Ben Gardiner <bengardiner@nanometrics.ca>
-
-Best Regards,
-Ben Gardiner
-
----
-Nanometrics Inc.
-http://www.nanometrics.ca
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
