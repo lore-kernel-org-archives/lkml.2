@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab1DFRw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 13:52:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42195 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab1DFRw0 (ORCPT
+	id S1755767Ab1DFRyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 13:54:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64698 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab1DFRyQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 13:52:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=tYE4PimrhZjAMjQt7eHTT6mkfdYwQmY7S/A4SfumAIxRkD6mE4///ghXD78euK8VMr
-         Kylsp47R/YbCV2o/3v/V6DAgNB5K1hdtFCr+hwLj/ci8vLSoS/zpRoC1mTc4m43jnBkQ
-         lRhqNwsu7Ie6R1gM28iMY/3LESBaBzUqUjLRs=
-Date: Wed, 6 Apr 2011 14:52:17 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Tim Blechmann <tim@klingt.org>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.39-rc2] perf top fails to mmap
-Message-ID: <20110406175217.GC4987@ghostprotocols.net>
-References: <inhgjs$54a$1@dough.gmane.org>
- <4D9C84D5.6090303@gmail.com>
+	Wed, 6 Apr 2011 13:54:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D9C84D5.6090303@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+	<AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+	<AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+	<alpine.LSU.2.00.1103182158200.18771@sister.anvils>
+	<BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+	<AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+	<BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com>
+	<BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
+	<BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com>
+	<BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
+	<BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com>
+	<BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
+	<BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com>
+	<alpine.LSU.2.00.1104060837590.4909@sister.anvils>
+	<BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com>
+Date: Wed, 6 Apr 2011 19:54:15 +0200
+Message-ID: <BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Michel Lespinasse <walken@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 06, 2011 at 09:20:53AM -0600, David Ahern escreveu:
-> 
-> 
-> On 04/06/11 04:51, Tim Blechmann wrote:
-> > hi all,
-> > 
-> > when trying to profile a process with `perf top -p $PID', perf exits with:
-> > Failed to mmap with 22 (Invalid argument)
-> 
-> Works fine for me with latest kernel tree (this morning). Short lived
-> process?
-> 
-> David
-> 
-> > 
-> > this happens when running perf as the same process as the process and when 
-> > running perf as root.
+On Wed, Apr 6, 2011 at 5:59 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Apr 6, 2011 at 8:43 AM, Hugh Dickins <hughd@google.com> wrote:
+>>
+>> I was about to send you my own UNTESTED patch: let me append it anyway,
+>> I think it is more correct than yours (it's the offset of vm_end we need
+>> to worry about, and there's the funny old_len,new_len stuff).
+>
+> Umm. That's what my patch did too. The
+>
+>   pgoff = (addr - vma->vm_start) >> PAGE_SHIFT;
+>
+> is the "offset of the pgoff" from the original mapping, then we do
+>
+>   pgoff += vma->vm_pgoff;
+>
+> to get the pgoff of the new mapping, and then we do
+>
+>   if (pgoff + (new_len >> PAGE_SHIFT) < pgoff)
+>
+> to check that the new mapping is ok.
+>
+> I think yours is equivalent, just a different (and odd - that
+> linear_page_index() thing will do lots of unnecessary shifts and
+> hugepage crap) way of writing it.
+>
+>> See what you think - sorry, I'm going out now.
+>
+> I think _yours_ is conceptually buggy, because I think that test for
+> "vma->vm_file" is wrong.
+>
+> Yes, new anonymous mappings set vm_pgoff to the virtual address, but
+> that's not true for mremap() moving them around, afaik.
+>
+> Admittedly it's really hard to get to the overflow case, because the
+> address is shifted down, so even if you start out with an anonymous
+> mmap at a high address (to get a big vm_off), and then move it down
+> and expand it (to get a big size), I doubt you can possibly overflow.
+> But I still don't think that the test for vm_file is semantically
+> sensible, even if it might not _matter_.
+>
+> But whatever. I suspect both our patches are practically doing the
+> same thing, and it would be interesting to hear if it actually fixes
+> the issue. Maybe there is some other way to mess up vm_pgoff that I
+> can't think of right now.
 
-yep, works for me as well:
+Testing with Linus' patch. Will let you know in a few hours.
 
-[acme@emilia ~]$ cat vsyscall.c 
-#include <time.h>
-
-int main(void)
-{
-        struct timespec t;
-        //int i;
-        //for(i = 0; i < 10000000; i++)
-        while (1) {
-                clock_gettime(CLOCK_MONOTONIC, &t);
-		usleep(10);
-	}
-        return 0;
-}
-[acme@emilia ~]$ cc -lrt vsyscall.c -o vsyscall
-[acme@emilia ~]$ ./vsyscall &
-[acme@emilia linux]$ perf top -p `pidof vsyscall` -F 10000
-PerfTop:  230 irqs/sec  kernel:88.3%  exact:  0.0% [10000Hz cycles],  (target_pid: 2728)
-----------------------------------------------------------------------------------------
-
-             samples  pcnt function             DSO
-             _______ _____ ____________________ ____________________
-
-               21.00 44.7% __nanosleep_nocancel /lib64/libc-2.12.so 
-               13.00 27.7% usleep               /lib64/libc-2.12.so 
-                6.00 12.8% __GI_clock_gettime   /lib64/librt-2.12.so
-                6.00 12.8% main                 /home/acme/vsyscall
-^C
-[acme@emilia linux]$ su -
-Password: 
-[root@emilia ~]# perf top -p `pidof vsyscall` -F 10000 --hide_kernel_symbols
-PerfTop:     428 irqs/sec  kernel:90.2%  exact:  0.0% [10000Hz cycles],  (target_pid: 2728)
--------------------------------------------------------------------------------------------
-
-             samples  pcnt function             DSO
-             _______ _____ ____________________ ____________________
-
-               15.00 29.4% __nanosleep_nocancel /lib64/libc-2.12.so 
-               14.00 27.5% usleep               /lib64/libc-2.12.so 
-                9.00 17.6% __GI_clock_gettime   /lib64/librt-2.12.so
-                8.00 15.7% main                 /home/acme/vsyscall 
-^C
-[root@emilia ~]#
-
-- Arnaldo
+-- 
+Robert Święcki
