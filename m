@@ -1,103 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab1DFRQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 13:16:36 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:55398 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab1DFRQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 13:16:35 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>
-Subject: [PATCH] RapidIO/mpc85xx: Fix possible mport registration problems.
-Date: Wed,  6 Apr 2011 13:16:00 -0400
-Message-Id: <1302110160-13763-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1755993Ab1DFRQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 13:16:56 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:2661 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab1DFRQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 13:16:54 -0400
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+In-Reply-To: <20110406170537.GB2757@sortiz-mobl>
+References: <20110331230522.GI437@ponder.secretlab.ca>
+	 <20110401112030.GA3447@sortiz-mobl> <20110401104756.2f5c6f7a@debxo>
+	 <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
+	 <20110401235239.GE29397@sortiz-mobl>
+	 <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
+	 <20110404100314.GC2751@sortiz-mobl>
+	 <20110405030428.GB29522@ponder.secretlab.ca>
+	 <20110406152322.GA2757@sortiz-mobl> <20110406155805.GA20095@suse.de>
+	 <20110406170537.GB2757@sortiz-mobl>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Wed, 06 Apr 2011 18:16:49 +0100
+Message-ID: <1302110209.2840.20.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Apr 2011 17:16:53.0956 (UTC) FILETIME=[6CDB5040:01CBF47E]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18056.005
+X-TM-AS-Result: No--23.293400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix possible problem with mport registration left non cleared after
-fsl_rio_setup() exits on link error. Abort mport initialization
-if registration failed.
+On Wed, 2011-04-06 at 19:05 +0200, Samuel Ortiz wrote:
+> Hi Greg,
+> 
+> On Wed, Apr 06, 2011 at 08:58:05AM -0700, Greg KH wrote:
+> > On Wed, Apr 06, 2011 at 05:23:23PM +0200, Samuel Ortiz wrote:
+> > > --- a/include/linux/device.h
+> > > +++ b/include/linux/device.h
+> > > @@ -33,6 +33,7 @@ struct class;
+> > >  struct subsys_private;
+> > >  struct bus_type;
+> > >  struct device_node;
+> > > +struct mfd_cell;
+> > >  
+> > >  struct bus_attribute {
+> > >  	struct attribute	attr;
+> > > @@ -444,6 +445,8 @@ struct device {
+> > >  	struct device_node	*of_node; /* associated device tree node */
+> > >  	const struct of_device_id *of_match; /* matching of_device_id from driver */
+> > >  
+> > > +	struct mfd_cell	*mfd_cell; /* MFD cell pointer */
+> > > +
+> > 
+> > What is a "MFD cell pointer" and why is it needed in struct device?
+> An MFD cell is an MFD instantiated device.
+> MFD (Multi Function Device) drivers instantiate platform devices. Those
+> devices drivers sometimes need a platform data pointer, sometimes an MFD
+> specific pointer, and sometimes both. Also, some of those drivers have been
+> implemented as MFD sub drivers, while others know nothing about MFD and just
+> expect a plain platform_data pointer.
+> 
+> We've been faced with the problem of being able to pass both MFD related data
+> and a platform_data pointer to some of those drivers. Squeezing the MFD bits
+> in the sub driver platform_data pointer doesn't work for drivers that know
+> nothing about MFDs. It also adds an additional dependency on the MFD API to
+> all MFD sub drivers. That prevents any of those drivers to eventually be used
+> as plain platform device drivers.
+> So, adding an MFD cell pointer to the device structure allows us to cleanly
+> pass both pieces of information, while keeping all the MFD sub drivers
+> independant from the MFD core if they want/can.
 
-This patch is applicable to 2.6.39-rc1 only. The problem does not exists
-for earlier versions.
+Why isn't an MFD the parent of its component devices?
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
----
- arch/powerpc/sysdev/fsl_rio.c |    4 +++-
- drivers/rapidio/rio.c         |    5 +++--
- include/linux/rio.h           |    2 +-
- 3 files changed, 7 insertions(+), 4 deletions(-)
+Ben.
 
-diff --git a/arch/powerpc/sysdev/fsl_rio.c b/arch/powerpc/sysdev/fsl_rio.c
-index 14232d5..4979853 100644
---- a/arch/powerpc/sysdev/fsl_rio.c
-+++ b/arch/powerpc/sysdev/fsl_rio.c
-@@ -1457,7 +1457,6 @@ int fsl_rio_setup(struct platform_device *dev)
- 	port->ops = ops;
- 	port->priv = priv;
- 	port->phys_efptr = 0x100;
--	rio_register_mport(port);
- 
- 	priv->regs_win = ioremap(regs.start, regs.end - regs.start + 1);
- 	rio_regs_win = priv->regs_win;
-@@ -1504,6 +1503,9 @@ int fsl_rio_setup(struct platform_device *dev)
- 	dev_info(&dev->dev, "RapidIO Common Transport System size: %d\n",
- 			port->sys_size ? 65536 : 256);
- 
-+	if (rio_register_mport(port))
-+		goto err;
-+
- 	if (port->host_deviceid >= 0)
- 		out_be32(priv->regs_win + RIO_GCCSR, RIO_PORT_GEN_HOST |
- 			RIO_PORT_GEN_MASTER | RIO_PORT_GEN_DISCOVERED);
-diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
-index c29719c..86c9a09 100644
---- a/drivers/rapidio/rio.c
-+++ b/drivers/rapidio/rio.c
-@@ -1171,16 +1171,17 @@ static int rio_hdid_setup(char *str)
- 
- __setup("riohdid=", rio_hdid_setup);
- 
--void rio_register_mport(struct rio_mport *port)
-+int rio_register_mport(struct rio_mport *port)
- {
- 	if (next_portid >= RIO_MAX_MPORTS) {
- 		pr_err("RIO: reached specified max number of mports\n");
--		return;
-+		return 1;
- 	}
- 
- 	port->id = next_portid++;
- 	port->host_deviceid = rio_get_hdid(port->id);
- 	list_add_tail(&port->node, &rio_mports);
-+	return 0;
- }
- 
- EXPORT_SYMBOL_GPL(rio_local_get_device_id);
-diff --git a/include/linux/rio.h b/include/linux/rio.h
-index 4e37a7c..4d50611 100644
---- a/include/linux/rio.h
-+++ b/include/linux/rio.h
-@@ -396,7 +396,7 @@ union rio_pw_msg {
- };
- 
- /* Architecture and hardware-specific functions */
--extern void rio_register_mport(struct rio_mport *);
-+extern int rio_register_mport(struct rio_mport *);
- extern int rio_open_inb_mbox(struct rio_mport *, void *, int, int);
- extern void rio_close_inb_mbox(struct rio_mport *, int);
- extern int rio_open_outb_mbox(struct rio_mport *, void *, int, int);
 -- 
-1.7.3.1
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
