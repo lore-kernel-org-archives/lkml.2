@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab1DFJYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 05:24:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35736 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab1DFJYg (ORCPT
+	id S1755385Ab1DFJ3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 05:29:46 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:39694 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab1DFJ3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 05:24:36 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Viresh Kumar <viresh.kumar@st.com>,
-        linux-arm-kernel@lists.infradead.org, shiraz.hashim@st.com
-Subject: [PATCH 2/5] driver core/platform_device_add_data: free platform data before overwriting
-Date: Wed,  6 Apr 2011 11:24:22 +0200
-Message-Id: <1302081865-2962-2-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20110301153438.GB15633@suse.de>
-References: <20110301153438.GB15633@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 6 Apr 2011 05:29:45 -0400
+Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Antonio Ospite <ospite@studenti.unina.it>
+Cc: linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
+        "John W . Linville" <linville@tuxdriver.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
+        Guiming Zhuo <gmzhuo@gmail.com>
+In-Reply-To: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
+References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Apr 2011 11:29:38 +0200
+Message-ID: <1302082178.3811.7.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/base/platform.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Wed, 2011-04-06 at 11:21 +0200, Antonio Ospite wrote:
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index f836f2e..01caf61 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -227,6 +227,7 @@ int platform_device_add_data(struct platform_device *pdev, const void *data,
- 			return -ENOMEM;
- 	}
- 
-+	kfree(pdev->dev.platform_data);
- 	pdev->dev.platform_data = d;
- 	return 0;
- }
--- 
-1.7.2.3
+> +	if (regulator_is_enabled(vcc)) {
+> +		dev_dbg(&pdev->dev, "Regulator already enabled\n");
+> +		rfkill_data->reg_enabled = 1;
+> +	}
+> +	rfkill_init_sw_state(rf_kill, !rfkill_data->reg_enabled);
+> +
+> +	ret = rfkill_register(rf_kill);
+
+We recently had a thread about how rfkill_init_sw_state() isn't quite
+working the right way. Also, it is indented to be used for devices that
+keep their state over resume. I think you should remove it here and rely
+on rfkill to sync you after registration.
+
+Cf. the long thread here:
+http://thread.gmane.org/gmane.linux.acpi.devel/49577
+
+Other than that, no comments from me from an rfkill POV.
+
+johannes
+
 
