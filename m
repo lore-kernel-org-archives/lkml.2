@@ -1,103 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab1DFIq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 04:46:58 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65041 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754929Ab1DFIq4 convert rfc822-to-8bit (ORCPT
+	id S1755013Ab1DFIu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 04:50:56 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:33532 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754743Ab1DFIuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 04:46:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=L37ZY7SKGSh6ktJ2KaQ5n4/r/13uJgHCbvWZvyXJfo4LtjakrYjDJA0gnsbU9GxG8H
-         5ZS+a19iAaEZpHUkgdIlWTe9051ZXSiv090W35WUoOQHzqIKTaJO5GX+l77s4SJJPPzE
-         qaUbJ60ca0RzADLVP8TxUpig881Ih2hf4ID0U=
+	Wed, 6 Apr 2011 04:50:54 -0400
+Message-ID: <4D9C2910.6020309@stericsson.com>
+Date: Wed, 6 Apr 2011 10:49:20 +0200
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <20110406084101.GB13963@pengutronix.de>
-References: <20110404235259.GA30132@iram.es>
-	<20110406084101.GB13963@pengutronix.de>
-Date: Wed, 6 Apr 2011 18:46:55 +1000
-Message-ID: <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
-Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
-From: Dave Airlie <airlied@gmail.com>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Gabriel Paubert <paubert@iram.es>, Greg KH <greg@kroah.com>,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCHv5 1/3] ARM: Translate delay.S into (mostly) C
+References: <1302047800-26720-1-git-send-email-sboyd@codeaurora.org> <1302047800-26720-2-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1302047800-26720-2-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/6 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> Hi Gabriel,
->
-> On Tue, Apr 05, 2011 at 01:52:59AM +0200, Gabriel Paubert wrote:
->> I've had the following funny crashes on PPC machines, with
->> cataleptic X server as a consequence:
->>
->> kernel: [drm] Setting GART location based on new memory map
->> kernel: Oops: Exception in kernel mode, sig: 4 [#1]
->> kernel: CHRP
->> kernel: last sysfs file: /sys/devices/pci0001:01/0001:01:08.0/resource
->> kernel: NIP: c05648fc LR: c0226f58 CTR: 00000008
->> kernel: REGS: ddb53d20 TRAP: 0700   Not tainted  (2.6.38)
->> kernel: MSR: 00089032 <EE,ME,IR,DR>  CR: 48044482  XER: 00000000
->> kernel: TASK = ddab12b0[3040] 'Xorg' THREAD: ddb52000
->> kernel: GPR00: c0226f34 ddb53dd0 ddab12b0 00000000 c0509e6c 00000000 00000000 00000000
->> kernel: GPR08: 00000000 00000000 00000000 00000000 28044488 101f3d8c bf8166b4 00002c00
->> kernel: GPR16: 101b9458 1006f1a0 101ebe0c 00000001 101ebe08 00000000 df9efc20 df9efc00
->> kernel: GPR24: c0591e54 80546440 ddacf660 df9efc00 c0506048 c0480210 00a00000 df9ef800
->> kernel: NIP [c05648fc] platform_device_register_resndata+0x4/0xa4
->> kernel: LR [c0226f58] radeon_cp_init+0xd08/0x10c4
->> kernel: Call Trace:
->> kernel: [ddb53dd0] [c0226f34] radeon_cp_init+0xce4/0x10c4 (unreliable)
->> kernel: [ddb53df0] [c020801c] drm_ioctl+0x2c0/0x3e4
->> kernel: [ddb53eb0] [c0091264] do_vfs_ioctl+0x674/0x710
->> kernel: [ddb53f10] [c0091340] sys_ioctl+0x40/0x70
->> kernel: [ddb53f40] [c00111a8] ret_from_syscall+0x0/0x38
->> kernel: --- Exception: c01 at 0xfc54a78
->> kernel:     LR = 0xfc549dc
->> kernel: Instruction dump:
->> kernel: 736f2e31 32002f75 73722f6c 69622f6c 6962786b 6c617669 65722e73 6f2e3132
->> kernel: 006c6962 786b6266 696c652e 736f2e31 <002f7573> 722f6c69 622f6c69 62786b62
->> kernel: ---[ end trace ed79daba161e31d9 ]---
->>
->> As you can see, the processor is trying to execute ASCII strings like
->> "/usr/lib/libxkb" and has trouble digesting them :-)
->>
->> The backtrace is actually missing radeon_cp_init_microcode and radeon_do_init_cp
->> which are inlined inside radeon_cp_init.
->>
->> The trouble is that radeon_cp_init_microcode calls platform_device_register_simple
->> which is a simple inline wrapper around platform_device_register_resndata, which
->> happens to be already freed and overwritten with something looking like a list
->> of filenames, since I have a non modular kernel.
->>
->> For now I have locally reverted 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8
->> which simply added an _init_or_module section attribute to
->> platform_device_register_resndata, and X is up again...
->>
->> Now it may be that it is the ioctl that does not have the right to do
->> this. Actually I thought that the name radeon_cp that is registered there
->> would appear somwhere under /sys (or /proc) but failed to find it...
-> I don't know for sure, but it looks strange to me that an ioctl can
-> register a device. But the fear for such code in the kernel made me
-> choose not to squash 737a3bb941 into 44f28bdea094. So my POV is that if
-> the maintainer of the radeon driver thinks registering the device is OK,
-> reverting 737a3bb9416 is fine for me.
+On 04/06/2011 01:56 AM, Stephen Boyd wrote:
+> +void __udelay(unsigned long usecs)
+> +{
+> +	__const_udelay(usecs * ((2199023*HZ)>>11));
+This will overflow if HZ=1000.
+If I remember correct I fixed it like this:
+__const_udelay(usecs * ((2199023UL*HZ)>>11));
 
-This is the old DRM driver for radeon, which relies on userspace to
-start X then calls the kernel
-to initialise the hardware. Due to this model, there is no device we
-can hang off (the PCI device
-might already be bound to fbdev), so we are forced to create a
-platform device to load the firmware.
-
-So its ugly, unless someone can suggest a better device to hang things
-off I don't know of another way.
-
-Dave.
+/Mattias Wallin
