@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab1DFUST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 16:18:19 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41289
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756769Ab1DFUSS (ORCPT
+	id S1756819Ab1DFUTc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 16:19:32 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:48036 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756612Ab1DFUTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 16:18:18 -0400
-Date: Wed, 06 Apr 2011 13:17:39 -0700 (PDT)
-Message-Id: <20110406.131739.242138705.davem@davemloft.net>
-To: simon@mungewell.org
-Cc: gregkh@suse.de, david-b@pacbell.net, sshtylyov@mvista.com,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PatchV2 : PL25A1 Support - 1/3] whitespace
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1302063406-13077-1-git-send-email-simon@mungewell.org>
-References: <1301456667-1648-1-git-send-email-simon@mungewell.org>
-	<1302063406-13077-1-git-send-email-simon@mungewell.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 6 Apr 2011 16:19:31 -0400
+Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Marek Vasut <marek.vasut@gmail.com>, Guiming Zhuo <gmzhuo@gmail.com>
+In-Reply-To: <1302121040.4090.18.camel@jlt3.sipsolutions.net>
+References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
+	 <20110406141131.GC2810@opensource.wolfsonmicro.com>
+	 <1302099669.4090.1.camel@jlt3.sipsolutions.net>
+	 <1302113542.22852.7.camel@x61.thuisdomein>
+	 <20110406183837.GI11941@tuxdriver.com>
+	 <1302120620.22852.22.camel@x61.thuisdomein>
+	 <1302120922.4090.17.camel@jlt3.sipsolutions.net>
+	 <1302121040.4090.18.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Apr 2011 22:19:24 +0200
+Message-ID: <1302121164.4090.20.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-04-06 at 22:17 +0200, Johannes Berg wrote:
+> On Wed, 2011-04-06 at 22:15 +0200, Johannes Berg wrote:
+> > On Wed, 2011-04-06 at 22:10 +0200, Paul Bolle wrote:
+> > > On Wed, 2011-04-06 at 14:38 -0400, John W. Linville wrote:
+> > > > The syntax may seem strange,
+> > > 
+> > > It does!
+> > > 
+> > > > but basically it just says "don't let me by y if RFKILL is m"
+> > > 
+> > > ... but, besides that, I can be any value. So in effect it's shorthand
+> > > for
+> > > 	depends on RFKILL=y || RFKILL=m && m || RFKILL=n
+> > > 
+> > > (which actually looks equally strange). Is that correct?
+> > 
+> > I don't think it is, I believe that an expression like "RFKILL=y" has a
+> > bool type, and a tristate type value that depends on a bool type can
+> > still take the value m.
+> 
+> Err, which is of course perfectly fine since if RFKILL is built in this
+> can be any value, and in the RFKILL=m case you force it to m by making
+> it depend on m directly. So yes, you're right.
 
-There are some problems with this patch series:
+Whoops ... sorry about the talking to self ...
 
-1) Please compose your subject lines more correctly.  When I such these
-   patches into GIT, everything in the initial "[]" brackets is removed
-   and the commit header line for this patch (for example) ends up being
-   just "whitespace".
+I still think the original is easier to understand. After all, just
+	depends on RFKILL
+is trivial to understand even with tristates. And knowing that RFKILL
+will provide no-op inlines when it is unconfigured, you add
+	depends on !RFKILL
+for that case.
 
-   We want more than that.
+johannes
 
-   Try something like:
-
-	Subject: [PATCH v2 1/3] usb: plusb: Whitespace.
-	Subject: [PATCH v2 2/3] usb: plusb: Add PL25A1 support.
-	Subject: [PATCH v2 3/3] usb: plusb: Add reset debugging.
-
-2) Patch 2 doesn't apply cleanly to the current tree, you'll need to
-   refresh these patches.
-
-Thanks.
