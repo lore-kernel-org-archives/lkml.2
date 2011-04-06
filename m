@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab1DFRC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 13:02:27 -0400
-Received: from linux-sh.org ([111.68.239.195]:51273 "EHLO linux-sh.org"
+	id S1755472Ab1DFRFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 13:05:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48513 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab1DFRCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 13:02:25 -0400
-Date: Thu, 7 Apr 2011 02:01:59 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] s3fb: add DDC support
-Message-ID: <20110406170155.GF11820@linux-sh.org>
-References: <201104032236.18936.linux@rainbow-software.org> <20110404083316.GB9431@localhost> <20110404084200.GD28208@linux-sh.org> <201104041125.36404.linux@rainbow-software.org>
-Mime-Version: 1.0
+	id S1754903Ab1DFRFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 13:05:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,311,1299484800"; 
+   d="scan'208";a="906357929"
+Date: Wed, 6 Apr 2011 19:05:38 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+Message-ID: <20110406170537.GB2757@sortiz-mobl>
+References: <20110331230522.GI437@ponder.secretlab.ca>
+ <20110401112030.GA3447@sortiz-mobl>
+ <20110401104756.2f5c6f7a@debxo>
+ <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
+ <20110401235239.GE29397@sortiz-mobl>
+ <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
+ <20110404100314.GC2751@sortiz-mobl>
+ <20110405030428.GB29522@ponder.secretlab.ca>
+ <20110406152322.GA2757@sortiz-mobl>
+ <20110406155805.GA20095@suse.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201104041125.36404.linux@rainbow-software.org>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <20110406155805.GA20095@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 04, 2011 at 11:25:36AM +0200, Ondrej Zary wrote:
-> On Monday 04 April 2011, Paul Mundt wrote:
-> > On Mon, Apr 04, 2011 at 10:33:16AM +0200, Ondrej Zajicek wrote:
-> > > On Sun, Apr 03, 2011 at 10:36:15PM +0200, Ondrej Zary wrote:
-> > > > Add I2C support for the DDC bus and also default mode initialization by
-> > > > reading monitor EDID to the s3fb driver.
-> > > >
-> > > > Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
-> > > > Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
-> > > >
-> > > > Will probably not work on Trio32 - my 2 cards have DDC support in BIOS
-> > > > that looks different from the other cards but the DDC pins on the VGA
-> > > > connector are not connected.
-> > > >
-> > > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> > >
-> > > Acked-by: Ondrej Zajicek <santiago@crfreenet.org>
-> >
-> > Is there much reason to leave this optional? Or are you simply waiting
-> > for testing feedback from Trio32 users before default-enabling it?
-> >
-> > It would generally be nice to avoid these sorts of config options for a
-> > specific driver if it already is quite capable of handling the
-> > unsupported cases and has a reasonable fallback on defaults via the error
-> > path.
+Hi Greg,
+
+On Wed, Apr 06, 2011 at 08:58:05AM -0700, Greg KH wrote:
+> On Wed, Apr 06, 2011 at 05:23:23PM +0200, Samuel Ortiz wrote:
+> > --- a/include/linux/device.h
+> > +++ b/include/linux/device.h
+> > @@ -33,6 +33,7 @@ struct class;
+> >  struct subsys_private;
+> >  struct bus_type;
+> >  struct device_node;
+> > +struct mfd_cell;
+> >  
+> >  struct bus_attribute {
+> >  	struct attribute	attr;
+> > @@ -444,6 +445,8 @@ struct device {
+> >  	struct device_node	*of_node; /* associated device tree node */
+> >  	const struct of_device_id *of_match; /* matching of_device_id from driver */
+> >  
+> > +	struct mfd_cell	*mfd_cell; /* MFD cell pointer */
+> > +
 > 
-> If the config option is not desired, I'll remove it, I don't like it either. 
-> Just did it like some other fb drivers do. The only reason why someone would 
-> want to disable DDC is probably to have I2C-less kernel.
-> 
-Oh, that's right, i2c is one of those pain in the ass subsystems that
-refuses to provide a stubbed implementation of the API for i2c disabled
-systems. Lets just stick with the first version for now.
+> What is a "MFD cell pointer" and why is it needed in struct device?
+An MFD cell is an MFD instantiated device.
+MFD (Multi Function Device) drivers instantiate platform devices. Those
+devices drivers sometimes need a platform data pointer, sometimes an MFD
+specific pointer, and sometimes both. Also, some of those drivers have been
+implemented as MFD sub drivers, while others know nothing about MFD and just
+expect a plain platform_data pointer.
+
+We've been faced with the problem of being able to pass both MFD related data
+and a platform_data pointer to some of those drivers. Squeezing the MFD bits
+in the sub driver platform_data pointer doesn't work for drivers that know
+nothing about MFDs. It also adds an additional dependency on the MFD API to
+all MFD sub drivers. That prevents any of those drivers to eventually be used
+as plain platform device drivers.
+So, adding an MFD cell pointer to the device structure allows us to cleanly
+pass both pieces of information, while keeping all the MFD sub drivers
+independant from the MFD core if they want/can.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
