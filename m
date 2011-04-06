@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab1DFJZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 05:25:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35746 "EHLO
+	id S1755368Ab1DFJYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 05:24:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35736 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab1DFJYi (ORCPT
+	with ESMTP id S1755212Ab1DFJYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 05:24:38 -0400
+	Wed, 6 Apr 2011 05:24:36 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: Greg KH <gregkh@suse.de>
 Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
         Viresh Kumar <viresh.kumar@st.com>,
         linux-arm-kernel@lists.infradead.org, shiraz.hashim@st.com
-Subject: [PATCH 4/5] driver core/platform_device_add_resources: free resource before overwriting
-Date: Wed,  6 Apr 2011 11:24:24 +0200
-Message-Id: <1302081865-2962-4-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 2/5] driver core/platform_device_add_data: free platform data before overwriting
+Date: Wed,  6 Apr 2011 11:24:22 +0200
+Message-Id: <1302081865-2962-2-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <20110301153438.GB15633@suse.de>
 References: <20110301153438.GB15633@suse.de>
@@ -36,17 +36,17 @@ Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
  1 files changed, 1 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 812d8ff..4a73cbc 100644
+index f836f2e..01caf61 100644
 --- a/drivers/base/platform.c
 +++ b/drivers/base/platform.c
-@@ -199,6 +199,7 @@ int platform_device_add_resources(struct platform_device *pdev,
+@@ -227,6 +227,7 @@ int platform_device_add_data(struct platform_device *pdev, const void *data,
  			return -ENOMEM;
  	}
  
-+	kfree(pdev->resource);
- 	pdev->resource = r;
- 	pdev->num_resources = num;
++	kfree(pdev->dev.platform_data);
+ 	pdev->dev.platform_data = d;
  	return 0;
+ }
 -- 
 1.7.2.3
 
