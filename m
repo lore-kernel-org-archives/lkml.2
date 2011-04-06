@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1DFAn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Apr 2011 20:43:59 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:45090 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596Ab1DFAn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 20:43:57 -0400
-Date: Tue, 5 Apr 2011 17:43:12 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Natarajan Gurumoorthy <natg@google.com>
-CC: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Mike Waychison <mikew@google.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH] Make all it87 drivers SMP safe.
-Message-ID: <20110406004312.GA21882@ericsson.com>
-References: <1302038697-28985-1-git-send-email-natg@google.com>
- <20110405223814.GA21350@ericsson.com>
- <BANLkTimQDVYe53K-M173iQtmkHzKg6Djyg@mail.gmail.com>
- <20110406000528.GB21350@ericsson.com>
- <BANLkTi==zj3PoNuqf2=THaHzevvHHsuh=w@mail.gmail.com>
+	id S1754051Ab1DFAyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Apr 2011 20:54:47 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:30459 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab1DFAyq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Apr 2011 20:54:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=EcFSQ1GDmW/YyLkX7QMAaNirv544d2lie98XPfUV6+gj5EVCagfuTlCiAwsGkVmBBL
+         WmtJLAWfjg0VFowLRjJQ==
+Date: Wed, 6 Apr 2011 02:54:54 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, perfmon2-devel@lists.sf.net,
+        paulus@samba.org, davem@davemloft.net
+Subject: [PATCH] perf_event: fix cgrp event scheduling bug in
+ perf_enable_on_exec()
+Message-ID: <20110406005454.GA1062@quad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi==zj3PoNuqf2=THaHzevvHHsuh=w@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 05, 2011 at 08:13:50PM -0400, Natarajan Gurumoorthy wrote:
-> Guenter,
->       How would you partition it out? Are you suggesting that we do
-> the following:
-> 
-> Patch1:
->    drivers/hwmon/Kconfig          |    1 +
->    drivers/hwmon/it87.c           |   14 ++++++++++++-
-> 
-> Patch2:
->    drivers/watchdog/Kconfig       |   12 +++++++++++
->    drivers/watchdog/Makefile      |    1 +
->    drivers/watchdog/it8712f_wdt.c |   10 ++++----
->    drivers/watchdog/it87_lock.c   |   27 +++++++++++++++++++++++++
->    drivers/watchdog/it87_wdt.c    |   42 ++++++---------------------------------
-> 
-> Patch3:
->    include/linux/it87_lock.h      |   28 ++++++++++++++++++++++++++
-> 
-No, not really. The include file is part of the locking code, and the sequence is wrong.
 
-I personally would introduce the lock in the 1st patch.
-This would affect
-	drivers/watchdog/it87_lock.c
-	include/linux/it87_lock.h
-	drivers/watchdog/Makefile
-	drivers/watchdog/Kconfig
+There is a bug in perf_event_enable_on_exec() when cgroup
+events are active on a CPU. The cgroup events may be scheduled
+twice causing event state corruptions which eventually may lead
+to kernel panics. The reason is that the function needs to first
+schedule out the cgroup events, just like for the per-thread events.
+The cgroup event are scheduled back in automatically from the
+perf_event_context_sched_in() function.
 
-The second patch would update the watchdog driver, affecting 
-	drivers/watchdog/Kconfig
-	drivers/watchdog/it8712f_wdt.c
+The patch also adds a WARN_ON_ONCE() is perf_cgroup_switch()
+to catch any bogus state.
 
-and the last patch would update the hwmon driver.
-	drivers/hwmon/Kconfig
-	drivers/hwmon/it87.c
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-Others may argue that patch 1 and 2 (introducing the lock and updating
-the watchdog driver) should be in a single patch, since the lock alone
-does not do anything without being used. This is a matter of opinion
-and really depends on the maintainer of the watchdog subsystem.
-
-Note that your patch has practical problems. If I disable WATCHDOG but enable
-the IT87 hwmon driver, I get:
-
-warning: (SENSORS_IT87) selects IT87_LOCK which has unmet direct dependencies (WATCHDOG)
-
-during configuration, and undefined references to it87_io_lock when linking.
-So it looks like you might want to consider moving the locking code to a location
-outside the watchdog code.
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 27960f1..badeb0a 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -364,6 +364,7 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
+ 			}
  
-Thanks,
-Guenter
+ 			if (mode & PERF_CGROUP_SWIN) {
++				WARN_ON_ONCE(cpuctx->cgrp);
+ 				/* set cgrp before ctxsw in to
+ 				 * allow event_filter_match() to not
+ 				 * have to pass task around
+@@ -2423,6 +2424,14 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
+ 	if (!ctx || !ctx->nr_events)
+ 		goto out;
+ 
++	/*
++	 * we must ctxsw out cgroup events to avoid conflict
++	 * when invoking perf_task_event_sched_in() later on
++	 * in this function. Otherwise we end up trying to
++	 * ctxswin cgroup events which are already scheduled
++	 * in.
++	 */
++	perf_cgroup_sched_out(current);
+ 	task_ctx_sched_out(ctx, EVENT_ALL);
+ 
+ 	raw_spin_lock(&ctx->lock);
+@@ -2447,6 +2456,9 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
+ 
+ 	raw_spin_unlock(&ctx->lock);
+ 
++	/*
++	 * also calls ctxswin for cgroup events, if any
++	 */
+ 	perf_event_context_sched_in(ctx, ctx->task);
+ out:
+ 	local_irq_restore(flags);
