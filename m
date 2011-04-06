@@ -1,31 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab1DFGuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 02:50:55 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:39245 "EHLO
+	id S1754432Ab1DFGvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 02:51:19 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:39303 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab1DFGur (ORCPT
+	with ESMTP id S1754025Ab1DFGuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 02:50:47 -0400
-X-ASG-Debug-ID: 1302072646-082c1f4c0001-xx1T2L
+	Wed, 6 Apr 2011 02:50:52 -0400
+X-ASG-Debug-ID: 1302072652-082d1f3e0001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: haojian.zhuang@gmail.com, dmitry.torokhov@gmail.com, ddtor@mail.ru,
         a.zummo@towertech.it, johnpol@2ka.mipt.ru, sameo@linux.intel.com,
         linux-kernel@vger.kernel.org
 Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH 3/6] rtc: add 88pm860x rtc
-Subject: [PATCH 3/6] rtc: add 88pm860x rtc
-Date: Wed,  6 Apr 2011 14:46:43 +0800
-X-ASG-Orig-Subj: [PATCH 3/6] rtc: add 88pm860x rtc
-Message-Id: <1302072406-21459-3-git-send-email-haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH 6/6] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
+Subject: [PATCH 6/6] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
+Date: Wed,  6 Apr 2011 14:46:46 +0800
+X-ASG-Orig-Subj: [PATCH 6/6] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
+Message-Id: <1302072406-21459-6-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1302072406-21459-2-git-send-email-haojian.zhuang@marvell.com>
+In-Reply-To: <1302072406-21459-5-git-send-email-haojian.zhuang@marvell.com>
 References: <2011040601>
  <1302072406-21459-1-git-send-email-haojian.zhuang@marvell.com>
  <1302072406-21459-2-git-send-email-haojian.zhuang@marvell.com>
+ <1302072406-21459-3-git-send-email-haojian.zhuang@marvell.com>
+ <1302072406-21459-4-git-send-email-haojian.zhuang@marvell.com>
+ <1302072406-21459-5-git-send-email-haojian.zhuang@marvell.com>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1302072646
+X-Barracuda-Start-Time: 1302072652
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -33,585 +36,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support RTC component in 88PM860x. Also support synchronize time from
-88PM860x RTC to another RTC device. It should be implemented in
-sync callback API.
-
-While 88PM860x RTC is enabled, it can do RTC calibration to gurantee
-enough power is supplied on VRTC domain of 88PM860x.
+This driver provides registers and IRQ of PXA3xx chips to the ds1wm driver.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
 ---
- drivers/mfd/88pm860x-core.c  |   30 +++
- drivers/rtc/Kconfig          |   10 +
- drivers/rtc/Makefile         |    1 +
- drivers/rtc/rtc-88pm860x.c   |  430 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/88pm860x.h |    6 +
- 5 files changed, 477 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-88pm860x.c
+ drivers/mfd/Kconfig  |    7 ++
+ drivers/mfd/Makefile |    1 +
+ drivers/mfd/pxa-w1.c |  149 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 157 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/pxa-w1.c
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index c73ffdf..63d1c54 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -57,6 +57,10 @@ static struct resource regulator_resources[] __initdata = {
- 	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,},
- };
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 9a46d64..56a3c64 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -34,6 +34,13 @@ config MFD_88PM860X
+ 	  select individual components like voltage regulators, RTC and
+ 	  battery-charger under the corresponding menus.
  
-+static struct resource rtc_resources[] __initdata = {
-+	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ,},
-+};
-+
- static struct resource touch_resources[] __initdata = {
- 	{PM8607_IRQ_PEN, PM8607_IRQ_PEN, "touch", IORESOURCE_IRQ,},
- };
-@@ -126,6 +130,10 @@ static struct mfd_cell regulator_devs[] __initdata = {
- 	{"88pm860x-regulator", 17,},
- };
- 
-+static struct mfd_cell rtc_devs[] __initdata = {
-+	{"88pm860x-rtc", -1,},
-+};
-+
- static struct mfd_cell touch_devs[] __initdata = {
- 	{"88pm860x-touch", -1,},
- };
-@@ -148,6 +156,7 @@ static struct pm860x_led_pdata led_pdata[ARRAY_SIZE(led_devs)];
- static struct regulator_init_data regulator_pdata[ARRAY_SIZE(regulator_devs)];
- static struct pm860x_touch_pdata touch_pdata;
- static struct pm860x_power_pdata power_pdata;
-+static struct pm860x_rtc_pdata rtc_pdata;
- 
- struct pm860x_irq_data {
- 	int	reg;
-@@ -585,6 +594,26 @@ out:
- 	return;
- }
- 
-+static void __devinit device_rtc_init(struct pm860x_chip *chip,
-+				      struct i2c_client *i2c,
-+				      struct pm860x_platform_data *pdata)
-+{
-+	int ret;
-+
-+	if ((pdata == NULL) || (pdata->rtc == NULL))
-+		return;
-+
-+	memcpy(&rtc_pdata, pdata->rtc, sizeof(struct pm860x_rtc_pdata));
-+	rtc_devs[0].mfd_data = &rtc_pdata;
-+	rtc_devs[0].num_resources = ARRAY_SIZE(rtc_resources);
-+	rtc_devs[0].resources = &rtc_resources[0];
-+	ret = mfd_add_devices(chip->dev, 0, &rtc_devs[0],
-+			      ARRAY_SIZE(rtc_devs), &rtc_resources[0],
-+			      chip->irq_base);
-+	if (ret < 0)
-+		dev_err(chip->dev, "Failed to add rtc subdev\n");
-+}
-+
- static void __devinit device_touch_init(struct pm860x_chip *chip,
- 					struct i2c_client *i2c,
- 					struct pm860x_platform_data *pdata)
-@@ -713,6 +742,7 @@ static void __devinit device_8607_init(struct pm860x_chip *chip,
- 		goto out;
- 
- 	device_regulator_init(chip, i2c, pdata);
-+	device_rtc_init(chip, i2c, pdata);
- 	device_onkey_init(chip, i2c, pdata);
- 	device_touch_init(chip, i2c, pdata);
- 	device_power_init(chip, i2c, pdata);
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index e187887..286f51e 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -128,6 +128,16 @@ comment "I2C RTC drivers"
- 
- if I2C
- 
-+config RTC_DRV_88PM860X
-+	tristate "Marvell 88PM860x"
-+	depends on RTC_CLASS && I2C && MFD_88PM860X
++config MFD_PXA_DS1WM
++	tristate "Support DS1WM chip on Marvell silicons"
++	select MFD_CORE
 +	help
-+	  If you say yes here you get support for RTC function in Marvell
-+	  88PM860x chips.
++	  This core driver provides register access for PXA_DS1WM.
++	  Actual functionality is handled by the ds1wm drivers.
 +
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-88pm860x.
-+
- config RTC_DRV_DS1307
- 	tristate "Dallas/Maxim DS1307/37/38/39/40, ST M41T00, EPSON RX-8025"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index ca91c3c..e3d6fb0 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -15,6 +15,7 @@ rtc-core-$(CONFIG_RTC_INTF_SYSFS) += rtc-sysfs.o
+ config MFD_SM501
+ 	tristate "Support for Silicon Motion SM501"
+ 	 ---help---
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index ef489f2..7999c56 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -4,6 +4,7 @@
  
- # Keep the list ordered.
- 
-+obj-$(CONFIG_RTC_DRV_88PM860X)  += rtc-88pm860x.o
- obj-$(CONFIG_RTC_DRV_AB3100)	+= rtc-ab3100.o
- obj-$(CONFIG_RTC_DRV_AB8500)	+= rtc-ab8500.o
- obj-$(CONFIG_RTC_DRV_AT32AP700X)+= rtc-at32ap700x.o
-diff --git a/drivers/rtc/rtc-88pm860x.c b/drivers/rtc/rtc-88pm860x.c
+ 88pm860x-objs			:= 88pm860x-core.o 88pm860x-i2c.o
+ obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
++obj-$(CONFIG_MFD_PXA_DS1WM)	+= pxa-w1.o
+ obj-$(CONFIG_MFD_SM501)		+= sm501.o
+ obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+ obj-$(CONFIG_MFD_SH_MOBILE_SDHI)		+= sh_mobile_sdhi.o
+diff --git a/drivers/mfd/pxa-w1.c b/drivers/mfd/pxa-w1.c
 new file mode 100644
-index 0000000..26c19bd
+index 0000000..1fb380f
 --- /dev/null
-+++ b/drivers/rtc/rtc-88pm860x.c
-@@ -0,0 +1,430 @@
++++ b/drivers/mfd/pxa-w1.c
+@@ -0,0 +1,149 @@
 +/*
-+ * Real Time Clock driver for Marvell 88PM860x PMIC
++ * Core driver for PXA DS1WM chip.
 + *
-+ * Copyright (c) 2010 Marvell International Ltd.
-+ * Author:	Haojian Zhuang <haojian.zhuang@marvell.com>
++ * Copyright (C) 2010 Marvell  <jtzhou@marvell.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
 + */
 +
-+#include <linux/kernel.h>
++#include <linux/init.h>
 +#include <linux/module.h>
-+#include <linux/platform_device.h>
 +#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include <linux/rtc.h>
-+#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/interrupt.h>
 +#include <linux/mfd/core.h>
-+#include <linux/mfd/88pm860x.h>
++#include <linux/mfd/ds1wm.h>
 +
-+#define VRTC_CALIBRATION
-+
-+struct pm860x_rtc_info {
-+	struct pm860x_chip	*chip;
-+	struct i2c_client	*i2c;
-+	struct rtc_device	*rtc_dev;
-+	struct device		*dev;
-+	struct delayed_work	calib_work;
-+
-+	int			irq;
-+	int			vrtc;
-+	int			(*sync)(unsigned int ticks);
++struct pxa_w1_info {
++	struct clk *clk;
 +};
 +
-+#define REG_VRTC_MEAS1		0x7D
-+
-+#define REG0_ADDR		0xB0
-+#define REG1_ADDR		0xB2
-+#define REG2_ADDR		0xB4
-+#define REG3_ADDR		0xB6
-+
-+#define REG0_DATA		0xB1
-+#define REG1_DATA		0xB3
-+#define REG2_DATA		0xB5
-+#define REG3_DATA		0xB7
-+
-+/* bit definitions of Measurement Enable Register 2 (0x51) */
-+#define MEAS2_VRTC		(1 << 0)
-+
-+/* bit definitions of RTC Register 1 (0xA0) */
-+#define ALARM_EN		(1 << 3)
-+#define ALARM_WAKEUP		(1 << 4)
-+#define ALARM			(1 << 5)
-+#define RTC1_USE_XO		(1 << 7)
-+
-+#define VRTC_CALIB_INTERVAL	(HZ * 60 * 10)		/* 10 minutes */
-+
-+static irqreturn_t rtc_update_handler(int irq, void *data)
++static int ds1wm_enable(struct platform_device *pdev)
 +{
-+	struct pm860x_rtc_info *info = (struct pm860x_rtc_info *)data;
-+	int mask;
++	struct device *dev = pdev->dev.parent;
++	struct pxa_w1_info *info = dev_get_drvdata(dev);
 +
-+	mask = ALARM | ALARM_WAKEUP;
-+	pm860x_set_bits(info->i2c, PM8607_RTC1, mask | ALARM_EN, mask);
-+	rtc_update_irq(info->rtc_dev, 1, RTC_AF);
-+	return IRQ_HANDLED;
-+}
-+
-+static int pm860x_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-+{
-+	struct pm860x_rtc_info *info = dev_get_drvdata(dev);
-+
-+	if (enabled)
-+		pm860x_set_bits(info->i2c, PM8607_RTC1, ALARM, ALARM);
-+	else
-+		pm860x_set_bits(info->i2c, PM8607_RTC1, ALARM, 0);
++	clk_enable(info->clk);
++	dev_dbg(dev, "pxa DS1WM clk (active)\n");
 +	return 0;
 +}
 +
-+/*
-+ * Calculate the next alarm time given the requested alarm time mask
-+ * and the current time.
-+ */
-+static void rtc_next_alarm_time(struct rtc_time *next, struct rtc_time *now,
-+				struct rtc_time *alrm)
++static int ds1wm_disable(struct platform_device *pdev)
 +{
-+	unsigned long next_time;
-+	unsigned long now_time;
++	struct device *dev = pdev->dev.parent;
++	struct pxa_w1_info *info = dev_get_drvdata(dev);
 +
-+	next->tm_year = now->tm_year;
-+	next->tm_mon = now->tm_mon;
-+	next->tm_mday = now->tm_mday;
-+	next->tm_hour = alrm->tm_hour;
-+	next->tm_min = alrm->tm_min;
-+	next->tm_sec = alrm->tm_sec;
-+
-+	rtc_tm_to_time(now, &now_time);
-+	rtc_tm_to_time(next, &next_time);
-+
-+	if (next_time < now_time) {
-+		/* Advance one day */
-+		next_time += 60 * 60 * 24;
-+		rtc_time_to_tm(next_time, next);
-+	}
-+}
-+
-+static int pm860x_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct pm860x_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned char buf[8];
-+	unsigned long ticks, base, data;
-+
-+	pm860x_page_bulk_read(info->i2c, REG0_ADDR, 8, buf);
-+	dev_dbg(info->dev, "%x-%x-%x-%x-%x-%x-%x-%x\n", buf[0], buf[1],
-+		buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
-+	base = (buf[1] << 24) | (buf[3] << 16) | (buf[5] << 8) | buf[7];
-+
-+	/* load 32-bit read-only counter */
-+	pm860x_bulk_read(info->i2c, PM8607_RTC_COUNTER1, 4, buf);
-+	data = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
-+	ticks = base + data;
-+	dev_dbg(info->dev, "get base:0x%lx, RO count:0x%lx, ticks:0x%lx\n",
-+		base, data, ticks);
-+
-+	rtc_time_to_tm(ticks, tm);
-+
++	clk_disable(info->clk);
++	dev_dbg(dev, "pxa DS1WM clk (in-active)\n");
 +	return 0;
 +}
 +
-+static int pm860x_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct pm860x_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned char buf[4];
-+	unsigned long ticks, base, data;
-+
-+	if ((tm->tm_year < 70) || (tm->tm_year > 138)) {
-+		dev_dbg(info->dev, "Set time %d out of range. "
-+			"Please set time between 1970 to 2038.\n",
-+			1900 + tm->tm_year);
-+		return -EINVAL;
-+	}
-+	rtc_tm_to_time(tm, &ticks);
-+
-+	/* load 32-bit read-only counter */
-+	pm860x_bulk_read(info->i2c, PM8607_RTC_COUNTER1, 4, buf);
-+	data = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
-+	base = ticks - data;
-+	dev_dbg(info->dev, "set base:0x%lx, RO count:0x%lx, ticks:0x%lx\n",
-+		base, data, ticks);
-+
-+	pm860x_page_reg_write(info->i2c, REG0_DATA, (base >> 24) & 0xFF);
-+	pm860x_page_reg_write(info->i2c, REG1_DATA, (base >> 16) & 0xFF);
-+	pm860x_page_reg_write(info->i2c, REG2_DATA, (base >> 8) & 0xFF);
-+	pm860x_page_reg_write(info->i2c, REG3_DATA, base & 0xFF);
-+
-+	if (info->sync)
-+		info->sync(ticks);
-+	return 0;
-+}
-+
-+static int pm860x_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct pm860x_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned char buf[8];
-+	unsigned long ticks, base, data;
-+	int ret;
-+
-+	pm860x_page_bulk_read(info->i2c, REG0_ADDR, 8, buf);
-+	dev_dbg(info->dev, "%x-%x-%x-%x-%x-%x-%x-%x\n", buf[0], buf[1],
-+		buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
-+	base = (buf[1] << 24) | (buf[3] << 16) | (buf[5] << 8) | buf[7];
-+
-+	pm860x_bulk_read(info->i2c, PM8607_RTC_EXPIRE1, 4, buf);
-+	data = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
-+	ticks = base + data;
-+	dev_dbg(info->dev, "get base:0x%lx, RO count:0x%lx, ticks:0x%lx\n",
-+		base, data, ticks);
-+
-+	rtc_time_to_tm(ticks, &alrm->time);
-+	ret = pm860x_reg_read(info->i2c, PM8607_RTC1);
-+	alrm->enabled = (ret & ALARM_EN) ? 1 : 0;
-+	alrm->pending = (ret & (ALARM | ALARM_WAKEUP)) ? 1 : 0;
-+	return 0;
-+}
-+
-+static int pm860x_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct pm860x_rtc_info *info = dev_get_drvdata(dev);
-+	struct rtc_time now_tm, alarm_tm;
-+	unsigned long ticks, base, data;
-+	unsigned char buf[8];
-+	int mask;
-+
-+	pm860x_set_bits(info->i2c, PM8607_RTC1, ALARM_EN, 0);
-+
-+	pm860x_page_bulk_read(info->i2c, REG0_ADDR, 8, buf);
-+	dev_dbg(info->dev, "%x-%x-%x-%x-%x-%x-%x-%x\n", buf[0], buf[1],
-+		buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
-+	base = (buf[1] << 24) | (buf[3] << 16) | (buf[5] << 8) | buf[7];
-+
-+	/* load 32-bit read-only counter */
-+	pm860x_bulk_read(info->i2c, PM8607_RTC_COUNTER1, 4, buf);
-+	data = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
-+	ticks = base + data;
-+	dev_dbg(info->dev, "get base:0x%lx, RO count:0x%lx, ticks:0x%lx\n",
-+		base, data, ticks);
-+
-+	rtc_time_to_tm(ticks, &now_tm);
-+	rtc_next_alarm_time(&alarm_tm, &now_tm, &alrm->time);
-+	/* get new ticks for alarm in 24 hours */
-+	rtc_tm_to_time(&alarm_tm, &ticks);
-+	data = ticks - base;
-+
-+	buf[0] = data & 0xff;
-+	buf[1] = (data >> 8) & 0xff;
-+	buf[2] = (data >> 16) & 0xff;
-+	buf[3] = (data >> 24) & 0xff;
-+	pm860x_bulk_write(info->i2c, PM8607_RTC_EXPIRE1, 4, buf);
-+	if (alrm->enabled) {
-+		mask = ALARM | ALARM_WAKEUP | ALARM_EN;
-+		pm860x_set_bits(info->i2c, PM8607_RTC1, mask, mask);
-+	} else {
-+		mask = ALARM | ALARM_WAKEUP | ALARM_EN;
-+		pm860x_set_bits(info->i2c, PM8607_RTC1, mask,
-+				ALARM | ALARM_WAKEUP);
-+	}
-+	return 0;
-+}
-+
-+static const struct rtc_class_ops pm860x_rtc_ops = {
-+	.read_time	= pm860x_rtc_read_time,
-+	.set_time	= pm860x_rtc_set_time,
-+	.read_alarm	= pm860x_rtc_read_alarm,
-+	.set_alarm	= pm860x_rtc_set_alarm,
-+	.alarm_irq_enable = pm860x_rtc_alarm_irq_enable,
++static struct resource ds1wm_resources[] __initdata = {
++	{0, 0, "ds1wm-mem", IORESOURCE_MEM,},
++	{0, 0, "ds1wm-irq", IORESOURCE_IRQ,},
 +};
 +
-+#ifdef VRTC_CALIBRATION
-+static void calibrate_vrtc_work(struct work_struct *work)
++static struct ds1wm_driver_data ds1wm_pdata;
++
++static struct mfd_cell ds1wm_cell __initdata = {
++	.name		= "ds1wm",
++	.enable		= ds1wm_enable,
++	.disable	= ds1wm_disable,
++	.mfd_data	= &ds1wm_pdata,
++	.num_resources	= ARRAY_SIZE(ds1wm_resources),
++	.resources	= ds1wm_resources,
++};
++
++static int __devinit pxa_w1_probe(struct platform_device *pdev)
 +{
-+	struct pm860x_rtc_info *info = container_of(work,
-+		struct pm860x_rtc_info, calib_work.work);
-+	unsigned char buf[2];
-+	unsigned int sum, data, mean, vrtc_set;
-+	int i;
++	struct ds1wm_driver_data *pdata = pdev->dev.platform_data;
++	struct pxa_w1_info *info;
++	struct resource *r;
++	int ret, irq;
 +
-+	for (i = 0, sum = 0; i < 16; i++) {
-+		msleep(100);
-+		pm860x_bulk_read(info->i2c, REG_VRTC_MEAS1, 2, buf);
-+		data = (buf[0] << 4) | buf[1];
-+		data = (data * 5400) >> 12;	/* convert to mv */
-+		sum += data;
-+	}
-+	mean = sum >> 4;
-+	vrtc_set = 2700 + (info->vrtc & 0x3) * 200;
-+	dev_dbg(info->dev, "mean:%d, vrtc_set:%d\n", mean, vrtc_set);
-+
-+	sum = pm860x_reg_read(info->i2c, PM8607_RTC_MISC1);
-+	data = sum & 0x3;
-+	if ((mean + 200) < vrtc_set) {
-+		/* try higher voltage */
-+		if (++data == 4)
-+			goto out;
-+		data = (sum & 0xf8) | (data & 0x3);
-+		pm860x_reg_write(info->i2c, PM8607_RTC_MISC1, data);
-+	} else if ((mean - 200) > vrtc_set) {
-+		/* try lower voltage */
-+		if (data-- == 0)
-+			goto out;
-+		data = (sum & 0xf8) | (data & 0x3);
-+		pm860x_reg_write(info->i2c, PM8607_RTC_MISC1, data);
-+	} else
-+		goto out;
-+	dev_dbg(info->dev, "set 0x%x to RTC_MISC1\n", data);
-+	/* trigger next calibration since VRTC is updated */
-+	schedule_delayed_work(&info->calib_work, VRTC_CALIB_INTERVAL);
-+	return;
-+out:
-+	/* disable measurement */
-+	pm860x_set_bits(info->i2c, PM8607_MEAS_EN2, MEAS2_VRTC, 0);
-+	dev_dbg(info->dev, "finish VRTC calibration\n");
-+	return;
-+}
-+#endif
-+
-+static int __devinit pm860x_rtc_probe(struct platform_device *pdev)
-+{
-+	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
-+	struct pm860x_rtc_pdata *pdata = NULL;
-+	struct pm860x_rtc_info *info;
-+	struct mfd_cell *cell;
-+	struct rtc_time tm;
-+	unsigned long ticks = 0;
-+	int ret;
-+
-+	cell = pdev->dev.platform_data;
-+	if (cell == NULL)
-+		return -ENODEV;
-+	pdata = cell->mfd_data;
-+	if (pdata == NULL) {
-+		dev_err(&pdev->dev, "No platform data!\n");
-+		return -EINVAL;
-+	}
-+
-+	info = kzalloc(sizeof(struct pm860x_rtc_info), GFP_KERNEL);
++	info = kzalloc(sizeof(struct pxa_w1_info), GFP_KERNEL);
 +	if (!info)
 +		return -ENOMEM;
-+	info->irq = platform_get_irq(pdev, 0);
-+	if (info->irq < 0) {
-+		dev_err(&pdev->dev, "No IRQ resource!\n");
-+		ret = -EINVAL;
++
++	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (r == NULL) {
++		ret = -ENXIO;
 +		goto out;
 +	}
++	irq = r->start;
++	if (pdata)
++		ds1wm_pdata.active_high = pdata->active_high;
++	if (ds1wm_pdata.active_high)
++		ds1wm_resources[1].flags |= IORESOURCE_IRQ_HIGHEDGE;
++	else
++		ds1wm_resources[1].flags |= IORESOURCE_IRQ_LOWEDGE;
 +
-+	info->chip = chip;
-+	info->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip->companion;
-+	info->dev = &pdev->dev;
-+	dev_set_drvdata(&pdev->dev, info);
-+
-+	ret = request_threaded_irq(info->irq, NULL, rtc_update_handler,
-+				   IRQF_ONESHOT, "rtc", info);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
-+			info->irq, ret);
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		ret = -ENXIO;
 +		goto out;
 +	}
++	ds1wm_resources[0].end = resource_size(r) - 1;
 +
-+	/* set addresses of 32-bit base value for RTC time */
-+	pm860x_page_reg_write(info->i2c, REG0_ADDR, REG0_DATA);
-+	pm860x_page_reg_write(info->i2c, REG1_ADDR, REG1_DATA);
-+	pm860x_page_reg_write(info->i2c, REG2_ADDR, REG2_DATA);
-+	pm860x_page_reg_write(info->i2c, REG3_ADDR, REG3_DATA);
-+
-+	ret = pm860x_rtc_read_time(&pdev->dev, &tm);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to read initial time.\n");
-+		goto out_rtc;
++	info->clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(info->clk)) {
++		ret = PTR_ERR(info->clk);
++		goto out;
 +	}
-+	if ((tm.tm_year < 70) || (tm.tm_year > 138)) {
-+		tm.tm_year = 70;
-+		tm.tm_mon = 0;
-+		tm.tm_mday = 1;
-+		tm.tm_hour = 0;
-+		tm.tm_min = 0;
-+		tm.tm_sec = 0;
-+		ret = pm860x_rtc_set_time(&pdev->dev, &tm);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "Failed to set initial time.\n");
-+			goto out_rtc;
-+		}
-+	}
-+	rtc_tm_to_time(&tm, &ticks);
-+	if (pdata->sync) {
-+		pdata->sync(ticks);
-+		info->sync = pdata->sync;
-+	}
++	platform_set_drvdata(pdev, info);
 +
-+	info->rtc_dev = rtc_device_register("88pm860x-rtc", &pdev->dev,
-+					    &pm860x_rtc_ops, THIS_MODULE);
-+	ret = PTR_ERR(info->rtc_dev);
-+	if (IS_ERR(info->rtc_dev)) {
-+		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
-+		goto out_rtc;
-+	}
++	ds1wm_pdata.clock_rate = clk_get_rate(info->clk);
++	ret = mfd_add_devices(&pdev->dev, pdev->id, &ds1wm_cell, 1, r, irq);
++	if (ret < 0)
++		dev_err(&pdev->dev, "failed to register pxa DS1WM\n");
 +
-+	/*
-+	 * enable internal XO instead of internal 3.25MHz clock since it can
-+	 * free running in PMIC power-down state.
-+	 */
-+	pm860x_set_bits(info->i2c, PM8607_RTC1, RTC1_USE_XO, RTC1_USE_XO);
-+
-+#ifdef VRTC_CALIBRATION
-+	/* <00> -- 2.7V, <01> -- 2.9V, <10> -- 3.1V, <11> -- 3.3V */
-+	info->vrtc = pdata->vrtc & 0x3;
-+	pm860x_set_bits(info->i2c, PM8607_MEAS_EN2, MEAS2_VRTC, MEAS2_VRTC);
-+
-+	/* calibrate VRTC */
-+	INIT_DELAYED_WORK(&info->calib_work, calibrate_vrtc_work);
-+	schedule_delayed_work(&info->calib_work, VRTC_CALIB_INTERVAL);
-+#endif	/* VRTC_CALIBRATION */
 +	return 0;
-+out_rtc:
-+	free_irq(info->irq, info);
 +out:
 +	kfree(info);
 +	return ret;
 +}
 +
-+static int __devexit pm860x_rtc_remove(struct platform_device *pdev)
++static int __devexit pxa_w1_remove(struct platform_device *pdev)
 +{
-+	struct pm860x_rtc_info *info = platform_get_drvdata(pdev);
++	struct pxa_w1_info *info = platform_get_drvdata(pdev);
 +
-+#ifdef VRTC_CALIBRATION
-+	flush_scheduled_work();
-+	/* disable measurement */
-+	pm860x_set_bits(info->i2c, PM8607_MEAS_EN2, MEAS2_VRTC, 0);
-+#endif	/* VRTC_CALIBRATION */
-+
-+	platform_set_drvdata(pdev, NULL);
-+	rtc_device_unregister(info->rtc_dev);
-+	free_irq(info->irq, info);
++	mfd_remove_devices(&pdev->dev);
++	clk_put(info->clk);
 +	kfree(info);
++	platform_set_drvdata(pdev, NULL);
 +	return 0;
 +}
 +
-+static struct platform_driver pm860x_rtc_driver = {
-+	.driver		= {
-+		.name	= "88pm860x-rtc",
-+		.owner	= THIS_MODULE,
++static struct platform_driver pxa_w1_driver = {
++	.driver = {
++		   .name	= "pxa3xx-w1",
++		   .owner	= THIS_MODULE,
 +	},
-+	.probe		= pm860x_rtc_probe,
-+	.remove		= __devexit_p(pm860x_rtc_remove),
++	.probe		= pxa_w1_probe,
++	.remove		= __devexit_p(pxa_w1_remove),
 +};
 +
-+static int __init pm860x_rtc_init(void)
++static int __init pxa_w1_base_init(void)
 +{
-+	return platform_driver_register(&pm860x_rtc_driver);
++	return platform_driver_register(&pxa_w1_driver);
 +}
-+module_init(pm860x_rtc_init);
 +
-+static void __exit pm860x_rtc_exit(void)
++static void __exit pxa_w1_base_exit(void)
 +{
-+	platform_driver_unregister(&pm860x_rtc_driver);
++	platform_driver_unregister(&pxa_w1_driver);
 +}
-+module_exit(pm860x_rtc_exit);
 +
-+MODULE_DESCRIPTION("Marvell 88PM860x RTC driver");
-+MODULE_AUTHOR("Haojian Zhuang <haojian.zhuang@marvell.com>");
++module_init(pxa_w1_base_init);
++module_exit(pxa_w1_base_exit);
++
++MODULE_AUTHOR("Jett Zhou <jtzhou@marvell.com>");
++MODULE_DESCRIPTION("one wire driver for PXA");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/88pm860x.h b/include/linux/mfd/88pm860x.h
-index 8fba797..63b4fb8 100644
---- a/include/linux/mfd/88pm860x.h
-+++ b/include/linux/mfd/88pm860x.h
-@@ -330,6 +330,11 @@ struct pm860x_led_pdata {
- 	unsigned long	flags;
- };
- 
-+struct pm860x_rtc_pdata {
-+	int		(*sync)(unsigned int ticks);
-+	int		vrtc;
-+};
-+
- struct pm860x_touch_pdata {
- 	int		gpadc_prebias;
- 	int		slot_cycle;
-@@ -349,6 +354,7 @@ struct pm860x_power_pdata {
- struct pm860x_platform_data {
- 	struct pm860x_backlight_pdata	*backlight;
- 	struct pm860x_led_pdata		*led;
-+	struct pm860x_rtc_pdata		*rtc;
- 	struct pm860x_touch_pdata	*touch;
- 	struct pm860x_power_pdata	*power;
- 	struct regulator_init_data	*regulator;
++MODULE_ALIAS("platform:pxa-w1");
 -- 
 1.5.6.5
 
