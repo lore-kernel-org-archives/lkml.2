@@ -1,163 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab1DFWGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:06:17 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50735 "EHLO hera.kernel.org"
+	id S1756754Ab1DFWGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:06:36 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50753 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab1DFWGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:06:14 -0400
-Date: Wed, 6 Apr 2011 22:05:59 GMT
+	id S1756132Ab1DFWGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 18:06:34 -0400
+Date: Wed, 6 Apr 2011 22:06:24 GMT
 From: tip-bot for Hans Rosenfeld <hans.rosenfeld@amd.com>
 Cc: linux-kernel@vger.kernel.org, hans.rosenfeld@amd.com, hpa@zytor.com,
         mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, hans.rosenfeld@amd.com,
         linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: 1302018656-586370-7-git-send-email-hans.rosenfeld@amd.com
-References: 1302018656-586370-7-git-send-email-hans.rosenfeld@amd.com
+In-Reply-To: <1302018656-586370-8-git-send-email-hans.rosenfeld@amd.com>
+References: <1302018656-586370-8-git-send-email-hans.rosenfeld@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/xsave] x86, xsave: add support for non-lazy xstates
-Message-ID: <tip-4182a4d68bac5782bf76743193c1d9f7d17a34a4@git.kernel.org>
-Git-Commit-ID: 4182a4d68bac5782bf76743193c1d9f7d17a34a4
+Subject: [tip:x86/xsave] x86, xsave: add kernel support for AMDs Lightweight Profiling (LWP)
+Message-ID: <tip-1039b306b1c68c2b4183b22a131c5f031dfedc2b@git.kernel.org>
+Git-Commit-ID: 1039b306b1c68c2b4183b22a131c5f031dfedc2b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 06 Apr 2011 22:05:59 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 06 Apr 2011 22:06:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4182a4d68bac5782bf76743193c1d9f7d17a34a4
-Gitweb:     http://git.kernel.org/tip/4182a4d68bac5782bf76743193c1d9f7d17a34a4
+Commit-ID:  1039b306b1c68c2b4183b22a131c5f031dfedc2b
+Gitweb:     http://git.kernel.org/tip/1039b306b1c68c2b4183b22a131c5f031dfedc2b
 Author:     Hans Rosenfeld <hans.rosenfeld@amd.com>
-AuthorDate: Tue, 5 Apr 2011 17:50:54 +0200
+AuthorDate: Tue, 5 Apr 2011 17:50:55 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 6 Apr 2011 14:15:19 -0700
+CommitDate: Wed, 6 Apr 2011 14:15:20 -0700
 
-x86, xsave: add support for non-lazy xstates
+x86, xsave: add kernel support for AMDs Lightweight Profiling (LWP)
 
-Non-lazy xstates are, as the name suggests, extended states that cannot
-be saved or restored lazily. The state for AMDs LWP feature is an
-example of this.
-
-This patch adds support for this kind of xstates. If any such states are
-present and supported on the running system, they will always be enabled
-in xstate_mask so that they are always restored in switch_to. Since lazy
-allocation of the xstate area won't work when non-lazy xstates are used,
-all user tasks will always have a xstate area preallocated.
+This patch extends the xsave structure to support the LWP state. The
+xstate feature bit for LWP is added to XCNTXT_NONLAZY, thereby enabling
+kernel support for saving/restoring LWP state. The LWP state is also
+saved/restored on signal entry/return, just like all other xstates. LWP
+state needs to be reset (disabled) when entering a signal handler.
 
 Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Link: http://lkml.kernel.org/r/1302018656-586370-7-git-send-email-hans.rosenfeld@amd.com
+Link: http://lkml.kernel.org/r/1302018656-586370-8-git-send-email-hans.rosenfeld@amd.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/i387.h  |   17 +++++++++++++++++
- arch/x86/include/asm/xsave.h |    5 +++--
- arch/x86/kernel/process_32.c |    2 +-
- arch/x86/kernel/process_64.c |    2 +-
- arch/x86/kernel/xsave.c      |    6 +++++-
- 5 files changed, 27 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/msr-index.h  |    1 +
+ arch/x86/include/asm/processor.h  |   12 ++++++++++++
+ arch/x86/include/asm/sigcontext.h |   12 ++++++++++++
+ arch/x86/include/asm/xsave.h      |    3 ++-
+ arch/x86/kernel/xsave.c           |    2 ++
+ 5 files changed, 29 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 0381578..da55ab6 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -329,6 +329,23 @@ static inline void fpu_copy(struct fpu *dst, struct fpu *src)
- }
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index fd5a1f3..55edab6 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -131,6 +131,7 @@
+ #define MSR_AMD64_IBSDCPHYSAD		0xc0011039
+ #define MSR_AMD64_IBSCTL		0xc001103a
+ #define MSR_AMD64_IBSBRTARGET		0xc001103b
++#define MSR_AMD64_LWP_CBADDR		0xc0000106
  
- extern void fpu_finit(struct fpu *fpu);
-+static union thread_xstate __init_xstate, *init_xstate = &__init_xstate;
+ /* Fam 15h MSRs */
+ #define MSR_F15H_PERF_CTL		0xc0010200
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 4c25ab4..df2cbd4 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -353,6 +353,17 @@ struct ymmh_struct {
+ 	u32 ymmh_space[64];
+ };
+ 
++struct lwp_struct {
++	u64 lwpcb_addr;
++	u32 flags;
++	u32 buf_head_offset;
++	u64 buf_base;
++	u32 buf_size;
++	u32 filters;
++	u64 saved_event_record[4];
++	u32 event_counter[16];
++};
 +
-+static inline void fpu_clear(struct fpu *fpu)
-+{
-+	if (pcntxt_mask & XCNTXT_NONLAZY) {
-+		if (!fpu_allocated(fpu)) {
-+			BUG_ON(init_xstate == NULL);
-+			fpu->state = init_xstate;
-+			init_xstate = NULL;
-+		}
-+		memset(fpu->state, 0, xstate_size);
-+		fpu_finit(fpu);
-+		set_used_math();
-+	} else {
-+		fpu_free(fpu);
-+	}
-+}
+ struct xsave_hdr_struct {
+ 	u64 xstate_bv;
+ 	u64 reserved1[2];
+@@ -363,6 +374,7 @@ struct xsave_struct {
+ 	struct i387_fxsave_struct i387;
+ 	struct xsave_hdr_struct xsave_hdr;
+ 	struct ymmh_struct ymmh;
++	struct lwp_struct lwp;
+ 	/* new processor state extensions will go here */
+ } __attribute__ ((packed, aligned (64)));
  
- #endif /* __ASSEMBLY__ */
+diff --git a/arch/x86/include/asm/sigcontext.h b/arch/x86/include/asm/sigcontext.h
+index 04459d2..0a58b82 100644
+--- a/arch/x86/include/asm/sigcontext.h
++++ b/arch/x86/include/asm/sigcontext.h
+@@ -274,6 +274,17 @@ struct _ymmh_state {
+ 	__u32 ymmh_space[64];
+ };
+ 
++struct _lwp_state {
++	__u64 lwpcb_addr;
++	__u32 flags;
++	__u32 buf_head_offset;
++	__u64 buf_base;
++	__u32 buf_size;
++	__u32 filters;
++	__u64 saved_event_record[4];
++	__u32 event_counter[16];
++};
++
+ /*
+  * Extended state pointed by the fpstate pointer in the sigcontext.
+  * In addition to the fpstate, information encoded in the xstate_hdr
+@@ -284,6 +295,7 @@ struct _xstate {
+ 	struct _fpstate fpstate;
+ 	struct _xsave_hdr xstate_hdr;
+ 	struct _ymmh_state ymmh;
++	struct _lwp_state lwp;
+ 	/* new processor state extensions go here */
+ };
  
 diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index b8861d4..4ccee3c 100644
+index 4ccee3c..be89f0e 100644
 --- a/arch/x86/include/asm/xsave.h
 +++ b/arch/x86/include/asm/xsave.h
-@@ -23,9 +23,10 @@
- /*
+@@ -9,6 +9,7 @@
+ #define XSTATE_FP	0x1
+ #define XSTATE_SSE	0x2
+ #define XSTATE_YMM	0x4
++#define XSTATE_LWP	(1ULL << 62)
+ 
+ #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
+ 
+@@ -24,7 +25,7 @@
   * These are the features that the OS can handle currently.
   */
--#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-+#define XCNTXT_LAZY	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-+#define XCNTXT_NONLAZY	0
+ #define XCNTXT_LAZY	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+-#define XCNTXT_NONLAZY	0
++#define XCNTXT_NONLAZY	(XSTATE_LWP)
  
--#define XCNTXT_LAZY	XCNTXT_MASK
-+#define XCNTXT_MASK	(XCNTXT_LAZY | XCNTXT_NONLAZY)
+ #define XCNTXT_MASK	(XCNTXT_LAZY | XCNTXT_NONLAZY)
  
- #ifdef CONFIG_X86_64
- #define REX_PREFIX	"0x48, "
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 8df07c3..a878736 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -257,7 +257,7 @@ start_thread(struct pt_regs *regs, unsigned long new_ip, unsigned long new_sp)
- 	/*
- 	 * Free the old FP and other extended state
- 	 */
--	free_thread_xstate(current);
-+	fpu_clear(&current->thread.fpu);
- }
- EXPORT_SYMBOL_GPL(start_thread);
- 
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index cbf1a67..8ff35fc 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -344,7 +344,7 @@ start_thread_common(struct pt_regs *regs, unsigned long new_ip,
- 	/*
- 	 * Free the old FP and other extended state
- 	 */
--	free_thread_xstate(current);
-+	fpu_clear(&current->thread.fpu);
- }
- 
- void
 diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index d42810f..56ab3d3 100644
+index 56ab3d3..a188362 100644
 --- a/arch/x86/kernel/xsave.c
 +++ b/arch/x86/kernel/xsave.c
-@@ -16,6 +16,7 @@
-  * Supported feature mask by the CPU and the kernel.
-  */
- u64 pcntxt_mask;
-+EXPORT_SYMBOL(pcntxt_mask);
+@@ -177,6 +177,8 @@ int save_xstates_sigframe(void __user *buf, unsigned int size)
+ 			(struct _fpstate_ia32 __user *) buf) ? -1 : 1;
  
- /*
-  * Represents init state for the supported extended state.
-@@ -260,7 +261,7 @@ int restore_xstates_sigframe(void __user *buf, unsigned int size)
- 	struct task_struct *tsk = current;
- 	struct _fpstate_ia32 __user *fp = buf;
- 	struct xsave_struct *xsave;
--	u64 xstate_mask = 0;
-+	u64 xstate_mask = pcntxt_mask & XCNTXT_NONLAZY;
- 	int err;
+ 	save_xstates(tsk);
++	if (pcntxt_mask & XSTATE_LWP)
++		wrmsrl(MSR_AMD64_LWP_CBADDR, 0);
+ 	if (use_xsaveopt())
+ 		sanitize_i387_state(tsk);
  
- 	if (!buf) {
-@@ -477,6 +478,9 @@ static void __init xstate_enable_boot_cpu(void)
- 	printk(KERN_INFO "xsave/xrstor: enabled xstate_bv 0x%llx, "
- 	       "cntxt size 0x%x\n",
- 	       pcntxt_mask, xstate_size);
-+
-+	if (pcntxt_mask & XCNTXT_NONLAZY)
-+		task_thread_info(&init_task)->xstate_mask |= XCNTXT_NONLAZY;
- }
- 
- /*
