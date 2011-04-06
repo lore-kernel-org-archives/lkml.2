@@ -1,239 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab1DFNsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 09:48:19 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:43845 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab1DFNsS (ORCPT
+	id S1756129Ab1DFNya (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 09:54:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37056 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755906Ab1DFNy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 09:48:18 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D9C6F82.5060404@cam.ac.uk>
-Date: Wed, 06 Apr 2011 14:49:54 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Wed, 6 Apr 2011 09:54:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EcvSM97KKAqoXAvKH1SJQYvxEqPIfeKPH6fSdidyuATd7kWBxy8ccZ/xn4qwbJX+Er
+         ehUNZlQz9Pl2TLCarsaL5lL03FBJlx8Bq9xzFNzlyH7pjmF1dqp+H0nPFHKb+a5tBj20
+         VDxtm38+vgPSo8dAw+8gTSxZXu0FppfEJsa/w=
+Date: Wed, 6 Apr 2011 15:54:24 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Thomas Renninger <trenn@suse.de>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH v3] hwmon: Add driver for AMD family 15h processor power
+ information
+Message-ID: <20110406135424.GC2177@alberich.amd.com>
+References: <20110404160733.GA11818@alberich.amd.com>
+ <20110405144536.GA5054@alberich.amd.com>
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Alan Cox <alan@linux.jf.intel.com>, linux-kernel@vger.kernel.org,
-        greg@kroah.com,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH] oaktrail AK8975 support via IIO
-References: <20110406123114.17742.10936.stgit@localhost.localdomain> <4D9C6D1F.30007@cam.ac.uk>
-In-Reply-To: <4D9C6D1F.30007@cam.ac.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110405144536.GA5054@alberich.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/11 14:39, Jonathan Cameron wrote:
-> On 04/06/11 13:31, Alan Cox wrote:
->> Actually this is generic 'I have no GPIO' support for the AK8975, instead
->> we have to go bus polling.
-Can we rename the patch to reflect that?
->>
->> Huang Liang produced an initial patch which worked by removing the support
->> for GPIO pins. This patch instead makes GPIO support optional and Huang then
->> fixed some bugs in it.
-Patch is fine, but could perhaps be a little shorter and tidier as suggested
-below.
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-> 
-> cc'd linux-iio
->> Signed-off-by: Alan Cox <alan@linux.intel.com>
->> ---
->>
->>  drivers/staging/iio/magnetometer/ak8975.c |  120 ++++++++++++++++++++---------
->>  1 files changed, 83 insertions(+), 37 deletions(-)
->>
->> diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
->> index 420f206..d71904a 100644
->> --- a/drivers/staging/iio/magnetometer/ak8975.c
->> +++ b/drivers/staging/iio/magnetometer/ak8975.c
->> @@ -206,7 +206,7 @@ static int ak8975_setup(struct i2c_client *client)
->>  	}
->>  
->>  	/* Precalculate scale factor for each axis and
->> -           store in the device data. */
->> +	   store in the device data. */
->>  	data->raw_to_gauss[0] = ((data->asa[0] + 128) * 30) >> 8;
->>  	data->raw_to_gauss[1] = ((data->asa[1] + 128) * 30) >> 8;
->>  	data->raw_to_gauss[2] = ((data->asa[2] + 128) * 30) >> 8;
->> @@ -316,6 +316,59 @@ static ssize_t show_scale(struct device *dev, struct device_attribute *devattr,
->>  	return sprintf(buf, "%ld\n", data->raw_to_gauss[this_attr->address]);
->>  }
->>  
->> +static int wait_conversion_complete_gpio(struct ak8975_data *data)
->> +{
->> +	struct i2c_client *client = data->client;
->> +	u8 read_status;
->> +	u32 timeout_ms = AK8975_MAX_CONVERSION_TIMEOUT;
->> +	int ret;
->> +
->> +	/* Wait for the conversion to complete. */
->> +	while (timeout_ms) {
->> +		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
->> +		if (gpio_get_value(data->eoc_gpio))
->> +			break;
->> +		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
->> +	}
->> +	if (!timeout_ms) {
->> +		dev_err(&client->dev, "Conversion timeout happened\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	ret = ak8975_read_data(client, AK8975_REG_ST1, 1, &read_status);
->> +	if (ret < 0) {
->> +		dev_err(&client->dev, "Error in reading ST1\n");
->> +		return ret;
->> +	}
->> +	return read_status;
->> +}
->> +
-Its not immediately obvious to me why we need these two separate functions.
-They only differ by a couple of lines.  Perhaps push querying if the gpio
-down into a single function?
->> +static int wait_conversion_complete_polled(struct ak8975_data *data)
->> +{
->> +	struct i2c_client *client = data->client;
->> +	u8 read_status;
->> +	u32 timeout_ms = AK8975_MAX_CONVERSION_TIMEOUT;
->> +	int ret;
->> +
->> +	/* Wait for the conversion to complete. */
->> +	while (timeout_ms) {
->> +		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
->> +		ret = ak8975_read_data(client, AK8975_REG_ST1, 1, &read_status);
->> +		if (ret < 0) {
->> +			dev_err(&client->dev, "Error in reading ST1\n");
->> +			return ret;
->> +		}
->> +		if (read_status)
->> +			break;
->> +		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
->> +	}
->> +	if (!timeout_ms) {
->> +		dev_err(&client->dev, "Conversion timeout happened\n");
->> +		return -EINVAL;
->> +	}
->> +	return read_status;
->> +}
->> +
->>  /*
->>   * Emits the raw flux value for the x, y, or z axis.
->>   */
->> @@ -326,7 +379,6 @@ static ssize_t show_raw(struct device *dev, struct device_attribute *devattr,
->>  	struct ak8975_data *data = indio_dev->dev_data;
->>  	struct i2c_client *client = data->client;
->>  	struct iio_dev_attr *this_attr = to_iio_dev_attr(devattr);
->> -	u32 timeout_ms = AK8975_MAX_CONVERSION_TIMEOUT;
->>  	u16 meas_reg;
->>  	s16 raw;
->>  	u8 read_status;
->> @@ -352,23 +404,14 @@ static ssize_t show_raw(struct device *dev, struct device_attribute *devattr,
->>  	}
->>  
->>  	/* Wait for the conversion to complete. */
->> -	while (timeout_ms) {
->> -		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
->> -		if (gpio_get_value(data->eoc_gpio))
->> -			break;
->> -		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
->> -	}
->> -	if (!timeout_ms) {
->> -		dev_err(&client->dev, "Conversion timeout happened\n");
->> -		ret = -EINVAL;
->> +	if (data->eoc_gpio)
->> +		ret = wait_conversion_complete_gpio(data);
->> +	else
->> +		ret = wait_conversion_complete_polled(data);
->> +	if (ret < 0)
->>  		goto exit;
->> -	}
->>  
->> -	ret = ak8975_read_data(client, AK8975_REG_ST1, 1, &read_status);
->> -	if (ret < 0) {
->> -		dev_err(&client->dev, "Error in reading ST1\n");
->> -		goto exit;
->> -	}
->> +	read_status = ret;
->>  
->>  	if (read_status & AK8975_REG_ST1_DRDY_MASK) {
->>  		ret = ak8975_read_data(client, AK8975_REG_ST2, 1, &read_status);
->> @@ -454,25 +497,26 @@ static int ak8975_probe(struct i2c_client *client,
->>  	data->eoc_irq = client->irq;
->>  	data->eoc_gpio = irq_to_gpio(client->irq);
->>  
->> -	if (!data->eoc_gpio) {
->> -		dev_err(&client->dev, "failed, no valid GPIO\n");
->> -		err = -EINVAL;
->> -		goto exit_free;
->> -	}
->> -
->> -	err = gpio_request(data->eoc_gpio, "ak_8975");
->> -	if (err < 0) {
->> -		dev_err(&client->dev, "failed to request GPIO %d, error %d\n",
->> -			data->eoc_gpio, err);
->> -		goto exit_free;
->> -	}
->> +	/* We may not have a GPIO based IRQ to scan, that is fine, we will
->> +	   poll if so */
->> +	if (data->eoc_gpio > 0) {
->> +		err = gpio_request(data->eoc_gpio, "ak_8975");
->> +		if (err < 0) {
->> +			dev_err(&client->dev,
->> +				"failed to request GPIO %d, error %d\n",
->> +							data->eoc_gpio, err);
->> +			goto exit_free;
->> +		}
->>  
->> -	err = gpio_direction_input(data->eoc_gpio);
->> -	if (err < 0) {
->> -		dev_err(&client->dev, "Failed to configure input direction for"
->> -			" GPIO %d, error %d\n", data->eoc_gpio, err);
->> -		goto exit_gpio;
->> -	}
->> +		err = gpio_direction_input(data->eoc_gpio);
->> +		if (err < 0) {
->> +			dev_err(&client->dev,
->> +				"Failed to configure input direction for GPIO %d, error %d\n",
->> +						data->eoc_gpio, err);
->> +			goto exit_gpio;
-Not really relevant to this patch, but this handling could be cleaned up using gpio_request_one.
->> +		}
->> +	} else
->> +		data->eoc_gpio = 0;	/* No GPIO available */
->>  
->>  	/* Perform some basic start-of-day setup of the device. */
->>  	err = ak8975_setup(client);
->> @@ -503,7 +547,8 @@ static int ak8975_probe(struct i2c_client *client,
->>  exit_free_iio:
->>  	iio_free_device(data->indio_dev);
->>  exit_gpio:
->> -	gpio_free(data->eoc_gpio);
->> +	if (data->eoc_gpio)
->> +		gpio_free(data->eoc_gpio);
->>  exit_free:
->>  	kfree(data);
->>  exit:
->> @@ -517,7 +562,8 @@ static int ak8975_remove(struct i2c_client *client)
->>  	iio_device_unregister(data->indio_dev);
->>  	iio_free_device(data->indio_dev);
->>  
->> -	gpio_free(data->eoc_gpio);
->> +	if (data->eoc_gpio)
->> +		gpio_free(data->eoc_gpio);
->>  
->>  	kfree(data);
->>  
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+This CPU family provides NB register values to gather following
+TDP information
+
+* ProcessorPwrWatts: Specifies in Watts the maximum amount of power
+  the processor can support.
+* CurrPwrWatts: Specifies in Watts the current amount of power being
+  consumed by the processor.
+
+This driver provides
+
+* power1_max (ProcessorPwrWatts)
+* power1_input (CurrPwrWatts)
+
+Changes from v2::
+ - fix format strings
+ - removed paranoid checks for existense of functions 3 and 5
+ - changed return type of function f15h_power_is_internal_node0
+ - provide power1_max instead of power1_cap
+ - use dev_warn instead of WARN_ON
+ - rebased against 2.6.39-rc2
+ - added Documentation/hwmon/f15h_power
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ Documentation/hwmon/f15h_power |   37 ++++++++
+ drivers/hwmon/Kconfig          |   10 ++
+ drivers/hwmon/Makefile         |    1 +
+ drivers/hwmon/f15h_power.c     |  197 ++++++++++++++++++++++++++++++++++++++++
+ drivers/hwmon/k10temp.c        |    2 +-
+ 5 files changed, 246 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/hwmon/f15h_power
+ create mode 100644 drivers/hwmon/f15h_power.c
+
+diff --git a/Documentation/hwmon/f15h_power b/Documentation/hwmon/f15h_power
+new file mode 100644
+index 0000000..5e990d3
+--- /dev/null
++++ b/Documentation/hwmon/f15h_power
+@@ -0,0 +1,37 @@
++Kernel driver f15h_power
++========================
++
++Supported chips:
++* AMD Family 15h Processors
++
++  Prefix: 'f15h_power'
++  Addresses scanned: PCI space
++  Datasheets:
++  BIOS and Kernel Developer's Guide (BKDG) For AMD Family 15h Processors
++    (not yet published)
++
++Author: Andreas Herrmann <andreas.herrmann3@amd.com>
++
++Description
++-----------
++
++This driver permits reading of registers providing power information
++of AMD Family 15h processors.
++
++For AMD Family 15h processors the following power values can be
++calculated using different processor northbridge function registers
++
++* BasePwrWatts: Specifies in watts the maximum amount of power
++  consumed by the processor for NB and logic external to the core.
++* ProcessorPwrWatts: Specifies in watts the maximum amount of power
++  the processor can support.
++* CurrPwrWatts: Specifies in watts the current amount of power being
++  consumed by the processor.
++
++This driver provides ProcessorPwrWatts and CurrPwrWatts:
++* power1_max (ProcessorPwrWatts)
++* power1_input (CurrPwrWatts)
++
++On multi-node processors the calculated value is for the entire
++package and not for a single node. Thus the driver creates sysfs
++attributes only for internal node0 of a multi-node processor.
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 060ef63..36ae085 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -249,6 +249,16 @@ config SENSORS_K10TEMP
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called k10temp.
+ 
++config SENSORS_F15H_POWER
++	tristate "AMD Family 15h processor power"
++	depends on X86 && PCI
++	help
++	  If you say yes here you get support for processor power
++	  information of your AMD family 15h CPU.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called f15h_power.
++
+ config SENSORS_ASB100
+ 	tristate "Asus ASB100 Bach"
+ 	depends on X86 && I2C && EXPERIMENTAL
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 967d0ea..a8d03d5 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -63,6 +63,7 @@ obj-$(CONFIG_SENSORS_JC42)	+= jc42.o
+ obj-$(CONFIG_SENSORS_JZ4740)	+= jz4740-hwmon.o
+ obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
+ obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
++obj-$(CONFIG_SENSORS_F15H_POWER) += f15h_power.o
+ obj-$(CONFIG_SENSORS_LINEAGE)	+= lineage-pem.o
+ obj-$(CONFIG_SENSORS_LM63)	+= lm63.o
+ obj-$(CONFIG_SENSORS_LM70)	+= lm70.o
+diff --git a/drivers/hwmon/f15h_power.c b/drivers/hwmon/f15h_power.c
+new file mode 100644
+index 0000000..648c21d
+--- /dev/null
++++ b/drivers/hwmon/f15h_power.c
+@@ -0,0 +1,197 @@
++/*
++ * f15h_power.c - AMD Family 15h processor power monitoring
++ *
++ * Copyright (c) 2011 Advanced Micro Devices, Inc.
++ * Author: Andreas Herrmann <andreas.herrmann3@amd.com>
++ *
++ *
++ * This driver is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This driver is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++ * See the GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this driver; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/err.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/bitops.h>
++#include <asm/processor.h>
++
++MODULE_DESCRIPTION("AMD Family 15h CPU processor power monitor");
++MODULE_AUTHOR("Andreas Herrmann <andreas.herrmann3@amd.com>");
++MODULE_LICENSE("GPL");
++
++/* D18F3 */
++#define REG_NORTHBRIDGE_CAP		0xe8
++
++/* D18F4 */
++#define REG_PROCESSOR_TDP		0x1b8
++
++/* D18F5 */
++#define REG_TDP_RUNNING_AVERAGE		0xe0
++#define REG_TDP_LIMIT3			0xe8
++
++static ssize_t show_power(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	u32 val, btdp, tdpl, tdp2w, arange;
++	s32 acap;
++	u64 ctdp;
++	struct pci_dev *f4 = to_pci_dev(dev);
++
++	pci_read_config_dword(f4, REG_PROCESSOR_TDP, &val);
++	btdp = (val >> 16) & 0xffff;
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
++				  REG_TDP_RUNNING_AVERAGE, &val);
++	acap = (val >> 4) & 0x3fffff;
++	acap = sign_extend32(acap, 22);
++	arange = val & 0xf;
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
++				  REG_TDP_LIMIT3, &val);
++
++	tdpl = (val >> 16) & 0x1fff;
++	tdp2w = ((val & 0x3ff) << 6) | ((val >> 10) & 0x3f);
++	ctdp = tdpl - (s32)(acap >> (arange + 1)) + btdp;
++	ctdp *= tdp2w;
++
++	/*
++	 * Convert to microWatt
++	 *
++	 * power is in Watt provided as fixed point integer with
++	 * scaling factor 1/(2^16).  For conversion we use
++	 * (10^6)/(2^16) = 15625/(2^10)
++	 */
++	ctdp = (ctdp * 15625) >> 10;
++	return sprintf(buf, "%u\n", (u32) ctdp);
++}
++static DEVICE_ATTR(power1_input, S_IRUGO, show_power, NULL);
++
++static ssize_t show_power_max(struct device *dev,
++			     struct device_attribute *attr, char *buf)
++{
++	u32 val, tdp2w;
++	u64 ptdp;
++	struct pci_dev *f4 = to_pci_dev(dev);
++
++	pci_read_config_dword(f4, REG_PROCESSOR_TDP, &val);
++	ptdp = val & 0xffff;
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
++				  REG_TDP_LIMIT3, &val);
++
++	tdp2w = ((val & 0x3ff) << 6) | ((val >> 10) & 0x3f);
++	ptdp *= tdp2w;
++
++	/* result not allowed to be >= 256W */
++	if ((ptdp>>16) >= 256)
++		dev_warn(dev, "Bogus value for ProcessorPwrWatts (ptdp>=%u)\n",
++			 (u32) (ptdp >> 16));
++
++	/* convert to microWatt */
++	ptdp = (ptdp * 15625) >> 10;
++	return sprintf(buf, "%u\n", (u32) ptdp);
++}
++static DEVICE_ATTR(power1_max, S_IRUGO, show_power_max, NULL);
++
++static ssize_t show_name(struct device *dev,
++			 struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "f15h_power\n");
++}
++static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
++
++static bool __devinit f15h_power_is_internal_node0(struct pci_dev *f4)
++{
++	u32 val;
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 3),
++				  REG_NORTHBRIDGE_CAP, &val);
++	if ((val & BIT(29)) && ((val >> 30) & 3))
++		return false;
++
++	return true;
++}
++
++static int __devinit f15h_power_probe(struct pci_dev *pdev,
++				      const struct pci_device_id *id)
++{
++	struct device *hwmon_dev;
++	int err = -ENODEV;
++
++	if (!f15h_power_is_internal_node0(pdev))
++		goto exit;
++
++	err = device_create_file(&pdev->dev, &dev_attr_power1_input);
++	if (err)
++		goto exit;
++	err = device_create_file(&pdev->dev, &dev_attr_power1_max);
++	if (err)
++		goto exit_remove;
++
++	err = device_create_file(&pdev->dev, &dev_attr_name);
++	if (err)
++		goto exit_remove;
++
++	hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(hwmon_dev)) {
++		err = PTR_ERR(hwmon_dev);
++		goto exit_remove;
++	}
++	dev_set_drvdata(&pdev->dev, hwmon_dev);
++
++	return 0;
++
++exit_remove:
++	device_remove_file(&pdev->dev, &dev_attr_name);
++	device_remove_file(&pdev->dev, &dev_attr_power1_input);
++	device_remove_file(&pdev->dev, &dev_attr_power1_max);
++exit:
++	return err;
++}
++
++static void __devexit f15h_power_remove(struct pci_dev *pdev)
++{
++	hwmon_device_unregister(dev_get_drvdata(&pdev->dev));
++	device_remove_file(&pdev->dev, &dev_attr_name);
++	device_remove_file(&pdev->dev, &dev_attr_power1_input);
++	device_remove_file(&pdev->dev, &dev_attr_power1_max);
++	dev_set_drvdata(&pdev->dev, NULL);
++}
++
++static DEFINE_PCI_DEVICE_TABLE(f15h_power_id_table) = {
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
++	{}
++};
++MODULE_DEVICE_TABLE(pci, f15h_power_id_table);
++
++static struct pci_driver f15h_power_driver = {
++	.name = "f15h_power",
++	.id_table = f15h_power_id_table,
++	.probe = f15h_power_probe,
++	.remove = __devexit_p(f15h_power_remove),
++};
++
++static int __init f15h_power_init(void)
++{
++	return pci_register_driver(&f15h_power_driver);
++}
++
++static void __exit f15h_power_exit(void)
++{
++	pci_unregister_driver(&f15h_power_driver);
++}
++
++module_init(f15h_power_init)
++module_exit(f15h_power_exit)
+diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
+index 82bf65a..2cbc1ab 100644
+--- a/drivers/hwmon/k10temp.c
++++ b/drivers/hwmon/k10temp.c
+@@ -205,7 +205,7 @@ static void __devexit k10temp_remove(struct pci_dev *pdev)
+ 	dev_set_drvdata(&pdev->dev, NULL);
+ }
+ 
+-static const struct pci_device_id k10temp_id_table[] = {
++static DEFINE_PCI_DEVICE_TABLE(k10temp_id_table) = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_11H_NB_MISC) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
+-- 
+1.7.4.1
 
