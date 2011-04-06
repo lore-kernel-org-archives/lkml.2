@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab1DFMTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:19:51 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47857 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab1DFMTt (ORCPT
+	id S1755810Ab1DFMUW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:20:22 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58277 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab1DFMUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:19:49 -0400
+	Wed, 6 Apr 2011 08:20:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=a5l5aAlGQCkVgh/6lub1mf7RabGkJwZRhWrHMtSBKvMBUrMw7KbICzq18JUrFZUhQv
-         qAg4uxWDJoYawcVx+QK+T5YUIIOu+TQXsbsy0jOTAvINIv3YUFOAtHNbQ1nnS9Mb3Uvy
-         oxLLuq0nG+UFtExMloj1MaBu1m1Wi/FIUItPo=
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=OSGvFAORtGPW1AAluJAGkwt39rxnDRpUPqNxgHNZE4ErnMM9cDgw6+Na9xJKHwrfxz
+         YZG+LKDMuDI/kqXpsSSVwMgYUlUEJiYqNuUnhDKLPJPw4fhEMA/1npZq5L0Lb7KypvA5
+         RMCRdyyBYxsgrJP59UdV49O7XC9rtXZttxlv8=
+Date: Wed, 6 Apr 2011 05:20:09 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
+        Martin Pitt <martin.pitt@ubuntu.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] cdrom: always check_disk_change() on open
+Message-ID: <20110406121920.GC4142@mtj.dyndns.org>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110406152915.bdc2ecd3.sfr@canb.auug.org.au>
-References: <20110406152915.bdc2ecd3.sfr@canb.auug.org.au>
-Date: Wed, 6 Apr 2011 14:19:48 +0200
-Message-ID: <BANLkTikG0=JbtbAQTOj9ij7EGPKb58sUbA@mail.gmail.com>
-Subject: Re: linux-next: Tree for April 6
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 6, 2011 at 7:29 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> [The kernel.org mirroring is being slow.]
->
-> Changes since 20110405:
->
-> Dropped tree: xen
->
-> The staging tree gained a conflict against the staging.current tree.
->
-> ----------------------------------------------------------------------------
->
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).
+cdrom_open() called check_disk_change() after the rest of open path
+succeeded which leads to the following bizarre behavior.
 
-Where is it?
-No updates, only the US kernel-mirror in [3] has a patch.
+* After media change, if the device opened without O_NONBLOCK,
+  open_for_data() naturally fails with -ENOMEDIA and
+  check_disk_change() is never called.  The media is known to be gone
+  and the open failure makes it obvious to the userland but device
+  invalidation never happens.
 
-In general:
+* But if the device is opened with O_NONBLOCK, all the checks are
+  bypassed and cdrom_open() doesn't notice that the media is not there
+  and check_disk_change() is called and invalidation happens.
 
-Whom to contact in case of this GeoIP-related(?!) slowness to
-kernel-mirrors for people from Europe?
-This problem still exists here, since end of 2010 (so called
-"android-stuff-sync").
-"Here" means Wild Wild South-West Germany: *.kernel.org -> *.eu.k.o
-I am now only taking the US-URLs to clone/pull/get my stuff.
-Can you explain what's going on?
+There's nothing to be gained by avoiding calling check_disk_change()
+on open failure.  Common cases end up calling check_disk_change()
+anyway.  All we get is inconsistent behavior.
 
-- Sedat -
+Fix it by moving check_disk_change() invocation to the top of
+cdrom_open() so that it always gets called regardless of how the rest
+of open proceeds.
 
-[1] http://www.kernel.org/pub/linux/kernel/v2.6/next/?C=M;O=D
-[2] http://git.eu.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=summary
-[3] http://www.us.kernel.org/pub/linux/kernel/v2.6/next/patch-v2.6.39-rc1-next-20110406.gz
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Amit Shah <amit.shah@redhat.com>
+Tested-by: Amit Shah <amit.shah@redhat.com>
+---
+ drivers/cdrom/cdrom.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index e2c48a7..5ade78a 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -986,6 +986,9 @@ int cdrom_open(struct cdrom_device_info *cdi, struct block_device *bdev, fmode_t
+ 
+ 	cdinfo(CD_OPEN, "entering cdrom_open\n"); 
+ 
++	/* open is event synchronization point, check events first */
++	check_disk_change(bdev);
++
+ 	/* if this was a O_NONBLOCK open and we should honor the flags,
+ 	 * do a quick open without drive/disc integrity checks. */
+ 	cdi->use_count++;
+@@ -1012,9 +1015,6 @@ int cdrom_open(struct cdrom_device_info *cdi, struct block_device *bdev, fmode_t
+ 
+ 	cdinfo(CD_OPEN, "Use count for \"/dev/%s\" now %d\n",
+ 			cdi->name, cdi->use_count);
+-	/* Do this on open.  Don't wait for mount, because they might
+-	    not be mounting, but opening with O_NONBLOCK */
+-	check_disk_change(bdev);
+ 	return 0;
+ err_release:
+ 	if (CDROM_CAN(CDC_LOCK) && cdi->options & CDO_LOCK) {
