@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab1DFMNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:13:06 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33842 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab1DFMNE (ORCPT
+	id S1755397Ab1DFMPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:15:16 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:52986 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab1DFMPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:13:04 -0400
+	Wed, 6 Apr 2011 08:15:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=XNxqn/l2TQTye+GyI+W8CuyIHaBr9iUfphDrVDE/KR8/KPMJZ/HOm/pXWWs2UVMuTU
-         Ix46UrB8OW/YAJjb9ZYNCr5+HuPzQeY2pd0qW2+NsIKxdcVTrvktWxPi5T6veGEZSstR
-         T+oH87sY01MMAkz/PzI2EuYYLV6w7hDzjqigo=
-Date: Wed, 6 Apr 2011 16:12:58 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net
-Subject: Re: [RFC PATCH 1/7] basic_mmio_gpio: remove runtime
- width/endianness evaluation
-Message-ID: <20110406121258.GA9530@oksana.dev.rtsoft.ru>
-References: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
- <1302088263-12714-2-git-send-email-jamie@jamieiles.com>
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lBkeysUrZzn9QyHpjtU8WQIrHMyhMAB9UisdWodi5lx0kkG0eHTlN627hZu4kHhWZ2
+         NNb3Xml8KuOQ+/49xKQCzIgo8RiXTCxQAFY5EaxGEx71Aas3K3KqyrWPEsx8etfEHcNz
+         ErYaHLoX+brAKIwmEZYKxbGINUw0fEdRVa2g4=
+Date: Wed, 6 Apr 2011 14:15:07 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
+Message-ID: <20110406121501.GA1867@nowhere>
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6>
+ <20110324113209.20235.61900.stgit@localhost6.localdomain6>
+ <4D8B79E6.2050603@gmail.com>
+ <4D8C6B1B.70409@hitachi.com>
+ <4D8CAE74.9080805@gmail.com>
+ <4D906450.1040809@hitachi.com>
+ <4D909BBB.5020500@gmail.com>
+ <20110401151313.GC2335@nowhere>
+ <4D96072E.4060902@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302088263-12714-2-git-send-email-jamie@jamieiles.com>
+In-Reply-To: <4D96072E.4060902@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 12:10:57PM +0100, Jamie Iles wrote:
-> Remove endianness/width calculations at runtime by installing function
-> pointers for bit-to-mask conversion and register accessors.
+On Fri, Apr 01, 2011 at 11:11:10AM -0600, David Ahern wrote:
 > 
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+> 
+> On 04/01/11 09:13, Frederic Weisbecker wrote:
+> > On Mon, Mar 28, 2011 at 08:31:23AM -0600, David Ahern wrote:
+> >> On 03/28/11 04:34, Akihiro Nagai wrote:
+> >>>> from is sample->ip? to is sample->addr? In the above example
+> >>>> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
+> >>>> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
+> >>> Yes.
+> >>> In this example, resolved address is only sample->ip (branch from).
+> >>> We need the resolved address of sample->addr (branch to) too, because
+> >>> both of them are addresses of execution code.
+> >>
+> >> Ok, now I understand. In that case add conversion of sample->addr to
+> >> symbols to perf-script.
+> > 
+> > I agree that we should rather use perf script for branch dumps.
+> > Sorry Akihiro, I think we suggested you to create this dedicated
+> > perf branch by the past. But then perf script became the vanilla dump
+> > tool in the middle and it seems more suitable today.
+> > 
+> > We can still create a perf branch later in order to produce some more
+> > advanced post-processing tools. But for sample dumps perf script (which starts
+> > to show itself as a misnomer BTW) seems to be the right place.
+> 
+> perf-dump?
 
-I guess there should be Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-
-:-)
-
-[...]
-> @@ -74,7 +78,8 @@ struct bgpio_chip {
->        * Some GPIO controllers work with the big-endian bits notation,
->        * e.g. in a 8-bits register, GPIO7 is the least significant bit.
->        */
-> -     int big_endian_bits;
-> +     unsigned long (*pin2mask)(struct bgpio_chip *bgc, unsigned int pin);
-> +
->
->       /*
-
-No need for this new empty line, I think.
-
-[...]
-> +static unsigned long bgpio_write64(void __iomem *reg, unsigned long data)
-> +{
-> +	return __raw_writeq(data, reg);
-> +}
-
-I was getting this on a 64 bit machine:
-
-  CHECK   drivers/gpio/basic_mmio_gpio.c
-drivers/gpio/basic_mmio_gpio.c:138:16: warning: incorrect type in return expression (different base types)
-drivers/gpio/basic_mmio_gpio.c:138:16:    expected unsigned long
-drivers/gpio/basic_mmio_gpio.c:138:16:    got void
-drivers/gpio/basic_mmio_gpio.c:302:33: warning: incorrect type in assignment (different base types)
-drivers/gpio/basic_mmio_gpio.c:302:33:    expected void ( *write_reg )( ... )
-drivers/gpio/basic_mmio_gpio.c:302:33:    got unsigned long ( static [toplevel] *<noident> )( ... )
-  CC      drivers/gpio/basic_mmio_gpio.o
-drivers/gpio/basic_mmio_gpio.c: In function ‘bgpio_write64’:
-drivers/gpio/basic_mmio_gpio.c:138: error: void value not ignored as it ought to be
-drivers/gpio/basic_mmio_gpio.c: In function ‘bgpio_setup_accessors’:
-drivers/gpio/basic_mmio_gpio.c:302: warning: assignment from incompatible pointer type
-make[1]: *** [drivers/gpio/basic_mmio_gpio.o] Error 1
-
-And I fixed it with this:
-
-diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-index 9dad485..3ddc4b2 100644
---- a/drivers/gpio/basic_mmio_gpio.c
-+++ b/drivers/gpio/basic_mmio_gpio.c
-@@ -133,9 +133,9 @@ static unsigned long bgpio_read32(void __iomem *reg)
- }
+Yeah. We could make it an alias of perf-script.
  
- #if BITS_PER_LONG >= 64
--static unsigned long bgpio_write64(void __iomem *reg, unsigned long data)
-+static void bgpio_write64(void __iomem *reg, unsigned long data)
- {
--	return __raw_writeq(data, reg);
-+	__raw_writeq(data, reg);
- }
- 
- static unsigned long bgpio_read64(void __iomem *reg)
+> > 
+> > So, in this context, if we have PERF_SAMPLE_ADDR, we are going to always
+> > follow the ip with a "=>" and then resolve the address, etc...
+> > 
+> > Yeah it makes sense for this default mode. But what about when we'll want
+> > a function graph kind of output? This will require a totally different
+> > layout. Also PERF_SAMPLE_ADDR may be used for different context in the
+> > future.
+> > 
+> > Perhaps we want a kind of per evsel callback that makes its own
+> > interpretation of the pid/tid/dso/sym/etc... options asked by the
+> > user?
+> 
+> The print addr function can take the evsel as an input. It includes the
+> event type which can be used to decide what the address means.
 
+Also yeah. But once we'll have the graph output, that may become
+a real mess.
 
-Otherwise, the patch looks perfect.
+> 
+> > 
+> > But well, we can start simple and make and just do the => trick
+> > if we have PERF_SAMPLE_ADDR and resolve addr if the user asked
+> > the sym. Then when we have the graph output, have these per evsel
+> > display callbacks.
+> 
+> There is another email thread about page faults. The user wants sample
+> address resolved to symbols. I was going to look into it next week when
+> I get back from vacation.
 
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
-
-Thanks!
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
-
+What we seem to need for that is to bring a pagefault tracepoint. We had
+propositions for that in the past, but work on this is in pause mode it
+seems.
