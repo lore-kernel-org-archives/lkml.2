@@ -1,154 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab1DFJTw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 05:19:52 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52855 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163Ab1DFJTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 05:19:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=QdyMuZOlGlzy179e1plQ18PtuCJLHHdqFzykn8PnOC4liKAcYHPchJoLOKHBvPDI1L
-         wqteDSokDO0gIRP24ZDOqiErKink5VqLh4t3Yt6ux581AxXGYjXdg1Fb778ykvmntJxV
-         aIa3JGpgNqVy8Ar6M1e+WgtRN4KWyH0XGGeec=
-Date: Wed, 6 Apr 2011 02:19:40 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>, kay.sievers@vrfy.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] block: don't block events on excl write for non-optical
- devices
-Message-ID: <20110406091940.GB32058@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755307Ab1DFJWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 05:22:54 -0400
+Received: from smtp207.alice.it ([82.57.200.103]:39000 "EHLO smtp207.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755212Ab1DFJWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 05:22:52 -0400
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: linux-wireless@vger.kernel.org
+Cc: Antonio Ospite <ospite@studenti.unina.it>, openezx-devel@lists.openezx.org,
+        "John W . Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
+        Guiming Zhuo <gmzhuo@gmail.com>
+Subject: [PATCH] rfkill: Regulator consumer driver for rfkill
+Date: Wed,  6 Apr 2011 11:21:19 +0200
+Message-Id: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
+X-Mailer: git-send-email 1.7.4.1
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disk event code automatically blocks events on excl write.  This is
-primarily to avoid issuing polling commands while burning is in
-progress.  This behavior doesn't fit other types of devices with
-removeable media where polling commands don't have adverse side
-effects and door locking usually doesn't exist.
+Add a regulator consumer driver for rfkill to enable controlling radio
+transmitters connected to voltage regulator using the regulator
+framework.
 
-This patch introduces new genhd flag which controls the auto-blocking
-behavior and uses it to enable auto-blocking only on optical devices.
+A new "vrfkill" virtual supply is provided to use in platform code.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Guiming Zhuo <gmzhuo@gmail.com>
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 ---
-Jens, can you please queue this for v2.6.39?  Thanks.
 
- drivers/block/paride/pcd.c |    1 +
- drivers/cdrom/viocd.c      |    3 ++-
- drivers/ide/ide-cd.c       |    2 +-
- drivers/scsi/sr.c          |    2 +-
- fs/block_dev.c             |   17 ++++++++++-------
- include/linux/genhd.h      |    1 +
- 6 files changed, 16 insertions(+), 10 deletions(-)
+Hi,
 
-diff --git a/drivers/block/paride/pcd.c b/drivers/block/paride/pcd.c
-index 2f2ccf6..a0aabd9 100644
---- a/drivers/block/paride/pcd.c
-+++ b/drivers/block/paride/pcd.c
-@@ -320,6 +320,7 @@ static void pcd_init_units(void)
- 		disk->first_minor = unit;
- 		strcpy(disk->disk_name, cd->name);	/* umm... */
- 		disk->fops = &pcd_bdops;
-+		disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 		disk->events = DISK_EVENT_MEDIA_CHANGE;
- 	}
- }
-diff --git a/drivers/cdrom/viocd.c b/drivers/cdrom/viocd.c
-index 4e874c5..ae15a4d 100644
---- a/drivers/cdrom/viocd.c
-+++ b/drivers/cdrom/viocd.c
-@@ -625,7 +625,8 @@ static int viocd_probe(struct vio_dev *vdev, const struct vio_device_id *id)
- 	blk_queue_max_hw_sectors(q, 4096 / 512);
- 	gendisk->queue = q;
- 	gendisk->fops = &viocd_fops;
--	gendisk->flags = GENHD_FL_CD|GENHD_FL_REMOVABLE;
-+	gendisk->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE |
-+			 GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	gendisk->events = DISK_EVENT_MEDIA_CHANGE;
- 	set_capacity(gendisk, 0);
- 	gendisk->private_data = d;
-diff --git a/drivers/ide/ide-cd.c b/drivers/ide/ide-cd.c
-index fd1e117..6e5123b 100644
---- a/drivers/ide/ide-cd.c
-+++ b/drivers/ide/ide-cd.c
-@@ -1781,7 +1781,7 @@ static int ide_cd_probe(ide_drive_t *drive)
- 
- 	ide_cd_read_toc(drive, &sense);
- 	g->fops = &idecd_ops;
--	g->flags |= GENHD_FL_REMOVABLE;
-+	g->flags |= GENHD_FL_REMOVABLE | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	g->events = DISK_EVENT_MEDIA_CHANGE;
- 	add_disk(g);
- 	return 0;
-diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-index aefadc6..464ee7b 100644
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -636,7 +636,7 @@ static int sr_probe(struct device *dev)
- 	disk->first_minor = minor;
- 	sprintf(disk->disk_name, "sr%d", minor);
- 	disk->fops = &sr_bdops;
--	disk->flags = GENHD_FL_CD;
-+	disk->flags = GENHD_FL_CD | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	disk->events = DISK_EVENT_MEDIA_CHANGE | DISK_EVENT_EJECT_REQUEST;
- 
- 	blk_queue_rq_timeout(sdev->request_queue, SR_TIMEOUT);
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index c1511c6..b55a145 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1228,6 +1228,8 @@ int blkdev_get(struct block_device *bdev, fmode_t mode, void *holder)
- 	res = __blkdev_get(bdev, mode, 0);
- 
- 	if (whole) {
-+		struct gendisk *disk = whole->bd_disk;
+a first implementation of the driver which handled only bluetooth was 
+from Guiming Zhuo, I then made it more generic and tried to put it in 
+shape for mainline inclusion; that's why the SOB line of Guiming Zhuo 
+comes first.
+
+Any comment is appreciated.
+
+We are using this driver for blocking/unblocking power to the bluetooth 
+module on some EZX phones (Motorola A1200/A910/E6/E2) in the openezx.org 
+project.
+
+Thanks,
+   Antonio Ospite
+   http://ao2.it
+
+ include/linux/rfkill-regulator.h |   48 +++++++++++
+ net/rfkill/Kconfig               |   11 +++
+ net/rfkill/Makefile              |    1 +
+ net/rfkill/rfkill-regulator.c    |  166 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 226 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/rfkill-regulator.h
+ create mode 100644 net/rfkill/rfkill-regulator.c
+
+diff --git a/include/linux/rfkill-regulator.h b/include/linux/rfkill-regulator.h
+new file mode 100644
+index 0000000..4aaef9c
+--- /dev/null
++++ b/include/linux/rfkill-regulator.h
+@@ -0,0 +1,48 @@
++/*
++ * rfkill-regulator.c - Regulator consumer driver for rfkill
++ *
++ * Copyright (C) 2009  Guiming Zhuo <gmzhuo@gmail.com>
++ * Copyright (C) 2011  Antonio Ospite <ospite@studenti.unina.it>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
 +
- 		/* finish claiming */
- 		mutex_lock(&bdev->bd_mutex);
- 		spin_lock(&bdev_lock);
-@@ -1254,15 +1256,16 @@ int blkdev_get(struct block_device *bdev, fmode_t mode, void *holder)
- 		spin_unlock(&bdev_lock);
- 
- 		/*
--		 * Block event polling for write claims.  Any write
--		 * holder makes the write_holder state stick until all
--		 * are released.  This is good enough and tracking
--		 * individual writeable reference is too fragile given
--		 * the way @mode is used in blkdev_get/put().
-+		 * Block event polling for write claims if requested.  Any
-+		 * write holder makes the write_holder state stick until
-+		 * all are released.  This is good enough and tracking
-+		 * individual writeable reference is too fragile given the
-+		 * way @mode is used in blkdev_get/put().
- 		 */
--		if (!res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
-+		if ((disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE) &&
-+		    !res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
- 			bdev->bd_write_holder = true;
--			disk_block_events(bdev->bd_disk);
-+			disk_block_events(disk);
- 		}
- 
- 		mutex_unlock(&bdev->bd_mutex);
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index d764a42..300d758 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -127,6 +127,7 @@ struct hd_struct {
- #define GENHD_FL_SUPPRESS_PARTITION_INFO	32
- #define GENHD_FL_EXT_DEVT			64 /* allow extended devt */
- #define GENHD_FL_NATIVE_CAPACITY		128
-+#define GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE	256
- 
- enum {
- 	DISK_EVENT_MEDIA_CHANGE			= 1 << 0, /* media changed */
++#ifndef __LINUX_RFKILL_REGULATOR_H
++#define __LINUX_RFKILL_REGULATOR_H
++
++/*
++ * Use "vrfkill" as supply id when declaring the regulator consumer:
++ *
++ * static struct regulator_consumer_supply pcap_regulator_V6_consumers [] = {
++ * 	{ .dev_name = "rfkill-regulator.0", supply = "vrfkill" },
++ * };
++ *
++ * If you have several regulator driven rfkill, you can append a numerical id to
++ * .dev_name as done above, and use the same id when declaring the platform
++ * device:
++ *
++ * static struct rfkill_regulator_platform_data ezx_rfkill_bt_data = {
++ * 	.name  = "ezx-bluetooth",
++ * 	.type  = RFKILL_TYPE_BLUETOOTH,
++ * };
++ *
++ * static struct platform_device a910_rfkill = {
++ * 	.name  = "rfkill-regulator",
++ * 	.id    = 0,
++ * 	.dev   = {
++ * 		.platform_data = &ezx_rfkill_bt_data,
++ * 	},
++ * };
++ */
++
++#include <linux/rfkill.h>
++
++struct rfkill_regulator_platform_data {
++	char *name;             /* the name for the rfkill switch */
++	enum rfkill_type type;  /* the type as specified in rfkill.h */
++};
++
++#endif /* __LINUX_RFKILL_REGULATOR_H */
+diff --git a/net/rfkill/Kconfig b/net/rfkill/Kconfig
+index 7fce6df..48464ca 100644
+--- a/net/rfkill/Kconfig
++++ b/net/rfkill/Kconfig
+@@ -22,3 +22,14 @@ config RFKILL_INPUT
+ 	depends on RFKILL
+ 	depends on INPUT = y || RFKILL = INPUT
+ 	default y if !EXPERT
++
++config RFKILL_REGULATOR
++	tristate "Generic rfkill regulator driver"
++	depends on RFKILL || !RFKILL
++	depends on REGULATOR
++	help
++          This options enable controlling radio transmitters connected to
++          voltage regulator using the regulator framework.
++
++          To compile this driver as a module, choose M here: the module will
++          be called rfkill-regulator.
+diff --git a/net/rfkill/Makefile b/net/rfkill/Makefile
+index 6621053..d9a5a58 100644
+--- a/net/rfkill/Makefile
++++ b/net/rfkill/Makefile
+@@ -5,3 +5,4 @@
+ rfkill-y			+= core.o
+ rfkill-$(CONFIG_RFKILL_INPUT)	+= input.o
+ obj-$(CONFIG_RFKILL)		+= rfkill.o
++obj-$(CONFIG_RFKILL_REGULATOR)	+= rfkill-regulator.o
+diff --git a/net/rfkill/rfkill-regulator.c b/net/rfkill/rfkill-regulator.c
+new file mode 100644
+index 0000000..448a1bf
+--- /dev/null
++++ b/net/rfkill/rfkill-regulator.c
+@@ -0,0 +1,166 @@
++/*
++ * rfkill-regulator.c - Regulator consumer driver for rfkill
++ *
++ * Copyright (C) 2009  Guiming Zhuo <gmzhuo@gmail.com>
++ * Copyright (C) 2011  Antonio Ospite <ospite@studenti.unina.it>
++ *
++ * Implementation inspired by leds-regulator driver.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/rfkill.h>
++#include <linux/rfkill-regulator.h>
++
++struct rfkill_regulator_data {
++	struct rfkill *rf_kill;
++	bool reg_enabled;
++
++	struct regulator *vcc;
++};
++
++static int rfkill_regulator_set_block(void *data, bool blocked)
++{
++	struct rfkill_regulator_data *rfkill_data = data;
++
++	pr_debug("%s: blocked: %d\n", __func__, blocked);
++
++	if (blocked) {
++		if (rfkill_data->reg_enabled) {
++			regulator_disable(rfkill_data->vcc);
++			rfkill_data->reg_enabled = 0;
++		}
++	} else {
++		if (!rfkill_data->reg_enabled) {
++			regulator_enable(rfkill_data->vcc);
++			rfkill_data->reg_enabled = 1;
++		}
++	}
++
++	pr_debug("%s: regulator_is_enabled after set_block: %d\n", __func__,
++		regulator_is_enabled(rfkill_data->vcc));
++
++	return 0;
++}
++
++struct rfkill_ops rfkill_regulator_ops = {
++	.set_block = rfkill_regulator_set_block,
++};
++
++static int __devinit rfkill_regulator_probe(struct platform_device *pdev)
++{
++	struct rfkill_regulator_platform_data *pdata = pdev->dev.platform_data;
++	struct rfkill_regulator_data *rfkill_data;
++	struct regulator *vcc;
++	struct rfkill *rf_kill;
++	int ret = 0;
++
++	if (pdata == NULL) {
++		dev_err(&pdev->dev, "no platform data\n");
++		return -ENODEV;
++	}
++
++	if (pdata->name == NULL || pdata->type == 0) {
++		dev_err(&pdev->dev, "invalid name or type in platform data\n");
++		return -EINVAL;
++	}
++
++	vcc = regulator_get_exclusive(&pdev->dev, "vrfkill");
++	if (IS_ERR(vcc)) {
++		dev_err(&pdev->dev, "Cannot get vcc for %s\n", pdata->name);
++		ret = PTR_ERR(vcc);
++		goto out;
++	}
++
++	rfkill_data = kzalloc(sizeof(*rfkill_data), GFP_KERNEL);
++	if (rfkill_data == NULL) {
++		ret = -ENOMEM;
++		goto err_data_alloc;
++	}
++
++	rf_kill = rfkill_alloc(pdata->name, &pdev->dev,
++				pdata->type,
++				&rfkill_regulator_ops, rfkill_data);
++	if (rf_kill == NULL) {
++		dev_err(&pdev->dev, "Cannot alloc rfkill device\n");
++		ret = -ENOMEM;
++		goto err_rfkill_alloc;
++	}
++
++	if (regulator_is_enabled(vcc)) {
++		dev_dbg(&pdev->dev, "Regulator already enabled\n");
++		rfkill_data->reg_enabled = 1;
++	}
++	rfkill_init_sw_state(rf_kill, !rfkill_data->reg_enabled);
++
++	ret = rfkill_register(rf_kill);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot register rfkill device\n");
++		goto err_rfkill_register;
++	}
++
++	rfkill_data->rf_kill = rf_kill;
++	rfkill_data->vcc = vcc;
++
++	platform_set_drvdata(pdev, rfkill_data);
++	dev_info(&pdev->dev, "initialized\n");
++
++	return 0;
++
++err_rfkill_register:
++	rfkill_destroy(rf_kill);
++err_rfkill_alloc:
++	kfree(rfkill_data);
++err_data_alloc:
++	regulator_put(vcc);
++out:
++	return ret;
++}
++
++static int __devexit rfkill_regulator_remove(struct platform_device *pdev)
++{
++	struct rfkill_regulator_data *rfkill_data = platform_get_drvdata(pdev);
++	struct rfkill *rf_kill = rfkill_data->rf_kill;
++
++	rfkill_unregister(rf_kill);
++	rfkill_destroy(rf_kill);
++	regulator_put(rfkill_data->vcc);
++	kfree(rfkill_data);
++
++	return 0;
++}
++
++static struct platform_driver rfkill_regulator_driver = {
++	.probe = rfkill_regulator_probe,
++	.remove = __devexit_p(rfkill_regulator_remove),
++	.driver = {
++		.name = "rfkill-regulator",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init rfkill_regulator_init(void)
++{
++	return platform_driver_register(&rfkill_regulator_driver);
++}
++module_init(rfkill_regulator_init);
++
++static void __exit rfkill_regulator_exit(void)
++{
++	platform_driver_unregister(&rfkill_regulator_driver);
++}
++module_exit(rfkill_regulator_exit);
++
++MODULE_AUTHOR("Guiming Zhuo <gmzhuo@gmail.com>");
++MODULE_AUTHOR("Antonio Ospite <ospite@studenti.unina.it>");
++MODULE_DESCRIPTION("Regulator consumer driver for rfkill");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:rfkill-regulator");
+-- 
+1.7.4.1
+
