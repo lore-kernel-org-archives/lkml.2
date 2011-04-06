@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab1DFLL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:11:56 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33212 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579Ab1DFLLT (ORCPT
+	id S1755790Ab1DFLMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:12:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52680 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755360Ab1DFLLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:11:19 -0400
+	Wed, 6 Apr 2011 07:11:14 -0400
 From: Jamie Iles <jamie@jamieiles.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux@arm.linux.org.uk, tglx@linutronix.de, cbouatmailru@gmail.com,
         grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net,
         Jamie Iles <jamie@jamieiles.com>
-Subject: [RFC PATCH 4/7] basic_mmio_gpio: request register regions
-Date: Wed,  6 Apr 2011 12:11:00 +0100
-Message-Id: <1302088263-12714-5-git-send-email-jamie@jamieiles.com>
+Subject: [RFC PATCH 2/7] basic_mmio_gpio: convert to platform_{get,set}_drvdata()
+Date: Wed,  6 Apr 2011 12:10:58 +0100
+Message-Id: <1302088263-12714-3-git-send-email-jamie@jamieiles.com>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
 References: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
@@ -22,57 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure that we get the register regions with request_mem_region()
-before ioremap() to make sure we have exclusive access.
+Use the platform drvdata helpers rather than working on the struct
+device itself.
 
 Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 Cc: Anton Vorontsov <cbouatmailru@gmail.com>
 Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/gpio/basic_mmio_gpio.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/gpio/basic_mmio_gpio.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-index 68f8b8b..afa854b 100644
+index 26f84e2..e6cce48 100644
 --- a/drivers/gpio/basic_mmio_gpio.c
 +++ b/drivers/gpio/basic_mmio_gpio.c
-@@ -193,6 +193,16 @@ static int bgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
- 	return 0;
- }
+@@ -296,7 +296,7 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
+ 	else
+ 		bgc->gc.base = -1;
  
-+static void __iomem *bgpio_request_and_map(struct device *dev,
-+					   struct resource *res)
-+{
-+	if (!devm_request_mem_region(dev, res->start, resource_size(res),
-+				     res->name ?: "mmio_gpio"))
-+		return NULL;
-+
-+	return devm_ioremap(dev, res->start, resource_size(res));
-+}
-+
- static int bgpio_setup_accessors(struct platform_device *pdev,
- 				 struct bgpio_chip *bgc)
+-	dev_set_drvdata(dev, bgc);
++	platform_set_drvdata(pdev, bgc);
+ 
+ 	ret = gpiochip_add(&bgc->gc);
+ 	if (ret)
+@@ -307,7 +307,7 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
+ 
+ static int __devexit bgpio_remove(struct platform_device *pdev)
  {
-@@ -259,7 +269,7 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 	if (!bgc)
- 		return -ENOMEM;
+-	struct bgpio_chip *bgc = dev_get_drvdata(&pdev->dev);
++	struct bgpio_chip *bgc = platform_get_drvdata(pdev);
  
--	bgc->reg_dat = devm_ioremap(dev, res_dat->start, dat_sz);
-+	bgc->reg_dat = bgpio_request_and_map(dev, res_dat);
- 	if (!bgc->reg_dat)
- 		return -ENOMEM;
- 
-@@ -270,8 +280,8 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 				resource_size(res_set) != dat_sz)
- 			return -EINVAL;
- 
--		bgc->reg_set = devm_ioremap(dev, res_set->start, dat_sz);
--		bgc->reg_clr = devm_ioremap(dev, res_clr->start, dat_sz);
-+		bgc->reg_set = bgpio_request_and_map(dev, res_set);
-+		bgc->reg_clr = bgpio_request_and_map(dev, res_clr);
- 		if (!bgc->reg_set || !bgc->reg_clr)
- 			return -ENOMEM;
- 	} else if (res_set || res_clr) {
+ 	return gpiochip_remove(&bgc->gc);
+ }
 -- 
 1.7.4
 
