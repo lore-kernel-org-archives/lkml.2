@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab1DFEqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 00:46:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34405 "EHLO mail.zytor.com"
+	id S1751284Ab1DFFE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 01:04:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3891 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab1DFEqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 00:46:38 -0400
-Message-ID: <4D9BEFF6.1030907@zytor.com>
-Date: Tue, 05 Apr 2011 21:45:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	id S1750738Ab1DFFE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 01:04:28 -0400
+Message-ID: <4D9BF512.6080309@redhat.com>
+Date: Wed, 06 Apr 2011 01:07:30 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
-        stable kernel team <stable@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <201104050843.39246.rjw@sisk.pl> <4D9BA9FA.4010405@zytor.com> <201104060634.12555.rjw@sisk.pl>
-In-Reply-To: <201104060634.12555.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+To: Alex Shi <alex.shi@intel.com>
+CC: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        tim.c.chen@intel.com, shaohua.li@intel.com
+Subject: Re: [PATCH] sched: recover sched_yield task running time increase
+References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2011 09:34 PM, Rafael J. Wysocki wrote:
-> 
-> Do you mean during resume?
-> 
-> I think we can try to make the ordering more appropriate, but I'm not really
-> sure it would be a good idea to do that in the same patch.  Probably not.
-> 
-> Also, our current ordering has never been reported to cause problems to anyone.
-> 
+On 04/05/2011 06:33 PM, Alex Shi wrote:
+> commit ac53db596cc08ecb8040c removed the sched_yield task running
+> time increase, so the yielded task get more opportunity to be launch
+> again. That may not the caller want to be. And this also causes
+> volano benchmark drop 50~80 percent performance on core2/NHM/WSM
+> machines. This patch recover the sched_yield task vruntime up.
+>
+> Signed-off-by: alex.shi@intel.com
 
-Yes, I mean on resume.
+NACK
 
-I'm not sure if we'd know since it would manifest as a very early failure.
+This was switched off by default and under
+the sysctl sched_compat_yield for a reason.
 
-Anyway, agreed it's not the same patch.
-
-Two things:
-
-1. Do you agree that this is the right place to put this?  There seems
-to be some other things in __save_processor_state() which puts things in
-places outside struct saved_context, but I would like your opinion.
-
-2. While we're at it, why is mtrr_save_fixed_ranges() only called on x86-32?
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Reintroducing it under that sysctl option
+may be acceptable, but by default it would
+be doing the wrong thing for other workloads.
