@@ -1,99 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab1DFUfz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 16:35:55 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:48290 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab1DFUfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 16:35:53 -0400
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
-        Eric Cooper <ecc@cmu.edu>, Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 2/2] ARM: Remove machine type dockstar (use sheevaplug instead)
-Date: Wed,  6 Apr 2011 22:35:21 +0200
-Message-Id: <1302122121-3652-3-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1302122121-3652-1-git-send-email-holler@ahsoftware.de>
-References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de>
+	id S932158Ab1DFUi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 16:38:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48858 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab1DFUiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 16:38:55 -0400
+Date: Wed, 6 Apr 2011 13:38:54 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: [PATCH] brk: COMPAT_BRK: fix detection of randomized brk (was Re:
+ [regression v2.6.38] Re: [PATCH v2] brk: fix min_brk lower bound computation
+ forCOMPAT_BRK)
+In-Reply-To: <BANLkTinnvXX70OCrtyYy_2e-zJDqS9f2iw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1104061336190.5855@pobox.suse.cz>
+References: <alpine.LNX.2.00.1101030002390.26685@pobox.suse.cz> <alpine.LNX.2.00.1101031237210.26685@pobox.suse.cz> <alpine.LNX.2.00.1101031421470.26685@pobox.suse.cz> <AANLkTinK-TYnY70Wst_FTbEtn7Dwm8wEQoWMewsYM8dh@mail.gmail.com>
+ <alpine.LNX.2.00.1103251119120.26754@pobox.suse.cz> <AANLkTi=g5z+GYkbOGbdLQcLaQkpY6yQ6tjGRjjk1H59R@mail.gmail.com> <alpine.LNX.2.00.1103281619320.26754@pobox.suse.cz> <AANLkTi=pNxVY8NZjRhT_aJMQNiTpfkmECqc-ZnTD7ynW@mail.gmail.com> <alpine.LNX.2.00.1104061155530.5855@pobox.suse.cz>
+ <BANLkTinnvXX70OCrtyYy_2e-zJDqS9f2iw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to have a different machine type for Seagate DockStars.
-Remove it.
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: brk: COMPAT_BRK: fix detection of randomized brk
 
-Be aware, this patch requires a change in the bootloader to feed the
-same machine type to the kernel as used for Marvell SheevaPlugs.
+5520e89 ("brk: fix min_brk lower bound computation for COMPAT_BRK")
+tried to get the whole logic of brk randomization for legacy (libc5-based)
+applications finally right.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+It turns out that the way to detect whether brk has actually been randomized in
+the end or not introduced by that patch still doesn't work for those binaries,
+as reported by Geert.
+
+I don't like it, but currently see no better option than a bit flag in
+task_struct to catch the CONFIG_COMPAT_BRK && randomize_va_space == 2
+case.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/arm/mach-kirkwood/Kconfig            |   10 ++--------
- arch/arm/mach-kirkwood/Makefile           |    1 -
- arch/arm/mach-kirkwood/sheevaplug-setup.c |   10 ----------
- 3 files changed, 2 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
-index 7fc603b..9dafb58 100644
---- a/arch/arm/mach-kirkwood/Kconfig
-+++ b/arch/arm/mach-kirkwood/Kconfig
-@@ -27,10 +27,10 @@ config MACH_MV88F6281GTW_GE
- 	  Marvell 88F6281 GTW GE Board.
+I am not really happy about introducing the bit flag, but I currently 
+don't see another option. And it's only for the legacy CONFIG_COMPAT_BRK 
+case anyway.
+
+Andrew, Ingo, any opinions/objections?
+
+If not -- Andrew, I guess this should go into current -rc still.
+
+ fs/binfmt_elf.c       |    6 +++++-
+ include/linux/sched.h |    3 +++
+ mm/mmap.c             |    2 +-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index f34078d..303983f 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -941,9 +941,13 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	current->mm->start_stack = bprm->p;
  
- config MACH_SHEEVAPLUG
--	bool "Marvell SheevaPlug Reference Board"
-+	bool "Marvell SheevaPlug Reference Board or Seagate DockStar"
- 	help
- 	  Say 'Y' here if you want your kernel to support the
--	  Marvell SheevaPlug Reference Board.
-+	  Marvell SheevaPlug Reference Board or the Seagate DockStar.
- 
- config MACH_ESATA_SHEEVAPLUG
- 	bool "Marvell eSATA SheevaPlug Reference Board"
-@@ -58,12 +58,6 @@ config MACH_TS41X
- 	  QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo
- 	  NAS devices.
- 
--config MACH_DOCKSTAR
--	bool "Seagate FreeAgent DockStar"
--	help
--	  Say 'Y' here if you want your kernel to support the
--	  Seagate FreeAgent DockStar.
--
- config MACH_OPENRD
-         bool
- 
-diff --git a/arch/arm/mach-kirkwood/Makefile b/arch/arm/mach-kirkwood/Makefile
-index f06bc3d..48c3c83 100644
---- a/arch/arm/mach-kirkwood/Makefile
-+++ b/arch/arm/mach-kirkwood/Makefile
-@@ -7,7 +7,6 @@ obj-$(CONFIG_MACH_MV88F6281GTW_GE)	+= mv88f6281gtw_ge-setup.o
- obj-$(CONFIG_MACH_SHEEVAPLUG)		+= sheevaplug-setup.o
- obj-$(CONFIG_MACH_ESATA_SHEEVAPLUG)	+= sheevaplug-setup.o
- obj-$(CONFIG_MACH_GURUPLUG)		+= guruplug-setup.o
--obj-$(CONFIG_MACH_DOCKSTAR)		+= sheevaplug-setup.o
- obj-$(CONFIG_MACH_TS219)		+= ts219-setup.o tsx1x-common.o
- obj-$(CONFIG_MACH_TS41X)		+= ts41x-setup.o tsx1x-common.o
- obj-$(CONFIG_MACH_OPENRD)		+= openrd-setup.o
-diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-index d1593db..f548aa9 100644
---- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
-+++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-@@ -177,13 +177,3 @@ MACHINE_START(ESATA_SHEEVAPLUG, "Marvell eSATA SheevaPlug Reference Board")
- 	.timer		= &kirkwood_timer,
- MACHINE_END
+ #ifdef arch_randomize_brk
+-	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1))
++	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
+ 		current->mm->brk = current->mm->start_brk =
+ 			arch_randomize_brk(current->mm);
++#ifdef CONFIG_COMPAT_BRK
++		current->brk_randomized = 1;
++#endif
++	}
  #endif
--
--#ifdef CONFIG_MACH_DOCKSTAR
--MACHINE_START(DOCKSTAR, "Seagate FreeAgent DockStar")
--	.boot_params	= 0x00000100,
--	.init_machine	= sheevaplug_init,
--	.map_io		= kirkwood_map_io,
--	.init_irq	= kirkwood_init_irq,
--	.timer		= &kirkwood_timer,
--MACHINE_END
--#endif
+ 
+ 	if (current->personality & MMAP_PAGE_ZERO) {
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 83bd2e2..239d2fe 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1254,6 +1254,9 @@ struct task_struct {
+ #endif
+ 
+ 	struct mm_struct *mm, *active_mm;
++#ifdef CONFIG_COMPAT_BRK
++	unsigned brk_randomized:1;
++#endif
+ #if defined(SPLIT_RSS_COUNTING)
+ 	struct task_rss_stat	rss_stat;
+ #endif
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 2ec8eb5..318ed2d 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -259,7 +259,7 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
+ 	 * randomize_va_space to 2, which will still cause mm->start_brk
+ 	 * to be arbitrarily shifted
+ 	 */
+-	if (mm->start_brk > PAGE_ALIGN(mm->end_data))
++	if (current->brk_randomized)
+ 		min_brk = mm->start_brk;
+ 	else
+ 		min_brk = mm->end_data;
 -- 
-1.7.2.2
+1.7.3.1
 
