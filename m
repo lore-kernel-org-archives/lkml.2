@@ -1,106 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab1DFWpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:45:14 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40279 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab1DFWpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:45:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TvXYJGFcCDqD3wYPrJgD19ShdQF57J6oy7J3q8WuKnbA/lRZ1Mz/5wz6M7AYetThLq
-         bRQr0Vj6d4vVSmMFZ0JiNkaT7BYvB0bC2cgOnvc67oNqCUZMr27BBHWv4CeQGVpLgw/S
-         GWm/CLM0RkOvN0OcfM44utM8ifPOZY9bYD0o8=
-Message-ID: <4D9CECF5.3090309@gmail.com>
-Date: Wed, 06 Apr 2011 16:45:09 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1756234Ab1DFWps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:45:48 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:49003 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755027Ab1DFWpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 18:45:47 -0400
+Date: Wed, 6 Apr 2011 15:45:47 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] ext4: Calculate and verify inode checksums
+Message-ID: <20110406224547.GT32706@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-To: Tim Blechmann <tim@klingt.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
-References: <inhgjs$54a$1@dough.gmane.org> <4D9C84D5.6090303@gmail.com> <20110406175217.GC4987@ghostprotocols.net> <201104062248.23853.tim@klingt.org> <4D9CE610.4020603@gmail.com>
-In-Reply-To: <4D9CE610.4020603@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406224410.GB24354@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch introduces to ext4 the ability to calculate and verify inode
+checksums.  This requires the use of a new ro compatibility flag and some
+accompanying e2fsprogs patches to provide the relevant features in tune2fs and
+e2fsck.
 
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-On 04/06/11 16:15, David Ahern wrote:
-> 
-> 
-> On 04/06/11 14:48, Tim Blechmann wrote:
->>>> David
->>>>
->>>>> this happens when running perf as the same process as the process and
->>>>> when running perf as root.
->>>
->>> yep, works for me as well:
->>>
->>> [acme@emilia ~]$ cat vsyscall.c
->>
->> after including unistd.h, this compiles and works fine. however i cannot profile 
->> any multithreaded program. does this work for you?
->>
->> tim
->>
-> 
-> That does fail:
-> # ps -C rsyslogd -L
->   PID   LWP TTY          TIME CMD
->   795   795 ?        00:00:00 rsyslogd
->   795   797 ?        00:00:00 rsyslogd
->   795   798 ?        00:00:00 rsyslogd
-> 
-> # /tmp/build-perf/perf top -p 795
-> Failed to mmap with 22 (Invalid argument)
-> 
-> strace shows it failing at:
-> ioctl(4, PERF_EVENT_IOC_SET_OUTPUT, 0x3) = -1 EINVAL (Invalid argument)
-> 
-> Changing to use thread only works:
-> # /tmp/build-perf/perf top -t 795
+ fs/ext4/ext4.h  |    6 ++++--
+ fs/ext4/inode.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 55 insertions(+), 3 deletions(-)
 
-git bisect points to:
-
-70db7533caef02350ec8d6852e589491bca3a951 is the first bad commit
-commit 70db7533caef02350ec8d6852e589491bca3a951
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Wed Jan 12 22:39:13 2011 -0200
-
-perf evlist: Move the mmap array from perf_evsel
-
-Adopting the new model used in 'perf record', where we don't have a map
-per thread per cpu, instead we have an mmap per cpu, established on the
-first fd for that cpu and ask the kernel using the
-PERF_EVENT_IOC_SET_OUTPUT ioctl to send events for the other fds on that
-cpu for the one with the mmap.
-
-The methods moved from perf_evsel to perf_evlist, but for easing review
-they were modified in place, in evsel.c, the next patch will move the
-migrated methods to evlist.c.
-
-With this 'perf top' now uses the same mmap model used by 'perf record'
-and the next patches will make 'perf record' use these new routines,
-establishing a common codebase for both tools.
-
-----------
-
-Coincidentally, perf-record is also broken. git bisect points to:
-
-dd7927f4f8ee75b032ff15aeef4bda49719a443a is the first bad commit
-commit dd7927f4f8ee75b032ff15aeef4bda49719a443a
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Wed Jan 12 14:28:51 2011 -0200
-
-perf record: Use perf_evsel__open
-
-Now its time to factor out the mmap handling bits into the perf_evsel
-class.
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 4daaf2b..8815928 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -617,7 +617,7 @@ struct ext4_inode {
+ 		} masix2;
+ 	} osd2;				/* OS dependent 2 */
+ 	__le16	i_extra_isize;
+-	__le16	i_pad1;
++	__le16  i_checksum;		/* crc16(sb_uuid+inodenum+inode) */
+ 	__le32  i_ctime_extra;  /* extra Change time      (nsec << 2 | epoch) */
+ 	__le32  i_mtime_extra;  /* extra Modification time(nsec << 2 | epoch) */
+ 	__le32  i_atime_extra;  /* extra Access time      (nsec << 2 | epoch) */
+@@ -1338,6 +1338,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ #define EXT4_FEATURE_RO_COMPAT_GDT_CSUM		0x0010
+ #define EXT4_FEATURE_RO_COMPAT_DIR_NLINK	0x0020
+ #define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE	0x0040
++#define EXT4_FEATURE_RO_COMPAT_INODE_CSUM	0x0400
+ 
+ #define EXT4_FEATURE_INCOMPAT_COMPRESSION	0x0001
+ #define EXT4_FEATURE_INCOMPAT_FILETYPE		0x0002
+@@ -1364,7 +1365,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ 					 EXT4_FEATURE_RO_COMPAT_DIR_NLINK | \
+ 					 EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE | \
+ 					 EXT4_FEATURE_RO_COMPAT_BTREE_DIR |\
+-					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE)
++					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE |\
++					 EXT4_FEATURE_RO_COMPAT_INODE_CSUM)
+ 
+ /*
+  * Default values for user and/or group using reserved blocks
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 1a86282..dc76f19 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -42,6 +42,7 @@
+ #include <linux/printk.h>
+ #include <linux/slab.h>
+ #include <linux/ratelimit.h>
++#include <linux/crc16.h>
+ 
+ #include "ext4_jbd2.h"
+ #include "xattr.h"
+@@ -52,6 +53,40 @@
+ 
+ #define MPAGE_DA_EXTENT_TAIL 0x01
+ 
++static __le16 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw)
++{
++	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	int offset = offsetof(struct ext4_inode, i_checksum);
++	__le32 inum = cpu_to_le32(inode->i_ino);
++	__u16 crc = 0;
++
++	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_INODE_CSUM) &&
++	    le16_to_cpu(raw->i_extra_isize) >= 4) {
++		crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
++		crc = crc16(crc, (__u8 *)&inum, sizeof(inum));
++		crc = crc16(crc, (__u8 *)raw, offset);
++		offset += sizeof(raw->i_checksum); /* skip checksum */
++		/* for checksum of struct ext4_inode do the rest...*/
++		if (ei->i_extra_isize > 4)
++			crc = crc16(crc, (__u8 *)raw + offset,
++				    ei->i_extra_isize - 4);
++	}
++
++	return cpu_to_le16(crc);
++}
++
++static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw)
++{
++	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_INODE_CSUM) &&
++	    (raw->i_checksum != ext4_inode_csum(inode, raw)))
++		return 0;
++
++	return 1;
++}
++
+ static inline int ext4_begin_ordered_truncate(struct inode *inode,
+ 					      loff_t new_size)
+ {
+@@ -4802,7 +4837,8 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 	struct ext4_inode *raw_inode;
+ 	struct ext4_inode_info *ei;
+ 	struct inode *inode;
+-	journal_t *journal = EXT4_SB(sb)->s_journal;
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
++	journal_t *journal = sbi->s_journal;
+ 	long ret;
+ 	int block;
+ 
+@@ -4916,6 +4952,14 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 	} else
+ 		ei->i_extra_isize = 0;
+ 
++	if (!ext4_inode_csum_verify(inode, raw_inode)) {
++		EXT4_ERROR_INODE(inode, "checksum invalid (%u != %u)",
++		       le16_to_cpu(ext4_inode_csum(inode, raw_inode)),
++		       le16_to_cpu(raw_inode->i_checksum));
++		ret = -EIO;
++		goto bad_inode;
++	}
++
+ 	EXT4_INODE_GET_XTIME(i_ctime, inode, raw_inode);
+ 	EXT4_INODE_GET_XTIME(i_mtime, inode, raw_inode);
+ 	EXT4_INODE_GET_XTIME(i_atime, inode, raw_inode);
+@@ -5138,6 +5182,12 @@ static int ext4_do_update_inode(handle_t *handle,
+ 			raw_inode->i_version_hi =
+ 			cpu_to_le32(inode->i_version >> 32);
+ 		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
++
++		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++			EXT4_FEATURE_RO_COMPAT_INODE_CSUM) &&
++		    EXT4_FITS_IN_INODE(raw_inode, ei, i_checksum))
++			raw_inode->i_checksum =
++				ext4_inode_csum(inode, raw_inode);
+ 	}
+ 
+ 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
