@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab1DFQJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 12:09:15 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53667 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab1DFQJO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 12:09:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YSprR4QTaLcOGxFWd2YWSDTlrOprXe44602ADrt0LqYvl0lHLfEDlpMGXQywC1rSn5
-         ppz9Bayn1ktdDs0ZoW0i4N6LQ80V271zKbrrneFRBSRwjPjE99vbYqZKxZf4J9QIGrn9
-         icWtYbL8aWQfDxl+QaS0B1//hM+7N3brP71Go=
+	id S1754885Ab1DFQPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 12:15:39 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:59560 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753358Ab1DFQPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 12:15:38 -0400
+Date: Wed, 6 Apr 2011 09:14:45 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Thomas Renninger <trenn@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] hwmon: Add driver for AMD family 15h processor
+ power information
+Message-ID: <20110406161445.GB25724@ericsson.com>
+References: <20110404160733.GA11818@alberich.amd.com>
+ <20110405144536.GA5054@alberich.amd.com>
+ <20110406161401.1c0ab6de@endymion.delvare>
+ <20110406151901.GE2177@alberich.amd.com>
+ <20110406173543.7308ba93@endymion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <20110406110335.0f2d5f4c@schlenkerla.am.freescale.net>
-References: <1302022702-24541-1-git-send-email-justinmattock@gmail.com>
-	<1302022702-24541-2-git-send-email-justinmattock@gmail.com>
-	<20110405131504.1d182da4@schlenkerla.am.freescale.net>
-	<BANLkTi=5A1P-WAFvCyjbT7RVva9K9d=gQQ@mail.gmail.com>
-	<20110406110335.0f2d5f4c@schlenkerla.am.freescale.net>
-Date: Wed, 6 Apr 2011 09:09:14 -0700
-Message-ID: <BANLkTi=CRxJqYdtD-kjA3buuWqYiSJEzxQ@mail.gmail.com>
-Subject: Re: [RFC 2/5]arch:powerpc:sysdev:Makefile Remove unused config in the Makefile.
-From: Justin Mattock <justinmattock@gmail.com>
-To: Scott Wood <scottwood@freescale.com>
-Cc: trivial@kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Harninder Rai <harninder.rai@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110406173543.7308ba93@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 6, 2011 at 9:03 AM, Scott Wood <scottwood@freescale.com> wrote:
-> On Wed, 6 Apr 2011 08:07:58 -0700
-> Justin Mattock <justinmattock@gmail.com> wrote:
->
->> ahh.. so the:  fsl_85xx_l2ctlr.o fsl_85xx_cache_sram.o is still in use
->> even though FSL_85XX_CACHE_SRAM is not really used, but really is used!!
->>
->> but might be wrong with this.
->
-> More like there are plans to use it, or possibly out-of-tree users.  We
-> should prod people a bit to submit the driver patches that use this before
-> we just yank it out.
->
-> -Scott
->
->
+On Wed, Apr 06, 2011 at 11:35:43AM -0400, Jean Delvare wrote:
+> On Wed, 6 Apr 2011 17:19:01 +0200, Andreas Herrmann wrote:
+> > On Wed, Apr 06, 2011 at 04:14:01PM +0200, Jean Delvare wrote:
+> > > On Tue, 5 Apr 2011 16:45:36 +0200, Andreas Herrmann wrote:
+> > > > +static ssize_t show_power(struct device *dev,
+> > > > +			  struct device_attribute *attr, char *buf)
+> > > > +{
+> > > > +	u32 val, btdp, tdpl, tdp2w, arange;
+> > > > +	s32 acap;
+> > > > +	u64 ctdp;
+> > > 
+> > > These variable names aren't easy to understand.
+> > 
+> > Just random names which eventually map to the spec:
+> > 
+> > btdp - base_tdp
+> > tdpl - tdp_limit
+> > tdp2w - tdp_to_watt
+> > acap - average_accumulator_capture (or even worse how about "processor_tdp_running_average_accumulator":(
+> > arange - average_range
+> 
+> avg_cap and avg_range would do, respectively, for the last two.
+> 
+> > I don't think that changing the names make it much easier to
+> > reconstruct the calculation but if you insist in changing it I'll
+> > adapt it.
+> 
+> I do prefer the "extended" names, really. Sure, this doesn't change the
+> calculations, but it helps the reader understand what's going on. Which
+> will be useful if one ever has to fix a bug in the code or extend it
+> for a different CPU family.
+> 
+> But maybe this is just me. Guenter, do you have an opinion?
+> 
+I agree. base_tdp is definitely much better than btdp. Same for the others.
 
-well if this is going to be used for something down the line, then
-best leave it in..
-
--- 
-Justin P. Mattock
+Thanks,
+Guenter
