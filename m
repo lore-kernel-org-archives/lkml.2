@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab1DFW4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:56:34 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:52190
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1756972Ab1DFW4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:56:47 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:52198
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756626Ab1DFWyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:54:05 -0400
+	id S1756617Ab1DFWyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 18:54:04 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 14/22] Staging: hv: Cleanup storvsc_remove()
-Date: Wed,  6 Apr 2011 16:05:14 -0700
-Message-Id: <1302131122-15530-14-git-send-email-kys@microsoft.com>
+Subject: [PATCH 19/22] Staging: hv: Fix a jump label (Cleanup) in blkvsc_drv
+Date: Wed,  6 Apr 2011 16:05:19 -0700
+Message-Id: <1302131122-15530-19-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302131122-15530-1-git-send-email-kys@microsoft.com>
 References: <1302131006-15411-1-git-send-email-kys@microsoft.com>
@@ -24,58 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-storvsc_remove() cannot fail, clean it up accordingly.
+One of the goto labels was named Cleanup; change it to cleanup.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   14 ++------------
- 1 files changed, 2 insertions(+), 12 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index ae61735..f819c6a 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -404,7 +404,6 @@ static int storvsc_probe(struct device *device)
-  */
- static int storvsc_remove(struct device *device)
- {
--	int ret;
- 	struct hv_driver *drv =
- 			drv_to_hv_drv(device->driver);
- 	struct storvsc_driver_object *storvsc_drv_obj = drv->priv;
-@@ -413,20 +412,11 @@ static int storvsc_remove(struct device *device)
- 	struct host_device_context *host_device_ctx =
- 			(struct host_device_context *)host->hostdata;
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index bf8647e..a47581c 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -963,7 +963,7 @@ static int blkvsc_probe(struct device *device)
+ 	blkdev = kzalloc(sizeof(struct block_device_context), GFP_KERNEL);
+ 	if (!blkdev) {
+ 		ret = -ENOMEM;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
  
--
--	if (!storvsc_drv_obj->base.dev_rm)
--		return -1;
--
- 	/*
- 	 * Call to the vsc driver to let it know that the device is being
- 	 * removed
- 	 */
--	ret = storvsc_drv_obj->base.dev_rm(device_obj);
--	if (ret != 0) {
--		/* TODO: */
--		DPRINT_ERR(STORVSC, "unable to remove vsc device (ret %d)",
--			   ret);
--	}
-+	storvsc_drv_obj->base.dev_rm(device_obj);
+ 	INIT_LIST_HEAD(&blkdev->pending_list);
+@@ -977,14 +977,14 @@ static int blkvsc_probe(struct device *device)
+ 					SLAB_HWCACHE_ALIGN, NULL);
+ 	if (!blkdev->request_pool) {
+ 		ret = -ENOMEM;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
  
- 	if (host_device_ctx->request_pool) {
- 		kmem_cache_destroy(host_device_ctx->request_pool);
-@@ -438,7 +428,7 @@ static int storvsc_remove(struct device *device)
  
- 	DPRINT_INFO(STORVSC, "releasing host adapter (%p)...", host);
- 	scsi_host_put(host);
--	return ret;
-+	return 0;
- }
+ 	/* Call to the vsc driver to add the device */
+ 	ret = storvsc_drv_obj->base.dev_add(device_obj, &device_info);
+ 	if (ret != 0)
+-		goto Cleanup;
++		goto cleanup;
  
- /*
+ 	blkdev->device_ctx = device_obj;
+ 	/* this identified the device 0 or 1 */
+@@ -1027,7 +1027,7 @@ static int blkvsc_probe(struct device *device)
+ 		}
+ 	} else {
+ 		ret = -1;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	DPRINT_INFO(BLKVSC_DRV, "blkvsc registered for major %d!!", major);
+@@ -1035,7 +1035,7 @@ static int blkvsc_probe(struct device *device)
+ 	blkdev->gd = alloc_disk(BLKVSC_MINORS);
+ 	if (!blkdev->gd) {
+ 		ret = -1;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	blkdev->gd->queue = blk_init_queue(blkvsc_request, &blkdev->lock);
+@@ -1074,7 +1074,7 @@ static int blkvsc_probe(struct device *device)
+ Remove:
+ 	storvsc_drv_obj->base.dev_rm(device_obj);
+ 
+-Cleanup:
++cleanup:
+ 	if (blkdev) {
+ 		if (blkdev->request_pool) {
+ 			kmem_cache_destroy(blkdev->request_pool);
 -- 
 1.7.4.1
 
