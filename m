@@ -1,133 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab1DFV0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:26:21 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:60531
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756904Ab1DFVYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:24:03 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 22/22] Staging: hv: Get rid of some dead code in blkvsc_drv.c
-Date: Wed,  6 Apr 2011 14:35:20 -0700
-Message-Id: <1302125720-10808-22-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1302125720-10808-1-git-send-email-kys@microsoft.com>
-References: <1302125655-10741-1-git-send-email-kys@microsoft.com>
- <1302125720-10808-1-git-send-email-kys@microsoft.com>
+	id S932258Ab1DFV1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:27:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59132 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab1DFV1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 17:27:37 -0400
+Date: Wed, 6 Apr 2011 17:27:33 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org
+Subject: Re: [PATCH] POWER: perf_event: Skip updating kernel counters if
+ register value shrinks
+Message-ID: <20110406212733.GB2596@mgebm.net>
+References: <1301059689-4556-1-git-send-email-emunson@mgebm.net>
+ <1301378637.2402.671.camel@pasglop>
+ <20110329142519.GA3527@mgebm.net>
+ <1301433165.2402.689.camel@pasglop>
+ <20110330183656.GA2564@mgebm.net>
+ <1301551476.2407.61.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pvezYHf7grwyp3Bc"
+Content-Disposition: inline
+In-Reply-To: <1301551476.2407.61.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of some dead code in blkvsc_drv.c.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/blkvsc_drv.c |   26 --------------------------
- 1 files changed, 0 insertions(+), 26 deletions(-)
+--pvezYHf7grwyp3Bc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 6ad1cad..0b85995 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -172,7 +172,6 @@ static int blk_vsc_initialize(struct hv_driver *driver)
- 	stor_driver = hvdr_to_stordr(driver);
- 
- 	/* Make sure we are at least 2 pages since 1 page is used for control */
--	/* ASSERT(stor_driver->RingBufferSize >= (PAGE_SIZE << 1)); */
- 
- 	driver->name = g_blk_driver_name;
- 	memcpy(&driver->dev_type, &g_blk_device_type, sizeof(struct hv_guid));
-@@ -224,14 +223,6 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
- 		   blkvsc_req->sector_count,
- 		   blkvsc_req->request.data_buffer.offset,
- 		   blkvsc_req->request.data_buffer.len);
--#if 0
--	for (i = 0; i < (blkvsc_req->request.data_buffer.len >> 12); i++) {
--		DPRINT_DBG(BLKVSC_DRV, "blkvsc_submit_request() - "
--			   "req %p pfn[%d] %llx\n",
--			   blkvsc_req, i,
--			   blkvsc_req->request.data_buffer.pfn_array[i]);
--	}
--#endif
- 
- 	storvsc_req = &blkvsc_req->request;
- 	vm_srb = &storvsc_req->vstor_packet.vm_srb;
-@@ -376,9 +367,6 @@ static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg)
- 
- static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
- {
--	/* ASSERT(blkvsc_req->req); */
--	/* ASSERT(blkvsc_req->sector_count <=
--	   (MAX_MULTIPAGE_BUFFER_COUNT*8)); */
- 
- 	blkvsc_req->cmd_len = 16;
- 
-@@ -435,7 +423,6 @@ static void blkvsc_init_rw(struct blkvsc_request *blkvsc_req)
- static int blkvsc_ioctl(struct block_device *bd, fmode_t mode,
- 			unsigned cmd, unsigned long argument)
- {
--/*	struct block_device_context *blkdev = bd->bd_disk->private_data; */
- 	int ret;
- 
- 	switch (cmd) {
-@@ -862,13 +849,6 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
- 	blkdev->capacity = be64_to_cpu(*(unsigned long long *) &buf[0]) + 1;
- 	blkdev->sector_size = be32_to_cpu(*(unsigned int *)&buf[8]);
- 
--#if 0
--	blkdev->capacity = ((buf[0] << 24) | (buf[1] << 16) |
--			    (buf[2] << 8) | buf[3]) + 1;
--	blkdev->sector_size = (buf[4] << 24) | (buf[5] << 16) |
--			      (buf[6] << 8) | buf[7];
--#endif
--
- 	kunmap(page_buf);
- 
- 	__free_page(page_buf);
-@@ -940,7 +920,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
- 
- 	buf = kmap(page_buf);
- 
--	/* print_hex_dump_bytes("", DUMP_PREFIX_NONE, buf, 64); */
- 	/* be to le */
- 	device_type = buf[0] & 0x1F;
- 
-@@ -960,8 +939,6 @@ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
- 		blkdev->device_id_len = 64;
- 
- 	memcpy(blkdev->device_id, &buf[8], blkdev->device_id_len);
--	/* printk_hex_dump_bytes("", DUMP_PREFIX_NONE, blkdev->device_id,
--	 * blkdev->device_id_len); */
- 
- 	kunmap(page_buf);
- 
-@@ -1346,8 +1323,6 @@ static int blkvsc_probe(struct device *device)
- 	/* Initialize what we can here */
- 	spin_lock_init(&blkdev->lock);
- 
--	/* ASSERT(sizeof(struct blkvsc_request_group) <= */
--	/* 	sizeof(struct blkvsc_request)); */
- 
- 	blkdev->request_pool = kmem_cache_create(dev_name(&device_obj->device),
- 					sizeof(struct blkvsc_request), 0,
-@@ -1484,7 +1459,6 @@ static void blkvsc_request_completion(struct hv_storvsc_request *request)
- 	struct blkvsc_request *comp_req, *tmp;
- 	struct vmscsi_request *vm_srb;
- 
--	/* ASSERT(blkvsc_req->group); */
- 
- 	DPRINT_DBG(BLKVSC_DRV, "blkdev %p blkvsc_req %p group %p type %s "
- 		   "sect_start %lu sect_count %ld len %d group outstd %d "
--- 
-1.7.4.1
+On Thu, 31 Mar 2011, Benjamin Herrenschmidt wrote:
 
+> On Wed, 2011-03-30 at 14:36 -0400, Eric B Munson wrote:
+> > On Wed, 30 Mar 2011, Benjamin Herrenschmidt wrote:
+> >=20
+> > > On Tue, 2011-03-29 at 10:25 -0400, Eric B Munson wrote:
+> > > > Here I made the assumption that the hardware would never remove mor=
+e events in
+> > > > a speculative roll back than it had added.  This is not a situation=
+ I
+> > > > encoutered in my limited testing, so I didn't think underflow was p=
+ossible.  I
+> > > > will send out a V2 using the signed 32 bit delta and remeber to CC =
+stable
+> > > > this time.=20
+> > >=20
+> > > I'm not thinking about underflow but rollover... or that isn't possib=
+le
+> > > with those counters ? IE. They don't wrap back to 0 after hitting
+> > > ffffffff ?
+> > >=20
+> >=20
+> > They do roll over to 0 after ffffffff, but I thought that case was alre=
+ady
+> > covered by the perf_event_interrupt.  Are you concerned that we will re=
+set a
+> > counter and speculative roll back will underflow that counter?
+>=20
+> No, but take this part of the patch:
+>=20
+> > --- a/arch/powerpc/kernel/perf_event.c
+> > +++ b/arch/powerpc/kernel/perf_event.c
+> > @@ -416,6 +416,15 @@ static void power_pmu_read(struct perf_event *even=
+t)
+> >  		prev =3D local64_read(&event->hw.prev_count);
+> >  		barrier();
+> >  		val =3D read_pmc(event->hw.idx);
+> > +		/*
+> > +		 * POWER7 can roll back counter values, if the new value is
+> > +		 * smaller than the previous value it will cause the delta
+> > +		 * and the counter to have bogus values.  If this is the
+> > +		 * case skip updating anything until the counter grows again.
+> > +		 * This can lead to a small lack of precision in the counters.
+> > +		 */
+> > +		if (val < prev)
+> > +			return;
+> >  	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) !=3D prev);
+>=20
+> Doesn't that mean that power_pmu_read() can only ever increase the value =
+of
+> the perf_event and so will essentially -stop- once the counter rolls over=
+ ?
+>=20
+> Similar comments every where you do this type of comparison.
+>=20
+> Cheers,
+> Ben.
+
+Sorry for the nag, but am I missing something about the way the register and
+the previous values are reset in the overflow interrupt handler?
+
+Thanks,
+Eric
+
+--pvezYHf7grwyp3Bc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNnNrFAAoJEH65iIruGRnNDSgIANiVEWRw2KhUErflFUPV0Gs4
+w8+7Bz1xPAdiPprxe7DbYn9GxEyvJ23kCmnCxetFrixX1+o0SPT0iyVip4GRfWHw
+oLDXuRCuqrOjctugNIfJM+CFAxlOtzooKjedXjlRsTCW+BMv7CvjahQR0+ecpunh
+0462K+CUTJh42ZBbJaRiomiWWMveRvInXpKYVarHaOO6OfqYl7p21UvFomTUyu8Z
+NTk0X38TG4KEfpghr3aIHKwYFCBE53bRE54A3LnQijq0P1CxHWEQgpRulHwRZZwz
+r4uPrs23gBuMeh5I/lToWGRv1G+QW4TVh5wqGkHR85XussvYA4Bpm29WpR8cX5Y=
+=X0/4
+-----END PGP SIGNATURE-----
+
+--pvezYHf7grwyp3Bc--
