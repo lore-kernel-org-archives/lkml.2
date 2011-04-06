@@ -1,170 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab1DFN7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 09:59:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36996 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755915Ab1DFN7w (ORCPT
+	id S1756142Ab1DFOC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 10:02:26 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44118 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755984Ab1DFOCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 09:59:52 -0400
-Date: Wed, 6 Apr 2011 22:59:56 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-Cc: "sameo@openedhand.com" <sameo@openedhand.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun Chen <Dajun.Chen@diasemi.com>
-Subject: Re: [PATCHv1 1/11] MFD: MFD module of DA9052 PMIC driver
-Message-ID: <20110406135954.GA2810@opensource.wolfsonmicro.com>
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B4AC245@KCINPUNHJCMS01.kpit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B4AC245@KCINPUNHJCMS01.kpit.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Apr 2011 10:02:25 -0400
+Date: Wed, 6 Apr 2011 15:02:32 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Alan Cox <alan@linux.jf.intel.com>, linux-kernel@vger.kernel.org,
+        greg@kroah.com,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH] oaktrail AK8975 support via IIO
+Message-ID: <20110406150232.56ab2408@lxorguk.ukuu.org.uk>
+In-Reply-To: <4D9C6F82.5060404@cam.ac.uk>
+References: <20110406123114.17742.10936.stgit@localhost.localdomain>
+	<4D9C6D1F.30007@cam.ac.uk>
+	<4D9C6F82.5060404@cam.ac.uk>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 07:01:34PM +0530, Ashish Jangam wrote:
+> >> +static int wait_conversion_complete_gpio(struct ak8975_data *data)
+> >> +{
+> >> +	struct i2c_client *client = data->client;
+> >> +	u8 read_status;
+> >> +	u32 timeout_ms = AK8975_MAX_CONVERSION_TIMEOUT;
+> >> +	int ret;
+> >> +
+> >> +	/* Wait for the conversion to complete. */
+> >> +	while (timeout_ms) {
+> >> +		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
+> >> +		if (gpio_get_value(data->eoc_gpio))
+> >> +			break;
+> >> +		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
+> >> +	}
+> >> +	if (!timeout_ms) {
+> >> +		dev_err(&client->dev, "Conversion timeout happened\n");
+> >> +		return -EINVAL;
+> >> +	}
+> >> +
+> >> +	ret = ak8975_read_data(client, AK8975_REG_ST1, 1, &read_status);
+> >> +	if (ret < 0) {
+> >> +		dev_err(&client->dev, "Error in reading ST1\n");
+> >> +		return ret;
+> >> +	}
+> >> +	return read_status;
+> >> +}
+> >> +
+> Its not immediately obvious to me why we need these two separate functions.
+> They only differ by a couple of lines.  Perhaps push querying if the gpio
+> down into a single function?
 
-> +int da9052_adc_manual_read(struct da9052 *da9052,
-> +                       unsigned char channel)
-> +{
-> +       unsigned char timeout_cnt = 8;
-> +       unsigned short calc_data;
-> +       int ret;
-> +       u16 data = 0;
-> +       u8 mux_sel = 0;
+That was actually my starting point but they are quite different - one
+does the gpio check each loop then a read, the other does a read each
+loop and then nothing. Mixed together you get 
 
-There's no concurrency protection in this code so if two users try to do
-ADC reads simultaneously they'll interfere with each other.
+	while() {
+		if
+			if
+		else
+			if
+		
+	}
+	if
 
-> +int da9052_reg_read(struct da9052 *da9052, unsigned char reg)
-> +{
-> +       unsigned char val;
-> +
-> +       if( reg > DA9052_MAX_REG_CNT ) {
+	else
 
-This isn't the standard kernel coding style - checkpatch.pl can help
-spot issues like this (there's many other examples throughout the code).
+and it looks like spagetti ..
 
-> +       if ( da9052->read_dev(da9052, reg, 1, &val) ) {
-> +               mutex_unlock(&da9052->io_lock);
-> +               return -EIO;
-> +       }
 
-It'd seem helpful to return any error code that read_dev() returns to
-the caller.
 
-> +int da9052_read_events(struct da9052 *da9052, unsigned char reg ,
-> +                             unsigned int *events)
-> +{
-> +       uint8_t v[4] = {0, 0, 0, 0};
-> +       int ret;
-> +
-> +       ret = da9052_group_read(da9052, reg, 4, v);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       *events = (v[3] << 24) | (v[2] << 16) | (v[1] << 8) | v[0];
-> +
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(da9052_read_events);
 
-This looks like part of the old non-standard IRQ code previous versions
-of these patches had?  Looks like this should be merged into the IRQ
-code if it's needed at all.
+> >> +static int wait_conversion_complete_polled(struct ak8975_data *data)
+> >> +{
+> >> +	struct i2c_client *client = data->client;
+> >> +	u8 read_status;
+> >> +	u32 timeout_ms = AK8975_MAX_CONVERSION_TIMEOUT;
+> >> +	int ret;
+> >> +
+> >> +	/* Wait for the conversion to complete. */
+> >> +	while (timeout_ms) {
+> >> +		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
+> >> +		ret = ak8975_read_data(client, AK8975_REG_ST1, 1, &read_status);
+> >> +		if (ret < 0) {
+> >> +			dev_err(&client->dev, "Error in reading ST1\n");
+> >> +			return ret;
+> >> +		}
+> >> +		if (read_status)
+> >> +			break;
+> >> +		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
+> >> +	}
+> >> +	if (!timeout_ms) {
+> >> +		dev_err(&client->dev, "Conversion timeout happened\n");
+> >> +		return -EINVAL;
+> >> +	}
+> >> +	return read_status;
+> >> +}
+> >> +
+> >>  /*
+> >>   * Emits the raw flux value for the x, y, or z axis.
+> >>   */
+> >> @@ -326,7 +379,6 @@ static ssize_t show_raw(struct device *dev, struct device_attribute *devattr,
+> >>  	struct ak8975_data *data = indio_dev->dev_data;
+> >>  	struct i2c_client *client = data->client;
+> >>  	struct iio_dev_attr *this_attr = to_iio_dev_attr(devattr);
+> >> -	u32 timeout_ms = AK8975_MAX_CONVERSION_TIMEOUT;
+> >>  	u16 meas_reg;
+> >>  	s16 raw;
+> >>  	u8 read_status;
+> >> @@ -352,23 +404,14 @@ static ssize_t show_raw(struct device *dev, struct device_attribute *devattr,
+> >>  	}
+> >>  
+> >>  	/* Wait for the conversion to complete. */
+> >> -	while (timeout_ms) {
+> >> -		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
+> >> -		if (gpio_get_value(data->eoc_gpio))
+> >> -			break;
+> >> -		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
+> >> -	}
+> >> -	if (!timeout_ms) {
+> >> -		dev_err(&client->dev, "Conversion timeout happened\n");
+> >> -		ret = -EINVAL;
+> >> +	if (data->eoc_gpio)
+> >> +		ret = wait_conversion_complete_gpio(data);
+> >> +	else
+> >> +		ret = wait_conversion_complete_polled(data);
+> >> +	if (ret < 0)
+> >>  		goto exit;
+> >> -	}
+> >>  
+> >> -	ret = ak8975_read_data(client, AK8975_REG_ST1, 1, &read_status);
+> >> -	if (ret < 0) {
+> >> -		dev_err(&client->dev, "Error in reading ST1\n");
+> >> -		goto exit;
+> >> -	}
+> >> +	read_status = ret;
+> >>  
+> >>  	if (read_status & AK8975_REG_ST1_DRDY_MASK) {
+> >>  		ret = ak8975_read_data(client, AK8975_REG_ST2, 1, &read_status);
+> >> @@ -454,25 +497,26 @@ static int ak8975_probe(struct i2c_client *client,
+> >>  	data->eoc_irq = client->irq;
+> >>  	data->eoc_gpio = irq_to_gpio(client->irq);
+> >>  
+> >> -	if (!data->eoc_gpio) {
+> >> -		dev_err(&client->dev, "failed, no valid GPIO\n");
+> >> -		err = -EINVAL;
+> >> -		goto exit_free;
+> >> -	}
+> >> -
+> >> -	err = gpio_request(data->eoc_gpio, "ak_8975");
+> >> -	if (err < 0) {
+> >> -		dev_err(&client->dev, "failed to request GPIO %d, error %d\n",
+> >> -			data->eoc_gpio, err);
+> >> -		goto exit_free;
+> >> -	}
+> >> +	/* We may not have a GPIO based IRQ to scan, that is fine, we will
+> >> +	   poll if so */
+> >> +	if (data->eoc_gpio > 0) {
+> >> +		err = gpio_request(data->eoc_gpio, "ak_8975");
+> >> +		if (err < 0) {
+> >> +			dev_err(&client->dev,
+> >> +				"failed to request GPIO %d, error %d\n",
+> >> +							data->eoc_gpio, err);
+> >> +			goto exit_free;
+> >> +		}
+> >>  
+> >> -	err = gpio_direction_input(data->eoc_gpio);
+> >> -	if (err < 0) {
+> >> -		dev_err(&client->dev, "Failed to configure input direction for"
+> >> -			" GPIO %d, error %d\n", data->eoc_gpio, err);
+> >> -		goto exit_gpio;
+> >> -	}
+> >> +		err = gpio_direction_input(data->eoc_gpio);
+> >> +		if (err < 0) {
+> >> +			dev_err(&client->dev,
+> >> +				"Failed to configure input direction for GPIO %d, error %d\n",
+> >> +						data->eoc_gpio, err);
+> >> +			goto exit_gpio;
+> Not really relevant to this patch, but this handling could be cleaned up using gpio_request_one.
+> >> +		}
+> >> +	} else
+> >> +		data->eoc_gpio = 0;	/* No GPIO available */
+> >>  
+> >>  	/* Perform some basic start-of-day setup of the device. */
+> >>  	err = ak8975_setup(client);
+> >> @@ -503,7 +547,8 @@ static int ak8975_probe(struct i2c_client *client,
+> >>  exit_free_iio:
+> >>  	iio_free_device(data->indio_dev);
+> >>  exit_gpio:
+> >> -	gpio_free(data->eoc_gpio);
+> >> +	if (data->eoc_gpio)
+> >> +		gpio_free(data->eoc_gpio);
+> >>  exit_free:
+> >>  	kfree(data);
+> >>  exit:
+> >> @@ -517,7 +562,8 @@ static int ak8975_remove(struct i2c_client *client)
+> >>  	iio_device_unregister(data->indio_dev);
+> >>  	iio_free_device(data->indio_dev);
+> >>  
+> >> -	gpio_free(data->eoc_gpio);
+> >> +	if (data->eoc_gpio)
+> >> +		gpio_free(data->eoc_gpio);
+> >>  
+> >>  	kfree(data);
+> >>  
+> >>
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("DA9052 MFD Core");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:" DA9052_SSC_DEVICE_NAME);
 
-Is this really a platform device?
-
-> +static struct i2c_device_id da9052_i2c_id[] = {
-> +       { "da9052_i2c", 0},
-> +       {}
-> +};
-
-The usual style would just be "da9052_i2c" - the fact that this is an
-I2C device ID makes it obvious that the device is an I2C one.
-
-> +/*
-> + * da9052-irq.c  --  Interrupt controller support for Dilaog DA9052 PMICs
-> + *
-> +#include <linux/i2c.h>
-> +#include <linux/spi/spi.h>
-
-The IRQ controller code probably shouldn't know anything about I2C or
-SPI given that you've got a separate layer doing register I/O.
-
-> +static void da9052_irq_sync_unlock(unsigned int irq)
-> +{
-> +       struct da9052 *da9052 = get_irq_chip_data(irq);
-> +
-> +       mutex_unlock(&da9052->irq_lock);
-> +}
-
-You should be applying the changes made while locked here - the locked
-region should be atomic.
-
-> +struct irq_chip da9052_irq_chip = {
-> +       .name = "da9052",
-> +       .bus_lock = da9052_irq_lock,
-> +       .bus_sync_unlock = da9052_irq_sync_unlock,
-> +       .mask = da9052_irq_mask,
-> +       .unmask = da9052_irq_unmask,
-> +};
-
-This is out of date with current mainline, you should be using the irq_
-variants of the operations which take an irq_desc rather than IRQ
-number.
-
-> +       for (cur_irq = da9052->irq_base;
-> +            cur_irq < ARRAY_SIZE(da9052_irqs) + da9052->irq_base;
-> +            cur_irq++) {
-> +               set_irq_chip_data(cur_irq, da9052);
-> +               set_irq_chip_and_handler(cur_irq, &da9052_irq_chip,
-> +                                        handle_simple_irq);
-> +               set_irq_nested_thread(cur_irq, 1);
-> +
-> +               /* ARM needs us to explicitly flag the IRQ as valid
-> +                * and will set them noprobe when we do so. */
-> +#ifdef CONFIG_ARM
-> +               set_irq_flags(cur_irq, IRQF_VALID);
-> +#else
-> +               set_irq_noprobe(cur_irq);
-> +#endif
-> +       }
-
-It'd be nice to credit the code you're drawing inspiration from :)
-
-> +config PMIC_DA9052
-> +       tristate "Dialog DA9052 with SPI/I2C"
-> +       depends on SPI_MASTER=y
-> +       depends on I2C=y
-
-These dependencies look wrong - they'll force both I2C and SPI to be
-built in even though only one of them will be required by the driver in
-a given system.
-
-> + /* Helper to save on boilerplate */
-> +static inline int da9052_request_irq(struct da9052 *da9052, int irq,
-> +                                      irq_handler_t handler, const char *name,
-> +                                      void *data)
-> + {
-> +       int ret;
-> +
-> +       if (!da9052->irq_base)
-> +               return -EINVAL;
-> +
-> +       ret = request_threaded_irq(da9052->irq_base + irq, NULL, handler,
-> +                                     IRQF_TRIGGER_LOW | IRQF_ONESHOT, name,
-> +                                     data);
-
-Since you're implementing directly with genirq you don't need this
-stuff, some drivers have it as they were written before genirq could
-support devices on sleepy buses.
+-- 
+--
+	"Alan, I'm getting a bit worried about you."
+				-- Linus Torvalds
