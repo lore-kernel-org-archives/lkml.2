@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab1DFPIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 11:08:45 -0400
-Received: from logistix.cr ([201.201.66.140]:8829 "EHLO mail.alsa.co.cr"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756376Ab1DFPIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 11:08:44 -0400
-Reply-To: <wonghui26@yahoo.com.hk>
-From: "Wong hui" <lingyoung56@yahoo.com>
-Subject: Hello.
-Date: Mon, 4 Apr 2011 12:28:16 -0300
+	id S1756405Ab1DFPLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 11:11:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64710 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756260Ab1DFPLQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 11:11:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=mPlrsKOyrV1XOTxIIk7IT+2AewDSNjMtXU2b8UHaUhvmhWsj+ZC8agam7UVNm3wYog
+         6qH5GLSXGJaBIfapHsaylTXm6jSRc2rPp7Av06QrB6uLWBVubeqtDnblTr6g4nMSf6Sl
+         SFaHcNmtiY7XFlvFUCD9Y2LWpOVUXrRpMLlds=
+Message-ID: <4D9C828F.90307@gmail.com>
+Date: Wed, 06 Apr 2011 08:11:11 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Jiri Kosina <jkosina@suse.cz>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]update old email address in various parts of the kernel.
+References: <1301951729-18814-1-git-send-email-justinmattock@gmail.com> <20110404.144144.26939291.davem@davemloft.net> <alpine.LNX.2.00.1104060619410.5855@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1104060619410.5855@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110403-1, 03/04/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110404105813.2DC472A06B85@mail.alsa.co.cr>
-To: undisclosed-recipients:;
-X-Antivirus: Scanned by F-Prot Antivirus (http://www.f-prot.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please I would like you to keep this proposal as a top secret and delete it if you are not interested and get back to me if you are interested for details as regards to the transfer of $24,500,000 to you. this money initially belongs to a client who died and had no next of kin in his account-opening package. in other to achieve this, I shall require your full name, and telephone number to reach you.Most importantly, a confirmation of acceptance from you after which I shall furnish you with the full details of this transaction. Reply via this email only: wonghui26@yahoo.com.hk
+On 04/06/2011 06:19 AM, Jiri Kosina wrote:
+> On Mon, 4 Apr 2011, David Miller wrote:
+>
+>> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>> Date: Mon,  4 Apr 2011 14:15:29 -0700
+>>
+>>> Not sure...but I am guessing the owner of the email address dm@engr.sgi.com
+>>> needs to change this themselves for one reason or another as stated in submitting
+>>> patches etc...Anyways was doing some other testing and this was my test subject
+>>> seding and friends!! anyways take it and/or leave it..either case my testing worked..
+>>>
+>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> I'm fine with this:
+>>
+>> Acked-by: David S. Miller<davem@davemloft.net>
+>
+> Applied (with modified changelog). Thanks,
+>
 
+alright!!
 
-regards,
-Mr W.Hui.
+Justin P. Mattock
