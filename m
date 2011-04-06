@@ -1,74 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab1DFX2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 19:28:46 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:49355
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756985Ab1DFX15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 19:27:57 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 09/22] Staging: hv: Get rid of the function blkvsc_revalidate_disk()
-Date: Wed,  6 Apr 2011 16:05:09 -0700
-Message-Id: <1302131122-15530-9-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1302131122-15530-1-git-send-email-kys@microsoft.com>
-References: <1302131006-15411-1-git-send-email-kys@microsoft.com>
- <1302131122-15530-1-git-send-email-kys@microsoft.com>
+	id S1757064Ab1DFX3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 19:29:41 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:43706 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756984Ab1DFX3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 19:29:39 -0400
+Date: Wed, 6 Apr 2011 16:29:38 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation
+	problem
+Message-ID: <20110406232938.GF1110@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <20110321140451.GA7153@quack.suse.cz> <1300716666-sup-2087@think> <20110321164305.GC7153@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110321164305.GC7153@quack.suse.cz>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The block driver in Hyper-V does not support removable media, get rid of the
-blkvsc_revalidate_disk().
+On Mon, Mar 21, 2011 at 05:43:05PM +0100, Jan Kara wrote:
+> On Mon 21-03-11 10:24:41, Chris Mason wrote:
+> > Excerpts from Jan Kara's message of 2011-03-21 10:04:51 -0400:
+> > > On Fri 18-03-11 17:07:55, Darrick J. Wong wrote:
+> > > > > > Ok, here's what I have so far.  I took everyone's suggestions of where to add
+> > > > > > calls to wait_on_page_writeback, which seems to handle the multiple-write case
+> > > > > > adequately.  Unfortunately, it is still possible to generate checksum errors by
+> > > > > > scribbling furiously on a mmap'd region, even after adding the writeback wait
+> > > > > > in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
+> > > > > > removing its wait_for_page_writeback call, so I suspect there's a bit more
+> > > > > > going on in btrfs than I've been able to figure out.
+> > > > 
+> > > > I wonder, is it possible for this to happen:
+> > > > 
+> > > > 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
+> > > >    but there's no ongoing writeback, so it returns without delay.
+> > > > 2. Thread A starts writing furiously to the page.
+> > > > 3. Thread B runs fsync() or something that results in the page being
+> > > >    checksummed and scheduled for writeout.
+> > > > 4. Thread A continues to write furiously(!) on that same page before the
+> > > >    controller finishes the DMA transfer.
+> > > > 5. Disk gets the page, which now doesn't match its checksum, and *boom*
+> > >   What happens on writepage (see mm/page-writeback.c:write_cache_pages())
+> > > is:
+> > >   lock_page(page)
+> > >   ...
+> > >   clear_page_dirty_for_io() - removes PageDirty, marks page as read-only in
+> > >     PTE
+> > >   ...
+> > >   set_page_writeback() (happens e.g. in __block_write_full_page() called
+> > > from filesystem's writepage implementation).
+> > >   unlock_page(page)
+> > > 
+> > >   So if you compute the checksum after set_page_writeback() is done in the
+> > > writepage() implementation (you cannot use __block_write_full_page() in
+> > > that case)
+>   I should add that if you are computing the checksum in the block layer
+> once the bio is submitted, you obviously are computing it after the page is
+> marked as writeback. So that should be fine...
+> 
+> > > and you call wait_on_page_writeback() in ext4_page_mkwrite()
+> > > under page lock, you should be safe. If you do all this and still see
+> > > errors, something is broken I'd say...
+> > 
+> > Looking at the ext4_page_mkwrite, it does this:
+> > 
+> > lock the page
+> > check for holes
+> > unlock the page
+> > if (no_holes)
+> > 	return;
+> > 
+> > write_begin/write_end
+> > return
+> > 
+> > So, to have page_mkwrite work, you need to wait for writeback with the
+> > page locked in both the no holes case and after the
+> > write_begin/write_end.  write_begin will dirty the page, so someone can
+> > wander in and start the IO while we are still in page_mkwrite.
+>   Oh right, that's a good point.
+> 
+> > This is untested and uncompiled, but it should
+> > do the trick.
+> > 
+> > Jan, did you get rid of all the buffer head based writeback for
+> > data=ordered in ext4?  That's my only other idea, that someone is doing
+> > writeback directly without taking the page lock.
+>   Yes, ext4 shouldn't do any buffer based writeback.
+> 
+> > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> > index 9f7f9e4..8a75e12 100644
+> > --- a/fs/ext4/inode.c
+> > +++ b/fs/ext4/inode.c
+> > @@ -5880,6 +5880,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  	if (page_has_buffers(page)) {
+> >  		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
+> >  					ext4_bh_unmapped)) {
+> > +			wait_on_page_writeback(page);
+> >  			unlock_page(page);
+> >  			goto out_unlock;
+> >  		}
+> > @@ -5901,6 +5902,16 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  	if (ret < 0)
+> >  		goto out_unlock;
+> >  	ret = 0;
+> > +
+> > +	/*
+> > +	 * write_begin/end might have created a dirty page and someone
+> > +	 * could wander in and start the IO.  Make sure that hasn't
+> > +	 * happened
+> > +	 */
+> > +	lock_page(page);
+> > +	wait_on_page_writeback(page);
+> > +	unlock_page(page);
+> > +
+> >  out_unlock:
+> >  	if (ret)
+> >  		ret = VM_FAULT_SIGBUS;
+> > 
+>   This looks good AFAICT.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/blkvsc_drv.c |   17 -----------------
- 1 files changed, 0 insertions(+), 17 deletions(-)
+I gave this a spin a couple of weeks ago (and accidentally left the test
+machines running for a full week!)  From what I can tell, with all the various
+wait_for_page_writeback stuff-ins, we've cut the frequency of writeback errors
+down to about 7-8 per day.  Not bad, but not fixed.
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 4c248b7..b2cd04a 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -722,22 +722,6 @@ static int blkvsc_release(struct gendisk *disk, fmode_t mode)
- }
- 
- 
--static int blkvsc_revalidate_disk(struct gendisk *gd)
--{
--	struct block_device_context *blkdev = gd->private_data;
--
--	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
--
--	if (blkdev->device_type == DVD_TYPE) {
--		blkvsc_do_operation(blkdev, DO_CAPACITY);
--		set_capacity(blkdev->gd, blkdev->capacity *
--			    (blkdev->sector_size/512));
--		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
--	}
--	return 0;
--}
--
--
- /*
-  * We break the request into 1 or more blkvsc_requests and submit
-  * them.  If we cant submit them all, we put them on the
-@@ -997,7 +981,6 @@ static const struct block_device_operations block_ops = {
- 	.owner = THIS_MODULE,
- 	.open = blkvsc_open,
- 	.release = blkvsc_release,
--	.revalidate_disk = blkvsc_revalidate_disk,
- 	.getgeo = blkvsc_getgeo,
- 	.ioctl  = blkvsc_ioctl,
- };
--- 
-1.7.4.1
+On the odd chance that jbd2 really can provide stable pages during writeback, I
+am now rerunning the test with no patches and data=journal, while noting that
+(a) DIO mode doesn't work with data=journal and (b) the first write failure
+will probably cause the journal to abort == game over.  When that's done I'll
+give the wait-for-writeback patches a whirl with 2.6.39-rc.
 
+Enjoy the warm SF weather!
+
+--D
