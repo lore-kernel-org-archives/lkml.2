@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab1DFS7P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:59:15 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:44967 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756571Ab1DFS7N (ORCPT
+	id S1756624Ab1DFTHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 15:07:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51964 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756538Ab1DFTHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:59:13 -0400
-Date: Wed, 6 Apr 2011 21:59:02 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Mocean Laboratories <info@mocean-labs.com>
-Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
- to drivers
-Message-ID: <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
- <20110401235239.GE29397@sortiz-mobl>
- <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
- <20110404100314.GC2751@sortiz-mobl>
- <20110405030428.GB29522@ponder.secretlab.ca>
- <20110406152322.GA2757@sortiz-mobl>
- <20110406155805.GA20095@suse.de>
- <20110406170537.GB2757@sortiz-mobl>
- <20110406175647.GA8048@suse.de>
- <20110406184733.GD2757@sortiz-mobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110406184733.GD2757@sortiz-mobl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 6 Apr 2011 15:07:35 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH v2 00/12] mmc: use nonblock mmc requests to minimize latency
+Date: Wed,  6 Apr 2011 21:07:01 +0200
+Message-Id: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+How significant is the cache maintenance over head?
+It depends, the eMMC are much faster now
+compared to a few years ago and cache maintenance cost more due to
+multiple cache levels and speculative cache pre-fetch. In relation the
+cost for handling the caches have increased and is now a bottle neck
+dealing with fast eMMC together with DMA.
 
-On Wed, Apr 06, 2011 at 08:47:34PM +0200, Samuel Ortiz wrote:
-> > > > What is a "MFD cell pointer" and why is it needed in struct device?
-> > > An MFD cell is an MFD instantiated device.
-> > > MFD (Multi Function Device) drivers instantiate platform devices. Those
-> > > devices drivers sometimes need a platform data pointer, sometimes an MFD
-> > > specific pointer, and sometimes both. Also, some of those drivers have been
-> > > implemented as MFD sub drivers, while others know nothing about MFD and just
-> > > expect a plain platform_data pointer.
-> > 
-> > That sounds like a bug in those drivers, why not fix them to properly
-> > pass in the correct pointer?
-> Because they're drivers for generic IPs, not MFD ones. By forcing them to use
-> MFD specific structure and APIs, we make it more difficult for platform code
-> to instantiate them.
+The intention for introducing none blocking mmc requests is to minimize the
+time between a mmc request ends and another mmc request starts. In the
+current implementation the MMC controller is idle when dma_map_sg and
+dma_unmap_sg is processing. Introducing none blocking mmc request makes it
+possible to prepare the caches for next job parallel with an active
+mmc request.
 
-I agree. What I do on those cases is to have a simple platform_device
-for the core IP driver and use platform_device_id tables to do runtime
-checks of the small differences. If one platform X doesn't use a
-platform_bus, it uses e.g. PCI, then you make a PCI "bridge" which
-allocates a platform_device with the correct name and adds that to the
-driver model.
+This is done by making the issue_rw_rq() none blocking.
+The increase in throughput is proportional to the time it takes to
+prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+a request and how fast the memory is. The faster the MMC/SD is
+the more significant the prepare request time becomes. Measurements on U5500
+and Panda on eMMC and SD shows significant performance gain for for large
+reads when running DMA mode. In the PIO case the performance is unchanged.
 
-See [1] (for the core driver) and [2] (for a PCI bridge driver) for an
-example of what I'm talking about.
+There are two optional hooks pre_req() and post_req() that the host driver
+may implement in order to move work to before and after the actual mmc_request
+function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+the dma descriptor and post_req runs the dma_unmap_sg.
 
-> The timberdale MFD for example is built with a Xilinx SPI controller, and a
-> Micrel ks8842 ethernet switch IP. Forcing those devices into being MFD devices
-> would mean any platform willing to instantiate them would have to use the MFD
-> APIs. That sounds a bit artificial to me.
+Details on measurements from IOZone and mmc_test:
+https://wiki.linaro.org/WorkingGroups/KernelConsolidation/Specs/StoragePerfMMC-async-req
 
-do they share any address space ? If they do, then you'd need something
-to synchronize, right ? If they don't, then you just add two separate
-devices, they don't have to be MFD.
+Changes since v1:
+ * Add support for omap_hsmmc
+ * Add test in mmc_test to compare performance with
+   and without none blocking request.
+ * Add random fault injection in mmc core to exercise error
+   handling in the mmc block code.
+ * Fix serveral issue in the mmc block error handling.
+ * Add a host_cookie member in mmc_data to be used by
+   pre_req to mark the data. The host driver will then
+   check this mark to see if the data is prepared or not.
+ * Previous patch subject was
+   "add double buffering for mmc block requests".
 
-> Although there is currently no drivers instantiated by both an MFD driver
-> and some platform code, Grant complaint about the Xilinx SPI driver moving
-> from a platform driver to an MFD one makes sense to me. 
+Per Forlin (12):
+  mmc: add none blocking mmc request function
+  mmc: mmc_test: add debugfs file to list all tests
+  mmc: mmc_test: add test for none blocking transfers
+  mmc: add member in mmc queue struct to hold request data
+  mmc: add a block request prepare function
+  mmc: move error code in mmc_block_issue_rw_rq to a separate function.
+  mmc: add a second mmc queue request member
+  mmc: add handling for two parallel block requests in issue_rw_rq
+  mmc: test: add random fault injection in core.c
+  omap_hsmmc: use original sg_len for dma_unmap_sg
+  omap_hsmmc: add support for pre_req and post_req
+  mmci: implement pre_req() and post_req()
 
-I don't think so. That's not really an MFD device is it ? It's just two
-different IPs instantianted on the same ASIC/FPGA, right ? Unless they
-share the register space, IMHO, there's no need to make them MFD.
-
-[1] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/core.c
-[2] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/dwc3-haps.c
+ drivers/mmc/card/block.c      |  493 +++++++++++++++++++++++++++--------------
+ drivers/mmc/card/mmc_test.c   |  342 ++++++++++++++++++++++++++++-
+ drivers/mmc/card/queue.c      |  171 +++++++++------
+ drivers/mmc/card/queue.h      |   31 ++-
+ drivers/mmc/core/core.c       |  132 ++++++++++-
+ drivers/mmc/core/debugfs.c    |    5 +
+ drivers/mmc/host/mmci.c       |  146 +++++++++++-
+ drivers/mmc/host/mmci.h       |    8 +
+ drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
+ include/linux/mmc/core.h      |    9 +-
+ include/linux/mmc/host.h      |   13 +-
+ lib/Kconfig.debug             |   11 +
+ 12 files changed, 1172 insertions(+), 279 deletions(-)
 
 -- 
-balbi
+1.7.4.1
+
