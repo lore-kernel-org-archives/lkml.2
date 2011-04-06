@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab1DFIXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 04:23:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41074 "EHLO mx1.suse.de"
+	id S1754846Ab1DFIeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 04:34:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22748 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab1DFIXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 04:23:07 -0400
-Message-ID: <4D9C22EB.7070106@suse.cz>
-Date: Wed, 06 Apr 2011 10:23:07 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kbuild@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Singer <elf@buici.com>
-Subject: Re: [PATCH 33/34] usb/lh7a40x_udc: Drop __DATE__ usage
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-34-git-send-email-mmarek@suse.cz> <20110405162512.GB11737@n2100.arm.linux.org.uk>
-In-Reply-To: <20110405162512.GB11737@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754125Ab1DFIeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 04:34:11 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, WANG Cong <amwang@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org
+Subject: [Patch] workqueue: remove cancel_rearming_delayed_work[queue]()
+Date: Wed,  6 Apr 2011 16:33:13 +0800
+Message-Id: <1302078793-2596-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5.4.2011 18:25, Russell King - ARM Linux wrote:
-> On Tue, Apr 05, 2011 at 04:59:20PM +0200, Michal Marek wrote:
->> The kernel already prints its build timestamp during boot, no need to
->> repeat it in random drivers and produce different object files each
->> time.
-> 
-> This file no longer exists.
+cancel_rearming_delayed_work() and cancel_rearming_delayed_workqueue()
+can be removed now.
 
-I only tested the series on top of 2.6.38. I dropped this patch now,
-sorry for the noise.
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
 
-Michal
+---
+ Documentation/feature-removal-schedule.txt |   10 ----------
+ include/linux/workqueue.h                  |   15 ---------------
+ 2 files changed, 0 insertions(+), 25 deletions(-)
+
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 274b32d..c70fb4b 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -541,16 +541,6 @@ Who:    NeilBrown <neilb@suse.de>
+ 
+ ----------------------------
+ 
+-What:	cancel_rearming_delayed_work[queue]()
+-When:	2.6.39
+-
+-Why:	The functions have been superceded by cancel_delayed_work_sync()
+-	quite some time ago.  The conversion is trivial and there is no
+-	in-kernel user left.
+-Who:	Tejun Heo <tj@kernel.org>
+-
+-----------------------------
+-
+ What:	Legacy, non-standard chassis intrusion detection interface.
+ When:	June 2011
+ Why:	The adm9240, w83792d and w83793 hardware monitoring drivers have
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index f584aba..57b31b3 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -412,21 +412,6 @@ static inline bool __cancel_delayed_work(struct delayed_work *work)
+ 	return ret;
+ }
+ 
+-/* Obsolete. use cancel_delayed_work_sync() */
+-static inline __deprecated
+-void cancel_rearming_delayed_workqueue(struct workqueue_struct *wq,
+-					struct delayed_work *work)
+-{
+-	cancel_delayed_work_sync(work);
+-}
+-
+-/* Obsolete. use cancel_delayed_work_sync() */
+-static inline __deprecated
+-void cancel_rearming_delayed_work(struct delayed_work *work)
+-{
+-	cancel_delayed_work_sync(work);
+-}
+-
+ #ifndef CONFIG_SMP
+ static inline long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
+ {
