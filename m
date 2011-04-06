@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab1DFP1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 11:27:39 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:32284 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756487Ab1DFP1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 11:27:37 -0400
-X-SpamScore: -28
-X-BigFish: VPS-28(zz1432N98dK1447Rzz1202hzz15d4Rz32i637h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJ8LJ5-01-3OH-02
-X-M-MSG: 
-Date: Wed, 6 Apr 2011 17:25:52 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Xu, Andiry" <Andiry.Xu@amd.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
-Message-ID: <20110406152552.GU23633@amd.com>
-References: <1302088878-25740-1-git-send-email-joerg.roedel@amd.com>
- <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
+	id S1756535Ab1DFPaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 11:30:16 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:58703 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756203Ab1DFPaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 11:30:15 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andrew Chew <achew@nvidia.com>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH] hwmon: (lm90) Add support for ADT7461A and NCT1008
+Date: Wed, 6 Apr 2011 08:41:19 -0700
+Message-ID: <1302104479-13363-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 11:16:07AM -0400, Alan Stern wrote:
-> On Wed, 6 Apr 2011, Joerg Roedel wrote:
-> >  	amd_chipset.probe_count++;
-> >  	/* probe only once */
-> >  	if (amd_chipset.probe_count > 1) {
-> >  		spin_unlock_irqrestore(&amd_lock, flags);
-> >  		return amd_chipset.probe_result;
-> >  	}
-> 
-> The counter really should be a bool: Has the chipset already been
-> probed or not?  After all, nobody cares how many times this routine was 
-> called.
+This patch adds support for ADT7461A and NCT1008 to the lm90 driver.
+Both chips have identical functionality and report the same manufacturing ID
+and device ID values.
 
-The quirk function needs a re-structuring anyway. The code-path is not
-very straight-forward and readable. But for this fix I tried to keep the
-changes small.
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+Would this be a candidate for 2.6.39 and possibly -stable ?
 
-> 
-> > +	spin_unlock_irqrestore(&amd_lock, flags);
-> 
-> This code now contains a bug: You incremented the probe_count _before_
-> doing the probe.  If another thread calls this routine right now, it
-> will get an incorrect result.
-> 
-> Fixing this up should be fairly easy.
+ drivers/hwmon/Kconfig |    8 ++++----
+ drivers/hwmon/lm90.c  |    6 ++++++
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-Okay, I will do. Thanks for the feedback.
-
-	Joerg
-
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 060ef63..92d0251 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -618,10 +618,10 @@ config SENSORS_LM90
+ 	depends on I2C
+ 	help
+ 	  If you say yes here you get support for National Semiconductor LM90,
+-	  LM86, LM89 and LM99, Analog Devices ADM1032 and ADT7461, Maxim
+-	  MAX6646, MAX6647, MAX6648, MAX6649, MAX6657, MAX6658, MAX6659,
+-	  MAX6680, MAX6681, MAX6692, MAX6695, MAX6696, and Winbond/Nuvoton
+-	  W83L771W/G/AWG/ASG sensor chips.
++	  LM86, LM89 and LM99, Analog Devices ADM1032, ADT7461, and ADT7461A,
++	  Maxim MAX6646, MAX6647, MAX6648, MAX6649, MAX6657, MAX6658, MAX6659,
++	  MAX6680, MAX6681, MAX6692, MAX6695, MAX6696, ON Semiconductor NCT1008,
++	  and Winbond/Nuvoton W83L771W/G/AWG/ASG sensor chips.
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called lm90.
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index 812781c..0aa892c 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -174,6 +174,7 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
+ static const struct i2c_device_id lm90_id[] = {
+ 	{ "adm1032", adm1032 },
+ 	{ "adt7461", adt7461 },
++	{ "adt7461a", adt7461 },
+ 	{ "lm90", lm90 },
+ 	{ "lm86", lm86 },
+ 	{ "lm89", lm86 },
+@@ -1153,6 +1154,11 @@ static int lm90_detect(struct i2c_client *new_client,
+ 		 && (reg_config1 & 0x1B) == 0x00
+ 		 && reg_convrate <= 0x0A) {
+ 			name = "adt7461";
++		} else
++		if (chip_id == 0x57 /* ADT7461A, NCT1008 */
++		 && (reg_config1 & 0x1B) == 0x00
++		 && reg_convrate <= 0x0A) {
++			name = "adt7461a";
+ 		}
+ 	} else
+ 	if (man_id == 0x4D) { /* Maxim */
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+1.7.3.1
 
