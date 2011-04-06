@@ -1,123 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab1DFS0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:26:11 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:35430 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755368Ab1DFS0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:26:09 -0400
-Date: Wed, 6 Apr 2011 11:25:57 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Greg KH <gregkh@suse.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Mocean Laboratories <info@mocean-labs.com>
-Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
- to drivers
-Message-ID: <20110406112557.5c4c9bfe@debxo>
-In-Reply-To: <20110406175647.GA8048@suse.de>
-References: <20110401112030.GA3447@sortiz-mobl>
-	<20110401104756.2f5c6f7a@debxo>
-	<BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
-	<20110401235239.GE29397@sortiz-mobl>
-	<BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
-	<20110404100314.GC2751@sortiz-mobl>
-	<20110405030428.GB29522@ponder.secretlab.ca>
-	<20110406152322.GA2757@sortiz-mobl>
-	<20110406155805.GA20095@suse.de>
-	<20110406170537.GB2757@sortiz-mobl>
-	<20110406175647.GA8048@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756266Ab1DFS0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:26:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33344 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab1DFS0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 14:26:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BSFf42UFljQrN/IZNx5V9Qz409Yyh/QkWfPugQPYEvHxjjoIB3hHvJSCXkZBUuR7Sw
+         Egwf/+81uQT5Qcx5u/hbm+jzWJl9USg/uHBrv5pivjZLaYh1cmTEuSwfYPYYB3NG5ptP
+         Z0y8LvHZO85pEFY4nRLHCfdBrQIdcV82Fi+IE=
+Date: Wed, 6 Apr 2011 11:26:15 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <Dajun.Chen2@diasemi.com>
+Subject: Re: [PATCHv1 11/11] INPUT/MISC/ONKEY: OnKey module of DA9052 PMICs
+ driver
+Message-ID: <20110406182614.GA17348@core.coreip.homeip.net>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E04@KCINPUNHJCMS01.kpit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E04@KCINPUNHJCMS01.kpit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Apr 2011 10:56:47 -0700
-Greg KH <gregkh@suse.de> wrote:
+Hi Ashish,
 
-> On Wed, Apr 06, 2011 at 07:05:38PM +0200, Samuel Ortiz wrote:
-> > Hi Greg,
-> > 
-> > On Wed, Apr 06, 2011 at 08:58:05AM -0700, Greg KH wrote:
-> > > On Wed, Apr 06, 2011 at 05:23:23PM +0200, Samuel Ortiz wrote:
-> > > > --- a/include/linux/device.h
-> > > > +++ b/include/linux/device.h
-> > > > @@ -33,6 +33,7 @@ struct class;
-> > > >  struct subsys_private;
-> > > >  struct bus_type;
-> > > >  struct device_node;
-> > > > +struct mfd_cell;
-> > > >  
-> > > >  struct bus_attribute {
-> > > >  	struct attribute	attr;
-> > > > @@ -444,6 +445,8 @@ struct device {
-> > > >  	struct device_node	*of_node; /* associated
-> > > > device tree node */ const struct of_device_id *of_match; /*
-> > > > matching of_device_id from driver */ 
-> > > > +	struct mfd_cell	*mfd_cell; /* MFD cell pointer
-> > > > */ +
-> > > 
-> > > What is a "MFD cell pointer" and why is it needed in struct
-> > > device?
-> > An MFD cell is an MFD instantiated device.
-> > MFD (Multi Function Device) drivers instantiate platform devices.
-> > Those devices drivers sometimes need a platform data pointer,
-> > sometimes an MFD specific pointer, and sometimes both. Also, some
-> > of those drivers have been implemented as MFD sub drivers, while
-> > others know nothing about MFD and just expect a plain platform_data
-> > pointer.
+On Wed, Apr 06, 2011 at 05:24:23PM +0530, Ashish Jangam wrote:
+> Hi Dmitry,
 > 
-> That sounds like a bug in those drivers, why not fix them to properly
-> pass in the correct pointer?
-
-I'm still trying to understand if this is a theoretical problem, or if
-Grant has actually experienced a regression.  His mention of bisecting
-made it sound like the latter was the case, but I've yet to hear of
-specifically what drivers this was breaking.  Samuel described some
-potential driver breakage, but nothing concrete.
-
-I do agree that this needs a better solution, given the theoretical
-breakage.
-
+> ONKEY Driver for Dialog Semiconductor DA9052 PMICs.
 > 
-> > We've been faced with the problem of being able to pass both MFD
-> > related data and a platform_data pointer to some of those drivers.
-> > Squeezing the MFD bits in the sub driver platform_data pointer
-> > doesn't work for drivers that know nothing about MFDs. It also adds
-> > an additional dependency on the MFD API to all MFD sub drivers.
-> > That prevents any of those drivers to eventually be used as plain
-> > platform device drivers.
+> Changes made since last submission:
+> . read and write operation moved to MFD
+> . added workqueue to notify onkey events
 > 
-> Then they shouldn't be "plain" platform drivers, that should only be
-> reserved for drivers that are the "lowest" type.  Just make them MFD
-> devices and go from there.
+> Some additional information of this patch:
+> . This patch is thoroughly tested with the Samsung 6410 board using I2C connectivity. 
+> . Workqueue is added to toggle the KEY_POWER event.
+> 
+> Linux Kernel Version: 2.6.37
+> 
+> Signed-off-by: D. Chen <dchen@diasemi.com>
+> ---
+> diff -Naur orig_linux-2.6.37/drivers/input/misc/da9052_onkey.c linux-2.6.37/drivers/input/misc/da9052_onkey.c
+> --- orig_linux-2.6.37/drivers/input/misc/da9052_onkey.c	1970-01-01 05:00:00.000000000 +0500
+> +++ linux-2.6.37/drivers/input/misc/da9052_onkey.c	2011-03-31 19:28:59.000000000 +0500
+> @@ -0,0 +1,150 @@
+> +/*
+> + * da9052_onkey.c  --  ON pin driver for Dialog DA9052 PMICs
 
+Please no filenames in comments.
 
-The problem is of mixing "plain" platform devices and MFD devices.
-It's reasonable to assume that different hardware may be using
-one method or the other to create devices; in order to maintain
-compatibility with the driver, one either needs to use a plain platform
-device.  Alternatively, if an MFD-specific device class is created,
-then MFD devices would start showing up in weird places.
+> + *
+> + * Copyright(c) 2009 Dialog Semiconductor Ltd.
+> + *
+> + * Author: Dajun Chen <dchen@diasemi.com>
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> + *  option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/input.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/platform_device.h>
+> +
+> +#include <linux/mfd/da9052/da9052.h>
+> +#include <linux/mfd/da9052/reg.h>
+> +
+> +struct da9052_onkey {
+> +	struct da9052 *da9052;
+> +	struct input_dev *input;
+> +	struct delayed_work work;
+> +	int irq;
+> +};
+> +
+> +static void da9052_onkey_work(struct work_struct *work)
+> +{
+> +	unsigned int ret;
 
-> 
-> > So, adding an MFD cell pointer to the device structure allows us to
-> > cleanly pass both pieces of information, while keeping all the MFD
-> > sub drivers independant from the MFD core if they want/can.
-> 
-> They shouldn't be "independant", make them "dependant" and go from
-> there.
-> 
-> thanks,
-> 
-> greg k-h
+No, not unsigned. Have you ried running it through sparse?
 
+> +	struct da9052_onkey *onkey;
+> +	onkey = container_of(work, struct da9052_onkey, work.work);
+> +
+> +	ret = da9052_reg_read(onkey->da9052, DA9052_EVENT_B_REG);
+> +	if (ret < 0) {
+> +		dev_err(onkey->da9052->dev,
+> +			"da9052_onkey_report_event da9052_reg_read error %d\n",
+> +			ret);
+> +		ret = 1;
+> +	} else {
+> +		ret = ret & DA9052_E_nONKEY;
+> +		input_report_key(onkey->input, KEY_POWER, ret);
+> +		input_sync(onkey->input);
+> +	}
+> +
+> +	if (ret)
+> +		schedule_delayed_work(&onkey->work, 10);
+> +
+> +}
+> +
+> +
+> +static irqreturn_t  da9052_onkey_irq(int irq, void *data)
+> +{
+> +	struct da9052_onkey *onkey = (struct da9052_onkey *) data;
+> +
+> +	schedule_delayed_work(&onkey->work, 0);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __devinit da9052_onkey_probe(struct platform_device *pdev)
+> +{
+> +	struct da9052_onkey *onkey;
+> +	unsigned int ret;
+
+It can't be unsigned - error codes are negative. And call it 'error'
+please.
+
+> +
+> +	onkey = kzalloc(sizeof(*onkey), GFP_KERNEL);
+> +	if (!onkey) {
+> +		dev_err(&pdev->dev, "Failed to allocate memory \n");
+> +		return -ENOMEM;
+> +	}
+> +	onkey->input = input_allocate_device();
+> +	if (!onkey->input) {
+> +		ret = -ENOMEM;
+> +		dev_err(&pdev->dev, "Failed to allocate input device, %d\n", ret);
+> +		goto err_mem;
+> +	}
+> +	onkey->da9052 = dev_get_drvdata(pdev->dev.parent);
+> +	onkey->irq = platform_get_irq_byname(pdev, "ONKEY");
+
+Can it fail?
+
+> +
+> +	onkey->input->evbit[0] = BIT_MASK(EV_KEY);
+> +	onkey->input->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+> +	onkey->input->name = "da9052-onkey";
+> +	onkey->input->phys = "da9052-onkey/input0";
+> +	onkey->input->dev.parent = &pdev->dev;
+> +
+> +	ret = input_register_device(onkey->input);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Unable to register input\
+
+Do not split the message, especially by escaping newline.
+
+> +				device, %d\n", ret);
+> +		goto err_input;
+> +	}
+> +
+> +	INIT_DELAYED_WORK(&onkey->work, da9052_onkey_work);
+> +
+> +	ret = da9052_request_irq(onkey->da9052, onkey->irq,
+> +					da9052_onkey_irq, "ONKEY", onkey);
+> +	if (ret < 0)
+> +		goto err_input;
+> +
+> +	platform_set_drvdata(pdev, onkey);
+> +
+> +	return 0;
+> +
+> +err_input:
+> +	input_unregister_device(onkey->input);
+
+If input device was not registered you should be calling
+input_free_device(). May I recommend registering input device last?
+
+> +	cancel_delayed_work_sync(&onkey->work);
+> +err_mem:
+> +	kfree(onkey);
+> +	return ret;
+> +}
+> +
+> +static int __devexit da9052_onkey_remove(struct platform_device *pdev)
+> +{
+> +	struct da9052_onkey *onkey = pdev->dev.platform_data;
+
+This should be platform_get_drvdata() which is different from
+pdev->dev.platform_data which is conctant data maintained by vboard
+code.
+
+> +
+> +	cancel_delayed_work_sync(&onkey->work);
+> +	input_unregister_device(onkey->input);
+
+If interrupt comes here you will crash. You need to free IRQ, then
+cancel work and only then unregister the device.
+
+> +	da9052_free_irq(onkey->da9052, onkey->irq, NULL);
+> +	kfree(onkey);
+
+platform_set_drvdata(pdev, NULL);
+
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver da9052_onkey_driver = {
+> +	.driver.name	= "da9052-onkey",
+> +	.driver.owner	= THIS_MODULE,
+> +	.probe		= da9052_onkey_probe,
+> +	.remove		= __devexit_p(da9052_onkey_remove),
+> +};
+> +
+> +static int __init da9052_onkey_init(void)
+> +{
+> +	return platform_driver_register(&da9052_onkey_driver);
+> +}
+> +
+> +static void __exit da9052_onkey_exit(void)
+> +{
+> +	platform_driver_unregister(&da9052_onkey_driver);
+> +}
+> +
+> +module_init(da9052_onkey_init);
+> +module_exit(da9052_onkey_exit);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
+> +MODULE_DESCRIPTION("Onkey driver for DA9052");
+> +MODULE_ALIAS("platform:da9052-onkey");
+> diff -Naur orig_linux-2.6.37/drivers/input/misc/Kconfig linux-2.6.37/drivers/input/misc/Kconfig
+> --- orig_linux-2.6.37/drivers/input/misc/Kconfig	2011-01-05 05:50:19.000000000 +0500
+> +++ linux-2.6.37/drivers/input/misc/Kconfig	2011-03-31 19:29:14.000000000 +0500
+> @@ -32,6 +32,16 @@
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called ab8500-ponkey.
+> 
+> +config INPUT_DA9052_ONKEY
+> +	tristate "Dialog DA9052 Onkey"
+> +	depends on PMIC_DA9052
+> +	help
+> +	  Support the ONKEY of Dialog DA9052 PMICs as an input device
+> +	  reporting power button status.
+> +
+> +	  To compile this driver as a module, choose M here: the module
+> +	  will be called da9052_onkey.
+> +
+>  config INPUT_AD714X
+>  	tristate "Analog Devices AD714x Capacitance Touch Sensor"
+>  	help
+> diff -Naur orig_linux-2.6.37/drivers/input/misc/Makefile linux-2.6.37/drivers/input/misc/Makefile
+> --- orig_linux-2.6.37/drivers/input/misc/Makefile	2011-01-05 05:50:19.000000000 +0500
+> +++ linux-2.6.37/drivers/input/misc/Makefile	2011-03-31 19:29:21.000000000 +0500
+> @@ -5,6 +5,7 @@
+>  # Each configuration option enables a list of files.
+> 
+>  obj-$(CONFIG_INPUT_88PM860X_ONKEY)	+= 88pm860x_onkey.o
+> +obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
+
+Please keep the Makefile and Kconfig sorthed alphabetically.
+
+>  obj-$(CONFIG_INPUT_AB8500_PONKEY)	+= ab8500-ponkey.o
+>  obj-$(CONFIG_INPUT_AD714X)		+= ad714x.o
+>  obj-$(CONFIG_INPUT_AD714X_I2C)	+= ad714x-i2c.o
+> 
+
+Thanks.
+
+-- 
+Dmitry
