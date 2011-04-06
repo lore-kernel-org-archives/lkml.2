@@ -1,122 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab1DFTne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 15:43:34 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:56378 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab1DFTnV (ORCPT
+	id S1756719Ab1DFTpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 15:45:47 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:48067 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab1DFTpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 15:43:21 -0400
-Date: Wed, 6 Apr 2011 21:43:19 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@uclinux.org>
-cc: uClinux list <uclinux-dev@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH] m68knommu: Remove obsolete #include <linux/sys.h>
-Message-ID: <alpine.DEB.2.00.1104062141370.28556@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Apr 2011 15:45:45 -0400
+Date: Wed, 6 Apr 2011 15:44:20 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+        matthltc@us.ibm.com, menage@google.com, oleg@redhat.com,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: [PATCH v8.75 0/4] cgroups: implement moving a threadgroup's
+ threads atomically with cgroup.procs
+Message-ID: <20110406194420.GC10792@ghc17.ghc.andrew.cmu.edu>
+References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.4.6.193318
+X-SMTP-Spam-Clean: 8% (
+ FROM_SAME_AS_TO 0.05, BODY_SIZE_5000_5999 0, BODY_SIZE_7000_LESS 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __FROM_SAME_AS_TO2 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NO_WWW 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On Mon, Feb 07, 2011 at 08:35:42PM -0500, Ben Blum wrote:
+> On Sun, Dec 26, 2010 at 07:09:19AM -0500, Ben Blum wrote:
+> > On Fri, Dec 24, 2010 at 03:22:26AM -0500, Ben Blum wrote:
+> > > On Wed, Aug 11, 2010 at 01:46:04AM -0400, Ben Blum wrote:
+> > > > On Fri, Jul 30, 2010 at 07:56:49PM -0400, Ben Blum wrote:
+> > > > > This patch series is a revision of http://lkml.org/lkml/2010/6/25/11 .
+> > > > > 
+> > > > > This patch series implements a write function for the 'cgroup.procs'
+> > > > > per-cgroup file, which enables atomic movement of multithreaded
+> > > > > applications between cgroups. Writing the thread-ID of any thread in a
+> > > > > threadgroup to a cgroup's procs file causes all threads in the group to
+> > > > > be moved to that cgroup safely with respect to threads forking/exiting.
+> > > > > (Possible usage scenario: If running a multithreaded build system that
+> > > > > sucks up system resources, this lets you restrict it all at once into a
+> > > > > new cgroup to keep it under control.)
+> > > > > 
+> > > > > Example: Suppose pid 31337 clones new threads 31338 and 31339.
+> > > > > 
+> > > > > # cat /dev/cgroup/tasks
+> > > > > ...
+> > > > > 31337
+> > > > > 31338
+> > > > > 31339
+> > > > > # mkdir /dev/cgroup/foo
+> > > > > # echo 31337 > /dev/cgroup/foo/cgroup.procs
+> > > > > # cat /dev/cgroup/foo/tasks
+> > > > > 31337
+> > > > > 31338
+> > > > > 31339
+> > > > > 
+> > > > > A new lock, called threadgroup_fork_lock and living in signal_struct, is
+> > > > > introduced to ensure atomicity when moving threads between cgroups. It's
+> > > > > taken for writing during the operation, and taking for reading in fork()
+> > > > > around the calls to cgroup_fork() and cgroup_post_fork().
+> > 
+> > Well this time everything here is actually safe and correct, as far as
+> > my best efforts and keen eyes can tell. I dropped the per_thread call
+> > from the last series in favour of revising the subsystem callback
+> > interface. It now looks like this:
+> > 
+> > ss->can_attach()
+> >  - Thread-independent, possibly expensive/sleeping.
+> > 
+> > ss->can_attach_task()
+> >  - Called per-thread, run with rcu_read so must not sleep.
+> > 
+> > ss->pre_attach()
+> >  - Thread independent, must be atomic, happens before attach_task.
+> > 
+> > ss->attach_task()
+> >  - Called per-thread, run with tasklist_lock so must not sleep.
+> > 
+> > ss->attach()
+> >  - Thread independent, possibly expensive/sleeping, called last.
+> 
+> Okay, so.
+> 
+> I've revamped the cgroup_attach_proc implementation a bunch and this
+> version should be a lot easier on the eyes (and brains). Issues that are
+> addressed:
+> 
+> 1) cgroup_attach_proc now iterates over leader->thread_group once, at
+>    the very beginning, and puts each task_struct that we want to move
+>    into an array, using get_task_struct to make sure they stick around.
+>     - threadgroup_fork_lock ensures no threads not in the array can
+>       appear, and allows us to use signal->nr_threads to determine the
+>       size of the array when kmallocing it.
+>     - This simplifies the rest of the function a bunch, since now we
+>       never need to do rcu_read_lock after building the array. All the
+>       subsystem callbacks are the same as described just above, but the
+>       "can't sleep" restriction is gone, so it's nice and clean.
+>     - Checking for a race with de_thread (the manoeuvre I refer to as
+>       "double-double-toil-and-trouble-check locking") now needs to be
+>       done only once, at the beginning (before building the array).
+> 
+> 2) The nodemask allocation problem in cpuset is fixed the same way as
+>    before - the masks are shared between the three attach callbacks, so
+>    are made as static global variables.
+> 
+> 3) The introduction of threadgroup_fork_lock in sched.h (specifically,
+>    in signal_struct) requires rwsem.h; the new include appears in the
+>    first patch. (An alternate plan would be to make it a struct pointer
+>    with an incomplete forward declaration and kmalloc/kfree it during
+>    housekeeping, but adding an include seems better than that particular
+>    complication.) In light of this, the definitions for
+>    threadgroup_fork_{read,write}_{un,}lock are also in sched.h.
+
+Same as before; using flex_array in attach_proc (thanks Kame).
+
+-- Ben
+
 ---
-Janitors: "git grep linux/sys.h" shows many more.
-
- arch/m68k/kernel/entry_no.S         |    1 -
- arch/m68k/kernel/syscalltable.S     |    1 -
- arch/m68k/platform/68328/entry.S    |    1 -
- arch/m68k/platform/68360/entry.S    |    1 -
- arch/m68k/platform/coldfire/entry.S |    1 -
- arch/m68k/platform/coldfire/head.S  |    1 -
- 6 files changed, 0 insertions(+), 6 deletions(-)
-
-diff --git a/arch/m68k/kernel/entry_no.S b/arch/m68k/kernel/entry_no.S
-index 2783f25..5f0f6b5 100644
---- a/arch/m68k/kernel/entry_no.S
-+++ b/arch/m68k/kernel/entry_no.S
-@@ -24,7 +24,6 @@
-  * linux 2.4 support David McCullough <davidm@snapgear.com>
-  */
- 
--#include <linux/sys.h>
- #include <linux/linkage.h>
- #include <asm/errno.h>
- #include <asm/setup.h>
-diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
-index 79b1ed1..935e10a 100644
---- a/arch/m68k/kernel/syscalltable.S
-+++ b/arch/m68k/kernel/syscalltable.S
-@@ -11,7 +11,6 @@
-  *  Copyright (C) 1991, 1992  Linus Torvalds
-  */
- 
--#include <linux/sys.h>
- #include <linux/linkage.h>
- #include <asm/unistd.h>
- 
-diff --git a/arch/m68k/platform/68328/entry.S b/arch/m68k/platform/68328/entry.S
-index 676960c..0747318 100644
---- a/arch/m68k/platform/68328/entry.S
-+++ b/arch/m68k/platform/68328/entry.S
-@@ -10,7 +10,6 @@
-  * Linux/m68k support by Hamish Macdonald
-  */
- 
--#include <linux/sys.h>
- #include <linux/linkage.h>
- #include <asm/thread_info.h>
- #include <asm/unistd.h>
-diff --git a/arch/m68k/platform/68360/entry.S b/arch/m68k/platform/68360/entry.S
-index 46c1b18..e1477f2 100644
---- a/arch/m68k/platform/68360/entry.S
-+++ b/arch/m68k/platform/68360/entry.S
-@@ -12,7 +12,6 @@
-  * M68360 Port by SED Systems, and Lineo.
-  */
- 
--#include <linux/sys.h>
- #include <linux/linkage.h>
- #include <asm/thread_info.h>
- #include <asm/unistd.h>
-diff --git a/arch/m68k/platform/coldfire/entry.S b/arch/m68k/platform/coldfire/entry.S
-index 5837cf0..bc15bea 100644
---- a/arch/m68k/platform/coldfire/entry.S
-+++ b/arch/m68k/platform/coldfire/entry.S
-@@ -26,7 +26,6 @@
-  * Bug, speed and maintainability fixes by Philippe De Muyter <phdm@macqel.be>
-  */
- 
--#include <linux/sys.h>
- #include <linux/linkage.h>
- #include <asm/unistd.h>
- #include <asm/thread_info.h>
-diff --git a/arch/m68k/platform/coldfire/head.S b/arch/m68k/platform/coldfire/head.S
-index 129bff4..da21180 100644
---- a/arch/m68k/platform/coldfire/head.S
-+++ b/arch/m68k/platform/coldfire/head.S
-@@ -8,7 +8,6 @@
- 
- /*****************************************************************************/
- 
--#include <linux/sys.h>
- #include <linux/linkage.h>
- #include <linux/init.h>
- #include <asm/asm-offsets.h>
--- 
-1.7.0.4
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+ Documentation/cgroups/cgroups.txt |   39 ++-
+ block/blk-cgroup.c                |   18 -
+ include/linux/cgroup.h            |   10 
+ include/linux/init_task.h         |    9 
+ include/linux/sched.h             |   36 ++
+ kernel/cgroup.c                   |  489 +++++++++++++++++++++++++++++++++-----
+ kernel/cgroup_freezer.c           |   26 --
+ kernel/cpuset.c                   |   96 +++----
+ kernel/fork.c                     |   10 
+ kernel/sched.c                    |   38 --
+ mm/memcontrol.c                   |   18 -
+ security/device_cgroup.c          |    3 
+ 12 files changed, 594 insertions(+), 198 deletions(-)
