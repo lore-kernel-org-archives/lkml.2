@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab1DFXqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 19:46:36 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:47744 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756708Ab1DFXqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 19:46:35 -0400
-Date: Thu, 7 Apr 2011 05:16:24 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 22/26] 22: perf: rename target_module
- to target
-Message-ID: <20110406234213.GC5806@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
- <20110401143657.15455.4701.sendpatchset@localhost6.localdomain6>
- <4D99980E.5080807@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4D99980E.5080807@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757126Ab1DFXze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 19:55:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33880 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756760Ab1DFXzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 19:55:33 -0400
+From: Benson Leung <bleung@chromium.org>
+To: lars@metafoo.de, cbouatmailru@gmail.com
+Cc: rklein@nvidia.com, linux-kernel@vger.kernel.org,
+        Benson Leung <bleung@chromium.org>
+Subject: [PATCH v3] gpio-charger: Add gpio_charger_resume
+Date: Wed,  6 Apr 2011 16:55:20 -0700
+Message-Id: <1302134120-29589-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1301796792-28806-1-git-send-email-bleung@chromium.org>
+References: <1301796792-28806-1-git-send-email-bleung@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  
-> > -int show_available_funcs(const char *module, struct strfilter *_filter)
-> > +int show_available_funcs(const char *elfobject, struct strfilter *_filter)
-> >  {
-> >  	struct map *map;
-> >  	int ret;
-> > @@ -1990,9 +1990,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
-> >  	if (ret < 0)
-> >  		return ret;
-> >  
-> > -	map = kernel_get_module_map(module);
-> > +	map = kernel_get_module_map(elfobject);
-> >  	if (!map) {
-> > -		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-> > +		pr_err("Failed to find %s map.\n", (elfobject) ? : "kernel");
-> 
-> Hmm, these changes(module -> elfobject) are put back by the next patch.
-> Could you check your patch stack?
-> 
+Gpio charger should notify if the gpio state had changed
+during suspend. This will send a CHANGED event each time
+the system resumes, ensuring a plug/unplug of the charger
+is not missed.
 
-In the next patch, we move "map =
-kernel_get_module_map(module/elfobject)" to a new function
-available_kernel_funcs(). For example: Even after the next patch,
-show_available_funcs() still takes elfobject and not module. If you want
-to avoid this, then we would have to either introduce the
-available_kernel_funcs() in this patch Or we could merge this and the
-next patch. Both those solutions dont look clean to me.
+Signed-off-by: Benson Leung <bleung@chromium.org>
 
+--
+Version history :
+v3 : Use SIMPLE_DEV_PM_OPS
+v2 : Changed to use dev_ms_ops
+v1 : Initial
+---
+ drivers/power/gpio-charger.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+index 25b88ac..718f2c5 100644
+--- a/drivers/power/gpio-charger.c
++++ b/drivers/power/gpio-charger.c
+@@ -161,12 +161,27 @@ static int __devexit gpio_charger_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++static int gpio_charger_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
++
++	power_supply_changed(&gpio_charger->charger);
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(gpio_charger_pm_ops, NULL, gpio_charger_resume);
++
+ static struct platform_driver gpio_charger_driver = {
+ 	.probe = gpio_charger_probe,
+ 	.remove = __devexit_p(gpio_charger_remove),
+ 	.driver = {
+ 		.name = "gpio-charger",
+ 		.owner = THIS_MODULE,
++		.pm = &gpio_charger_pm_ops,
+ 	},
+ };
+ 
 -- 
-Thanks and Regards
-Srikar
+1.7.1
+
