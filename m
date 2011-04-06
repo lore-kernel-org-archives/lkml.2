@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab1DFRQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 13:16:56 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:2661 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab1DFRQy (ORCPT
+	id S1755750Ab1DFRSc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 13:18:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38436 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab1DFRSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 13:16:54 -0400
-Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
- to drivers
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Mocean Laboratories <info@mocean-labs.com>
-In-Reply-To: <20110406170537.GB2757@sortiz-mobl>
-References: <20110331230522.GI437@ponder.secretlab.ca>
-	 <20110401112030.GA3447@sortiz-mobl> <20110401104756.2f5c6f7a@debxo>
-	 <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
-	 <20110401235239.GE29397@sortiz-mobl>
-	 <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
-	 <20110404100314.GC2751@sortiz-mobl>
-	 <20110405030428.GB29522@ponder.secretlab.ca>
-	 <20110406152322.GA2757@sortiz-mobl> <20110406155805.GA20095@suse.de>
-	 <20110406170537.GB2757@sortiz-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Wed, 06 Apr 2011 18:16:49 +0100
-Message-ID: <1302110209.2840.20.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Apr 2011 17:16:53.0956 (UTC) FILETIME=[6CDB5040:01CBF47E]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18056.005
-X-TM-AS-Result: No--23.293400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Wed, 6 Apr 2011 13:18:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=NEjfPNylp5RH0qsaTre1gQpZgQ4tGmEpWK8IvJ09FDId25eJSqUy0A/6Tfp9X0CuNH
+         GhzAcfCYxMK9ZgUWUKkncFBbVhmCY6t1wmpXk4sQmwbXt8Lm9NTwJE5+pKCMEenGzc3b
+         lj9hdtKt+OvSXI0tj81Q1dggA9K+zijnhGjVI=
+Date: Wed, 6 Apr 2011 14:18:21 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
+Message-ID: <20110406171821.GB4987@ghostprotocols.net>
+References: <4D8B79E6.2050603@gmail.com>
+ <4D8C6B1B.70409@hitachi.com>
+ <4D8CAE74.9080805@gmail.com>
+ <4D906450.1040809@hitachi.com>
+ <4D909BBB.5020500@gmail.com>
+ <20110401151313.GC2335@nowhere>
+ <4D96072E.4060902@gmail.com>
+ <20110406121501.GA1867@nowhere>
+ <20110406140958.GA4987@ghostprotocols.net>
+ <20110406145521.GG1867@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406145521.GG1867@nowhere>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-06 at 19:05 +0200, Samuel Ortiz wrote:
-> Hi Greg,
-> 
-> On Wed, Apr 06, 2011 at 08:58:05AM -0700, Greg KH wrote:
-> > On Wed, Apr 06, 2011 at 05:23:23PM +0200, Samuel Ortiz wrote:
-> > > --- a/include/linux/device.h
-> > > +++ b/include/linux/device.h
-> > > @@ -33,6 +33,7 @@ struct class;
-> > >  struct subsys_private;
-> > >  struct bus_type;
-> > >  struct device_node;
-> > > +struct mfd_cell;
-> > >  
-> > >  struct bus_attribute {
-> > >  	struct attribute	attr;
-> > > @@ -444,6 +445,8 @@ struct device {
-> > >  	struct device_node	*of_node; /* associated device tree node */
-> > >  	const struct of_device_id *of_match; /* matching of_device_id from driver */
-> > >  
-> > > +	struct mfd_cell	*mfd_cell; /* MFD cell pointer */
-> > > +
+Em Wed, Apr 06, 2011 at 04:55:23PM +0200, Frederic Weisbecker escreveu:
+> On Wed, Apr 06, 2011 at 11:09:58AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Isn't there one in the 'tip/tmp.perf/trace' tmp branch? Lemme see...
 > > 
-> > What is a "MFD cell pointer" and why is it needed in struct device?
-> An MFD cell is an MFD instantiated device.
-> MFD (Multi Function Device) drivers instantiate platform devices. Those
-> devices drivers sometimes need a platform data pointer, sometimes an MFD
-> specific pointer, and sometimes both. Also, some of those drivers have been
-> implemented as MFD sub drivers, while others know nothing about MFD and just
-> expect a plain platform_data pointer.
+> > Yeah, and it is even yours ;-)
+> > 
+> > commit 6a824e89c0dfe6bce3d7e85f987ec9c8e7304b34
+> > Author: Frederic Weisbecker <fweisbec@gmail.com>
+> > Date:   Fri Nov 12 05:35:06 2010 +0100
+> > 
+> >     perf, mm: Add fault tracing
+> >     
+> >     Part of that are two modified patches from Jiri Olsa who added the
+> >     fault tracepoints. I had to split them in two tracepoints so that we get
+> >     the faults handling duration.
+> >     
+> >     Originally-from: Frederic Weisbecker <fweisbec@gmail.com>
+> >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> >     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > 
-> We've been faced with the problem of being able to pass both MFD related data
-> and a platform_data pointer to some of those drivers. Squeezing the MFD bits
-> in the sub driver platform_data pointer doesn't work for drivers that know
-> nothing about MFDs. It also adds an additional dependency on the MFD API to
-> all MFD sub drivers. That prevents any of those drivers to eventually be used
-> as plain platform device drivers.
-> So, adding an MFD cell pointer to the device structure allows us to cleanly
-> pass both pieces of information, while keeping all the MFD sub drivers
-> independant from the MFD core if they want/can.
+> That forgets to mention it's based on Jiri Olsa's patch :)
+> 
+> "tracing,mm - add kernel pagefault tracepoint for x86 & x86_64"
+> 
+> (Message id <1289466549-7602-3-git-send-email-jolsa@redhat.com>).
+> 
+> > 
+> > Can we dust this one off and get the ball rolling again? 
+> 
+> I prefer someone comes with a real need before me or Jiri respin
+> that. There was perf trace but its development seems to be stale
+> now.
 
-Why isn't an MFD the parent of its component devices?
+Yeah, I need to resume work on it, sidetracked now tho.
+ 
+> The page fault software event seem to be enough for basic
+> dump requests. I don't like software events and prefer tracepoints
+> in general but as long as the current implementation is enough
+> and people don't need to measure page fault servicing time,
+> write scripts or so, we are probably fine.
 
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+- ARnaldo
