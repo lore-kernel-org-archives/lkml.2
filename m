@@ -1,84 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab1DFMUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:20:22 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58277 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab1DFMUT (ORCPT
+	id S1755806Ab1DFMWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:22:53 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58642 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab1DFMWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:20:19 -0400
+	Wed, 6 Apr 2011 08:22:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=OSGvFAORtGPW1AAluJAGkwt39rxnDRpUPqNxgHNZE4ErnMM9cDgw6+Na9xJKHwrfxz
-         YZG+LKDMuDI/kqXpsSSVwMgYUlUEJiYqNuUnhDKLPJPw4fhEMA/1npZq5L0Lb7KypvA5
-         RMCRdyyBYxsgrJP59UdV49O7XC9rtXZttxlv8=
-Date: Wed, 6 Apr 2011 05:20:09 -0700
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=elcvYxxENvBJGYNMQiM98Dr4r8fZM4E0zkAYlwzeTUXZsl0HjdIcp3w7UWYIL73ELV
+         y3OheJ9klFarembOgCoifV3TbIbo3QizS92weW1cbYgadgp4VKyHQIcAEPGs58nGPpWs
+         CYzE3HPqJsObjh08E4CofdUDj5HlngWrHsVgw=
+Date: Wed, 6 Apr 2011 05:22:44 -0700
 From: Tejun Heo <tj@kernel.org>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
         Martin Pitt <martin.pitt@ubuntu.com>,
         Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] cdrom: always check_disk_change() on open
-Message-ID: <20110406121920.GC4142@mtj.dyndns.org>
+Subject: [PATCH 2/2] block: rescan partitions on invalidated devices on
+ -ENOMEDIA too
+Message-ID: <20110406122244.GD4142@mtj.dyndns.org>
+References: <20110406121920.GC4142@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110406121920.GC4142@mtj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cdrom_open() called check_disk_change() after the rest of open path
-succeeded which leads to the following bizarre behavior.
+__blkdev_get() doesn't rescan partitions if disk->fops->open() fails,
+which leads to ghost partition devices lingering after medimum removal
+is known to both the kernel and userland.  The behavior also creates a
+subtle inconsistency where O_NONBLOCK open, which doesn't fail even if
+there's no medium, clears the ghots partitions, which is exploited to
+work around the problem from userland.
 
-* After media change, if the device opened without O_NONBLOCK,
-  open_for_data() naturally fails with -ENOMEDIA and
-  check_disk_change() is never called.  The media is known to be gone
-  and the open failure makes it obvious to the userland but device
-  invalidation never happens.
+Fix it by updating __blkdev_get() to issue partition rescan after
+-ENOMEDIA too.
 
-* But if the device is opened with O_NONBLOCK, all the checks are
-  bypassed and cdrom_open() doesn't notice that the media is not there
-  and check_disk_change() is called and invalidation happens.
+This was reported in the following bz.
 
-There's nothing to be gained by avoiding calling check_disk_change()
-on open failure.  Common cases end up calling check_disk_change()
-anyway.  All we get is inconsistent behavior.
-
-Fix it by moving check_disk_change() invocation to the top of
-cdrom_open() so that it always gets called regardless of how the rest
-of open proceeds.
+ https://bugzilla.kernel.org/show_bug.cgi?id=13029
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Amit Shah <amit.shah@redhat.com>
-Tested-by: Amit Shah <amit.shah@redhat.com>
+Reported-by: David Zeuthen <zeuthen@gmail.com>
+Reported-by: Martin Pitt <martin.pitt@ubuntu.com>
+Reported-by: Kay Sievers <kay.sievers@vrfy.org>
+Tested-by: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 ---
- drivers/cdrom/cdrom.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/block_dev.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index e2c48a7..5ade78a 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -986,6 +986,9 @@ int cdrom_open(struct cdrom_device_info *cdi, struct block_device *bdev, fmode_t
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index c1511c6..a926ad4 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1102,6 +1102,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 			if (!bdev->bd_part)
+ 				goto out_clear;
  
- 	cdinfo(CD_OPEN, "entering cdrom_open\n"); 
- 
-+	/* open is event synchronization point, check events first */
-+	check_disk_change(bdev);
++			ret = 0;
+ 			if (disk->fops->open) {
+ 				ret = disk->fops->open(bdev, mode);
+ 				if (ret == -ERESTARTSYS) {
+@@ -1118,9 +1119,18 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 					put_disk(disk);
+ 					goto restart;
+ 				}
+-				if (ret)
+-					goto out_clear;
+ 			}
++			/*
++			 * If the device is invalidated, rescan partition
++			 * if open succeeded or failed with -ENOMEDIUM.
++			 * The latter is necessary to prevent ghost
++			 * partitions on a removed medium.
++			 */
++			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
++				rescan_partitions(disk, bdev);
++			if (ret)
++				goto out_clear;
 +
- 	/* if this was a O_NONBLOCK open and we should honor the flags,
- 	 * do a quick open without drive/disc integrity checks. */
- 	cdi->use_count++;
-@@ -1012,9 +1015,6 @@ int cdrom_open(struct cdrom_device_info *cdi, struct block_device *bdev, fmode_t
- 
- 	cdinfo(CD_OPEN, "Use count for \"/dev/%s\" now %d\n",
- 			cdi->name, cdi->use_count);
--	/* Do this on open.  Don't wait for mount, because they might
--	    not be mounting, but opening with O_NONBLOCK */
--	check_disk_change(bdev);
- 	return 0;
- err_release:
- 	if (CDROM_CAN(CDC_LOCK) && cdi->options & CDO_LOCK) {
+ 			if (!bdev->bd_openers) {
+ 				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
+ 				bdi = blk_get_backing_dev_info(bdev);
+@@ -1128,8 +1138,6 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 					bdi = &default_backing_dev_info;
+ 				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
+ 			}
+-			if (bdev->bd_invalidated)
+-				rescan_partitions(disk, bdev);
+ 		} else {
+ 			struct block_device *whole;
+ 			whole = bdget_disk(disk, 0);
+@@ -1153,13 +1161,14 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 		}
+ 	} else {
+ 		if (bdev->bd_contains == bdev) {
+-			if (bdev->bd_disk->fops->open) {
++			ret = 0;
++			if (bdev->bd_disk->fops->open)
+ 				ret = bdev->bd_disk->fops->open(bdev, mode);
+-				if (ret)
+-					goto out_unlock_bdev;
+-			}
+-			if (bdev->bd_invalidated)
++			/* the same as first opener case, read comment there */
++			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
+ 				rescan_partitions(bdev->bd_disk, bdev);
++			if (ret)
++				goto out_unlock_bdev;
+ 		}
+ 		/* only one opener holds refs to the module and disk */
+ 		module_put(disk->fops->owner);
