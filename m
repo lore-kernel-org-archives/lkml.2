@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab1DFRvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 13:51:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45373 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab1DFRvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 13:51:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,311,1299484800"; 
-   d="scan'208";a="676038043"
-Date: Wed, 6 Apr 2011 19:51:14 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Mocean Laboratories <info@mocean-labs.com>
-Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
- to drivers
-Message-ID: <20110406175113.GC2757@sortiz-mobl>
-References: <20110401104756.2f5c6f7a@debxo>
- <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
- <20110401235239.GE29397@sortiz-mobl>
- <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
- <20110404100314.GC2751@sortiz-mobl>
- <20110405030428.GB29522@ponder.secretlab.ca>
- <20110406152322.GA2757@sortiz-mobl>
- <20110406155805.GA20095@suse.de>
- <20110406170537.GB2757@sortiz-mobl>
- <1302110209.2840.20.camel@bwh-desktop>
+	id S1755550Ab1DFRw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 13:52:27 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42195 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab1DFRw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 13:52:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=tYE4PimrhZjAMjQt7eHTT6mkfdYwQmY7S/A4SfumAIxRkD6mE4///ghXD78euK8VMr
+         Kylsp47R/YbCV2o/3v/V6DAgNB5K1hdtFCr+hwLj/ci8vLSoS/zpRoC1mTc4m43jnBkQ
+         lRhqNwsu7Ie6R1gM28iMY/3LESBaBzUqUjLRs=
+Date: Wed, 6 Apr 2011 14:52:17 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Tim Blechmann <tim@klingt.org>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.39-rc2] perf top fails to mmap
+Message-ID: <20110406175217.GC4987@ghostprotocols.net>
+References: <inhgjs$54a$1@dough.gmane.org>
+ <4D9C84D5.6090303@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1302110209.2840.20.camel@bwh-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D9C84D5.6090303@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
-
-On Wed, Apr 06, 2011 at 06:16:49PM +0100, Ben Hutchings wrote:
-> > So, adding an MFD cell pointer to the device structure allows us to cleanly
-> > pass both pieces of information, while keeping all the MFD sub drivers
-> > independant from the MFD core if they want/can.
+Em Wed, Apr 06, 2011 at 09:20:53AM -0600, David Ahern escreveu:
 > 
-> Why isn't an MFD the parent of its component devices?
-It actually is. How would that help here ?
+> 
+> On 04/06/11 04:51, Tim Blechmann wrote:
+> > hi all,
+> > 
+> > when trying to profile a process with `perf top -p $PID', perf exits with:
+> > Failed to mmap with 22 (Invalid argument)
+> 
+> Works fine for me with latest kernel tree (this morning). Short lived
+> process?
+> 
+> David
+> 
+> > 
+> > this happens when running perf as the same process as the process and when 
+> > running perf as root.
 
-Cheers,
-Samuel.
+yep, works for me as well:
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+[acme@emilia ~]$ cat vsyscall.c 
+#include <time.h>
+
+int main(void)
+{
+        struct timespec t;
+        //int i;
+        //for(i = 0; i < 10000000; i++)
+        while (1) {
+                clock_gettime(CLOCK_MONOTONIC, &t);
+		usleep(10);
+	}
+        return 0;
+}
+[acme@emilia ~]$ cc -lrt vsyscall.c -o vsyscall
+[acme@emilia ~]$ ./vsyscall &
+[acme@emilia linux]$ perf top -p `pidof vsyscall` -F 10000
+PerfTop:  230 irqs/sec  kernel:88.3%  exact:  0.0% [10000Hz cycles],  (target_pid: 2728)
+----------------------------------------------------------------------------------------
+
+             samples  pcnt function             DSO
+             _______ _____ ____________________ ____________________
+
+               21.00 44.7% __nanosleep_nocancel /lib64/libc-2.12.so 
+               13.00 27.7% usleep               /lib64/libc-2.12.so 
+                6.00 12.8% __GI_clock_gettime   /lib64/librt-2.12.so
+                6.00 12.8% main                 /home/acme/vsyscall
+^C
+[acme@emilia linux]$ su -
+Password: 
+[root@emilia ~]# perf top -p `pidof vsyscall` -F 10000 --hide_kernel_symbols
+PerfTop:     428 irqs/sec  kernel:90.2%  exact:  0.0% [10000Hz cycles],  (target_pid: 2728)
+-------------------------------------------------------------------------------------------
+
+             samples  pcnt function             DSO
+             _______ _____ ____________________ ____________________
+
+               15.00 29.4% __nanosleep_nocancel /lib64/libc-2.12.so 
+               14.00 27.5% usleep               /lib64/libc-2.12.so 
+                9.00 17.6% __GI_clock_gettime   /lib64/librt-2.12.so
+                8.00 15.7% main                 /home/acme/vsyscall 
+^C
+[root@emilia ~]#
+
+- Arnaldo
