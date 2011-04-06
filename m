@@ -1,346 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab1DFSeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:34:18 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:35988 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756260Ab1DFSeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:34:17 -0400
-Message-ID: <4D9CB247.3050106@metafoo.de>
-Date: Wed, 06 Apr 2011 20:34:47 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
-MIME-Version: 1.0
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Subject: Re: [PATCHv1 10/11] LEDS: LED module of DA9052 PMIC driver
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E32@KCINPUNHJCMS01.kpit.com>
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E32@KCINPUNHJCMS01.kpit.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756365Ab1DFSfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:35:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20728 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756293Ab1DFSff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 14:35:35 -0400
+Date: Wed, 6 Apr 2011 14:35:34 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dzickus@redhat.com, alan@lxorguk.ukuu.org.uk, greg@kroah.com,
+        mikew@google.com, Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20110406183534.25155.87821.sendpatchset@prarit.bos.redhat.com>
+Content-Type: text/plain; charset=us-ascii
+Subject: [PATCH]: Rename /sys/firmware/dmi to /sys/firmware/smbios
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2011 02:04 PM, Ashish Jangam wrote:
-> Hi,
-> 
-> LED Driver for Dialog Semiconductor DA9052 PMICs.
-> 
-> Changes made since last submission:
-> . read and write operation moved to MFD
-> 
-> Some additional information of this patch:
-> . This patch is thoroughly tested with the Samsung 6410 board with LEDs connected to the DA9052 development board. 
-> . Use of platform device to retrieve device specific information.
-> 
-> Linux Kernel Version: 2.6.37
-> 
+Sorry for the repost.  Just want to make sure you have this patch Greg.
 
-It would be good if patches are based on a more recent version.
+P.
 
-> Signed-off-by: D. Chen <dchen@diasemi.com>
-> ---
-> diff -Naur orig_linux-2.6.37/drivers/leds/Kconfig linux-2.6.37/drivers/leds/Kconfig
-> --- orig_linux-2.6.37/drivers/leds/Kconfig	2011-01-05 05:50:19.000000000 +0500
-> +++ linux-2.6.37/drivers/leds/Kconfig	2011-03-31 20:24:05.000000000 +0500
-> @@ -274,6 +274,14 @@
->  	  This option enables support for on-chip LED drivers found
->  	  on Dialog Semiconductor DA9030/DA9034 PMICs.
-> 
-> +config LEDS_DA9052
-> +	tristate "Dialog DA9052 LEDS"
-> +	depends on LEDS_CLASS
-> +	depends on PMIC_DA9052
-> +	help
-> +	  This option enables support for on-chip LED drivers found
-> +	  on Dialog Semiconductor DA9052 PMICs
-> +
->  config LEDS_DAC124S085
->  	tristate "LED Support for DAC124S085 SPI DAC"
->  	depends on LEDS_CLASS
-> diff -Naur orig_linux-2.6.37/drivers/leds/leds-da9052.c linux-2.6.37/drivers/leds/leds-da9052.c
-> --- orig_linux-2.6.37/drivers/leds/leds-da9052.c	1970-01-01 05:00:00.000000000 +0500
-> +++ linux-2.6.37/drivers/leds/leds-da9052.c	2011-03-31 20:24:19.000000000 +0500
-> @@ -0,0 +1,209 @@
-> +/*
-> + * leds-da9052.c  --  LED Driver for Dialog DA9052
-> + *
-> + * Copyright(c) 2009 Dialog Semiconductor Ltd.
-> + *
-> + * Author: Dajun Chen <dchen@diasemi.com>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/leds.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/slab.h>
-> +
-> +#include <linux/mfd/da9052/reg.h>
-> +#include <linux/mfd/da9052/da9052.h>
-> +#include <linux/mfd/da9052/pdata.h>
-> +#include <linux/mfd/da9052/gpio.h>
-> +
-> +struct da9052_led {
-> +	struct led_classdev cdev;
-> +	struct work_struct work;
-> +	struct da9052 *da9052;
-> +	u8 num_leds;
+---8<---
 
-num_leds is never assigned, but read in da9052_led_remove. But the number of
-leds can also obtained through the platform_data, so this num_leds can be
-dropped here.
+sys/firmware/dmi should be sys/firmware/smbios.
 
-> +	u8 id;
-> +	int brightness;
-> +};
-> +
-> +u8 led_reg[] = {
+commit 948af1f0bbc8526448e8cbe3f8d3bf211bdf5181
+introduced a new firmware directory called /sys/firmware/dmi which
+provides broken out SMBIOS entries for userspace.
 
-static ...
+In a previous discussion I've mentioned that it would be a good idea for
+us to move away from using 'dmi' towards using 'smbios' and centralizing
+the SMBIOS code that is scattered throughout the kernel.
 
-> +		DA9052_LED_CONT_4_REG,
-> +		DA9052_LED_CONT_5_REG,
-> +};
-> +
-> +static int da9052_set_led_brightness(struct da9052_led *led)
-> +{
-> +	int ret = 0;
+Modified ('dmi' to 'smbios') and moved sysfs-firmware-dmi to
+sysfs-firmware-smbios.
 
-No need to initialize ret here, since it will be overwritten in the next line.
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
-> +
-> +	ret = da9052_reg_write(led->da9052, led_reg[led->id], led->brightness |
-> +			       DA9052_LED_CONT_DIM);
-> +	if (ret < 0)
-> +		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n", ret);
-> +	return ret;
-> +}
-> +
-> +
-> +static void da9052_led_work(struct work_struct *work)
-> +{
-> +	struct da9052_led *led = container_of(work,
-> +				 struct da9052_led, work);
-> +
-> +	da9052_set_led_brightness(led);
-> +}
-> +
-> +static void da9052_led_set(struct led_classdev *led_cdev,
-> +			   enum led_brightness value)
-> +{
-> +	struct da9052_led *led;
-> +
-> +	led = container_of(led_cdev, struct da9052_led, cdev);
-> +	led->brightness = value;
-> +	schedule_work(&led->work);
-> +}
-> +
-> +
-> +static int da9052_configure_leds_gpio(struct da9052_led *led)
-> +{
-> +	int ret = 0;
-No need to initialize ret.
-
-> +	u8 register_value = DA9052_OUTPUT_OPENDRAIN |
-> +			DA9052_SUPPLY_VDD_IO1 << 2 | 1 << 3;
-> +
-> +	ret = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
-> +				DA9052_GPIO_MASK_LOWER_NIBBLE,
-> +				register_value);
-> +
-> +	if (ret < 0) {
-> +		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	ret = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
-> +				DA9052_GPIO_MASK_UPPER_NIBBLE,
-> +				register_value << DA9052_GPIO_NIBBLE_SHIFT
-> +				);
-> +	if (ret < 0)
-> +		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", ret);
-> +
-> +	return ret;
-> +}
-> +
-> +static int __devinit da9052_led_probe(struct platform_device *pdev)
-> +{
-> +	struct da9052_pdata *pdata;
-> +	struct da9052 *da9052;
-> +	struct gpio_led_platform_data *pled;
-
-You don't use any fields from the gpio_led struct except for name, so using
-struct led_platform_data here would be a better choice.
-
-> +	struct da9052_led *led;
-> +	int ret, i;
-> +
-> +	da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	pdata = da9052->dev->platform_data;
-> +	pled = pdata->pled;
-> +
-> +	if (pled == NULL) {
-> +		dev_err(&pdev->dev, "failed no platform data for LED\n");
-> +		return -ENOMEM;
-return -ENXIO;
-> +	}
-> +
-> +	led = kzalloc(sizeof(struct da9052_led) * pled->num_leds, GFP_KERNEL);
-> +	if (led == NULL) {
-> +		dev_err(&pdev->dev, "failed to alloc memory\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	if (pdata == NULL) {
-
-pdata has already been dereferenced at this point. the check should go before
-pled is assigned.
-
-> +		dev_err(&pdev->dev, "no platform data\n");
-> +		ret = -ENODEV;
-ret = -ENXIO;
-> +		goto err_mem;
-> +	}
-> +
-> +
-> +	for (i = 0; i < pled->num_leds; i++) {
-> +		led[i].cdev.name = pled->leds[i].name;
-> +		led[i].cdev.brightness_set = da9052_led_set;
-> +		led[i].cdev.brightness = LED_OFF;
-> +		led[i].brightness = 0;
-> +		led[i].id = i;
-
-if pled->num_leds is greater then 2 you'll get undefined behavior in
-da9052_set_led_brightness, because led->id is beyond the bounds of led_reg.
-Is it always the case that the first led is used when the second led ist used?
-Otherwise it might make sense to provide the id through the platform data.
-
-
-> +		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
-
-led[i].da9052 = da9052;
-
-You might also want to initialize .default_trigger to .default_trigger from the
-platform data.
-
-> +		INIT_WORK(&led[i].work, da9052_led_work);
-> +
-> +		ret = led_classdev_register(pdev->dev.parent, &led[i].cdev);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "Failed to register led %d\n",
-> +					led[i].id);
-> +			goto err_register;
-> +		}
-> +
-> +		ret = da9052_set_led_brightness(&led[i]);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "unable to init led %d\n",
-> +					led[i].id);
-> +			continue;
-> +		}
-> +	}
-> +	ret = da9052_configure_leds_gpio(led);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to configure GPIO Led, %d\n",ret);
-> +		goto err_register;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, led);
-> +
-> +	return 0;
-> +
-> +err_register:
-> +	for (i = i - 1; i >= 0; i--) {
-> +		led_classdev_unregister(&led[i].cdev);
-> +		cancel_work_sync(&led[i].work);
-> +	}
-> +err_mem:
-> +	kfree(led);
-> +	return ret;
-> +}
-> +
-> +static int __devexit da9052_led_remove(struct platform_device *pdev)
-> +{
-> +	struct da9052_led *led = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	for (i = 0; i < led->num_leds; i++) {
-led->num_leds should be num_leds from the platform_data.
-
-> +		da9052_set_led_brightness(&led[i]);
-
-Does it makes sense to call da9052_set_led_brightness here?
-The latest brightness should already be set. Or do you want do disable the led?
-In that case led->brightness should be set to 0 first.
-
-> +		led_classdev_unregister(&led[i].cdev);
-> +		cancel_work_sync(&led[i].work);
-> +	}
-> +
-> +	kfree(led);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver da9052_led_driver = {
-> +	.driver.name	= "da9052-leds",
-> +	.driver.owner	= THIS_MODULE,
-The common pattern is to do:
-	.driver = {
-		.name = "da9052-leds",
-		.owener = THIS_MODULE,
-	},
-> +	.probe		= da9052_led_probe,
-> +	.remove		= __devexit_p(da9052_led_remove),
-> +};
-> +
-> +static int __init da9052_led_init(void)
-> +{
-> +	return platform_driver_register(&da9052_led_driver);
-> +}
-> +module_init(da9052_led_init);
-> +
-> +static void __exit da9052_led_exit(void)
-> +{
-> +	platform_driver_unregister(&da9052_led_driver);
-> +}
-> +module_exit(da9052_led_exit);
-> +
-> +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:" DRIVER_NAME);
-
-Where is DRIVER_NAME defined?
-
-> diff -Naur orig_linux-2.6.37/drivers/leds/Makefile linux-2.6.37/drivers/leds/Makefile
-> --- orig_linux-2.6.37/drivers/leds/Makefile	2011-01-05 05:50:19.000000000 +0500
-> +++ linux-2.6.37/drivers/leds/Makefile	2011-03-31 20:24:00.000000000 +0500
-> @@ -30,6 +30,7 @@
->  obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
->  obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
->  obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
-> +obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
->  obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
->  obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
->  obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
-> 
-> Regards,
-> Ashish
-> 
-> 
-
+diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
+deleted file mode 100644
+index ba9da95..0000000
+--- a/Documentation/ABI/testing/sysfs-firmware-dmi
++++ /dev/null
+@@ -1,110 +0,0 @@
+-What:		/sys/firmware/dmi/
+-Date:		February 2011
+-Contact:	Mike Waychison <mikew@google.com>
+-Description:
+-		Many machines' firmware (x86 and ia64) export DMI /
+-		SMBIOS tables to the operating system.  Getting at this
+-		information is often valuable to userland, especially in
+-		cases where there are OEM extensions used.
+-
+-		The kernel itself does not rely on the majority of the
+-		information in these tables being correct.  It equally
+-		cannot ensure that the data as exported to userland is
+-		without error either.
+-
+-		DMI is structured as a large table of entries, where
+-		each entry has a common header indicating the type and
+-		length of the entry, as well as 'handle' that is
+-		supposed to be unique amongst all entries.
+-
+-		Some entries are required by the specification, but many
+-		others are optional.  In general though, users should
+-		never expect to find a specific entry type on their
+-		system unless they know for certain what their firmware
+-		is doing.  Machine to machine will vary.
+-
+-		Multiple entries of the same type are allowed.  In order
+-		to handle these duplicate entry types, each entry is
+-		assigned by the operating system an 'instance', which is
+-		derived from an entry type's ordinal position.  That is
+-		to say, if there are 'N' multiple entries with the same type
+-		'T' in the DMI tables (adjacent or spread apart, it
+-		doesn't matter), they will be represented in sysfs as
+-		entries "T-0" through "T-(N-1)":
+-
+-		Example entry directories:
+-
+-			/sys/firmware/dmi/entries/17-0
+-			/sys/firmware/dmi/entries/17-1
+-			/sys/firmware/dmi/entries/17-2
+-			/sys/firmware/dmi/entries/17-3
+-			...
+-
+-		Instance numbers are used in lieu of the firmware
+-		assigned entry handles as the kernel itself makes no
+-		guarantees that handles as exported are unique, and
+-		there are likely firmware images that get this wrong in
+-		the wild.
+-
+-		Each DMI entry in sysfs has the common header values
+-		exported as attributes:
+-
+-		handle	: The 16bit 'handle' that is assigned to this
+-			  entry by the firmware.  This handle may be
+-			  referred to by other entries.
+-		length	: The length of the entry, as presented in the
+-			  entry itself.  Note that this is _not the
+-			  total count of bytes associated with the
+-			  entry_.  This value represents the length of
+-			  the "formatted" portion of the entry.  This
+-			  "formatted" region is sometimes followed by
+-			  the "unformatted" region composed of nul
+-			  terminated strings, with termination signalled
+-			  by a two nul characters in series.
+-		raw	: The raw bytes of the entry. This includes the
+-			  "formatted" portion of the entry, the
+-			  "unformatted" strings portion of the entry,
+-			  and the two terminating nul characters.
+-		type	: The type of the entry.  This value is the same
+-			  as found in the directory name.  It indicates
+-			  how the rest of the entry should be
+-			  interpreted.
+-		instance: The instance ordinal of the entry for the
+-			  given type.  This value is the same as found
+-			  in the parent directory name.
+-		position: The position of the entry within the entirety
+-			  of the entirety.
+-
+-		=== Entry Specialization ===
+-
+-		Some entry types may have other information available in
+-		sysfs.
+-
+-		--- Type 15 - System Event Log ---
+-
+-		This entry allows the firmware to export a log of
+-		events the system has taken.  This information is
+-		typically backed by nvram, but the implementation
+-		details are abstracted by this table.  This entries data
+-		is exported in the directory:
+-
+-		/sys/firmware/dmi/entries/15-0/system_event_log
+-
+-		and has the following attributes (documented in the
+-		SMBIOS / DMI specification under "System Event Log (Type 15)":
+-
+-		area_length
+-		header_start_offset
+-		data_start_offset
+-		access_method
+-		status
+-		change_token
+-		access_method_address
+-		header_format
+-		per_log_type_descriptor_length
+-		type_descriptors_supported_count
+-
+-		As well, the kernel exports the binary attribute:
+-
+-		raw_event_log	: The raw binary bits of the event log
+-				  as described by the DMI entry.
+diff --git a/Documentation/ABI/testing/sysfs-firmware-smbios b/Documentation/ABI/testing/sysfs-firmware-smbios
+new file mode 100644
+index 0000000..88b6067
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-firmware-smbios
+@@ -0,0 +1,110 @@
++What:		/sys/firmware/smbios/
++Date:		February 2011
++Contact:	Mike Waychison <mikew@google.com>
++Description:
++		Many machines' firmware (x86 and ia64) export SMBIOS
++		structures to the operating system.  Getting at this
++		information is often valuable to userland, especially in
++		cases where there are OEM extensions used.
++
++		The kernel itself does not rely on the majority of the
++		information in these tables being correct.  It equally
++		cannot ensure that the data as exported to userland is
++		without error either.
++
++		SMBIOS is structured as a large table of entries, where
++		each entry has a common header indicating the type and
++		length of the entry, as well as 'handle' that is
++		supposed to be unique amongst all entries.
++
++		Some entries are required by the specification, but many
++		others are optional.  In general though, users should
++		never expect to find a specific entry type on their
++		system unless they know for certain what their firmware
++		is doing.  Machine to machine will vary.
++
++		Multiple entries of the same type are allowed.  In order
++		to handle these duplicate entry types, each entry is
++		assigned by the operating system an 'instance', which is
++		derived from an entry type's ordinal position.  That is
++		to say, if there are 'N' multiple entries with the same type
++		'T' in the SMBIOS tables (adjacent or spread apart, it
++		doesn't matter), they will be represented in sysfs as
++		entries "T-0" through "T-(N-1)":
++
++		Example entry directories:
++
++			/sys/firmware/smbios/entries/17-0
++			/sys/firmware/smbios/entries/17-1
++			/sys/firmware/smbios/entries/17-2
++			/sys/firmware/smbios/entries/17-3
++			...
++
++		Instance numbers are used in lieu of the firmware
++		assigned entry handles as the kernel itself makes no
++		guarantees that handles as exported are unique, and
++		there are likely firmware images that get this wrong in
++		the wild.
++
++		Each SMBIOS entry in sysfs has the common header values
++		exported as attributes:
++
++		handle	: The 16bit 'handle' that is assigned to this
++			  entry by the firmware.  This handle may be
++			  referred to by other entries.
++		length	: The length of the entry, as presented in the
++			  entry itself.  Note that this is _not the
++			  total count of bytes associated with the
++			  entry_.  This value represents the length of
++			  the "formatted" portion of the entry.  This
++			  "formatted" region is sometimes followed by
++			  the "unformatted" region composed of nul
++			  terminated strings, with termination signalled
++			  by a two nul characters in series.
++		raw	: The raw bytes of the entry. This includes the
++			  "formatted" portion of the entry, the
++			  "unformatted" strings portion of the entry,
++			  and the two terminating nul characters.
++		type	: The type of the entry.  This value is the same
++			  as found in the directory name.  It indicates
++			  how the rest of the entry should be
++			  interpreted.
++		instance: The instance ordinal of the entry for the
++			  given type.  This value is the same as found
++			  in the parent directory name.
++		position: The position of the entry within the entirety
++			  of the entirety.
++
++		=== Entry Specialization ===
++
++		Some entry types may have other information available in
++		sysfs.
++
++		--- Type 15 - System Event Log ---
++
++		This entry allows the firmware to export a log of
++		events the system has taken.  This information is
++		typically backed by nvram, but the implementation
++		details are abstracted by this table.  This entries data
++		is exported in the directory:
++
++		/sys/firmware/smbios/entries/15-0/system_event_log
++
++		and has the following attributes (documented in the
++		2.7.1 SMBIOS specification under "System Event Log (Type 15)":
++
++		area_length
++		header_start_offset
++		data_start_offset
++		access_method
++		status
++		change_token
++		access_method_address
++		header_format
++		per_log_type_descriptor_length
++		type_descriptors_supported_count
++
++		As well, the kernel exports the binary attribute:
++
++		raw_event_log	: The raw binary bits of the event log
++				  as described by the SMBIOS entry.
+diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+index eb26d62..40d9825 100644
+--- a/drivers/firmware/dmi-sysfs.c
++++ b/drivers/firmware/dmi-sysfs.c
+@@ -652,7 +652,7 @@ static int __init dmi_sysfs_init(void)
+ 	int val;
+ 
+ 	/* Set up our directory */
+-	dmi_kobj = kobject_create_and_add("dmi", firmware_kobj);
++	dmi_kobj = kobject_create_and_add("smbios", firmware_kobj);
+ 	if (!dmi_kobj)
+ 		goto err;
+ 
