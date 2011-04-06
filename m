@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751047Ab1DFEeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 00:34:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54116 "EHLO ogre.sisk.pl"
+	id S1751232Ab1DFElc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 00:41:32 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44677 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727Ab1DFEeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 00:34:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH urgent] x86: Save cr4 to mmu_cr4_features at boot time
-Date: Wed, 6 Apr 2011 06:34:12 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        "lkml20101129@newton.leun.net" <lkml20101129@newton.leun.net>,
-        stable kernel team <stable@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-References: <alpine.DEB.2.00.1103311715400.16492@kaball-desktop> <201104050843.39246.rjw@sisk.pl> <4D9BA9FA.4010405@zytor.com>
-In-Reply-To: <4D9BA9FA.4010405@zytor.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1750738Ab1DFEl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 00:41:29 -0400
+Date: Wed, 6 Apr 2011 14:41:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olaf Hering <olaf@aepfle.de>, Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-Id: <20110406144122.8d67030e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104060634.12555.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 06, 2011, H. Peter Anvin wrote:
-> On 04/04/2011 11:43 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, April 05, 2011, H. Peter Anvin wrote:
-> >> On 04/04/2011 11:29 PM, Rafael J. Wysocki wrote:
-> >>>>
-> >>>> Peter very consciously did not mark the fix for this commit as -stable 
-> >>>> material. It was ineligible for -stable for multiple reasons: it by no means 
-> >>>> fixed a 2.6.39 regression and the fix was literally just a few days old.
-> >>>
-> >>> Has this issue been resolved in the mainline, BTW?
-> >>>
-> >>
-> >> Just to refresh my memory... is this an issue in mainline, or is it only
-> >> a problem in the backport (I'm wondering if the trampoline unification
-> >> patches might have accidentally solved the issue)?
-> > 
-> > 
-> > The problem is in mainline too, please fix ASAP.
-> > 
-> 
-> For the suspend/resume case this seems like the sanest way to fix it in
-> my opinion.  However, I am a bit concerned since I'm still not sure
-> we're programming registers in the correct order, that is:
-> 
-> MISC_ENABLE -> EFER -> cr4 -> cr3 -> cr0
-> 
-> I will look at this issue later this evening, but I wanted your opinion
-> on it.
+Hi Greg,
 
-Do you mean during resume?
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/hv/vmbus_drv.c between commit 22356585712d ("staging: hv:
+use sync_bitops when interacting with the hypervisor") from the
+staging.current tree and commit 98e087022b61 ("staging: hv: Remove all
+unneeded DPRINT from hv_vmbus") from the staging tree.
 
-I think we can try to make the ordering more appropriate, but I'm not really
-sure it would be a good idea to do that in the same patch.  Probably not.
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Also, our current ordering has never been reported to cause problems to anyone.
-
-Thanks,
-Rafael
+diff --cc drivers/staging/hv/vmbus_drv.c
+index 79089f8,501ab36..0000000
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@@ -254,10 -527,8 +527,8 @@@ static int vmbus_on_isr(void
+  	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
+  
+  	/* Since we are a child, we only need to check bit 0 */
+- 	if (sync_test_and_clear_bit(0, (unsigned long *) &event->flags32[0])) {
+- 		DPRINT_DBG(VMBUS, "received event %d", event->flags32[0]);
+ -	if (test_and_clear_bit(0, (unsigned long *) &event->flags32[0]))
+++	if (sync_test_and_clear_bit(0, (unsigned long *) &event->flags32[0]))
+  		ret |= 0x2;
+- 	}
+  
+  	return ret;
+  }
