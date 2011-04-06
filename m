@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab1DFSr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:47:58 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42857 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab1DFSr4 (ORCPT
+	id S1756584Ab1DFSu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:50:58 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:22050 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518Ab1DFSu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:47:56 -0400
-Date: Wed, 6 Apr 2011 14:47:53 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: linux-kernel@vger.kernel.org
-Cc: dave@linux.vnet.ibm.com
-Subject: 2.6.39-rc2 boot crash
-Message-ID: <20110406184753.GA7691@mgebm.net>
+	Wed, 6 Apr 2011 14:50:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=Ov9VtEnLf9I1P/NQdcEtjTXS6W7sN7ML0PS1hklofv10IUVZKWrc84XsMCMk1JkbU9
+         O7CKEM83VmWlFE/ezfxw==
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Wed, 6 Apr 2011 11:50:21 -0700
+Message-ID: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
+Subject: [RFC] tracing: Adding cgroup aware tracing functionality
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+All
 
---CE+1k2dSO48ffgeK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The cgroup functionality is being used widely in different scenarios. It also
+is being integrated with other parts of kernel to take advantage of its
+features. One of the areas that is not yet aware of cgroup functionality is
+the ftrace framework.
 
-I am seeing a boot crash on my machine with 2.6.39-rc2.  I don't yet have
-netconsole setup and I don't have serial so the best I can do at the moment
-is a couple of pictures of the stack trace.
+Although ftrace provides a way to filter based on PIDs of tasks to be traced,
+it is restricted to specific tracers, like function tracer. Also it becomes
+difficult to keep track of all PIDs in a dynamic environment with processes
+being created and destroyed in a short amount of time.
 
-http://tinypic.com/r/2zsr19i/7
+An application that creates many processes/tasks is convenient to track and
+control with cgroups, but it is difficult to track these processes for the
+purposes of tracing. And if child processes are moved to another cgroup, it
+makes sense to trace only the original cgroup.
 
-And=20
+This proposal is to create a file in the tracing directory called
+set_trace_cgroup to which a user can write the path of an active cgroup, one
+at a time. If no cgroups are specified, no filtering is done and all tasks are
+traced. When a cgroup path is added in, it sets a boolean tracing_enabled for
+the enabled cgroup in all the hierarchies, which enables tracing for all the
+assigned tasks under the specified cgroup.
 
-http://tinypic.com/r/2iw22dj/7
+Though creating a new file in the directory is not desirable, but this
+interface seems the most appropriate change required to implement the new
+feature.
 
-I will try and get a net console working for better output, is there
-anything else that would help?
+This tracing_enabled flag is also exported in the cgroupfs directory structure
+which can be turned on/off for a specific hierarchy/cgroup combination. This
+gives control to enable/disable tracing over a cgroup in a specific hierarchy
+only.
 
-Thanks,
-Eric
+This gives more fine-grained control over the tasks being traced. I would like
+to know your thoughts on this interface and the approach to make tracing
+cgroup aware.
 
---CE+1k2dSO48ffgeK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Thanks
 
-iQEcBAEBAgAGBQJNnLVZAAoJEH65iIruGRnNbw8H/2mghRRQ/E1NuqAqw3+Z3X+X
-rEAmyoL+3ldIByZHpysuR7xNnkgyjSmPLaO+PS8rq27QjQMhG/lev6PG+d9Jv5cG
-LnZ7AT5hnBVov0YEyxQnklNimJRuSl8XwwvcSba9SDoO3MLY+HXjX3OAaZx7O9Pv
-n1mWS5gLyGoJZm0vLXXhHpm6HK/r+5IzxHHrMkA4mG1+VDYbBOZJSVAih0yyGsWj
-NC4NrentR7RolXvg7tNWt6UUn6A83ucCshBpz33dOVk250XaFHsujhfXOuRGijOE
-PHtcC5WTr+sBe0nqDvi4C/o1hOcpMmn/Y51etPnZ8eWs+s5P3UnT001IB+50fjE=
-=IJrY
------END PGP SIGNATURE-----
-
---CE+1k2dSO48ffgeK--
+Vaibhav Nagarnaik
