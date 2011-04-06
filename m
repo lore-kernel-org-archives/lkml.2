@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1DFSqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:46:43 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:37606 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448Ab1DFSqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:46:42 -0400
-Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
-        "John W . Linville" <linville@tuxdriver.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Marek Vasut <marek.vasut@gmail.com>, Guiming Zhuo <gmzhuo@gmail.com>
-In-Reply-To: <1302113542.22852.7.camel@x61.thuisdomein>
-References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
-	 <20110406141131.GC2810@opensource.wolfsonmicro.com>
-	 <1302099669.4090.1.camel@jlt3.sipsolutions.net>
-	 <1302113542.22852.7.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Apr 2011 20:46:37 +0200
-Message-ID: <1302115597.4090.11.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756553Ab1DFSrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:47:49 -0400
+Received: from mga14.intel.com ([143.182.124.37]:1646 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756470Ab1DFSrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 14:47:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,311,1299484800"; 
+   d="scan'208";a="414946539"
+Date: Wed, 6 Apr 2011 20:47:34 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+Message-ID: <20110406184733.GD2757@sortiz-mobl>
+References: <20110401104756.2f5c6f7a@debxo>
+ <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
+ <20110401235239.GE29397@sortiz-mobl>
+ <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
+ <20110404100314.GC2751@sortiz-mobl>
+ <20110405030428.GB29522@ponder.secretlab.ca>
+ <20110406152322.GA2757@sortiz-mobl>
+ <20110406155805.GA20095@suse.de>
+ <20110406170537.GB2757@sortiz-mobl>
+ <20110406175647.GA8048@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406175647.GA8048@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-06 at 20:12 +0200, Paul Bolle wrote:
-> On Wed, 2011-04-06 at 16:21 +0200, Johannes Berg wrote:
-> > On Wed, 2011-04-06 at 23:11 +0900, Mark Brown wrote:
-> > > On Wed, Apr 06, 2011 at 11:21:19AM +0200, Antonio Ospite wrote:
-> > > 
-> > > > +	tristate "Generic rfkill regulator driver"
-> > > > +	depends on RFKILL || !RFKILL
-> > > 
-> > > That looks *odd*.
+On Wed, Apr 06, 2011 at 10:56:47AM -0700, Greg KH wrote:
+> On Wed, Apr 06, 2011 at 07:05:38PM +0200, Samuel Ortiz wrote:
+> > Hi Greg,
 > > 
-> > That's normal for rfkill -- if RFKILL==n then this can be anything since
-> > the rfkill API goes all no-op inlines, but if RFKILL==m then this can't
-> > be ==y. "depends on !RFKILL" covers the former, "depends on RFKILL" the
-> > latter.
+> > On Wed, Apr 06, 2011 at 08:58:05AM -0700, Greg KH wrote:
+> > > On Wed, Apr 06, 2011 at 05:23:23PM +0200, Samuel Ortiz wrote:
+> > > > --- a/include/linux/device.h
+> > > > +++ b/include/linux/device.h
+> > > > @@ -33,6 +33,7 @@ struct class;
+> > > >  struct subsys_private;
+> > > >  struct bus_type;
+> > > >  struct device_node;
+> > > > +struct mfd_cell;
+> > > >  
+> > > >  struct bus_attribute {
+> > > >  	struct attribute	attr;
+> > > > @@ -444,6 +445,8 @@ struct device {
+> > > >  	struct device_node	*of_node; /* associated device tree node */
+> > > >  	const struct of_device_id *of_match; /* matching of_device_id from driver */
+> > > >  
+> > > > +	struct mfd_cell	*mfd_cell; /* MFD cell pointer */
+> > > > +
+> > > 
+> > > What is a "MFD cell pointer" and why is it needed in struct device?
+> > An MFD cell is an MFD instantiated device.
+> > MFD (Multi Function Device) drivers instantiate platform devices. Those
+> > devices drivers sometimes need a platform data pointer, sometimes an MFD
+> > specific pointer, and sometimes both. Also, some of those drivers have been
+> > implemented as MFD sub drivers, while others know nothing about MFD and just
+> > expect a plain platform_data pointer.
 > 
-> But doesn't
-> 	depends on RFKILL || !RFKILL
+> That sounds like a bug in those drivers, why not fix them to properly
+> pass in the correct pointer?
+Because they're drivers for generic IPs, not MFD ones. By forcing them to use
+MFD specific structure and APIs, we make it more difficult for platform code
+to instantiate them.
+The timberdale MFD for example is built with a Xilinx SPI controller, and a
+Micrel ks8842 ethernet switch IP. Forcing those devices into being MFD devices
+would mean any platform willing to instantiate them would have to use the MFD
+APIs. That sounds a bit artificial to me.
+Although there is currently no drivers instantiated by both an MFD driver
+and some platform code, Grant complaint about the Xilinx SPI driver moving
+from a platform driver to an MFD one makes sense to me. 
+
+> > So, adding an MFD cell pointer to the device structure allows us to cleanly
+> > pass both pieces of information, while keeping all the MFD sub drivers
+> > independant from the MFD core if they want/can.
 > 
-> always evaluate to true when running "make *config"? (Even if RFKILL is
-> an unknown symbol when that expression is parsed!)
+> They shouldn't be "independant", 
+Excuse my poor spelling.
 
-No, it will not, you're forgetting that these things are tristate.
+> make them "dependant" and go from there.
+That's what the code currently does.
 
-johannes
+Cheers,
+Samuel.
 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
