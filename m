@@ -1,259 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab1DFWsm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 18:48:42 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58768 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab1DFWsl (ORCPT
+	id S1756494Ab1DFWuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 18:50:24 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:52498 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755966Ab1DFWuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 18:48:41 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Milton Miller <miltonm@bga.com>, Jens Axboe <axboe@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, WANG Cong <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v2] generic-ipi: Initialize call_single_queue before enabling interrupt
-Date: Wed, 06 Apr 2011 18:47:36 -0400
+	Wed, 6 Apr 2011 18:50:23 -0400
+Date: Thu, 7 Apr 2011 04:20:13 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 23/26] 23: perf: show possible probes
+ in a given executable file or library.
+Message-ID: <20110406225013.GB5806@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+ <20110401143707.15455.66114.sendpatchset@localhost6.localdomain6>
+ <4D999A2F.4020204@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Mailer: HidemaruMail 5.38 (WinNT,501)
-In-Reply-To: <20110406204742.GH18777@redhat.com>
-References: <D6CBEE2F420741indou.takao@jp.fujitsu.com> <20110406204742.GH18777@redhat.com>
-Message-Id: <EBCBF4AC9FDAD4indou.takao@jp.fujitsu.com>
-X-Antivirus: avast! (VPS 110406-1, 2011/04/06), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4D999A2F.4020204@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Apr 2011 16:47:42 -0400, Vivek Goyal wrote:
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> [2011-04-04 19:15:11]:
 
->On Tue, Mar 29, 2011 at 12:35:04PM -0400, Takao Indoh wrote:
->> Hi all,
->> 
->> This patch renames init_call_single_data() to call_function_init() and
->> calls it in start_kernel() so that call_single_queue can be initialized
->> before enabling interrupt.
->> 
->> There is a problem that kdump(2nd kernel) sometimes hangs up due to
->> pending IPI from 1st kernel. Kernel panic occurs because IPI comes
->> before call_single_queue is initialized. The details are as follows.
->> (1) 2nd kernel boot up
->> (2) A pending IPI from 1st kernel comes when irqs are first enabled
->>     in start_kernel().
->> (3) Kernel tries to handle the interrupt, but call_single_queue is not
->>     initialized yet at this point. As a result, in the
->>     generic_smp_call_function_single_interrupt(), NULL pointer
->>     dereference occurs when list_replace_init() tries to access
->>     &q->list.next.
->> Therefore this patch changes the name of init_call_single_data() to
->> call_function_init() and calls it before local_irq_enable() in
->> start_kernel().
->> 
->> v2:
->> - Rename init_call_single_data() to call_function_init() and calls it in
->>   start_kernel()
->> - Change insert position in start_kernel().
->> - Adjust for CONFIG_SMP/CONFIG_USE_GENERIC_SMP_HELPERS options
->> - Rebased to Linus's latest tree
->> 
->> v1:
->> https://lkml.org/lkml/2011/3/25/317
->> - Divide init_call_single_data() into two functions,
->>    o init_call_single_data: initialize call_single_queue
->>    o init_hotplug_cfd: initialize hotplug_cfd_notifier
->>   And call init_call_single_data before local_irq_enable() in
->>   start_kernel().
->> 
->> v0:
->> https://lkml.org/lkml/2011/3/23/417
->> - In generic_smp_call_function_single_interrupt(), check if
->>   call_single_queue was initialized or not, and just return if not
->>   initialized.
->> 
->> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
->> ---
->>  include/linux/smp.h |    5 ++++-
->>  init/main.c         |    1 +
->>  kernel/smp.c        |    5 +----
->>  3 files changed, 6 insertions(+), 5 deletions(-)
->> 
->> diff --git a/include/linux/smp.h b/include/linux/smp.h
->> index 74243c8..4fb3eac 100644
->> --- a/include/linux/smp.h
->> +++ b/include/linux/smp.h
->> @@ -85,12 +85,15 @@ int smp_call_function_any(const struct cpumask *mask,
->>   * Generic and arch helpers
->>   */
->>  #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
->> +void __init call_function_init(void);
->>  void generic_smp_call_function_single_interrupt(void);
->>  void generic_smp_call_function_interrupt(void);
->>  void ipi_call_lock(void);
->>  void ipi_call_unlock(void);
->>  void ipi_call_lock_irq(void);
->>  void ipi_call_unlock_irq(void);
->> +#else
->> +static inline void call_function_init(void) { }
->>  #endif
->>  
->>  /*
->> @@ -144,7 +147,7 @@ static inline void smp_send_reschedule(int cpu) { }
->>  #define smp_prepare_boot_cpu()			do {} while (0)
->>  #define smp_call_function_many(mask, func, info, wait) \
->>  			(up_smp_call_function(func, info))
->> -static inline void init_call_single_data(void) { }
->> +static inline void call_function_init(void) { }
->>  
->>  static inline int
->>  smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
->> diff --git a/init/main.c b/init/main.c
->> index 4a9479e..12821d1 100644
->> --- a/init/main.c
->> +++ b/init/main.c
->> @@ -539,6 +539,7 @@ asmlinkage void __init start_kernel(void)
->>  	timekeeping_init();
->>  	time_init();
->>  	profile_init();
->> +	call_function_init();
->
->Takao,
->
->So by calling this function before we enable interrupts we have made
->sure that per cpu call_single_queue has been initialized and q->list
->also has been initiliazed and it is an empty list now.
->
->After enabling the interrupts, I am assuming we will call
->generic_smp_call_function_single_interrupt().
->
->this function does.
->
->        raw_spin_lock(&q->lock);
->        list_replace_init(&q->list, &list);
->        raw_spin_unlock(&q->lock);
->
->        while (!list_empty(&list)) {
->                struct call_single_data *data;
->
->                data = list_entry(list.next, struct call_single_data,
->list);
->                list_del(&data->list);
->
->Looking at the code of list_replace_init(), I think we will have odd
->results if q->list is empty. Looks like list->next will be pointing to
->&q->list?
->
->IIUC, q->list sould be empty when we get pending IPI from previous kernel
->because any function scheduled for execution must have been inserted on
->previous kernel's data structures and here we are building fresh data
->structures.
->
->If that is the case, I think above code should have weared interaction.
->We should think that "list" is not empty and try to execute a data item
->q->list which is actually not a data item.
->
->What am I missing here. After your patch, have to debugged it and 
->noticed how list_replace_init() does on empty lists and what's the
->result of list_empty(list)?
-
-When list_replace_init(&q->list, &list) is called,
-they are changed as followed.
-
-/* list_replace */
-(A) &list->next = &q->list->next;
-(B) &list->next->prev = &list;
-(C) &list->prev = &q->list->prev;
-(D) &list->prev->next = &list;
-
-/* INIT_LIST_HEAD */
-(E) &q->list->next = &q->list;
-(F) &q->list->prev = &q->list;
-
-So, if q->list is empty, each list is changed like this.
-
-(Initial state)
-list.next ==> &list
-list.prev ==> &list
-q->list.next ==> &q->list
-q->list.prev ==> &q->list
-
-(A)
-list.next ==> &q->list
-list.prev ==> &list
-q->list.next ==> &q->list
-q->list.prev ==> &q->list
-
-(B)
-list.next ==> &q->list
-list.prev ==> &list
-q->list.next ==> &q->list
-q->list.prev ==> &list
-
-(C)
-list.next ==> &q->list
-list.prev ==> &list
-q->list.next ==> &q->list
-q->list.prev ==> &list
-
-(D)
-list.next ==> &list
-list.prev ==> &list
-q->list.next ==> &q->list
-q->list.prev ==> &list
-
-(E)
-list.next ==> &list
-list.prev ==> &list
-q->list.next ==> &q->list
-q->list.prev ==> &list
-
-(F)
-list.next ==> &list
-list.prev ==> &list
-q->list.next ==> &q->list
-q->list.prev ==> &q->list
-
-
-So, list_empty(list)? is always false, if I am not missing something.
-
-Thanks,
-Takao Indoh
-
->
->Thanks
->Vivek
+> (2011/04/01 23:37), Srikar Dronamraju wrote:
+> > Enhances -F/--funcs option of "perf probe" to list possible probe points in
+> > an executable file or library. A new option -e/--exe specifies the path of
+> > the executable or library.
 > 
->
->
->>  	if (!irqs_disabled())
->>  		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
->>  				 "enabled early\n");
->> diff --git a/kernel/smp.c b/kernel/smp.c
->> index 73a1951..fb67dfa 100644
->> --- a/kernel/smp.c
->> +++ b/kernel/smp.c
->> @@ -74,7 +74,7 @@ static struct notifier_block __cpuinitdata 
->> hotplug_cfd_notifier = {
->>  	.notifier_call		= hotplug_cfd,
->>  };
->>  
->> -static int __cpuinit init_call_single_data(void)
->> +void __init call_function_init(void)
->>  {
->>  	void *cpu = (void *)(long)smp_processor_id();
->>  	int i;
->> @@ -88,10 +88,7 @@ static int __cpuinit init_call_single_data(void)
->>  
->>  	hotplug_cfd(&hotplug_cfd_notifier, CPU_UP_PREPARE, cpu);
->>  	register_cpu_notifier(&hotplug_cfd_notifier);
->> -
->> -	return 0;
->>  }
->> -early_initcall(init_call_single_data);
->>  
->>  /*
->>   * csd_lock/csd_unlock used to serialize access to per-cpu csd resources
+> I think you'd better use -x for abbr. of --exe, since -e is used for --event
+> for other subcommands.
+
+Okay, 
+
+> 
+> And also, it seems this kind of patch should be placed after perf-probe
+> uprobe support patch, because without uprobe support, user binary analysis
+> is meaningless. (In the result, this introduces -u/--uprobe option without
+> uprobe support)
+> 
+
+Okay, I can do that, Should we do the listing before or after the uprobe
+can place a breakpoint is arguable.
+
+> 
+> > Show last 10 functions in /bin/zsh.
+> > 
+> > # perf probe -F -u -e /bin/zsh | tail
+> 
+> I also can't understand why -u is required even if we have -x for user
+> binaries and -m for kernel modules.
+> 
+
+yes, for the listing we can certainly do without -u option.
+
+-- 
+Thanks and Regards
+Srikar
