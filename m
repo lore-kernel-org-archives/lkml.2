@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab1DFSOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:14:05 -0400
-Received: from nm15-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.70]:38261 "HELO
-	nm15-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752918Ab1DFSOD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:14:03 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 103230.83323.bm@omp1060.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=LQRXyvRuHnRrQA8X1gXEfhjbxMbQNkcPgaYnja2dTOKKO0gTtDtHzNjEBaHTIi0Nj9VHn26vzmZFlZInJDyccxLaVOsaureO6TiWYe25c1HBsQcjgTJcF+a5sCAClXb68U+JbFhCP7Se9dqxZhaluV1I0FXhYlkgK/NMxlA/Pho=;
-Message-ID: <898033.72049.qm@web120017.mail.ne1.yahoo.com>
-X-YMail-OSG: SKD5grMVM1mcmZfa3r5xVpTKgu515cCMOwQuurVGFZ4mybm
- 9Kf3rWLT873vu3s8bBEc4lUYmaJjNE359IB.11gXzeUJNLzHhVWl5JaKXRKB
- xgmHht4qaTMv2aLtDSLrk8unxWOGQIG3GN6EKDbQXzO_782Od2t01lXwijKw
- WRUtr7rSV0qI.iQNjoHWOaI.pNeofCTEbQCXilX6p6RCrM06KJVbAFfE2x9q
- uq01528iTwQIxkK2oEeBLeved_dX7g9QoxP6jMSGnxo7U6LNF35xtYjuBUdy
- 0iQgS1Yix7vngG_oLOK0NQQaQaAeDLGrr3xBqNyQ105lSXrwmJ5A5oBHXbg1
- F0NcfLUOA55EQ.0HxWQs-
-X-Mailer: YahooMailWebService/0.8.109.295617
-Date: Wed, 6 Apr 2011 11:14:01 -0700 (PDT)
-From: Tim Peters <tim.peters90@yahoo.com>
-Subject: Re:5
-To: lindalou95@mindspring.com, linux-kernel@vger.kernel.org,
-        lora.santana@pacbell.net, lori@execpc.com, lrridghood@msn.com,
-        luno8@msn.com, lxialucard@msn.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756247Ab1DFSOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:14:25 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:57595
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756168Ab1DFSOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 14:14:23 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 2/2] Staging: hv: Zero out the request structure on allocation
+Date: Wed,  6 Apr 2011 11:25:39 -0700
+Message-Id: <1302114339-2198-2-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1302114339-2198-1-git-send-email-kys@microsoft.com>
+References: <1302114286-2127-1-git-send-email-kys@microsoft.com>
+ <1302114339-2198-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, my baby! I hope you will like John’s new site!. http://web9.p15137332.pureserver.info/friends_links.php?hitPage=72re9
+As part of the cleanup of the I/O request structure, allocate them zeroed
+out. This fixes a bug that was introduced in the patch-set titled:
+Staging: hv: Cleanup-storage-drivers-phase-II.
+A corrected version of this patch-set was sent out earlier, however
+the earlier (buggy) version of this patch-set was already applied.
+This patch fixes the problem.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+---
+ drivers/staging/hv/storvsc_drv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 6128ffd..ae61735 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -738,7 +738,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 
+ 	request_size = sizeof(struct storvsc_cmd_request);
+ 
+-	cmd_request = kmem_cache_alloc(host_device_ctx->request_pool,
++	cmd_request = kmem_cache_zalloc(host_device_ctx->request_pool,
+ 				       GFP_ATOMIC);
+ 	if (!cmd_request) {
+ 		DPRINT_ERR(STORVSC_DRV, "scmnd (%p) - unable to allocate "
+-- 
+1.7.4.1
+
