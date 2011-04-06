@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab1DFS6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:58:37 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:51041 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab1DFS6g (ORCPT
+	id S1756622Ab1DFS7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:59:15 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:44967 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756571Ab1DFS7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:58:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=p2a+8q4Fu0yX6O+RhSjlI/3RpB5agCO1an9km9iX0Mzc8VFiTbo3tfuULQKyvGpy6Y
-         M+Rz3xsKCaS1PrUh4+8oVH/G1BE6YeUuCQdjXvR2D+SHSLjmODZ3UoGKnlbUDhqUE8tO
-         3ktBNSjnpoZIBi8Lk+o36c/OtqiR2SKweNoTk=
-Date: Wed, 6 Apr 2011 15:58:27 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
-Subject: Re: [PATCH] perf script: improve validation of sample attributes for
- output fields
-Message-ID: <20110406185827.GD4987@ghostprotocols.net>
-References: <1301841300-14425-1-git-send-email-daahern@cisco.com>
+	Wed, 6 Apr 2011 14:59:13 -0400
+Date: Wed, 6 Apr 2011 21:59:02 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+Message-ID: <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <BANLkTi=bCd_+f=EG-O=U5VH_ZNjFhxkziQ@mail.gmail.com>
+ <20110401235239.GE29397@sortiz-mobl>
+ <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
+ <20110404100314.GC2751@sortiz-mobl>
+ <20110405030428.GB29522@ponder.secretlab.ca>
+ <20110406152322.GA2757@sortiz-mobl>
+ <20110406155805.GA20095@suse.de>
+ <20110406170537.GB2757@sortiz-mobl>
+ <20110406175647.GA8048@suse.de>
+ <20110406184733.GD2757@sortiz-mobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301841300-14425-1-git-send-email-daahern@cisco.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110406184733.GD2757@sortiz-mobl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Apr 03, 2011 at 08:35:00AM -0600, David Ahern escreveu:
-> +++ b/tools/perf/builtin-script.c
-> @@ -94,41 +95,111 @@ static bool output_set_by_user(void)
-> +static const char *output_field2str(enum perf_output_field field)
-> +{
-> +	int i, imax = sizeof(all_output_options) / sizeof(struct output_option);
+Hi,
 
-Use ARRAY_SIZE(all_output_options)
+On Wed, Apr 06, 2011 at 08:47:34PM +0200, Samuel Ortiz wrote:
+> > > > What is a "MFD cell pointer" and why is it needed in struct device?
+> > > An MFD cell is an MFD instantiated device.
+> > > MFD (Multi Function Device) drivers instantiate platform devices. Those
+> > > devices drivers sometimes need a platform data pointer, sometimes an MFD
+> > > specific pointer, and sometimes both. Also, some of those drivers have been
+> > > implemented as MFD sub drivers, while others know nothing about MFD and just
+> > > expect a plain platform_data pointer.
+> > 
+> > That sounds like a bug in those drivers, why not fix them to properly
+> > pass in the correct pointer?
+> Because they're drivers for generic IPs, not MFD ones. By forcing them to use
+> MFD specific structure and APIs, we make it more difficult for platform code
+> to instantiate them.
 
-> +	for (i = 0; i < imax; ++i) {
-> +		if (all_output_options[i].field == field) {
-> +			str = all_output_options[i].str;
-> +			break;
+I agree. What I do on those cases is to have a simple platform_device
+for the core IP driver and use platform_device_id tables to do runtime
+checks of the small differences. If one platform X doesn't use a
+platform_bus, it uses e.g. PCI, then you make a PCI "bridge" which
+allocates a platform_device with the correct name and adds that to the
+driver model.
 
-> +static int perf_attr__check_stype(struct perf_event_attr *attr,
-> +				  u64 sample_type, const char *sample_msg,
-> +				  enum perf_output_field field)
+See [1] (for the core driver) and [2] (for a PCI bridge driver) for an
+example of what I'm talking about.
 
-s/perf_attr__check_stype/perf_event_attr__check_stype/g
+> The timberdale MFD for example is built with a Xilinx SPI controller, and a
+> Micrel ks8842 ethernet switch IP. Forcing those devices into being MFD devices
+> would mean any platform willing to instantiate them would have to use the MFD
+> APIs. That sounds a bit artificial to me.
 
-> +	/* user did not ask for it explicitly so remove from the default list */
-> +	output[type].fields &= ~field;
-> +	evname = __event_name(attr->type, attr->config);
-> +	pr_debug("Samples for '%s' event do not have %s attribute set. "
-> +		 "Skipping '%s' field.\n",
-> +		 evname, sample_msg, output_field2str(field));
+do they share any address space ? If they do, then you'd need something
+to synchronize, right ? If they don't, then you just add two separate
+devices, they don't have to be MFD.
 
-pr_warning?
+> Although there is currently no drivers instantiated by both an MFD driver
+> and some platform code, Grant complaint about the Xilinx SPI driver moving
+> from a platform driver to an MFD one makes sense to me. 
 
-> +static int perf_evsel__check_attr(struct perf_session *session,
-> +				  struct perf_evsel *evsel)
+I don't think so. That's not really an MFD device is it ? It's just two
+different IPs instantianted on the same ASIC/FPGA, right ? Unless they
+share the register space, IMHO, there's no need to make them MFD.
 
-for consistency, please make evsel the first parameter.
+[1] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/core.c
+[2] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/dwc3-haps.c
 
-> +/* verify all user requested events exist and the samples
-> + * have the expected data
-> + */
-> +static int perf_session__check_output_opt(struct perf_session *session)
-> +{
-> +	int j;
-> +	struct perf_evsel *evsel;
-> +
-> +	for (j = 0; j < PERF_TYPE_MAX; ++j) {
-> +		evsel = perf_session__find_event(session, j);
-
-You're nog finding an specific event, you're looking for the first event
-of type j, so I think perf_session__find_first_evtype is clearer.
-
-> +
-> +		/* even if fields is set to 0 (ie., show nothing) event must
-> +		 * exist if user explicitly includes it on the command line
-> +		 */
-
-Please use:
-
-		/*
-  		 * even if fields is set to 0 (ie., show nothing) event must
-  		 * exist if user explicitly includes it on the command line
-  		 */
-
-There are other places like this, please fix those too.
-
-- Arnaldo
+-- 
+balbi
