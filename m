@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab1DFTQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 15:16:31 -0400
-Received: from sj-iport-3.cisco.com ([171.71.176.72]:54657 "EHLO
-	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab1DFTQ3 (ORCPT
+	id S1756684Ab1DFTRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 15:17:38 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:34267 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab1DFTRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 15:16:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMC6nE2rRDoI/2dsb2JhbAClfXenQpxEhWwEhU6HboNj
-X-IronPort-AV: E=Sophos;i="4.63,311,1299456000"; 
-   d="scan'208";a="290702826"
-Message-ID: <4D9CBC0B.5050602@cisco.com>
-Date: Wed, 06 Apr 2011 13:16:27 -0600
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
-Subject: Re: [PATCH] perf script: improve validation of sample attributes
- for output fields
-References: <1301841300-14425-1-git-send-email-daahern@cisco.com> <20110406185827.GD4987@ghostprotocols.net>
-In-Reply-To: <20110406185827.GD4987@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Apr 2011 15:17:36 -0400
+Date: Wed, 6 Apr 2011 14:17:25 -0500
+From: Ryan Harper <ryanh@us.ibm.com>
+To: Takuma Umeya <tumeya@redhat.com>
+Cc: virtualization@lists.linux-foundation.org,
+        john cooper <john.cooper@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH] virtio_blk: decrement index when blockdevice is removed
+Message-ID: <20110406191725.GJ5445@us.ibm.com>
+References: <1099995365.641718.1301903899721.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <1969774563.659835.1301978981017.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1969774563.659835.1301978981017.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.6+20040907i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Takuma Umeya <tumeya@redhat.com> [2011-04-05 00:00]:
+> When virtio block device is removed, index does not get decremented. When 
+> another virtio disk is attached it uses the next device letter to the 
+> one that is suppose to be available. 
+> 
+> Signed-off-by: Takuma Umeya <tumeya@redhat.com>
+> 
+> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> index 6ecf89c..730e7af 100644
+> --- a/drivers/block/virtio_blk.c
+> +++ b/drivers/block/virtio_blk.c
+> @@ -489,6 +489,7 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+>         mempool_destroy(vblk->pool);
+>         vdev->config->del_vqs(vdev);
+>         kfree(vblk);
+> +       index--;
+>  }
 
-
-On 04/06/11 12:58, Arnaldo Carvalho de Melo wrote:
-> Em Sun, Apr 03, 2011 at 08:35:00AM -0600, David Ahern escreveu:
->> +++ b/tools/perf/builtin-script.c
->> @@ -94,41 +95,111 @@ static bool output_set_by_user(void)
->> +static const char *output_field2str(enum perf_output_field field)
->> +{
->> +	int i, imax = sizeof(all_output_options) / sizeof(struct output_option);
-> 
-> Use ARRAY_SIZE(all_output_options)
-> 
->> +	for (i = 0; i < imax; ++i) {
->> +		if (all_output_options[i].field == field) {
->> +			str = all_output_options[i].str;
->> +			break;
-> 
->> +static int perf_attr__check_stype(struct perf_event_attr *attr,
->> +				  u64 sample_type, const char *sample_msg,
->> +				  enum perf_output_field field)
-> 
-> s/perf_attr__check_stype/perf_event_attr__check_stype/g
-> 
->> +	/* user did not ask for it explicitly so remove from the default list */
->> +	output[type].fields &= ~field;
->> +	evname = __event_name(attr->type, attr->config);
->> +	pr_debug("Samples for '%s' event do not have %s attribute set. "
->> +		 "Skipping '%s' field.\n",
->> +		 evname, sample_msg, output_field2str(field));
-> 
-> pr_warning?
-
-In this case, it seems more like a debug. You have default options which
-are not available for the specific perf.data file.
-
+What about referencing /dev/disk/by-id  and using drive serial numbers?
+How much do we care about re-using minor numbers?  IIRC, virtio-blk can
+go out to vdxxx; that's a lot of disks or add/removes.
 
 > 
->> +static int perf_evsel__check_attr(struct perf_session *session,
->> +				  struct perf_evsel *evsel)
+>  static const struct virtio_device_id id_table[] = {
 > 
-> for consistency, please make evsel the first parameter.
-> 
->> +/* verify all user requested events exist and the samples
->> + * have the expected data
->> + */
->> +static int perf_session__check_output_opt(struct perf_session *session)
->> +{
->> +	int j;
->> +	struct perf_evsel *evsel;
->> +
->> +	for (j = 0; j < PERF_TYPE_MAX; ++j) {
->> +		evsel = perf_session__find_event(session, j);
-> 
-> You're nog finding an specific event, you're looking for the first event
-> of type j, so I think perf_session__find_first_evtype is clearer.
-> 
->> +
->> +		/* even if fields is set to 0 (ie., show nothing) event must
->> +		 * exist if user explicitly includes it on the command line
->> +		 */
-> 
-> Please use:
-> 
-> 		/*
->   		 * even if fields is set to 0 (ie., show nothing) event must
->   		 * exist if user explicitly includes it on the command line
->   		 */
-> 
-> There are other places like this, please fix those too.
+> -- 
+> Umeya, Takuma
+> Technical Account Manager
+> Red Hat GSS APAC
+> +81.3.5798.8584 (direct)
+> tumeya@redhat.com
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/virtualization
 
-Ok, I'll make the changes and resend.
-
-David
-
-> 
-> - Arnaldo
+-- 
+Ryan Harper
+Software Engineer; Linux Technology Center
+IBM Corp., Austin, Tx
+ryanh@us.ibm.com
