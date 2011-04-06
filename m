@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab1DFTRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 15:17:38 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:34267 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab1DFTRg (ORCPT
+	id S1756675Ab1DFTV2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 15:21:28 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56909 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab1DFTV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 15:17:36 -0400
-Date: Wed, 6 Apr 2011 14:17:25 -0500
-From: Ryan Harper <ryanh@us.ibm.com>
-To: Takuma Umeya <tumeya@redhat.com>
-Cc: virtualization@lists.linux-foundation.org,
-        john cooper <john.cooper@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] virtio_blk: decrement index when blockdevice is removed
-Message-ID: <20110406191725.GJ5445@us.ibm.com>
-References: <1099995365.641718.1301903899721.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <1969774563.659835.1301978981017.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-Mime-Version: 1.0
+	Wed, 6 Apr 2011 15:21:27 -0400
+Date: Wed, 6 Apr 2011 12:21:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Serge Hallyn <serue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+Message-ID: <20110406192119.GB2265@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D931814.9090100@suse.cz>
+ <4D93D29C.5010702@cn.fujitsu.com>
+ <1301558691.2250.486.camel@laptop>
+ <4D944E60.8080704@cn.fujitsu.com>
+ <1301570320.4859.242.camel@twins>
+ <4D953121.6090901@cn.fujitsu.com>
+ <1301657749.4859.531.camel@twins>
+ <20110405215450.GK2247@linux.vnet.ibm.com>
+ <20110405230745.GA5972@linux.vnet.ibm.com>
+ <1302077428.2225.1365.camel@twins>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1969774563.659835.1301978981017.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-User-Agent: Mutt/1.5.6+20040907i
+In-Reply-To: <1302077428.2225.1365.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Takuma Umeya <tumeya@redhat.com> [2011-04-05 00:00]:
-> When virtio block device is removed, index does not get decremented. When 
-> another virtio disk is attached it uses the next device letter to the 
-> one that is suppose to be available. 
+On Wed, Apr 06, 2011 at 10:10:28AM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-04-05 at 16:07 -0700, Paul E. McKenney wrote:
+> > 
+> > The next layer on this onion is the use of the ctl_table typedef
+> > in include/linux/key.h -- which is defined to be struct ctl_table.
+> > Anyone know where struct ctl_table is defined?  Color me blind, but I
+> > am not seeing it... 
 > 
-> Signed-off-by: Takuma Umeya <tumeya@redhat.com>
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 6ecf89c..730e7af 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -489,6 +489,7 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
->         mempool_destroy(vblk->pool);
->         vdev->config->del_vqs(vdev);
->         kfree(vblk);
-> +       index--;
->  }
+> include/linux/sysctl.h:1015
 
-What about referencing /dev/disk/by-id  and using drive serial numbers?
-How much do we care about re-using minor numbers?  IIRC, virtio-blk can
-go out to vdxxx; that's a lot of disks or add/removes.
+Thank you!
 
-> 
->  static const struct virtio_device_id id_table[] = {
-> 
-> -- 
-> Umeya, Takuma
-> Technical Account Manager
-> Red Hat GSS APAC
-> +81.3.5798.8584 (direct)
-> tumeya@redhat.com
-> _______________________________________________
-> Virtualization mailing list
-> Virtualization@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/virtualization
+							Thanx, Paul
 
--- 
-Ryan Harper
-Software Engineer; Linux Technology Center
-IBM Corp., Austin, Tx
-ryanh@us.ibm.com
+> /* A sysctl table is an array of struct ctl_table: */
+> struct ctl_table
+> {
+>         const char *procname;           /* Text ID for /proc/sys, or zero */
+>         void *data;
+>         int maxlen;
+>         mode_t mode;
+>         struct ctl_table *child;
+>         struct ctl_table *parent;       /* Automatically set */
+>         proc_handler *proc_handler;     /* Callback for text formatting */
+>         void *extra1;
+>         void *extra2;
+> };
+> 
