@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab1DFGNQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 02:13:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10711 "EHLO mga03.intel.com"
+	id S1752596Ab1DFGeZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 02:34:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19349 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019Ab1DFGNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 02:13:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,309,1299484800"; 
-   d="scan'208";a="414569099"
-Subject: Re: [PATCH] sched: recover sched_yield task running time increase
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mingo@elte.hu" <mingo@elte.hu>, "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-In-Reply-To: <4D9BF512.6080309@redhat.com>
-References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
-	 <4D9BF512.6080309@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Apr 2011 14:15:09 +0800
-Message-ID: <1302070509.15889.7351.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1751481Ab1DFGeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 02:34:24 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        WANG Cong <amwang@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [Patch v2] rcu: update the CONFIG logic in include/linux/pagemap.h
+Date: Wed,  6 Apr 2011 14:32:48 +0800
+Message-Id: <1302071569-23217-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-06 at 13:07 +0800, Rik van Riel wrote:
-> On 04/05/2011 06:33 PM, Alex Shi wrote:
-> > commit ac53db596cc08ecb8040c removed the sched_yield task running
-> > time increase, so the yielded task get more opportunity to be launch
-> > again. That may not the caller want to be. And this also causes
-> > volano benchmark drop 50~80 percent performance on core2/NHM/WSM
-> > machines. This patch recover the sched_yield task vruntime up.
-> >
-> > Signed-off-by: alex.shi@intel.com
-> 
-> NACK
-> 
-> This was switched off by default and under
-> the sysctl sched_compat_yield for a reason.
-> 
-> Reintroducing it under that sysctl option
-> may be acceptable, but by default it would
-> be doing the wrong thing for other workloads.
+TREE_RCU depends on !PREEMPT && SMP, when !CONFIG_SMP is true, CONFIG_TREE_RCU
+will be false, thus "!defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)"
+is always false.
 
-I can implement this as sysctl option. But when I checked again the man
-page of sched_yield. I have some concerns on this. 
+Paul suggested to update the logic to
+!defined(CONFIG_SMP) && defined(CONFIG_TREE_PREEMPT_RCU).
 
-----
-       int sched_yield(void);
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-DESCRIPTION
-       A  process  can  relinquish  the processor voluntarily without blocking by calling sched_yield().
-       The process will then be moved to the end of the queue for its static priority and a new  process
-       gets to run.
-----
+---
+ include/linux/pagemap.h |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-If a application calls sched_yield system call, most of time it is not
-want to be launched again right now. so the man page said "the caller
-process will then be moved to the _end_ of the queue..."
-
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index c119506..a296d7c 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -133,10 +133,9 @@ static inline int page_cache_get_speculative(struct page *page)
+ {
+ 	VM_BUG_ON(in_interrupt());
+ 
+-#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+-# ifdef CONFIG_PREEMPT
++#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_PREEMPT_RCU)
++	/* Must have CONFIG_PREEMPT here, implied by CONFIG_TREE_PREEMPT_RCU. */
+ 	VM_BUG_ON(!in_atomic());
+-# endif
+ 	/*
+ 	 * Preempt must be disabled here - we rely on rcu_read_lock doing
+ 	 * this for us.
+@@ -171,10 +170,8 @@ static inline int page_cache_add_speculative(struct page *page, int count)
+ {
+ 	VM_BUG_ON(in_interrupt());
+ 
+-#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+-# ifdef CONFIG_PREEMPT
++#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_PREEMPT_RCU)
+ 	VM_BUG_ON(!in_atomic());
+-# endif
+ 	VM_BUG_ON(page_count(page) == 0);
+ 	atomic_add(count, &page->_count);
+ 
