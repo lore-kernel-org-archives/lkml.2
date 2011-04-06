@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab1DFMIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 08:08:54 -0400
-Received: from brother.balabit.com ([195.70.62.219]:52615 "EHLO
-	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab1DFMIx (ORCPT
+	id S1755908Ab1DFMMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 08:12:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54907 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755869Ab1DFMMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 08:08:53 -0400
-Message-ID: <4D9C57D2.20303@balabit.hu>
-Date: Wed, 06 Apr 2011 14:08:50 +0200
-From: KOVACS Krisztian <hidden@balabit.hu>
+	Wed, 6 Apr 2011 08:12:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=avX4SsIMQRYGihrNMuiOAII/lz++EwULN2j9wH7KrWt3A2ct7c/Hdky2Deo1YC3K1Z
+         QzNW//ylCEWOPf+vr0RKJZVoN0uV79n76VvP23sQ+aQh1Ws0p7GdRVsHyVYE0ozG5Ced
+         eBcZtIlcn3MZ9pdbaoLUApDVKEFgeMjmC957M=
+Date: Wed, 6 Apr 2011 16:12:25 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
+        grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net
+Subject: Re: [RFC PATCH 7/7] basic_mmio_gpio: support direction registers
+Message-ID: <20110406121225.GA8865@oksana.dev.rtsoft.ru>
+References: <1302088263-12714-1-git-send-email-jamie@jamieiles.com>
+ <1302088263-12714-8-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
-To: Patrick McHardy <kaber@trash.net>
-CC: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix build failure when ipv6 but xt_tproxy
- is built in
-References: <1301451199.14261.327.camel@gandalf.stny.rr.com>	 <20110329.223536.245392030.davem@davemloft.net>	 <4D99CDA0.3030305@trash.net> <1302014626.67568.1.camel@nienna.balabit> <4D9B2BF2.2010606@trash.net>
-In-Reply-To: <4D9B2BF2.2010606@trash.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1302088263-12714-8-git-send-email-jamie@jamieiles.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 04/05/2011 04:49 PM, Patrick McHardy wrote:
->> What about something like this?
->>
->> diff --git a/net/netfilter/xt_TPROXY.c b/net/netfilter/xt_TPROXY.c
->> index dcfd57e..1ef0e56 100644
->> --- a/net/netfilter/xt_TPROXY.c
->> +++ b/net/netfilter/xt_TPROXY.c
->> @@ -283,10 +283,10 @@ tproxy_tg6_v1(struct sk_buff *skb, const struct xt_action_param *par)
->>         const struct in6_addr *laddr;
->>         __be16 lport;
->>         int thoff;
->> -       int tproto;
->> +       u8 tproto = iph->nexthdr;
->>  
->> -       tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
->> -       if (tproto < 0) {
->> +       thoff = ipv6_skip_exthdr(skb, sizeof(*iph), &tproto);
->> +       if (thoff < 0) {
->>                 pr_debug("unable to find transport header in IPv6 packet, dropping\n");
->>                 return NF_DROP;
->>         }
+On Wed, Apr 06, 2011 at 12:11:03PM +0100, Jamie Iles wrote:
+> Most controllers require the direction of a GPIO to be set by writing to
+> a direction register.  Add support for either an input direction
+> register or an output direction register.
 > 
-> Looks good to me. Please formally submit this including a Signed-off-by:
-> line and I'll push it upstream.
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+[...]
+> @@ -71,6 +71,8 @@ struct bgpio_chip {
+>       void __iomem *reg_set;
+>       void __iomem *reg_clr;
+>       void __iomem *reg_in;
+> +     void __iomem *reg_dirout;
+> +     void __iomem *reg_dirin;
+>
 
-Will do, as soon as I have a chance to run the test suite. Thanks Patrick.
+I guess you don't need both reg_dirout and reg_dirin in the runtime.
+How about just renaming it to "reg_dir" and just assinging it with
+either dirout or dirin in bgpio_setup_direction()?
+
+[...]
+> +	/* Shadowed direction registers to clear/set direction safely. */
+> +	unsigned long outputs, inputs;
+
+Same as obove, maybe just a single 'dir' variable?
+
+Plus, a minor nit: the coding style suggests:
+
+	unsigned long outputs;
+	unsigned long inputs;
+
+[...]
+>  static int bgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
+>  {
+> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&bgc->lock, flags);
+> +	bgc->outputs &= ~bgc->pin2mask(bgc, gpio);
+> +	bgc->write_reg(bgc->reg_dirout, bgc->outputs);
+> +	spin_unlock_irqrestore(&bgc->lock, flags);
+>
+
+Because of the lock, the code in these routines is dense and hard to
+read, so I would rather add empty lines near the locking calls, just
+like in bgpio_set() (also makes it look consistent).
+
+Otherwise,
+
+Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+
+Thanks!
 
 -- 
-KOVACS Krisztian
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
