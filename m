@@ -1,55 +1,45 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab1DEQZG (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 5 Apr 2011 12:25:06 -0400
-Received: from dedicated.stoinet.com ([72.4.160.228]:40039 "EHLO
-	dedicated.stoinet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab1DEQZD (ORCPT
+	id S1754858Ab1DFC5l (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 5 Apr 2011 22:57:41 -0400
+Received: from e3.20.79ae.static.theplanet.com ([174.121.32.227]:46441 "EHLO
+	host.fountium.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754623Ab1DFC5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 12:25:03 -0400
-X-Greylist: delayed 67672 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 12:25:03 EDT
-X-ClientAddr: 127.0.0.1
-Message-ID: <2343.115.242.246.16.1301951603.squirrel@115.242.246.16>
-Date: Mon, 4 Apr 2011 17:13:23 -0400 (EDT)
-Subject: Dear Webmail/E-mail user
-From: "WEB MAIL SERVICE" <accountaccess14@hotmail.com>
-Reply-To: alertweb333@hotmail.com
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	Tue, 5 Apr 2011 22:57:38 -0400
+X-Greylist: delayed 5703 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 22:57:38 EDT
+Message-ID: <20110405205954.10912xt1gnmbh2q2@webmail.konkommtelecomslimited.com>
+Date: Tue, 05 Apr 2011 20:59:54 -0400
+From: WONG HUI <wan.info@ymail.com>
+Reply-to: wonghui72@yahoo.com
+To: undisclosed-recipients:;
+Subject: hi
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-stoinet-MailScanner-Information: Please contact the ISP for more information
-X-stoinet-MailScanner: Found to be clean
-X-MailScanner-From: accountaccess14@hotmail.com
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host.fountium.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - ymail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+An iraqi oil business man made a fixed deposit of $24,500.000.00 in my  
+bank branch where I am a director and he died with his entire family  
+in the war leaving behind no next of kin.
+I Propose to present you as next of kin to claim the funds.Get back to  
+me only if interested with your full name, and telephone number to  
+reach you and most importantly, a confirmation of acceptance from you  
+after which I shall furnish you with the full details of this  
+transaction.Respond only if interested.
+Yours Truly,
+WONG HUI
 
 
-
-Dear Account Owner.
-
-This mail is to inform all our {Web Mail} users that we will be upgrading
-our site in a couple of days from now. So you as a Subscriber of our site
-you are required send us your Email account details so as to enable us
-know if you are still making use of your mail box if you still do to add
-more space to you. Further be informed that we will be deleting all mail
-account that is not functioning so as to create more space for new user.
-
-you will have to confirm your webmail account details by providing the
-following:
-
-1.NetID:....................................
-2.Password:...................................
-3.Date of Birth:...............................
-
-Failure to do this will immediately render your email address deactivated
-from our database.
-
-Thank you for using our WEB SERVICE !
-FROM THE WEB MAIL SUPPORT TEAM
 
