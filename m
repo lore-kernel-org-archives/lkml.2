@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab1DFS0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 14:26:24 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33344 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756221Ab1DFS0W (ORCPT
+	id S1756310Ab1DFSeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 14:34:18 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:35988 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756260Ab1DFSeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 14:26:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BSFf42UFljQrN/IZNx5V9Qz409Yyh/QkWfPugQPYEvHxjjoIB3hHvJSCXkZBUuR7Sw
-         Egwf/+81uQT5Qcx5u/hbm+jzWJl9USg/uHBrv5pivjZLaYh1cmTEuSwfYPYYB3NG5ptP
-         Z0y8LvHZO85pEFY4nRLHCfdBrQIdcV82Fi+IE=
-Date: Wed, 6 Apr 2011 11:26:15 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun Chen <Dajun.Chen2@diasemi.com>
-Subject: Re: [PATCHv1 11/11] INPUT/MISC/ONKEY: OnKey module of DA9052 PMICs
- driver
-Message-ID: <20110406182614.GA17348@core.coreip.homeip.net>
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E04@KCINPUNHJCMS01.kpit.com>
+	Wed, 6 Apr 2011 14:34:17 -0400
+Message-ID: <4D9CB247.3050106@metafoo.de>
+Date: Wed, 06 Apr 2011 20:34:47 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E04@KCINPUNHJCMS01.kpit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Subject: Re: [PATCHv1 10/11] LEDS: LED module of DA9052 PMIC driver
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E32@KCINPUNHJCMS01.kpit.com>
+In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B451E32@KCINPUNHJCMS01.kpit.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashish,
-
-On Wed, Apr 06, 2011 at 05:24:23PM +0530, Ashish Jangam wrote:
-> Hi Dmitry,
+On 04/06/2011 02:04 PM, Ashish Jangam wrote:
+> Hi,
 > 
-> ONKEY Driver for Dialog Semiconductor DA9052 PMICs.
+> LED Driver for Dialog Semiconductor DA9052 PMICs.
 > 
 > Changes made since last submission:
 > . read and write operation moved to MFD
-> . added workqueue to notify onkey events
 > 
 > Some additional information of this patch:
-> . This patch is thoroughly tested with the Samsung 6410 board using I2C connectivity. 
-> . Workqueue is added to toggle the KEY_POWER event.
+> . This patch is thoroughly tested with the Samsung 6410 board with LEDs connected to the DA9052 development board. 
+> . Use of platform device to retrieve device specific information.
 > 
 > Linux Kernel Version: 2.6.37
 > 
+
+It would be good if patches are based on a more recent version.
+
 > Signed-off-by: D. Chen <dchen@diasemi.com>
 > ---
-> diff -Naur orig_linux-2.6.37/drivers/input/misc/da9052_onkey.c linux-2.6.37/drivers/input/misc/da9052_onkey.c
-> --- orig_linux-2.6.37/drivers/input/misc/da9052_onkey.c	1970-01-01 05:00:00.000000000 +0500
-> +++ linux-2.6.37/drivers/input/misc/da9052_onkey.c	2011-03-31 19:28:59.000000000 +0500
-> @@ -0,0 +1,150 @@
+> diff -Naur orig_linux-2.6.37/drivers/leds/Kconfig linux-2.6.37/drivers/leds/Kconfig
+> --- orig_linux-2.6.37/drivers/leds/Kconfig	2011-01-05 05:50:19.000000000 +0500
+> +++ linux-2.6.37/drivers/leds/Kconfig	2011-03-31 20:24:05.000000000 +0500
+> @@ -274,6 +274,14 @@
+>  	  This option enables support for on-chip LED drivers found
+>  	  on Dialog Semiconductor DA9030/DA9034 PMICs.
+> 
+> +config LEDS_DA9052
+> +	tristate "Dialog DA9052 LEDS"
+> +	depends on LEDS_CLASS
+> +	depends on PMIC_DA9052
+> +	help
+> +	  This option enables support for on-chip LED drivers found
+> +	  on Dialog Semiconductor DA9052 PMICs
+> +
+>  config LEDS_DAC124S085
+>  	tristate "LED Support for DAC124S085 SPI DAC"
+>  	depends on LEDS_CLASS
+> diff -Naur orig_linux-2.6.37/drivers/leds/leds-da9052.c linux-2.6.37/drivers/leds/leds-da9052.c
+> --- orig_linux-2.6.37/drivers/leds/leds-da9052.c	1970-01-01 05:00:00.000000000 +0500
+> +++ linux-2.6.37/drivers/leds/leds-da9052.c	2011-03-31 20:24:19.000000000 +0500
+> @@ -0,0 +1,209 @@
 > +/*
-> + * da9052_onkey.c  --  ON pin driver for Dialog DA9052 PMICs
-
-Please no filenames in comments.
-
+> + * leds-da9052.c  --  LED Driver for Dialog DA9052
 > + *
 > + * Copyright(c) 2009 Dialog Semiconductor Ltd.
 > + *
@@ -73,207 +82,265 @@ Please no filenames in comments.
 > + */
 > +
 > +#include <linux/module.h>
+> +#include <linux/kernel.h>
 > +#include <linux/init.h>
-> +#include <linux/input.h>
-> +#include <linux/workqueue.h>
 > +#include <linux/platform_device.h>
+> +#include <linux/leds.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/slab.h>
 > +
-> +#include <linux/mfd/da9052/da9052.h>
 > +#include <linux/mfd/da9052/reg.h>
+> +#include <linux/mfd/da9052/da9052.h>
+> +#include <linux/mfd/da9052/pdata.h>
+> +#include <linux/mfd/da9052/gpio.h>
 > +
-> +struct da9052_onkey {
+> +struct da9052_led {
+> +	struct led_classdev cdev;
+> +	struct work_struct work;
 > +	struct da9052 *da9052;
-> +	struct input_dev *input;
-> +	struct delayed_work work;
-> +	int irq;
+> +	u8 num_leds;
+
+num_leds is never assigned, but read in da9052_led_remove. But the number of
+leds can also obtained through the platform_data, so this num_leds can be
+dropped here.
+
+> +	u8 id;
+> +	int brightness;
 > +};
 > +
-> +static void da9052_onkey_work(struct work_struct *work)
+> +u8 led_reg[] = {
+
+static ...
+
+> +		DA9052_LED_CONT_4_REG,
+> +		DA9052_LED_CONT_5_REG,
+> +};
+> +
+> +static int da9052_set_led_brightness(struct da9052_led *led)
 > +{
-> +	unsigned int ret;
+> +	int ret = 0;
 
-No, not unsigned. Have you ried running it through sparse?
-
-> +	struct da9052_onkey *onkey;
-> +	onkey = container_of(work, struct da9052_onkey, work.work);
-> +
-> +	ret = da9052_reg_read(onkey->da9052, DA9052_EVENT_B_REG);
-> +	if (ret < 0) {
-> +		dev_err(onkey->da9052->dev,
-> +			"da9052_onkey_report_event da9052_reg_read error %d\n",
-> +			ret);
-> +		ret = 1;
-> +	} else {
-> +		ret = ret & DA9052_E_nONKEY;
-> +		input_report_key(onkey->input, KEY_POWER, ret);
-> +		input_sync(onkey->input);
-> +	}
-> +
-> +	if (ret)
-> +		schedule_delayed_work(&onkey->work, 10);
-> +
-> +}
-> +
-> +
-> +static irqreturn_t  da9052_onkey_irq(int irq, void *data)
-> +{
-> +	struct da9052_onkey *onkey = (struct da9052_onkey *) data;
-> +
-> +	schedule_delayed_work(&onkey->work, 0);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int __devinit da9052_onkey_probe(struct platform_device *pdev)
-> +{
-> +	struct da9052_onkey *onkey;
-> +	unsigned int ret;
-
-It can't be unsigned - error codes are negative. And call it 'error'
-please.
+No need to initialize ret here, since it will be overwritten in the next line.
 
 > +
-> +	onkey = kzalloc(sizeof(*onkey), GFP_KERNEL);
-> +	if (!onkey) {
-> +		dev_err(&pdev->dev, "Failed to allocate memory \n");
-> +		return -ENOMEM;
-> +	}
-> +	onkey->input = input_allocate_device();
-> +	if (!onkey->input) {
-> +		ret = -ENOMEM;
-> +		dev_err(&pdev->dev, "Failed to allocate input device, %d\n", ret);
-> +		goto err_mem;
-> +	}
-> +	onkey->da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	onkey->irq = platform_get_irq_byname(pdev, "ONKEY");
-
-Can it fail?
-
-> +
-> +	onkey->input->evbit[0] = BIT_MASK(EV_KEY);
-> +	onkey->input->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
-> +	onkey->input->name = "da9052-onkey";
-> +	onkey->input->phys = "da9052-onkey/input0";
-> +	onkey->input->dev.parent = &pdev->dev;
-> +
-> +	ret = input_register_device(onkey->input);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Unable to register input\
-
-Do not split the message, especially by escaping newline.
-
-> +				device, %d\n", ret);
-> +		goto err_input;
-> +	}
-> +
-> +	INIT_DELAYED_WORK(&onkey->work, da9052_onkey_work);
-> +
-> +	ret = da9052_request_irq(onkey->da9052, onkey->irq,
-> +					da9052_onkey_irq, "ONKEY", onkey);
+> +	ret = da9052_reg_write(led->da9052, led_reg[led->id], led->brightness |
+> +			       DA9052_LED_CONT_DIM);
 > +	if (ret < 0)
-> +		goto err_input;
-> +
-> +	platform_set_drvdata(pdev, onkey);
-> +
-> +	return 0;
-> +
-> +err_input:
-> +	input_unregister_device(onkey->input);
-
-If input device was not registered you should be calling
-input_free_device(). May I recommend registering input device last?
-
-> +	cancel_delayed_work_sync(&onkey->work);
-> +err_mem:
-> +	kfree(onkey);
+> +		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n", ret);
 > +	return ret;
 > +}
 > +
-> +static int __devexit da9052_onkey_remove(struct platform_device *pdev)
-> +{
-> +	struct da9052_onkey *onkey = pdev->dev.platform_data;
-
-This should be platform_get_drvdata() which is different from
-pdev->dev.platform_data which is conctant data maintained by vboard
-code.
-
 > +
-> +	cancel_delayed_work_sync(&onkey->work);
-> +	input_unregister_device(onkey->input);
+> +static void da9052_led_work(struct work_struct *work)
+> +{
+> +	struct da9052_led *led = container_of(work,
+> +				 struct da9052_led, work);
+> +
+> +	da9052_set_led_brightness(led);
+> +}
+> +
+> +static void da9052_led_set(struct led_classdev *led_cdev,
+> +			   enum led_brightness value)
+> +{
+> +	struct da9052_led *led;
+> +
+> +	led = container_of(led_cdev, struct da9052_led, cdev);
+> +	led->brightness = value;
+> +	schedule_work(&led->work);
+> +}
+> +
+> +
+> +static int da9052_configure_leds_gpio(struct da9052_led *led)
+> +{
+> +	int ret = 0;
+No need to initialize ret.
 
-If interrupt comes here you will crash. You need to free IRQ, then
-cancel work and only then unregister the device.
+> +	u8 register_value = DA9052_OUTPUT_OPENDRAIN |
+> +			DA9052_SUPPLY_VDD_IO1 << 2 | 1 << 3;
+> +
+> +	ret = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
+> +				DA9052_GPIO_MASK_LOWER_NIBBLE,
+> +				register_value);
+> +
+> +	if (ret < 0) {
+> +		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	ret = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
+> +				DA9052_GPIO_MASK_UPPER_NIBBLE,
+> +				register_value << DA9052_GPIO_NIBBLE_SHIFT
+> +				);
+> +	if (ret < 0)
+> +		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", ret);
+> +
+> +	return ret;
+> +}
+> +
+> +static int __devinit da9052_led_probe(struct platform_device *pdev)
+> +{
+> +	struct da9052_pdata *pdata;
+> +	struct da9052 *da9052;
+> +	struct gpio_led_platform_data *pled;
 
-> +	da9052_free_irq(onkey->da9052, onkey->irq, NULL);
-> +	kfree(onkey);
+You don't use any fields from the gpio_led struct except for name, so using
+struct led_platform_data here would be a better choice.
 
-platform_set_drvdata(pdev, NULL);
+> +	struct da9052_led *led;
+> +	int ret, i;
+> +
+> +	da9052 = dev_get_drvdata(pdev->dev.parent);
+> +	pdata = da9052->dev->platform_data;
+> +	pled = pdata->pled;
+> +
+> +	if (pled == NULL) {
+> +		dev_err(&pdev->dev, "failed no platform data for LED\n");
+> +		return -ENOMEM;
+return -ENXIO;
+> +	}
+> +
+> +	led = kzalloc(sizeof(struct da9052_led) * pled->num_leds, GFP_KERNEL);
+> +	if (led == NULL) {
+> +		dev_err(&pdev->dev, "failed to alloc memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	if (pdata == NULL) {
 
+pdata has already been dereferenced at this point. the check should go before
+pled is assigned.
+
+> +		dev_err(&pdev->dev, "no platform data\n");
+> +		ret = -ENODEV;
+ret = -ENXIO;
+> +		goto err_mem;
+> +	}
+> +
+> +
+> +	for (i = 0; i < pled->num_leds; i++) {
+> +		led[i].cdev.name = pled->leds[i].name;
+> +		led[i].cdev.brightness_set = da9052_led_set;
+> +		led[i].cdev.brightness = LED_OFF;
+> +		led[i].brightness = 0;
+> +		led[i].id = i;
+
+if pled->num_leds is greater then 2 you'll get undefined behavior in
+da9052_set_led_brightness, because led->id is beyond the bounds of led_reg.
+Is it always the case that the first led is used when the second led ist used?
+Otherwise it might make sense to provide the id through the platform data.
+
+
+> +		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
+
+led[i].da9052 = da9052;
+
+You might also want to initialize .default_trigger to .default_trigger from the
+platform data.
+
+> +		INIT_WORK(&led[i].work, da9052_led_work);
+> +
+> +		ret = led_classdev_register(pdev->dev.parent, &led[i].cdev);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "Failed to register led %d\n",
+> +					led[i].id);
+> +			goto err_register;
+> +		}
+> +
+> +		ret = da9052_set_led_brightness(&led[i]);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "unable to init led %d\n",
+> +					led[i].id);
+> +			continue;
+> +		}
+> +	}
+> +	ret = da9052_configure_leds_gpio(led);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to configure GPIO Led, %d\n",ret);
+> +		goto err_register;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, led);
+> +
+> +	return 0;
+> +
+> +err_register:
+> +	for (i = i - 1; i >= 0; i--) {
+> +		led_classdev_unregister(&led[i].cdev);
+> +		cancel_work_sync(&led[i].work);
+> +	}
+> +err_mem:
+> +	kfree(led);
+> +	return ret;
+> +}
+> +
+> +static int __devexit da9052_led_remove(struct platform_device *pdev)
+> +{
+> +	struct da9052_led *led = platform_get_drvdata(pdev);
+> +	int i;
+> +
+> +	for (i = 0; i < led->num_leds; i++) {
+led->num_leds should be num_leds from the platform_data.
+
+> +		da9052_set_led_brightness(&led[i]);
+
+Does it makes sense to call da9052_set_led_brightness here?
+The latest brightness should already be set. Or do you want do disable the led?
+In that case led->brightness should be set to 0 first.
+
+> +		led_classdev_unregister(&led[i].cdev);
+> +		cancel_work_sync(&led[i].work);
+> +	}
+> +
+> +	kfree(led);
 > +
 > +	return 0;
 > +}
 > +
-> +static struct platform_driver da9052_onkey_driver = {
-> +	.driver.name	= "da9052-onkey",
+> +static struct platform_driver da9052_led_driver = {
+> +	.driver.name	= "da9052-leds",
 > +	.driver.owner	= THIS_MODULE,
-> +	.probe		= da9052_onkey_probe,
-> +	.remove		= __devexit_p(da9052_onkey_remove),
+The common pattern is to do:
+	.driver = {
+		.name = "da9052-leds",
+		.owener = THIS_MODULE,
+	},
+> +	.probe		= da9052_led_probe,
+> +	.remove		= __devexit_p(da9052_led_remove),
 > +};
 > +
-> +static int __init da9052_onkey_init(void)
+> +static int __init da9052_led_init(void)
 > +{
-> +	return platform_driver_register(&da9052_onkey_driver);
+> +	return platform_driver_register(&da9052_led_driver);
 > +}
+> +module_init(da9052_led_init);
 > +
-> +static void __exit da9052_onkey_exit(void)
+> +static void __exit da9052_led_exit(void)
 > +{
-> +	platform_driver_unregister(&da9052_onkey_driver);
+> +	platform_driver_unregister(&da9052_led_driver);
 > +}
+> +module_exit(da9052_led_exit);
 > +
-> +module_init(da9052_onkey_init);
-> +module_exit(da9052_onkey_exit);
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("Onkey driver for DA9052");
-> +MODULE_ALIAS("platform:da9052-onkey");
-> diff -Naur orig_linux-2.6.37/drivers/input/misc/Kconfig linux-2.6.37/drivers/input/misc/Kconfig
-> --- orig_linux-2.6.37/drivers/input/misc/Kconfig	2011-01-05 05:50:19.000000000 +0500
-> +++ linux-2.6.37/drivers/input/misc/Kconfig	2011-03-31 19:29:14.000000000 +0500
-> @@ -32,6 +32,16 @@
->  	  To compile this driver as a module, choose M here: the module
->  	  will be called ab8500-ponkey.
-> 
-> +config INPUT_DA9052_ONKEY
-> +	tristate "Dialog DA9052 Onkey"
-> +	depends on PMIC_DA9052
-> +	help
-> +	  Support the ONKEY of Dialog DA9052 PMICs as an input device
-> +	  reporting power button status.
-> +
-> +	  To compile this driver as a module, choose M here: the module
-> +	  will be called da9052_onkey.
-> +
->  config INPUT_AD714X
->  	tristate "Analog Devices AD714x Capacitance Touch Sensor"
->  	help
-> diff -Naur orig_linux-2.6.37/drivers/input/misc/Makefile linux-2.6.37/drivers/input/misc/Makefile
-> --- orig_linux-2.6.37/drivers/input/misc/Makefile	2011-01-05 05:50:19.000000000 +0500
-> +++ linux-2.6.37/drivers/input/misc/Makefile	2011-03-31 19:29:21.000000000 +0500
-> @@ -5,6 +5,7 @@
->  # Each configuration option enables a list of files.
-> 
->  obj-$(CONFIG_INPUT_88PM860X_ONKEY)	+= 88pm860x_onkey.o
-> +obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
+> +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
+> +MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:" DRIVER_NAME);
 
-Please keep the Makefile and Kconfig sorthed alphabetically.
+Where is DRIVER_NAME defined?
 
->  obj-$(CONFIG_INPUT_AB8500_PONKEY)	+= ab8500-ponkey.o
->  obj-$(CONFIG_INPUT_AD714X)		+= ad714x.o
->  obj-$(CONFIG_INPUT_AD714X_I2C)	+= ad714x-i2c.o
+> diff -Naur orig_linux-2.6.37/drivers/leds/Makefile linux-2.6.37/drivers/leds/Makefile
+> --- orig_linux-2.6.37/drivers/leds/Makefile	2011-01-05 05:50:19.000000000 +0500
+> +++ linux-2.6.37/drivers/leds/Makefile	2011-03-31 20:24:00.000000000 +0500
+> @@ -30,6 +30,7 @@
+>  obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
+>  obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
+>  obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
+> +obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
+>  obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
+>  obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
+>  obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
+> 
+> Regards,
+> Ashish
+> 
 > 
 
-Thanks.
-
--- 
-Dmitry
