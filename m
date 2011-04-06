@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab1DFTIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 15:08:31 -0400
+	id S932126Ab1DFTIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 15:08:36 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:48270 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756566Ab1DFTI2 (ORCPT
+	with ESMTP id S932099Ab1DFTId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 15:08:28 -0400
+	Wed, 6 Apr 2011 15:08:33 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
 Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v2 09/12] mmc: test: add random fault injection in core.c
-Date: Wed,  6 Apr 2011 21:07:10 +0200
-Message-Id: <1302116833-24540-10-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v2 11/12] omap_hsmmc: add support for pre_req and post_req
+Date: Wed,  6 Apr 2011 21:07:12 +0200
+Message-Id: <1302116833-24540-12-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
 References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
@@ -21,151 +21,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simple fault injection proved to be very useful to
-test the error handling in the block.c rw_rq(). It may
-still be useful to test if the host driver handle
-pre_req() and post_req() correctly in case of errors.
+pre_req() runs dma_map_sg() post_req() runs dma_unmap_sg.
+If not calling pre_req() before omap_hsmmc_request(), request()
+will prepare the cache just like it did it before.
+It is optional to use pre_req() and post_req().
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 ---
- drivers/mmc/core/core.c    |   54 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/debugfs.c |    5 ++++
- include/linux/mmc/host.h   |    4 ++-
- lib/Kconfig.debug          |   11 +++++++++
- 4 files changed, 73 insertions(+), 1 deletions(-)
+ drivers/mmc/host/omap_hsmmc.c |   87 +++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 83 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index e88dd36..85296df 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -23,6 +23,8 @@
- #include <linux/log2.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#include <linux/fault-inject.h>
-+#include <linux/random.h>
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index ad3731a..2116c09 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -141,6 +141,11 @@
+ #define OMAP_HSMMC_WRITE(base, reg, val) \
+ 	__raw_writel((val), (base) + OMAP_HSMMC_##reg)
  
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -82,6 +84,56 @@ static void mmc_flush_scheduled_work(void)
- 	flush_workqueue(workqueue);
++struct omap_hsmmc_next {
++	unsigned int	dma_len;
++	s32		cookie;
++};
++
+ struct omap_hsmmc_host {
+ 	struct	device		*dev;
+ 	struct	mmc_host	*mmc;
+@@ -184,6 +189,7 @@ struct omap_hsmmc_host {
+ 	int			reqs_blocked;
+ 	int			use_reg;
+ 	int			req_in_progress;
++	struct omap_hsmmc_next	next_data;
+ 
+ 	struct	omap_mmc_platform_data	*pdata;
+ };
+@@ -1344,8 +1350,9 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
+ 		return;
+ 	}
+ 
+-	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
+-		omap_hsmmc_get_dma_dir(host, data));
++	if (!data->host_cookie)
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++			     omap_hsmmc_get_dma_dir(host, data));
+ 
+ 	req_in_progress = host->req_in_progress;
+ 	dma_ch = host->dma_ch;
+@@ -1363,6 +1370,45 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
+ 	}
  }
  
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_mmc_request);
-+
-+static int __init setup_fail_mmc_request(char *str)
++static int omap_hsmmc_pre_dma_transfer(struct omap_hsmmc_host *host,
++				       struct mmc_data *data,
++				       struct omap_hsmmc_next *next)
 +{
-+	return setup_fault_attr(&fail_mmc_request, str);
++	int dma_len;
++
++	if (!next && data->host_cookie &&
++	    data->host_cookie != host->next_data.cookie) {
++		printk(KERN_WARNING "[%s] invalid cookie: data->host_cookie %d"
++		       " host->next_data.cookie %d\n",
++		       __func__, data->host_cookie, host->next_data.cookie);
++		data->host_cookie = 0;
++	}
++
++	/* Check if next job is already prepared */
++	if (next ||
++	    (!next && data->host_cookie != host->next_data.cookie)) {
++		dma_len = dma_map_sg(mmc_dev(host->mmc), data->sg,
++				     data->sg_len,
++				     omap_hsmmc_get_dma_dir(host, data));
++
++	} else {
++		dma_len = host->next_data.dma_len;
++		host->next_data.dma_len = 0;
++	}
++
++
++	if (dma_len == 0)
++		return -EINVAL;
++
++	if (next) {
++		next->dma_len = dma_len;
++		data->host_cookie = ++next->cookie < 0 ? 1 : next->cookie;
++	} else
++		host->dma_len = dma_len;
++
++	return 0;
 +}
-+__setup("fail_mmc_request=", setup_fail_mmc_request);
 +
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
+ /*
+  * Routine to configure and start DMA for the MMC card
+  */
+@@ -1396,9 +1442,10 @@ static int omap_hsmmc_start_dma_transfer(struct omap_hsmmc_host *host,
+ 			mmc_hostname(host->mmc), ret);
+ 		return ret;
+ 	}
++	ret = omap_hsmmc_pre_dma_transfer(host, data, NULL);
++	if (ret)
++		return ret;
+ 
+-	host->dma_len = dma_map_sg(mmc_dev(host->mmc), data->sg,
+-			data->sg_len, omap_hsmmc_get_dma_dir(host, data));
+ 	host->dma_ch = dma_ch;
+ 	host->dma_sg_idx = 0;
+ 
+@@ -1478,6 +1525,35 @@ omap_hsmmc_prepare_data(struct omap_hsmmc_host *host, struct mmc_request *req)
+ 	return 0;
+ }
+ 
++static void omap_hsmmc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
++				int err)
 +{
-+	struct mmc_command *cmd = mrq->cmd;
++	struct omap_hsmmc_host *host = mmc_priv(mmc);
 +	struct mmc_data *data = mrq->data;
-+	static const int data_errors[] = {
-+		-ETIMEDOUT,
-+		-EILSEQ,
-+		-EIO,
-+	};
 +
-+	if (!data)
-+		return;
-+
-+	if (cmd->error || data->error || !host->make_it_fail ||
-+	    !should_fail(&fail_mmc_request, data->blksz * data->blocks))
-+		return;
-+
-+	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
-+	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
++	if (host->use_dma) {
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++			     omap_hsmmc_get_dma_dir(host, data));
++		data->host_cookie = 0;
++	}
 +}
 +
-+static int __init fail_mmc_request_debugfs(void)
++static void omap_hsmmc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
++			       bool is_first_req)
 +{
-+	return init_fault_attr_dentries(&fail_mmc_request,
-+					"fail_mmc_request");
++	struct omap_hsmmc_host *host = mmc_priv(mmc);
++
++	if (mrq->data->host_cookie) {
++		mrq->data->host_cookie = 0;
++		return ;
++	}
++
++	if (host->use_dma)
++		if (omap_hsmmc_pre_dma_transfer(host, mrq->data,
++						&host->next_data))
++			mrq->data->host_cookie = 0;
 +}
 +
-+late_initcall(fail_mmc_request_debugfs);
-+
-+#else /* CONFIG_FAIL_MMC_REQUEST */
-+
-+static inline void mmc_should_fail_request(struct mmc_host *host,
-+					   struct mmc_data *data)
-+{
-+}
-+
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
-+
- /**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-@@ -108,6 +160,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
- 		cmd->error = 0;
- 		host->ops->request(host, mrq);
- 	} else {
-+		mmc_should_fail_request(host, mrq);
-+
- 		led_trigger_event(host->led, LED_OFF);
+ /*
+  * Request function. for read/write operation
+  */
+@@ -1926,6 +2002,8 @@ static int omap_hsmmc_disable_fclk(struct mmc_host *mmc, int lazy)
+ static const struct mmc_host_ops omap_hsmmc_ops = {
+ 	.enable = omap_hsmmc_enable_fclk,
+ 	.disable = omap_hsmmc_disable_fclk,
++	.post_req = omap_hsmmc_post_req,
++	.pre_req = omap_hsmmc_pre_req,
+ 	.request = omap_hsmmc_request,
+ 	.set_ios = omap_hsmmc_set_ios,
+ 	.get_cd = omap_hsmmc_get_cd,
+@@ -2075,6 +2153,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	host->mapbase	= res->start;
+ 	host->base	= ioremap(host->mapbase, SZ_4K);
+ 	host->power_mode = MMC_POWER_OFF;
++	host->next_data.cookie = 1;
  
- 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 998797e..588e76f 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -188,6 +188,11 @@ void mmc_add_host_debugfs(struct mmc_host *host)
- 				root, &host->clk_delay))
- 		goto err_node;
- #endif
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
-+			       root, &host->make_it_fail))
-+		goto err_node;
-+#endif
- 	return;
- 
- err_node:
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index c056a3d..8b2b44b 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -251,7 +251,9 @@ struct mmc_host {
- #endif
- 
- 	struct dentry		*debugfs_root;
--
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	u8			make_it_fail;
-+#endif
- 	unsigned long		private[0] ____cacheline_aligned;
- };
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index df9234c..180620b 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1059,6 +1059,17 @@ config FAIL_IO_TIMEOUT
- 	  Only works with drivers that use the generic timeout handling,
- 	  for others it wont do anything.
- 
-+config FAIL_MMC_REQUEST
-+	bool "Fault-injection capability for MMC IO"
-+	select DEBUG_FS
-+	depends on FAULT_INJECTION
-+	help
-+	  Provide fault-injection capability for MMC IO.
-+	  This will make the mmc core return data errors. This is
-+	  useful for testing the error handling in the mmc block device
-+	  and how the mmc host driver handle retries from
-+	  the block device.
-+
- config FAULT_INJECTION_DEBUG_FS
- 	bool "Debugfs entries for fault-injection capabilities"
- 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
+ 	platform_set_drvdata(pdev, host);
+ 	INIT_WORK(&host->mmc_carddetect_work, omap_hsmmc_detect);
 -- 
 1.7.4.1
 
