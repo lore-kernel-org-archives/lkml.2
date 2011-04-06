@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab1DFVbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:31:34 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58766 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465Ab1DFVbd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:31:33 -0400
-Date: Wed, 6 Apr 2011 17:31:29 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFS Regression in commit 0b26a0bf6ff398
-Message-ID: <20110406213129.GC2596@mgebm.net>
-References: <20110216005640.GA2841@mgebm.net>
- <1297818155.10103.43.camel@heimdal.trondhjem.org>
+	id S932304Ab1DFVbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:31:42 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:44260 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932279Ab1DFVbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 17:31:40 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Sergei Trofimovich <slyich@gmail.com>
+Subject: Re: [PATCH] [RFC] um: x86: unbreak build by reintroducing this_cpu_cmpxchg16b_emu
+Date: Wed, 6 Apr 2011 23:31:33 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+Cc: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+References: <20110407001837.12e6f01c@sf.home>
+In-Reply-To: <20110407001837.12e6f01c@sf.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
-Content-Disposition: inline
-In-Reply-To: <1297818155.10103.43.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104062331.34205.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sergei,
 
---hOcCNbCCxyk/YU74
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am Mittwoch 06 April 2011, 23:18:37 schrieb Sergei Trofimovich:
+> I'm sure fix can be nices, but initial patch should express an idea.
 
-On Tue, 15 Feb 2011, Trond Myklebust wrote:
+Please send patches not as attachment.
 
-> On Tue, 2011-02-15 at 19:56 -0500, Eric B Munson wrote:=20
-> > While testing some 2.6.38 work my rsync backup script started consuming
-> > large amounts of memory (all available before dying with no more availa=
-ble
-> > memory).  I have bisected the problem back to 0b26a0bf6ff398.  I am
-> > unfamiliar with the NFS code so I don't know where to start looking for=
- a
-> > possible fix.  My backups files from my home directory to an NFS mounted
-> > directory.  The NFS server is a Synology DS-411+ if it matters.  Let me=
- know
-> > if there is any other information I can provide.
->=20
-> Exactly which 2.6.38 kernel are you running, and which NFS version?
->=20
-> I'm having trouble seeing how the patch in question can be responsible
-> for what you are seeing, so please could you provide more details of
-> your test setup.
->=20
-> --=20
-> Trond Myklebust
-> Linux NFS client maintainer
->=20
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
->=20
+I think this patch is only needed on x86_64.
+Um builds fine on my main machine (i386).
+It seems to fail on x86_64 when using  CONFIG_SLUB=y.
 
-Whatever was broken was fixed with 2.6.39-rc1.  Thanks for your help.
+> The main offender is privileged 'cli'.
+> 
+> Thanks!
 
-Eric
+Thanks,
+//richard
 
---hOcCNbCCxyk/YU74
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNnNuxAAoJEH65iIruGRnNPUsH/R2ezjV2orZzwDZu4/9ynhlq
-r2VKdB03nWQ8ss1O0u7vzypJnDXmQxrj3DFfYdqCWblh2eN63f9Qq29OFtE2FzpC
-pfzW2nCF4/qTo4L1R397nmZOnz6nRMdhTOv7G4U7PV1m4WJ7TtkWfN4J+JLIi1yQ
-y05tUgDCTIXMnt/UR46QQy1TAVC0IQVeQ5av52yNUFlQUVneALfm2/sWzc0g4JSD
-WcWKOzyhXHS/rVaenG1sU/KSiwShMOCpvFy+ZDzAFcM8DJedpfZ6pDAp8xPRFvJA
-mfmZ9wmrNMWGuM+eN3zFKfC9TMAm4Ncj33DhKoTug7ffxUiXSFI0oRzlgiQJnUM=
-=clzp
------END PGP SIGNATURE-----
-
---hOcCNbCCxyk/YU74--
