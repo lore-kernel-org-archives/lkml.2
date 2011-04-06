@@ -1,179 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab1DFLVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 07:21:32 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.183]:20227
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754224Ab1DFLVa (ORCPT
+	id S1755756Ab1DFLVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 07:21:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53030 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755376Ab1DFLVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 07:21:30 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bh8275dhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJ8A7M-01-3B1-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andiry Xu <andiry.xu@amd.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, <stable@kernel.org>
-Subject: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
-Date: Wed, 6 Apr 2011 13:21:18 +0200
-Message-ID: <1302088878-25740-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 6 Apr 2011 07:21:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type;
+        b=NW19wvbsquSjpErksJ/aTiPkJv1piT2DyvtuSaZKxHmNFaDKIl9mwtlh2sXKIGpfz+
+         yt09UUan0UGr0rf56lpyhqe2fVnmJl0wtZoguv9xkhKBBjbUMM0bYYPYbtmT7VRUOOo6
+         UyfwTcXccnTWPOtV8+akQnC4pijbPG6S2yIvQ=
+Message-ID: <4D9C4E04.9070205@gmail.com>
+Date: Wed, 06 Apr 2011 19:27:00 +0800
+From: "helight.xu" <helight.xu@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: "Eric.Moore <Eric.Moore@lsi.com>; support <support@lsi.com>;
+	DL-MPTFusionLinux <DL-MPTFusionLinux@lsi.com>; linux-scsi" 
+	<linux-scsi@vger.kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] fix warning: unused variable =?windows-1252?Q?=91log=5Fi?=
+ =?windows-1252?Q?nfo=92_drivers/message/fusion/mptsas=2Ec?=
+Content-Type: multipart/mixed;
+ boundary="------------010401090803050009050503"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Booting 2.6.38 on my test machine produces a lockdep warning
-from the usb_amd_find_chipset_info() function:
+This is a multi-part message in MIME format.
+--------------010401090803050009050503
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 
- WARNING: at /data/lemmy/linux.trees.git/kernel/lockdep.c:2465 lockdep_trace_alloc+0x95/0xc2()
- Hardware name: Snook
- Modules linked in:
- Pid: 959, comm: work_for_cpu Not tainted 2.6.39-rc2+ #22
- Call Trace:
-  [<ffffffff8103c0d4>] warn_slowpath_common+0x80/0x98
-  [<ffffffff812387e6>] ? T.492+0x24/0x26
-  [<ffffffff8103c101>] warn_slowpath_null+0x15/0x17
-  [<ffffffff81068667>] lockdep_trace_alloc+0x95/0xc2
-  [<ffffffff810ed9ac>] slab_pre_alloc_hook+0x18/0x3b
-  [<ffffffff810ef227>] kmem_cache_alloc_trace+0x25/0xba
-  [<ffffffff812387e6>] T.492+0x24/0x26
-  [<ffffffff81238816>] pci_get_subsys+0x2e/0x73
- sr0: scsi3-mmc drive: 48x/48x writer dvd-ram cd/rw xa/form2 cdda tray
-  [<ffffffff8123886c>] pci_get_device+0x11/0x13
-  [<ffffffff814082a9>] usb_amd_find_chipset_info+0x3f/0x18a
-...
+fix warning: unused variable �log_info� drivers/message/fusion/mptsas.c
 
-It turns out that this function calls pci_get_device under a spin_lock
-with irqs disabled, but the pci_get_device function is only allowed in
-preemptible context.
 
-This patch fixes this by using temporary variables in the quirk
-algorithm and commiting them later to the struct under the lock. This
-moves all pci_get_device() invocations out of the spin_lock and fixes
-the lockdep warning for me.
-
-Cc: stable@kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: helight <helight@zhwen.org>
 ---
- drivers/usb/host/pci-quirks.c |   67 +++++++++++++++++++++++-----------------
- 1 files changed, 38 insertions(+), 29 deletions(-)
+  drivers/gpu/drm/nouveau/nv50_vm.c |    1 -
+  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 1d586d4..d3e5cf3 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -84,64 +84,73 @@ int usb_amd_find_chipset_info(void)
- {
- 	u8 rev = 0;
- 	unsigned long flags;
-+	struct pci_dev *nb_dev, *smbus_dev;
-+	int nb_type, sb_type;
- 
- 	spin_lock_irqsave(&amd_lock, flags);
--
- 	amd_chipset.probe_count++;
- 	/* probe only once */
- 	if (amd_chipset.probe_count > 1) {
- 		spin_unlock_irqrestore(&amd_lock, flags);
- 		return amd_chipset.probe_result;
- 	}
-+	spin_unlock_irqrestore(&amd_lock, flags);
- 
--	amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
--	if (amd_chipset.smbus_dev) {
--		rev = amd_chipset.smbus_dev->revision;
-+	sb_type   = 0;
-+	smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
-+	if (smbus_dev) {
-+		rev = smbus_dev->revision;
- 		if (rev >= 0x40)
--			amd_chipset.sb_type = 1;
-+			sb_type = 1;
- 		else if (rev >= 0x30 && rev <= 0x3b)
--			amd_chipset.sb_type = 3;
-+			sb_type = 3;
- 	} else {
--		amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
--							0x780b, NULL);
--		if (!amd_chipset.smbus_dev) {
-+		smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
-+		if (smbus_dev) {
-+			spin_lock_irqsave(&amd_lock, flags);
-+			amd_chipset.smbus_dev = smbus_dev;
- 			spin_unlock_irqrestore(&amd_lock, flags);
- 			return 0;
- 		}
--		rev = amd_chipset.smbus_dev->revision;
-+		rev = smbus_dev->revision;
- 		if (rev >= 0x11 && rev <= 0x18)
--			amd_chipset.sb_type = 2;
-+			sb_type = 2;
- 	}
- 
--	if (amd_chipset.sb_type == 0) {
--		if (amd_chipset.smbus_dev) {
--			pci_dev_put(amd_chipset.smbus_dev);
--			amd_chipset.smbus_dev = NULL;
-+	if (sb_type == 0) {
-+		if (smbus_dev) {
-+			pci_dev_put(smbus_dev);
-+			smbus_dev = NULL;
- 		}
--		spin_unlock_irqrestore(&amd_lock, flags);
- 		return 0;
- 	}
- 
--	amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
--	if (amd_chipset.nb_dev) {
--		amd_chipset.nb_type = 1;
-+	nb_type = 0;
-+	nb_dev  = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
-+	if (nb_dev) {
-+		nb_type = 1;
- 	} else {
--		amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
--							0x1510, NULL);
--		if (amd_chipset.nb_dev) {
--			amd_chipset.nb_type = 2;
--		} else  {
--			amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
--								0x9600, NULL);
--			if (amd_chipset.nb_dev)
--				amd_chipset.nb_type = 3;
-+		nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
-+		if (nb_dev) {
-+			nb_type = 2;
-+		} else {
-+			nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
-+						0x9600, NULL);
-+			if (nb_dev)
-+				nb_type = 3;
- 		}
- 	}
- 
-+	spin_lock_irqsave(&amd_lock, flags);
-+	amd_chipset.smbus_dev    = smbus_dev;
-+	amd_chipset.sb_type      = sb_type;
-+	amd_chipset.nb_dev       = nb_dev;
-+	amd_chipset.nb_type      = nb_type;
- 	amd_chipset.probe_result = 1;
-+	spin_unlock_irqrestore(&amd_lock, flags);
-+
- 	printk(KERN_DEBUG "QUIRK: Enable AMD PLL fix\n");
- 
--	spin_unlock_irqrestore(&amd_lock, flags);
- 	return amd_chipset.probe_result;
- }
- EXPORT_SYMBOL_GPL(usb_amd_find_chipset_info);
+diff --git a/drivers/gpu/drm/nouveau/nv50_vm.c 
+b/drivers/gpu/drm/nouveau/nv50_vm.c
+index 6144156..1f47c75 100644
+--- a/drivers/gpu/drm/nouveau/nv50_vm.c
++++ b/drivers/gpu/drm/nouveau/nv50_vm.c
+@@ -31,7 +31,6 @@ void
+  nv50_vm_map_pgt(struct nouveau_gpuobj *pgd, u32 pde,
+          struct nouveau_gpuobj *pgt[2])
+  {
+-    struct drm_nouveau_private *dev_priv = pgd->dev->dev_private;
+      u64 phys = 0xdeadcafe00000000ULL;
+      u32 coverage = 0;
+
 -- 
-1.7.1
+1.6.0.2
 
 
+--------------010401090803050009050503
+Content-Type: text/x-patch;
+ name="0001-fix-warning-unused-variable-log_info-drivers.patch"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: attachment;
+ filename*0="0001-fix-warning-unused-variable-log_info-drivers.patch"
+
+>From 655f95b584289fcf6da3aa4c8ad17ccdbc0b96f3 Mon Sep 17 00:00:00 2001
+From: helight <helight@zhwen.org>
+Date: Mon, 4 Apr 2011 20:18:23 +0800
+Subject: [PATCH] fix warning: unused variable ‘log_info’ drivers/message/fusion/mptsas.c
+
+fix warning: unused variable ‘log_info’ drivers/message/fusion/mptsas.c
+
+Signed-off-by: helight <helight@zhwen.org>
+---
+ drivers/message/fusion/mptsas.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 8aefb18..431092b 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -5009,13 +5009,13 @@ mptsas_event_process(MPT_ADAPTER *ioc, EventNotificationReply_t *reply)
+ 			(ioc_stat & MPI_IOCSTATUS_FLAG_LOG_INFO_AVAILABLE)) {
+ 			VirtTarget *vtarget = NULL;
+ 			u8		id, channel;
+-			u32	 log_info = le32_to_cpu(reply->IOCLogInfo);
+ 
+ 			id = sas_event_data->TargetID;
+ 			channel = sas_event_data->Bus;
+ 
+ 			vtarget = mptsas_find_vtarget(ioc, channel, id);
+ 			if (vtarget) {
++				u32 log_info = le32_to_cpu(reply->IOCLogInfo);
+ 				devtprintk(ioc, printk(MYIOC_s_DEBUG_FMT
+ 				    "LogInfo (0x%x) available for "
+ 				   "INTERNAL_DEVICE_RESET"
+-- 
+1.6.0.2
+
+
+--------------010401090803050009050503--
