@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab1DFVYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 17:24:11 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:49955
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S1756941Ab1DFVYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 17:24:08 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:49947
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756891Ab1DFVYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 17:24:02 -0400
+	id S1756879Ab1DFVYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 17:24:01 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 15/22] Staging: hv: Get rid of the forward declaration of blkvsc_revalidate_disk()
-Date: Wed,  6 Apr 2011 14:35:13 -0700
-Message-Id: <1302125720-10808-15-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/22] Staging: hv: Get rid of the forward declaration of blkvsc_shutdown()
+Date: Wed,  6 Apr 2011 14:35:09 -0700
+Message-Id: <1302125720-10808-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302125720-10808-1-git-send-email-kys@microsoft.com>
 References: <1302125655-10741-1-git-send-email-kys@microsoft.com>
@@ -25,68 +25,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of blkvsc_revalidate_disk() by moving
-the code around.
+Get rid of the forward declaration of blkvsc_shutdown() by moving the
+code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c |   31 +++++++++++++++----------------
- 1 files changed, 15 insertions(+), 16 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   70 +++++++++++++++++++--------------------
+ 1 files changed, 34 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 49caad7..35dacf0 100644
+index a98ed8f..1fb68b7 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -861,9 +861,23 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
- 	return 0;
+@@ -645,10 +645,42 @@ static int blkvsc_remove(struct device *device)
+ 	return ret;
  }
  
-+static int blkvsc_revalidate_disk(struct gendisk *gd)
++static void blkvsc_shutdown(struct device *device)
 +{
-+	struct block_device_context *blkdev = gd->private_data;
++	struct block_device_context *blkdev = dev_get_drvdata(device);
++	unsigned long flags;
 +
-+	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
++	if (!blkdev)
++		return;
 +
-+	if (blkdev->device_type == DVD_TYPE) {
-+		blkvsc_do_read_capacity(blkdev);
-+		set_capacity(blkdev->gd, blkdev->capacity *
-+			    (blkdev->sector_size/512));
-+		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
++	DPRINT_DBG(BLKVSC_DRV, "blkvsc_shutdown - users %d disk %s\n",
++		   blkdev->users, blkdev->gd->disk_name);
++
++	spin_lock_irqsave(&blkdev->lock, flags);
++
++	blkdev->shutting_down = 1;
++
++	blk_stop_queue(blkdev->gd->queue);
++
++	spin_unlock_irqrestore(&blkdev->lock, flags);
++
++	while (blkdev->num_outstanding_reqs) {
++		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
++			    blkdev->num_outstanding_reqs);
++		udelay(100);
 +	}
-+	return 0;
++
++	blkvsc_do_flush(blkdev);
++
++	spin_lock_irqsave(&blkdev->lock, flags);
++
++	blkvsc_cancel_pending_reqs(blkdev);
++
++	spin_unlock_irqrestore(&blkdev->lock, flags);
 +}
 +
  /* Static decl */
  static int blkvsc_probe(struct device *dev);
--static int blkvsc_revalidate_disk(struct gendisk *gd);
+-static void blkvsc_shutdown(struct device *device);
+-
+ static int blkvsc_release(struct gendisk *disk, fmode_t mode);
+ static int blkvsc_revalidate_disk(struct gendisk *gd);
  static void blkvsc_request(struct request_queue *queue);
- static void blkvsc_request_completion(struct hv_storvsc_request *request);
- static int blkvsc_do_request(struct block_device_context *blkdev,
-@@ -1513,21 +1527,6 @@ static void blkvsc_request(struct request_queue *queue)
- 	}
+@@ -913,40 +945,6 @@ Cleanup:
+ 	return ret;
  }
  
--static int blkvsc_revalidate_disk(struct gendisk *gd)
+-static void blkvsc_shutdown(struct device *device)
 -{
--	struct block_device_context *blkdev = gd->private_data;
+-	struct block_device_context *blkdev = dev_get_drvdata(device);
+-	unsigned long flags;
 -
--	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
+-	if (!blkdev)
+-		return;
 -
--	if (blkdev->device_type == DVD_TYPE) {
--		blkvsc_do_read_capacity(blkdev);
--		set_capacity(blkdev->gd, blkdev->capacity *
--			    (blkdev->sector_size/512));
--		blk_queue_logical_block_size(gd->queue, blkdev->sector_size);
+-	DPRINT_DBG(BLKVSC_DRV, "blkvsc_shutdown - users %d disk %s\n",
+-		   blkdev->users, blkdev->gd->disk_name);
+-
+-	spin_lock_irqsave(&blkdev->lock, flags);
+-
+-	blkdev->shutting_down = 1;
+-
+-	blk_stop_queue(blkdev->gd->queue);
+-
+-	spin_unlock_irqrestore(&blkdev->lock, flags);
+-
+-	while (blkdev->num_outstanding_reqs) {
+-		DPRINT_INFO(STORVSC, "waiting for %d requests to complete...",
+-			    blkdev->num_outstanding_reqs);
+-		udelay(100);
 -	}
--	return 0;
+-
+-	blkvsc_do_flush(blkdev);
+-
+-	spin_lock_irqsave(&blkdev->lock, flags);
+-
+-	blkvsc_cancel_pending_reqs(blkdev);
+-
+-	spin_unlock_irqrestore(&blkdev->lock, flags);
 -}
 -
- static int __init blkvsc_init(void)
+ /* Do a scsi INQUIRY cmd here to get the device type (ie disk or dvd) */
+ static int blkvsc_do_inquiry(struct block_device_context *blkdev)
  {
- 	int ret;
 -- 
 1.7.4.1
 
