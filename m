@@ -1,137 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab1DGQxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:53:09 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43283 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab1DGQxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:53:08 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: benh@kernel.crashing.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, anton@samba.org, stable@kernel.org,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH V3] POWER: perf_event: Skip updating kernel counters if register value shrinks
-Date: Thu,  7 Apr 2011 12:52:54 -0400
-Message-Id: <1302195174-9115-1-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.1
+	id S1756197Ab1DGQ5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:57:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54736 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755822Ab1DGQ5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 12:57:04 -0400
+Date: Thu, 7 Apr 2011 18:57:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation
+ problem
+Message-ID: <20110407165700.GB7363@quack.suse.cz>
+References: <1298566775-sup-730@think>
+ <20110224182732.GV27190@tux1.beaverton.ibm.com>
+ <1298897186-sup-9394@think>
+ <20110304210724.GF27190@tux1.beaverton.ibm.com>
+ <20110308045626.GD1956@dastard>
+ <20110319000755.GD1110@tux1.beaverton.ibm.com>
+ <20110321140451.GA7153@quack.suse.cz>
+ <1300716666-sup-2087@think>
+ <20110321164305.GC7153@quack.suse.cz>
+ <20110406232938.GF1110@tux1.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406232938.GF1110@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because of speculative event roll back, it is possible for some event coutners
-to decrease between reads on POWER7.  This causes a problem with the way that
-counters are updated.  Delta calues are calculated in a 64 bit value and the
-top 32 bits are masked.  If the register value has decreased, this leaves us
-with a very large positive value added to the kernel counters.  This patch
-protects against this by skipping the update if the delta would be negative.
-This can lead to a lack of precision in the coutner values, but from my testing
-the value is typcially fewer than 10 samples at a time.
+On Wed 06-04-11 16:29:38, Darrick J. Wong wrote:
+> On Mon, Mar 21, 2011 at 05:43:05PM +0100, Jan Kara wrote:
+> > On Mon 21-03-11 10:24:41, Chris Mason wrote:
+> > > Excerpts from Jan Kara's message of 2011-03-21 10:04:51 -0400:
+> > > > On Fri 18-03-11 17:07:55, Darrick J. Wong wrote:
+> > > > > > > Ok, here's what I have so far.  I took everyone's suggestions of where to add
+> > > > > > > calls to wait_on_page_writeback, which seems to handle the multiple-write case
+> > > > > > > adequately.  Unfortunately, it is still possible to generate checksum errors by
+> > > > > > > scribbling furiously on a mmap'd region, even after adding the writeback wait
+> > > > > > > in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
+> > > > > > > removing its wait_for_page_writeback call, so I suspect there's a bit more
+> > > > > > > going on in btrfs than I've been able to figure out.
+> > > > > 
+> > > > > I wonder, is it possible for this to happen:
+> > > > > 
+> > > > > 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
+> > > > >    but there's no ongoing writeback, so it returns without delay.
+> > > > > 2. Thread A starts writing furiously to the page.
+> > > > > 3. Thread B runs fsync() or something that results in the page being
+> > > > >    checksummed and scheduled for writeout.
+> > > > > 4. Thread A continues to write furiously(!) on that same page before the
+> > > > >    controller finishes the DMA transfer.
+> > > > > 5. Disk gets the page, which now doesn't match its checksum, and *boom*
+> > > >   What happens on writepage (see mm/page-writeback.c:write_cache_pages())
+> > > > is:
+> > > >   lock_page(page)
+> > > >   ...
+> > > >   clear_page_dirty_for_io() - removes PageDirty, marks page as read-only in
+> > > >     PTE
+> > > >   ...
+> > > >   set_page_writeback() (happens e.g. in __block_write_full_page() called
+> > > > from filesystem's writepage implementation).
+> > > >   unlock_page(page)
+> > > > 
+> > > >   So if you compute the checksum after set_page_writeback() is done in the
+> > > > writepage() implementation (you cannot use __block_write_full_page() in
+> > > > that case)
+> >   I should add that if you are computing the checksum in the block layer
+> > once the bio is submitted, you obviously are computing it after the page is
+> > marked as writeback. So that should be fine...
+> > 
+> > > > and you call wait_on_page_writeback() in ext4_page_mkwrite()
+> > > > under page lock, you should be safe. If you do all this and still see
+> > > > errors, something is broken I'd say...
+> > > 
+> > > Looking at the ext4_page_mkwrite, it does this:
+> > > 
+> > > lock the page
+> > > check for holes
+> > > unlock the page
+> > > if (no_holes)
+> > > 	return;
+> > > 
+> > > write_begin/write_end
+> > > return
+> > > 
+> > > So, to have page_mkwrite work, you need to wait for writeback with the
+> > > page locked in both the no holes case and after the
+> > > write_begin/write_end.  write_begin will dirty the page, so someone can
+> > > wander in and start the IO while we are still in page_mkwrite.
+> >   Oh right, that's a good point.
+> > 
+> > > This is untested and uncompiled, but it should
+> > > do the trick.
+> > > 
+> > > Jan, did you get rid of all the buffer head based writeback for
+> > > data=ordered in ext4?  That's my only other idea, that someone is doing
+> > > writeback directly without taking the page lock.
+> >   Yes, ext4 shouldn't do any buffer based writeback.
+> > 
+> > > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> > > index 9f7f9e4..8a75e12 100644
+> > > --- a/fs/ext4/inode.c
+> > > +++ b/fs/ext4/inode.c
+> > > @@ -5880,6 +5880,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> > >  	if (page_has_buffers(page)) {
+> > >  		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
+> > >  					ext4_bh_unmapped)) {
+> > > +			wait_on_page_writeback(page);
+> > >  			unlock_page(page);
+> > >  			goto out_unlock;
+> > >  		}
+> > > @@ -5901,6 +5902,16 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> > >  	if (ret < 0)
+> > >  		goto out_unlock;
+> > >  	ret = 0;
+> > > +
+> > > +	/*
+> > > +	 * write_begin/end might have created a dirty page and someone
+> > > +	 * could wander in and start the IO.  Make sure that hasn't
+> > > +	 * happened
+> > > +	 */
+> > > +	lock_page(page);
+> > > +	wait_on_page_writeback(page);
+> > > +	unlock_page(page);
+> > > +
+> > >  out_unlock:
+> > >  	if (ret)
+> > >  		ret = VM_FAULT_SIGBUS;
+> > > 
+> >   This looks good AFAICT.
+> 
+> I gave this a spin a couple of weeks ago (and accidentally left the test
+> machines running for a full week!)  From what I can tell, with all the various
+> wait_for_page_writeback stuff-ins, we've cut the frequency of writeback errors
+> down to about 7-8 per day.  Not bad, but not fixed.
+  Ugh, strange. Can you post the full patch you are currently using? I've
+already lost track of all the proposed changes... Thanks.
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-Cc: stable@kernel.org
----
-Changes from V2:
- Create a helper that should handle counter roll back as well as registers that
-might be allowed to roll over
-
-Changes from V1:
- Updated patch leader
- Added stable CC
- Use an s32 to hold delta values and discard any values that are less than 0
-
- arch/powerpc/kernel/perf_event.c |   40 +++++++++++++++++++++++++++++++------
- 1 files changed, 33 insertions(+), 7 deletions(-)
-
-diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-index 97e0ae4..78bf933 100644
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -398,6 +398,28 @@ static int check_excludes(struct perf_event **ctrs, unsigned int cflags[],
- 	return 0;
- }
- 
-+static u64 check_and_compute_delta(s64 prev, s64 val)
-+{
-+	/*
-+	 * Because the PerfMon registers are only 32 bits wide, the delta
-+	 * should not overflow.
-+	 */
-+	u64 delta = 0;
-+
-+	/*
-+	 * POWER7 can roll back counter values, if the new value is smaller
-+	 * than the previous value it will cause the delta and the counter to
-+	 * have bogus values unless we rolled a counter over.  If this is the
-+	 * case or prev < val, calculate the delta nd return it, otherwise
-+	 * return 0.  This can lead to a small lack of precision in the
-+	 * counters.
-+	 */
-+	if (((prev & 0x80000000) && !(val & 0x80000000)) || (val > prev))
-+		delta = (val - prev) & 0xfffffffful;
-+
-+	return delta;
-+}
-+
- static void power_pmu_read(struct perf_event *event)
- {
- 	s64 val, delta, prev;
-@@ -416,10 +438,11 @@ static void power_pmu_read(struct perf_event *event)
- 		prev = local64_read(&event->hw.prev_count);
- 		barrier();
- 		val = read_pmc(event->hw.idx);
-+		delta = check_and_compute_delta(prev, val);
-+		if (!delta)
-+			return;
- 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
- 
--	/* The counters are only 32 bits wide */
--	delta = (val - prev) & 0xfffffffful;
- 	local64_add(delta, &event->count);
- 	local64_sub(delta, &event->hw.period_left);
- }
-@@ -449,8 +472,9 @@ static void freeze_limited_counters(struct cpu_hw_events *cpuhw,
- 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
- 		prev = local64_read(&event->hw.prev_count);
- 		event->hw.idx = 0;
--		delta = (val - prev) & 0xfffffffful;
--		local64_add(delta, &event->count);
-+		delta = check_and_compute_delta(prev, val);
-+		if (delta)
-+			local64_add(delta, &event->count);
- 	}
- }
- 
-@@ -458,14 +482,16 @@ static void thaw_limited_counters(struct cpu_hw_events *cpuhw,
- 				  unsigned long pmc5, unsigned long pmc6)
- {
- 	struct perf_event *event;
--	u64 val;
-+	u64 val, prev;
- 	int i;
- 
- 	for (i = 0; i < cpuhw->n_limited; ++i) {
- 		event = cpuhw->limited_counter[i];
- 		event->hw.idx = cpuhw->limited_hwidx[i];
- 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
--		local64_set(&event->hw.prev_count, val);
-+		prev = local64_read(&event->hw.prev_count);
-+		if (check_and_compute_delta(prev, val))
-+			local64_set(&event->hw.prev_count, val);
- 		perf_event_update_userpage(event);
- 	}
- }
-@@ -1197,7 +1223,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 
- 	/* we don't have to worry about interrupts here */
- 	prev = local64_read(&event->hw.prev_count);
--	delta = (val - prev) & 0xfffffffful;
-+	delta = check_and_compute_delta(prev, val);
- 	local64_add(delta, &event->count);
- 
- 	/*
+									Honza
 -- 
-1.7.1
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
