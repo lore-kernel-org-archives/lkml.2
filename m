@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab1DGMnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 08:43:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60234 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab1DGMky (ORCPT
+	id S1756192Ab1DGMoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 08:44:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48161 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab1DGMkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 08:40:54 -0400
-Message-Id: <20110407122941.820460566@chello.nl>
+	Thu, 7 Apr 2011 08:40:53 -0400
+Message-Id: <20110407122942.607287405@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 07 Apr 2011 14:09:42 +0200
+Date: Thu, 07 Apr 2011 14:09:57 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -21,84 +21,106 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 01/23] sched: Remove obsolete arch_ prefixes
+Subject: [PATCH 16/23] sched: Create persistent sched_domains_tmpmask
 References: <20110407120941.400629539@chello.nl>
-Content-Disposition: inline; filename=sched-remove-arch-prefixes.patch
+Content-Disposition: inline; filename=sched-foo15.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Non weak static functions clearly are not arch specific, so remove the
-arch_ prefix.
+Since sched domain creation is fully serialized by the
+sched_domains_mutex we can create a single persistent tmpmask to use
+during domain creation.
+
+This removes the need for s_data::send_covered.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
+ kernel/sched.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -232,7 +232,7 @@ static void destroy_rt_bandwidth(struct
- #endif
+@@ -6791,7 +6791,6 @@ struct sd_data {
+ };
  
+ struct s_data {
+-	cpumask_var_t		send_covered;
+ 	struct sched_domain ** __percpu sd;
+ 	struct sd_data 		sdd[SD_LV_MAX];
+ 	struct root_domain	*rd;
+@@ -6801,7 +6800,6 @@ enum s_alloc {
+ 	sa_rootdomain,
+ 	sa_sd,
+ 	sa_sd_storage,
+-	sa_send_covered,
+ 	sa_none,
+ };
+ 
+@@ -6822,6 +6820,8 @@ static int get_group(int cpu, struct sd_
+ 	return cpu;
+ }
+ 
++static cpumask_var_t sched_domains_tmpmask; /* sched_domains_mutex */
++
  /*
-- * sched_domains_mutex serializes calls to arch_init_sched_domains,
-+ * sched_domains_mutex serializes calls to init_sched_domains,
-  * detach_destroy_domains and partition_sched_domains.
+  * build_sched_groups takes the cpumask we wish to span, and a pointer
+  * to a function which identifies what group(along with sched group) a CPU
+@@ -6833,13 +6833,17 @@ static int get_group(int cpu, struct sd_
+  * and ->cpu_power to 0.
   */
- static DEFINE_MUTEX(sched_domains_mutex);
-@@ -7646,7 +7646,7 @@ void free_sched_domains(cpumask_var_t do
-  * For now this just excludes isolated cpus, but could be used to
-  * exclude other special cases in the future.
-  */
--static int arch_init_sched_domains(const struct cpumask *cpu_map)
-+static int init_sched_domains(const struct cpumask *cpu_map)
+ static void
+-build_sched_groups(struct sched_domain *sd, struct cpumask *covered)
++build_sched_groups(struct sched_domain *sd)
  {
- 	int err;
+ 	struct sched_group *first = NULL, *last = NULL;
+ 	struct sd_data *sdd = sd->private;
+ 	const struct cpumask *span = sched_domain_span(sd);
++	struct cpumask *covered;
+ 	int i;
  
-@@ -7663,7 +7663,7 @@ static int arch_init_sched_domains(const
- 	return err;
- }
++	lockdep_assert_held(&sched_domains_mutex);
++	covered = sched_domains_tmpmask;
++
+ 	cpumask_clear(covered);
  
--static void arch_destroy_sched_domains(const struct cpumask *cpu_map,
-+static void destroy_sched_domains(const struct cpumask *cpu_map,
- 				       struct cpumask *tmpmask)
- {
- 	free_sched_groups(cpu_map, tmpmask);
-@@ -7682,7 +7682,7 @@ static void detach_destroy_domains(const
- 	for_each_cpu(i, cpu_map)
- 		cpu_attach_domain(NULL, &def_root_domain, i);
- 	synchronize_sched();
--	arch_destroy_sched_domains(cpu_map, to_cpumask(tmpmask));
-+	destroy_sched_domains(cpu_map, to_cpumask(tmpmask));
- }
+ 	for_each_cpu(i, span) {
+@@ -6984,8 +6988,6 @@ static void __free_domain_allocs(struct 
+ 			free_percpu(d->sdd[i].sd);
+ 			free_percpu(d->sdd[i].sg);
+ 		} /* fall through */
+-	case sa_send_covered:
+-		free_cpumask_var(d->send_covered); /* fall through */
+ 	case sa_none:
+ 		break;
+ 	}
+@@ -6998,8 +7000,6 @@ static enum s_alloc __visit_domain_alloc
  
- /* handle null as "default" */
-@@ -7791,7 +7791,7 @@ void partition_sched_domains(int ndoms_n
- }
+ 	memset(d, 0, sizeof(*d));
  
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
--static void arch_reinit_sched_domains(void)
-+static void reinit_sched_domains(void)
- {
- 	get_online_cpus();
+-	if (!alloc_cpumask_var(&d->send_covered, GFP_KERNEL))
+-		return sa_none;
+ 	for (i = 0; i < SD_LV_MAX; i++) {
+ 		d->sdd[i].sd = alloc_percpu(struct sched_domain *);
+ 		if (!d->sdd[i].sd)
+@@ -7188,7 +7188,7 @@ static int __build_sched_domains(const s
+ 			if (i != cpumask_first(sched_domain_span(sd)))
+ 				continue;
  
-@@ -7824,7 +7824,7 @@ static ssize_t sched_power_savings_store
- 	else
- 		sched_mc_power_savings = level;
+-			build_sched_groups(sd, d.send_covered);
++			build_sched_groups(sd);
+ 		}
+ 	}
  
--	arch_reinit_sched_domains();
-+	reinit_sched_domains();
+@@ -7870,6 +7870,7 @@ void __init sched_init(void)
  
- 	return count;
- }
-@@ -7950,7 +7950,7 @@ void __init sched_init_smp(void)
- #endif
- 	get_online_cpus();
- 	mutex_lock(&sched_domains_mutex);
--	arch_init_sched_domains(cpu_active_mask);
-+	init_sched_domains(cpu_active_mask);
- 	cpumask_andnot(non_isolated_cpus, cpu_possible_mask, cpu_isolated_map);
- 	if (cpumask_empty(non_isolated_cpus))
- 		cpumask_set_cpu(smp_processor_id(), non_isolated_cpus);
+ 	/* Allocate the nohz_cpu_mask if CONFIG_CPUMASK_OFFSTACK */
+ 	zalloc_cpumask_var(&nohz_cpu_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&sched_domains_tmpmask, GFP_NOWAIT);
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_NO_HZ
+ 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
 
 
