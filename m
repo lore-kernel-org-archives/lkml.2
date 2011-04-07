@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab1DGMlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 08:41:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48202 "EHLO
+	id S1756032Ab1DGMlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 08:41:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48203 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab1DGMlM (ORCPT
+	with ESMTP id S1755497Ab1DGMlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 08:41:12 -0400
-Message-Id: <20110407122942.025636011@chello.nl>
+	Thu, 7 Apr 2011 08:41:14 -0400
+Message-Id: <20110407122942.717702108@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 07 Apr 2011 14:09:46 +0200
+Date: Thu, 07 Apr 2011 14:09:59 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -21,49 +21,79 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/23] sched: Clean up some ALLNODES code
+Subject: [PATCH 18/23] sched: Create proper cpu_$DOM_mask() functions
 References: <20110407120941.400629539@chello.nl>
-Content-Disposition: inline; filename=sched-foo4.patch
+Content-Disposition: inline; filename=sched-foo16.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In order to unify the sched domain creation more, create proper
+cpu_$DOM_mask() functions for those domains that didn't already have
+one.
+
+Use the sched_domains_tmpmask for the weird NUMA domain span.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ kernel/sched.c |   22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -7256,7 +7256,9 @@ static void build_sched_groups(struct s_
- 						d->send_covered, d->tmpmask);
- 
- 	case SD_LV_ALLNODES:
--		init_sched_build_groups(cpu_map, cpu_map, &cpu_to_allnodes_group,
-+		if (cpu == cpumask_first(cpu_map))
-+			init_sched_build_groups(cpu_map, cpu_map,
-+					&cpu_to_allnodes_group,
- 					d->send_covered, d->tmpmask);
- 		break;
- #endif
-@@ -7307,14 +7309,9 @@ static int __build_sched_domains(const s
- 		build_sched_groups(&d, SD_LV_MC, cpu_map, i);
- 		build_sched_groups(&d, SD_LV_CPU, cpu_map, i);
- 		build_sched_groups(&d, SD_LV_NODE, cpu_map, i);
-+		build_sched_groups(&d, SD_LV_ALLNODES, cpu_map, i);
+@@ -6793,8 +6793,22 @@ static void sched_domain_node_span(int n
+ 		cpumask_or(span, span, cpumask_of_node(next_node));
  	}
+ }
++
++static const struct cpumask *cpu_node_mask(int cpu)
++{
++	lockdep_assert_held(&sched_domains_mutex);
++
++	sched_domain_node_span(cpu_to_node(cpu), sched_domains_tmpmask);
++
++	return sched_domains_tmpmask;
++}
+ #endif /* CONFIG_NUMA */
  
--#ifdef CONFIG_NUMA
--	/* Set up node groups */
--	if (d.sd_allnodes)
--		build_sched_groups(&d, SD_LV_ALLNODES, cpu_map, 0);
--#endif
--
- 	/* Calculate CPU power for physical packages and nodes */
- #ifdef CONFIG_SCHED_SMT
- 	for_each_cpu(i, cpu_map) {
++static const struct cpumask *cpu_cpu_mask(int cpu)
++{
++	return cpumask_of_node(cpu_to_node(cpu));
++}
++
+ int sched_smt_power_savings = 0, sched_mc_power_savings = 0;
+ 
+ struct sd_data {
+@@ -7074,7 +7088,7 @@ static struct sched_domain *__build_alln
+ #ifdef CONFIG_NUMA
+ 	sd = sd_init_ALLNODES(d, i);
+ 	set_domain_attribute(sd, attr);
+-	cpumask_copy(sched_domain_span(sd), cpu_map);
++	cpumask_and(sched_domain_span(sd), cpu_map, cpu_possible_mask);
+ 	sd->parent = parent;
+ 	if (parent)
+ 		parent->child = sd;
+@@ -7090,8 +7104,7 @@ static struct sched_domain *__build_node
+ #ifdef CONFIG_NUMA
+ 	sd = sd_init_NODE(d, i);
+ 	set_domain_attribute(sd, attr);
+-	sched_domain_node_span(cpu_to_node(i), sched_domain_span(sd));
+-	cpumask_and(sched_domain_span(sd), sched_domain_span(sd), cpu_map);
++	cpumask_and(sched_domain_span(sd), cpu_map, cpu_node_mask(i));
+ 	sd->parent = parent;
+ 	if (parent)
+ 		parent->child = sd;
+@@ -7106,8 +7119,7 @@ static struct sched_domain *__build_cpu_
+ 	struct sched_domain *sd;
+ 	sd = sd_init_CPU(d, i);
+ 	set_domain_attribute(sd, attr);
+-	cpumask_and(sched_domain_span(sd),
+-			cpumask_of_node(cpu_to_node(i)), cpu_map);
++	cpumask_and(sched_domain_span(sd), cpu_map, cpu_cpu_mask(i));
+ 	sd->parent = parent;
+ 	if (parent)
+ 		parent->child = sd;
 
 
