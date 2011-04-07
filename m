@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab1DGKcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 06:32:22 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:63127 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753225Ab1DGKcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 06:32:21 -0400
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 07 Apr 2011 13:35:22 +0300
-Message-Id: <20110407103522.14727.6712.sendpatchset@localhost.localdomain>
-Subject: [GIT PULL] UBI/UBIFS changes for 2.6.39
-X-Nokia-AV: Clean
+	id S1755132Ab1DGKd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 06:33:58 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4739 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752634Ab1DGKd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 06:33:56 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p37AXcWk005702
+Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
+        "John W . Linville" <linville@tuxdriver.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Marek Vasut <marek.vasut@gmail.com>, Guiming Zhuo <gmzhuo@gmail.com>
+In-Reply-To: <1302170978.3779.0.camel@jlt3.sipsolutions.net>
+References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
+	 <20110406141131.GC2810@opensource.wolfsonmicro.com>
+	 <1302099669.4090.1.camel@jlt3.sipsolutions.net>
+	 <1302113542.22852.7.camel@x61.thuisdomein>
+	 <1302115597.4090.11.camel@jlt3.sipsolutions.net>
+	 <1302170472.21251.9.camel@thorin>
+	 <1302170978.3779.0.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Apr 2011 12:33:37 +0200
+Message-ID: <1302172417.21251.48.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Don, 2011-04-07 at 12:09 +0200, Johannes Berg wrote: 
+> On Thu, 2011-04-07 at 12:01 +0200, Bernd Petrovitsch wrote:
+> > On Mit, 2011-04-06 at 20:46 +0200, Johannes Berg wrote: 
+> > > On Wed, 2011-04-06 at 20:12 +0200, Paul Bolle wrote:
+> > [...] 
+> > > > But doesn't
+> > > > 	depends on RFKILL || !RFKILL
+> > > > 
+> > > > always evaluate to true when running "make *config"? (Even if RFKILL is
+> > > > an unknown symbol when that expression is parsed!)
+> > > 
+> > > No, it will not, you're forgetting that these things are tristate.
+> > 
+> > Boolean operators for tristate logic isn't intuitive at all IMHO.
+> 
+> *shrug*. You're free to propose patches to the kconfig system to make it
+> more intuitive. :-)
 
-Please, pull the UBI and UBIFS fixes for 2.6.39.
+FullACK;-)
+But no intuitive tristate logic operators come to my mind (otherwise I
+would have mentioned them above).
+And there are more logic implications in "depends on RFKILL".
+Hmm, I have to think more about it ....
 
-The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
+Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
-  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
-
-are available in the git repository at:
-  git://git.infradead.org/ubifs-2.6.git for-linus
-
-Artem Bityutskiy (10):
-      UBIFS: do not read flash unnecessarily
-      UBIFS: fix oops on error path in read_pnode
-      UBIFS: fix assertion warnings
-      UBIFS: do not select KALLSYMS_ALL
-      UBIFS: unify error path dbg_debugfs_init_fs
-      UBIFS: fix error path in dbg_debugfs_init_fs
-      UBIFS: fix debugging failure in dbg_check_space_info
-      UBI: check if we are in RO mode in the erase routine
-      UBI: do not compare array with NULL
-      UBI: do not select KALLSYMS_ALL
-
- drivers/mtd/ubi/Kconfig |    2 +-
- drivers/mtd/ubi/io.c    |    8 +++++-
- drivers/mtd/ubi/vmt.c   |    5 ---
- fs/ubifs/Kconfig        |    2 +-
- fs/ubifs/commit.c       |    2 +-
- fs/ubifs/debug.c        |   63 ++++++++++++++++++++++++++++++++++------------
- fs/ubifs/lpt.c          |    7 ++---
- fs/ubifs/super.c        |    3 +-
- 8 files changed, 61 insertions(+), 31 deletions(-)
-
-Thanks,
-Artem.
