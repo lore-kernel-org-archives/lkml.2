@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab1DGScJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 14:32:09 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:56929 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754793Ab1DGScH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 14:32:07 -0400
-Date: Thu, 7 Apr 2011 14:32:06 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, "lenb@kernel.org" <lenb@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: About lock-less data structure patches
-Message-ID: <20110407183206.GB6104@Krystal>
-References: <BLU0-SMTP52616BFA7ABB7E8E73E8396BC0@phx.gbl> <4D93DB49.3060205@intel.com> <20110401213748.GA26543@Krystal> <4D96AEAE.2010800@intel.com> <20110404155328.GA13390@Krystal> <BANLkTin3XpOnnqWcu-bsUCJ_6JaYcBkJkg@mail.gmail.com> <20110405044227.GA20013@Krystal> <BANLkTinLH=s419RVQXSUTjBSdH0XjdpZWg@mail.gmail.com> <20110406014824.GB32321@Krystal> <4D9D1DF0.6030704@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D9D1DF0.6030704@intel.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:30:58 up 134 days, 23:34,  4 users,  load average: 0.18, 0.04,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756545Ab1DGSdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 14:33:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22650 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751886Ab1DGSdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 14:33:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,317,1299484800"; 
+   d="scan'208";a="730457027"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH] x86/mrst: correct pin to irq mapping
+Date: Thu,  7 Apr 2011 11:32:52 -0700
+Message-Id: <1302201172-1254-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Huang Ying (ying.huang@intel.com) wrote:
-> On 04/06/2011 09:48 AM, Mathieu Desnoyers wrote:
-> > * huang ying (huang.ying.caritas@gmail.com) wrote:
-> [snip]
-> >>>>
-> >>>> OK.  I will change the comments, adding these semantics explanation.
-> >>>> The user should be warned :)
-> >>>
-> >>> Yes, that makes sense. After this generalization step, if you're ok with
-> >>> this, we could aim at moving the implementation from a stack to a queue
-> >>> and provide fifo semantic rather than lifo, so that other users (e.g.
-> >>> call_rcu in the kernel) can start benefiting from it.
-> >>
-> >> I think that is good to move from stack to queue.
-> >>
-> >> I will send out changed lock-less data structure patchset soon.  And
-> >> we can continue to work on the new lock-less queue at the same time.
-> > 
-> > Sounds like a very good plan! Thanks!
-> 
-> Maybe you can send out your lock-less queue patches, so we can work on that.
+Set mp_bus_not_pci bit to allow 1:1 mapping of pin2irq on Moorestown.
+Refer to discussion in:
+https://lkml.org/lkml/2010/6/10/70
 
-Yep, let's wait until your implementation is finalized and merged, and
-then ping me again so I can cook up a RFC patch turning llist into a
-queue, if it's OK with you.
+Suggested-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Thanks,
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ arch/x86/platform/mrst/mrst.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Mathieu
-
-> 
-> Best Regards,
-> Huang Ying
-
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 5c0207b..d51d644 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -282,7 +282,7 @@ void __init x86_mrst_early_setup(void)
+ 	/* Avoid searching for BIOS MP tables */
+ 	x86_init.mpparse.find_smp_config = x86_init_noop;
+ 	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+-
++	set_bit(0, mp_bus_not_pci);
+ }
+ 
+ /*
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.1
+
