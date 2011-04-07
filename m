@@ -1,90 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab1DGXsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 19:48:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59601 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757159Ab1DGXsX (ORCPT
+	id S1757177Ab1DGXyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 19:54:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62004 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755609Ab1DGXyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 19:48:23 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1299630756.4146.25.camel@localhost>
-References: <1299630111.4146.15.camel@localhost>
-	 <1299630756.4146.25.camel@localhost>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-KiqkLlqS7H0FLX1Z6tT2"
-Date: Fri, 08 Apr 2011 00:48:19 +0100
-Message-ID: <1302220099.5282.11.camel@localhost>
+	Thu, 7 Apr 2011 19:54:05 -0400
+Date: Thu, 7 Apr 2011 16:53:55 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Andreas Bombe <andreas.bombe@mytum.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: OOPS procfs in vma_stop() from bad vma pointer
+Message-Id: <20110407165355.37af12b0.randy.dunlap@oracle.com>
+In-Reply-To: <20110407002832.GA5185@amos.fritz.box>
+References: <20110407002832.GA5185@amos.fritz.box>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 4/5] avr32: Fix .size directive for cpu_enter_idle
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D9E4E97.007A:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 7 Apr 2011 02:28:33 +0200 Andreas Bombe wrote:
 
---=-KiqkLlqS7H0FLX1Z6tT2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> So I got this Oops in an x86-64 2.6.38-08569-g16c29da (not the very
+> latest, so maybe it is known already). It was triggered by Debian's
+> popularity-contest program that was started from cron. Here it is:
+> 
+> [ 2106.743933] BUG: unable to handle kernel paging request at fffffffffffffff3
+> [ 2106.744039] IP: [<ffffffff81158b01>] vma_stop.clone.3+0x13/0x2e
+> [ 2106.744118] PGD 1805067 PUD 1806067 PMD 0 
+> [ 2106.744180] Oops: 0000 [#1] PREEMPT SMP 
+> [ 2106.744240] last sysfs file: /sys/devices/pci0000:00/0000:00:1c.5/0000:02:00.0/net/eth0/statistics/collisions
+> [ 2106.744356] CPU 0 
+> [ 2106.744381] Modules linked in: acpi_cpufreq mperf cpufreq_powersave cpufreq_stats cpufreq_userspace cpufreq_conservative snd_hrtimer binfmt_misc kvm_intel kvm uinput fuse xfs sha256_generic twofish_generic twofish_x86_64 twofish_common cbc dm_crypt snd_hda_codec_hdmi snd_emu10k1_synth snd_emux_synth snd_seq_virmidi snd_hda_codec_realtek snd_seq_midi_emul snd_emu10k1 snd_hda_intel snd_ac97_codec ac97_bus snd_hda_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_util_mem snd_hwdep snd_seq_midi snd_rawmidi snd_seq_midi_event radeon snd_seq snd_timer snd_seq_device snd ttm intel_agp joydev emu10k1_gp drm_kms_helper processor intel_gtt wacom soundcore i2c_i801 pcspkr gameport evdev snd_page_alloc thermal_sys asus_atk0110 button dm_mod usbhid ahci libahci firewire_ohci atl1e firewire_core libata crc_itu_t uhci_hcd ehci_hcd [last unloaded: scsi_wait_scan]
+> [ 2106.745580] 
+> [ 2106.745600] Pid: 5874, comm: popularity-cont Not tainted 2.6.38-08569-g16c29da #64 System manufacturer P5Q/P5Q
+> [ 2106.745730] RIP: 0010:[<ffffffff81158b01>]  [<ffffffff81158b01>] vma_stop.clone.3+0x13/0x2e
+> [ 2106.745834] RSP: 0018:ffff8800c9877e48  EFLAGS: 00010286
+> [ 2106.745897] RAX: 00000000fffffff3 RBX: ffff880129b7fde0 RCX: ffff8800be696900
+> [ 2106.745979] RDX: ffffffff814169d0 RSI: fffffffffffffff3 RDI: ffff880129b7fdf0
+> [ 2106.746064] RBP: ffff8800c9877e58 R08: ffff8800be696900 R09: ffff8800c9877e08
+> [ 2106.746149] R10: 0000000000000001 R11: ffff88012aab2600 R12: ffff8800b65fbe00
+> [ 2106.746232] R13: ffff8800be696900 R14: fffffffffffffff3 R15: 0000000000000000
+> [ 2106.746321] FS:  00007f6babc8f700(0000) GS:ffff88012fc00000(0000) knlGS:0000000000000000
+> [ 2106.746420] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [ 2106.746488] CR2: fffffffffffffff3 CR3: 0000000036f66000 CR4: 00000000000406f0
+> [ 2106.746571] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 2106.746654] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 2106.746737] Process popularity-cont (pid: 5874, threadinfo ffff8800c9876000, task ffff880127239fb0)
+> [ 2106.746841] Stack:
+> [ 2106.746866]  0000000000000004 ffff880129b7fde0 ffff8800c9877e78 ffffffff81158b78
+> [ 2106.746878]  0000000000000004 0000000000001000 ffff8800c9877ef8 ffffffff8112901f
+> [ 2106.746878]  0000000000000001 ffff8800fffffff3 0000000000000004 ffff8800be696938
+> [ 2106.746878] Call Trace:
+> [ 2106.746878]  [<ffffffff81158b78>] m_stop+0x19/0x2b
+> [ 2106.746878]  [<ffffffff8112901f>] seq_read+0x23b/0x369
+> [ 2106.746878]  [<ffffffff8110de6e>] vfs_read+0xa4/0xf7
+> [ 2106.746878]  [<ffffffff8110f0fe>] ? fget_light+0x3d/0x9b
+> [ 2106.746878]  [<ffffffff8110df06>] sys_read+0x45/0x69
+> [ 2106.746878]  [<ffffffff813e2612>] system_call_fastpath+0x16/0x1b
+> [ 2106.746878] Code: 39 c4 74 05 49 8b 54 24 08 48 89 53 30 41 5d 31 c0 5b 41 5c 41 5d c9 c3 55 48 89 e5 53 48 83 ec 08 48 85 f6 74 1c 48 3b 37 74 17 
+> [ 2106.746878]  8b 1e 48 8d bb 98 00 00 00 e8 2f 17 f1 ff 48 89 df e8 95 f7 
+> [ 2106.746878] RIP  [<ffffffff81158b01>] vma_stop.clone.3+0x13/0x2e
+> [ 2106.746878]  RSP <ffff8800c9877e48>
+> [ 2106.746878] CR2: fffffffffffffff3
+> [ 2107.173115] ---[ end trace 8cdfece298b5cc14 ]---
+> 
+> 
+> I disassembled vma_stop:
+> | Dump of assembler code for function vma_stop:
+> | 91	static void vma_stop(struct proc_maps_private *priv, struct vm_area_struct *vma)
+> |    0xffffffff81158aee <+0>:	push   %rbp
+> |    0xffffffff81158aef <+1>:	mov    %rsp,%rbp
+> |    0xffffffff81158af2 <+4>:	push   %rbx
+> |    0xffffffff81158af3 <+5>:	sub    $0x8,%rsp
+> | 
+> | 92	{
+> | 93		if (vma && vma != priv->tail_vma) {
+> |    0xffffffff81158af7 <+9>:	test   %rsi,%rsi
+> |    0xffffffff81158afa <+12>:	je     0xffffffff81158b18 <vma_stop+42>
+> |    0xffffffff81158afc <+14>:	cmp    (%rdi),%rsi
+> |    0xffffffff81158aff <+17>:	je     0xffffffff81158b18 <vma_stop+42>
+> | 
+> | 94			struct mm_struct *mm = vma->vm_mm;
+> |    0xffffffff81158b01 <+19>:	mov    (%rsi),%rbx
+> Oops here                       ^^^^^^^^^^^^^^^^^^
+> | 95			up_read(&mm->mmap_sem);
+> |    0xffffffff81158b04 <+22>:	lea    0x98(%rbx),%rdi
+> |    0xffffffff81158b0b <+29>:	callq  0xffffffff8106a23f <up_read>
+> | 
+> | 96			mmput(mm);
+> |    0xffffffff81158b10 <+34>:	mov    %rbx,%rdi
+> |    0xffffffff81158b13 <+37>:	callq  0xffffffff810482ad <mmput>
+> | 
+> | 97		}
+> | 98	}
+> |    0xffffffff81158b18 <+42>:	pop    %rax
+> |    0xffffffff81158b19 <+43>:	pop    %rbx
+> |    0xffffffff81158b1a <+44>:	leaveq 
+> |    0xffffffff81158b1b <+45>:	retq   
+> | 
+> | End of assembler dump.
+> 
+> It looks like vma_stop() got called with -13 as the vma pointer. This is
+> the first time that happened and I have no way to reproduce it.
 
-On Wed, 2011-03-09 at 00:32 +0000, Ben Hutchings wrote:
-> gas used to accept (and ignore?) .size directives which referred to
-> undefined symbols, as this does.  In binutils 2.21 these are treated
-> as errors.
+-13 == -EACCES.  Could come from m_start() calling mm_for_maps().
+m_start() handles IS_ERR(mm).  m_stop() handles IS_ERR(vma).
+But m_next() does not handle IS_ERR(vma).  I wonder if it needs to do that.
 
-Please acknowledge and send this upstream.
+Duh.  Try latest git with this patch:
 
-Ben.
+commit 76597cd31470fa130784c78fadb4dab2e624a723
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Sun Mar 27 19:09:29 2011 -0700
 
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  arch/avr32/mach-at32ap/pm-at32ap700x.S |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/arch/avr32/mach-at32ap/pm-at32ap700x.S b/arch/avr32/mach-at3=
-2ap/pm-at32ap700x.S
-> index 17503b0..f868f4c 100644
-> --- a/arch/avr32/mach-at32ap/pm-at32ap700x.S
-> +++ b/arch/avr32/mach-at32ap/pm-at32ap700x.S
-> @@ -53,7 +53,7 @@ cpu_enter_idle:
->  	st.w	r8[TI_flags], r9
->  	unmask_interrupts
->  	sleep	CPU_SLEEP_IDLE
-> -	.size	cpu_idle_sleep, . - cpu_idle_sleep
-> +	.size	cpu_enter_idle, . - cpu_enter_idle
-> =20
->  	/*
->  	 * Common return path for PM functions that don't run from
+    proc: fix oops on invalid /proc/<pid>/maps access
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
 
---=-KiqkLlqS7H0FLX1Z6tT2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATZ5NPue/yOyVhhEJAQrwwRAAnlzCT4VwN+pQvlrGFYSkFkdRu9UDdmRU
-H1f47wRk5Vr/x6qteRJTZwk87rjjH6CX1mjB54n1UqwKOYf8vNsQBMx1UeKN0ldR
-YPTd+5KjMi5Q3f4jxv8PZNUDgfUjD1JDBXuqMOMjWUbMbJexyRrPdRzBStyWYRj1
-9KLPKeFxj9lGcLqcRYvoOx2ItqGc8TSu3m5hFAT4MVl2262bq/SWgmbzLHCBMNBq
-EEUtttioLP3R3kgIUrNS06pibFPiUYDdb2CJu6WR+Uo67YUZPWH9bzR44FLSWjb5
-dthg/zThlMUGro+mtY6xsFBIMg0VXzlXRQ44dkcu/Ga177jAEBm40WRD9Hl+hKVw
-TubMAWo8pqmfwpx6xlm7QnEP6o3yBxkpH3xiLGgsCIP/8wVXEMj0q/kVr1W/cOgi
-UTv/TlfpdHruyXEiU5zZ6/O14J1kEIaPQ0TFltWHOJXCKzKxEDRDaZMhGHRALSWL
-LSrnU1cV9rTrRGJoxi6g1FgRMp6B45gB7Wq2+xyDL8yvnz+AIyy1jHBivsfDzcky
-RHuh/L1JFRzjBBScgOMKnO1CiJO7Th0BxLSqeYZg2lvR+VJn6zuKATBEaGvX2gkR
-ektA9sRZFO68+AdSPa/IX6S1qKnMLshBKbHfsHRFwioyXRpjy1ZAaH+xVeP8d9o8
-4gGpBVoqwYY=
-=n/JY
------END PGP SIGNATURE-----
-
---=-KiqkLlqS7H0FLX1Z6tT2--
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
