@@ -1,170 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab1DGAwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 20:52:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43511 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab1DGAwu (ORCPT
+	id S1757036Ab1DGAyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 20:54:36 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49201 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755773Ab1DGAye convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 20:52:50 -0400
-Message-ID: <4D9D0ADB.9010005@oracle.com>
-Date: Wed, 06 Apr 2011 17:52:43 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	Wed, 6 Apr 2011 20:54:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oqcyfSLhydSx+4+aOhDSWG1ggB9weQZVVH6oAFdoa8qe2MR++KtOXfV8rUw9dXkuwk
+         gY1Rou+wAlmTrRH69JvoTcdacDwj12IPWsjZ8qLNbfPw0agji0yOY5Fo/jtTguYY1hp+
+         f6Fs4pnzISfFmG2TViokQzpOUFPv9lborSPvw=
 MIME-Version: 1.0
-To: djwong@us.ibm.com
-CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ext4: Calculate and verify inode checksums
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <20110406224547.GT32706@tux1.beaverton.ibm.com>
-In-Reply-To: <20110406224547.GT32706@tux1.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D9D0ADD.00E7:SCFSTAT5015188,ss=1,fgs=0
+In-Reply-To: <1302134429.27258.32.camel@dev.znau.edu.ua>
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+	<op.vtisojsk3ri7v4@arend-laptop>
+	<BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
+	<op.vti9ote53ri7v4@arend-laptop>
+	<BANLkTin-u=U_-cUH9oCco0LjEBuQmh4wag@mail.gmail.com>
+	<BANLkTi=x89+52cMeutOB7J--QQta+mX_wg@mail.gmail.com>
+	<1302123428.20093.6.camel@maggie>
+	<BANLkTimGSoYzp0Z4vyCS_H5PDKhgjYuLBA@mail.gmail.com>
+	<1302124112.20093.11.camel@maggie>
+	<BANLkTik76dwwnmmPzXL9Kkk7fdt01QPzZA@mail.gmail.com>
+	<1302124737.27258.7.camel@dev.znau.edu.ua>
+	<BANLkTi=4-LgrkjG96+Ar3SjMOsKh-dMuLg@mail.gmail.com>
+	<1302134429.27258.32.camel@dev.znau.edu.ua>
+Date: Thu, 7 Apr 2011 02:54:33 +0200
+Message-ID: <BANLkTinfM0QLFwcKZXfWQ_jNYfBJg_et-Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: George Kashperko <george@znau.edu.ua>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2011 03:45 PM, Darrick J. Wong wrote:
-> This patch introduces to ext4 the ability to calculate and verify inode
-> checksums.  This requires the use of a new ro compatibility flag and some
-> accompanying e2fsprogs patches to provide the relevant features in tune2fs and
-> e2fsck.
+W dniu 7 kwietnia 2011 02:00 użytkownik George Kashperko
+<george@znau.edu.ua> napisał:
+> For PCI function description take a look at PCI specs or PCI
+> configuration space description (e. g.
+> http://en.wikipedia.org/wiki/PCI_configuration_space)
 >
-> Signed-off-by: Darrick J. Wong<djwong@us.ibm.com>
-> ---
+> Sorry for missleading short-ups, w11 - bcm80211 core, under two-head I
+> mean ssb/axi with two functional cores on same interconnect (like w11
+> +w11, not a lot of these exists I guess). Also there were some b43+b44
+> on single PCI ssb host and those where implemented as ssb interconnect
+> on multifunctional PCI host therefore providing separate access windows
+> for each function.
 >
->   fs/ext4/ext4.h  |    6 ++++--
->   fs/ext4/inode.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++++++-
->   2 files changed, 55 insertions(+), 3 deletions(-)
+> Might I mussunderstood something (its late night here at my place) when
+> you where talking about using coreswitching involved for two drivers
+> therefore I remembered about those functions. Seems now you were talking
+> about chipcommon+b43 access sharing same window.
 >
-> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-> index 4daaf2b..8815928 100644
-> --- a/fs/ext4/ext4.h
-> +++ b/fs/ext4/ext4.h
-> @@ -617,7 +617,7 @@ struct ext4_inode {
->   		} masix2;
->   	} osd2;				/* OS dependent 2 */
->   	__le16	i_extra_isize;
-> -	__le16	i_pad1;
-> +	__le16  i_checksum;		/* crc16(sb_uuid+inodenum+inode) */
->   	__le32  i_ctime_extra;  /* extra Change time      (nsec<<  2 | epoch) */
->   	__le32  i_mtime_extra;  /* extra Modification time(nsec<<  2 | epoch) */
->   	__le32  i_atime_extra;  /* extra Access time      (nsec<<  2 | epoch) */
-> @@ -1338,6 +1338,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
->   #define EXT4_FEATURE_RO_COMPAT_GDT_CSUM		0x0010
->   #define EXT4_FEATURE_RO_COMPAT_DIR_NLINK	0x0020
->   #define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE	0x0040
-> +#define EXT4_FEATURE_RO_COMPAT_INODE_CSUM	0x0400
+> As for core switching requirments for earlier SSB interconnects on PCI
+> hosts where there were no direct chipcommon access, that one can be
+> accomplished without spin_lock/mutex for b43 or b44 cores with proper
+> bus design.
 >
->   #define EXT4_FEATURE_INCOMPAT_COMPRESSION	0x0001
->   #define EXT4_FEATURE_INCOMPAT_FILETYPE		0x0002
-> @@ -1364,7 +1365,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
->   					 EXT4_FEATURE_RO_COMPAT_DIR_NLINK | \
->   					 EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE | \
->   					 EXT4_FEATURE_RO_COMPAT_BTREE_DIR |\
-> -					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE)
-> +					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE |\
-> +					 EXT4_FEATURE_RO_COMPAT_INODE_CSUM)
->
->   /*
->    * Default values for user and/or group using reserved blocks
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 1a86282..dc76f19 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -42,6 +42,7 @@
->   #include<linux/printk.h>
->   #include<linux/slab.h>
->   #include<linux/ratelimit.h>
-> +#include<linux/crc16.h>
->
->   #include "ext4_jbd2.h"
->   #include "xattr.h"
-> @@ -52,6 +53,40 @@
->
->   #define MPAGE_DA_EXTENT_TAIL 0x01
->
-> +static __le16 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw)
-> +{
-> +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-> +	struct ext4_inode_info *ei = EXT4_I(inode);
-> +	int offset = offsetof(struct ext4_inode, i_checksum);
-> +	__le32 inum = cpu_to_le32(inode->i_ino);
-> +	__u16 crc = 0;
-> +
-> +	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-> +		EXT4_FEATURE_RO_COMPAT_INODE_CSUM)&&
-> +	    le16_to_cpu(raw->i_extra_isize)>= 4) {
-> +		crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
-> +		crc = crc16(crc, (__u8 *)&inum, sizeof(inum));
-> +		crc = crc16(crc, (__u8 *)raw, offset);
-> +		offset += sizeof(raw->i_checksum); /* skip checksum */
-> +		/* for checksum of struct ext4_inode do the rest...*/
-> +		if (ei->i_extra_isize>  4)
-> +			crc = crc16(crc, (__u8 *)raw + offset,
-> +				    ei->i_extra_isize - 4);
-> +	}
-> +
-> +	return cpu_to_le16(crc);
-> +}
-> +
-> +static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw)
-> +{
-> +	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-> +		EXT4_FEATURE_RO_COMPAT_INODE_CSUM)&&
-> +	    (raw->i_checksum != ext4_inode_csum(inode, raw)))
-> +		return 0;
-> +
-> +	return 1;
-> +}
-> +
->   static inline int ext4_begin_ordered_truncate(struct inode *inode,
->   					      loff_t new_size)
->   {
-> @@ -4802,7 +4837,8 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
->   	struct ext4_inode *raw_inode;
->   	struct ext4_inode_info *ei;
->   	struct inode *inode;
-> -	journal_t *journal = EXT4_SB(sb)->s_journal;
-> +	struct ext4_sb_info *sbi = EXT4_SB(sb);
-> +	journal_t *journal = sbi->s_journal;
->   	long ret;
->   	int block;
->
-> @@ -4916,6 +4952,14 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
->   	} else
->   		ei->i_extra_isize = 0;
->
-> +	if (!ext4_inode_csum_verify(inode, raw_inode)) {
-> +		EXT4_ERROR_INODE(inode, "checksum invalid (%u != %u)",
-> +		       le16_to_cpu(ext4_inode_csum(inode, raw_inode)),
-> +		       le16_to_cpu(raw_inode->i_checksum));
-> +		ret = -EIO;
-> +		goto bad_inode;
-> +	}
-> +
->   	EXT4_INODE_GET_XTIME(i_ctime, inode, raw_inode);
->   	EXT4_INODE_GET_XTIME(i_mtime, inode, raw_inode);
->   	EXT4_INODE_GET_XTIME(i_atime, inode, raw_inode);
-> @@ -5138,6 +5182,12 @@ static int ext4_do_update_inode(handle_t *handle,
->   			raw_inode->i_version_hi =
->   			cpu_to_le32(inode->i_version>>  32);
->   		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
-> +
-> +		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-> +			EXT4_FEATURE_RO_COMPAT_INODE_CSUM)&&
-> +		    EXT4_FITS_IN_INODE(raw_inode, ei, i_checksum))
-> +			raw_inode->i_checksum =
-> +				ext4_inode_csum(inode, raw_inode);
->   	}
->
->   	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
+> AXI doesn't need spinlocks/mutexes as both chipcommon and pci bridge are
+> available directly and b43 will be the only one requiring window access.
 
-You may want to look into jbd2 buffer triggers. struct jbd2_buffer_trigger_type
-Instead of computing checksum on every update, it allows one to compute it
-just before the journal write. More efficient.
+Ahh, so while talking about 4 windows, I guess you counted fixes
+windows as well. That would be right, matching my knowledge.
 
+When asking question about amount of cores we may want to use
+simultaneously I didn't think about ChipCommon or PCIe. The real
+problem would be to support for example two 802.11 cores and one
+ethernet core at the same time. That gives us 3 cores while we have
+only 2 sliding windows. But I would not care for that too much for
+now.
+
+For the rest (PCI function) I have to sleep before reading specs ;)
+
+-- 
+Rafał
