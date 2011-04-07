@@ -1,83 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1DGDTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 23:19:15 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:42901 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755441Ab1DGDTN (ORCPT
+	id S1757183Ab1DGD0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 23:26:55 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38844 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab1DGD0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 23:19:13 -0400
-X-AuditID: b753bd60-9c7ccba000000f4e-6e-4d9d2d2eeefa
-X-AuditID: b753bd60-9c7ccba000000f4e-6e-4d9d2d2eeefa
-Message-ID: <4D9D2D28.4040508@hitachi.com>
-Date: Thu, 07 Apr 2011 12:19:04 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 26/26] 26: uprobes: filter chain
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6> <20110401143737.15455.30181.sendpatchset@localhost6.localdomain6> <4D9A6FE8.2010301@hitachi.com> <20110406224148.GA5806@linux.vnet.ibm.com>
-In-Reply-To: <20110406224148.GA5806@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 6 Apr 2011 23:26:53 -0400
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-pci@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, bheglaas@google.com, monstr@monstr.eu,
+        tglx@linuxtronix.de, bigeasy@linuxtronix.de,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 4/5] x86/devicetree: Use generic PCI <-> OF matching
+Date: Thu,  7 Apr 2011 13:26:35 +1000
+Message-Id: <1302146796-26825-5-git-send-email-benh@kernel.crashing.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1302146796-26825-1-git-send-email-benh@kernel.crashing.org>
+References: <1302146796-26825-1-git-send-email-benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/04/07 7:41), Srikar Dronamraju wrote:
->>> +static bool filter_chain(struct uprobe *uprobe, struct task_struct *t)
->>> +{
->>> +	struct uprobe_consumer *consumer;
->>> +	bool ret = false;
->>> +
->>> +	down_read(&uprobe->consumer_rwsem);
->>> +	for (consumer = uprobe->consumers; consumer;
->>> +					consumer = consumer->next) {
->>> +		if (!consumer->filter || consumer->filter(consumer, t)) {
->>> +			ret = true;
->>> +			break;
->>> +		}
->>> +	}
->>> +	up_read(&uprobe->consumer_rwsem);
->>> +	return ret;
->>> +}
->>> +
->>
->> Where this function is called from ? This patch seems the last one of this series...
->>
-> 
-> Sorry for the delayed reply, I was travelling to LFCS.
-> Still I have to connect the filter from trace/perf probe. 
+Instead of walking the whole PCI tree to update the of_node's for
+PCI busses and devices after the fact, enable the new generic core
+code for doing so by providing the proper device nodes for the
+PCI host bridges
 
-I see, and I'd like to suggest you to separate that series
-from this "uprobe" series. For upstream merge, indeed, we
-need a consumer of the uprobe. However, it should be as simple
-as possible, so that we can focus on reviewing uprobe itself.
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ arch/x86/kernel/devicetree.c |   62 +++++++++++++----------------------------
+ 1 files changed, 20 insertions(+), 42 deletions(-)
 
-> Thats listed as todo and thats the next thing I am planning to work on.
-
-Interesting:) Could you tell us what the plan will introduce?
-How will it be connected? how will we use it?
-
-Thank you,
-
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index 706a9fb..f6c9d67 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -123,6 +123,26 @@ static int __init add_bus_probe(void)
+ module_init(add_bus_probe);
+ 
+ #ifdef CONFIG_PCI
++struct device_node * pcibios_get_phb_of_node(struct pci_bus *bus)
++{
++	struct device_node *np;
++	unsigned int bus_min;
++
++	for_each_node_by_type(np, "pci") {
++		const void *prop;
++		struct pci_bus *bus;
++		unsigned int bus_min;
++		struct device_node *child;
++
++		prop = of_get_property(np, "bus-range", NULL);
++		if (!prop)
++			continue;
++		bus_min = be32_to_cpup(prop);
++		if (bus->number == bus_min)
++			return np;
++	}
++}
++
+ static int x86_of_pci_irq_enable(struct pci_dev *dev)
+ {
+ 	struct of_irq oirq;
+@@ -154,50 +174,8 @@ static void x86_of_pci_irq_disable(struct pci_dev *dev)
+ 
+ void __cpuinit x86_of_pci_init(void)
+ {
+-	struct device_node *np;
+-
+ 	pcibios_enable_irq = x86_of_pci_irq_enable;
+ 	pcibios_disable_irq = x86_of_pci_irq_disable;
+-
+-	for_each_node_by_type(np, "pci") {
+-		const void *prop;
+-		struct pci_bus *bus;
+-		unsigned int bus_min;
+-		struct device_node *child;
+-
+-		prop = of_get_property(np, "bus-range", NULL);
+-		if (!prop)
+-			continue;
+-		bus_min = be32_to_cpup(prop);
+-
+-		bus = pci_find_bus(0, bus_min);
+-		if (!bus) {
+-			printk(KERN_ERR "Can't find a node for bus %s.\n",
+-					np->full_name);
+-			continue;
+-		}
+-
+-		if (bus->self)
+-			bus->self->dev.of_node = np;
+-		else
+-			bus->dev.of_node = np;
+-
+-		for_each_child_of_node(np, child) {
+-			struct pci_dev *dev;
+-			u32 devfn;
+-
+-			prop = of_get_property(child, "reg", NULL);
+-			if (!prop)
+-				continue;
+-
+-			devfn = (be32_to_cpup(prop) >> 8) & 0xff;
+-			dev = pci_get_slot(bus, devfn);
+-			if (!dev)
+-				continue;
+-			dev->dev.of_node = child;
+-			pci_dev_put(dev);
+-		}
+-	}
+ }
+ #endif
+ 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.1
+
