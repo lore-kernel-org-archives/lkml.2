@@ -1,192 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab1DGI0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 04:26:19 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53383 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab1DGI0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 04:26:15 -0400
-Date: Thu, 7 Apr 2011 10:25:50 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@MIT.EDU>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFT/PATCH v2 2/6] x86-64: Optimize vread_tsc's barriers
-Message-ID: <20110407082550.GG24879@elte.hu>
-References: <cover.1302137785.git.luto@mit.edu>
- <80b43d57d15f7b141799a7634274ee3bfe5a5855.1302137785.git.luto@mit.edu>
+	id S1755598Ab1DGI04 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 04:26:56 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:12503
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755262Ab1DGI0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 04:26:54 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bh8275dhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJ9WSH-01-95X-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, <stable@kernel.org>
+Subject: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+Date: Thu, 7 Apr 2011 10:26:29 +0200
+Message-ID: <1302164789-31887-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <80b43d57d15f7b141799a7634274ee3bfe5a5855.1302137785.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Booting 2.6.38 on my test machine produces a lockdep warning
+from the usb_amd_find_chipset_info() function:
 
-(Cc:-ed more memory ordering folks.)
+ WARNING: at /data/lemmy/linux.trees.git/kernel/lockdep.c:2465 lockdep_trace_alloc+0x95/0xc2()
+ Hardware name: Snook
+ Modules linked in:
+ Pid: 959, comm: work_for_cpu Not tainted 2.6.39-rc2+ #22
+ Call Trace:
+  [<ffffffff8103c0d4>] warn_slowpath_common+0x80/0x98
+  [<ffffffff812387e6>] ? T.492+0x24/0x26
+  [<ffffffff8103c101>] warn_slowpath_null+0x15/0x17
+  [<ffffffff81068667>] lockdep_trace_alloc+0x95/0xc2
+  [<ffffffff810ed9ac>] slab_pre_alloc_hook+0x18/0x3b
+  [<ffffffff810ef227>] kmem_cache_alloc_trace+0x25/0xba
+  [<ffffffff812387e6>] T.492+0x24/0x26
+  [<ffffffff81238816>] pci_get_subsys+0x2e/0x73
+ sr0: scsi3-mmc drive: 48x/48x writer dvd-ram cd/rw xa/form2 cdda tray
+  [<ffffffff8123886c>] pci_get_device+0x11/0x13
+  [<ffffffff814082a9>] usb_amd_find_chipset_info+0x3f/0x18a
+...
 
-* Andy Lutomirski <luto@MIT.EDU> wrote:
+It turns out that this function calls pci_get_device under a spin_lock
+with irqs disabled, but the pci_get_device function is only allowed in
+preemptible context.
 
-> RDTSC is completely unordered on modern Intel and AMD CPUs.  The
-> Intel manual says that lfence;rdtsc causes all previous instructions
-> to complete before the tsc is read, and the AMD manual says to use
-> mfence;rdtsc to do the same thing.
-> 
-> We want a stronger guarantee, though: we want the tsc to be read
-> before any memory access that occurs after the call to
-> vclock_gettime (or vgettimeofday).  We currently guarantee that with
-> a second lfence or mfence.  This sequence is not really supported by
-> the manual (AFAICT) and it's also slow.
-> 
-> This patch changes the rdtsc to use implicit memory ordering instead
-> of the second fence.  The sequence looks like this:
-> 
-> {l,m}fence
-> rdtsc
-> mov [something dependent on edx],[tmp]
-> return [some function of tmp]
-> 
-> This means that the time stamp has to be read before the load, and
-> the return value depends on tmp.  All x86-64 chips guarantee that no
-> memory access after a load moves before that load.  This means that
-> all memory access after vread_tsc occurs after the time stamp is
-> read.
-> 
-> The trick is that the answer should not actually change as a result
-> of the sneaky memory access.  I accomplish this by shifting rdx left
-> by 32 bits, twice, to generate the number zero.  (I can't imagine
-> that any CPU can break that dependency.)  Then I use "zero" as an
-> offset to a memory access that we had to do anyway.
-> 
-> On Sandy Bridge (i7-2600), this improves a loop of
-> clock_gettime(CLOCK_MONOTONIC) by 5 ns/iter (from ~22.7 to ~17.7).
-> time-warp-test still passes.
-> 
-> I suspect that it's sufficient to just load something dependent on
-> edx without using the result, but I don't see any solid evidence in
-> the manual that CPUs won't eliminate useless loads.  I leave scary
-> stuff like that to the real experts.
-> 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/kernel/tsc.c |   37 ++++++++++++++++++++++++++++++-------
->  1 files changed, 30 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index bc46566..858c084 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -767,18 +767,41 @@ static cycle_t read_tsc(struct clocksource *cs)
->  static cycle_t __vsyscall_fn vread_tsc(void)
->  {
->  	cycle_t ret;
-> +	u64 zero, last;
->  
->  	/*
-> -	 * Surround the RDTSC by barriers, to make sure it's not
-> -	 * speculated to outside the seqlock critical section and
-> -	 * does not cause time warps:
-> +	 * rdtsc is unordered, and we want it to be ordered like
-> +	 * a load with respect to other CPUs (and we don't want
-> +	 * it to execute absurdly early wrt code on this CPU).
-> +	 * rdtsc_barrier() is a barrier that provides this ordering
-> +	 * with respect to *earlier* loads.  (Which barrier to use
-> +	 * depends on the CPU.)
->  	 */
->  	rdtsc_barrier();
-> -	ret = (cycle_t)vget_cycles();
-> -	rdtsc_barrier();
->  
-> -	return ret >= VVAR(vsyscall_gtod_data).clock.cycle_last ?
-> -		ret : VVAR(vsyscall_gtod_data).clock.cycle_last;
-> +	asm volatile ("rdtsc\n\t"
-> +		      "shl $0x20,%%rdx\n\t"
-> +		      "or %%rdx,%%rax\n\t"
-> +		      "shl $0x20,%%rdx"
-> +		      : "=a" (ret), "=d" (zero) : : "cc");
-> +
-> +	/*
-> +	 * zero == 0, but as far as the processor is concerned, zero
-> +	 * depends on the output of rdtsc.  So we can use it as a
-> +	 * load barrier by loading something that depends on it.
-> +	 * x86-64 keeps all loads in order wrt each other, so this
-> +	 * ensures that rdtsc is ordered wrt all later loads.
-> +	 */
-> +
-> +	/*
-> +	 * This doesn't multiply 'zero' by anything, which *should*
-> +	 * generate nicer code, except that gcc cleverly embeds the
-> +	 * dereference into the cmp and the cmovae.  Oh, well.
-> +	 */
-> +	last = *( (cycle_t *)
-> +		  ((char *)&VVAR(vsyscall_gtod_data).clock.cycle_last + zero) );
-> +
-> +	return ret >= last ? ret : last;
+This patch fixes this by using temporary variables in the quirk
+algorithm and commiting them later to the struct under the lock. This
+moves all pci_get_device() invocations out of the spin_lock and fixes
+the lockdep warning.
 
-Ok, that's like totally sick ;-)
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/usb/host/pci-quirks.c |   86 +++++++++++++++++++++++++----------------
+ 1 files changed, 52 insertions(+), 34 deletions(-)
 
-It's a software barrier in essence, using data dependency obfuscation.
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 1d586d4..b5802f6 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -84,65 +84,83 @@ int usb_amd_find_chipset_info(void)
+ {
+ 	u8 rev = 0;
+ 	unsigned long flags;
++	struct amd_chipset_info info;
++	int ret;
+ 
+ 	spin_lock_irqsave(&amd_lock, flags);
+ 
+-	amd_chipset.probe_count++;
+ 	/* probe only once */
+-	if (amd_chipset.probe_count > 1) {
++	if (amd_chipset.probe_count > 0) {
+ 		spin_unlock_irqrestore(&amd_lock, flags);
+ 		return amd_chipset.probe_result;
+ 	}
++	info = amd_chipset;
++	spin_unlock_irqrestore(&amd_lock, flags);
+ 
+-	amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
+-	if (amd_chipset.smbus_dev) {
+-		rev = amd_chipset.smbus_dev->revision;
++	info.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
++	if (info.smbus_dev) {
++		rev = info.smbus_dev->revision;
+ 		if (rev >= 0x40)
+-			amd_chipset.sb_type = 1;
++			info.sb_type = 1;
+ 		else if (rev >= 0x30 && rev <= 0x3b)
+-			amd_chipset.sb_type = 3;
++			info.sb_type = 3;
+ 	} else {
+-		amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-							0x780b, NULL);
+-		if (!amd_chipset.smbus_dev) {
+-			spin_unlock_irqrestore(&amd_lock, flags);
+-			return 0;
++		info.smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
++						0x780b, NULL);
++		if (!info.smbus_dev) {
++			ret = 0;
++			goto commit;
+ 		}
+-		rev = amd_chipset.smbus_dev->revision;
++
++		rev = info.smbus_dev->revision;
+ 		if (rev >= 0x11 && rev <= 0x18)
+-			amd_chipset.sb_type = 2;
++			info.sb_type = 2;
+ 	}
+ 
+-	if (amd_chipset.sb_type == 0) {
+-		if (amd_chipset.smbus_dev) {
+-			pci_dev_put(amd_chipset.smbus_dev);
+-			amd_chipset.smbus_dev = NULL;
++	if (info.sb_type == 0) {
++		if (info.smbus_dev) {
++			pci_dev_put(info.smbus_dev);
++			info.smbus_dev = NULL;
+ 		}
+-		spin_unlock_irqrestore(&amd_lock, flags);
+-		return 0;
++		ret = 0;
++		goto commit;
+ 	}
+ 
+-	amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
+-	if (amd_chipset.nb_dev) {
+-		amd_chipset.nb_type = 1;
++	info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
++	if (info.nb_dev) {
++		info.nb_type = 1;
+ 	} else {
+-		amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-							0x1510, NULL);
+-		if (amd_chipset.nb_dev) {
+-			amd_chipset.nb_type = 2;
+-		} else  {
+-			amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-								0x9600, NULL);
+-			if (amd_chipset.nb_dev)
+-				amd_chipset.nb_type = 3;
++		info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
++		if (info.nb_dev) {
++			info.nb_type = 2;
++		} else {
++			info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
++						     0x9600, NULL);
++			if (info.nb_dev)
++				info.nb_type = 3;
+ 		}
+ 	}
+ 
+-	amd_chipset.probe_result = 1;
++	ret = info.probe_result = 1;
+ 	printk(KERN_DEBUG "QUIRK: Enable AMD PLL fix\n");
+ 
++commit:
++
++	spin_lock_irqsave(&amd_lock, flags);
++	if (amd_chipset.probe_count > 0) {
++		/* race - someone else was faster - drop devices */
++		if (info.nb_dev)
++			pci_dev_put(info.nb_dev);
++		if (info.smbus_dev)
++			pci_dev_put(info.smbus_dev);
++	} else {
++		/* no race - commit the result */
++		info.probe_count++;
++		amd_chipset = info;
++	}
+ 	spin_unlock_irqrestore(&amd_lock, flags);
+-	return amd_chipset.probe_result;
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(usb_amd_find_chipset_info);
+ 
+-- 
+1.7.1
 
-First objection would be the extra memory references: we have a general 
-aversion against memory references. The memory reference here is arguably 
-special, it is to the stack so should be in cache and should be pretty fast.
 
-But the code really looks too tricky for its own good.
-
-For example this assumption:
-
-> The trick is that the answer should not actually change as a result
-> of the sneaky memory access.  I accomplish this by shifting rdx left
-> by 32 bits, twice, to generate the number zero.  (I can't imagine
-> that any CPU can break that dependency.)  Then I use "zero" as an
-
-is not particularly future-proof. Yes, i doubt any CPU will bother to figure 
-out the data dependency across such a sequence, but synthetic CPUs might and 
-who knows what the far future brings.
-
-Also, do we *really* have RDTSC SMP-coherency guarantees on multi-socket CPUs 
-today? It now works on multi-core, but on bigger NUMA i strongly doubt it. So 
-this hack tries to preserve something that we wont be able to offer anyway.
-
-So the much better optimization would be to give up on exact GTOD coherency and 
-just make sure the same task does not see time going backwards. If user-space 
-wants precise coherency it can use synchronization primitives itsef. By default 
-it would get the fast and possibly off by a few cycles thing instead. We'd 
-never be seriously jump in time - only small jumps would happen in practice, 
-depending on CPU parallelism effects.
-
-If we do that then the optimization would be to RDTSC and not use *any* of the 
-barriers, neither the hardware ones nor your tricky software data-dependency 
-obfuscation barrier.
-
-Note that doing this will also have other advantages: we wont really need 
-alternatives patching, thus we could more easily move this code into .S - which 
-would allow further optimizations, such as the elimination of this GCC 
-inflicted slowdown:
-
-> +	/*
-> +	 * This doesn't multiply 'zero' by anything, which *should*
-> +	 * generate nicer code, except that gcc cleverly embeds the
-> +	 * dereference into the cmp and the cmovae.  Oh, well.
-> +	 */
-> +	last = *( (cycle_t *)
-> +		  ((char *)&VVAR(vsyscall_gtod_data).clock.cycle_last + zero) );
-> +
-> +	return ret >= last ? ret : last;
-
-Thanks,
-
-	Ingo
