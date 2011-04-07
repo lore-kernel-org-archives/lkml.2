@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab1DGUs7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 16:48:59 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59960
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757098Ab1DGUs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 16:48:58 -0400
-Date: Thu, 07 Apr 2011 13:48:21 -0700 (PDT)
-Message-Id: <20110407.134821.71129934.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sathya.perla@emulex.com,
-        ajit.khaparde@emulex.com
-Subject: Re: linux-next: manual merge of the net tree with the net-current
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110407113943.2f054e2f.sfr@canb.auug.org.au>
-References: <20110407113943.2f054e2f.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752098Ab1DGVAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 17:00:19 -0400
+Received: from nm8-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.23]:44836 "HELO
+	nm8-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751885Ab1DGVAS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 17:00:18 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 710754.14020.bm@omp1051.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=wSS6nNm0raHij5EVyOdunDKTL12HAhViUzpbuG/98S8ry4hyZlq8XJZMY45qKCSp6SHLsbKig13pnQ80sHT6Ly3g5ojm1tlHl0MbgKmS6heXvmqDLqZiNSnSAG01n5AhOCpF5rqnsWadW8Xt8I+EWPiCnvTqKqSRcZXqn4fSucw=;
+Message-ID: <401628.33172.qm@web120013.mail.ne1.yahoo.com>
+X-YMail-OSG: OlyDvekVM1kUqa7b2kBQ89FtedG7_MSz5pfbaMqPArKajhQ
+ yfIj5QN2TiPqCCTe75byR3LtaGpacALGDAIV.o8t2iLDHYQWrUhVnbgvX8.J
+ kQrnVQsoiTMR93llsmMGXOhZdvVtpTvhT7jHGNHvu7SHO4kc2NpYzfn9Kw.T
+ pVkPQsebCNc.WBX8a1fuA1doQL7Ux0lMJQh8Jm28U9V8n04o7nGHCF9xO_C9
+ Ydke84dB468TdvnyVzkqCJr6MHNo5uUVbKPg.sDytx5IeNNvbXHIDCmn1WSf
+ AGMJhvo_lSxgZNgFM5QKSNf6GAWxOsVv.HqmqAJ8pe_i7K7N5fZ_Bs7TBQg-
+ -
+X-Mailer: YahooMailWebService/0.8.109.295617
+Date: Thu, 7 Apr 2011 14:00:16 -0700 (PDT)
+From: Tim Peters <tim.peters90@yahoo.com>
+Subject: Re:
+To: lindalou95@mindspring.com, linux-kernel@vger.kernel.org,
+        lora.santana@pacbell.net, lori@execpc.com, lrridghood@msn.com,
+        luno8@msn.com, lxialucard@msn.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 7 Apr 2011 11:39:43 +1000
-
-> Hi all,
-> 
-> Today's linux-next merge of the net tree got a conflict in
-> drivers/net/benet/be_main.c between commit 2d5d41546504 ("be2net: Fix a
-> potential crash during shutdown.") from the net-current tree and commit
-> 0f4a68288217 ("be2net: cancel be_worker in be_shutdown() even when i/f is
-> down") from the net tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
-
-I'll do a merge to clear this up for you, thanks Stephen.
+You’ll have crazy sex!. http://vecteurhabitat.phpnet.org/friends_links.php?kID=65x4
