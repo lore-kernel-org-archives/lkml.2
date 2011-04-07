@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1DGXCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 19:02:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55504 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751141Ab1DGXCi (ORCPT
+	id S1756328Ab1DGXEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 19:04:10 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:35035 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab1DGXEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 19:02:38 -0400
-Date: Thu, 7 Apr 2011 16:01:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, kernel-janitors@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/rtc/rtc-mrst.c: Use release_mem_region after
- request_mem_region
-Message-Id: <20110407160142.0a9d399c.akpm@linux-foundation.org>
-In-Reply-To: <1300136425-3311-1-git-send-email-julia@diku.dk>
-References: <1300136425-3311-1-git-send-email-julia@diku.dk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 7 Apr 2011 19:04:08 -0400
+Message-ID: <4D9E42E1.1060902@ahsoftware.de>
+Date: Fri, 08 Apr 2011 01:04:01 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Alexander Clouter <alex@digriz.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on	the
+ basis of the memory size.
+References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de> <1302122121-3652-2-git-send-email-holler@ahsoftware.de> <alpine.LFD.2.00.1104061739100.28032@xanadu.home> <4D9CED15.2010806@ahsoftware.de> <alpine.LFD.2.00.1104061850410.28032@xanadu.home> <4D9CF5B3.9020007@ahsoftware.de> <toa078-0do.ln1@chipmunk.wormnet.eu> <4D9E2D1C.7070102@ahsoftware.de> <20110407220855.GD17049@n2100.arm.linux.org.uk>
+In-Reply-To: <20110407220855.GD17049@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 22:00:25 +0100
-Julia Lawall <julia@diku.dk> wrote:
+Am 08.04.2011 00:08, schrieb Russell King - ARM Linux:
 
-> The memory allocated using request_mem_region should be released using
-> release_mem_region, not release_region.
-> 
-> The semantic patch that fixes part of this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression E1,E2,E3;
-> @@
-> 
-> request_mem_region(E1,E2,E3)
-> ...
-> ?- release_region(E1,E2)
-> + release_mem_region(E1,E2)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/rtc/rtc-mrst.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-> index b86bc32..558dd7d 100644
-> --- a/drivers/rtc/rtc-mrst.c
-> +++ b/drivers/rtc/rtc-mrst.c
-> @@ -379,7 +379,7 @@ cleanup1:
->  	mrst_rtc.dev = NULL;
->  	rtc_device_unregister(mrst_rtc.rtc);
->  cleanup0:
-> -	release_region(iomem->start, iomem->end + 1 - iomem->start);
-> +	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
->  	dev_err(dev, "rtc-mrst: unable to initialise\n");
->  	return retval;
->  }
-> @@ -405,7 +405,7 @@ static void __exit rtc_mrst_do_remove(struct device *dev)
->  	mrst->rtc = NULL;
->  
->  	iomem = mrst->iomem;
-> -	release_region(iomem->start, iomem->end + 1 - iomem->start);
-> +	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
->  	mrst->iomem = NULL;
->  
->  	mrst->dev = NULL;
+>> Requiring a machine ID and the needed stuff to handle that for a board
+>> which just is using two GPIOs different than another board is why the
+>> ARM tree exploded.
+>
+> You can not be any more wrong than that.
+>
+> The reason the ARM tree exploded is because of the compartmentalized
+> sub-community structure, where the vast majority of (eg) OMAP development
+> is done independently of the (eg) Samsung development.
+>
+> Consequently, there's no attempt to consolidate code between the SoCs,
+> even for basic stuff like 32-bit up-counting timers.  We've ended up with
+> _nine_ implementations of clocksources all doing the same thing in that
+> respect.
+>
+> That's got precisely zilch to do with machine IDs, and your attempt to
+> blame the bloat on machine IDs just shows how misinformed you are.
 
-We may as well clean this up too.
+I had a look at what's going on in the OMAP linux world for more than a 
+year now and I think I've seen a lot of the stuff you are referring to.
 
---- a/drivers/rtc/rtc-mrst.c~drivers-rtc-rtc-mrstc-use-release_mem_region-after-request_mem_region-fix
-+++ a/drivers/rtc/rtc-mrst.c
-@@ -380,7 +380,7 @@ cleanup1:
- cleanup0:
- 	dev_set_drvdata(dev, NULL);
- 	mrst_rtc.dev = NULL;
--	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
-+	release_mem_region(iomem->start, resource_size(iomem));
- 	dev_err(dev, "rtc-mrst: unable to initialise\n");
- 	return retval;
- }
-@@ -406,7 +406,7 @@ static void __devexit rtc_mrst_do_remove
- 	mrst->rtc = NULL;
- 
- 	iomem = mrst->iomem;
--	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
-+	release_mem_region(iomem->start, resource_size(iomem));
- 	mrst->iomem = NULL;
- 
- 	mrst->dev = NULL;
-_
+And I think one of the reasons that the mess happened is the same I've 
+got trapped in. Why should anyone try to submit patches if he must fear 
+to get caught in some senseless endless discussion about one line.
 
-which makes one wonder why we don't have
+E.g. requiring people to use NULL than 0 or that stupid discussion now 
+about the simple patch I've posted. I'm writing whole (readable) C++ 
+applications (not crap!) in less time than what's is needed to submit 
+and discuss a small patch for some silly hw.
 
-void release_resource_mem(struct resource *r)
-{
-	release_mem_region(r->start, resource_size(r));
-}
+So for me it's fully understandable why companies don't try to work with 
+kernel people at first. They try to develop innovativ products they can 
+sell, and it doesn't help if their developers would have to fear that 
+they get called stupid, crap and abonimation writing aliens for things 
+like the small patch I've posted, which in turn requires them to defend 
+them against those people doing so (which ends in such stupid 
+discussions like this).
+
+It's one thing to say such to someone you know and work with, but it's a 
+totally different thing to say such to someone you almost know nothing 
+about. And not everybody who hasn't the name of a big company in his 
+email address is a moron.
+
+Sorry, I'm getting sick having to defend me here against people who like 
+to call others crap and abonimation writing ones just because they have 
+maintainer status or whatever.
+
+Regards,
+
+Alexander
