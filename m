@@ -1,98 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab1DGJty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 05:49:54 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47466 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab1DGJtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 05:49:52 -0400
-Date: Thu, 7 Apr 2011 09:48:56 GMT
-From: tip-bot for Feng Tang <feng.tang@intel.com>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, torvalds@linux-foundation.org,
-        john.stultz@linaro.org, tglx@linutronix.de, feng.tang@intel.com,
-        a.zummo@towertech.it, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        john.stultz@linaro.org, tglx@linutronix.de, feng.tang@intel.com,
-        a.zummo@towertech.it, mingo@elte.hu
-In-Reply-To: <1302140384-27571-1-git-send-email-feng.tang@intel.com>
-References: <1302140384-27571-1-git-send-email-feng.tang@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] rtc, x86/mrst/vrtc: Fix boot crash in rtc_read_alarm()
-Message-ID: <tip-de97a21a23dda34f1754a748560dede139e6bfc2@git.kernel.org>
-Git-Commit-ID: de97a21a23dda34f1754a748560dede139e6bfc2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753949Ab1DGJzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 05:55:08 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:50123 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab1DGJzF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 05:55:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vd2Pr9i9UWm9QjRhD/7wFrMxUPRhnf/euyU5vprfNhYvlm1GP9DRggsRSEelusejdK
+         Re4MEeo2ie5WtiKp+YyHx3dpD342Ur45xIaJm8mEMjrxeLDm0WQYkXFVOw/Uj6Boii0c
+         k6PhgvIsSd7l14HI+3gjNlN+gXInZ2Izy2biA=
 MIME-Version: 1.0
+In-Reply-To: <1302162886.10725.4.camel@maggie>
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+	<op.vtisojsk3ri7v4@arend-laptop>
+	<BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
+	<op.vti9ote53ri7v4@arend-laptop>
+	<BANLkTin-u=U_-cUH9oCco0LjEBuQmh4wag@mail.gmail.com>
+	<BANLkTi=x89+52cMeutOB7J--QQta+mX_wg@mail.gmail.com>
+	<1302123428.20093.6.camel@maggie>
+	<BANLkTimGSoYzp0Z4vyCS_H5PDKhgjYuLBA@mail.gmail.com>
+	<1302124112.20093.11.camel@maggie>
+	<BANLkTik76dwwnmmPzXL9Kkk7fdt01QPzZA@mail.gmail.com>
+	<1302124737.27258.7.camel@dev.znau.edu.ua>
+	<BANLkTi=4-LgrkjG96+Ar3SjMOsKh-dMuLg@mail.gmail.com>
+	<1302134429.27258.32.camel@dev.znau.edu.ua>
+	<BANLkTinfM0QLFwcKZXfWQ_jNYfBJg_et-Q@mail.gmail.com>
+	<1302162886.10725.4.camel@maggie>
+Date: Thu, 7 Apr 2011 11:55:03 +0200
+Message-ID: <BANLkTim30i8kBkvsSvmWxQaNxWkfMjhOZA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>
+Cc: George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 07 Apr 2011 09:48:58 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  de97a21a23dda34f1754a748560dede139e6bfc2
-Gitweb:     http://git.kernel.org/tip/de97a21a23dda34f1754a748560dede139e6bfc2
-Author:     Feng Tang <feng.tang@intel.com>
-AuthorDate: Thu, 7 Apr 2011 09:39:44 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 7 Apr 2011 11:27:42 +0200
+W dniu 7 kwietnia 2011 09:54 użytkownik Michael Büsch <mb@bu3sch.de> napisał:
+> On Thu, 2011-04-07 at 02:54 +0200, Rafał Miłecki wrote:
+>> W dniu 7 kwietnia 2011 02:00 użytkownik George Kashperko
+>> <george@znau.edu.ua> napisał:
+>> > For PCI function description take a look at PCI specs or PCI
+>> > configuration space description (e. g.
+>> > http://en.wikipedia.org/wiki/PCI_configuration_space)
+>> >
+>> > Sorry for missleading short-ups, w11 - bcm80211 core, under two-head I
+>> > mean ssb/axi with two functional cores on same interconnect (like w11
+>> > +w11, not a lot of these exists I guess). Also there were some b43+b44
+>> > on single PCI ssb host and those where implemented as ssb interconnect
+>> > on multifunctional PCI host therefore providing separate access windows
+>> > for each function.
+>> >
+>> > Might I mussunderstood something (its late night here at my place) when
+>> > you where talking about using coreswitching involved for two drivers
+>> > therefore I remembered about those functions. Seems now you were talking
+>> > about chipcommon+b43 access sharing same window.
+>> >
+>> > As for core switching requirments for earlier SSB interconnects on PCI
+>> > hosts where there were no direct chipcommon access, that one can be
+>> > accomplished without spin_lock/mutex for b43 or b44 cores with proper
+>> > bus design.
+>> >
+>> > AXI doesn't need spinlocks/mutexes as both chipcommon and pci bridge are
+>> > available directly and b43 will be the only one requiring window access.
+>>
+>> Ahh, so while talking about 4 windows, I guess you counted fixes
+>> windows as well. That would be right, matching my knowledge.
+>>
+>> When asking question about amount of cores we may want to use
+>> simultaneously I didn't think about ChipCommon or PCIe. The real
+>> problem would be to support for example two 802.11 cores and one
+>> ethernet core at the same time. That gives us 3 cores while we have
+>> only 2 sliding windows.
+>
+> Would that really be a problem? Think of it. This combination
+> will only be available on embedded devices. But do we have windows
+> on embedded devices? I guess not. If AXI is similar to SSB, the MMIO
+> of all cores will always be mapped. So accesses can be done
+> without switch or lock.
+>
+> I do really think that engineers at broadcom are clever enough
+> to design a hardware that does not require expensive window sliding
+> all the time while operating.
 
-rtc, x86/mrst/vrtc: Fix boot crash in rtc_read_alarm()
+I also think so. When asking about amount of cores (non PCIe, non
+ChipCommon) which has to work simultaneously. I'm not sure if we will
+meet AI board with 2 cores (non PCIe, non ChipCommon) on PCIe host. I
+don't think we will see more than 2 cores (non PCIe, non ChipCommon)
+on PCIe host.
 
-Commit f44f7f96a20 ("RTC: Initialize kernel state from RTC") caused a
-boot regression on the MRST platform.
-
-The reason is that rtc_device_register() calls rtc_read_alarm() after
-that change, which function does not have all driver data set up yet.
-
-The rtc-mrst driver needs to call dev_set_drvdata() before rtc_device_register()
-gets called.
-
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Acked-by: John Stultz <john.stultz@linaro.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1302140384-27571-1-git-send-email-feng.tang@intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- drivers/rtc/rtc-mrst.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-index 332a2c4..b2f0968 100644
---- a/drivers/rtc/rtc-mrst.c
-+++ b/drivers/rtc/rtc-mrst.c
-@@ -342,6 +342,8 @@ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
- 
- 	mrst_rtc.irq = rtc_irq;
- 	mrst_rtc.iomem = iomem;
-+	mrst_rtc.dev = dev;
-+	dev_set_drvdata(dev, &mrst_rtc);
- 
- 	mrst_rtc.rtc = rtc_device_register(driver_name, dev,
- 				&mrst_rtc_ops, THIS_MODULE);
-@@ -350,8 +352,6 @@ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
- 		goto cleanup0;
- 	}
- 
--	mrst_rtc.dev = dev;
--	dev_set_drvdata(dev, &mrst_rtc);
- 	rename_region(iomem, dev_name(&mrst_rtc.rtc->dev));
- 
- 	spin_lock_irq(&rtc_lock);
-@@ -376,9 +376,10 @@ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
- 	return 0;
- 
- cleanup1:
--	mrst_rtc.dev = NULL;
- 	rtc_device_unregister(mrst_rtc.rtc);
- cleanup0:
-+	dev_set_drvdata(dev, NULL);
-+	mrst_rtc.dev = NULL;
- 	release_region(iomem->start, iomem->end + 1 - iomem->start);
- 	dev_err(dev, "rtc-mrst: unable to initialise\n");
- 	return retval;
+-- 
+Rafał
