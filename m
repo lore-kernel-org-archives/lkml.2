@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab1DGHDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 03:03:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63129 "EHLO song.cn.fujitsu.com"
+	id S1752243Ab1DGHFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 03:05:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55383 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab1DGHDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 03:03:14 -0400
-Message-ID: <4D9D622E.1080202@cn.fujitsu.com>
-Date: Thu, 07 Apr 2011 15:05:18 +0800
+	id S1750979Ab1DGHFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 03:05:02 -0400
+Message-ID: <4D9D629A.60605@cn.fujitsu.com>
+Date: Thu, 07 Apr 2011 15:07:06 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
@@ -22,14 +22,14 @@ CC: "H. Peter Anvin" <hpa@linux.intel.com>,
         Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
         linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 1/4] rcu: split rcupdate.h
+Subject: [PATCH 2/4] rcu: make rcudpate.h can use struct task_struct.
 References: <1301570320.4859.242.camel@twins> <4D953121.6090901@cn.fujitsu.com> <1301657749.4859.531.camel@twins> <20110405215450.GK2247@linux.vnet.ibm.com> <20110405230745.GA5972@linux.vnet.ibm.com> <1302077428.2225.1365.camel@twins> <20110406192119.GB2265@linux.vnet.ibm.com> <20110406201350.GA9378@linux.vnet.ibm.com> <1302123970.2207.4.camel@laptop> <4D9CDACB.9050705@linux.intel.com> <20110407003041.GD2265@linux.vnet.ibm.com>
 In-Reply-To: <20110407003041.GD2265@linux.vnet.ibm.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-07 15:03:55,
+ 2011-04-07 15:05:43,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-07 15:03:56,
-	Serialize complete at 2011-04-07 15:03:56
+ 2011-04-07 15:05:45,
+	Serialize complete at 2011-04-07 15:05:45
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,1334 +37,271 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Split rcupdate.h and move basic defines to rcupdate_defs.h.
-It allows rcupdate.h using struct task_struct.
+Step1: Ensure sched.h that it does not include rcudpate.h.
 
-Only rcu_read_lock*() (which require struct task_struct) are left
-in rcupdate.h. Some other code(example, the declaration of synchronize_rcu())
-can also be left in rcupdate.h actually, but it is not required and
-it will make the works more complex. So I also move them.
-The result rcupdate_defs.h is a little big, but it just contains the RCU
-defines and declarations, it is OK. Maybe rcupdate_basic.h is a better name?
+rcupdate.h is so generic that it is included in many headers.
+sched.h is so complex that it includes many headers.
+So we have to find out all header files which directly include
+rcupdate.h and are directly/indirectly included by sched.h.
+
+I found out these files by a script(No False Positive, No False Negetive):
+2 include/linux/aio.h ---> include/linux/rcupdate.h
+2 include/linux/key.h ---> include/linux/rcupdate.h
+2 include/linux/pid.h ---> include/linux/rcupdate.h
+2 include/linux/rculist.h ---> include/linux/rcupdate.h
+2 include/linux/sched.h ---> include/linux/rcupdate.h
+2 include/linux/sem.h ---> include/linux/rcupdate.h
+2 include/linux/sysctl.h ---> include/linux/rcupdate.h
+
+So the step 1 changes these files just includes rcupdate_defs.h
+
+Step2: Ensure rcupdate.h included in the files which use rcu_read_lock*()
+
+When the step 1 is done, the kernel build will fail, because some
+files just include the above files and use rcu_read_lock*() without
+rcupdate.h included.
+
+# vi ~/is_include.py     ########### command1
+
+import re
+import sys
+
+include_re = re.compile(r'#\s*include\s*<([_\-\w]*/)([/\._\-\w]*)>')
+searched = {}
+
+def is_include(f, depth):
+  if f == ('include/linux/', 'rcupdate.h'):
+    sys.exit(0)
+  if depth <= 0:
+    return
+  if searched.has_key(f):
+    if searched[f] > depth:
+      return
+  searched[f] = depth
+  try:
+    ff = file(f[0]+f[1])
+  except:
+    return ()
+  for ch in include_re.findall(ff.read()):
+    if ch[0] != 'asm/':
+      is_include(('include/' + ch[0], ch[1]), depth - 1)
+
+"""usage: is_include.py file_name depth """
+is_include(('', sys.argv[1]), int(sys.argv[2]))
+sys.exit(1)
+
+# vi ~/is_include.sh ############## command2
+#!/bin/bash
+
+depth="$1"
+
+find -name "*.c" | xargs grep -l rcu_read_lock | while read file
+do
+	python ~/is_include.py "$file" "$depth" || echo "$file"
+done
+
+# ~/is_include.sh 3   ################# command3(after step1 is done)
+./drivers/base/power/wakeup.c
+./drivers/misc/sgi-gru/grutlbpurge.c
+./drivers/char/tpm/tpm.c
+./drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
+./drivers/net/wireless/ath/ath9k/xmit.c
+./drivers/net/wireless/ath/ath9k/htc_drv_main.c
+./drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+./drivers/net/wireless/ath/carl9170/mac.c
+./drivers/net/wireless/ath/ar9170/mac.c
+./drivers/staging/tidspbridge/pmgr/dspapi.c
+./drivers/s390/cio/qdio_thinint.c
+./lib/is_single_threaded.c
+./fs/autofs4/waitq.c
+./fs/ecryptfs/messaging.c
+./fs/xfs/xfs_mount.c
+./fs/xfs/linux-2.6/xfs_sync.c
+./fs/xfs/xfs_iget.c
+./fs/xfs/xfs_inode.c
+./arch/ia64/sn/kernel/irq.c
+./security/tomoyo/common.c
+./security/apparmor/audit.c
+./kernel/sched_fair.c
+./kernel/tsacct.c
+./kernel/sched_debug.c
+./kernel/pid_namespace.c
+./kernel/futex_compat.c
+./kernel/sched_rt.c
+./net/rds/ib_rdma.c
+./net/rds/connection.c
+./net/mac80211/debugfs_sta.c
+./net/mac80211/mesh.c
+./net/mac80211/mesh_hwmp.c
+./net/mac80211/debugfs_key.c
+./net/mac80211/mesh_plink.c
+./net/batman-adv/send.c
+./net/batman-adv/routing.c
+./net/batman-adv/main.c
+./net/batman-adv/originator.c
+
+(The simple scripts allow False Positive, disallow False Negetive)
+After manual check, only
+	drivers/staging/tidspbridge/pmgr/dspapi.c
+	kernel/futex_compat.c
+	kernel/tsacct.c
+	lib/is_single_threaded.c
+are required to add  "#include <linux/rcupdate.h>"
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- include/linux/rcupdate.h      |  616 +--------------------------------------
- include/linux/rcupdate_defs.h |  653 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 654 insertions(+), 615 deletions(-)
+ drivers/staging/tidspbridge/pmgr/dspapi.c |    1 +
+ include/linux/aio.h                       |    2 +-
+ include/linux/key.h                       |    2 +-
+ include/linux/pid.h                       |    2 +-
+ include/linux/rculist.h                   |    2 +-
+ include/linux/sched.h                     |    2 +-
+ include/linux/sem.h                       |    2 +-
+ include/linux/sysctl.h                    |    2 +-
+ kernel/futex_compat.c                     |    1 +
+ kernel/tsacct.c                           |    1 +
+ lib/is_single_threaded.c                  |    1 +
+ 11 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index dd4cd6d..c25d2a6 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -33,42 +33,7 @@
- #ifndef __LINUX_RCUPDATE_H
- #define __LINUX_RCUPDATE_H
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index 86ca785..558654e 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -17,6 +17,7 @@
+  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+  */
+ #include <linux/types.h>
++#include <linux/rcupdate.h>
  
--#include <linux/cache.h>
--#include <linux/spinlock.h>
--#include <linux/threads.h>
--#include <linux/cpumask.h>
--#include <linux/seqlock.h>
--#include <linux/lockdep.h>
--#include <linux/completion.h>
--#include <linux/debugobjects.h>
--#include <linux/compiler.h>
--
--#ifdef CONFIG_RCU_TORTURE_TEST
--extern int rcutorture_runnable; /* for sysctl */
--#endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
--
--#define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
--#define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
--#define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
--#define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
--
--/**
-- * struct rcu_head - callback structure for use with RCU
-- * @next: next update requests in a list
-- * @func: actual update function to call after the grace period.
-- */
--struct rcu_head {
--	struct rcu_head *next;
--	void (*func)(struct rcu_head *head);
--};
--
--/* Exported common interfaces */
--extern void call_rcu_sched(struct rcu_head *head,
--			   void (*func)(struct rcu_head *rcu));
--extern void synchronize_sched(void);
--extern void rcu_barrier_bh(void);
--extern void rcu_barrier_sched(void);
--extern int sched_expedited_torture_stats(char *page);
+ /*  ----------------------------------- Host OS */
+ #include <dspbridge/host_os.h>
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 7a8db41..1033572 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -5,7 +5,7 @@
+ #include <linux/workqueue.h>
+ #include <linux/aio_abi.h>
+ #include <linux/uio.h>
+-#include <linux/rcupdate.h>
 +#include <linux/rcupdate_defs.h>
  
- static inline void __rcu_read_lock_bh(void)
- {
-@@ -84,7 +49,6 @@ static inline void __rcu_read_unlock_bh(void)
+ #include <asm/atomic.h>
  
- extern void __rcu_read_lock(void);
- extern void __rcu_read_unlock(void);
--void synchronize_rcu(void);
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 3db0adc..8f18036 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -18,7 +18,7 @@
+ #include <linux/types.h>
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+-#include <linux/rcupdate.h>
++#include <linux/rcupdate_defs.h>
+ #include <linux/sysctl.h>
+ #include <linux/rwsem.h>
+ #include <asm/atomic.h>
+diff --git a/include/linux/pid.h b/include/linux/pid.h
+index 49f1c2f..12d652c 100644
+--- a/include/linux/pid.h
++++ b/include/linux/pid.h
+@@ -1,7 +1,7 @@
+ #ifndef _LINUX_PID_H
+ #define _LINUX_PID_H
+ 
+-#include <linux/rcupdate.h>
++#include <linux/rcupdate_defs.h>
+ 
+ enum pid_type
+ {
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index 2dea94f..265e22d 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -7,7 +7,7 @@
+  * RCU-protected list version
+  */
+ #include <linux/list.h>
+-#include <linux/rcupdate.h>
++#include <linux/rcupdate_defs.h>
  
  /*
-  * Defined as a macro as it is a very low level header included from
-@@ -106,11 +70,6 @@ static inline void __rcu_read_unlock(void)
- 	preempt_enable();
- }
+  * Why is there no list_empty_rcu()?  Because list_empty() serves this
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 777d8a5..69db9e7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -78,7 +78,7 @@ struct sched_param {
+ #include <linux/topology.h>
+ #include <linux/proportions.h>
+ #include <linux/seccomp.h>
+-#include <linux/rcupdate.h>
++#include <linux/rcupdate_defs.h>
+ #include <linux/rculist.h>
+ #include <linux/rtmutex.h>
  
--static inline void synchronize_rcu(void)
--{
--	synchronize_sched();
--}
--
- static inline int rcu_preempt_depth(void)
- {
- 	return 0;
-@@ -118,402 +77,6 @@ static inline int rcu_preempt_depth(void)
+diff --git a/include/linux/sem.h b/include/linux/sem.h
+index f2961af..98d96e8 100644
+--- a/include/linux/sem.h
++++ b/include/linux/sem.h
+@@ -78,7 +78,7 @@ struct  seminfo {
  
- #endif /* #else #ifdef CONFIG_PREEMPT_RCU */
+ #ifdef __KERNEL__
+ #include <asm/atomic.h>
+-#include <linux/rcupdate.h>
++#include <linux/rcupdate_defs.h>
+ #include <linux/cache.h>
  
--/* Internal to kernel */
--extern void rcu_sched_qs(int cpu);
--extern void rcu_bh_qs(int cpu);
--extern void rcu_check_callbacks(int cpu, int user);
--struct notifier_block;
--
--#ifdef CONFIG_NO_HZ
--
--extern void rcu_enter_nohz(void);
--extern void rcu_exit_nohz(void);
--
--#else /* #ifdef CONFIG_NO_HZ */
--
--static inline void rcu_enter_nohz(void)
--{
--}
--
--static inline void rcu_exit_nohz(void)
--{
--}
--
--#endif /* #else #ifdef CONFIG_NO_HZ */
--
--#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
--#include <linux/rcutree.h>
--#elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
--#include <linux/rcutiny.h>
--#else
--#error "Unknown RCU implementation specified to kernel configuration"
--#endif
--
--/*
-- * init_rcu_head_on_stack()/destroy_rcu_head_on_stack() are needed for dynamic
-- * initialization and destruction of rcu_head on the stack. rcu_head structures
-- * allocated dynamically in the heap or defined statically don't need any
-- * initialization.
-- */
--#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
--extern void init_rcu_head_on_stack(struct rcu_head *head);
--extern void destroy_rcu_head_on_stack(struct rcu_head *head);
--#else /* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
--static inline void init_rcu_head_on_stack(struct rcu_head *head)
--{
--}
--
--static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
--{
--}
--#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
--
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--
--extern struct lockdep_map rcu_lock_map;
--# define rcu_read_acquire() \
--		lock_acquire(&rcu_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
--# define rcu_read_release()	lock_release(&rcu_lock_map, 1, _THIS_IP_)
--
--extern struct lockdep_map rcu_bh_lock_map;
--# define rcu_read_acquire_bh() \
--		lock_acquire(&rcu_bh_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
--# define rcu_read_release_bh()	lock_release(&rcu_bh_lock_map, 1, _THIS_IP_)
--
--extern struct lockdep_map rcu_sched_lock_map;
--# define rcu_read_acquire_sched() \
--		lock_acquire(&rcu_sched_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
--# define rcu_read_release_sched() \
--		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
--
--extern int debug_lockdep_rcu_enabled(void);
--
--/**
-- * rcu_read_lock_held() - might we be in RCU read-side critical section?
-- *
-- * If CONFIG_DEBUG_LOCK_ALLOC is selected, returns nonzero iff in an RCU
-- * read-side critical section.  In absence of CONFIG_DEBUG_LOCK_ALLOC,
-- * this assumes we are in an RCU read-side critical section unless it can
-- * prove otherwise.  This is useful for debug checks in functions that
-- * require that they be called within an RCU read-side critical section.
-- *
-- * Checks debug_lockdep_rcu_enabled() to prevent false positives during boot
-- * and while lockdep is disabled.
-- */
--static inline int rcu_read_lock_held(void)
--{
--	if (!debug_lockdep_rcu_enabled())
--		return 1;
--	return lock_is_held(&rcu_lock_map);
--}
--
--/*
-- * rcu_read_lock_bh_held() is defined out of line to avoid #include-file
-- * hell.
-- */
--extern int rcu_read_lock_bh_held(void);
--
--/**
-- * rcu_read_lock_sched_held() - might we be in RCU-sched read-side critical section?
-- *
-- * If CONFIG_DEBUG_LOCK_ALLOC is selected, returns nonzero iff in an
-- * RCU-sched read-side critical section.  In absence of
-- * CONFIG_DEBUG_LOCK_ALLOC, this assumes we are in an RCU-sched read-side
-- * critical section unless it can prove otherwise.  Note that disabling
-- * of preemption (including disabling irqs) counts as an RCU-sched
-- * read-side critical section.  This is useful for debug checks in functions
-- * that required that they be called within an RCU-sched read-side
-- * critical section.
-- *
-- * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
-- * and while lockdep is disabled.
-- */
--#ifdef CONFIG_PREEMPT
--static inline int rcu_read_lock_sched_held(void)
--{
--	int lockdep_opinion = 0;
--
--	if (!debug_lockdep_rcu_enabled())
--		return 1;
--	if (debug_locks)
--		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
--	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
--}
--#else /* #ifdef CONFIG_PREEMPT */
--static inline int rcu_read_lock_sched_held(void)
--{
--	return 1;
--}
--#endif /* #else #ifdef CONFIG_PREEMPT */
--
--#else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
--
--# define rcu_read_acquire()		do { } while (0)
--# define rcu_read_release()		do { } while (0)
--# define rcu_read_acquire_bh()		do { } while (0)
--# define rcu_read_release_bh()		do { } while (0)
--# define rcu_read_acquire_sched()	do { } while (0)
--# define rcu_read_release_sched()	do { } while (0)
--
--static inline int rcu_read_lock_held(void)
--{
--	return 1;
--}
--
--static inline int rcu_read_lock_bh_held(void)
--{
--	return 1;
--}
--
--#ifdef CONFIG_PREEMPT
--static inline int rcu_read_lock_sched_held(void)
--{
--	return preempt_count() != 0 || irqs_disabled();
--}
--#else /* #ifdef CONFIG_PREEMPT */
--static inline int rcu_read_lock_sched_held(void)
--{
--	return 1;
--}
--#endif /* #else #ifdef CONFIG_PREEMPT */
--
--#endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
--
--#ifdef CONFIG_PROVE_RCU
--
--extern int rcu_my_thread_group_empty(void);
--
--/**
-- * rcu_lockdep_assert - emit lockdep splat if specified condition not met
-- * @c: condition to check
-- */
--#define rcu_lockdep_assert(c)						\
--	do {								\
--		static bool __warned;					\
--		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
--			__warned = true;				\
--			lockdep_rcu_dereference(__FILE__, __LINE__);	\
--		}							\
--	} while (0)
--
--#else /* #ifdef CONFIG_PROVE_RCU */
--
--#define rcu_lockdep_assert(c) do { } while (0)
--
--#endif /* #else #ifdef CONFIG_PROVE_RCU */
--
--/*
-- * Helper functions for rcu_dereference_check(), rcu_dereference_protected()
-- * and rcu_assign_pointer().  Some of these could be folded into their
-- * callers, but they are left separate in order to ease introduction of
-- * multiple flavors of pointers to match the multiple flavors of RCU
-- * (e.g., __rcu_bh, * __rcu_sched, and __srcu), should this make sense in
-- * the future.
-- */
--
--#ifdef __CHECKER__
--#define rcu_dereference_sparse(p, space) \
--	((void)(((typeof(*p) space *)p) == p))
--#else /* #ifdef __CHECKER__ */
--#define rcu_dereference_sparse(p, space)
--#endif /* #else #ifdef __CHECKER__ */
--
--#define __rcu_access_pointer(p, space) \
--	({ \
--		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
--		rcu_dereference_sparse(p, space); \
--		((typeof(*p) __force __kernel *)(_________p1)); \
--	})
--#define __rcu_dereference_check(p, c, space) \
--	({ \
--		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
--		rcu_lockdep_assert(c); \
--		rcu_dereference_sparse(p, space); \
--		smp_read_barrier_depends(); \
--		((typeof(*p) __force __kernel *)(_________p1)); \
--	})
--#define __rcu_dereference_protected(p, c, space) \
--	({ \
--		rcu_lockdep_assert(c); \
--		rcu_dereference_sparse(p, space); \
--		((typeof(*p) __force __kernel *)(p)); \
--	})
--
--#define __rcu_dereference_index_check(p, c) \
--	({ \
--		typeof(p) _________p1 = ACCESS_ONCE(p); \
--		rcu_lockdep_assert(c); \
--		smp_read_barrier_depends(); \
--		(_________p1); \
--	})
--#define __rcu_assign_pointer(p, v, space) \
--	({ \
--		if (!__builtin_constant_p(v) || \
--		    ((v) != NULL)) \
--			smp_wmb(); \
--		(p) = (typeof(*v) __force space *)(v); \
--	})
--
--
--/**
-- * rcu_access_pointer() - fetch RCU pointer with no dereferencing
-- * @p: The pointer to read
-- *
-- * Return the value of the specified RCU-protected pointer, but omit the
-- * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-- * when the value of this pointer is accessed, but the pointer is not
-- * dereferenced, for example, when testing an RCU-protected pointer against
-- * NULL.  Although rcu_access_pointer() may also be used in cases where
-- * update-side locks prevent the value of the pointer from changing, you
-- * should instead use rcu_dereference_protected() for this use case.
-- */
--#define rcu_access_pointer(p) __rcu_access_pointer((p), __rcu)
--
--/**
-- * rcu_dereference_check() - rcu_dereference with debug checking
-- * @p: The pointer to read, prior to dereferencing
-- * @c: The conditions under which the dereference will take place
-- *
-- * Do an rcu_dereference(), but check that the conditions under which the
-- * dereference will take place are correct.  Typically the conditions
-- * indicate the various locking conditions that should be held at that
-- * point.  The check should return true if the conditions are satisfied.
-- * An implicit check for being in an RCU read-side critical section
-- * (rcu_read_lock()) is included.
-- *
-- * For example:
-- *
-- *	bar = rcu_dereference_check(foo->bar, lockdep_is_held(&foo->lock));
-- *
-- * could be used to indicate to lockdep that foo->bar may only be dereferenced
-- * if either rcu_read_lock() is held, or that the lock required to replace
-- * the bar struct at foo->bar is held.
-- *
-- * Note that the list of conditions may also include indications of when a lock
-- * need not be held, for example during initialisation or destruction of the
-- * target struct:
-- *
-- *	bar = rcu_dereference_check(foo->bar, lockdep_is_held(&foo->lock) ||
-- *					      atomic_read(&foo->usage) == 0);
-- *
-- * Inserts memory barriers on architectures that require them
-- * (currently only the Alpha), prevents the compiler from refetching
-- * (and from merging fetches), and, more importantly, documents exactly
-- * which pointers are protected by RCU and checks that the pointer is
-- * annotated as __rcu.
-- */
--#define rcu_dereference_check(p, c) \
--	__rcu_dereference_check((p), rcu_read_lock_held() || (c), __rcu)
--
--/**
-- * rcu_dereference_bh_check() - rcu_dereference_bh with debug checking
-- * @p: The pointer to read, prior to dereferencing
-- * @c: The conditions under which the dereference will take place
-- *
-- * This is the RCU-bh counterpart to rcu_dereference_check().
-- */
--#define rcu_dereference_bh_check(p, c) \
--	__rcu_dereference_check((p), rcu_read_lock_bh_held() || (c), __rcu)
--
--/**
-- * rcu_dereference_sched_check() - rcu_dereference_sched with debug checking
-- * @p: The pointer to read, prior to dereferencing
-- * @c: The conditions under which the dereference will take place
-- *
-- * This is the RCU-sched counterpart to rcu_dereference_check().
-- */
--#define rcu_dereference_sched_check(p, c) \
--	__rcu_dereference_check((p), rcu_read_lock_sched_held() || (c), \
--				__rcu)
--
--#define rcu_dereference_raw(p) rcu_dereference_check(p, 1) /*@@@ needed? @@@*/
--
--/**
-- * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
-- * @p: The pointer to read, prior to dereferencing
-- * @c: The conditions under which the dereference will take place
-- *
-- * Similar to rcu_dereference_check(), but omits the sparse checking.
-- * This allows rcu_dereference_index_check() to be used on integers,
-- * which can then be used as array indices.  Attempting to use
-- * rcu_dereference_check() on an integer will give compiler warnings
-- * because the sparse address-space mechanism relies on dereferencing
-- * the RCU-protected pointer.  Dereferencing integers is not something
-- * that even gcc will put up with.
-- *
-- * Note that this function does not implicitly check for RCU read-side
-- * critical sections.  If this function gains lots of uses, it might
-- * make sense to provide versions for each flavor of RCU, but it does
-- * not make sense as of early 2010.
-- */
--#define rcu_dereference_index_check(p, c) \
--	__rcu_dereference_index_check((p), (c))
--
--/**
-- * rcu_dereference_protected() - fetch RCU pointer when updates prevented
-- * @p: The pointer to read, prior to dereferencing
-- * @c: The conditions under which the dereference will take place
-- *
-- * Return the value of the specified RCU-protected pointer, but omit
-- * both the smp_read_barrier_depends() and the ACCESS_ONCE().  This
-- * is useful in cases where update-side locks prevent the value of the
-- * pointer from changing.  Please note that this primitive does -not-
-- * prevent the compiler from repeating this reference or combining it
-- * with other references, so it should not be used without protection
-- * of appropriate locks.
-- *
-- * This function is only for update-side use.  Using this function
-- * when protected only by rcu_read_lock() will result in infrequent
-- * but very ugly failures.
-- */
--#define rcu_dereference_protected(p, c) \
--	__rcu_dereference_protected((p), (c), __rcu)
--
--/**
-- * rcu_dereference_bh_protected() - fetch RCU-bh pointer when updates prevented
-- * @p: The pointer to read, prior to dereferencing
-- * @c: The conditions under which the dereference will take place
-- *
-- * This is the RCU-bh counterpart to rcu_dereference_protected().
-- */
--#define rcu_dereference_bh_protected(p, c) \
--	__rcu_dereference_protected((p), (c), __rcu)
--
--/**
-- * rcu_dereference_sched_protected() - fetch RCU-sched pointer when updates prevented
-- * @p: The pointer to read, prior to dereferencing
-- * @c: The conditions under which the dereference will take place
-- *
-- * This is the RCU-sched counterpart to rcu_dereference_protected().
-- */
--#define rcu_dereference_sched_protected(p, c) \
--	__rcu_dereference_protected((p), (c), __rcu)
--
--
--/**
-- * rcu_dereference() - fetch RCU-protected pointer for dereferencing
-- * @p: The pointer to read, prior to dereferencing
-- *
-- * This is a simple wrapper around rcu_dereference_check().
-- */
--#define rcu_dereference(p) rcu_dereference_check(p, 0)
--
--/**
-- * rcu_dereference_bh() - fetch an RCU-bh-protected pointer for dereferencing
-- * @p: The pointer to read, prior to dereferencing
-- *
-- * Makes rcu_dereference_check() do the dirty work.
-- */
--#define rcu_dereference_bh(p) rcu_dereference_bh_check(p, 0)
--
--/**
-- * rcu_dereference_sched() - fetch RCU-sched-protected pointer for dereferencing
-- * @p: The pointer to read, prior to dereferencing
-- *
-- * Makes rcu_dereference_check() do the dirty work.
-- */
--#define rcu_dereference_sched(p) rcu_dereference_sched_check(p, 0)
--
- /**
-  * rcu_read_lock() - mark the beginning of an RCU read-side critical section
-  *
-@@ -657,181 +220,4 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
- 	preempt_enable_notrace();
- }
+ struct task_struct;
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 11684d9..553f127 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -930,7 +930,7 @@ enum
  
--/**
-- * rcu_assign_pointer() - assign to RCU-protected pointer
-- * @p: pointer to assign to
-- * @v: value to assign (publish)
-- *
-- * Assigns the specified value to the specified RCU-protected
-- * pointer, ensuring that any concurrent RCU readers will see
-- * any prior initialization.  Returns the value assigned.
-- *
-- * Inserts memory barriers on architectures that require them
-- * (pretty much all of them other than x86), and also prevents
-- * the compiler from reordering the code that initializes the
-- * structure after the pointer assignment.  More importantly, this
-- * call documents which pointers will be dereferenced by RCU read-side
-- * code.
-- */
--#define rcu_assign_pointer(p, v) \
--	__rcu_assign_pointer((p), (v), __rcu)
--
--/**
-- * RCU_INIT_POINTER() - initialize an RCU protected pointer
-- *
-- * Initialize an RCU-protected pointer in such a way to avoid RCU-lockdep
-- * splats.
-- */
--#define RCU_INIT_POINTER(p, v) \
--		p = (typeof(*v) __force __rcu *)(v)
--
--/* Infrastructure to implement the synchronize_() primitives. */
--
--struct rcu_synchronize {
--	struct rcu_head head;
--	struct completion completion;
--};
--
--extern void wakeme_after_rcu(struct rcu_head  *head);
--
--#ifdef CONFIG_PREEMPT_RCU
--
--/**
-- * call_rcu() - Queue an RCU callback for invocation after a grace period.
-- * @head: structure to be used for queueing the RCU updates.
-- * @func: actual callback function to be invoked after the grace period
-- *
-- * The callback function will be invoked some time after a full grace
-- * period elapses, in other words after all pre-existing RCU read-side
-- * critical sections have completed.  However, the callback function
-- * might well execute concurrently with RCU read-side critical sections
-- * that started after call_rcu() was invoked.  RCU read-side critical
-- * sections are delimited by rcu_read_lock() and rcu_read_unlock(),
-- * and may be nested.
-- */
--extern void call_rcu(struct rcu_head *head,
--			      void (*func)(struct rcu_head *head));
--
--#else /* #ifdef CONFIG_PREEMPT_RCU */
--
--/* In classic RCU, call_rcu() is just call_rcu_sched(). */
--#define	call_rcu	call_rcu_sched
--
--#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
--
--/**
-- * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
-- * @head: structure to be used for queueing the RCU updates.
-- * @func: actual callback function to be invoked after the grace period
-- *
-- * The callback function will be invoked some time after a full grace
-- * period elapses, in other words after all currently executing RCU
-- * read-side critical sections have completed. call_rcu_bh() assumes
-- * that the read-side critical sections end on completion of a softirq
-- * handler. This means that read-side critical sections in process
-- * context must not be interrupted by softirqs. This interface is to be
-- * used when most of the read-side critical sections are in softirq context.
-- * RCU read-side critical sections are delimited by :
-- *  - rcu_read_lock() and  rcu_read_unlock(), if in interrupt context.
-- *  OR
-- *  - rcu_read_lock_bh() and rcu_read_unlock_bh(), if in process context.
-- *  These may be nested.
-- */
--extern void call_rcu_bh(struct rcu_head *head,
--			void (*func)(struct rcu_head *head));
--
--/*
-- * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
-- * by call_rcu() and rcu callback execution, and are therefore not part of the
-- * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
-- */
--
--#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
--# define STATE_RCU_HEAD_READY	0
--# define STATE_RCU_HEAD_QUEUED	1
--
--extern struct debug_obj_descr rcuhead_debug_descr;
--
--static inline void debug_rcu_head_queue(struct rcu_head *head)
--{
--	WARN_ON_ONCE((unsigned long)head & 0x3);
--	debug_object_activate(head, &rcuhead_debug_descr);
--	debug_object_active_state(head, &rcuhead_debug_descr,
--				  STATE_RCU_HEAD_READY,
--				  STATE_RCU_HEAD_QUEUED);
--}
--
--static inline void debug_rcu_head_unqueue(struct rcu_head *head)
--{
--	debug_object_active_state(head, &rcuhead_debug_descr,
--				  STATE_RCU_HEAD_QUEUED,
--				  STATE_RCU_HEAD_READY);
--	debug_object_deactivate(head, &rcuhead_debug_descr);
--}
--#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
--static inline void debug_rcu_head_queue(struct rcu_head *head)
--{
--}
--
--static inline void debug_rcu_head_unqueue(struct rcu_head *head)
--{
--}
--#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
--
--static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
--{
--	return offset < 4096;
--}
--
--static __always_inline
--void __kfree_rcu(struct rcu_head *head, unsigned long offset)
--{
--	typedef void (*rcu_callback)(struct rcu_head *);
--
--	BUILD_BUG_ON(!__builtin_constant_p(offset));
--
--	/* See the kfree_rcu() header comment. */
--	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
--
--	call_rcu(head, (rcu_callback)offset);
--}
--
--extern void kfree(const void *);
--
--static inline void __rcu_reclaim(struct rcu_head *head)
--{
--	unsigned long offset = (unsigned long)head->func;
--
--	if (__is_kfree_rcu_offset(offset))
--		kfree((void *)head - offset);
--	else
--		head->func(head);
--}
--
--/**
-- * kfree_rcu() - kfree an object after a grace period.
-- * @ptr:	pointer to kfree
-- * @rcu_head:	the name of the struct rcu_head within the type of @ptr.
-- *
-- * Many rcu callbacks functions just call kfree() on the base structure.
-- * These functions are trivial, but their size adds up, and furthermore
-- * when they are used in a kernel module, that module must invoke the
-- * high-latency rcu_barrier() function at module-unload time.
-- *
-- * The kfree_rcu() function handles this issue.  Rather than encoding a
-- * function address in the embedded rcu_head structure, kfree_rcu() instead
-- * encodes the offset of the rcu_head structure within the base structure.
-- * Because the functions are not allowed in the low-order 4096 bytes of
-- * kernel virtual memory, offsets up to 4095 bytes can be accommodated.
-- * If the offset is larger than 4095 bytes, a compile-time error will
-- * be generated in __kfree_rcu().  If this error is triggered, you can
-- * either fall back to use of call_rcu() or rearrange the structure to
-- * position the rcu_head structure into the first 4096 bytes.
-- *
-- * Note that the allowable offset might decrease in the future, for example,
-- * to allow something like kmem_cache_free_rcu().
-- */
--#define kfree_rcu(ptr, rcu_head)					\
--	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
--
- #endif /* __LINUX_RCUPDATE_H */
-diff --git a/include/linux/rcupdate_defs.h b/include/linux/rcupdate_defs.h
-new file mode 100644
-index 0000000..ae84745
---- /dev/null
-+++ b/include/linux/rcupdate_defs.h
-@@ -0,0 +1,653 @@
-+/*
-+ * Read-Copy Update mechanism for mutual exclusion
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright IBM Corporation, 2001
-+ *
-+ * Author: Dipankar Sarma <dipankar@in.ibm.com>
-+ *
-+ * Based on the original work by Paul McKenney <paulmck@us.ibm.com>
-+ * and inputs from Rusty Russell, Andrea Arcangeli and Andi Kleen.
-+ * Papers:
-+ * http://www.rdrop.com/users/paulmck/paper/rclockpdcsproof.pdf
-+ * http://lse.sourceforge.net/locking/rclock_OLS.2001.05.01c.sc.pdf (OLS2001)
-+ *
-+ * For detailed explanation of Read-Copy Update mechanism see -
-+ *		http://lse.sourceforge.net/locking/rcupdate.html
-+ *
-+ */
-+
-+#ifndef __LINUX_RCUPDATE_DEFS_H
-+#define __LINUX_RCUPDATE_DEFS_H
-+
-+#include <linux/cache.h>
-+#include <linux/spinlock.h>
-+#include <linux/threads.h>
-+#include <linux/cpumask.h>
-+#include <linux/seqlock.h>
-+#include <linux/lockdep.h>
-+#include <linux/completion.h>
-+#include <linux/debugobjects.h>
-+#include <linux/compiler.h>
-+
-+#ifdef CONFIG_RCU_TORTURE_TEST
-+extern int rcutorture_runnable; /* for sysctl */
-+#endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
-+
-+#define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
-+#define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
-+#define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
-+#define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
-+
-+/**
-+ * struct rcu_head - callback structure for use with RCU
-+ * @next: next update requests in a list
-+ * @func: actual update function to call after the grace period.
-+ */
-+struct rcu_head {
-+	struct rcu_head *next;
-+	void (*func)(struct rcu_head *head);
-+};
-+
-+/* Exported common interfaces */
-+extern void call_rcu_sched(struct rcu_head *head,
-+			   void (*func)(struct rcu_head *rcu));
-+extern void synchronize_sched(void);
-+extern void rcu_barrier_bh(void);
-+extern void rcu_barrier_sched(void);
-+extern int sched_expedited_torture_stats(char *page);
-+
-+/* Internal to kernel */
-+extern void rcu_sched_qs(int cpu);
-+extern void rcu_bh_qs(int cpu);
-+extern void rcu_check_callbacks(int cpu, int user);
-+struct notifier_block;
-+
-+#ifdef CONFIG_NO_HZ
-+
-+extern void rcu_enter_nohz(void);
-+extern void rcu_exit_nohz(void);
-+
-+#else /* #ifdef CONFIG_NO_HZ */
-+
-+static inline void rcu_enter_nohz(void)
-+{
-+}
-+
-+static inline void rcu_exit_nohz(void)
-+{
-+}
-+
-+#endif /* #else #ifdef CONFIG_NO_HZ */
-+
-+#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
-+#include <linux/rcutree.h>
-+#elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
-+#include <linux/rcutiny.h>
-+#else
-+#error "Unknown RCU implementation specified to kernel configuration"
-+#endif
-+
-+/*
-+ * init_rcu_head_on_stack()/destroy_rcu_head_on_stack() are needed for dynamic
-+ * initialization and destruction of rcu_head on the stack. rcu_head structures
-+ * allocated dynamically in the heap or defined statically don't need any
-+ * initialization.
-+ */
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+extern void init_rcu_head_on_stack(struct rcu_head *head);
-+extern void destroy_rcu_head_on_stack(struct rcu_head *head);
-+#else /* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+static inline void init_rcu_head_on_stack(struct rcu_head *head)
-+{
-+}
-+
-+static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
-+{
-+}
-+#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+
-+extern struct lockdep_map rcu_lock_map;
-+# define rcu_read_acquire() \
-+		lock_acquire(&rcu_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
-+# define rcu_read_release()	lock_release(&rcu_lock_map, 1, _THIS_IP_)
-+
-+extern struct lockdep_map rcu_bh_lock_map;
-+# define rcu_read_acquire_bh() \
-+		lock_acquire(&rcu_bh_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
-+# define rcu_read_release_bh()	lock_release(&rcu_bh_lock_map, 1, _THIS_IP_)
-+
-+extern struct lockdep_map rcu_sched_lock_map;
-+# define rcu_read_acquire_sched() \
-+		lock_acquire(&rcu_sched_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
-+# define rcu_read_release_sched() \
-+		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
-+
-+extern int debug_lockdep_rcu_enabled(void);
-+
-+/**
-+ * rcu_read_lock_held() - might we be in RCU read-side critical section?
-+ *
-+ * If CONFIG_DEBUG_LOCK_ALLOC is selected, returns nonzero iff in an RCU
-+ * read-side critical section.  In absence of CONFIG_DEBUG_LOCK_ALLOC,
-+ * this assumes we are in an RCU read-side critical section unless it can
-+ * prove otherwise.  This is useful for debug checks in functions that
-+ * require that they be called within an RCU read-side critical section.
-+ *
-+ * Checks debug_lockdep_rcu_enabled() to prevent false positives during boot
-+ * and while lockdep is disabled.
-+ */
-+static inline int rcu_read_lock_held(void)
-+{
-+	if (!debug_lockdep_rcu_enabled())
-+		return 1;
-+	return lock_is_held(&rcu_lock_map);
-+}
-+
-+/*
-+ * rcu_read_lock_bh_held() is defined out of line to avoid #include-file
-+ * hell.
-+ */
-+extern int rcu_read_lock_bh_held(void);
-+
-+/**
-+ * rcu_read_lock_sched_held() - might we be in RCU-sched read-side critical section?
-+ *
-+ * If CONFIG_DEBUG_LOCK_ALLOC is selected, returns nonzero iff in an
-+ * RCU-sched read-side critical section.  In absence of
-+ * CONFIG_DEBUG_LOCK_ALLOC, this assumes we are in an RCU-sched read-side
-+ * critical section unless it can prove otherwise.  Note that disabling
-+ * of preemption (including disabling irqs) counts as an RCU-sched
-+ * read-side critical section.  This is useful for debug checks in functions
-+ * that required that they be called within an RCU-sched read-side
-+ * critical section.
-+ *
-+ * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
-+ * and while lockdep is disabled.
-+ */
-+#ifdef CONFIG_PREEMPT
-+static inline int rcu_read_lock_sched_held(void)
-+{
-+	int lockdep_opinion = 0;
-+
-+	if (!debug_lockdep_rcu_enabled())
-+		return 1;
-+	if (debug_locks)
-+		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
-+	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
-+}
-+#else /* #ifdef CONFIG_PREEMPT */
-+static inline int rcu_read_lock_sched_held(void)
-+{
-+	return 1;
-+}
-+#endif /* #else #ifdef CONFIG_PREEMPT */
-+
-+#else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
-+# define rcu_read_acquire()		do { } while (0)
-+# define rcu_read_release()		do { } while (0)
-+# define rcu_read_acquire_bh()		do { } while (0)
-+# define rcu_read_release_bh()		do { } while (0)
-+# define rcu_read_acquire_sched()	do { } while (0)
-+# define rcu_read_release_sched()	do { } while (0)
-+
-+static inline int rcu_read_lock_held(void)
-+{
-+	return 1;
-+}
-+
-+static inline int rcu_read_lock_bh_held(void)
-+{
-+	return 1;
-+}
-+
-+#ifdef CONFIG_PREEMPT
-+static inline int rcu_read_lock_sched_held(void)
-+{
-+	return preempt_count() != 0 || irqs_disabled();
-+}
-+#else /* #ifdef CONFIG_PREEMPT */
-+static inline int rcu_read_lock_sched_held(void)
-+{
-+	return 1;
-+}
-+#endif /* #else #ifdef CONFIG_PREEMPT */
-+
-+#endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
-+#ifdef CONFIG_PROVE_RCU
-+
-+extern int rcu_my_thread_group_empty(void);
-+
-+/**
-+ * rcu_lockdep_assert - emit lockdep splat if specified condition not met
-+ * @c: condition to check
-+ */
-+#define rcu_lockdep_assert(c)						\
-+	do {								\
-+		static bool __warned;					\
-+		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
-+			__warned = true;				\
-+			lockdep_rcu_dereference(__FILE__, __LINE__);	\
-+		}							\
-+	} while (0)
-+
-+#else /* #ifdef CONFIG_PROVE_RCU */
-+
-+#define rcu_lockdep_assert(c) do { } while (0)
-+
-+#endif /* #else #ifdef CONFIG_PROVE_RCU */
-+
-+/*
-+ * Helper functions for rcu_dereference_check(), rcu_dereference_protected()
-+ * and rcu_assign_pointer().  Some of these could be folded into their
-+ * callers, but they are left separate in order to ease introduction of
-+ * multiple flavors of pointers to match the multiple flavors of RCU
-+ * (e.g., __rcu_bh, * __rcu_sched, and __srcu), should this make sense in
-+ * the future.
-+ */
-+
-+#ifdef __CHECKER__
-+#define rcu_dereference_sparse(p, space) \
-+	((void)(((typeof(*p) space *)p) == p))
-+#else /* #ifdef __CHECKER__ */
-+#define rcu_dereference_sparse(p, space)
-+#endif /* #else #ifdef __CHECKER__ */
-+
-+#define __rcu_access_pointer(p, space) \
-+	({ \
-+		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
-+		rcu_dereference_sparse(p, space); \
-+		((typeof(*p) __force __kernel *)(_________p1)); \
-+	})
-+#define __rcu_dereference_check(p, c, space) \
-+	({ \
-+		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
-+		rcu_lockdep_assert(c); \
-+		rcu_dereference_sparse(p, space); \
-+		smp_read_barrier_depends(); \
-+		((typeof(*p) __force __kernel *)(_________p1)); \
-+	})
-+#define __rcu_dereference_protected(p, c, space) \
-+	({ \
-+		rcu_lockdep_assert(c); \
-+		rcu_dereference_sparse(p, space); \
-+		((typeof(*p) __force __kernel *)(p)); \
-+	})
-+
-+#define __rcu_dereference_index_check(p, c) \
-+	({ \
-+		typeof(p) _________p1 = ACCESS_ONCE(p); \
-+		rcu_lockdep_assert(c); \
-+		smp_read_barrier_depends(); \
-+		(_________p1); \
-+	})
-+#define __rcu_assign_pointer(p, v, space) \
-+	({ \
-+		if (!__builtin_constant_p(v) || \
-+		    ((v) != NULL)) \
-+			smp_wmb(); \
-+		(p) = (typeof(*v) __force space *)(v); \
-+	})
-+
-+
-+/**
-+ * rcu_access_pointer() - fetch RCU pointer with no dereferencing
-+ * @p: The pointer to read
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit the
-+ * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-+ * when the value of this pointer is accessed, but the pointer is not
-+ * dereferenced, for example, when testing an RCU-protected pointer against
-+ * NULL.  Although rcu_access_pointer() may also be used in cases where
-+ * update-side locks prevent the value of the pointer from changing, you
-+ * should instead use rcu_dereference_protected() for this use case.
-+ */
-+#define rcu_access_pointer(p) __rcu_access_pointer((p), __rcu)
-+
-+/**
-+ * rcu_dereference_check() - rcu_dereference with debug checking
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-+ *
-+ * Do an rcu_dereference(), but check that the conditions under which the
-+ * dereference will take place are correct.  Typically the conditions
-+ * indicate the various locking conditions that should be held at that
-+ * point.  The check should return true if the conditions are satisfied.
-+ * An implicit check for being in an RCU read-side critical section
-+ * (rcu_read_lock()) is included.
-+ *
-+ * For example:
-+ *
-+ *	bar = rcu_dereference_check(foo->bar, lockdep_is_held(&foo->lock));
-+ *
-+ * could be used to indicate to lockdep that foo->bar may only be dereferenced
-+ * if either rcu_read_lock() is held, or that the lock required to replace
-+ * the bar struct at foo->bar is held.
-+ *
-+ * Note that the list of conditions may also include indications of when a lock
-+ * need not be held, for example during initialisation or destruction of the
-+ * target struct:
-+ *
-+ *	bar = rcu_dereference_check(foo->bar, lockdep_is_held(&foo->lock) ||
-+ *					      atomic_read(&foo->usage) == 0);
-+ *
-+ * Inserts memory barriers on architectures that require them
-+ * (currently only the Alpha), prevents the compiler from refetching
-+ * (and from merging fetches), and, more importantly, documents exactly
-+ * which pointers are protected by RCU and checks that the pointer is
-+ * annotated as __rcu.
-+ */
-+#define rcu_dereference_check(p, c) \
-+	__rcu_dereference_check((p), rcu_read_lock_held() || (c), __rcu)
-+
-+/**
-+ * rcu_dereference_bh_check() - rcu_dereference_bh with debug checking
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-+ *
-+ * This is the RCU-bh counterpart to rcu_dereference_check().
-+ */
-+#define rcu_dereference_bh_check(p, c) \
-+	__rcu_dereference_check((p), rcu_read_lock_bh_held() || (c), __rcu)
-+
-+/**
-+ * rcu_dereference_sched_check() - rcu_dereference_sched with debug checking
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-+ *
-+ * This is the RCU-sched counterpart to rcu_dereference_check().
-+ */
-+#define rcu_dereference_sched_check(p, c) \
-+	__rcu_dereference_check((p), rcu_read_lock_sched_held() || (c), \
-+				__rcu)
-+
-+#define rcu_dereference_raw(p) rcu_dereference_check(p, 1) /*@@@ needed? @@@*/
-+
-+/**
-+ * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-+ *
-+ * Similar to rcu_dereference_check(), but omits the sparse checking.
-+ * This allows rcu_dereference_index_check() to be used on integers,
-+ * which can then be used as array indices.  Attempting to use
-+ * rcu_dereference_check() on an integer will give compiler warnings
-+ * because the sparse address-space mechanism relies on dereferencing
-+ * the RCU-protected pointer.  Dereferencing integers is not something
-+ * that even gcc will put up with.
-+ *
-+ * Note that this function does not implicitly check for RCU read-side
-+ * critical sections.  If this function gains lots of uses, it might
-+ * make sense to provide versions for each flavor of RCU, but it does
-+ * not make sense as of early 2010.
-+ */
-+#define rcu_dereference_index_check(p, c) \
-+	__rcu_dereference_index_check((p), (c))
-+
-+/**
-+ * rcu_dereference_protected() - fetch RCU pointer when updates prevented
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit
-+ * both the smp_read_barrier_depends() and the ACCESS_ONCE().  This
-+ * is useful in cases where update-side locks prevent the value of the
-+ * pointer from changing.  Please note that this primitive does -not-
-+ * prevent the compiler from repeating this reference or combining it
-+ * with other references, so it should not be used without protection
-+ * of appropriate locks.
-+ *
-+ * This function is only for update-side use.  Using this function
-+ * when protected only by rcu_read_lock() will result in infrequent
-+ * but very ugly failures.
-+ */
-+#define rcu_dereference_protected(p, c) \
-+	__rcu_dereference_protected((p), (c), __rcu)
-+
-+/**
-+ * rcu_dereference_bh_protected() - fetch RCU-bh pointer when updates prevented
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-+ *
-+ * This is the RCU-bh counterpart to rcu_dereference_protected().
-+ */
-+#define rcu_dereference_bh_protected(p, c) \
-+	__rcu_dereference_protected((p), (c), __rcu)
-+
-+/**
-+ * rcu_dereference_sched_protected() - fetch RCU-sched pointer when updates prevented
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-+ *
-+ * This is the RCU-sched counterpart to rcu_dereference_protected().
-+ */
-+#define rcu_dereference_sched_protected(p, c) \
-+	__rcu_dereference_protected((p), (c), __rcu)
-+
-+
-+/**
-+ * rcu_dereference() - fetch RCU-protected pointer for dereferencing
-+ * @p: The pointer to read, prior to dereferencing
-+ *
-+ * This is a simple wrapper around rcu_dereference_check().
-+ */
-+#define rcu_dereference(p) rcu_dereference_check(p, 0)
-+
-+/**
-+ * rcu_dereference_bh() - fetch an RCU-bh-protected pointer for dereferencing
-+ * @p: The pointer to read, prior to dereferencing
-+ *
-+ * Makes rcu_dereference_check() do the dirty work.
-+ */
-+#define rcu_dereference_bh(p) rcu_dereference_bh_check(p, 0)
-+
-+/**
-+ * rcu_dereference_sched() - fetch RCU-sched-protected pointer for dereferencing
-+ * @p: The pointer to read, prior to dereferencing
-+ *
-+ * Makes rcu_dereference_check() do the dirty work.
-+ */
-+#define rcu_dereference_sched(p) rcu_dereference_sched_check(p, 0)
-+
-+/**
-+ * rcu_assign_pointer() - assign to RCU-protected pointer
-+ * @p: pointer to assign to
-+ * @v: value to assign (publish)
-+ *
-+ * Assigns the specified value to the specified RCU-protected
-+ * pointer, ensuring that any concurrent RCU readers will see
-+ * any prior initialization.  Returns the value assigned.
-+ *
-+ * Inserts memory barriers on architectures that require them
-+ * (pretty much all of them other than x86), and also prevents
-+ * the compiler from reordering the code that initializes the
-+ * structure after the pointer assignment.  More importantly, this
-+ * call documents which pointers will be dereferenced by RCU read-side
-+ * code.
-+ */
-+#define rcu_assign_pointer(p, v) \
-+	__rcu_assign_pointer((p), (v), __rcu)
-+
-+/**
-+ * RCU_INIT_POINTER() - initialize an RCU protected pointer
-+ *
-+ * Initialize an RCU-protected pointer in such a way to avoid RCU-lockdep
-+ * splats.
-+ */
-+#define RCU_INIT_POINTER(p, v) \
-+		p = (typeof(*v) __force __rcu *)(v)
-+
-+/* Infrastructure to implement the synchronize_() primitives. */
-+
-+struct rcu_synchronize {
-+	struct rcu_head head;
-+	struct completion completion;
-+};
-+
-+extern void wakeme_after_rcu(struct rcu_head  *head);
-+
-+#ifdef CONFIG_PREEMPT_RCU
-+
-+/**
-+ * call_rcu() - Queue an RCU callback for invocation after a grace period.
-+ * @head: structure to be used for queueing the RCU updates.
-+ * @func: actual callback function to be invoked after the grace period
-+ *
-+ * The callback function will be invoked some time after a full grace
-+ * period elapses, in other words after all pre-existing RCU read-side
-+ * critical sections have completed.  However, the callback function
-+ * might well execute concurrently with RCU read-side critical sections
-+ * that started after call_rcu() was invoked.  RCU read-side critical
-+ * sections are delimited by rcu_read_lock() and rcu_read_unlock(),
-+ * and may be nested.
-+ */
-+extern void call_rcu(struct rcu_head *head,
-+			      void (*func)(struct rcu_head *head));
-+
-+void synchronize_rcu(void);
-+
-+#else /* #ifdef CONFIG_PREEMPT_RCU */
-+
-+/* In classic RCU, call_rcu() is just call_rcu_sched(). */
-+#define	call_rcu	call_rcu_sched
-+
-+static inline void synchronize_rcu(void)
-+{
-+	synchronize_sched();
-+}
-+
-+#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
-+
-+/**
-+ * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
-+ * @head: structure to be used for queueing the RCU updates.
-+ * @func: actual callback function to be invoked after the grace period
-+ *
-+ * The callback function will be invoked some time after a full grace
-+ * period elapses, in other words after all currently executing RCU
-+ * read-side critical sections have completed. call_rcu_bh() assumes
-+ * that the read-side critical sections end on completion of a softirq
-+ * handler. This means that read-side critical sections in process
-+ * context must not be interrupted by softirqs. This interface is to be
-+ * used when most of the read-side critical sections are in softirq context.
-+ * RCU read-side critical sections are delimited by :
-+ *  - rcu_read_lock() and  rcu_read_unlock(), if in interrupt context.
-+ *  OR
-+ *  - rcu_read_lock_bh() and rcu_read_unlock_bh(), if in process context.
-+ *  These may be nested.
-+ */
-+extern void call_rcu_bh(struct rcu_head *head,
-+			void (*func)(struct rcu_head *head));
-+
-+/*
-+ * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
-+ * by call_rcu() and rcu callback execution, and are therefore not part of the
-+ * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
-+ */
-+
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+# define STATE_RCU_HEAD_READY	0
-+# define STATE_RCU_HEAD_QUEUED	1
-+
-+extern struct debug_obj_descr rcuhead_debug_descr;
-+
-+static inline void debug_rcu_head_queue(struct rcu_head *head)
-+{
-+	WARN_ON_ONCE((unsigned long)head & 0x3);
-+	debug_object_activate(head, &rcuhead_debug_descr);
-+	debug_object_active_state(head, &rcuhead_debug_descr,
-+				  STATE_RCU_HEAD_READY,
-+				  STATE_RCU_HEAD_QUEUED);
-+}
-+
-+static inline void debug_rcu_head_unqueue(struct rcu_head *head)
-+{
-+	debug_object_active_state(head, &rcuhead_debug_descr,
-+				  STATE_RCU_HEAD_QUEUED,
-+				  STATE_RCU_HEAD_READY);
-+	debug_object_deactivate(head, &rcuhead_debug_descr);
-+}
-+#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+static inline void debug_rcu_head_queue(struct rcu_head *head)
-+{
-+}
-+
-+static inline void debug_rcu_head_unqueue(struct rcu_head *head)
-+{
-+}
-+#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+
-+static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
-+{
-+	return offset < 4096;
-+}
-+
-+static __always_inline
-+void __kfree_rcu(struct rcu_head *head, unsigned long offset)
-+{
-+	typedef void (*rcu_callback)(struct rcu_head *);
-+
-+	BUILD_BUG_ON(!__builtin_constant_p(offset));
-+
-+	/* See the kfree_rcu() header comment. */
-+	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
-+
-+	call_rcu(head, (rcu_callback)offset);
-+}
-+
-+extern void kfree(const void *);
-+
-+static inline void __rcu_reclaim(struct rcu_head *head)
-+{
-+	unsigned long offset = (unsigned long)head->func;
-+
-+	if (__is_kfree_rcu_offset(offset))
-+		kfree((void *)head - offset);
-+	else
-+		head->func(head);
-+}
-+
-+/**
-+ * kfree_rcu() - kfree an object after a grace period.
-+ * @ptr:	pointer to kfree
-+ * @rcu_head:	the name of the struct rcu_head within the type of @ptr.
-+ *
-+ * Many rcu callbacks functions just call kfree() on the base structure.
-+ * These functions are trivial, but their size adds up, and furthermore
-+ * when they are used in a kernel module, that module must invoke the
-+ * high-latency rcu_barrier() function at module-unload time.
-+ *
-+ * The kfree_rcu() function handles this issue.  Rather than encoding a
-+ * function address in the embedded rcu_head structure, kfree_rcu() instead
-+ * encodes the offset of the rcu_head structure within the base structure.
-+ * Because the functions are not allowed in the low-order 4096 bytes of
-+ * kernel virtual memory, offsets up to 4095 bytes can be accommodated.
-+ * If the offset is larger than 4095 bytes, a compile-time error will
-+ * be generated in __kfree_rcu().  If this error is triggered, you can
-+ * either fall back to use of call_rcu() or rearrange the structure to
-+ * position the rcu_head structure into the first 4096 bytes.
-+ *
-+ * Note that the allowable offset might decrease in the future, for example,
-+ * to allow something like kmem_cache_free_rcu().
-+ */
-+#define kfree_rcu(ptr, rcu_head)					\
-+	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-+
-+#endif /* __LINUX_RCUPDATE_DEFS_H */
+ #ifdef __KERNEL__
+ #include <linux/list.h>
+-#include <linux/rcupdate.h>
++#include <linux/rcupdate_defs.h>
+ 
+ /* For the /proc/sys support */
+ struct ctl_table;
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index a7934ac..4485705 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -10,6 +10,7 @@
+ #include <linux/compat.h>
+ #include <linux/nsproxy.h>
+ #include <linux/futex.h>
++#include <linux/rcupdate.h>
+ 
+ #include <asm/uaccess.h>
+ 
+diff --git a/kernel/tsacct.c b/kernel/tsacct.c
+index 24dc60d..2617467 100644
+--- a/kernel/tsacct.c
++++ b/kernel/tsacct.c
+@@ -21,6 +21,7 @@
+ #include <linux/tsacct_kern.h>
+ #include <linux/acct.h>
+ #include <linux/jiffies.h>
++#include <linux/rcupdate.h>
+ #include <linux/mm.h>
+ 
+ /*
+diff --git a/lib/is_single_threaded.c b/lib/is_single_threaded.c
+index bd2bea9..efcb711 100644
+--- a/lib/is_single_threaded.c
++++ b/lib/is_single_threaded.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/sched.h>
++#include <linux/rcupdate.h>
+ 
+ /*
+  * Returns true if the task does not share ->mm with another thread/process.
 -- 
 1.7.4
 
