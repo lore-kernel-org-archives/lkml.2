@@ -1,70 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab1DGS3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 14:29:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44880 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756236Ab1DGS3d (ORCPT
+	id S1756440Ab1DGSal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 14:30:41 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:54493 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756243Ab1DGSaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 14:29:33 -0400
+	Thu, 7 Apr 2011 14:30:39 -0400
+Date: Thu, 7 Apr 2011 14:30:35 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -v2 2/4] lib, Add lock-less NULL terminated single list
+Message-ID: <20110407183034.GA6104@Krystal>
+References: <1302139746-1030-1-git-send-email-ying.huang@intel.com> <1302139746-1030-3-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
-References: <20110331032307.GA27999@vigoh> <20110331062949.GA29526@elte.hu>
- <20110331144400.GA2618@vigoh> <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 7 Apr 2011 11:28:43 -0700
-Message-ID: <BANLkTikDc0o6Kf5Ym5XkmpeY54fPc67SVw@mail.gmail.com>
-Subject: Re: [GIT PULL] Fix common misspellings
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, lucas.de.marchi@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302139746-1030-3-git-send-email-ying.huang@intel.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:13:58 up 134 days, 23:17,  4 users,  load average: 0.01, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 6, 2011 at 7:17 AM, Lucas De Marchi
-<lucas.demarchi@profusion.mobi> wrote:
-> Hi Linus,
->
-> On Thu, Mar 31, 2011 at 11:44 AM, Lucas De Marchi
-> <lucas.demarchi@profusion.mobi> wrote:
->> I've created a new patch, removing the copyright changes. New
->> patch can be pulled from:
->>
->> git://git.profusion.mobi/users/lucas/linux-2.6.git for-linus2
->
-> Maybe you could consider this patch now that rc2 is out? It still
-> applies cleanly on top of -rc2.
+* Huang Ying (ying.huang@intel.com) wrote:
+> Cmpxchg is used to implement adding new entry to the list, deleting
+> all entries from the list, deleting first entry of the list and some
+> other operations.
+> 
+> Because this is a single list, so the tail can not be accessed in O(1).
+> 
+> If there are multiple producers and multiple consumers, llist_add can
+> be used in producers and llist_del_all can be used in consumers.  They
+> can work simultaneously without lock.  But llist_del_first can not be
+> used here.  Because llist_del_first depends on list->first->next does
+> not changed if list->first is not changed during its operation, but
+> llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
+> llist_add) sequence in another consumer may violate that.
+> 
+> If there are multiple producers and one consumer, llist_add can be
+> used in producers and llist_del_all or llist_del_first can be used in
+> the consumer.
+> 
+> This can be summarized as follow:
+> 
+>            |   add    | del_first |  del_all
+>  add       |    -     |     -     |     -
+>  del_first |          |     L     |     L
+>  del_all   |          |           |     -
+> 
+> Where "-" stands for no lock is needed, while "L" stands for lock is
+> needed.
+> 
+> The list entries deleted via llist_del_all can be traversed with
+> traversing function such as llist_for_each etc.  But the list entries
+> can not be traversed safely before deleted from the list.  The order
+> of deleted entries is from the newest to the oldest added one.  If you
+> want to traverse from the oldest to the newest, you must reverse the
+> order by yourself before traversing.
+> 
+> The basic atomic operation of this list is cmpxchg on long.  On
+> architectures that don't have NMI-safe cmpxchg implementation, the
+> list can NOT be used in NMI handler.  So code uses the list in NMI
+> handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Reviewed-by: Andi Kleen <ak@linux.intel.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  include/linux/llist.h |  126 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  lib/Kconfig           |    3 +
+>  lib/Makefile          |    2 
+>  lib/llist.c           |  125 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 256 insertions(+)
+>  create mode 100644 include/linux/llist.h
+>  create mode 100644 lib/llist.c
+> 
+> --- /dev/null
+> +++ b/include/linux/llist.h
+> @@ -0,0 +1,126 @@
+> +#ifndef LLIST_H
+> +#define LLIST_H
+> +/*
+> + * Lock-less NULL terminated single linked list
+> + *
+> + * If there are multiple producers and multiple consumers, llist_add
+> + * can be used in producers and llist_del_all can be used in
+> + * consumers.  They can work simultaneously without lock.  But
+> + * llist_del_first can not be used here.  Because llist_del_first
+> + * depends on list->first->next does not changed if list->first is not
+> + * changed during its operation, but llist_del_first, llist_add,
+> + * llist_add (or llist_del_all, llist_add, llist_add) sequence in
+> + * another consumer may violate that.
+> + *
+> + * If there are multiple producers and one consumer, llist_add can be
+> + * used in producers and llist_del_all or llist_del_first can be used
+> + * in the consumer.
+> + *
+> + * This can be summarized as follow:
+> + *
+> + *           |   add    | del_first |  del_all
+> + * add       |    -     |     -     |     -
+> + * del_first |          |     L     |     L
+> + * del_all   |          |           |     -
+> + *
+> + * Where "-" stands for no lock is needed, while "L" stands for lock
+> + * is needed.
+> + *
+> + * The list entries deleted via llist_del_all can be traversed with
+> + * traversing function such as llist_for_each etc.  But the list
+> + * entries can not be traversed safely before deleted from the list.
+> + * The order of deleted entries is from the newest to the oldest added
+> + * one.  If you want to traverse from the oldest to the newest, you
+> + * must reverse the order by yourself before traversing.
+> + *
+> + * The basic atomic operation of this list is cmpxchg on long.  On
+> + * architectures that don't have NMI-safe cmpxchg implementation, the
+> + * list can NOT be used in NMI handler.  So code uses the list in NMI
+> + * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+> + */
+> +
+> +struct llist_head {
+> +	struct llist_node *first;
+> +};
+> +
+> +struct llist_node {
+> +	struct llist_node *next;
+> +};
+> +
+> +#define LLIST_HEAD_INIT(name)	{ NULL }
+> +#define LLIST_HEAD(name)	struct llist_head name = LLIST_HEAD_INIT(name)
+> +
+> +/**
+> + * init_llist_head - initialize lock-less list head
+> + * @head:	the head for your lock-less list
+> + */
+> +static inline void init_llist_head(struct llist_head *list)
+> +{
+> +	list->first = NULL;
+> +}
+> +
+> +/**
+> + * llist_entry - get the struct of this entry
+> + * @ptr:	the &struct llist_node pointer.
+> + * @type:	the type of the struct this is embedded in.
+> + * @member:	the name of the llist_node within the struct.
+> + */
+> +#define llist_entry(ptr, type, member)		\
+> +	container_of(ptr, type, member)
+> +
+> +/**
+> + * llist_for_each - iterate over some deleted entries of a lock-less list
+> + * @pos:	the &struct llist_node to use as a loop cursor
+> + * @node:	the first entry of deleted list entries
+> + *
+> + * In general, some entries of the lock-less list can be traversed
+> + * safely only after being deleted from list, so start with an entry
+> + * instead of list head.
+> + *
+> + * If being used on entries deleted from lock-less list directly, the
+> + * traverse order is from the newest to the oldest added entry.  If
+> + * you want to traverse from the oldest to the newest, you must
+> + * reverse the order by yourself before traversing.
+> + */
+> +#define llist_for_each(pos, node)			\
+> +	for (pos = (node); pos; pos = pos->next)
 
-Ok, I pulled it, but some checking shows that not all of the
-corrections are correct.
+I know list.h has the same lack of ( ) around "pos" in the for_each
+iterator, but shouldn't we add some around it to ensure that especially
+(pos)->next uses the right operator prececence ? e.g.
 
-For example:
+	for ((pos) = (node); pos; (pos) = (pos)->next)
 
-  @@ -557 +557 @@ struct sctp_ulpevent *sctp_ulpevent_make_send_failed(
-  	 * ressemble/resemble a fragmented message.
+maybe there is some reason for not putting parenthesis there that I am
+missing, but I'm asking anyway.
 
-(this is with "word diff"), the "ressemble" was corrected to
-"resemble". But the correct spelling in this case is actually
-"reassemble".
+> +
+> +/**
+> + * llist_for_each_entry - iterate over some deleted entries of lock-less list of given type
+> + * @pos:	the type * to use as a loop cursor.
+> + * @node:	the fist entry of deleted list entries.
+> + * @member:	the name of the llist_node with the struct.
+> + *
+> + * In general, some entries of the lock-less list can be traversed
+> + * safely only after being removed from list, so start with an entry
+> + * instead of list head.
+> + *
+> + * If being used on entries deleted from lock-less list directly, the
+> + * traverse order is from the newest to the oldest added entry.  If
+> + * you want to traverse from the oldest to the newest, you must
+> + * reverse the order by yourself before traversing.
+> + */
+> +#define llist_for_each_entry(pos, node, member)				\
+> +	for (pos = llist_entry((node), typeof(*pos), member);		\
+> +	     &pos->member != NULL;					\
+> +	     pos = llist_entry(pos->member.next, typeof(*pos), member))
 
-Another example:
+Same question as above apply here.
 
-  @@ -317 +317 @@ static struct clk timer2_clk = {
-          .usecount = 1,              /* REVISIT: why cant'can't' this
-be disabled? */
+> +
+> +/**
+> + * llist_empty - tests whether a lock-less list is empty
+> + * @head:	the list to test
+> + *
+> + * Not guaranteed to be accurate or up to date.  Just a quick way to
+> + * test whether the list is empty without deleting something from the
+> + * list.
+> + */
+> +static inline int llist_empty(const struct llist_head *head)
+> +{
+> +	return head->first == NULL;
 
-where (cant') was changed into (can't') - notice the extra apostrophe
-(it used to be there, just transposed with the 't' - there were at
-least three of those).
+Would it make sense to do:
 
-Regardless, those were the only ones I _noticed_, there may well be
-others. I'd suggest people try to find more. The easiest way I found
-to go through it was:
+ return ACCESS_ONCE(head->first) == NULL;
 
-   git show -U0 --color-words 25985edcedea
+instead ? Otherwise the compiler can choose to keep the result around in
+registers without re-reading (e.g. busy waiting loop).
 
-which makes it reasonably dense and easy to see.
+> +}
+> +
+> +void llist_add(struct llist_node *new, struct llist_head *head);
+> +void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+> +		     struct llist_head *head);
+> +struct llist_node *llist_del_first(struct llist_head *head);
+> +struct llist_node *llist_del_all(struct llist_head *head);
+> +#endif /* LLIST_H */
+> --- a/lib/Kconfig
+> +++ b/lib/Kconfig
+> @@ -272,4 +272,7 @@ config AVERAGE
+>  
+>  	  If unsure, say N.
+>  
+> +config LLIST
+> +	bool
+> +
+>  endmenu
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -115,6 +115,8 @@ obj-$(CONFIG_AVERAGE) += average.o
+>  
+>  obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
+>  
+> +obj-$(CONFIG_LLIST) += llist.o
+> +
+>  hostprogs-y	:= gen_crc32table
+>  clean-files	:= crc32table.h
+>  
+> --- /dev/null
+> +++ b/lib/llist.c
+> @@ -0,0 +1,125 @@
+> +/*
+> + * Lock-less NULL terminated single linked list
+> + *
+> + * The basic atomic operation of this list is cmpxchg on long.  On
+> + * architectures that don't have NMI-safe cmpxchg implementation, the
+> + * list can NOT be used in NMI handler.  So code uses the list in NMI
+> + * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+> + *
+> + * Copyright 2010 Intel Corp.
 
-                      Linus
+2010, 2011
+
+> + *   Author: Huang Ying <ying.huang@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation;
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/llist.h>
+> +
+> +#include <asm/system.h>
+> +
+> +/**
+> + * llist_add - add a new entry
+> + * @new:	new entry to be added
+> + * @head:	the head for your lock-less list
+> + */
+> +void llist_add(struct llist_node *new, struct llist_head *head)
+> +{
+> +	struct llist_node *entry;
+> +
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	do {
+> +		entry = head->first;
+> +		new->next = entry;
+> +		cpu_relax();
+> +	} while (cmpxchg(&head->first, entry, new) != entry);
+
+Could be turned into:
+
+struct llist_node *entry, *old_entry;
+
+entry = head->first;
+
+do {
+        old_entry = entry;
+        new->next = entry;
+        cpu_relax();
+} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
+
+It should generate more compact code, and slightly faster retry.
+
+> +}
+> +EXPORT_SYMBOL_GPL(llist_add);
+> +
+> +/**
+> + * llist_add_batch - add several linked entries in batch
+> + * @new_first:	first entry in batch to be added
+> + * @new_last:	last entry in batch to be added
+> + * @head:	the head for your lock-less list
+> + */
+> +void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+> +		     struct llist_head *head)
+> +{
+> +	struct llist_node *entry;
+> +
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	do {
+> +		entry = head->first;
+> +		new_last->next = entry;
+> +		cpu_relax();
+> +	} while (cmpxchg(&head->first, entry, new_first) != entry);
+
+Similar modification as above could be done.
+
+> +}
+> +EXPORT_SYMBOL_GPL(llist_add_batch);
+> +
+> +/**
+> + * llist_del_first - delete the first entry of lock-less list
+> + * @head:	the head for your lock-less list
+> + *
+> + * If list is empty, return NULL, otherwise, return the first entry
+> + * deleted, this is the newest added one.
+> + *
+> + * Only one llist_del_first user can be used simultaneously with
+> + * multiple llist_add users without lock.  Because otherwise
+> + * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
+> + * llist_add) sequence in another user may change @head->first->next,
+> + * but keep @head->first.  If multiple consumers are needed, please
+> + * use llist_del_all or use lock between consumers.
+> + */
+> +struct llist_node *llist_del_first(struct llist_head *head)
+> +{
+> +	struct llist_node *entry;
+> +
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	do {
+> +		entry = head->first;
+> +		if (entry == NULL)
+> +			return NULL;
+> +		cpu_relax();
+> +	} while (cmpxchg(&head->first, entry, entry->next) != entry);
+
+Same comment as above.
+
+Thanks,
+
+Mathieu
+
+> +
+> +	return entry;
+> +}
+> +EXPORT_SYMBOL_GPL(llist_del_first);
+> +
+> +/**
+> + * llist_del_all - delete all entries from lock-less list
+> + * @head:	the head of lock-less list to delete all entries
+> + *
+> + * If list is empty, return NULL, otherwise, delete all entries and
+> + * return the pointer to the first entry.  The order of entries
+> + * deleted is from the newest to the oldest added one.
+> + */
+> +struct llist_node *llist_del_all(struct llist_head *head)
+> +{
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	return xchg(&head->first, NULL);
+> +}
+> +EXPORT_SYMBOL_GPL(llist_del_all);
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
