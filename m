@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab1DGFiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 01:38:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33145 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab1DGFiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 01:38:07 -0400
-From: "Rafael J. Wysocki" <rjw@suse.com>
-Organization: SUSE Labs
+	id S1751974Ab1DGFpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 01:45:08 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36397 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab1DGFpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 01:45:06 -0400
+Date: Wed, 6 Apr 2011 22:44:59 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
 To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [PATCH/RFC 0/6] ARM: runtime PM: consolidate runtime PM implementations
-Date: Thu, 7 Apr 2011 07:38:42 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <1302134569-22825-1-git-send-email-khilman@ti.com>
-In-Reply-To: <1302134569-22825-1-git-send-email-khilman@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org
+Subject: Re: [RFC][PATCH] PM / Platform: Remove __weak definitions of runtime
+ PM callbacks
+Message-ID: <20110407054459.GB6427@angua.secretlab.ca>
+References: <201103270058.41632.rjw@sisk.pl>
+ <87zko3dn4b.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104070738.42956.rjw@suse.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zko3dn4b.fsf@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 07, 2011, Kevin Hilman wrote:
-> This series aims to consolidate OMAP and SH-mobile runtime PM
-> implementations around the new device power domains.
+On Wed, Apr 06, 2011 at 03:35:32PM -0700, Kevin Hilman wrote:
+> Hi Rafael, Magnus,
 > 
-> In 2.6.39, device power domains were added (commit
-> 7538e3db6e015e890825fbd9f8659952896ddd5b, PM: add support for device
-> power domains).  In converting both OMAP and SH-mobile to use device
-> power domains, the overlap between implementations was almost 100%.  
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> To share the runtime PM implementation based on simple clock gating,
-> move it to arch/arm/common and initialize it from OMAP and SH-mobile.
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Remove the __weak definitions of platform bus type runtime PM
+> > callbacks, make platform_dev_pm_ops point to the generic routines
+> > as appropriate and allow architectures using platform_dev_pm_ops to
+> > replace the runtime PM callbacks in that structure with their own
+> > set.
+> >
+> > Convert architectures providing its own definitions of the platform
+> > runtime PM callbacks to use the new mechanism.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Also, OMAP was the only user of platform_bus_set_pm_ops().  Now that
-> it has been converted to device power domains, remove
-> platform_bus_set_pm_ops().
+> I dont't think we should be adding yet another new interface for setting
+> platform-specific runtime PM ops.
+> 
+> We now have 3.  Two existing ones:
+> 
+> 1) new device power domains (presumably preferred)
+> 2) platform_bus_set_pm_ops() (disliked by many)
+> 
+> and now the new one you create here
+> 
+> 3) platform_set_runtime_pm_ops()
+> 
+> This new one is basically the same as platform_bus_set_pm_ops(), but
+> targetted only at runtime PM ops, and also has all the same problems
+> that have been discussed before.  Namely, it overrides the pm ops for
+> *every* device on the platform_bus, instead of targetting only specific
+> devices.  With the new device power domains, we can target specific
+> devices.
+> 
+> Wouldn't the right way to go here be to convert mach-shmobile over to
+> using device power domains?
 
-Please, don't do it this way.
+I agree.  +1
 
-First, we'll still need platform_bus_set_pm_ops() on shmobile and the reason
-is that we want to override the platform bus type PM ops for _all_ devices on
-that platform, which power domains are not really suitable for.
-
-Second, we're going to introduce code for handling real power domains for
-shmobile that would conflict with the way you're using power domains for
-overriding the default PM ops.
-
-Besides, the way you've used power domains appears to assume that drivers
-will not define their own runtime PM callbacks, because if they do, those
-callbacks will be called _in_ _addition_ to the power domain callbacks you're
-trying to add (from the default platform bus type callbacks).
-
-Thanks,
-Rafael
+g.
