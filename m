@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab1DGRpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 13:45:11 -0400
-Received: from hostingsmtp08.register.it ([81.88.50.249]:36975 "EHLO
-	hostingsmtp.register.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751913Ab1DGRpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 13:45:10 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Apr 2011 13:45:09 EDT
-Message-Id: <201104071738.p37HcSFX019185@vivaldi20.register.it>
-From: "Guido Trentalancia" <guido@trentalancia.com>
-Reply-To: "Guido Trentalancia" <guido@trentalancia.com>
-To: linux-kernel@vger.kernel.org
-Cc: kailang@realtek.com.tw, pshou@realtek.com.tw, tiwai@suse.de,
-        jwoithe@physics.adelaide.edu.au
-Subject: [PATCH] snd_hda_codec_realtek: enable ALC271 for Acer laptops
-Date: Thu, 07 Apr 2011 19:38:27 +0200
-X-RID: bStjJyU7Y24lKCV0biNydEArZDvoZw==|bStjJyU7Y24lKCV0biNydA==|MF5eJ/kw4CdeMF4n8uBe|TElBTUJFVw==
+	id S1756180Ab1DGRqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:46:16 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48596 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754165Ab1DGRqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 13:46:15 -0400
+Date: Thu, 7 Apr 2011 19:46:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] irq fix
+Message-ID: <20110407174601.GA28319@elte.hu>
 MIME-Version: 1.0
-X-Priority: 3
-X-Mailer: Webmail Client v1.5
-Content-Type: text/plain;
-	charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This quick fix to the Realtek HD Audio driver enables configurable support for the ALC271 type commonly found on some Acer laptops (e.g. Aspire 5745G).
+Linus,
 
-Normally, the driver would fall back to BIOS auto-probing. However, the "model=acer" parameter can be passed on the boot command line to enable such support. Otherwise, it is quite common that the internal microphone does not work.
+Please pull the latest irq-fixes-for-linus git tree from:
 
---- linux-2.6.38.2-original/sound/pci/hda/patch_realtek.c	2011-04-07 17:56:25.053046707 +0200
-+++ linux-2.6.38.2/sound/pci/hda/patch_realtek.c	2011-04-07 19:03:00.975706888 +0200
-@@ -15028,6 +15028,7 @@ static const char * const alc269_models[
- 	[ALC269_DMIC]			= "laptop-dmic",
- 	[ALC269_FUJITSU]		= "fujitsu",
- 	[ALC269_LIFEBOOK]		= "lifebook",
-+	[ALC271_ACER]			= "acer",
- 	[ALC269_AUTO]			= "auto",
- };
-  
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-fixes-for-linus
 
+ Thanks,
+
+	Ingo
+
+------------------>
+Xiaotian Feng (1):
+      genirq: Fix cpumask leak in __setup_irq()
+
+
+ kernel/irq/manage.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 12a80fd..07c1611 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1051,6 +1051,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	register_irq_proc(irq, desc);
+ 	new->dir = NULL;
+ 	register_handler_proc(irq, new);
++	free_cpumask_var(mask);
+ 
+ 	return 0;
+ 
