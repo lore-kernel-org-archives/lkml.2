@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab1DGRnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 13:43:32 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:33546 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753765Ab1DGRnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 13:43:31 -0400
-Subject: [RFC][PATCH] virtio balloon: kill tell-host-first logic
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Thu, 07 Apr 2011 10:43:25 -0700
-Message-Id: <20110407174325.ED21C82B@kernel>
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1755640Ab1DGRpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:45:11 -0400
+Received: from hostingsmtp08.register.it ([81.88.50.249]:36975 "EHLO
+	hostingsmtp.register.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751913Ab1DGRpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 13:45:10 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Apr 2011 13:45:09 EDT
+Message-Id: <201104071738.p37HcSFX019185@vivaldi20.register.it>
+From: "Guido Trentalancia" <guido@trentalancia.com>
+Reply-To: "Guido Trentalancia" <guido@trentalancia.com>
+To: linux-kernel@vger.kernel.org
+Cc: kailang@realtek.com.tw, pshou@realtek.com.tw, tiwai@suse.de,
+        jwoithe@physics.adelaide.edu.au
+Subject: [PATCH] snd_hda_codec_realtek: enable ALC271 for Acer laptops
+Date: Thu, 07 Apr 2011 19:38:27 +0200
+X-RID: bStjJyU7Y24lKCV0biNydEArZDvoZw==|bStjJyU7Y24lKCV0biNydA==|MF5eJ/kw4CdeMF4n8uBe|TElBTUJFVw==
+MIME-Version: 1.0
+X-Priority: 3
+X-Mailer: Webmail Client v1.5
+Content-Type: text/plain;
+	charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This quick fix to the Realtek HD Audio driver enables configurable support for the ALC271 type commonly found on some Acer laptops (e.g. Aspire 5745G).
 
-The virtio balloon driver has a VIRTIO_BALLOON_F_MUST_TELL_HOST
-feature bit.  Whenever the bit is set, we must always tell the
-host before we free pages back to the allocator.  Without this
-we might free a page (and have another user touch it) while the
-hypervisor is unprepared for it.
+Normally, the driver would fall back to BIOS auto-probing. However, the "model=acer" parameter can be passed on the boot command line to enable such support. Otherwise, it is quite common that the internal microphone does not work.
 
-But, if the bit is _not_ set, we are under no obligation to
-reverse the order.  Furthermore, all modern qemus set this bit.
-So, the "tell second" code is completely unused and untestable.
-Quoting Anthony: "untested code is broken code".
+--- linux-2.6.38.2-original/sound/pci/hda/patch_realtek.c	2011-04-07 17:56:25.053046707 +0200
++++ linux-2.6.38.2/sound/pci/hda/patch_realtek.c	2011-04-07 19:03:00.975706888 +0200
+@@ -15028,6 +15028,7 @@ static const char * const alc269_models[
+ 	[ALC269_DMIC]			= "laptop-dmic",
+ 	[ALC269_FUJITSU]		= "fujitsu",
+ 	[ALC269_LIFEBOOK]		= "lifebook",
++	[ALC271_ACER]			= "acer",
+ 	[ALC269_AUTO]			= "auto",
+ };
+  
 
-This _also_ means that we don't have to preserve a pfn list
-after the pages are freed, which should let us get rid of some
-temporary storage (vb->pfns) eventually.
-
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/drivers/virtio/virtio_balloon.c |   21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
-
-diff -puN drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic drivers/virtio/virtio_balloon.c
---- linux-2.6.git/drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic	2011-04-07 10:23:12.016343374 -0700
-+++ linux-2.6.git-dave/drivers/virtio/virtio_balloon.c	2011-04-07 10:23:12.024343370 -0700
-@@ -40,9 +40,6 @@ struct virtio_balloon
- 	/* Waiting for host to ack the pages we released. */
- 	struct completion acked;
- 
--	/* Do we have to tell Host *before* we reuse pages? */
--	bool tell_host_first;
--
- 	/* The pages we've told the Host we're not using. */
- 	unsigned int num_pages;
- 	struct list_head pages;
-@@ -151,13 +148,14 @@ static void leak_balloon(struct virtio_b
- 		vb->num_pages--;
- 	}
- 
--	if (vb->tell_host_first) {
--		tell_host(vb, vb->deflate_vq);
--		release_pages_by_pfn(vb->pfns, vb->num_pfns);
--	} else {
--		release_pages_by_pfn(vb->pfns, vb->num_pfns);
--		tell_host(vb, vb->deflate_vq);
--	}
-+
-+	/*
-+	 * Note that if
-+	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
-+	 * is true, we *have* to do it in this order
-+	 */
-+	tell_host(vb, vb->deflate_vq);
-+	release_pages_by_pfn(vb->pfns, vb->num_pfns);
- }
- 
- static inline void update_stat(struct virtio_balloon *vb, int idx,
-@@ -325,9 +323,6 @@ static int virtballoon_probe(struct virt
- 		goto out_del_vqs;
- 	}
- 
--	vb->tell_host_first
--		= virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
--
- 	return 0;
- 
- out_del_vqs:
-_
