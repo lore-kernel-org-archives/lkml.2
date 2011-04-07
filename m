@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab1DGUFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 16:05:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58335 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906Ab1DGUFu (ORCPT
+	id S1756904Ab1DGURA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 16:17:00 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13696 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab1DGUQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 16:05:50 -0400
-Date: Thu, 7 Apr 2011 22:05:41 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
+	Thu, 7 Apr 2011 16:16:59 -0400
+Date: Thu, 7 Apr 2011 22:17:17 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
 To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-scsi@vger.kernel.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        socketcan-core@lists.berlios.de, linux-mtd@lists.infradead.org,
-        linux-input@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/6]Fix typo "recieve" in various parts of the kernel.
-Message-ID: <20110407200541.GC8569@pengutronix.de>
-References: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
+cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/6]Fix typo "recieve" in various parts of the kernel.
+In-Reply-To: <1302192567-842-2-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1104072216330.1538@swampdragon.chaosbits.net>
+References: <1302192567-842-1-git-send-email-justinmattock@gmail.com> <1302192567-842-2-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 09:09:22AM -0700, Justin P. Mattock wrote:
-> The patch below fixes some typos "recieve" in various parts of the kernel.
-> Note: these below are in actual code rather than comments(excpet for r852.c which
-s/excpet/except/
+On Thu, 7 Apr 2011, Justin P. Mattock wrote:
 
-> has a code fix, and comment).
-> compile tested as best as I can...
-I'm not a native speaker, but "as good as" sounds better in my ears.
-
-Best regards
-Uwe
+> The patch below fixes "recieve" in various parts of the kernel.
+> Note: patches 2,3,4,5 are fixes to comments only(no code).
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
