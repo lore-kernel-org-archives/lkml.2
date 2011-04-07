@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1DGWU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 18:20:29 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:37220 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755591Ab1DGWU1 (ORCPT
+	id S1755952Ab1DGWXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 18:23:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53149 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755414Ab1DGWXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 18:20:27 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=fWLf28XK44yPsusCCfFFR/hon599Kb3QwhPmugT6LGyME7C/vwZwEXpIbodlMoYrqtDlm3M+tTLbl86gJXBqXLIhpNSv5FwlN38Pvvx0NydD1NRESdYspz5zk06xFfHA;
-Date: Thu, 7 Apr 2011 15:20:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Ameya Palande <ameya.palande@nokia.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: Add Documentation/leds/00-INDEX
-Message-Id: <20110407152025.4ae45c59.rdunlap@xenotime.net>
-In-Reply-To: <4D9ADA58.9050806@nokia.com>
-References: <20110331084420.47eaa91c.rdunlap@xenotime.net>
-	<1301648314-3441-1-git-send-email-ameya.palande@nokia.com>
-	<20110401101701.e440ad6d.rdunlap@xenotime.net>
-	<4D9ADA58.9050806@nokia.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 7 Apr 2011 18:23:17 -0400
+Date: Thu, 7 Apr 2011 15:23:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org, mjg@redhat.com
+Subject: Re: [PATCH] PCI: Enable ASPM state clearing regardless of policy
+Message-Id: <20110407152310.5bfeab8b.akpm@linux-foundation.org>
+In-Reply-To: <20110310185351.3394.54996.stgit@s20.home>
+References: <20110310185351.3394.54996.stgit@s20.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Apr 2011 12:01:12 +0300 Ameya Palande wrote:
+On Thu, 10 Mar 2011 11:54:16 -0700
+Alex Williamson <alex.williamson@redhat.com> wrote:
 
-> Hi Randy,
+> Commit 2f671e2d allowed us to clear ASPM state when the FADT
+> tells us it isn't supported, but we don't put this into effect
+> if the aspm_policy is set to POLICY_POWERSAVE.  Enable the
+> state to be cleared regardless of policy.
 > 
-> On 04/01/2011 08:17 PM, ext Randy Dunlap wrote:
-> > On Fri,  1 Apr 2011 11:58:34 +0300 Ameya Palande wrote:
-> >
-> >> Signed-off-by: Ameya Palande<ameya.palande@nokia.com>
-> >
-> > Applied, thanks.
-> >
-> >> ---
-> >>   Documentation/leds/00-INDEX |   10 ++++++++++
-> >>   1 files changed, 10 insertions(+), 0 deletions(-)
-> >>   create mode 100644 Documentation/leds/00-INDEX
-> >>
-> >> diff --git a/Documentation/leds/00-INDEX b/Documentation/leds/00-INDEX
-> >> new file mode 100644
-> >> index 0000000..762d676
-> >> --- /dev/null
-> >> +++ b/Documentation/leds/00-INDEX
-> >> @@ -0,0 +1,10 @@
-> >> +00-INDEX
-> >> +	- This file
-> >> +leds-class.txt
-> >> +	- Info about led sysfs class
-> >> +leds-lp3944.txt
-> >> +	- Info on National Semiconductor LP3944 fun-light chip
-> >> +leds-lp5521.txt
-> >> +	- Info on National Semiconductor LP5521 led driver chip
-> >> +leds-lp5523.txt
-> >> +	- Info on National Semiconductor LP5523 led driver chip
-> >> --
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
 > 
-> Can you point me to your tree where you applied my commit?
+>  drivers/pci/pcie/aspm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+> index 3188cd9..eb8ac5c 100644
+> --- a/drivers/pci/pcie/aspm.c
+> +++ b/drivers/pci/pcie/aspm.c
+> @@ -607,7 +607,7 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+>  	 * the BIOS's expectation, we'll do so once pci_enable_device() is
+>  	 * called.
+>  	 */
+> -	if (aspm_policy != POLICY_POWERSAVE) {
+> +	if (aspm_policy != POLICY_POWERSAVE || aspm_clear_state) {
+>  		pcie_config_aspm_path(link);
+>  		pcie_set_clkpm(link, policy_to_clkpm_state(link));
+>  	}
 
-See MAINTAINERS file:
+hm.  why.  Presumably this change has some user-observeable effect.
 
-DOCUMENTATION
-M:	Randy Dunlap <rdunlap@xenotime.net>
-L:	linux-doc@vger.kernel.org
-T:	quilt oss.oracle.com/~rdunlap/kernel-doc-patches/current/
-S:	Maintained
-F:	Documentation/
-
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+What is that effect, and why is it desirable? ;)
