@@ -1,173 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab1DGNcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:32:06 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:6115 "EHLO
-	VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab1DGNaO (ORCPT
+	id S1751915Ab1DGNeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:34:25 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:32861 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751087Ab1DGNeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:30:14 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJAAU7-02-JOM-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 7/9] x86/amd-iommu: Improve handling of full command buffer
-Date: Thu, 7 Apr 2011 15:30:02 +0200
-Message-ID: <1302183004-4081-8-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1302183004-4081-1-git-send-email-joerg.roedel@amd.com>
-References: <1302183004-4081-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Thu, 7 Apr 2011 09:34:24 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+C1QsJVROC1SYlJ2cp60S1YPoyumpC4+52FzG84p
+	mbyRlO/gWcVhwV
+Subject: Re: [PATCH]sched: convert wall-time to vruntime for
+ check_preempt_tick
+From: Mike Galbraith <efault@gmx.de>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, zheng.z.yan@intel.com
+In-Reply-To: <20110407124332.GA31809@sli10-conroe.sh.intel.com>
+References: <20110407124332.GA31809@sli10-conroe.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Apr 2011 15:34:20 +0200
+Message-ID: <1302183260.8065.9.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch improved the handling of commands when the IOMMU
-command buffer is nearly full. In this case it issues an
-completion wait command and waits until the IOMMU has
-processed it before continuing queuing new commands.
+On Thu, 2011-04-07 at 20:43 +0800, Shaohua Li wrote:
+> In check_preempt_tick(), delta is vruntime and ideal_runtime is wall runtime.
+> Comparing vruntime and ideal_runtime looks buggy.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kernel/amd_iommu.c |   88 +++++++++++++++++++++++++++++++-----------
- 1 files changed, 65 insertions(+), 23 deletions(-)
+Why is that buggy?  It's a distance in units ns, ala wakeup_granularity,
+a number.  This number just happens to be variable.
 
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index 9d66b20..75c7f8c 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -381,6 +381,39 @@ irqreturn_t amd_iommu_int_handler(int irq, void *data)
-  *
-  ****************************************************************************/
- 
-+static int wait_on_sem(volatile u64 *sem)
-+{
-+	int i = 0;
-+
-+	while (*sem == 0 && i < LOOP_TIMEOUT) {
-+		udelay(1);
-+		i += 1;
-+	}
-+
-+	if (i == LOOP_TIMEOUT) {
-+		pr_alert("AMD-Vi: Completion-Wait loop timed out\n");
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static void copy_cmd_to_buffer(struct amd_iommu *iommu,
-+			       struct iommu_cmd *cmd,
-+			       u32 tail)
-+{
-+	u8 *target;
-+
-+	target = iommu->cmd_buf + tail;
-+	tail   = (tail + sizeof(*cmd)) % iommu->cmd_buf_size;
-+
-+	/* Copy command to buffer */
-+	memcpy(target, cmd, sizeof(*cmd));
-+
-+	/* Tell the IOMMU about it */
-+	writel(tail, iommu->mmio_base + MMIO_CMD_TAIL_OFFSET);
-+}
-+
- static void build_completion_wait(struct iommu_cmd *cmd, u64 address)
- {
- 	WARN_ON(address & 0x7ULL);
-@@ -432,25 +465,44 @@ static void build_inv_iommu_pages(struct iommu_cmd *cmd, u64 address,
- 
- /*
-  * Writes the command to the IOMMUs command buffer and informs the
-- * hardware about the new command. Must be called with iommu->lock held.
-+ * hardware about the new command.
-  */
- static int iommu_queue_command(struct amd_iommu *iommu, struct iommu_cmd *cmd)
- {
-+	u32 left, tail, head, next_tail;
- 	unsigned long flags;
--	u32 tail, head;
--	u8 *target;
- 
- 	WARN_ON(iommu->cmd_buf_size & CMD_BUFFER_UNINITIALIZED);
-+
-+again:
- 	spin_lock_irqsave(&iommu->lock, flags);
--	tail = readl(iommu->mmio_base + MMIO_CMD_TAIL_OFFSET);
--	target = iommu->cmd_buf + tail;
--	memcpy_toio(target, cmd, sizeof(*cmd));
--	tail = (tail + sizeof(*cmd)) % iommu->cmd_buf_size;
--	head = readl(iommu->mmio_base + MMIO_CMD_HEAD_OFFSET);
--	if (tail == head)
--		return -ENOMEM;
--	writel(tail, iommu->mmio_base + MMIO_CMD_TAIL_OFFSET);
-+
-+	head      = readl(iommu->mmio_base + MMIO_CMD_HEAD_OFFSET);
-+	tail      = readl(iommu->mmio_base + MMIO_CMD_TAIL_OFFSET);
-+	next_tail = (tail + sizeof(*cmd)) % iommu->cmd_buf_size;
-+	left      = (head - next_tail) % iommu->cmd_buf_size;
-+
-+	if (left <= 2) {
-+		struct iommu_cmd sync_cmd;
-+		volatile u64 sem = 0;
-+		int ret;
-+
-+		build_completion_wait(&sync_cmd, (u64)&sem);
-+		copy_cmd_to_buffer(iommu, &sync_cmd, tail);
-+
-+		spin_unlock_irqrestore(&iommu->lock, flags);
-+
-+		if ((ret = wait_on_sem(&sem)) != 0)
-+			return ret;
-+
-+		goto again;
-+	}
-+
-+	copy_cmd_to_buffer(iommu, cmd, tail);
-+
-+	/* We need to sync now to make sure all commands are processed */
- 	iommu->need_sync = true;
-+
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- 
- 	return 0;
-@@ -464,7 +516,7 @@ static int iommu_completion_wait(struct amd_iommu *iommu)
- {
- 	struct iommu_cmd cmd;
- 	volatile u64 sem = 0;
--	int ret, i = 0;
-+	int ret;
- 
- 	if (!iommu->need_sync)
- 		return 0;
-@@ -475,17 +527,7 @@ static int iommu_completion_wait(struct amd_iommu *iommu)
- 	if (ret)
- 		return ret;
- 
--	while (sem == 0 && i < LOOP_TIMEOUT) {
--		udelay(1);
--		i += 1;
--	}
--
--	if (i == LOOP_TIMEOUT) {
--		pr_alert("AMD-Vi: Completion-Wait loop timed out\n");
--		ret = -EIO;
--	}
--
--	return 0;
-+	return wait_on_sem(&sem);
- }
- 
- /*
--- 
-1.7.1
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 3f7ec9e..0b76e3a 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1121,7 +1121,7 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+>  		if (delta < 0)
+>  			return;
+>  
+> -		if (delta > ideal_runtime)
+> +		if (delta > calc_delta_fair(ideal_runtime, curr))
+>  			resched_task(rq_of(cfs_rq)->curr);
+>  	}
+>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
