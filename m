@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab1DGV7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 17:59:07 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38833 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab1DGV7G (ORCPT
+	id S1755273Ab1DGV7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 17:59:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55433 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755043Ab1DGV7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 17:59:06 -0400
-Subject: Re: [PATCH 1/2] rename alloc_pages_exact()
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@freescale.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1104071437130.14967@chino.kir.corp.google.com>
-References: <20110407172104.1F8B7329@kernel>
-	 <alpine.DEB.2.00.1104071437130.14967@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 07 Apr 2011 14:58:57 -0700
-Message-ID: <1302213537.8184.4105.camel@nimitz>
+	Thu, 7 Apr 2011 17:59:11 -0400
+Date: Thu, 7 Apr 2011 14:58:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: kernel@wildgooses.com
+Cc: rpurdie@rpsys.net, const@mimas.ru, daniel@caiaq.de, a.zummo@towertech.it,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] leds: New PCEngines Alix LED driver using gpio
+ interface
+Message-Id: <20110407145836.3cde7699.akpm@linux-foundation.org>
+In-Reply-To: <1299430285-13189-1-git-send-email-kernel@wildgooses.com>
+References: <1299430285-13189-1-git-send-email-kernel@wildgooses.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-07 at 14:40 -0700, David Rientjes wrote:
-> > alloc_pages_exact() returns a virtual address.  But, alloc_pages() returns
-> > a 'struct page *'.  That makes for very confused kernel hackers.
-> > 
-> > __get_free_pages(), on the other hand, returns virtual addresses.  That
-> > makes alloc_pages_exact() a much closer match to __get_free_pages(), so
-> > rename it to get_free_pages_exact().
-> > 
-> 
-> The patch also reverses the arguments of the function in 
-> include/linux/gfp.h, undoubtedly to resemble the (mask, order) appearance 
-> of __get_free_pages():
-> 
-> 	-void *alloc_pages_exact(size_t size, gfp_t gfp_mask);
-> 	+void *get_free_pages_exact(gfp_t gfp_mask, size_t size);
+On Sun,  6 Mar 2011 16:51:25 +0000
+kernel@wildgooses.com wrote:
 
-Thanks.  I dumped the fixes for that in the second patch.  Whoops.  Will
-repost.
+> From: Ed Wildgoose <kernel@wildgooses.com>
+> 
+> This new driver replaces the old PCEngines Alix 2/3 LED driver with
+> a new driver that controls the LEDs through the leds-gpio driver.
+> The old driver accessed GPIOs directly, which created a conflict 
+> and prevented also loading the cs5535-gio driver to read other
+> GPIOs on the Alix board. With this new driver, both are loaded
+> and therefore it's possible to access both the LEDs and onboard GPIOs 
+> 
+> This driver is based on leds-net5501.c 
+> by: Alessandro Zummo <a.zummo@towertech.it>
+> Additionally it relies on parts of the patch: 7f131cf3ed
+> by: Daniel Mack <daniel@caiaq.de> to perform detection of the Alix board
 
--- Dave
+As far as I can tell from looking at it, this driver maintains all the
+same interfaces and behaviour as the old version.  Am I right?
 
