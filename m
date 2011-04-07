@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab1DGP1t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 11:27:49 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48313 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab1DGP1s (ORCPT
+	id S1754769Ab1DGP2E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 11:28:04 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:54433 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab1DGP2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 11:27:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=dd0bavnekXSf3cdwHdS9zp/mN6VXZOiWQWAXMg+YZG6IDobWGhjJKst+3+lNYMiP0j
-         bD/7/pevht/i94j/yG0CnbP01r97P87MwJr1cG8SX3IBEloUGoPEtk5arKSd4mUux3/N
-         5A5O626ZKS26xmBgpl8ekzYLHChWBER4YQu/Y=
+	Thu, 7 Apr 2011 11:28:03 -0400
+Date: Thu, 7 Apr 2011 17:28:00 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: tip: New "Link:" tag to replace "LKML-Reference:"
+Message-ID: <20110407152800.GA19652@merkur.ravnborg.org>
+References: <4D9CE4AE.4090303@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <1302178426.3357.34.camel@edumazet-laptop>
-References: <20110315132527.130FB80018F1@mail1005.cent> <20110317001519.GB18911@kroah.com>
- <20110407120112.E08DCA03@pobox.sk> <4D9D8FAA.9080405@suse.cz>
- <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com> <1302177428.3357.25.camel@edumazet-laptop>
- <1302178426.3357.34.camel@edumazet-laptop>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Thu, 7 Apr 2011 23:27:26 +0800
-Message-ID: <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
-Subject: Re: Regression from 2.6.36
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Content-Type: multipart/mixed; boundary=0016368e1b8d65b44804a055c0e9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D9CE4AE.4090303@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016368e1b8d65b44804a055c0e9
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 06, 2011 at 03:09:50PM -0700, H. Peter Anvin wrote:
+> Hi all,
+> 
+> At Linus' request, I have modified the tip-bot to recognize a new form
+> of email archive references, which should work as clickable links.
+> Instead of:
+> 
+> LKML-Reference: <message-id>
+> 
+> use, instead:
+> 
+> Link: http://lkml.kernel.org/r/message-id
 
-On Thu, Apr 7, 2011 at 8:13 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote=
-:
-> Le jeudi 07 avril 2011 =E0 13:57 +0200, Eric Dumazet a =E9crit :
->
->> We had a similar memory problem in fib_trie in the past =A0: We force a
->> synchronize_rcu() every XXX Mbytes allocated to make sure we dont have
->> too much ram waiting to be freed in rcu queues.
+If use of this grows outside plain linux-kernel development a
+more generic name could make sense.
 
-I don't think there is too much memory allocated by vmalloc to free.
-My patch should reduce the size of the memory allocated by vmalloc().
-I think the real problem is kfree always returns the memory, whose
-size is aligned to 2^n pages, and more memory are used than before.
+Suggestion:
 
->
-> This was done in commit c3059477fce2d956
-> (ipv4: Use synchronize_rcu() during trie_rebalance())
->
-> It was possible in fib_trie because we hold RTNL lock, so managing
-> a counter was free.
->
-> In fs case, we might use a percpu_counter if we really want to limit the
-> amount of space.
->
-> Now, I am not even sure we should care that much and could just forget
-> about this high order pages use.
+    http://mid.kernel.org/r/message-id
 
-In normal cases, only a few fds are used, the ftable isn't larger than
-one page, so we should use kmalloc to reduce the memory cost. Maybe we
-should set a upper limit for kmalloc() here. One page?
+mid for message-id.
 
-azurlt, would you please test the patch attached? Thanks.
-
---=20
-Regards,
-Changli Gao(xiaosuo@gmail.com)
-
---0016368e1b8d65b44804a055c0e9
-Content-Type: application/octet-stream; name="x.diff"
-Content-Disposition: attachment; filename="x.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gm7ubqed0
-
-ZGlmZiAtLWdpdCBhL2ZzL2ZpbGUuYyBiL2ZzL2ZpbGUuYwppbmRleCAwYmUzNDQ3Li45NjZiZjBj
-IDEwMDY0NAotLS0gYS9mcy9maWxlLmMKKysrIGIvZnMvZmlsZS5jCkBAIC00Myw5ICs0MywxMSBA
-QCBzdGF0aWMgaW5saW5lIHZvaWQgKmFsbG9jX2ZkbWVtKHVuc2lnbmVkIGludCBzaXplKQogewog
-CXZvaWQgKmRhdGE7CiAKLQlkYXRhID0ga21hbGxvYyhzaXplLCBHRlBfS0VSTkVMfF9fR0ZQX05P
-V0FSTik7Ci0JaWYgKGRhdGEgIT0gTlVMTCkKLQkJcmV0dXJuIGRhdGE7CisJaWYgKHNpemUgPD0g
-UEFHRV9TSVpFKSB7CisJCWRhdGEgPSBrbWFsbG9jKHNpemUsIEdGUF9LRVJORUx8X19HRlBfTk9X
-QVJOKTsKKwkJaWYgKGRhdGEgIT0gTlVMTCkKKwkJCXJldHVybiBkYXRhOworCX0KIAogCXJldHVy
-biB2bWFsbG9jKHNpemUpOwogfQo=
---0016368e1b8d65b44804a055c0e9--
+	Sam
