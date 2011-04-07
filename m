@@ -1,85 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab1DGNk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:40:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36122 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab1DGNk0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:40:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uA7e1lAF/sQFatRONrNJnjolXqqDynqrT1CKLarRofkM1nErsYu81nRbg+9MamdZUw
-         XwRUOr0No8dLqKASQ19K37fgdG8LBOJptdDXithW+vidp7G4+Cg1wz2M2xHGKA2bcBAt
-         RJItJXLnqOKP9hN42/2RsIGq8q0eVc8j1CJ24=
+	id S1753247Ab1DGNkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:40:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31106 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab1DGNk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 09:40:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,316,1299484800"; 
+   d="scan'208";a="624997387"
+Date: Thu, 7 Apr 2011 15:40:23 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+Message-ID: <20110407133717.GA3923@sortiz-mobl>
+References: <20110401235239.GE29397@sortiz-mobl>
+ <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
+ <20110404100314.GC2751@sortiz-mobl>
+ <20110405030428.GB29522@ponder.secretlab.ca>
+ <20110406152322.GA2757@sortiz-mobl>
+ <20110406155805.GA20095@suse.de>
+ <20110406170537.GB2757@sortiz-mobl>
+ <20110406175647.GA8048@suse.de>
+ <20110406184733.GD2757@sortiz-mobl>
+ <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-In-Reply-To: <4D9D62CE.7060007@cn.fujitsu.com>
-References: <1301570320.4859.242.camel@twins>
-	<4D953121.6090901@cn.fujitsu.com>
-	<1301657749.4859.531.camel@twins>
-	<20110405215450.GK2247@linux.vnet.ibm.com>
-	<20110405230745.GA5972@linux.vnet.ibm.com>
-	<1302077428.2225.1365.camel@twins>
-	<20110406192119.GB2265@linux.vnet.ibm.com>
-	<20110406201350.GA9378@linux.vnet.ibm.com>
-	<1302123970.2207.4.camel@laptop>
-	<4D9CDACB.9050705@linux.intel.com>
-	<20110407003041.GD2265@linux.vnet.ibm.com>
-	<4D9D62CE.7060007@cn.fujitsu.com>
-Date: Thu, 7 Apr 2011 16:40:25 +0300
-Message-ID: <BANLkTinrmMT8dE+EuOKegM+CB8+T7AfjEw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] rcu: introduce task_rcu_struct and move task's RCU
- code to rcupdate_defs.h
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 7, 2011 at 10:07 AM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
-> Add struct task_rcu_struct to make code clearer and move
-> them to rcupdate_defs.h which help us for code maitainment.
+Hi Felipe,
 
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1232,17 +1232,7 @@ struct task_struct {
->        unsigned int policy;
->        cpumask_t cpus_allowed;
->
-> -#ifdef CONFIG_PREEMPT_RCU
-> -       int rcu_read_lock_nesting;
-> -       char rcu_read_unlock_special;
-> -       struct list_head rcu_node_entry;
-> -#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> -#ifdef CONFIG_TREE_PREEMPT_RCU
-> -       struct rcu_node *rcu_blocked_node;
-> -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> -#ifdef CONFIG_RCU_BOOST
-> -       struct rt_mutex *rcu_boost_mutex;
-> -#endif /* #ifdef CONFIG_RCU_BOOST */
-> +       struct task_rcu_struct task_rcu_struct;
+On Wed, Apr 06, 2011 at 09:59:02PM +0300, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Apr 06, 2011 at 08:47:34PM +0200, Samuel Ortiz wrote:
+> > > > > What is a "MFD cell pointer" and why is it needed in struct device?
+> > > > An MFD cell is an MFD instantiated device.
+> > > > MFD (Multi Function Device) drivers instantiate platform devices. Those
+> > > > devices drivers sometimes need a platform data pointer, sometimes an MFD
+> > > > specific pointer, and sometimes both. Also, some of those drivers have been
+> > > > implemented as MFD sub drivers, while others know nothing about MFD and just
+> > > > expect a plain platform_data pointer.
+> > > 
+> > > That sounds like a bug in those drivers, why not fix them to properly
+> > > pass in the correct pointer?
+> > Because they're drivers for generic IPs, not MFD ones. By forcing them to use
+> > MFD specific structure and APIs, we make it more difficult for platform code
+> > to instantiate them.
+> 
+> I agree. What I do on those cases is to have a simple platform_device
+> for the core IP driver and use platform_device_id tables to do runtime
+> checks of the small differences. If one platform X doesn't use a
+> platform_bus, it uses e.g. PCI, then you make a PCI "bridge" which
+> allocates a platform_device with the correct name and adds that to the
+> driver model.
+I see, thanks.
+Below is a patch for the Xilinx SPI example. Although this would fix the
+issue, we'd still have to do that on device per device basis. I had a similar
+solution where MFD drivers would set a flag for sub drivers that don't need
+any of the MFD bits. In that case the MFD core code would just forward the
+platform data, instead of embedding it through an MFD cell.
 
-Oh, wow, all these movements are for this.
+Cheers,
+Samuel.
 
-You could do
+---
+ drivers/mfd/timberdale.c |    8 ++++----
+ drivers/spi/xilinx_spi.c |   19 ++++++++++++++++++-
+ include/linux/mfd/core.h |    3 +++
+ 3 files changed, 25 insertions(+), 5 deletions(-)
 
-    struct task_rcu {
-        ...
-    } rcu;
+diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+index 94c6c8a..c9220ce 100644
+--- a/drivers/mfd/timberdale.c
++++ b/drivers/mfd/timberdale.c
+@@ -416,7 +416,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
+ 		.mfd_data = &timberdale_radio_platform_data,
+ 	},
+ 	{
+-		.name = "xilinx_spi",
++		.name = "mfd_xilinx_spi",
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
+@@ -476,7 +476,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
+ 		.mfd_data = &timberdale_radio_platform_data,
+ 	},
+ 	{
+-		.name = "xilinx_spi",
++		.name = "mfd_xilinx_spi",
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
+@@ -526,7 +526,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
+ 		.mfd_data = &timberdale_radio_platform_data,
+ 	},
+ 	{
+-		.name = "xilinx_spi",
++		.name = "mfd_xilinx_spi",
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
+@@ -570,7 +570,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
+ 		.mfd_data = &timberdale_radio_platform_data,
+ 	},
+ 	{
+-		.name = "xilinx_spi",
++		.name = "mfd_xilinx_spi",
+ 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
+ 		.resources = timberdale_spi_resources,
+ 		.mfd_data = &timberdale_xspi_platform_data,
+diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/xilinx_spi.c
+index c69c6f2..3287b84 100644
+--- a/drivers/spi/xilinx_spi.c
++++ b/drivers/spi/xilinx_spi.c
+@@ -471,7 +471,11 @@ static int __devinit xilinx_spi_probe(struct platform_device *dev)
+ 	struct spi_master *master;
+ 	u8 i;
+ 
+-	pdata = mfd_get_data(dev);
++	if (platform_get_device_id(dev) &&
++	    platform_get_device_id(dev)->driver_data & MFD_PLATFORM_DEVICE)
++		pdata = mfd_get_data(dev);
++	else
++		pdata = dev->dev.platform_data;
+ 	if (pdata) {
+ 		num_cs = pdata->num_chipselect;
+ 		little_endian = pdata->little_endian;
+@@ -530,6 +534,18 @@ static int __devexit xilinx_spi_remove(struct platform_device *dev)
+ /* work with hotplug and coldplug */
+ MODULE_ALIAS("platform:" XILINX_SPI_NAME);
+ 
++static const struct platform_device_id xilinx_spi_id_table[] = {
++	{
++		.name	= XILINX_SPI_NAME,
++	},
++	{
++		.name	= "mfd_xilinx_spi",
++		.driver_data = MFD_PLATFORM_DEVICE,
++	},
++	{  },	/* Terminating Entry */
++};
++MODULE_DEVICE_TABLE(platform, xilinx_spi_id_table);
++
+ static struct platform_driver xilinx_spi_driver = {
+ 	.probe = xilinx_spi_probe,
+ 	.remove = __devexit_p(xilinx_spi_remove),
+@@ -538,6 +554,7 @@ static struct platform_driver xilinx_spi_driver = {
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = xilinx_spi_of_match,
+ 	},
++	.id_table	= xilinx_spi_id_table,
+ };
+ 
+ static int __init xilinx_spi_pltfm_init(void)
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index ad1b19a..13f31f4 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -89,6 +89,9 @@ static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
+ 	return pdev->dev.platform_data;
+ }
+ 
++/* */
++#define MFD_PLATFORM_DEVICE BIT(0)
++
+ /*
+  * Given a platform device that's been created by mfd_add_devices(), fetch
+  * the .mfd_data entry from the mfd_cell that created it.
 
-inside sched.h, drop pointless 1:1 current_() et al wrappers and
-avoid all this mess.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
