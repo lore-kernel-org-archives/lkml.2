@@ -1,160 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab1DGADq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 20:03:46 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:47973 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757163Ab1DGACw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 20:02:52 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH/RFC 3/6] OMAP1: runtime PM: drop platform bus implementation
-Date: Wed,  6 Apr 2011 17:02:46 -0700
-Message-Id: <1302134569-22825-4-git-send-email-khilman@ti.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1302134569-22825-1-git-send-email-khilman@ti.com>
-References: <1302134569-22825-1-git-send-email-khilman@ti.com>
+	id S1757243Ab1DGAEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 20:04:14 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:42691 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757209Ab1DGAEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 20:04:12 -0400
+Date: Wed, 6 Apr 2011 17:03:20 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Nat Gurumoorthy <natg@google.com>
+CC: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Mike Waychison <mikew@google.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 3/3] Make all it87 drivers SMP safe.
+Message-ID: <20110407000320.GA28123@ericsson.com>
+References: <1302124396-22449-1-git-send-email-natg@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1302124396-22449-1-git-send-email-natg@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current runtime PM implementation on OMAP1 is is based on a deprecated
-interface: platform_bus_set_pm_ops().  Subsequent patch will convert
-OMAP1 runtime PM to an implementation shared with SH-mobile, and based
-on the new device power domain infrastructure in the common PM core.
+On Wed, Apr 06, 2011 at 05:13:16PM -0400, Nat Gurumoorthy wrote:
+> 03 - Adds changes to hwmon driver to use the new lock.
+> 
+> Signed-off-by: Nat Gurumoorthy <natg@google.com>
+> 
+Content looks ok, but two comments:
 
-Signed-off-by: Kevin Hilman <khilman@ti.com>
----
- arch/arm/mach-omap1/Makefile |    2 +-
- arch/arm/mach-omap1/pm_bus.c |  100 ------------------------------------------
- 2 files changed, 1 insertions(+), 101 deletions(-)
- delete mode 100644 arch/arm/mach-omap1/pm_bus.c
+1) When sending a series of patches, send subsequent ones as reply to the first patch.
+   "git send-email" does this for you, as does quilt.
+2) The headline of each patch should describe what is done in that patch.
+   The description above doesn't mean anything without knowing the context.
 
-diff --git a/arch/arm/mach-omap1/Makefile b/arch/arm/mach-omap1/Makefile
-index af98117..1913c2d 100644
---- a/arch/arm/mach-omap1/Makefile
-+++ b/arch/arm/mach-omap1/Makefile
-@@ -11,7 +11,7 @@ obj-$(CONFIG_OMAP_MCBSP) += mcbsp.o
- obj-$(CONFIG_OMAP_32K_TIMER)	+= timer32k.o
- 
- # Power Management
--obj-$(CONFIG_PM) += pm.o sleep.o pm_bus.o
-+obj-$(CONFIG_PM) += pm.o sleep.o
- 
- # DSP
- obj-$(CONFIG_OMAP_MBOX_FWK)	+= mailbox_mach.o
-diff --git a/arch/arm/mach-omap1/pm_bus.c b/arch/arm/mach-omap1/pm_bus.c
-deleted file mode 100644
-index 6588c22..0000000
---- a/arch/arm/mach-omap1/pm_bus.c
-+++ /dev/null
-@@ -1,100 +0,0 @@
--/*
-- * Runtime PM support code for OMAP1
-- *
-- * Author: Kevin Hilman, Deep Root Systems, LLC
-- *
-- * Copyright (C) 2010 Texas Instruments, Inc.
-- *
-- * This file is licensed under the terms of the GNU General Public
-- * License version 2. This program is licensed "as is" without any
-- * warranty of any kind, whether express or implied.
-- */
--#include <linux/init.h>
--#include <linux/kernel.h>
--#include <linux/io.h>
--#include <linux/pm_runtime.h>
--#include <linux/platform_device.h>
--#include <linux/mutex.h>
--#include <linux/clk.h>
--#include <linux/err.h>
--
--#include <plat/omap_device.h>
--#include <plat/omap-pm.h>
--
--#ifdef CONFIG_PM_RUNTIME
--static int omap1_pm_runtime_suspend(struct device *dev)
--{
--	struct clk *iclk, *fclk;
--	int ret = 0;
--
--	dev_dbg(dev, "%s\n", __func__);
--
--	ret = pm_generic_runtime_suspend(dev);
--
--	fclk = clk_get(dev, "fck");
--	if (!IS_ERR(fclk)) {
--		clk_disable(fclk);
--		clk_put(fclk);
--	}
--
--	iclk = clk_get(dev, "ick");
--	if (!IS_ERR(iclk)) {
--		clk_disable(iclk);
--		clk_put(iclk);
--	}
--
--	return 0;
--};
--
--static int omap1_pm_runtime_resume(struct device *dev)
--{
--	struct clk *iclk, *fclk;
--
--	dev_dbg(dev, "%s\n", __func__);
--
--	iclk = clk_get(dev, "ick");
--	if (!IS_ERR(iclk)) {
--		clk_enable(iclk);
--		clk_put(iclk);
--	}
--
--	fclk = clk_get(dev, "fck");
--	if (!IS_ERR(fclk)) {
--		clk_enable(fclk);
--		clk_put(fclk);
--	}
--
--	return pm_generic_runtime_resume(dev);
--};
--
--static int __init omap1_pm_runtime_init(void)
--{
--	const struct dev_pm_ops *pm;
--	struct dev_pm_ops *omap_pm;
--
--	if (!cpu_class_is_omap1())
--		return -ENODEV;
--
--	pm = platform_bus_get_pm_ops();
--	if (!pm) {
--		pr_err("%s: unable to get dev_pm_ops from platform_bus\n",
--			__func__);
--		return -ENODEV;
--	}
--
--	omap_pm = kmemdup(pm, sizeof(struct dev_pm_ops), GFP_KERNEL);
--	if (!omap_pm) {
--		pr_err("%s: unable to alloc memory for new dev_pm_ops\n",
--			__func__);
--		return -ENOMEM;
--	}
--
--	omap_pm->runtime_suspend = omap1_pm_runtime_suspend;
--	omap_pm->runtime_resume = omap1_pm_runtime_resume;
--
--	platform_bus_set_pm_ops(omap_pm);
--
--	return 0;
--}
--core_initcall(omap1_pm_runtime_init);
--#endif /* CONFIG_PM_RUNTIME */
--- 
-1.7.4
+Also see Documentation/SubmittingPatches, item #2 and #15.
 
+Thanks,
+Guenter
+
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 297bc9a..afe671a 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -436,6 +436,7 @@ config SENSORS_IBMPEX
+>  config SENSORS_IT87
+>  	tristate "ITE IT87xx and compatibles"
+>  	select HWMON_VID
+> +	select IT87_LOCK
+>  	help
+>  	  If you say yes here you get support for ITE IT8705F, IT8712F,
+>  	  IT8716F, IT8718F, IT8720F, IT8721F, IT8726F and IT8758E sensor
+> diff --git a/drivers/hwmon/it87.c b/drivers/hwmon/it87.c
+> index 316b648..bc32535 100644
+> --- a/drivers/hwmon/it87.c
+> +++ b/drivers/hwmon/it87.c
+> @@ -55,6 +55,8 @@
+>  #include <linux/dmi.h>
+>  #include <linux/acpi.h>
+>  #include <linux/io.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/it87_lock.h>
+>  
+>  #define DRVNAME "it87"
+>  
+> @@ -110,7 +112,9 @@ superio_select(int ldn)
+>  
+>  static inline void
+>  superio_enter(void)
+> +__acquires(&it87_io_lock)
+>  {
+> +	spin_lock(&it87_io_lock);
+>  	outb(0x87, REG);
+>  	outb(0x01, REG);
+>  	outb(0x55, REG);
+> @@ -119,9 +123,11 @@ superio_enter(void)
+>  
+>  static inline void
+>  superio_exit(void)
+> +__releases(&it87_io_lock)
+>  {
+>  	outb(0x02, REG);
+>  	outb(0x02, VAL);
+> +	spin_unlock(&it87_io_lock);
+>  }
+>  
+>  /* Logical device 4 registers */
+> @@ -1899,8 +1905,12 @@ static int __devexit it87_remove(struct platform_device *pdev)
+>     would slow down the IT87 access and should not be necessary. */
+>  static int it87_read_value(struct it87_data *data, u8 reg)
+>  {
+> +	int ret;
+> +	spin_lock(&it87_io_lock);
+>  	outb_p(reg, data->addr + IT87_ADDR_REG_OFFSET);
+> -	return inb_p(data->addr + IT87_DATA_REG_OFFSET);
+> +	ret = inb_p(data->addr + IT87_DATA_REG_OFFSET);
+> +	spin_unlock(&it87_io_lock);
+> +	return ret;
+>  }
+>  
+>  /* Must be called with data->update_lock held, except during initialization.
+> @@ -1908,8 +1918,10 @@ static int it87_read_value(struct it87_data *data, u8 reg)
+>     would slow down the IT87 access and should not be necessary. */
+>  static void it87_write_value(struct it87_data *data, u8 reg, u8 value)
+>  {
+> +	spin_lock(&it87_io_lock);
+>  	outb_p(reg, data->addr + IT87_ADDR_REG_OFFSET);
+>  	outb_p(value, data->addr + IT87_DATA_REG_OFFSET);
+> +	spin_unlock(&it87_io_lock);
+>  }
+>  
+>  /* Return 1 if and only if the PWM interface is safe to use */
+> -- 
+> 
