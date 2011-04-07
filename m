@@ -1,85 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab1DGFsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 01:48:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57877 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab1DGFsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 01:48:08 -0400
-Message-ID: <4D9D507F.2040006@cn.fujitsu.com>
-Date: Thu, 07 Apr 2011 13:49:51 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1751992Ab1DGFuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 01:50:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45611 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab1DGFuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 01:50:03 -0400
+Date: Wed, 6 Apr 2011 22:49:57 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "Rafael J. Wysocki" <rjw@suse.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH/RFC 2/6] OMAP2+: PM: move runtime PM implementation to
+ use device power domains
+Message-ID: <20110407054957.GD6427@angua.secretlab.ca>
+References: <1302134569-22825-1-git-send-email-khilman@ti.com>
+ <1302134569-22825-3-git-send-email-khilman@ti.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-References: <1301570320.4859.242.camel@twins> <4D953121.6090901@cn.fujitsu.com> <1301657749.4859.531.camel@twins> <20110405215450.GK2247@linux.vnet.ibm.com> <20110405230745.GA5972@linux.vnet.ibm.com> <1302077428.2225.1365.camel@twins> <20110406192119.GB2265@linux.vnet.ibm.com> <20110406201350.GA9378@linux.vnet.ibm.com> <1302123970.2207.4.camel@laptop> <4D9CDACB.9050705@linux.intel.com> <20110407003041.GD2265@linux.vnet.ibm.com>
-In-Reply-To: <20110407003041.GD2265@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-07 13:48:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-07 13:48:50,
-	Serialize complete at 2011-04-07 13:48:50
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302134569-22825-3-git-send-email-khilman@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2011 08:30 AM, Paul E. McKenney wrote:
-> On Wed, Apr 06, 2011 at 02:27:39PM -0700, H. Peter Anvin wrote:
->> On 04/06/2011 02:06 PM, Peter Zijlstra wrote:
->>> On Wed, 2011-04-06 at 13:13 -0700, Paul E. McKenney wrote:
->>>> And the following patch builds correctly for defconfig x86 builds,
->>>> while allowing rcupdate.h to see the sched.h definitions as needed
->>>> to inline rcu_read_lock() and rcu_read_unlock().
->>>>
->>> Looks like an entirely reasonable patch to me ;-)
->>>
->>
->> Quite... a lot better than the original proposal!
+On Wed, Apr 06, 2011 at 05:02:45PM -0700, Kevin Hilman wrote:
+> In commit 7538e3db6e015e890825fbd9f8659952896ddd5b (PM: add support
+> for device power domains) a better way for handling platform-specific
+> power hooks was introduced.
 > 
-> Glad you both like it!
+> Rather than using the platform_bus dev_pm_ops overrides
+> (platform_bus_set_pm_ops()), this patch moves the OMAP runtime PM
+> implementation over to using device power domains.
 > 
-> When I do an allyesconfig build, I do get errors during the "CHECK"
-> phase, when it is putting things into the usr/include in the build tree.
-> I believe that this is because I am exposing different header files to
-> the library-export scripts.  The following patch silences some of them,
-> but I am really out of my depth here.
+> Since OMAP is the only user of platform_bus_set_pm_ops(), that
+> interface can be removed (and will be in a forthcoming patch.)
 > 
-> Sam, Jan, Michal, help?
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Kevin Hilman <khilman@ti.com>
 
-Easy to split rcupdate.h, hard to resolve the dependence problem.
+Looks right to me.
 
-You can apply the next additional patch when you test:
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 0b4496a..ccbebeb 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -788,4 +788,10 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
- #error "Unknown RCU implementation specified to kernel configuration"
- #endif
- 
-+#include <linux/sched.h>
-+static inline long test_use_task_struct(void)
-+{
-+	return current->state;
-+}
-+
- #endif /* __LINUX_RCUPDATE_H */
+> ---
+>  arch/arm/mach-omap2/Makefile     |    6 +-
+>  arch/arm/mach-omap2/pm_bus.c     |   85 --------------------------------------
+>  arch/arm/plat-omap/omap_device.c |   22 ++++++++++
+>  3 files changed, 25 insertions(+), 88 deletions(-)
+>  delete mode 100644 arch/arm/mach-omap2/pm_bus.c
+> 
+> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+> index a45cd64..b353584 100644
+> --- a/arch/arm/mach-omap2/Makefile
+> +++ b/arch/arm/mach-omap2/Makefile
+> @@ -59,10 +59,10 @@ endif
+>  # Power Management
+>  ifeq ($(CONFIG_PM),y)
+>  obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
+> -obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o pm_bus.o
+> +obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
+>  obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o \
+> -					   cpuidle34xx.o pm_bus.o
+> -obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o pm_bus.o
+> +					   cpuidle34xx.o
+> +obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o
+>  obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
+>  obj-$(CONFIG_OMAP_SMARTREFLEX)          += sr_device.o smartreflex.o
+>  obj-$(CONFIG_OMAP_SMARTREFLEX_CLASS3)	+= smartreflex-class3.o
+> diff --git a/arch/arm/mach-omap2/pm_bus.c b/arch/arm/mach-omap2/pm_bus.c
+> deleted file mode 100644
+> index 5acd2ab..0000000
+> --- a/arch/arm/mach-omap2/pm_bus.c
+> +++ /dev/null
+> @@ -1,85 +0,0 @@
+> -/*
+> - * Runtime PM support code for OMAP
+> - *
+> - * Author: Kevin Hilman, Deep Root Systems, LLC
+> - *
+> - * Copyright (C) 2010 Texas Instruments, Inc.
+> - *
+> - * This file is licensed under the terms of the GNU General Public
+> - * License version 2. This program is licensed "as is" without any
+> - * warranty of any kind, whether express or implied.
+> - */
+> -#include <linux/init.h>
+> -#include <linux/kernel.h>
+> -#include <linux/io.h>
+> -#include <linux/pm_runtime.h>
+> -#include <linux/platform_device.h>
+> -#include <linux/mutex.h>
+> -
+> -#include <plat/omap_device.h>
+> -#include <plat/omap-pm.h>
+> -
+> -#ifdef CONFIG_PM_RUNTIME
+> -static int omap_pm_runtime_suspend(struct device *dev)
+> -{
+> -	struct platform_device *pdev = to_platform_device(dev);
+> -	int r, ret = 0;
+> -
+> -	dev_dbg(dev, "%s\n", __func__);
+> -
+> -	ret = pm_generic_runtime_suspend(dev);
+> -
+> -	if (!ret && dev->parent == &omap_device_parent) {
+> -		r = omap_device_idle(pdev);
+> -		WARN_ON(r);
+> -	}
+> -
+> -	return ret;
+> -};
+> -
+> -static int omap_pm_runtime_resume(struct device *dev)
+> -{
+> -	struct platform_device *pdev = to_platform_device(dev);
+> -	int r;
+> -
+> -	dev_dbg(dev, "%s\n", __func__);
+> -
+> -	if (dev->parent == &omap_device_parent) {
+> -		r = omap_device_enable(pdev);
+> -		WARN_ON(r);
+> -	}
+> -
+> -	return pm_generic_runtime_resume(dev);
+> -};
+> -#else
+> -#define omap_pm_runtime_suspend NULL
+> -#define omap_pm_runtime_resume NULL
+> -#endif /* CONFIG_PM_RUNTIME */
+> -
+> -static int __init omap_pm_runtime_init(void)
+> -{
+> -	const struct dev_pm_ops *pm;
+> -	struct dev_pm_ops *omap_pm;
+> -
+> -	pm = platform_bus_get_pm_ops();
+> -	if (!pm) {
+> -		pr_err("%s: unable to get dev_pm_ops from platform_bus\n",
+> -			__func__);
+> -		return -ENODEV;
+> -	}
+> -
+> -	omap_pm = kmemdup(pm, sizeof(struct dev_pm_ops), GFP_KERNEL);
+> -	if (!omap_pm) {
+> -		pr_err("%s: unable to alloc memory for new dev_pm_ops\n",
+> -			__func__);
+> -		return -ENOMEM;
+> -	}
+> -
+> -	omap_pm->runtime_suspend = omap_pm_runtime_suspend;
+> -	omap_pm->runtime_resume = omap_pm_runtime_resume;
+> -
+> -	platform_bus_set_pm_ops(omap_pm);
+> -
+> -	return 0;
+> -}
+> -core_initcall(omap_pm_runtime_init);
+> diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
+> index 9bbda9a..93cd2fb 100644
+> --- a/arch/arm/plat-omap/omap_device.c
+> +++ b/arch/arm/plat-omap/omap_device.c
+> @@ -536,6 +536,27 @@ int omap_early_device_register(struct omap_device *od)
+>  	return 0;
+>  }
+>  
+> +static int _od_runtime_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +
+> +	return omap_device_idle(pdev);
+> +}
+> +
+> +static int _od_runtime_resume(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +
+> +	return omap_device_enable(pdev);
+> +}
+> +
+> +static struct dev_power_domain omap_device_power_domain = {
+> +	.ops = {
+> +		.runtime_suspend = _od_runtime_suspend,
+> +		.runtime_resume = _od_runtime_resume,
+> +	}
+> +};
+> +
+>  /**
+>   * omap_device_register - register an omap_device with one omap_hwmod
+>   * @od: struct omap_device * to register
+> @@ -549,6 +570,7 @@ int omap_device_register(struct omap_device *od)
+>  	pr_debug("omap_device: %s: registering\n", od->pdev.name);
+>  
+>  	od->pdev.dev.parent = &omap_device_parent;
+> +	od->pdev.dev.pwr_domain = &omap_device_power_domain;
+>  	return platform_device_register(&od->pdev);
+>  }
+>  
+> -- 
+> 1.7.4
+> 
