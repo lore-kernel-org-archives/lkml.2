@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab1DGN3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:29:35 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:3878 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754184Ab1DGN3e (ORCPT
+	id S1755321Ab1DGNaP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:30:15 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:45714
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751702Ab1DGNaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:29:34 -0400
-From: <oskar.andero@sonyericsson.com>
-To: <nbowler@elliptictech.com>, <u.kleine-koenig@pengutronix.de>,
-        <pebolle@tiscali.nl>
-CC: <nicolas.pitre@linaro.org>, <linux@arm.linux.org.uk>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        <linux-kernel@vger.kernel.org>, <eric.y.miao@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Victor Boivie <victor.boivie@sonyericsson.com>,
-        Oskar Andero <oskar.andero@sonyericsson.com>
-Subject: [PATCH] ARM: Allow for kernel command line concatenation
-Date: Thu, 7 Apr 2011 15:29:28 +0200
-Message-ID: <1302182968-16708-1-git-send-email-oskar.andero@sonyericsson.com>
-X-Mailer: git-send-email 1.7.3.4
+	Thu, 7 Apr 2011 09:30:13 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJAAU6-01-CQ9-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/9] Rework command handling of AMD IOMMU driver
+Date: Thu, 7 Apr 2011 15:29:55 +0200
+Message-ID: <1302183004-4081-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
 Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Victor Boivie <victor.boivie@sonyericsson.com>
+Hi,
 
-This patch allows the provided CONFIG_CMDLINE to be concatenated
-with the one provided by the boot loader. This is useful to
-merge the static values defined in CONFIG_CMDLINE with the
-boot loader's (possibly) more dynamic values, such as startup
-reasons and more.
+this patch-set reworks the command handling in the AMD IOMMU driver. The
+functions are better named now and more clearly splitted. Some cases are
+also better handled now than before, like the situation of congestion in
+the command buffer.
 
-Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
-Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
-Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
----
- arch/arm/Kconfig        |   21 ++++++++++++++++++---
- arch/arm/kernel/setup.c |   13 +++++++++----
- 2 files changed, 27 insertions(+), 7 deletions(-)
+To further increase maintainability the driver now flushes all internal
+caches of the IOMMU right after it gets enabled and does not rely on
+flushing individual caches before they are used.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5b9f78b..fe34ed7 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1743,16 +1743,31 @@ config CMDLINE
- 	  time by entering them here. As a minimum, you should specify the
- 	  memory size and the root device (e.g., mem=64M root=/dev/nfs).
- 
-+choice
-+	prompt "Kernel command line type" if CMDLINE != ""
-+	default CMDLINE_FROM_BOOTLOADER
-+
-+config CMDLINE_FROM_BOOTLOADER
-+	bool "Use bootloader kernel arguments if available"
-+	help
-+	  Uses the command-line options passed by the boot loader. If
-+	  the boot loader doesn't provide any, the default kernel command
-+	  string provided in CMDLINE will be used.
-+
-+config CMDLINE_EXTEND
-+	bool "Extend bootloader kernel arguments"
-+	help
-+	  The command-line arguments provided by the boot loader will be
-+	  appended to the default kernel command string.
-+
- config CMDLINE_FORCE
- 	bool "Always use the default kernel command string"
--	depends on CMDLINE != ""
- 	help
- 	  Always use the default kernel command string, even if the boot
- 	  loader passes other arguments to the kernel.
- 	  This is useful if you cannot or don't want to change the
- 	  command-line options your boot loader passes to the kernel.
--
--	  If unsure, say N.
-+endchoice
- 
- config XIP_KERNEL
- 	bool "Kernel Execute-In-Place from ROM"
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 006c1e8..6dce209 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -672,11 +672,16 @@ __tagtable(ATAG_REVISION, parse_tag_revision);
- 
- static int __init parse_tag_cmdline(const struct tag *tag)
- {
--#ifndef CONFIG_CMDLINE_FORCE
--	strlcpy(default_command_line, tag->u.cmdline.cmdline, COMMAND_LINE_SIZE);
--#else
-+#if defined(CONFIG_CMDLINE_EXTEND)
-+	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
-+	strlcat(default_command_line, tag->u.cmdline.cmdline,
-+		COMMAND_LINE_SIZE);
-+#elif defined(CONFIG_CMDLINE_FORCE)
- 	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
--#endif /* CONFIG_CMDLINE_FORCE */
-+#else
-+	strlcpy(default_command_line, tag->u.cmdline.cmdline,
-+		COMMAND_LINE_SIZE);
-+#endif
- 	return 0;
- }
- 
--- 
-1.7.4.2
+Any feedback appreciated.
+
+Regards,
+
+	Joerg
+
+Diffstat:
+
+ arch/x86/include/asm/amd_iommu_proto.h |    2 -
+ arch/x86/include/asm/amd_iommu_types.h |    3 -
+ arch/x86/kernel/amd_iommu.c            |  415 +++++++++++++++-----------------
+ arch/x86/kernel/amd_iommu_init.c       |   11 +-
+ 4 files changed, 202 insertions(+), 229 deletions(-)
+
+Shortlog:
+
+Joerg Roedel (9):
+      x86/amd-iommu: Move compl-wait command building to own function
+      x86/amd-iommu: Move inv-dte command building to own function
+      x86/amd-iommu: Cleanup inv_pages command handling
+      x86/amd-iommu: Cleanup completion-wait handling
+      x86/amd-iommu: Remove command buffer resetting logic
+      x86/amd-iommu: Rename iommu_flush* to domain_flush*
+      x86/amd-iommu: Improve handling of full command buffer
+      x86/amd-iommu: Rename iommu_flush_device
+      x86/amd-iommu: Flush all internal TLBs when IOMMUs are enabled
+
 
