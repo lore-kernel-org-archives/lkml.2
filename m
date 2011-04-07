@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab1DGJ4E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 05:56:04 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:50236 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751827Ab1DGJ4D (ORCPT
+	id S1754531Ab1DGJ4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 05:56:50 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:16134 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab1DGJ4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 05:56:03 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/UYYk4Gl/UMUhwbRr8zXCQSuu/rSGIoxqiVZUoI5
-	dtYVULpXQ+MUfq
-Subject: query: [PATCH 2/2] cgroup: Remove call to synchronize_rcu in
- cgroup_attach_task
-From: Mike Galbraith <efault@gmx.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Paul Menage <menage@google.com>, Colin Cross <ccross@android.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Apr 2011 11:55:53 +0200
-Message-ID: <1302170153.12304.31.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Thu, 7 Apr 2011 05:56:49 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFIiy0PGjDB
+X-RZG-CLASS-ID: mo00
+Date: Thu, 7 Apr 2011 11:56:47 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: dynamic oldmem in kdump kernel
+Message-ID: <20110407095646.GA30788@aepfle.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
 
-Wrt these patches:
+Recently kdump for pv-on-hvm Xen guests was implemented by me.
 
-https://lkml.org/lkml/2010/11/24/14 [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
-https://lkml.org/lkml/2010/11/24/15 [PATCH 2/2] cgroup: Remove call to synchronize_rcu in cgroup_attach_task
+One issue remains:
+The xen_balloon driver in the guest frees guest pages and gives them
+back to the hypervisor. These pages are marked as mmio in the
+hypervisor. During a read of such a page via the /proc/vmcore interface
+the hypervisor calls the qemu-dm process. qemu-dm tries to map the page,
+this attempt fails because the page is not backed by ram and 0xff is
+returned. All this generates high load in dom0 because the reads come
+as 8byte requests.
 
-I received a query regarding 2/2 because a large database company is
-apparently moving tasks between cgroups frequently enough that their
-database initialization time dropped from ~11 hours to ~4 hours when
-they applied this patch.
+There seems to be no way to make the crash kernel aware of the state of
+individual pages in the crashed kernel, it is not aware of memory
+ballooning. And doing that from within the "kernel to crash" seems error
+prone. Since over time the fragmentation will increase, it would be best
+if the crash kernel itself queries the state of oldmem pages. 
 
-Curious why these got no traction.
-
-Regardless of the wisdom of frequent cgroup moves, Joe User launching
-light tasks via cgexec would gain quite a bit as well it seems.
-
-Q/D measurement of cgexec -g cpu:test sh -c exit.
-
-Unpatched:
-
-marge:~ # time perf stat --repeat=1000 cgexec -g cpu:test sh -c exit
-
- Performance counter stats for 'cgexec -g cpu:test sh -c exit' (1000 runs):
-
-          2.686149 task-clock-msecs         #      0.119 CPUs    ( +-   0.067% )
-                 2 context-switches         #      0.001 M/sec   ( +-   0.100% )
-                 0 CPU-migrations           #      0.000 M/sec   ( +-  35.231% )
-               633 page-faults              #      0.236 M/sec   ( +-   0.003% )
-           6292755 cycles                   #   2342.668 M/sec   ( +-   0.062% )
-           4844702 instructions             #      0.770 IPC     ( +-   0.004% )
-            974011 branches                 #    362.605 M/sec   ( +-   0.005% )
-             35187 branch-misses            #      3.613 %       ( +-   0.027% )
-     <not counted> cache-references        
-     <not counted> cache-misses            
-
-        0.022597372  seconds time elapsed   ( +-   0.981% )
+If copy_oldmem_page() would call a function, a hook, provided by the Xen
+pv-on-hvm drivers to query if the pfn to read from is really backed by
+ram the load issue could be avoided. Unfortunately, even Xen needs to
+get a new interface to query the state of individual hvm guest pfns for
+the purpose mentioned above.
 
 
-real    0m23.054s
-user    0m0.380s
-sys     0m0.000s
 
-Patched:
-
-marge:~ # time perf stat --repeat=1000 cgexec -g cpu:test sh -c exit
-
- Performance counter stats for 'cgexec -g cpu:test sh -c exit' (1000 runs):
-
-          2.639303 task-clock-msecs         #      0.915 CPUs    ( +-   0.051% )
-                 1 context-switches         #      0.000 M/sec   ( +-   1.048% )
-                 0 CPU-migrations           #      0.000 M/sec   ( +-  21.602% )
-               633 page-faults              #      0.240 M/sec   ( +-   0.003% )
-           3883572 cycles                   #   1471.439 M/sec   ( +-   1.767% )
-           4830809 instructions             #      1.244 IPC     ( +-   0.191% )
-            975204 branches                 #    369.493 M/sec   ( +-   0.009% )
-             35314 branch-misses            #      3.621 %       ( +-   0.060% )
-     <not counted> cache-references        
-     <not counted> cache-misses            
-
-        0.002884424  seconds time elapsed   ( +-   0.055% )
+Another issue, slightly related, is memory hotplug.
+How is this currently handled for kdump?  Is there code which
+automatically reconfigures the kdump kernel with the new memory ranges?
 
 
-real    0m3.329s
-user    0m0.012s
-sys     0m0.352s
-
-
+Olaf
 
