@@ -1,48 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab1DGSgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 14:36:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62828 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793Ab1DGSgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 14:36:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,317,1299484800"; 
-   d="scan'208";a="625126301"
-Date: Thu, 7 Apr 2011 11:36:38 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <hpa@zytor.com>, <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, <arjan@linux.intel.com>,
-        <alan@linux.intel.com>
-Subject: Re: [PATCH] x86/mrst: move sfi timer irqs after gsi_top
-Message-ID: <20110407113638.59497927@jacob-laptop>
-In-Reply-To: <20110407093021.1a778324@feng-i7>
-References: <1301962175-4336-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<BANLkTi=VZCtNnx2dK9hgWmUVGb8ntMrxuw@mail.gmail.com>
-	<20110407093021.1a778324@feng-i7>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S1756557Ab1DGSj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 14:39:29 -0400
+Received: from mail.academy.zt.ua ([82.207.120.245]:53968 "EHLO
+	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755892Ab1DGSj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 14:39:27 -0400
+X-MDAV-Processed: mail.academy.zt.ua, Thu, 07 Apr 2011 21:39:23 +0300
+X-Spam-Processed: mail.academy.zt.ua, Thu, 07 Apr 2011 21:39:23 +0300
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: george@academy.zt.ua
+X-Return-Path: george@znau.edu.ua
+X-Envelope-From: george@znau.edu.ua
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+From: George Kashperko <george@znau.edu.ua>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+In-Reply-To: <BANLkTim30i8kBkvsSvmWxQaNxWkfMjhOZA@mail.gmail.com>
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+	 <op.vtisojsk3ri7v4@arend-laptop>
+	 <BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
+	 <op.vti9ote53ri7v4@arend-laptop>
+	 <BANLkTin-u=U_-cUH9oCco0LjEBuQmh4wag@mail.gmail.com>
+	 <BANLkTi=x89+52cMeutOB7J--QQta+mX_wg@mail.gmail.com>
+	 <1302123428.20093.6.camel@maggie>
+	 <BANLkTimGSoYzp0Z4vyCS_H5PDKhgjYuLBA@mail.gmail.com>
+	 <1302124112.20093.11.camel@maggie>
+	 <BANLkTik76dwwnmmPzXL9Kkk7fdt01QPzZA@mail.gmail.com>
+	 <1302124737.27258.7.camel@dev.znau.edu.ua>
+	 <BANLkTi=4-LgrkjG96+Ar3SjMOsKh-dMuLg@mail.gmail.com>
+	 <1302134429.27258.32.camel@dev.znau.edu.ua>
+	 <BANLkTinfM0QLFwcKZXfWQ_jNYfBJg_et-Q@mail.gmail.com>
+	 <1302162886.10725.4.camel@maggie>
+	 <BANLkTim30i8kBkvsSvmWxQaNxWkfMjhOZA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Date: Thu, 07 Apr 2011 21:36:58 +0300
+Message-Id: <1302201418.30694.3.camel@dev.znau.edu.ua>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Apr 2011 09:30:21 +0800
-Feng Tang <feng.tang@intel.com> wrote:
 
-> Hi Jacob,
+> W dniu 7 kwietnia 2011 09:54 użytkownik Michael Büsch <mb@bu3sch.de> napisał:
+> > On Thu, 2011-04-07 at 02:54 +0200, Rafał Miłecki wrote:
+> >> W dniu 7 kwietnia 2011 02:00 użytkownik George Kashperko
+> >> <george@znau.edu.ua> napisał:
+> >> > For PCI function description take a look at PCI specs or PCI
+> >> > configuration space description (e. g.
+> >> > http://en.wikipedia.org/wiki/PCI_configuration_space)
+> >> >
+> >> > Sorry for missleading short-ups, w11 - bcm80211 core, under two-head I
+> >> > mean ssb/axi with two functional cores on same interconnect (like w11
+> >> > +w11, not a lot of these exists I guess). Also there were some b43+b44
+> >> > on single PCI ssb host and those where implemented as ssb interconnect
+> >> > on multifunctional PCI host therefore providing separate access windows
+> >> > for each function.
+> >> >
+> >> > Might I mussunderstood something (its late night here at my place) when
+> >> > you where talking about using coreswitching involved for two drivers
+> >> > therefore I remembered about those functions. Seems now you were talking
+> >> > about chipcommon+b43 access sharing same window.
+> >> >
+> >> > As for core switching requirments for earlier SSB interconnects on PCI
+> >> > hosts where there were no direct chipcommon access, that one can be
+> >> > accomplished without spin_lock/mutex for b43 or b44 cores with proper
+> >> > bus design.
+> >> >
+> >> > AXI doesn't need spinlocks/mutexes as both chipcommon and pci bridge are
+> >> > available directly and b43 will be the only one requiring window access.
+> >>
+> >> Ahh, so while talking about 4 windows, I guess you counted fixes
+> >> windows as well. That would be right, matching my knowledge.
+> >>
+> >> When asking question about amount of cores we may want to use
+> >> simultaneously I didn't think about ChipCommon or PCIe. The real
+> >> problem would be to support for example two 802.11 cores and one
+> >> ethernet core at the same time. That gives us 3 cores while we have
+> >> only 2 sliding windows.
+> >
+> > Would that really be a problem? Think of it. This combination
+> > will only be available on embedded devices. But do we have windows
+> > on embedded devices? I guess not. If AXI is similar to SSB, the MMIO
+> > of all cores will always be mapped. So accesses can be done
+> > without switch or lock.
+> >
+> > I do really think that engineers at broadcom are clever enough
+> > to design a hardware that does not require expensive window sliding
+> > all the time while operating.
+Yes they are. As I've already mentioned earlier ssb/axi interconnects on
+multifunctional pci bridges provide each function with separate sliding
+windows, up to 4 functions on single pci bridge.
+
 > 
-> The mrst vrtc driver has the similar irq number problem in 2.6.39-rc2,
-> how about the following patch to solve it in ioapic code.
-Just dug up the old thread in https://lkml.org/lkml/2010/6/10/70. I
-actually have been through this before, I just sent out another patch
-for this as suggested by Eric.
+> I also think so. When asking about amount of cores (non PCIe, non
+> ChipCommon) which has to work simultaneously. I'm not sure if we will
+> meet AI board with 2 cores (non PCIe, non ChipCommon) on PCIe host. I
+> don't think we will see more than 2 cores (non PCIe, non ChipCommon)
+> on PCIe host.
+> 
 
-This patch is withdrawn now.
+Have nice day,
+George
 
-Thanks,
 
-Jacob
