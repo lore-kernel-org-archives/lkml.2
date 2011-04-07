@@ -1,89 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab1DGQti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:49:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:7613 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab1DGQth convert rfc822-to-8bit (ORCPT
+	id S1756168Ab1DGQxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:53:09 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43283 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294Ab1DGQxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:49:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=DjRBUuyBvx5FFw8bvR5AtA8MOuknIDzYKVBndd6+z2dxS2uV4U+iZCBr/C+ZP19pKW
-         eBILeEQ9c6KRCK5sEQ7g==
-MIME-Version: 1.0
-In-Reply-To: <4D9D4D23.6000805@codeaurora.org>
-References: <1302131890-20953-1-git-send-email-sjg@chromium.org>
-	<4D9D4D23.6000805@codeaurora.org>
-Date: Thu, 7 Apr 2011 09:49:33 -0700
-X-Google-Sender-Auth: r3TpPtZgNf5uBo8KwMjDGTQjtWM
-Message-ID: <BANLkTimaii4zNXVuUPqiWGZabRRdYM8JmQ@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: Use generic BUG() handler
-From: Simon Glass <sjg@chromium.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Dave Martin <dave.martin@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 7 Apr 2011 12:53:08 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: benh@kernel.crashing.org
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org, stable@kernel.org,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH V3] POWER: perf_event: Skip updating kernel counters if register value shrinks
+Date: Thu,  7 Apr 2011 12:52:54 -0400
+Message-Id: <1302195174-9115-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 6, 2011 at 10:35 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 4/6/2011 4:18 PM, Simon Glass wrote:
->> v3: Remove old BUG() implementation in favor of this one.
->> Remove the Backtrace: message (will submit this separately).
->> Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
->> thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
->> define GENERIC_BUG this might be academic.)
->
-> Its not entirely academic because CONFIG_BUG=n and CONFIG_SMP_ON_UP=n
-> would allow us to remove the exit text. This could be huge for people
-> who want to cram kernel's onto space constrained devices.
+Because of speculative event roll back, it is possible for some event coutners
+to decrease between reads on POWER7.  This causes a problem with the way that
+counters are updated.  Delta calues are calculated in a 64 bit value and the
+top 32 bits are masked.  If the register value has decreased, this leaves us
+with a very large positive value added to the kernel counters.  This patch
+protects against this by skipping the update if the delta would be negative.
+This can lead to a lack of precision in the coutner values, but from my testing
+the value is typcially fewer than 10 samples at a time.
 
-OK I see. On my kernel this is 8KB but every little helps and no point
-it having it in there if it isn't needed.
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Cc: stable@kernel.org
+---
+Changes from V2:
+ Create a helper that should handle counter roll back as well as registers that
+might be allowed to roll over
 
->> Rebase to linux-2.6.git master.
->>
->> Change-Id: I07d77c832e816f5ad2390e25f466ddf750adecf4
->
-> Don't forget to remove these before submitting to the patch tracker (and
-> sending to the list).
+Changes from V1:
+ Updated patch leader
+ Added stable CC
+ Use an s32 to hold delta values and discard any values that are less than 0
 
-OK thanks.
+ arch/powerpc/kernel/perf_event.c |   40 +++++++++++++++++++++++++++++++------
+ 1 files changed, 33 insertions(+), 7 deletions(-)
 
->> diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
->> index 4d88425..2914724 100644
->> --- a/arch/arm/include/asm/bug.h
->> +++ b/arch/arm/include/asm/bug.h
->> @@ -3,21 +3,58 @@
->>
->>
->>  #ifdef CONFIG_BUG
->> -#ifdef CONFIG_DEBUG_BUGVERBOSE
->> -extern void __bug(const char *file, int line) __attribute__((noreturn));
->> -
->> -/* give file/line information */
->> -#define BUG()                __bug(__FILE__, __LINE__)
->
-> Does anybody reference __bug() anymore? If not you can remove that too.
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index 97e0ae4..78bf933 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -398,6 +398,28 @@ static int check_excludes(struct perf_event **ctrs, unsigned int cflags[],
+ 	return 0;
+ }
+ 
++static u64 check_and_compute_delta(s64 prev, s64 val)
++{
++	/*
++	 * Because the PerfMon registers are only 32 bits wide, the delta
++	 * should not overflow.
++	 */
++	u64 delta = 0;
++
++	/*
++	 * POWER7 can roll back counter values, if the new value is smaller
++	 * than the previous value it will cause the delta and the counter to
++	 * have bogus values unless we rolled a counter over.  If this is the
++	 * case or prev < val, calculate the delta nd return it, otherwise
++	 * return 0.  This can lead to a small lack of precision in the
++	 * counters.
++	 */
++	if (((prev & 0x80000000) && !(val & 0x80000000)) || (val > prev))
++		delta = (val - prev) & 0xfffffffful;
++
++	return delta;
++}
++
+ static void power_pmu_read(struct perf_event *event)
+ {
+ 	s64 val, delta, prev;
+@@ -416,10 +438,11 @@ static void power_pmu_read(struct perf_event *event)
+ 		prev = local64_read(&event->hw.prev_count);
+ 		barrier();
+ 		val = read_pmc(event->hw.idx);
++		delta = check_and_compute_delta(prev, val);
++		if (!delta)
++			return;
+ 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
+ 
+-	/* The counters are only 32 bits wide */
+-	delta = (val - prev) & 0xfffffffful;
+ 	local64_add(delta, &event->count);
+ 	local64_sub(delta, &event->hw.period_left);
+ }
+@@ -449,8 +472,9 @@ static void freeze_limited_counters(struct cpu_hw_events *cpuhw,
+ 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+ 		prev = local64_read(&event->hw.prev_count);
+ 		event->hw.idx = 0;
+-		delta = (val - prev) & 0xfffffffful;
+-		local64_add(delta, &event->count);
++		delta = check_and_compute_delta(prev, val);
++		if (delta)
++			local64_add(delta, &event->count);
+ 	}
+ }
+ 
+@@ -458,14 +482,16 @@ static void thaw_limited_counters(struct cpu_hw_events *cpuhw,
+ 				  unsigned long pmc5, unsigned long pmc6)
+ {
+ 	struct perf_event *event;
+-	u64 val;
++	u64 val, prev;
+ 	int i;
+ 
+ 	for (i = 0; i < cpuhw->n_limited; ++i) {
+ 		event = cpuhw->limited_counter[i];
+ 		event->hw.idx = cpuhw->limited_hwidx[i];
+ 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+-		local64_set(&event->hw.prev_count, val);
++		prev = local64_read(&event->hw.prev_count);
++		if (check_and_compute_delta(prev, val))
++			local64_set(&event->hw.prev_count, val);
+ 		perf_event_update_userpage(event);
+ 	}
+ }
+@@ -1197,7 +1223,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 
+ 	/* we don't have to worry about interrupts here */
+ 	prev = local64_read(&event->hw.prev_count);
+-	delta = (val - prev) & 0xfffffffful;
++	delta = check_and_compute_delta(prev, val);
+ 	local64_add(delta, &event->count);
+ 
+ 	/*
+-- 
+1.7.1
 
-No one is using it now, I will do this.
-
-Regards,
-Simon
