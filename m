@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab1DGNup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:50:45 -0400
-Received: from mail.windriver.com ([147.11.1.11]:64431 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab1DGNuo (ORCPT
+	id S1752321Ab1DGNwD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:52:03 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:56666 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751646Ab1DGNwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:50:44 -0400
-Message-ID: <4D9DC0E8.5080705@windriver.com>
-Date: Thu, 07 Apr 2011 08:49:28 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Alessio Igor Bogani <abogani@kernel.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH] module: Use the binary search for symbols resolution
-References: <1302024146-2608-1-git-send-email-abogani@kernel.org> <1302024146-2608-2-git-send-email-abogani@kernel.org>
-In-Reply-To: <1302024146-2608-2-git-send-email-abogani@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Apr 2011 09:52:01 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+qUKFFqjqqXAL/qTinEzBB1+wjmrS7WarfPral6/
+	znnSKwi9t3SKMQ
+Subject: Re: [PATCH 00/23] sched: Rewrite sched_domain/sched_group creation
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <20110407120941.400629539@chello.nl>
+References: <20110407120941.400629539@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Apr 2011 15:51:54 +0200
+Message-ID: <1302184314.8065.13.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Apr 2011 13:49:29.0555 (UTC) FILETIME=[9DD42A30:01CBF52A]
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2011 12:22 PM, Alessio Igor Bogani wrote:
-> Let the linker sort the exported symbols and use the binary search for locate them.
->
+On Thu, 2011-04-07 at 14:09 +0200, Peter Zijlstra wrote:
+> This series rewrite the sched_domain and sched_group creation code.
+> 
+> While its still not completely finished it does get us a lot of cleanups
+> and code reduction and seems fairly stable at this point and should thus
+> be a fairly good base to continue from.
 
-It would be nice if this patch header included some of the information from introduction message, that asside the technical content looks good.
+Looks and sounds like good plan to me.
 
-> This work was supported by a hardware donation from the CE Linux Forum.
->
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+> Also available through:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-sched.git sched_domain
+> 
+> ---
+>  include/linux/sched.h |   26 +-
+>  kernel/cpuset.c       |    2 +-
+>  kernel/sched.c        |  963 +++++++++++++++----------------------------------
+>  kernel/sched_fair.c   |   32 ++-
+>  4 files changed, 326 insertions(+), 697 deletions(-)
 
-Reviewed-by: Jason Wessel <jason.wessel@windriver.com>
+We could use a few more diffstats like this one :)
 
-
->  static bool find_symbol_in_section(const struct symsearch *syms,
->  				   struct module *owner,
->  				   unsigned int symnum, void *data)
->  {
->  	struct find_symbol_arg *fsa = data;
->  
-> -	if (strcmp(syms->start[symnum].name, fsa->name) != 0)
-> -		return false;
-> -
->  	if (!fsa->gplok) {
->  		if (syms->licence == GPL_ONLY)
->  			return false;
+	-Mike
 
 
-This was the only part I had a hard time following, but after having looked at the original source to kernel/module.c, I see how this was optimized and agree.
-
-This looks like a very nice speed up for large interdependent kernel modules.
-
-Cheers,
-Jason.
