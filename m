@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab1DGQKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:10:37 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63563 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928Ab1DGQJo (ORCPT
+	id S1756242Ab1DGQKv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:10:51 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39445 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab1DGQJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:09:44 -0400
+	Thu, 7 Apr 2011 12:09:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=bkCdsAP4R6o2YNctyglS86S6FYtvVf1brvPmhj2ZUrb7eeQgg+cXS1YQdSdG0rArDj
-         yq8u1EB7CJmmi5GeTrYhrJi0xPrkOVD+mg939XevxNyKBuX9Xkgy2vPxdPQ7RnJym0t3
-         UNZv3pxi5o9HhPtSShX0sRkgbwPspe+sR1txo=
+        b=e6IqEQ3ixfyf+6D6T0zZzYxMcKiJ1mA23s6XM5DbHzLN+SEL66o+IV8c9wA38URiMq
+         0dT0veQvBt+6o1E++QZsXdGXl4o+TbwSQ26EXVjO9DFzR7Fjb8ks3iw3t1kxXa+lSg3u
+         aNCw0ZsAZ5LNNIkezT6GCeUPhVIcinXAabg9Q=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [RFC 4/6]Fix typo "recieve" in various parts of the kernel.
-Date: Thu,  7 Apr 2011 09:09:25 -0700
-Message-Id: <1302192567-842-4-git-send-email-justinmattock@gmail.com>
+Subject: [RFC 3/6]Fix typo "recieve" in various parts of the kernel. 
+Date: Thu,  7 Apr 2011 09:09:24 -0700
+Message-Id: <1302192567-842-3-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
 References: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
@@ -33,226 +33,297 @@ Note: patches 2,3,4,5 are fixes to comments only(no code).
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/scsi/cxgbi/libcxgbi.h        |    6 +++---
- drivers/scsi/libfc/fc_lport.c        |    2 +-
- drivers/scsi/lpfc/lpfc_bsg.c         |    2 +-
- drivers/scsi/lpfc/lpfc_hbadisc.c     |    4 ++--
- drivers/scsi/lpfc/lpfc_sli.c         |    2 +-
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    2 +-
- drivers/scsi/qla2xxx/qla_fw.h        |    2 +-
- drivers/scsi/qla2xxx/qla_mbx.c       |    2 +-
- drivers/scsi/qla4xxx/ql4_def.h       |    2 +-
- drivers/tty/mxser.h                  |    2 +-
- drivers/usb/class/usbtmc.c           |    2 +-
- drivers/usb/gadget/fsl_qe_udc.h      |    2 +-
- drivers/usb/host/fhci-tds.c          |    2 +-
- drivers/usb/host/oxu210hp-hcd.c      |    4 ++--
- 14 files changed, 18 insertions(+), 18 deletions(-)
+ drivers/net/tehuti.c                         |    2 +-
+ drivers/net/wimax/i2400m/driver.c            |    2 +-
+ drivers/net/wireless/ath/ath5k/reg.h         |    4 ++--
+ drivers/net/wireless/ath/regd.c              |    2 +-
+ drivers/net/wireless/ipw2x00/ipw2200.c       |    2 +-
+ drivers/net/wireless/rt2x00/rt2x00link.c     |    2 +-
+ drivers/net/wireless/rt2x00/rt2x00queue.h    |    2 +-
+ drivers/net/wireless/rtlwifi/regd.c          |    2 +-
+ drivers/net/wireless/zd1211rw/zd_rf_uw2453.c |    2 +-
+ drivers/ps3/ps3-lpm.c                        |    4 ++--
+ drivers/rapidio/rio-scan.c                   |    2 +-
+ drivers/scsi/aic7xxx/aic79xx.reg             |    2 +-
+ drivers/scsi/be2iscsi/be_cmds.h              |   14 +++++++-------
+ drivers/scsi/bfa/bfa_defs_svc.h              |    2 +-
+ drivers/scsi/bfa/bfa_fc.h                    |    2 +-
+ drivers/scsi/bfa/bfa_svc.c                   |    2 +-
+ 16 files changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/scsi/cxgbi/libcxgbi.h b/drivers/scsi/cxgbi/libcxgbi.h
-index 0a20fd5..9267844 100644
---- a/drivers/scsi/cxgbi/libcxgbi.h
-+++ b/drivers/scsi/cxgbi/libcxgbi.h
-@@ -262,9 +262,9 @@ struct cxgbi_skb_tx_cb {
- enum cxgbi_skcb_flags {
- 	SKCBF_TX_NEED_HDR,	/* packet needs a header */
- 	SKCBF_RX_COALESCED,	/* received whole pdu */
--	SKCBF_RX_HDR,		/* recieved pdu header */
--	SKCBF_RX_DATA,		/* recieved pdu payload */
--	SKCBF_RX_STATUS,	/* recieved ddp status */
-+	SKCBF_RX_HDR,		/* received pdu header */
-+	SKCBF_RX_DATA,		/* received pdu payload */
-+	SKCBF_RX_STATUS,	/* received ddp status */
- 	SKCBF_RX_DATA_DDPD,	/* pdu payload ddp'd */
- 	SKCBF_RX_HCRC_ERR,	/* header digest error */
- 	SKCBF_RX_DCRC_ERR,	/* data digest error */
-diff --git a/drivers/scsi/libfc/fc_lport.c b/drivers/scsi/libfc/fc_lport.c
-index 8c08b21..7651c8a 100644
---- a/drivers/scsi/libfc/fc_lport.c
-+++ b/drivers/scsi/libfc/fc_lport.c
-@@ -771,7 +771,7 @@ EXPORT_SYMBOL(fc_lport_set_local_id);
+diff --git a/drivers/net/tehuti.c b/drivers/net/tehuti.c
+index 3397618..cf1568d 100644
+--- a/drivers/net/tehuti.c
++++ b/drivers/net/tehuti.c
+@@ -1200,7 +1200,7 @@ static void bdx_recycle_skb(struct bdx_priv *priv, struct rxd_desc *rxdd)
+ 	RET();
+ }
+ 
+-/* bdx_rx_receive - recieves full packets from RXD fifo and pass them to OS
++/* bdx_rx_receive - receives full packets from RXD fifo and pass them to OS
+  * NOTE: a special treatment is given to non-continous descriptors
+  * that start near the end, wraps around and continue at the beginning. a second
+  * part is copied right after the first, and then descriptor is interpreted as
+diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
+index 65bc334..f510ec7 100644
+--- a/drivers/net/wimax/i2400m/driver.c
++++ b/drivers/net/wimax/i2400m/driver.c
+@@ -755,7 +755,7 @@ EXPORT_SYMBOL_GPL(i2400m_error_recovery);
+  * Alloc the command and ack buffers for boot mode
+  *
+  * Get the buffers needed to deal with boot mode messages.  These
+- * buffers need to be allocated before the sdio recieve irq is setup.
++ * buffers need to be allocated before the sdio receive irq is setup.
+  */
+ static
+ int i2400m_bm_buf_alloc(struct i2400m *i2400m)
+diff --git a/drivers/net/wireless/ath/ath5k/reg.h b/drivers/net/wireless/ath/ath5k/reg.h
+index e1c9abd..9a717af 100644
+--- a/drivers/net/wireless/ath/ath5k/reg.h
++++ b/drivers/net/wireless/ath/ath5k/reg.h
+@@ -283,7 +283,7 @@
+  */
+ #define AR5K_ISR		0x001c			/* Register Address [5210] */
+ #define AR5K_PISR		0x0080			/* Register Address [5211+] */
+-#define AR5K_ISR_RXOK		0x00000001	/* Frame successfuly recieved */
++#define AR5K_ISR_RXOK		0x00000001	/* Frame successfuly received */
+ #define AR5K_ISR_RXDESC		0x00000002	/* RX descriptor request */
+ #define AR5K_ISR_RXERR		0x00000004	/* Receive error */
+ #define AR5K_ISR_RXNOFRM	0x00000008	/* No frame received (receive timeout) */
+@@ -377,7 +377,7 @@
+  */
+ #define	AR5K_IMR		0x0020			/* Register Address [5210] */
+ #define AR5K_PIMR		0x00a0			/* Register Address [5211+] */
+-#define AR5K_IMR_RXOK		0x00000001	/* Frame successfuly recieved*/
++#define AR5K_IMR_RXOK		0x00000001	/* Frame successfuly received*/
+ #define AR5K_IMR_RXDESC		0x00000002	/* RX descriptor request*/
+ #define AR5K_IMR_RXERR		0x00000004	/* Receive error*/
+ #define AR5K_IMR_RXNOFRM	0x00000008	/* No frame received (receive timeout)*/
+diff --git a/drivers/net/wireless/ath/regd.c b/drivers/net/wireless/ath/regd.c
+index f828f29..4c95a29 100644
+--- a/drivers/net/wireless/ath/regd.c
++++ b/drivers/net/wireless/ath/regd.c
+@@ -268,7 +268,7 @@ ath_reg_apply_active_scan_flags(struct wiphy *wiphy,
+ 	}
+ 
+ 	/*
+-	 * If a country IE has been recieved check its rule for this
++	 * If a country IE has been received check its rule for this
+ 	 * channel first before enabling active scan. The passive scan
+ 	 * would have been enforced by the initial processing of our
+ 	 * custom regulatory domain.
+diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
+index 160881f..9f862b8 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -8342,7 +8342,7 @@ static void ipw_handle_mgmt_packet(struct ipw_priv *priv,
+ /*
+  * Main entry function for recieving a packet with 80211 headers.  This
+  * should be called when ever the FW has notified us that there is a new
+- * skb in the recieve queue.
++ * skb in the receive queue.
+  */
+ static void ipw_rx(struct ipw_priv *priv)
+ {
+diff --git a/drivers/net/wireless/rt2x00/rt2x00link.c b/drivers/net/wireless/rt2x00/rt2x00link.c
+index c975b0a..29abfde 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00link.c
++++ b/drivers/net/wireless/rt2x00/rt2x00link.c
+@@ -283,7 +283,7 @@ void rt2x00link_start_tuner(struct rt2x00_dev *rt2x00dev)
+ 	/**
+ 	 * While scanning, link tuning is disabled. By default
+ 	 * the most sensitive settings will be used to make sure
+-	 * that all beacons and probe responses will be recieved
++	 * that all beacons and probe responses will be received
+ 	 * during the scan.
+ 	 */
+ 	if (test_bit(DEVICE_STATE_SCANNING, &rt2x00dev->flags))
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.h b/drivers/net/wireless/rt2x00/rt2x00queue.h
+index 0c8b0c6..fa4f3cb 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.h
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.h
+@@ -365,7 +365,7 @@ enum queue_entry_flags {
+  * @flags: Entry flags, see &enum queue_entry_flags.
+  * @queue: The data queue (&struct data_queue) to which this entry belongs.
+  * @skb: The buffer which is currently being transmitted (for TX queue),
+- *	or used to directly recieve data in (for RX queue).
++ *	or used to directly receive data in (for RX queue).
+  * @entry_idx: The entry index number.
+  * @priv_data: Private data belonging to this queue entry. The pointer
+  *	points to data specific to a particular driver and queue type.
+diff --git a/drivers/net/wireless/rtlwifi/regd.c b/drivers/net/wireless/rtlwifi/regd.c
+index 3336ca9..d26f957 100644
+--- a/drivers/net/wireless/rtlwifi/regd.c
++++ b/drivers/net/wireless/rtlwifi/regd.c
+@@ -179,7 +179,7 @@ static void _rtl_reg_apply_active_scan_flags(struct wiphy *wiphy,
+ 	}
+ 
+ 	/*
+-	 *If a country IE has been recieved check its rule for this
++	 *If a country IE has been received check its rule for this
+ 	 *channel first before enabling active scan. The passive scan
+ 	 *would have been enforced by the initial processing of our
+ 	 *custom regulatory domain.
+diff --git a/drivers/net/wireless/zd1211rw/zd_rf_uw2453.c b/drivers/net/wireless/zd1211rw/zd_rf_uw2453.c
+index 9e74eb1..ba0a0cc 100644
+--- a/drivers/net/wireless/zd1211rw/zd_rf_uw2453.c
++++ b/drivers/net/wireless/zd1211rw/zd_rf_uw2453.c
+@@ -353,7 +353,7 @@ static int uw2453_init_hw(struct zd_rf *rf)
+ 	};
+ 
+ 	static const u32 rv[] = {
+-		UW2453_REGWRITE(4, 0x2b),    /* configure reciever gain */
++		UW2453_REGWRITE(4, 0x2b),    /* configure receiver gain */
+ 		UW2453_REGWRITE(5, 0x19e4f), /* configure transmitter gain */
+ 		UW2453_REGWRITE(6, 0xf81ad), /* enable RX/TX filter tuning */
+ 		UW2453_REGWRITE(7, 0x3fffe), /* disable TX gain in test mode */
+diff --git a/drivers/ps3/ps3-lpm.c b/drivers/ps3/ps3-lpm.c
+index 8000985..1e5c4c3 100644
+--- a/drivers/ps3/ps3-lpm.c
++++ b/drivers/ps3/ps3-lpm.c
+@@ -919,7 +919,7 @@ EXPORT_SYMBOL_GPL(ps3_disable_pm);
+  * @offset: Offset in bytes from the start of the trace buffer.
+  * @buf: Copy destination.
+  * @count: Maximum count of bytes to copy.
+- * @bytes_copied: Pointer to a variable that will recieve the number of
++ * @bytes_copied: Pointer to a variable that will receive the number of
+  *  bytes copied to @buf.
+  *
+  * On error @buf will contain any successfully copied trace buffer data
+@@ -974,7 +974,7 @@ EXPORT_SYMBOL_GPL(ps3_lpm_copy_tb);
+  * @offset: Offset in bytes from the start of the trace buffer.
+  * @buf: A __user copy destination.
+  * @count: Maximum count of bytes to copy.
+- * @bytes_copied: Pointer to a variable that will recieve the number of
++ * @bytes_copied: Pointer to a variable that will receive the number of
+  *  bytes copied to @buf.
+  *
+  * On error @buf will contain any successfully copied trace buffer data
+diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
+index 3a59d5f..ee89358 100644
+--- a/drivers/rapidio/rio-scan.c
++++ b/drivers/rapidio/rio-scan.c
+@@ -295,7 +295,7 @@ static int __devinit rio_add_device(struct rio_dev *rdev)
+ }
  
  /**
-  * fc_lport_recv_flogi_req() - Receive a FLOGI request
-- * @lport: The local port that recieved the request
-+ * @lport: The local port that received the request
-  * @rx_fp: The FLOGI frame
+- * rio_enable_rx_tx_port - enable input reciever and output transmitter of
++ * rio_enable_rx_tx_port - enable input receiver and output transmitter of
+  * given port
+  * @port: Master port associated with the RIO network
+  * @local: local=1 select local port otherwise a far device is reached
+diff --git a/drivers/scsi/aic7xxx/aic79xx.reg b/drivers/scsi/aic7xxx/aic79xx.reg
+index 0666c22..3c7f5a3 100644
+--- a/drivers/scsi/aic7xxx/aic79xx.reg
++++ b/drivers/scsi/aic7xxx/aic79xx.reg
+@@ -1249,7 +1249,7 @@ register TARGPCISTAT {
+ 
+ /*
+  * LQ Packet In
+- * The last LQ Packet recieved
++ * The last LQ Packet received
+  */
+ register LQIN {
+ 	address			0x020
+diff --git a/drivers/scsi/be2iscsi/be_cmds.h b/drivers/scsi/be2iscsi/be_cmds.h
+index 5218de4..17cb16d 100644
+--- a/drivers/scsi/be2iscsi/be_cmds.h
++++ b/drivers/scsi/be2iscsi/be_cmds.h
+@@ -877,7 +877,7 @@ struct be_all_if_id {
+ 						 */
+ #define CXN_KILLED_PDU_SIZE_EXCEEDS_DSL 3	/* Connection got invalidated
+ 						 * internally
+-						 * due to a recieved PDU
++						 * due to a received PDU
+ 						 * size > DSL
+ 						 */
+ #define CXN_KILLED_BURST_LEN_MISMATCH   4	/* Connection got invalidated
+@@ -886,7 +886,7 @@ struct be_all_if_id {
+ 						 * FBL/MBL.
+ 						 */
+ #define CXN_KILLED_AHS_RCVD		5	/* Connection got invalidated
+-						 * internally due to a recieved
++						 * internally due to a received
+ 						 * PDU Hdr that has
+ 						 * AHS */
+ #define CXN_KILLED_HDR_DIGEST_ERR	6	/* Connection got invalidated
+@@ -899,12 +899,12 @@ struct be_all_if_id {
+ 						 * pdu hdr
+ 						 */
+ #define CXN_KILLED_STALE_ITT_TTT_RCVD	8	/* Connection got invalidated
+-						 * internally due to a recieved
++						 * internally due to a received
+ 						 * ITT/TTT that does not belong
+ 						 * to this Connection
+ 						 */
+ #define CXN_KILLED_INVALID_ITT_TTT_RCVD 9	/* Connection got invalidated
+-						 * internally due to recieved
++						 * internally due to received
+ 						 * ITT/TTT value > Max
+ 						 * Supported ITTs/TTTs
+ 						 */
+@@ -946,11 +946,11 @@ struct be_all_if_id {
+ 						 * run bytes.
+ 						 */
+ #define CMD_KILLED_INVALID_STATSN_RCVD	18	/* Command got invalidated
+-						 * internally due to a recieved
++						 * internally due to a received
+ 						 * PDU has an invalid StatusSN
+ 						 */
+ #define CMD_KILLED_INVALID_R2T_RCVD	19	/* Command got invalidated
+-						 * internally due to a recieved
++						 * internally due to a received
+ 						 * an R2T with some invalid
+ 						 * fields in it
+ 						 */
+@@ -973,7 +973,7 @@ struct be_all_if_id {
+ 						 */
+ #define CMD_CXN_KILLED_INVALID_DATASN_RCVD 24	/* Command got invalidated
+ 						 * internally due to a
+-						 * recieved PDU has an invalid
++						 * received PDU has an invalid
+ 						 * DataSN
+ 						 */
+ #define CXN_INVALIDATE_NOTIFY		25	/* Connection invalidation
+diff --git a/drivers/scsi/bfa/bfa_defs_svc.h b/drivers/scsi/bfa/bfa_defs_svc.h
+index 648c841..56399be 100644
+--- a/drivers/scsi/bfa/bfa_defs_svc.h
++++ b/drivers/scsi/bfa/bfa_defs_svc.h
+@@ -145,7 +145,7 @@ struct bfa_fw_io_stats_s {
+ 	u32	ioh_data_oor_event;	/*  Data out of range */
+ 	u32	ioh_ro_ooo_event;	/*  Relative offset out of range */
+ 	u32	ioh_cpu_owned_event;	/*  IOH hit -iost owned by f/w */
+-	u32	ioh_unexp_frame_event;	/*  unexpected frame recieved
++	u32	ioh_unexp_frame_event;	/*  unexpected frame received
+ 						 *   count */
+ 	u32	ioh_err_int;		/*  IOH error int during data-phase
+ 						 *   for scsi write
+diff --git a/drivers/scsi/bfa/bfa_fc.h b/drivers/scsi/bfa/bfa_fc.h
+index 8e764fa..bf0067e 100644
+--- a/drivers/scsi/bfa/bfa_fc.h
++++ b/drivers/scsi/bfa/bfa_fc.h
+@@ -315,7 +315,7 @@ struct fc_plogi_csp_s {
+ 			query_dbc:1,
+ 			hg_supp:1;
+ #endif
+-	__be16		rxsz;		/* recieve data_field size */
++	__be16		rxsz;		/* receive data_field size */
+ 	__be16		conseq;
+ 	__be16		ro_bitmap;
+ 	__be32		e_d_tov;
+diff --git a/drivers/scsi/bfa/bfa_svc.c b/drivers/scsi/bfa/bfa_svc.c
+index 1d34921..f8debef 100644
+--- a/drivers/scsi/bfa/bfa_svc.c
++++ b/drivers/scsi/bfa/bfa_svc.c
+@@ -5022,7 +5022,7 @@ bfa_uf_start(struct bfa_s *bfa)
+ }
+ 
+ /*
+- * Register handler for all unsolicted recieve frames.
++ * Register handler for all unsolicted receive frames.
   *
-  * A received FLOGI request indicates a point-to-point connection.
-diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
-index 793b9f1..77b2871 100644
---- a/drivers/scsi/lpfc/lpfc_bsg.c
-+++ b/drivers/scsi/lpfc/lpfc_bsg.c
-@@ -1939,7 +1939,7 @@ out:
-  * @rxxri: Receive exchange id
-  * @len: Number of data bytes
-  *
-- * This function allocates and posts a data buffer of sufficient size to recieve
-+ * This function allocates and posts a data buffer of sufficient size to receive
-  * an unsolicted CT command.
-  **/
- static int lpfcdiag_loop_post_rxbufs(struct lpfc_hba *phba, uint16_t rxxri,
-diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
-index 154c715..1dbeadc 100644
---- a/drivers/scsi/lpfc/lpfc_hbadisc.c
-+++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
-@@ -4477,7 +4477,7 @@ lpfc_setup_disc_node(struct lpfc_vport *vport, uint32_t did)
- 	if ((vport->fc_flag & FC_RSCN_MODE) &&
- 	    !(vport->fc_flag & FC_NDISC_ACTIVE)) {
- 		if (lpfc_rscn_payload_check(vport, did)) {
--			/* If we've already recieved a PLOGI from this NPort
-+			/* If we've already received a PLOGI from this NPort
- 			 * we don't need to try to discover it again.
- 			 */
- 			if (ndlp->nlp_flag & NLP_RCV_PLOGI)
-@@ -4493,7 +4493,7 @@ lpfc_setup_disc_node(struct lpfc_vport *vport, uint32_t did)
- 		} else
- 			ndlp = NULL;
- 	} else {
--		/* If we've already recieved a PLOGI from this NPort,
-+		/* If we've already received a PLOGI from this NPort,
- 		 * or we are already in the process of discovery on it,
- 		 * we don't need to try to discover it again.
- 		 */
-diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
-index 4746dcd..d5791e7 100644
---- a/drivers/scsi/lpfc/lpfc_sli.c
-+++ b/drivers/scsi/lpfc/lpfc_sli.c
-@@ -9684,7 +9684,7 @@ out:
-  * @cq: Pointer to the completion queue.
-  * @wcqe: Pointer to a completion queue entry.
-  *
-- * This routine process a slow-path work-queue or recieve queue completion queue
-+ * This routine process a slow-path work-queue or receive queue completion queue
-  * entry.
-  *
-  * Return: true if work posted to worker thread, otherwise false.
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 6ceb775..b26502f 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -2984,7 +2984,7 @@ _scsih_check_for_pending_tm(struct MPT2SAS_ADAPTER *ioc, u16 smid)
-  *
-  * This routine added to better handle cable breaker.
-  *
-- * This handles the case where driver recieves multiple expander
-+ * This handles the case where driver receives multiple expander
-  * add and delete events in a single shot.  When there is a delete event
-  * the routine will void any pending add events waiting in the event queue.
-  *
-diff --git a/drivers/scsi/qla2xxx/qla_fw.h b/drivers/scsi/qla2xxx/qla_fw.h
-index 631fefc..f5ba09c 100644
---- a/drivers/scsi/qla2xxx/qla_fw.h
-+++ b/drivers/scsi/qla2xxx/qla_fw.h
-@@ -539,7 +539,7 @@ struct sts_entry_24xx {
- 	 * If DIF Error is set in comp_status, these additional fields are
- 	 * defined:
- 	 * &data[10] : uint8_t report_runt_bg[2];	- computed guard
--	 * &data[12] : uint8_t actual_dif[8];		- DIF Data recieved
-+	 * &data[12] : uint8_t actual_dif[8];		- DIF Data received
- 	 * &data[20] : uint8_t expected_dif[8];		- DIF Data computed
- 	*/
- };
-diff --git a/drivers/scsi/qla2xxx/qla_mbx.c b/drivers/scsi/qla2xxx/qla_mbx.c
-index 7a7c0ec..6accb11 100644
---- a/drivers/scsi/qla2xxx/qla_mbx.c
-+++ b/drivers/scsi/qla2xxx/qla_mbx.c
-@@ -3789,7 +3789,7 @@ qla2x00_loopback_test(scsi_qla_host_t *vha, struct msg_echo_lb *mreq,
- 	mcp->mb[20] = LSW(MSD(mreq->send_dma));
- 	mcp->mb[21] = MSW(MSD(mreq->send_dma));
- 
--	/* recieve data address */
-+	/* receive data address */
- 	mcp->mb[16] = LSW(mreq->rcv_dma);
- 	mcp->mb[17] = MSW(mreq->rcv_dma);
- 	mcp->mb[6] = LSW(MSD(mreq->rcv_dma));
-diff --git a/drivers/scsi/qla4xxx/ql4_def.h b/drivers/scsi/qla4xxx/ql4_def.h
-index c1f8d1b..4757878 100644
---- a/drivers/scsi/qla4xxx/ql4_def.h
-+++ b/drivers/scsi/qla4xxx/ql4_def.h
-@@ -182,7 +182,7 @@ struct srb {
- 	uint16_t flags;		/* (1) Status flags. */
- 
- #define SRB_DMA_VALID		BIT_3	/* DMA Buffer mapped. */
--#define SRB_GOT_SENSE		BIT_4	/* sense data recieved. */
-+#define SRB_GOT_SENSE		BIT_4	/* sense data received. */
- 	uint8_t state;		/* (1) Status flags. */
- 
- #define SRB_NO_QUEUE_STATE	 0	/* Request is in between states */
-diff --git a/drivers/tty/mxser.h b/drivers/tty/mxser.h
-index 41878a6..0bf7943 100644
---- a/drivers/tty/mxser.h
-+++ b/drivers/tty/mxser.h
-@@ -113,7 +113,7 @@
- #define MOXA_MUST_IIR_RTO		0x0C
- #define MOXA_MUST_IIR_LSR		0x06
- 
--/* recieved Xon/Xoff or specical interrupt pending */
-+/* received Xon/Xoff or specical interrupt pending */
- #define MOXA_MUST_IIR_XSC		0x10
- 
- /* RTS/CTS change state interrupt pending */
-diff --git a/drivers/usb/class/usbtmc.c b/drivers/usb/class/usbtmc.c
-index 6a54634..385acb8 100644
---- a/drivers/usb/class/usbtmc.c
-+++ b/drivers/usb/class/usbtmc.c
-@@ -483,7 +483,7 @@ static ssize_t usbtmc_read(struct file *filp, char __user *buf,
- 		}
- 
- 		done += n_characters;
--		/* Terminate if end-of-message bit recieved from device */
-+		/* Terminate if end-of-message bit received from device */
- 		if ((buffer[8] &  0x01) && (actual >= n_characters + 12))
- 			remaining = 0;
- 		else
-diff --git a/drivers/usb/gadget/fsl_qe_udc.h b/drivers/usb/gadget/fsl_qe_udc.h
-index bea5b82..105eb62 100644
---- a/drivers/usb/gadget/fsl_qe_udc.h
-+++ b/drivers/usb/gadget/fsl_qe_udc.h
-@@ -379,7 +379,7 @@ struct qe_udc {
- #define T_LSP         0x01000000         /* Low-speed transaction */
- #define T_PID         0x00c00000         /* packet id */
- #define T_NAK         0x00100000         /* No ack. */
--#define T_STAL        0x00080000         /* Stall recieved */
-+#define T_STAL        0x00080000         /* Stall received */
- #define T_TO          0x00040000         /* time out */
- #define T_UN          0x00020000         /* underrun */
- 
-diff --git a/drivers/usb/host/fhci-tds.c b/drivers/usb/host/fhci-tds.c
-index 38fe058..7fd46f3 100644
---- a/drivers/usb/host/fhci-tds.c
-+++ b/drivers/usb/host/fhci-tds.c
-@@ -40,7 +40,7 @@
- #define TD_RXER		0x0020 /* Rx error or not */
- 
- #define TD_NAK		0x0010 /* No ack. */
--#define TD_STAL		0x0008 /* Stall recieved */
-+#define TD_STAL		0x0008 /* Stall received */
- #define TD_TO		0x0004 /* time out */
- #define TD_UN		0x0002 /* underrun */
- #define TD_NO		0x0010 /* Rx Non Octet Aligned Packet */
-diff --git a/drivers/usb/host/oxu210hp-hcd.c b/drivers/usb/host/oxu210hp-hcd.c
-index 44e4deb..4a771f6 100644
---- a/drivers/usb/host/oxu210hp-hcd.c
-+++ b/drivers/usb/host/oxu210hp-hcd.c
-@@ -2879,7 +2879,7 @@ static int oxu_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 	/* Ok, we have more job to do! :) */
- 
- 	for (i = 0; i < num - 1; i++) {
--		/* Get free micro URB poll till a free urb is recieved */
-+		/* Get free micro URB poll till a free urb is received */
- 
- 		do {
- 			murb = (struct urb *) oxu_murb_alloc(oxu);
-@@ -2911,7 +2911,7 @@ static int oxu_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 
- 	/* Last urb requires special handling  */
- 
--	/* Get free micro URB poll till a free urb is recieved */
-+	/* Get free micro URB poll till a free urb is received */
- 	do {
- 		murb = (struct urb *) oxu_murb_alloc(oxu);
- 		if (!murb)
+  * @param[in]	bfa		BFA instance
+  * @param[in]	ufrecv	receive handler function
 -- 
 1.7.4.2
 
