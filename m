@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab1DGLZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 07:25:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64619 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab1DGLZ5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755627Ab1DGLZ5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 7 Apr 2011 07:25:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=NztPOWj83xrMs7sb9Vu0FEz1oCiavyVNcMnP/aQJRmnWEtFFJtRmlUFqqjXpBGHNw3
-         UvY3l/Ng/j+HNMXhlGpCIglwfZ6YHeVad2tqHTagsQUr5VIDi0vHgAWe+A+ECAt/E5bH
-         X9SAsv0pmpbFUEDFAlwiwGQQUwV1LY1XNftYA=
+Received: from gra-lx1.iram.es ([150.214.224.41]:35236 "EHLO gra-lx1.iram.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751777Ab1DGLZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 07:25:56 -0400
+Date: Thu, 7 Apr 2011 13:25:48 +0200
+From: Gabriel Paubert <paubert@iram.es>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+Message-ID: <20110407112548.GA30805@iram.es>
+References: <20110404235259.GA30132@iram.es> <20110406084101.GB13963@pengutronix.de> <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110407075456.GC24879@elte.hu>
-References: <cover.1302137785.git.luto@mit.edu> <49856c9e1325fd1a1f1786f05a7f2befe14666d6.1302137785.git.luto@mit.edu>
- <20110407075456.GC24879@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 7 Apr 2011 07:25:37 -0400
-X-Google-Sender-Auth: CpHrclMECc0tZecURCw21O1WJKo
-Message-ID: <BANLkTinQEsrRfuLV7BXs815Ya47TM8UOEw@mail.gmail.com>
-Subject: Re: [RFT/PATCH v2 3/6] x86-64: Don't generate cmov in vread_tsc
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 7, 2011 at 3:54 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Andy Lutomirski <luto@mit.edu> wrote:
->
->> vread_tsc checks whether rdtsc returns something less than
->> cycle_last, which is an extremely predictable branch.  GCC likes
->> to generate a cmov anyway, which is several cycles slower than
->> a predicted branch.  This saves a couple of nanoseconds.
->>
->> Signed-off-by: Andy Lutomirski <luto@mit.edu>
->> ---
->>  arch/x86/kernel/tsc.c |   19 +++++++++++++++----
->>  1 files changed, 15 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
->> index 858c084..69ff619 100644
->> --- a/arch/x86/kernel/tsc.c
->> +++ b/arch/x86/kernel/tsc.c
->> @@ -794,14 +794,25 @@ static cycle_t __vsyscall_fn vread_tsc(void)
->>        */
->>
->>       /*
->> -      * This doesn't multiply 'zero' by anything, which *should*
->> -      * generate nicer code, except that gcc cleverly embeds the
->> -      * dereference into the cmp and the cmovae.  Oh, well.
->> +      * This doesn't multiply 'zero' by anything, which generates
->> +      * very slightly nicer code than multiplying it by 8.
->>        */
->>       last = *( (cycle_t *)
->>                 ((char *)&VVAR(vsyscall_gtod_data).clock.cycle_last + zero) );
->>
->> -     return ret >= last ? ret : last;
->> +     if (likely(ret >= last))
->> +             return ret;
->> +
->> +     /*
->> +      * GCC likes to generate cmov here, but this branch is extremely
->> +      * predictable (it's just a funciton of time and the likely is
->> +      * very likely) and there's a data dependence, so force GCC
->> +      * to generate a branch instead.  I don't barrier() because
->> +      * we don't actually need a barrier, and if this function
->> +      * ever gets inlined it will generate worse code.
->> +      */
->> +     asm volatile ("");
->
-> Hm, you have not addressed the review feedback i gave in:
->
->  Message-ID: <20110329061546.GA27398@elte.hu>
+	Hi Dave,
 
-I can change that, but if anyone ever inlines this function (and Andi
-suggested that as another future optimization), then they'd want to
-undo it, because it will generate worse code.  (barrier() has the
-unnecessary memory clobber.)
+> This is the old DRM driver for radeon, which relies on userspace to
+> start X then calls the kernel
 
---Andy
+Actually, even the old DRM driver occasionally hangs on this machine,
+I suspect a missing barrier, but I might be completely off base.
 
->
-> Thanks,
->
->        Ingo
->
+The system is up, only X uses 100% of one core and according to
+gdb X is there:
+
+(gdb) info stack
+#0  0x0fbafb08 in ioctl () from /lib/libc.so.6
+#1  0x0f7be1c8 in drmDMA () from /usr/lib/libdrm.so.2
+#2  0x0f65330c in ?? () from /usr/lib/xorg/modules/drivers/radeon_drv.so
+#3  0x0f65380c in ?? () from /usr/lib/xorg/modules/drivers/radeon_drv.so
+#4  0x0f6f89b8 in ?? () from /usr/lib/xorg/modules/drivers/radeon_drv.so
+#5  0x0f562538 in ?? () from /usr/lib/xorg/modules/libexa.so
+#6  0x0f56298c in ?? () from /usr/lib/xorg/modules/libexa.so
+#7  0x0f56351c in ?? () from /usr/lib/xorg/modules/libexa.so
+#8  0x0f55fba0 in ?? () from /usr/lib/xorg/modules/libexa.so
+#9  0x0f56ab18 in ?? () from /usr/lib/xorg/modules/libexa.so
+#10 0x0f56b810 in ?? () from /usr/lib/xorg/modules/libexa.so
+#11 0x100f168c in ?? ()
+#12 0x100df0fc in CompositePicture ()
+#13 0x0f56a748 in ?? () from /usr/lib/xorg/modules/libexa.so
+#14 0x100dee08 in CompositeTrapezoids ()
+#15 0x100eb318 in ?? ()
+#16 0x100e3ae8 in ?? ()
+#17 0x1004a1f0 in ?? ()
+#18 0x1001d0d4 in ?? ()
+#19 0x0faea63c in ?? () from /lib/libc.so.6
+#20 0x0faea800 in __libc_start_main () from /lib/libc.so.6
+#21 0x00000000 in ?? ()
+
+
+I don't know how to get more details.
+
+	Regards,
+	Gabriel
