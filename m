@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab1DGKd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 06:33:58 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4739 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752634Ab1DGKd4 (ORCPT
+	id S1754961Ab1DGKf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 06:35:27 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:47098 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab1DGKf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 06:33:56 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p37AXcWk005702
-Subject: Re: [PATCH] rfkill: Regulator consumer driver for rfkill
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
-        "John W . Linville" <linville@tuxdriver.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Marek Vasut <marek.vasut@gmail.com>, Guiming Zhuo <gmzhuo@gmail.com>
-In-Reply-To: <1302170978.3779.0.camel@jlt3.sipsolutions.net>
-References: <1302081679-812-1-git-send-email-ospite@studenti.unina.it>
-	 <20110406141131.GC2810@opensource.wolfsonmicro.com>
-	 <1302099669.4090.1.camel@jlt3.sipsolutions.net>
-	 <1302113542.22852.7.camel@x61.thuisdomein>
-	 <1302115597.4090.11.camel@jlt3.sipsolutions.net>
-	 <1302170472.21251.9.camel@thorin>
-	 <1302170978.3779.0.camel@jlt3.sipsolutions.net>
+	Thu, 7 Apr 2011 06:35:26 -0400
+Subject: Re: [PATCH] ARM: Allow for kernel command line concatenation
+From: Paul Bolle <pebolle@tiscali.nl>
+To: oskar.andero@sonyericsson.com
+Cc: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, will.deacon@arm.com,
+        eric.y.miao@gmail.com, catalin.marinas@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Victor Boivie <victor.boivie@sonyericsson.com>
+Date: Thu, 07 Apr 2011 12:35:01 +0200
+In-Reply-To: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
+References: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Apr 2011 12:33:37 +0200
-Message-ID: <1302172417.21251.48.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-Mailer: Evolution 2.91.92 (2.91.92-1.fc16) 
 Content-Transfer-Encoding: 7bit
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+Message-ID: <1302172525.24493.7.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Don, 2011-04-07 at 12:09 +0200, Johannes Berg wrote: 
-> On Thu, 2011-04-07 at 12:01 +0200, Bernd Petrovitsch wrote:
-> > On Mit, 2011-04-06 at 20:46 +0200, Johannes Berg wrote: 
-> > > On Wed, 2011-04-06 at 20:12 +0200, Paul Bolle wrote:
-> > [...] 
-> > > > But doesn't
-> > > > 	depends on RFKILL || !RFKILL
-> > > > 
-> > > > always evaluate to true when running "make *config"? (Even if RFKILL is
-> > > > an unknown symbol when that expression is parsed!)
-> > > 
-> > > No, it will not, you're forgetting that these things are tristate.
-> > 
-> > Boolean operators for tristate logic isn't intuitive at all IMHO.
-> 
-> *shrug*. You're free to propose patches to the kconfig system to make it
-> more intuitive. :-)
+On Thu, 2011-04-07 at 10:17 +0200, oskar.andero@sonyericsson.com wrote:
+> +config CMDLINE_EXTEND
+> +	bool "Extend bootloader kernel arguments"
+> +	depends on CMDLINE != ""
+> +	help
+> +	  The default kernel command string will be concatenated with the
+> +	  arguments provided by the boot loader.
 
-FullACK;-)
-But no intuitive tristate logic operators come to my mind (otherwise I
-would have mentioned them above).
-And there are more logic implications in "depends on RFKILL".
-Hmm, I have to think more about it ....
+This suggests the parameters provided by the boot loader will override
+corresponding parameters of the default kernel command string. Is that
+correct (for all possible parameters)?
 
-Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+Either way, shouldn't it be documented, perhaps in this help text, what
+will happen if a parameter of the default kernel command string and a
+parameter provided by the boot loader somehow conflict?
+
+
+Paul Bolle
 
