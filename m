@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab1DGGl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 02:41:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14989 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690Ab1DGGl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 02:41:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,315,1299484800"; 
-   d="scan'208";a="415228379"
-Subject: Re: [PATCH] sched: recover sched_yield task running time increase
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-In-Reply-To: <4D9D55EF.3090606@redhat.com>
-References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
-	 <1302077064.2225.1357.camel@twins> <1302145733.15889.7472.camel@debian>
-	 <4D9D55EF.3090606@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Apr 2011 14:43:16 +0800
-Message-ID: <1302158596.15889.7499.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1752233Ab1DGGmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 02:42:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37868 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab1DGGmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 02:42:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=s27o/hiI/3E+PT1tRlZGzLa9n0nO6p4y0Efo4srgKfcFqq0L6+w/45bU6qm0nBba8e
+         iJJGUqTbR95fZrLJ6b+aRF0QmsSfG8BT9cSreFCn5fm44SxZigrvcpiDj+8fMLOkau19
+         r9ul/iaSZGBL0wAQa1TMOby33EB1Ef7Ls+hXY=
+Message-ID: <4D9D5CC9.2040002@suse.cz>
+Date: Thu, 07 Apr 2011 08:42:17 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        ML netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org
+Subject: Re: nfs client doesn't work [was: mmotm 2011-03-31-14-48 uploaded]
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org> <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>
+In-Reply-To: <1302122693.16786.0.camel@lade.trondhjem.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-07 at 14:13 +0800, Rik van Riel wrote:
-> On 04/06/2011 11:08 PM, Alex,Shi wrote:
-> > On Wed, 2011-04-06 at 16:04 +0800, Peter Zijlstra wrote:
-> >> On Wed, 2011-04-06 at 06:33 +0800, Alex Shi wrote:
+On 04/06/2011 10:44 PM, Myklebust, Trond wrote:
+> On Sat, 2011-04-02 at 10:56 +0200, Jiri Slaby wrote:
+>> On 03/31/2011 11:48 PM, akpm@linux-foundation.org wrote:
+>> > The mm-of-the-moment snapshot 2011-03-31-14-48 has been uploaded to
+>>
+>> Hi, nfs client is defunct in this kernel. Tcpdump says:
+>> 10:51:55.489717 IP 10.20.11.33.759945860 > 10.20.3.2.2049: 132 getattr
+>> fh 0,0/24
+>> 10:51:55.515927 IP 10.20.3.2.2049 > 10.20.11.33.759945860: reply ok 44
+>> getattr ERROR: Operation not permitted
+>> 10:51:55.515949 IP 10.20.11.33.921 > 10.20.3.2.2049: Flags [.], ack
+>> 3569361440, win 115, options [nop,nop,TS val 599750 ecr 255058541],
+> length 0
+>> 10:52:04.130310 IP 10.20.11.33.793500292 > 10.20.3.2.2049: 76 getattr fh
+>> 0,0/24
+>> 10:52:04.152178 IP 10.20.3.2.2049 > 10.20.11.33.793500292: reply ok 44
+>> getattr ERROR: Operation not permitted
+>>
+>> If I run the same mount command (mount -oro,intr host:dir mountpoint)
+>> from within a virtual machine with 2.6.38.2 there, everything mounts OK.
 > 
-> >> You do know that any app that relies on sched_yield behaviour is more
-> >> than broken? Using sched_yield() for anything other than SCHED_FIFO
-> >> tasks is well outside spec.
-> >>
-> >> Furthermore, apparently you used sysctl_sched_compat_yield, which was
-> >> bound to disappear some time, since with the default settings the yield
-> >> semantics didn't actually change.
-> >
-> > Yes, I used sched_compat_yield, otherwise volano will become extremely
-> > slow in my single machine testing. We may reconsider our testing
-> > setting.
-> 
-> With what JVM is this happening?
+> Does the attached patch help?
 
-I used openjdk from fedora 10~13 and jrockit-R27.3.1-jre1.5.0_11, both
-of them use sched_yield much. And I just did a quick try with
-jrockit-R27.4.0-jre1.6.0_02.x86_64, it had same problem.
+No, still the operation not permitted in the tcpdump output and no mount.
 
-> 
-> Surely not every JVM uses user space spinlocks and
-> yield, when we have futexes available?
-
-No, just 7 times futex called in testing, so I think the JVM did not use
-it. 
-> 
-> 
-> 
-
-
+thanks,
+-- 
+js
+suse labs
