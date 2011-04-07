@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab1DGNSh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:18:37 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:45612 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751777Ab1DGNSf (ORCPT
+	id S1753225Ab1DGNUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:20:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45701 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab1DGNUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:18:35 -0400
-Date: Thu, 7 Apr 2011 09:18:10 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: oskar.andero@sonyericsson.com
-Cc: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, will.deacon@arm.com,
-        eric.y.miao@gmail.com, catalin.marinas@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Victor Boivie <victor.boivie@sonyericsson.com>
-Subject: Re: [PATCH] ARM: Allow for kernel command line concatenation
-Message-ID: <20110407131810.GA6450@elliptictech.com>
-References: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
+	Thu, 7 Apr 2011 09:20:51 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=XYJHFtupD_QA:10 a=YIYGEDvFEgsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QNmi9Sp72UPk8Su8vhAA:9 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 7 Apr 2011 09:20:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Possible to software trigger an interrupt?
+Message-ID: <20110407132048.GA7257@home.goodmis.org>
+References: <4D989A8A.3050700@cam.ac.uk>
+ <4D98A185.1080704@cam.ac.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D98A185.1080704@cam.ac.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-07 10:17 +0200, oskar.andero@sonyericsson.com wrote:
-> From: Victor Boivie <victor.boivie@sonyericsson.com>
+On Sun, Apr 03, 2011 at 05:34:13PM +0100, Jonathan Cameron wrote:
+> On 04/03/11 17:04, Jonathan Cameron wrote:
+> > Hi,
+> > 
+> > Having produced a proof of concept for using gpio chips
+> > to handle the triggers in IIO I am looking at converting
+> > over our sysfs trigger.  This trigger is used to initialize
+> > capture on devices in a similar way to dataready interrupts.
+> > The key point is we want to handle this in the same way within
+> > drivers as the hardware event triggers. 
+> > 
+> > It is a very useful tool.  So the upshot is, what is the best
+> > way to handle causing an interrupt to occur from userspace?
+> > 
+> > Any pointers on how to do this would be most welcome.
 > 
-> This patch allows the provided CONFIG_CMDLINE to be concatenated
-> with the one provided by the boot loader. This is useful to
-> merge the static values defined in CONFIG_CMDLINE with the
-> boot loader's (possibly) more dynamic values, such as startup
-> reasons and more.
+> For what it is worth, the incredibly dumb approach of just
+> calling handle_nested_irq seems to 'work'.   I dread to think
+> what that might be quietly breaking though...
 
-This sounds very useful!  One comment below.
+I think you are fine in calling that. It's made to be called from a
+threaded context. But if you are testing code that will someday be
+called in an interrupt context, it may not catch everything you need.
 
-> Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
-> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
-> ---
->  arch/arm/Kconfig        |   21 +++++++++++++++++++--
->  arch/arm/kernel/setup.c |    9 ++++++++-
->  2 files changed, 27 insertions(+), 3 deletions(-)
+For example, a mutex is allowed to be called from a threaded context,
+but not from a hard irq one. There may be other subtle locking issues as
+well. These could be caught with lockdep, but only when the code is
+really been executed from hard irq context.
+
+-- Steve
+
+
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-[...]
-> +config CMDLINE_EXTEND
-> +	bool "Extend bootloader kernel arguments"
-> +	depends on CMDLINE != ""
-> +	help
-> +	  The default kernel command string will be concatenated with the
-> +	  arguments provided by the boot loader.
-
-Since concatenation is not commutative, this help text should describe
-exactly the order in which the arguments are concatenated.  How about
-this instead:
-
-  The command-line arguments provided by the boot loader will be
-  appended to the default kernel command string.
-
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+> My understanding of some of this code is still rather limited
+> I'm afraid!
