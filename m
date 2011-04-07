@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1DGFxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 01:53:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58344 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab1DGFxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 01:53:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: sleeping function called from invalid context at kernel/mutex.c
-Date: Thu, 7 Apr 2011 07:53:47 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Xiaotian Feng <dfeng@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-References: <4D970CB6.3070604@redhat.com> <201104060643.38301.rjw@sisk.pl> <1302077253.2225.1360.camel@twins>
-In-Reply-To: <1302077253.2225.1360.camel@twins>
+	id S1752064Ab1DGF5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 01:57:22 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47918 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab1DGF5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 01:57:21 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6308"; a="84428337"
+Message-ID: <4D9D523F.4090506@codeaurora.org>
+Date: Wed, 06 Apr 2011 22:57:19 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Len Brown <len.brown@intel.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] cpuidle: Fix build on ARM and SH
+References: <1301894612-10471-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1301894612-10471-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104070753.47431.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 06, 2011, Peter Zijlstra wrote:
-> On Wed, 2011-04-06 at 06:43 +0200, Rafael J. Wysocki wrote:
-> > > the $subject text sound like it triggered might_sleep(), and that had a
-> > > system_state != SYSTEM_RUNNING bail condition, but then, I've no clue
-> > > what resume looks like.
-> > 
-> > Early resume looks pretty much like the system startup, e.g. everything
-> > called from syscore_ops should not be sleepable (although mutexes shouldn't
-> > trigger, because that code is effectively single-threaded, unless somebody
-> > holds the mutex in question when that code is being executed, but that would
-> > deadlock anyway). 
-> 
-> Right, so system_state != SYSTEM_RUNNING should be true for resume?
+On 4/3/2011 10:23 PM, Mark Brown wrote:
+> Commit 5f8cf82 (cpuidle: stop using pm_idle) converted arches to use
+> cpuidle_idle_call() but contained typos on ARM and SH transposing the
+> function name into cpuidle_call_idle().
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-It is not, although it probably should be.
+When will this patch get into linux-next? Every ARM and SH build has
+failed for the past 3 days presumably due to this. Stephen, can you pick
+it up for the time being?
 
-First, some time ago there was opposition to adding more different possible
-values of system_state and it wasn't clear which of the existing values should
-be used instead of SYSTEM_RUNNING during suspend/resume.  We ended up sticking
-to SYSTEM_RUNNING for that reason long enough for some code to develop the
-expectation of system_state == SYSTEM_RUNNING during suspend/resume (IOW,
-changing that right now would probably break stuff).
+> ---
+>  arch/arm/kernel/process.c |    2 +-
+>  arch/sh/kernel/idle.c     |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> index dc9d685..f47660e 100644
+> --- a/arch/arm/kernel/process.c
+> +++ b/arch/arm/kernel/process.c
+> @@ -197,7 +197,7 @@ void cpu_idle(void)
+>  				cpu_relax();
+>  			} else {
+>  				stop_critical_timings();
+> -				if (cpuidle_call_idle())
+> +				if (cpuidle_idle_call())
+>  					pm_idle();
+>  				start_critical_timings();
+>  				/*
+> diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+> index 9c7099e..1db1968 100644
+> --- a/arch/sh/kernel/idle.c
+> +++ b/arch/sh/kernel/idle.c
+> @@ -101,7 +101,7 @@ void cpu_idle(void)
+>  			local_irq_disable();
+>  			/* Don't trace irqs off for idle */
+>  			stop_critical_timings();
+> -			if (cpuidle_call_idle())
+> +			if (cpuidle_idle_call())
+>  				pm_idle();
+>  			/*
+>  			 * Sanity check to ensure that pm_idle() returns
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Second, even if we decide to switch from SYSTEM_RUNNING to something else
-during suspend (and back during resume), it's not entirely clear what's the
-right place to do so.
-
-Thanks,
-Rafael
