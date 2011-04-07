@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab1DGWlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 18:41:06 -0400
-Received: from mail1.nippynetworks.com ([91.220.24.129]:59322 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755893Ab1DGWlE (ORCPT
+	id S1756826Ab1DGWmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 18:42:32 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:2464 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755893Ab1DGWmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 18:41:04 -0400
-Message-ID: <4D9E3D7D.3090601@wildgooses.com>
-Date: Thu, 07 Apr 2011 23:41:01 +0100
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	Thu, 7 Apr 2011 18:42:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=AoHwGoHOeepC53mLK5Hg+SASc9zad+/MJGXf4Cm78oBnuZr27E4K2rgzDzxzVYFpOP
+         cpqFInciLaiIzEebiQng==
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: kernel@wildgooses.com, Grant Likely <grant.likely@secretlab.ca>,
-        daniel@caiaq.de, Andres Salomon <dilinger@queued.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] leds: New PCEngines Alix LED driver using gpio interface
-References: <1299430285-13189-1-git-send-email-kernel@wildgooses.com> <20110407145836.3cde7699.akpm@linux-foundation.org>
-In-Reply-To: <20110407145836.3cde7699.akpm@linux-foundation.org>
-X-TagToolbar-Keys: D20110407234100999
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110407213208.GE1798@nowhere>
+References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
+ <20110407013349.GH1867@nowhere> <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
+ <20110407120608.GB1798@nowhere> <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
+ <20110407213208.GE1798@nowhere>
+From: David Sharp <dhsharp@google.com>
+Date: Thu, 7 Apr 2011 15:42:08 -0700
+Message-ID: <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
+Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Stephane Eranian <eranian@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2011 22:58, Andrew Morton wrote:
-> On Sun,  6 Mar 2011 16:51:25 +0000
-> kernel@wildgooses.com wrote:
->
->> From: Ed Wildgoose <kernel@wildgooses.com>
+On Thu, Apr 7, 2011 at 2:32 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Thu, Apr 07, 2011 at 01:22:30PM -0700, David Sharp wrote:
+>> On Thu, Apr 7, 2011 at 5:06 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> Perf doesn't have the same latency characteristics as ftrace. It costs
+>> a full microsecond for every trace event.
 >>
->> This new driver replaces the old PCEngines Alix 2/3 LED driver with
->> a new driver that controls the LEDs through the leds-gpio driver.
->> The old driver accessed GPIOs directly, which created a conflict 
->> and prevented also loading the cs5535-gio driver to read other
->> GPIOs on the Alix board. With this new driver, both are loaded
->> and therefore it's possible to access both the LEDs and onboard GPIOs 
+>> https://lkml.org/lkml/2010/10/28/261
 >>
->> This driver is based on leds-net5501.c 
->> by: Alessandro Zummo <a.zummo@towertech.it>
->> Additionally it relies on parts of the patch: 7f131cf3ed
->> by: Daniel Mack <daniel@caiaq.de> to perform detection of the Alix board
-> As far as I can tell from looking at it, this driver maintains all the
-> same interfaces and behaviour as the old version.  Am I right?
+>> It's possible these results need to be updated. Has any effort been
+>> made to improve the tracing latency of perf?
+>
+> Nothing significant since then, I believe. But the hotspots are known
+> and some are relatively low hanging fruits if you want to get closer to
+> ftrace throughput:
+>
+> * When an event triggers, we do a double copy. A first one in a temporary
+> buffer and a second one from the temporary buffer to the event'ss one.
+> This is because we don't have the same discard feature than in ftrace
+> buffer. We need to first filter on the temporary buffer and give up if the filter
+> matched instead of copying to the main buffer.
+>
+> As a short term solution: have a fast path tracing for the case where we
+> don't have a filter: directly copy to the main buffer.
+>
+> In the longer term I think we want to filter on tracepoint parameters
+> rather than in the ending trace.
+>
+> * We save more things in perf, because we have the perf headers. So we
+> save the pid twice: once in trace event headers, second in perf headers.
+> We need to drop the one from the trace event.
+> Also in the case of pure tracing, we don't need to save the ip in the perf
+> headers.
+>
+> * We have lots of conditionals in the fast path, due to some exclusion options,
+> overflow count tracking, etc... We probably want a fastpath tracing function
+> for the high volume tracing case, something that goes quickly to the buffer
+> saving.
+>
+> And there are things common to ftrace and perf that we probably want to have:
+> like tracking of pids using sched switch event if one is running, instead
+> of saving the pid on each traces. And get rid of the preempt_count in the
+> trace event headers, at least have the possibility to choose whether we want
+> it.
+>
+>
+> Any help in any of these tasks would be very welcome.
 >
 
-Yes, this is correct.  The substance of the change is simply to use the
-leds-gpio interface rather than fiddling with gpio settings directly. 
-However, please note that Grant and Andres suggested that the driver
-should instead move to "arch" and out of leds? Therefore, I created an
-updated version of this patch which you can find from message id:
-"1300553466-23873-1-git-send-email-kernel@wildgooses.com", ie:
-    http://lists.zerezo.com/linux-kernel/msg27455553.html
+This is all very interesting, but doesn't really help us. I'd prefer
+to focus on the proposal itself than discuss the merits of perf and
+ftrace. We're using ftrace for the foreseeable future, and afaik, it's
+still a maintained part of the kernel. If perf improves its
+performance for tracing, then we can consider switching to it. We
+could invest time improving perf, and that might be worthwhile, but
+ftrace is here now.
 
-Additionally this updated patch has a slightly amended copyright -
-several folks thought that the updated copyright statement was more
-appropriate
-
-My apologies that this updated patch was not more clearly marked as such
-- Grant has taken the time to point out how I should submit patches more
-clearly in the future
-
-I would be happy to shuffle the code around further if anyone has an
-opinion?
-
-Thanks for picking this up
-
-Ed W
-
+So with that in mind, are there any suggestions regarding cgroup
+functionality in ftrace?
