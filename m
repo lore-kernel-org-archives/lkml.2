@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab1DGNwD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:52:03 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:56666 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751646Ab1DGNwB (ORCPT
+	id S1752323Ab1DGOE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 10:04:56 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:41186 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751562Ab1DGOEz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:52:01 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+qUKFFqjqqXAL/qTinEzBB1+wjmrS7WarfPral6/
-	znnSKwi9t3SKMQ
-Subject: Re: [PATCH 00/23] sched: Rewrite sched_domain/sched_group creation
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-In-Reply-To: <20110407120941.400629539@chello.nl>
-References: <20110407120941.400629539@chello.nl>
+	Thu, 7 Apr 2011 10:04:55 -0400
+X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
+	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
+	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Gabriel Paubert <paubert@iram.es>
+Cc: Dave Airlie <airlied@gmail.com>, Greg KH <greg@kroah.com>,
+        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+In-Reply-To: <20110406204327.GA11148@iram.es>
+References: <20110404235259.GA30132@iram.es>
+	 <20110406084101.GB13963@pengutronix.de>
+	 <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
+	 <20110406204327.GA11148@iram.es>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Apr 2011 15:51:54 +0200
-Message-ID: <1302184314.8065.13.camel@marge.simson.net>
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 07 Apr 2011 16:04:35 +0200
+Message-ID: <1302185075.24704.143.camel@thor.local>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-07 at 14:09 +0200, Peter Zijlstra wrote:
-> This series rewrite the sched_domain and sched_group creation code.
+On Mit, 2011-04-06 at 22:43 +0200, Gabriel Paubert wrote: 
 > 
-> While its still not completely finished it does get us a lot of cleanups
-> and code reduction and seems fairly stable at this point and should thus
-> be a fairly good base to continue from.
+> The probem is that, at least on one of my machines, the new driver
+> does not work: the system hangs (apparently solid, but it's before
+> networking starts up and I've not yet hooked up a serial console), 
+> after the "radeon: ib pool ready" message.
 
-Looks and sounds like good plan to me.
+Does radeon.agpmode=-1 radeon.no_wb=1 help?
 
-> Also available through:
->   git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-sched.git sched_domain
-> 
-> ---
->  include/linux/sched.h |   26 +-
->  kernel/cpuset.c       |    2 +-
->  kernel/sched.c        |  963 +++++++++++++++----------------------------------
->  kernel/sched_fair.c   |   32 ++-
->  4 files changed, 326 insertions(+), 697 deletions(-)
+You might be able to get more information via netconsole if you prevent
+the radeon module from loading automatically (or load it with
+radeon.modeset=0 first) and then load it e.g. via ssh with modeset=1.
 
-We could use a few more diffstats like this one :)
-
-	-Mike
+It would be interesting to see at least all agp/drm/radeon related
+kernel messages before the problem occurs.
 
 
+-- 
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
