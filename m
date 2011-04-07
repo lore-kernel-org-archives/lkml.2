@@ -1,35 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1DGTIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 15:08:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46022 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756677Ab1DGTIk (ORCPT
+	id S1756749Ab1DGTOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 15:14:12 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13156 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716Ab1DGTOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 15:08:40 -0400
+	Thu, 7 Apr 2011 15:14:11 -0400
+Date: Thu, 7 Apr 2011 21:14:27 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: James Bottomley <James.Bottomley@suse.de>, Christoph Hellwig <hch@lst.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] SCSI, target, loopback: Fix memory leak in
+ tcm_loop_make_scsi_hba()
+Message-ID: <alpine.LNX.2.00.1104072108370.1538@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110407190550.GB11496@elte.hu>
-References: <20110331032307.GA27999@vigoh> <20110331062949.GA29526@elte.hu>
- <20110331144400.GA2618@vigoh> <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
- <BANLkTikDc0o6Kf5Ym5XkmpeY54fPc67SVw@mail.gmail.com> <20110407190550.GB11496@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 7 Apr 2011 12:07:48 -0700
-Message-ID: <BANLkTimERSp_dTfQ-nLwz1kJxNLn3h6vaA@mail.gmail.com>
-Subject: Re: [GIT PULL] Fix common misspellings
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        lucas.de.marchi@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 7, 2011 at 12:05 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> I think we should keep the miniscule spelling, it has become ingrained in the
-> English language:
+There is a memory leak in tcm_loop_make_scsi_hba().
 
-Agreed. The codespell spellchecker is just wrong on that one.
+If all the strstr() calls return NULL and we end up at 
+  return ERR_PTR(-EINVAL);
+then we'll be leaking the memory previously allocated to tl_hba as that 
+variable goes out of scope.
 
-                  Linus
+This patch fixes the leak.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ tcm_loop.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+  compile tested only.
+
+diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+index aed4e46..c4f81ec 100644
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -1330,7 +1330,8 @@ struct se_wwn *tcm_loop_make_scsi_hba(
+ 
+ 	printk(KERN_ERR "Unable to locate prefix for emulated Target Port:"
+ 			" %s\n", name);
+-	return ERR_PTR(-EINVAL);
++	ret = -EINVAL;
++	goto out;
+ 
+ check_len:
+ 	if (strlen(name) > TL_WWN_ADDR_LEN) {
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
