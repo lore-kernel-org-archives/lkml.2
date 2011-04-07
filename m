@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab1DGWRP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 18:17:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33031
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755537Ab1DGWRN (ORCPT
+	id S1755643Ab1DGWRv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 18:17:51 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:54987 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495Ab1DGWRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 18:17:13 -0400
-Date: Thu, 07 Apr 2011 15:16:36 -0700 (PDT)
-Message-Id: <20110407.151636.183068185.davem@davemloft.net>
-To: benh@kernel.crashing.org
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bheglaas@google.com, monstr@monstr.eu,
-        tglx@linuxtronix.de, bigeasy@linuxtronix.de
-Subject: Re: [PATCHES] Generalize PCI <-> OF node matching 
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1302146796-26825-1-git-send-email-benh@kernel.crashing.org>
-References: <1302146796-26825-1-git-send-email-benh@kernel.crashing.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 7 Apr 2011 18:17:50 -0400
+Subject: Re: [PATCH 2/2] make new alloc_pages_exact()
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Timur Tabi <timur@freescale.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1104071452070.14967@chino.kir.corp.google.com>
+References: <20110407172104.1F8B7329@kernel>
+	 <20110407172105.831B9A0A@kernel>
+	 <alpine.DEB.2.00.1104071452070.14967@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 07 Apr 2011 15:17:43 -0700
+Message-ID: <1302214663.8184.4164.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu,  7 Apr 2011 13:26:31 +1000
-
-> This series generalize the PCI <-> OF node matching, moves it to the
-> PCI core and make our archs use it. I also rip out while at it a whole
-> bunch of useless stuff from microblaze PCI code which was copied from
-> ppc32 and is essentially useless there (old workarounds for PowerMac
-> and ancient X servers).
+On Thu, 2011-04-07 at 15:03 -0700, David Rientjes wrote:
+> On Thu, 7 Apr 2011, Dave Hansen wrote:
+> > What I really wanted in the end was a highmem-capable alloc_pages_exact(),
+> > so here it is.
 > 
-> Compile tested on x86_64, microblaze, sparc64 and powerpc.
+> Perhaps expand upon how the new alloc_pages_exact() works and what it will 
+> be used for instead of only talking about how it's named?
 
-What tree is this against?  None of the microblaze and x86 bits
-apply without rejects against Linus's tree, which is where I'm
-trying to test this.
+Will do.
 
-I'll trudge through it, but a heads up about what your patches
-are against in the future would be heavily appreciated.
+> > +/* 'struct page' version */
+> > +struct page *__alloc_pages_exact(gfp_t, size_t);
+> > +void __free_pages_exact(struct page *, size_t);
+> 
+> They're not required, but these should have the names of the arguments 
+> like the other prototypes in this file.
+
+Fair enough.
+
+> > -	addr = __get_free_pages(gfp_mask, order);
+> > -	if (addr) {
+> > -		unsigned long alloc_end = addr + (PAGE_SIZE << order);
+> > -		unsigned long used = addr + PAGE_ALIGN(size);
+> > +	page = alloc_pages(gfp_mask, order);
+> > +	if (page) {
+> > +		struct page *alloc_end = page + (1 << order);
+> > +		struct page *used = page + PAGE_ALIGN(size)/PAGE_SIZE;
+> 
+> Wouldn't it better to call this "unused" rather than "used" since it 
+> represents a cursor over pages that we want to free?
+
+Yeah, agreed.  I think I screwed this up once when coding this because I
+misread it.  I'll change it.
+
+-- Dave
+
