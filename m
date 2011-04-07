@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab1DGRnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 13:43:04 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38048 "EHLO mx3.mail.elte.hu"
+	id S1756108Ab1DGRnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:43:32 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:33546 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab1DGRnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 13:43:02 -0400
-Date: Thu, 7 Apr 2011 19:42:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] timer fixes
-Message-ID: <20110407174249.GA26266@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753765Ab1DGRnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 13:43:31 -0400
+Subject: [RFC][PATCH] virtio balloon: kill tell-host-first logic
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Thu, 07 Apr 2011 10:43:25 -0700
+Message-Id: <20110407174325.ED21C82B@kernel>
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the latest timers-fixes-for-linus git tree from:
+The virtio balloon driver has a VIRTIO_BALLOON_F_MUST_TELL_HOST
+feature bit.  Whenever the bit is set, we must always tell the
+host before we free pages back to the allocator.  Without this
+we might free a page (and have another user touch it) while the
+hypervisor is unprepared for it.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
+But, if the bit is _not_ set, we are under no obligation to
+reverse the order.  Furthermore, all modern qemus set this bit.
+So, the "tell second" code is completely unused and untestable.
+Quoting Anthony: "untested code is broken code".
 
- Thanks,
-
-	Ingo
-
------------------->
-Feng Tang (2):
-      rtc, x86/mrst/vrtc: Fix boot crash in rtc_read_alarm()
-      x86/mrst/vrtc: Fix boot crash in mrst_rtc_init()
+This _also_ means that we don't have to preserve a pfn list
+after the pages are freed, which should let us get rid of some
+temporary storage (vb->pfns) eventually.
 
 
- arch/x86/platform/mrst/vrtc.c |    4 +++-
- drivers/rtc/rtc-mrst.c        |    7 ++++---
- 2 files changed, 7 insertions(+), 4 deletions(-)
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+---
 
-diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
-index 04cf645..73d70d6 100644
---- a/arch/x86/platform/mrst/vrtc.c
-+++ b/arch/x86/platform/mrst/vrtc.c
-@@ -100,9 +100,11 @@ int vrtc_set_mmss(unsigned long nowtime)
+ linux-2.6.git-dave/drivers/virtio/virtio_balloon.c |   21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
+
+diff -puN drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic drivers/virtio/virtio_balloon.c
+--- linux-2.6.git/drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic	2011-04-07 10:23:12.016343374 -0700
++++ linux-2.6.git-dave/drivers/virtio/virtio_balloon.c	2011-04-07 10:23:12.024343370 -0700
+@@ -40,9 +40,6 @@ struct virtio_balloon
+ 	/* Waiting for host to ack the pages we released. */
+ 	struct completion acked;
  
- void __init mrst_rtc_init(void)
- {
--	unsigned long vrtc_paddr = sfi_mrtc_array[0].phys_addr;
-+	unsigned long vrtc_paddr;
- 
- 	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
-+
-+	vrtc_paddr = sfi_mrtc_array[0].phys_addr;
- 	if (!sfi_mrtc_num || !vrtc_paddr)
- 		return;
- 
-diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-index 332a2c4..b2f0968 100644
---- a/drivers/rtc/rtc-mrst.c
-+++ b/drivers/rtc/rtc-mrst.c
-@@ -342,6 +342,8 @@ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
- 
- 	mrst_rtc.irq = rtc_irq;
- 	mrst_rtc.iomem = iomem;
-+	mrst_rtc.dev = dev;
-+	dev_set_drvdata(dev, &mrst_rtc);
- 
- 	mrst_rtc.rtc = rtc_device_register(driver_name, dev,
- 				&mrst_rtc_ops, THIS_MODULE);
-@@ -350,8 +352,6 @@ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
- 		goto cleanup0;
+-	/* Do we have to tell Host *before* we reuse pages? */
+-	bool tell_host_first;
+-
+ 	/* The pages we've told the Host we're not using. */
+ 	unsigned int num_pages;
+ 	struct list_head pages;
+@@ -151,13 +148,14 @@ static void leak_balloon(struct virtio_b
+ 		vb->num_pages--;
  	}
  
--	mrst_rtc.dev = dev;
--	dev_set_drvdata(dev, &mrst_rtc);
- 	rename_region(iomem, dev_name(&mrst_rtc.rtc->dev));
+-	if (vb->tell_host_first) {
+-		tell_host(vb, vb->deflate_vq);
+-		release_pages_by_pfn(vb->pfns, vb->num_pfns);
+-	} else {
+-		release_pages_by_pfn(vb->pfns, vb->num_pfns);
+-		tell_host(vb, vb->deflate_vq);
+-	}
++
++	/*
++	 * Note that if
++	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
++	 * is true, we *have* to do it in this order
++	 */
++	tell_host(vb, vb->deflate_vq);
++	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+ }
  
- 	spin_lock_irq(&rtc_lock);
-@@ -376,9 +376,10 @@ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
+ static inline void update_stat(struct virtio_balloon *vb, int idx,
+@@ -325,9 +323,6 @@ static int virtballoon_probe(struct virt
+ 		goto out_del_vqs;
+ 	}
+ 
+-	vb->tell_host_first
+-		= virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+-
  	return 0;
  
- cleanup1:
--	mrst_rtc.dev = NULL;
- 	rtc_device_unregister(mrst_rtc.rtc);
- cleanup0:
-+	dev_set_drvdata(dev, NULL);
-+	mrst_rtc.dev = NULL;
- 	release_region(iomem->start, iomem->end + 1 - iomem->start);
- 	dev_err(dev, "rtc-mrst: unable to initialise\n");
- 	return retval;
+ out_del_vqs:
+_
