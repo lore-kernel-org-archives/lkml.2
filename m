@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab1DGLp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 07:45:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5781 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038Ab1DGLpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 07:45:24 -0400
-Message-ID: <4D9DA3CD.8060602@redhat.com>
-Date: Thu, 07 Apr 2011 14:45:17 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1755797Ab1DGLs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 07:48:27 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14327 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755756Ab1DGLs0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 07:48:26 -0400
+From: <oskar.andero@sonyericsson.com>
+To: <u.kleine-koenig@pengutronix.de>, <pebolle@tiscali.nl>
+CC: <nicolas.pitre@linaro.org>, <linux@arm.linux.org.uk>,
+        <catalin.marinas@arm.com>, <will.deacon@arm.com>,
+        <linux-kernel@vger.kernel.org>, <eric.y.miao@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Victor Boivie <victor.boivie@sonyericsson.com>,
+        Oskar Andero <oskar.andero@sonyericsson.com>
+Subject: [PATCH] ARM: Allow for kernel command line concatenation
+Date: Thu, 7 Apr 2011 13:47:36 +0200
+Message-ID: <1302176856-16265-1-git-send-email-oskar.andero@sonyericsson.com>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] KVM updates for 2.6.39-rc2
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the repo/branch at:
+From: Victor Boivie <victor.boivie@sonyericsson.com>
 
-   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.39
+This patch allows the provided CONFIG_CMDLINE to be concatenated
+with the one provided by the boot loader. This is useful to
+merge the static values defined in CONFIG_CMDLINE with the
+boot loader's (possibly) more dynamic values, such as startup
+reasons and more.
 
-to receive a fix for virtualized cpuid and a host irqfd oops, as well as 
-a patch that enables asynchronous page faults, which was merged in 
-2.6.38 but not enabled.
+Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
+Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
+---
+ arch/arm/Kconfig        |   21 ++++++++++++++++++---
+ arch/arm/kernel/setup.c |   13 +++++++++----
+ 2 files changed, 27 insertions(+), 7 deletions(-)
 
-Andre Przywara (2):
-       KVM: fix XSAVE bit scanning
-       KVM: move and fix substitue search for missing CPUID entries
-
-Gleb Natapov (1):
-       KVM: Enable async page fault processing
-
-Michael S. Tsirkin (1):
-       KVM: fix crash on irqfd deassign
-
-  arch/x86/kvm/x86.c  |   37 ++++++++++++++++++++++++++++---------
-  virt/kvm/eventfd.c  |    2 +-
-  virt/kvm/kvm_main.c |   23 +++++++++++++++++++++--
-  3 files changed, 50 insertions(+), 12 deletions(-)
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 5b9f78b..704b73c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1743,16 +1743,31 @@ config CMDLINE
+ 	  time by entering them here. As a minimum, you should specify the
+ 	  memory size and the root device (e.g., mem=64M root=/dev/nfs).
+ 
++choice
++	prompt "Kernel command line type" if CMDLINE != ""
++	default CMDLINE_FROM_BOOTLOADER
++
++config CMDLINE_FROM_BOOTLOADER
++	bool "Use bootloader kernel arguments if available"
++	help
++	  Uses the command-line options passed by the boot loader. If
++	  the boot loader doesn't provide any, the default kernel command
++	  string provided in CMDLINE will be used.
++
++config CMDLINE_EXTEND
++	bool "Extend bootloader kernel arguments"
++	help
++	  The default kernel command string will be concatenated with the
++	  arguments provided by the boot loader.
++
+ config CMDLINE_FORCE
+ 	bool "Always use the default kernel command string"
+-	depends on CMDLINE != ""
+ 	help
+ 	  Always use the default kernel command string, even if the boot
+ 	  loader passes other arguments to the kernel.
+ 	  This is useful if you cannot or don't want to change the
+ 	  command-line options your boot loader passes to the kernel.
+-
+-	  If unsure, say N.
++endchoice
+ 
+ config XIP_KERNEL
+ 	bool "Kernel Execute-In-Place from ROM"
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 006c1e8..6dce209 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -672,11 +672,16 @@ __tagtable(ATAG_REVISION, parse_tag_revision);
+ 
+ static int __init parse_tag_cmdline(const struct tag *tag)
+ {
+-#ifndef CONFIG_CMDLINE_FORCE
+-	strlcpy(default_command_line, tag->u.cmdline.cmdline, COMMAND_LINE_SIZE);
+-#else
++#if defined(CONFIG_CMDLINE_EXTEND)
++	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
++	strlcat(default_command_line, tag->u.cmdline.cmdline,
++		COMMAND_LINE_SIZE);
++#elif defined(CONFIG_CMDLINE_FORCE)
+ 	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
+-#endif /* CONFIG_CMDLINE_FORCE */
++#else
++	strlcpy(default_command_line, tag->u.cmdline.cmdline,
++		COMMAND_LINE_SIZE);
++#endif
+ 	return 0;
+ }
+ 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.4.2
 
