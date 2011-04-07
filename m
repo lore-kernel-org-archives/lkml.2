@@ -1,153 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab1DGAR4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 20:17:56 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:46795
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755240Ab1DGARz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 20:17:55 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 21/22] Staging: hv: Introduce a function to map channel properties onto block device info
-Date: Wed,  6 Apr 2011 16:05:21 -0700
-Message-Id: <1302131122-15530-21-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1302131122-15530-1-git-send-email-kys@microsoft.com>
-References: <1302131006-15411-1-git-send-email-kys@microsoft.com>
- <1302131122-15530-1-git-send-email-kys@microsoft.com>
+	id S1756736Ab1DGATM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 20:19:12 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19107 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755240Ab1DGATK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 20:19:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 06 Apr 2011 17:19:06 -0700
+Date: Wed, 6 Apr 2011 17:19:04 -0700
+From: Aaron Plattner <aplattner@nvidia.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Anssi Hannula <anssi.hannula@iki.fi>,
+        Wu Fengguang <fengguang.wu@intel.com>
+CC: Stephen Warren <swarren@nvidia.com>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ALSA: hda - HDMI: Fix MCP7x audio infoframe checksums
+Message-ID: <20110407001904.GA4922@soprano.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for removing the IDE details from the block driver, implement
-a function that maps channel properties to block device information.
+The MCP7x hardware computes the audio infoframe channel count
+automatically, but requires the audio driver to set the audio
+infoframe checksum manually via the Nv_VERB_SET_Info_Frame_Checksum
+control verb.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+When audio starts playing, nvhdmi_8ch_7x_pcm_prepare sets the checksum
+to (0x71 - chan - chanmask).  For example, for 2ch audio, chan == 1
+and chanmask == 0 so the checksum is set to 0x70.  When audio playback
+finishes and the device is closed, nvhdmi_8ch_7x_pcm_close resets the
+channel formats, causing the channel count to revert to 8ch.  Since
+the checksum is not reset, the hardware starts generating audio
+infoframes with invalid checksums.  This causes some displays to blank
+the video.
+
+Fix this by updating the checksum and channel mask when the device is
+closed and also when it is first initialized.  In addition, make sure
+that the channel mask is appropriate for an 8ch infoframe by setting
+it to 0x13 (FL FR LFE FC RL RR RLC RRC).
+
+Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/staging/hv/storvsc.c     |   68 ++++++++++++++++++++++++++++++++++++++
- drivers/staging/hv/storvsc_api.h |   10 +++++
- 2 files changed, 78 insertions(+), 0 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   70 +++++++++++++++++++++++++++----------------
+ 1 files changed, 44 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index d7ce393..e2b3410 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -17,6 +17,8 @@
-  * Authors:
-  *   Haiyang Zhang <haiyangz@microsoft.com>
-  *   Hank Janssen  <hjanssen@microsoft.com>
-+ *
-+ * 4/3/2011: K. Y. Srinivasan - Significant restructuring and cleanup.
-  */
- #include <linux/kernel.h>
- #include <linux/sched.h>
-@@ -593,6 +595,72 @@ int stor_vsc_on_io_request(struct hv_device *device,
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 251773e..715615a 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1280,6 +1280,39 @@ static int simple_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
+ 					     stream_tag, format, substream);
  }
  
- /*
-+ * The channel properties uniquely specify how the device is to be
-+ * presented to the guest. Map this information for use by the block
-+ * driver. For Linux guests on Hyper-V, we emulate a scsi HBA in the guest
-+ * (storvsc_drv) and so scsi devices in the guest  are handled by
-+ * native upper level Linux drivers. Consequently, Hyper-V
-+ * block driver, while being a generic block driver, presently does not
-+ * deal with anything other than devices that would need to be presented
-+ * to the guest as an IDE disk.
-+ *
-+ * This function maps the channel properties as embedded in the input
-+ * parameter device_info onto information necessary to register the
-+ * corresponding block device.
-+ *
-+ * Currently, there is no way to stop the emulation of the block device
-+ * on the host side. And so, to prevent the native IDE drivers in Linux
-+ * from taking over these devices (to be managedby Hyper-V block
-+ * driver), we will take over if need be the major of the IDE controllers.
-+ *
-+ */
-+
-+int stor_vsc_get_major_info(struct storvsc_device_info *device_info,
-+			    struct storvsc_major_info *major_info)
++static void nvhdmi_8ch_7x_set_info_frame_parameters(struct hda_codec *codec,
++						    int channels)
 +{
-+	static bool ide0_registered;
-+	static bool ide1_registered;
++	unsigned int chanmask;
++	int chan = channels ? (channels - 1) : 1;
 +
-+	/*
-+	 * For now we only support IDE disks.
-+	 */
-+	major_info->devname = "ide";
-+	major_info->diskname = "hd";
-+
-+	if (device_info->path_id) {
-+		major_info->major = 22;
-+		if (!ide1_registered)
-+			major_info->do_register = true;
-+		else {
-+			major_info->do_register = false;
-+			ide1_registered = true;
-+		}
-+		if (device_info->target_id)
-+			major_info->index = 3;
-+		 else
-+			major_info->index = 2;
-+
-+		return 0;
-+	} else {
-+		major_info->major = 3;
-+		if (!ide0_registered)
-+			major_info->do_register = true;
-+		else {
-+			major_info->do_register = false;
-+			ide0_registered = true;
-+		}
-+		if (device_info->target_id)
-+			major_info->index = 1;
-+		else
-+			major_info->index = 0;
-+
-+		return 0;
++	switch (channels) {
++	default:
++	case 0:
++	case 2:
++		chanmask = 0x00;
++		break;
++	case 4:
++		chanmask = 0x08;
++		break;
++	case 6:
++		chanmask = 0x0b;
++		break;
++	case 8:
++		chanmask = 0x13;
++		break;
 +	}
 +
-+	return -ENODEV;
++	/* Set the audio infoframe channel allocation and checksum fields.  The
++	 * channel count is computed implicitly by the hardware. */
++	snd_hda_codec_write(codec, 0x1, 0,
++			Nv_VERB_SET_Channel_Allocation, chanmask);
++
++	snd_hda_codec_write(codec, 0x1, 0,
++			Nv_VERB_SET_Info_Frame_Checksum,
++			(0x71 - chan - chanmask));
 +}
 +
-+/*
-  * stor_vsc_on_cleanup - Perform any cleanup when the driver is removed
-  */
- void stor_vsc_on_cleanup(struct hv_driver *driver)
-diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index d7db949..c98139c 100644
---- a/drivers/staging/hv/storvsc_api.h
-+++ b/drivers/staging/hv/storvsc_api.h
-@@ -92,6 +92,14 @@ struct storvsc_device_info {
- 	unsigned char target_id;
- };
+ static int nvhdmi_8ch_7x_pcm_close(struct hda_pcm_stream *hinfo,
+ 				   struct hda_codec *codec,
+ 				   struct snd_pcm_substream *substream)
+@@ -1298,6 +1331,10 @@ static int nvhdmi_8ch_7x_pcm_close(struct hda_pcm_stream *hinfo,
+ 				AC_VERB_SET_STREAM_FORMAT, 0);
+ 	}
  
-+struct storvsc_major_info {
-+	int major;
-+	int index;
-+	bool do_register;
-+	char *devname;
-+	char *diskname;
-+};
++	/* The audio hardware sends a channel count of 0x7 (8ch) when all the
++	 * streams are disabled. */
++	nvhdmi_8ch_7x_set_info_frame_parameters(codec, 8);
 +
- /* A storvsc device is a device object that contains a vmbus channel */
- struct storvsc_device {
- 	struct hv_device *device;
-@@ -155,5 +163,7 @@ int stor_vsc_on_io_request(struct hv_device *device,
- 				struct hv_storvsc_request *request);
- void stor_vsc_on_cleanup(struct hv_driver *driver);
+ 	return snd_hda_multi_out_dig_close(codec, &spec->multiout);
+ }
  
-+int stor_vsc_get_major_info(struct storvsc_device_info *device_info,
-+				struct storvsc_major_info *major_info);
+@@ -1308,37 +1345,16 @@ static int nvhdmi_8ch_7x_pcm_prepare(struct hda_pcm_stream *hinfo,
+ 				     struct snd_pcm_substream *substream)
+ {
+ 	int chs;
+-	unsigned int dataDCC1, dataDCC2, chan, chanmask, channel_id;
++	unsigned int dataDCC1, dataDCC2, channel_id;
+ 	int i;
  
- #endif /* _STORVSC_API_H_ */
+ 	mutex_lock(&codec->spdif_mutex);
+ 
+ 	chs = substream->runtime->channels;
+-	chan = chs ? (chs - 1) : 1;
+ 
+-	switch (chs) {
+-	default:
+-	case 0:
+-	case 2:
+-		chanmask = 0x00;
+-		break;
+-	case 4:
+-		chanmask = 0x08;
+-		break;
+-	case 6:
+-		chanmask = 0x0b;
+-		break;
+-	case 8:
+-		chanmask = 0x13;
+-		break;
+-	}
+ 	dataDCC1 = AC_DIG1_ENABLE | AC_DIG1_COPYRIGHT;
+ 	dataDCC2 = 0x2;
+ 
+-	/* set the Audio InforFrame Channel Allocation */
+-	snd_hda_codec_write(codec, 0x1, 0,
+-			Nv_VERB_SET_Channel_Allocation, chanmask);
+-
+ 	/* turn off SPDIF once; otherwise the IEC958 bits won't be updated */
+ 	if (codec->spdif_status_reset && (codec->spdif_ctls & AC_DIG1_ENABLE))
+ 		snd_hda_codec_write(codec,
+@@ -1413,10 +1429,7 @@ static int nvhdmi_8ch_7x_pcm_prepare(struct hda_pcm_stream *hinfo,
+ 		}
+ 	}
+ 
+-	/* set the Audio Info Frame Checksum */
+-	snd_hda_codec_write(codec, 0x1, 0,
+-			Nv_VERB_SET_Info_Frame_Checksum,
+-			(0x71 - chan - chanmask));
++	nvhdmi_8ch_7x_set_info_frame_parameters(codec, chs);
+ 
+ 	mutex_unlock(&codec->spdif_mutex);
+ 	return 0;
+@@ -1512,6 +1525,11 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
+ 	spec->multiout.max_channels = 8;
+ 	spec->pcm_playback = &nvhdmi_pcm_playback_8ch_7x;
+ 	codec->patch_ops = nvhdmi_patch_ops_8ch_7x;
++
++	/* Initialize the audio infoframe channel mask and checksum to something
++	 * valid */
++	nvhdmi_8ch_7x_set_info_frame_parameters(codec, 8);
++
+ 	return 0;
+ }
+ 
 -- 
-1.7.4.1
+1.7.1
 
