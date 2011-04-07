@@ -1,238 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab1DGJ6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 05:58:19 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.183]:1874
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752918Ab1DGJ6R convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 05:58:17 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(zzbb2cK9371O542M1432N4015Lzz1202hzz8275bh8275dhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJA10Z-02-6LV-02
-X-M-MSG: 
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1754684Ab1DGKBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 06:01:14 -0400
+Received: from gmmr5.centrum.cz ([90.183.38.152]:55886 "EHLO gmmr5.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827Ab1DGKBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 06:01:13 -0400
+To: <linux-kernel@vger.kernel.org>
+Subject: Re: Regression from 2.6.36
+Date: Thu, 07 Apr 2011 12:01:12 +0200
+From: "azurIt" <azurit@pobox.sk>
+References: <20110315132527.130FB80018F1@mail1005.cent> <20110317001519.GB18911@kroah.com>
+In-Reply-To: <20110317001519.GB18911@kroah.com>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
-Date: Thu, 7 Apr 2011 17:58:14 +0800
-Message-ID: <2DEEA3AB13739D45A22ADDB5086AEA0B013084C4@sshaexmb1.amd.com>
-In-Reply-To: <1302164789-31887-1-git-send-email-joerg.roedel@amd.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
-Thread-Index: Acv0/Yd3ACQ1K7VuSx27Ed/bPbZj8gAC2RuQ
-References: <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org> <1302164789-31887-1-git-send-email-joerg.roedel@amd.com>
-From: "Xu, Andiry" <Andiry.Xu@amd.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Roedel, Joerg" <Joerg.Roedel@amd.com>, <stable@kernel.org>,
-        "He, Alex" <Alex.He@amd.com>
-X-OriginalArrivalTime: 07 Apr 2011 09:58:11.0323 (UTC) FILETIME=[4DC204B0:01CBF50A]
-X-OriginatorOrg: amd.com
+Message-Id: <20110407120112.E08DCA03@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joerg.roedel@amd.com]
-> Sent: Thursday, April 07, 2011 4:26 PM
-> To: Greg Kroah-Hartman; Sarah Sharp; Xu, Andiry
-> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Roedel,
-Joerg;
-> stable@kernel.org
-> Subject: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
-> 
-> Booting 2.6.38 on my test machine produces a lockdep warning
-> from the usb_amd_find_chipset_info() function:
-> 
->  WARNING: at /data/lemmy/linux.trees.git/kernel/lockdep.c:2465
-> lockdep_trace_alloc+0x95/0xc2()
->  Hardware name: Snook
->  Modules linked in:
->  Pid: 959, comm: work_for_cpu Not tainted 2.6.39-rc2+ #22
->  Call Trace:
->   [<ffffffff8103c0d4>] warn_slowpath_common+0x80/0x98
->   [<ffffffff812387e6>] ? T.492+0x24/0x26
->   [<ffffffff8103c101>] warn_slowpath_null+0x15/0x17
->   [<ffffffff81068667>] lockdep_trace_alloc+0x95/0xc2
->   [<ffffffff810ed9ac>] slab_pre_alloc_hook+0x18/0x3b
->   [<ffffffff810ef227>] kmem_cache_alloc_trace+0x25/0xba
->   [<ffffffff812387e6>] T.492+0x24/0x26
->   [<ffffffff81238816>] pci_get_subsys+0x2e/0x73
->  sr0: scsi3-mmc drive: 48x/48x writer dvd-ram cd/rw xa/form2 cdda tray
->   [<ffffffff8123886c>] pci_get_device+0x11/0x13
->   [<ffffffff814082a9>] usb_amd_find_chipset_info+0x3f/0x18a
-> ...
-> 
-> It turns out that this function calls pci_get_device under a spin_lock
-> with irqs disabled, but the pci_get_device function is only allowed in
-> preemptible context.
-> 
-> This patch fixes this by using temporary variables in the quirk
-> algorithm and commiting them later to the struct under the lock. This
-> moves all pci_get_device() invocations out of the spin_lock and fixes
-> the lockdep warning.
-> 
-> Cc: stable@kernel.org
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  drivers/usb/host/pci-quirks.c |   86
-+++++++++++++++++++++++++-----------
-> -----
->  1 files changed, 52 insertions(+), 34 deletions(-)
-> 
-> diff --git a/drivers/usb/host/pci-quirks.c
-b/drivers/usb/host/pci-quirks.c
-> index 1d586d4..b5802f6 100644
-> --- a/drivers/usb/host/pci-quirks.c
-> +++ b/drivers/usb/host/pci-quirks.c
-> @@ -84,65 +84,83 @@ int usb_amd_find_chipset_info(void)
->  {
->  	u8 rev = 0;
->  	unsigned long flags;
-> +	struct amd_chipset_info info;
-> +	int ret;
-> 
->  	spin_lock_irqsave(&amd_lock, flags);
-> 
-> -	amd_chipset.probe_count++;
->  	/* probe only once */
-> -	if (amd_chipset.probe_count > 1) {
-> +	if (amd_chipset.probe_count > 0) {
->  		spin_unlock_irqrestore(&amd_lock, flags);
->  		return amd_chipset.probe_result;
->  	}
-> +	info = amd_chipset;
-> +	spin_unlock_irqrestore(&amd_lock, flags);
-> 
-> -	amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI,
-0x4385,
-> NULL);
-> -	if (amd_chipset.smbus_dev) {
-> -		rev = amd_chipset.smbus_dev->revision;
-> +	info.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385,
-NULL);
-> +	if (info.smbus_dev) {
-> +		rev = info.smbus_dev->revision;
->  		if (rev >= 0x40)
-> -			amd_chipset.sb_type = 1;
-> +			info.sb_type = 1;
->  		else if (rev >= 0x30 && rev <= 0x3b)
-> -			amd_chipset.sb_type = 3;
-> +			info.sb_type = 3;
->  	} else {
-> -		amd_chipset.smbus_dev =
-pci_get_device(PCI_VENDOR_ID_AMD,
-> -							0x780b, NULL);
-> -		if (!amd_chipset.smbus_dev) {
-> -			spin_unlock_irqrestore(&amd_lock, flags);
-> -			return 0;
-> +		info.smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
-> +						0x780b, NULL);
-> +		if (!info.smbus_dev) {
-> +			ret = 0;
-> +			goto commit;
->  		}
-> -		rev = amd_chipset.smbus_dev->revision;
-> +
-> +		rev = info.smbus_dev->revision;
->  		if (rev >= 0x11 && rev <= 0x18)
-> -			amd_chipset.sb_type = 2;
-> +			info.sb_type = 2;
->  	}
-> 
-> -	if (amd_chipset.sb_type == 0) {
-> -		if (amd_chipset.smbus_dev) {
-> -			pci_dev_put(amd_chipset.smbus_dev);
-> -			amd_chipset.smbus_dev = NULL;
-> +	if (info.sb_type == 0) {
-> +		if (info.smbus_dev) {
-> +			pci_dev_put(info.smbus_dev);
-> +			info.smbus_dev = NULL;
->  		}
-> -		spin_unlock_irqrestore(&amd_lock, flags);
-> -		return 0;
-> +		ret = 0;
-> +		goto commit;
->  	}
-> 
-> -	amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601,
-NULL);
-> -	if (amd_chipset.nb_dev) {
-> -		amd_chipset.nb_type = 1;
-> +	info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
-> +	if (info.nb_dev) {
-> +		info.nb_type = 1;
->  	} else {
-> -		amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
-> -							0x1510, NULL);
-> -		if (amd_chipset.nb_dev) {
-> -			amd_chipset.nb_type = 2;
-> -		} else  {
-> -			amd_chipset.nb_dev =
-pci_get_device(PCI_VENDOR_ID_AMD,
-> -								0x9600,
-NULL);
-> -			if (amd_chipset.nb_dev)
-> -				amd_chipset.nb_type = 3;
-> +		info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510,
-NULL);
-> +		if (info.nb_dev) {
-> +			info.nb_type = 2;
-> +		} else {
-> +			info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
-> +						     0x9600, NULL);
-> +			if (info.nb_dev)
-> +				info.nb_type = 3;
->  		}
->  	}
-> 
-> -	amd_chipset.probe_result = 1;
-> +	ret = info.probe_result = 1;
->  	printk(KERN_DEBUG "QUIRK: Enable AMD PLL fix\n");
-> 
-> +commit:
-> +
-> +	spin_lock_irqsave(&amd_lock, flags);
-> +	if (amd_chipset.probe_count > 0) {
-> +		/* race - someone else was faster - drop devices */
-> +		if (info.nb_dev)
-> +			pci_dev_put(info.nb_dev);
-> +		if (info.smbus_dev)
-> +			pci_dev_put(info.smbus_dev);
 
-You need to increase info.probe_count here and set
-amd_chipset.probe_count with it, because it's decreased during every
-host controller stop routine.
+I have finally completed bisection, here are the results:
 
 
-> +	} else {
-> +		/* no race - commit the result */
-> +		info.probe_count++;
-> +		amd_chipset = info;
-> +	}
->  	spin_unlock_irqrestore(&amd_lock, flags);
-> -	return amd_chipset.probe_result;
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(usb_amd_find_chipset_info);
-> 
-> --
-> 1.7.1
 
-The original design target is to probe the chipset only once, so other
-host controllers will not probe the chipset again. This patch allows
-multiple threads to probe the chipset at the same time, and only one
-thread is doing the valid work. It may add unnecessary cost.
+a892e2d7dcdfa6c76e60c50a8c7385c65587a2a6 is first bad commit
+commit a892e2d7dcdfa6c76e60c50a8c7385c65587a2a6
+Author: Changli Gao <xiaosuo@gmail.com>
+Date:   Tue Aug 10 18:01:35 2010 -0700
 
-Thanks,
-Andiry
+    vfs: use kmalloc() to allocate fdmem if possible
+   
+    Use kmalloc() to allocate fdmem if possible.
+   
+    vmalloc() is used as a fallback solution for fdmem allocation.  A new
+    helper function __free_fdtable() is introduced to reduce the lines of
+    code.
+   
+    A potential bug, vfree() a memory allocated by kmalloc(), is fixed.
+   
+    [akpm@linux-foundation.org: use __GFP_NOWARN, uninline alloc_fdmem() and free_fdmem()]
+    Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+    Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+    Cc: Jiri Slaby <jslaby@suse.cz>
+    Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+    Cc: Alexey Dobriyan <adobriyan@gmail.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Avi Kivity <avi@redhat.com>
+    Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
+:040000 040000 a7b3997bc754f573b4a309cda1a0774ea95c235e 4241a4f2115c60e5c1dc1879c85c9911fa077807 M      fs
+
+
+
+
+
+ 
+ ______________________________________________________________
+ > Od: "Greg KH" <greg@kroah.com>
+ > Komu: azurIt <azurit@pobox.sk>
+ > Dátum: 17.03.2011 01:15
+ > Predmet: Re: Regression from 2.6.36
+ >
+ > CC: linux-kernel@vger.kernel.org On Tue, Mar 15, 2011 at 02:25:27PM +0100, azurIt wrote: 
+ >  
+ > Hi, 
+ >  
+ > we are successfully running several very busy web servers on 2.6.32.* and 
+ > few days ago I decided to upgrade to 2.6.37 (mainly because of blkio cgroup). 
+ > I installed 2.6.37.2 on one of the servers and very strange things started to 
+ > happen with Apache web server. 
+ >  
+ > We are using Apache with MPM-ITK ( http://mpm-itk.sesse.net/ ) so it is doing 
+ > lots of 'fork' and lots of 'setuid'. I have also noticed that problem is 
+ > happening only on very busy servers. 
+ >  
+ > Everything is ok when Apache is started but as time is passing by, its 'root' 
+ > processes (Apache processes running under root) are consuming more and more CPU. 
+ > Finally, the whole server becames very unstable and Apache must be restarted. 
+ > This is repeating until the load on web sites is much lower (usually on 22:00). 
+ > Sometimes it takes 3 hours when restart is needed, sometimes only 1 hour (again, 
+ > depends on load on web sites). Here is the graph of CPU utilization showing the 
+ > problem (red color), Apache was REstarted at 8:11 and 9:35: 
+ > http://watchdog.sk/lkml/cpu-problem.png 
+ >  
+ > Here is how it looks on htop: 
+ > http://watchdog.sk/lkml/htop.jpg 
+ >  
+ > And finally here is how it looks with older kernels (yes, when i install older 
+ > kernel, problem is gone), notice also that I/O wait is much lower and nicer 
+ > (blue color): 
+ > http://watchdog.sk/lkml/cpu-ok.png 
+ >  
+ > I was also strace-ing Apache processes which were doing problems, here it is: 
+ > http://watchdog.sk/lkml/strace.txt 
+ >  
+ > I'm not 100% sure but I think that CPU was consumed on 'futex' lines. 
+ >  
+ > I tried several kernel versions and find out that everything BEFORE 2.6.36 is 
+ > NOT affected and everything AFTER 2.6.36 (included) is affected. 
+ >  
+ > Versions which I tried and were NOT affected by this problem: 
+ > 2.6.32.* 
+ > 2.6.35.11 
+ >  
+ > Versions which I tried and were affected by this problem: 
+ > 2.6.36 
+ > 2.6.36.4 
+ > 2.6.37.2 
+ > 2.6.37.3 
+ > 2.6.38-rc8 (final version was not released yet) 
+ >  
+ > All tests were made on vanilla kernels on Debian Lenny with this config: 
+ > http://watchdog.sk/lkml/config 
+ >  
+ > Do you need any other information from me ? I'm able to try other versions or 
+ > patches but, please, take into account that I have to do this on _production_ 
+ > server (I failed to reproduce it in testing environment). Also, I'm able to try 
+ > only one kernel per day. 
+ 
+ Ick, one kernel per day might make this a bit difficult, but if there 
+ was any way you could use 'git bisect' to try to narrow this down to the 
+ patch that caused this problem, it would be great. 
+ 
+ You can mark 2.6.35 as working and 2.6.36 as bad and git will go from 
+ there and try to offer you different chances to find the problem. 
+ 
+ thanks, 
+ 
+ greg k-h
