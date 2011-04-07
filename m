@@ -1,85 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab1DGMCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 08:02:47 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:45473 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755832Ab1DGMCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 08:02:46 -0400
-Date: Thu, 7 Apr 2011 14:59:48 +0300 (EEST)
-From: Ilkka Koskinen <ikoskine@nokia.com>
-X-X-Sender: ikoskine@tumpelo.nmp.nokia.com
-To: ext Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-cc: Ilkka Koskinen <ilkka.koskinen@nokia.com>, eric.piel@tremplin-utc.net,
-        mjg@redhat.com, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, samu.p.onkalo@nokia.com
-Subject: Re: [RFC PATCHv2 4/5] hwmon: lis3: Remove the referencies to the
- global variable in core driver
-In-Reply-To: <20110405155007.GB2454@nautilus.holoscopio.com>
-Message-ID: <alpine.DEB.2.00.1104071448290.9511@tumpelo.nmp.nokia.com>
-References: <1302014714-7334-1-git-send-email-ilkka.koskinen@nokia.com> <1302014714-7334-5-git-send-email-ilkka.koskinen@nokia.com> <20110405155007.GB2454@nautilus.holoscopio.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755949Ab1DGMGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 08:06:21 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52977 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755775Ab1DGMGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 08:06:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kcJV1fQt6T9aaId8K/2f1zgrOtXQ+Q82eTZUUKiFktRscTlk72QFmF47bNje1sOw3E
+         RQ2/j5n51wtMaa7Wn35Muh53dVz6XjrBDB+VCehn9CNYn0AYWK6duuqIQpphkFu5jg4q
+         JjUh9Jg1sxcJ9plPdQqbBj8SzsAe3X83JBSjE=
+Date: Thu, 7 Apr 2011 14:06:11 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
+        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
+Message-ID: <20110407120608.GB1798@nowhere>
+References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
+ <20110407013349.GH1867@nowhere>
+ <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 06, 2011 at 08:17:33PM -0700, Vaibhav Nagarnaik wrote:
+> On Wed, Apr 6, 2011 at 6:33 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > On Wed, Apr 06, 2011 at 11:50:21AM -0700, Vaibhav Nagarnaik wrote:
+> >> All
+> >> The cgroup functionality is being used widely in different scenarios. It also
+> >> is being integrated with other parts of kernel to take advantage of its
+> >> features. One of the areas that is not yet aware of cgroup functionality is
+> >> the ftrace framework.
+> >>
+> >> Although ftrace provides a way to filter based on PIDs of tasks to be traced,
+> >> it is restricted to specific tracers, like function tracer. Also it becomes
+> >> difficult to keep track of all PIDs in a dynamic environment with processes
+> >> being created and destroyed in a short amount of time.
+> >>
+> >> An application that creates many processes/tasks is convenient to track and
+> >> control with cgroups, but it is difficult to track these processes for the
+> >> purposes of tracing. And if child processes are moved to another cgroup, it
+> >> makes sense to trace only the original cgroup.
+> >>
+> >> This proposal is to create a file in the tracing directory called
+> >> set_trace_cgroup to which a user can write the path of an active cgroup, one
+> >> at a time. If no cgroups are specified, no filtering is done and all tasks are
+> >> traced. When a cgroup path is added in, it sets a boolean tracing_enabled for
+> >> the enabled cgroup in all the hierarchies, which enables tracing for all the
+> >> assigned tasks under the specified cgroup.
+> >>
+> >> Though creating a new file in the directory is not desirable, but this
+> >> interface seems the most appropriate change required to implement the new
+> >> feature.
+> >>
+> >> This tracing_enabled flag is also exported in the cgroupfs directory structure
+> >> which can be turned on/off for a specific hierarchy/cgroup combination. This
+> >> gives control to enable/disable tracing over a cgroup in a specific hierarchy
+> >> only.
+> >>
+> >> This gives more fine-grained control over the tasks being traced. I would like
+> >> to know your thoughts on this interface and the approach to make tracing
+> >> cgroup aware.
+> >
+> > So I have to ask, why can't you use perf events to do tracing limited on cgroups?
+> > It has this cgroup context awareness.
+> >
+> 
+> The perf event cgroup awareness comes from creating a different hierarchy for
+> perf events. When the events and the current task's cgroup match, the events
+> are logged. So the changes are pretty specific to the perf events.
+> 
+> Even in the case where changes are made to handle trace events, the interface
+> files are still needed. The interface used to specify perf events uses the
+> perf_event syscall which isn't available to specify trace events.
+> 
+> This is based on my limited understanding of the perf_events cgroup awareness
+> patch. Please correct me if I am missing anything.
 
-Hi,
 
-Thanks for the comments!
+Ah but perf events can do much more than counting and sampling
+hardware events. Trace events can be used as perf events too.
 
-On Tue, 5 Apr 2011, ext Thadeu Lima de Souza Cascardo wrote:
-> On Tue, Apr 05, 2011 at 05:45:13PM +0300, Ilkka Koskinen wrote:
->> Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
->> ---
->>  drivers/misc/lis3lv02d/lis3lv02d.c |  237 ++++++++++++++++++++----------------
->>  drivers/misc/lis3lv02d/lis3lv02d.h |    3 +
->>  2 files changed, 135 insertions(+), 105 deletions(-)
+List the events:
 
->> @@ -980,14 +1003,18 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
->>  				thread_fn,
->>  				IRQF_TRIGGER_RISING | IRQF_ONESHOT |
->>  				irq_flags,
->> -				DRIVER_NAME, &lis3_dev);
->> +				DRIVER_NAME, lis3);
->>
->>  	if (err < 0) {
->>  		pr_err("Cannot get IRQ\n");
->>  		goto out;
->>  	}
->>
->> -	if (misc_register(&lis3lv02d_misc_device))
->> +	lis3->miscdev.minor	= MISC_DYNAMIC_MINOR;
->> +	lis3->miscdev.name	= "freefall";
->> +	lis3->miscdev.fops	= &lis3lv02d_misc_fops;
->> +
->> +	if (misc_register(&lis3->miscdev))
->>  		pr_err("misc_register failed\n");
->
-> You should not use miscdevice in case there will be multiple devices.
-> First, it will fail. There cannot be more than one device with the same
-> name. Second, current dynamic minor devices is restricted to 64 devices.
-> Since this is reserved to one-shot devices, freefall was OK as a misc
-> device until you fixed it to allow multiple freefall devices.  :-)
+	perf list -e tracepoints
 
-Ah, true :)
+List of pre-defined events (to be used in -e):
 
-> So, I'd recommend switching to a new device class, and have freefall0,
-> freefall1, etc.
+  skb:kfree_skb                              [Tracepoint event]
+  skb:consume_skb                            [Tracepoint event]
+  skb:skb_copy_datagram_iovec                [Tracepoint event]
+  net:net_dev_xmit                           [Tracepoint event]
+  net:net_dev_queue                          [Tracepoint event]
+  net:netif_receive_skb                      [Tracepoint event]
+  net:netif_rx                               [Tracepoint event]
+  napi:napi_poll                             [Tracepoint event]
+  scsi:scsi_dispatch_cmd_start               [Tracepoint event]
+  scsi:scsi_dispatch_cmd_error               [Tracepoint event]
+  scsi:scsi_dispatch_cmd_done                [Tracepoint event]
+  scsi:scsi_dispatch_cmd_timeout             [Tracepoint event]
+  scsi:scsi_eh_wakeup                        [Tracepoint event]
+  drm:drm_vblank_event                       [Tracepoint event]
+  drm:drm_vblank_event_queued                [Tracepoint event]
+  drm:drm_vblank_event_delivered             [Tracepoint event]
+  block:block_rq_abort                       [Tracepoint event]
+  block:block_rq_requeue                     [Tracepoint event]
+  block:block_rq_complete                    [Tracepoint event]
+  block:block_rq_insert                      [Tracepoint event]
+  etc...
 
-I wonder if introducing a new class makes sense. I mean, I can figure out 
-use cases for several accelerometers but for several free fall sensors? :/
 
-Would it be better to add a mechanism to tell to the core module if the 
-particular device is used for free fall detection or not?
+Trace sched switch events:
 
-Cheers, Ilkka
+	perf record -e sched:sched_switch -a
+	^C
 
-> Anyway, good job on this.
->
-> Regards,
-> Cascardo.
+
+Print them:
+
+	perf script
+
+         swapper     0 [000]  1132.964598: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm
+     kworker/0:1  4358 [000]  1132.964641: sched_switch: prev_comm=kworker/0:1 prev_pid=4358 prev_prio=120 prev_state=S ==> ne
+         syslogd  2703 [000]  1132.964720: sched_switch: prev_comm=syslogd prev_pid=2703 prev_prio=120 prev_state=D ==> next_c
+         swapper     0 [000]  1132.965100: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm
+            perf  4725 [001]  1132.965178: sched_switch: prev_comm=perf prev_pid=4725 prev_prio=120 prev_state=D ==> next_comm
+         swapper     0 [001]  1132.965227: sched_switch: prev_comm=kworker/0:0 prev_pid=0 prev_prio=120 prev_state=R ==> next_
+            perf  4725 [001]  1132.965246: sched_switch: prev_comm=perf prev_pid=4725 prev_prio=120 prev_state=D ==> next_comm
+	etc...
 
