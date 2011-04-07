@@ -1,339 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab1DGQ0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:26:11 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:40306 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab1DGQ0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:26:10 -0400
-Date: Thu, 7 Apr 2011 09:26:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-Message-ID: <20110407162600.GA24227@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110405215450.GK2247@linux.vnet.ibm.com>
- <20110405230745.GA5972@linux.vnet.ibm.com>
- <1302077428.2225.1365.camel@twins>
- <20110406192119.GB2265@linux.vnet.ibm.com>
- <20110406201350.GA9378@linux.vnet.ibm.com>
- <1302123970.2207.4.camel@laptop>
- <4D9CDACB.9050705@linux.intel.com>
- <20110407003041.GD2265@linux.vnet.ibm.com>
- <4D9D507F.2040006@cn.fujitsu.com>
- <20110407154737.GF2262@linux.vnet.ibm.com>
+	id S1755848Ab1DGQ0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:26:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51679 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755413Ab1DGQ0w convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 12:26:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110407154737.GF2262@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <80b43d57d15f7b141799a7634274ee3bfe5a5855.1302137785.git.luto@mit.edu>
+References: <cover.1302137785.git.luto@mit.edu> <80b43d57d15f7b141799a7634274ee3bfe5a5855.1302137785.git.luto@mit.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 7 Apr 2011 09:18:01 -0700
+Message-ID: <BANLkTi=RkeFMpcb36RrJ=+eYm-xk4B2zYw@mail.gmail.com>
+Subject: Re: [RFT/PATCH v2 2/6] x86-64: Optimize vread_tsc's barriers
+To: Andy Lutomirski <luto@mit.edu>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 08:47:37AM -0700, Paul E. McKenney wrote:
-> On Thu, Apr 07, 2011 at 01:49:51PM +0800, Lai Jiangshan wrote:
-> > On 04/07/2011 08:30 AM, Paul E. McKenney wrote:
-> > > On Wed, Apr 06, 2011 at 02:27:39PM -0700, H. Peter Anvin wrote:
-> > >> On 04/06/2011 02:06 PM, Peter Zijlstra wrote:
-> > >>> On Wed, 2011-04-06 at 13:13 -0700, Paul E. McKenney wrote:
-> > >>>> And the following patch builds correctly for defconfig x86 builds,
-> > >>>> while allowing rcupdate.h to see the sched.h definitions as needed
-> > >>>> to inline rcu_read_lock() and rcu_read_unlock().
-> > >>>>
-> > >>> Looks like an entirely reasonable patch to me ;-)
-> > >>>
-> > >>
-> > >> Quite... a lot better than the original proposal!
-> > > 
-> > > Glad you both like it!
-> > > 
-> > > When I do an allyesconfig build, I do get errors during the "CHECK"
-> > > phase, when it is putting things into the usr/include in the build tree.
-> > > I believe that this is because I am exposing different header files to
-> > > the library-export scripts.  The following patch silences some of them,
-> > > but I am really out of my depth here.
-> > > 
-> > > Sam, Jan, Michal, help?
-> > > 
-> > > 							Thanx, Paul
-> > > 
-> > > ------------------------------------------------------------------------
-> > > 
-> > 
-> > Easy to split rcupdate.h, hard to resolve the dependence problem.
-> > 
-> > You can apply the next additional patch when you test:
-> 
-> I am sure that you are quite correct.  ;-)
-> 
-> I am moving _rcu_read_lock() and _rcu_read_unlock() into
-> include/linux/rcutree.h and include/linux/rcutiny.h, and I am sure that
-> more pain will ensue.
-> 
-> One thing I don't understand...  How does is it helping to group the
-> task_struct RCU-related fields into a structure?  Is that generating
-> better code on your platform due to smaller offsets or something?
-> 
-> Also, does your patchset address the CHECK warnings?
+On Wed, Apr 6, 2011 at 7:03 PM, Andy Lutomirski <luto@mit.edu> wrote:
+>
+> We want a stronger guarantee, though: we want the tsc to be read
+> before any memory access that occurs after the call to
+> vclock_gettime (or vgettimeofday).  We currently guarantee that with
+> a second lfence or mfence.  This sequence is not really supported by
+> the manual (AFAICT) and it's also slow.
+>
+> This patch changes the rdtsc to use implicit memory ordering instead
+> of the second fence.
 
-I take it back...  I applied the following patch on top of my earlier
-one, and a defconfig x86 build completed without error.  (Though I have
-not tested the results of the build.)
+Ok, I have to admit to a horrid fascination with this patch. The
+"saves 5ns on Sandybridge" sounds like a quite noticeable win, and I
+always hated the stupid barriers (and argued strongly for avoiding
+them when we don't care enough - which is why the rdtsc_barrier() is a
+separate thing, rather than being inside rdtsc.
 
-One possible difference -- I did this work on top of a recent Linus
-git commit (b2a8b4b81966) rather than on top of my -rcu tree.  Also,
-I have not yet tried an allyesconfig build, which will no doubt locate
-some more problems.
+And your approach to serialize things is *so* disgusting that it's funny.
 
-							Thanx, Paul
+That said, I think your commentary is wrong, and I think the
+serialization for that reason is at least slightly debatable.
 
-------------------------------------------------------------------------
+>  All x86-64 chips guarantee that no
+> memory access after a load moves before that load.
 
-rcu: inline preemptible rcu_read_lock() and rcu_read_unlock()
+This is not true.
 
-Move the definitions of __rcu_read_lock() and __rcu_read_unlock()
-from kernel/rcutree_plugin.h to include/linux/rcutree.h and from
-kernel/rcutiny_plugin.h to include/linux/rcutiny.h, allowing these
-functions to be inlined.
+The x86-64 memory ordering semantics are that YOU CANNOT TELL that a
+memory access happened before the load, but that's not the same thing
+at all as saying that you can have no memory accesses. It just means
+that the memory re-ordering logic will have to keep the cachelines
+around until loads have completed in-order, and will have to retry if
+it turns out that a cacheline was evicted in the wrong order (and thus
+the values might have been changed by another CPU or DMA in ways that
+make the out-of-order loads visible).
 
+So that's problem #1 with your explanation.
 
- include/linux/rcutiny.h |   34 ++++++++++++++++++++++++++++++++++
- include/linux/rcutree.h |   34 ++++++++++++++++++++++++++++++++++
- kernel/rcutiny_plugin.h |   38 ++------------------------------------
- kernel/rcutree_plugin.h |   38 ++------------------------------------
- 4 files changed, 72 insertions(+), 72 deletions(-)
+Now, the _reason_ I don't think this is much of a problem is that I
+seriously don't think we care. The whole "no moving memory ops around"
+thing isn't about some correctness thing, it's really about trying to
+keep the rdtsc "sufficiently bounded". And I do think that making the
+rdtsc result impact the address calculation for the last_cycle thing
+is perfectly fine in that respect.
 
-rcu: inline preemptible rcu_read_lock() and rcu_read_unlock()
+So I don't think that the "all x86-64 chips guarantee.." argument is
+correct at all, but I do think that in practice it's a good approach.
+I fundamentally think that "barriers" are crap, and have always
+thought that the x86 model of implicit memory barriers and "smart
+re-ordering" is much much superior to the crazy model of memory
+barriers. I think the same is true of lfence and rdtsc.
 
-Move the definitions of __rcu_read_lock() and __rcu_read_unlock()
-from kernel/rcutree_plugin.h to include/linux/rcutree.h and from
-kernel/rcutiny_plugin.h to include/linux/rcutiny.h, allowing these
-functions to be inlined.
+Which may be one reason why I like your patch - I think getting rid of
+an lfence is simply a fundamental improvement.
 
-Not-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> The trick is that the answer should not actually change as a result
+> of the sneaky memory access.  I accomplish this by shifting rdx left
+> by 32 bits, twice, to generate the number zero.  (I can't imagine
+> that any CPU can break that dependency.)  Then I use "zero" as an
+> offset to a memory access that we had to do anyway.
 
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index 30ebd7c..227a3dd 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -47,6 +47,40 @@ static inline void rcu_barrier(void)
- 
- void rcu_barrier(void);
- void synchronize_rcu_expedited(void);
-+void rcu_read_unlock_special(struct task_struct *t);
-+
-+/*
-+ * Tiny-preemptible RCU implementation for rcu_read_lock().
-+ * Just increment ->rcu_read_lock_nesting, shared state will be updated
-+ * if we block.
-+ */
-+static inline void __rcu_read_lock(void)
-+{
-+	current->rcu_read_lock_nesting++;
-+	barrier();
-+}
-+
-+/*
-+ * Tiny-preemptible RCU implementation for rcu_read_unlock().
-+ * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
-+ * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
-+ * invoke rcu_read_unlock_special() to clean up after a context switch
-+ * in an RCU read-side critical section and other special cases.
-+ */
-+static inline void __rcu_read_unlock(void)
-+{
-+	struct task_struct *t = current;
-+
-+	barrier();
-+	--t->rcu_read_lock_nesting;
-+	barrier();  /* decrement before load of ->rcu_read_unlock_special */
-+	if (t->rcu_read_lock_nesting == 0 &&
-+	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-+		rcu_read_unlock_special(t);
-+#ifdef CONFIG_PROVE_LOCKING
-+	WARN_ON_ONCE(t->rcu_read_lock_nesting < 0);
-+#endif /* #ifdef CONFIG_PROVE_LOCKING */
-+}
- 
- #endif /* #else #ifdef CONFIG_TINY_RCU */
- 
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index c317eec..00a2b88 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -40,6 +40,40 @@ extern void rcu_cpu_stall_reset(void);
- #ifdef CONFIG_TREE_PREEMPT_RCU
- 
- extern void exit_rcu(void);
-+extern void rcu_read_unlock_special(struct task_struct *t);
-+
-+/*
-+ * Tree-preemptable RCU implementation for rcu_read_lock().
-+ * Just increment ->rcu_read_lock_nesting, shared state will be updated
-+ * if we block.
-+ */
-+static inline void __rcu_read_lock(void)
-+{
-+	current->rcu_read_lock_nesting++;
-+	barrier();
-+}
-+
-+/*
-+ * Tree-preemptable RCU implementation for rcu_read_unlock().
-+ * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
-+ * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
-+ * invoke rcu_read_unlock_special() to clean up after a context switch
-+ * in an RCU read-side critical section and other special cases.
-+ */
-+static inline void __rcu_read_unlock(void)
-+{
-+	struct task_struct *t = current;
-+
-+	barrier();
-+	--t->rcu_read_lock_nesting;
-+	barrier();  /* decrement before load of ->rcu_read_unlock_special */
-+	if (t->rcu_read_lock_nesting == 0 &&
-+	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-+		rcu_read_unlock_special(t);
-+#ifdef CONFIG_PROVE_LOCKING
-+	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-+#endif /* #ifdef CONFIG_PROVE_LOCKING */
-+}
- 
- #else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
- 
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 3cb8e36..d0e1ac3 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -520,23 +520,11 @@ void rcu_preempt_note_context_switch(void)
- }
- 
- /*
-- * Tiny-preemptible RCU implementation for rcu_read_lock().
-- * Just increment ->rcu_read_lock_nesting, shared state will be updated
-- * if we block.
-- */
--void __rcu_read_lock(void)
--{
--	current->rcu_read_lock_nesting++;
--	barrier();  /* needed if we ever invoke rcu_read_lock in rcutiny.c */
--}
--EXPORT_SYMBOL_GPL(__rcu_read_lock);
--
--/*
-  * Handle special cases during rcu_read_unlock(), such as needing to
-  * notify RCU core processing or task having blocked during the RCU
-  * read-side critical section.
-  */
--static void rcu_read_unlock_special(struct task_struct *t)
-+void rcu_read_unlock_special(struct task_struct *t)
- {
- 	int empty;
- 	int empty_exp;
-@@ -616,29 +604,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
- #endif /* #ifdef CONFIG_RCU_BOOST */
- 	local_irq_restore(flags);
- }
--
--/*
-- * Tiny-preemptible RCU implementation for rcu_read_unlock().
-- * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
-- * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
-- * invoke rcu_read_unlock_special() to clean up after a context switch
-- * in an RCU read-side critical section and other special cases.
-- */
--void __rcu_read_unlock(void)
--{
--	struct task_struct *t = current;
--
--	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutiny.c */
--	--t->rcu_read_lock_nesting;
--	barrier();  /* decrement before load of ->rcu_read_unlock_special */
--	if (t->rcu_read_lock_nesting == 0 &&
--	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
--		rcu_read_unlock_special(t);
--#ifdef CONFIG_PROVE_LOCKING
--	WARN_ON_ONCE(t->rcu_read_lock_nesting < 0);
--#endif /* #ifdef CONFIG_PROVE_LOCKING */
--}
--EXPORT_SYMBOL_GPL(__rcu_read_unlock);
-+EXPORT_SYMBOL_GPL(rcu_read_unlock_special);
- 
- /*
-  * Check for a quiescent state from the current CPU.  When a task blocks,
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index a363871..4b27afd 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -196,18 +196,6 @@ static void rcu_preempt_note_context_switch(int cpu)
- }
- 
- /*
-- * Tree-preemptable RCU implementation for rcu_read_lock().
-- * Just increment ->rcu_read_lock_nesting, shared state will be updated
-- * if we block.
-- */
--void __rcu_read_lock(void)
--{
--	current->rcu_read_lock_nesting++;
--	barrier();  /* needed if we ever invoke rcu_read_lock in rcutree.c */
--}
--EXPORT_SYMBOL_GPL(__rcu_read_lock);
--
--/*
-  * Check for preempted RCU readers blocking the current grace period
-  * for the specified rcu_node structure.  If the caller needs a reliable
-  * answer, it must hold the rcu_node's ->lock.
-@@ -261,7 +249,7 @@ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp, unsigned long flags)
-  * notify RCU core processing or task having blocked during the RCU
-  * read-side critical section.
-  */
--static void rcu_read_unlock_special(struct task_struct *t)
-+void rcu_read_unlock_special(struct task_struct *t)
- {
- 	int empty;
- 	int empty_exp;
-@@ -332,29 +320,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
- 		local_irq_restore(flags);
- 	}
- }
--
--/*
-- * Tree-preemptable RCU implementation for rcu_read_unlock().
-- * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
-- * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
-- * invoke rcu_read_unlock_special() to clean up after a context switch
-- * in an RCU read-side critical section and other special cases.
-- */
--void __rcu_read_unlock(void)
--{
--	struct task_struct *t = current;
--
--	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
--	--t->rcu_read_lock_nesting;
--	barrier();  /* decrement before load of ->rcu_read_unlock_special */
--	if (t->rcu_read_lock_nesting == 0 &&
--	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
--		rcu_read_unlock_special(t);
--#ifdef CONFIG_PROVE_LOCKING
--	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
--#endif /* #ifdef CONFIG_PROVE_LOCKING */
--}
--EXPORT_SYMBOL_GPL(__rcu_read_unlock);
-+EXPORT_SYMBOL_GPL(rcu_read_unlock_special);
- 
- #ifdef CONFIG_RCU_CPU_STALL_DETECTOR
- 
+So this is my other nit-pick: I can _easily_ imagine a CPU breaking
+that dependency. In fact, I can pretty much guarantee that the CPU
+design I was myself involved with at Transmeta would have broken it if
+it had just been 64-bit (because it would first notice that eflags are
+dead, then combine the two shifts into one, and then make the
+shift-by-64 be a zero).
+
+Now, I agree that it's less likely with a traditional CPU core, but
+there are actually other ways to break the dependency too, namely by
+doing things like address or data speculation on the load, and simply
+do the load much earlier - and then just verify the address/data
+afterwards.
+
+Likely? No. But the point I'm trying to make is that there are at
+least two quite reasonable ways to avoid the dependency.
+
+Which again I actually think is probably perfectly ok. It's ok exactly because
+
+ (a) the dependency avoidance is pretty unlikely in any forseeable future
+
+ (b) we don't even _care_ too much even if it's avoided (ie the
+annoying lfence wasn't that important to begin with - the time warps
+of the clock aren't disastrous enough to be a major issue, and I bet
+this approach - even if not totally water-tight - is still limiting
+enough for scheduling that it cuts down the warps a lot)
+
+So again, I mainly object to the _description_, not the approach itself.
+
+The "lfence" was never some kind of absolute barrier. We really don't
+care about any one particular instruction, we care about the rdtsc
+just not moving around _too_ much. So I'm certainly ok with using
+other approaches to limit CPU instruction scheduling.
+
+I dunno. I would suggest:
+
+ - marking "cycle_last" as being "volatile"
+
+ - not doing the second shift by 32, but instead by 29, leaving the
+three high bits "random".
+
+ - doing "last = (&__vsyscall_gtod_data.clock.cycle_last)[edx]"
+instead, which should generate something like
+
+   movq __vsyscall_gtod_data+40(,%rdx,8),%rax
+
+which does the last three bits, and makes it slightly harder for the
+CPU to notice that there are no actual bits of real data left (again -
+"slightly harder" is not at all "impossible" - if the CPU internally
+does the address generation as a shift+add, it could notice that all
+the shifts add up to 64).
+
+But before that, I would check that the second lfence is needed AT
+ALL. I don't know whether we ever tried the "only barrier before"
+version, because quite frankly, if you call this thing in a loop, then
+a single barrier will still mean that there are barriers in between
+iterations. So...
+
+There may well be a reason why Intel says just "lfence ; rdtsc" -
+maybe the rdtsc is never really moved down anyway, and it's only the
+"move up" barrier that anybody ever really needs.
+
+Hmm?
+
+So before trying to be clever, let's try to be simple. Ok?
+
+                          Linus
