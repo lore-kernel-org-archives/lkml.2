@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab1DGF3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 01:29:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58220 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418Ab1DGF3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 01:29:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [RFC][PATCH] PM / Platform: Remove __weak definitions of runtime PM callbacks
-Date: Thu, 7 Apr 2011 07:29:45 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, grant.likely@secretlab.ca
-References: <201103270058.41632.rjw@sisk.pl> <87zko3dn4b.fsf@ti.com>
-In-Reply-To: <87zko3dn4b.fsf@ti.com>
+	id S1751848Ab1DGFff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 01:35:35 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63262 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab1DGFfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 01:35:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6308"; a="84426413"
+Message-ID: <4D9D4D23.6000805@codeaurora.org>
+Date: Wed, 06 Apr 2011 22:35:31 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Simon Glass <sjg@chromium.org>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Dave Martin <dave.martin@linaro.org>, Simon Glass <sjg@google.com>
+Subject: Re: [PATCH v3] ARM: Use generic BUG() handler
+References: <1302131890-20953-1-git-send-email-sjg@chromium.org>
+In-Reply-To: <1302131890-20953-1-git-send-email-sjg@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104070729.45484.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 07, 2011, Kevin Hilman wrote:
-> Hi Rafael, Magnus,
-> 
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > Remove the __weak definitions of platform bus type runtime PM
-> > callbacks, make platform_dev_pm_ops point to the generic routines
-> > as appropriate and allow architectures using platform_dev_pm_ops to
-> > replace the runtime PM callbacks in that structure with their own
-> > set.
-> >
-> > Convert architectures providing its own definitions of the platform
-> > runtime PM callbacks to use the new mechanism.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> I dont't think we should be adding yet another new interface for setting
-> platform-specific runtime PM ops.
-> 
-> We now have 3.  Two existing ones:
-> 
-> 1) new device power domains (presumably preferred)
-> 2) platform_bus_set_pm_ops() (disliked by many)
+On 4/6/2011 4:18 PM, Simon Glass wrote:
+> v3: Remove old BUG() implementation in favor of this one.
+> Remove the Backtrace: message (will submit this separately).
+> Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
+> thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
+> define GENERIC_BUG this might be academic.)
 
-Hmm, I wasn't aware of that one, will have a look.
+Its not entirely academic because CONFIG_BUG=n and CONFIG_SMP_ON_UP=n
+would allow us to remove the exit text. This could be huge for people
+who want to cram kernel's onto space constrained devices.
 
-> and now the new one you create here
-> 
-> 3) platform_set_runtime_pm_ops()
-> 
-> This new one is basically the same as platform_bus_set_pm_ops(), but
-> targetted only at runtime PM ops, and also has all the same problems
-> that have been discussed before.  Namely, it overrides the pm ops for
-> *every* device on the platform_bus, instead of targetting only specific
-> devices.
+> Rebase to linux-2.6.git master.
+>
+> Change-Id: I07d77c832e816f5ad2390e25f466ddf750adecf4
 
-This is not a problem for this particular use case.  We really want to
-replace the PM ops for all of the platform devices on that platform.
+Don't forget to remove these before submitting to the patch tracker (and
+sending to the list).
 
-Though I agree it probably makes more sense to use the existing
-platform_bus_set_pm_ops() for this purpose.
+> diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
+> index 4d88425..2914724 100644
+> --- a/arch/arm/include/asm/bug.h
+> +++ b/arch/arm/include/asm/bug.h
+> @@ -3,21 +3,58 @@
+>  
+>  
+>  #ifdef CONFIG_BUG
+> -#ifdef CONFIG_DEBUG_BUGVERBOSE
+> -extern void __bug(const char *file, int line) __attribute__((noreturn));
+> -
+> -/* give file/line information */
+> -#define BUG()		__bug(__FILE__, __LINE__)
 
-> With the new device power domains, we can target specific devices.
-> 
-> Wouldn't the right way to go here be to convert mach-shmobile over to
-> using device power domains?
+Does anybody reference __bug() anymore? If not you can remove that too.
 
-Not for this particular purpose.
- 
-> The patch below against v2.6.39-rc2 combined with your patch (minus the
-> mach-shmobile/* changes) should do it.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Unfortunately it would conflict with work in progress introducing _real_
-power domains on shmobile.
-
-Thanks,
-Rafael
