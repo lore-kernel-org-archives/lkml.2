@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab1DGGQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 02:16:34 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58390 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab1DGGQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 02:16:33 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC][PATCH] PM / Platform: Remove __weak definitions of runtime PM callbacks
-Date: Thu, 7 Apr 2011 08:15:41 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Kevin Hilman <khilman@ti.com>, Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org
-References: <201103270058.41632.rjw@sisk.pl> <201104070729.45484.rjw@sisk.pl> <20110407054806.GC6427@angua.secretlab.ca>
-In-Reply-To: <20110407054806.GC6427@angua.secretlab.ca>
+	id S1752019Ab1DGGfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 02:35:33 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:53229 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751010Ab1DGGfc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 02:35:32 -0400
+From: Robert ROSENGREN <robert.rosengren@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Thu, 7 Apr 2011 08:31:47 +0200
+Subject: RE: [PATCH] regulator: recursive locking detected
+Thread-Topic: [PATCH] regulator: recursive locking detected
+Thread-Index: Acvw0vXB6GxvLaQOTbqvNzO5n4etPgEGoK4B
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A0C79DEC0E1@EXDCVYMBSTM006.EQ1STM.local>
+References: <1301652257-19347-1-git-send-email-robert.rosengren@stericsson.com>,<20110402011202.GC25424@opensource.wolfsonmicro.com>
+In-Reply-To: <20110402011202.GC25424@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104070815.41579.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 07, 2011, Grant Likely wrote:
-> On Thu, Apr 07, 2011 at 07:29:45AM +0200, Rafael J. Wysocki wrote:
-> > On Thursday, April 07, 2011, Kevin Hilman wrote:
-> > > Hi Rafael, Magnus,
-> > > 
-> > > "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> > > 
-> > > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > >
-> > > > Remove the __weak definitions of platform bus type runtime PM
-> > > > callbacks, make platform_dev_pm_ops point to the generic routines
-> > > > as appropriate and allow architectures using platform_dev_pm_ops to
-> > > > replace the runtime PM callbacks in that structure with their own
-> > > > set.
-> > > >
-> > > > Convert architectures providing its own definitions of the platform
-> > > > runtime PM callbacks to use the new mechanism.
-> > > >
-> > > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > I dont't think we should be adding yet another new interface for setting
-> > > platform-specific runtime PM ops.
-> > > 
-> > > We now have 3.  Two existing ones:
-> > > 
-> > > 1) new device power domains (presumably preferred)
-> > > 2) platform_bus_set_pm_ops() (disliked by many)
-> > 
-> > Hmm, I wasn't aware of that one, will have a look.
-> > 
-> > > and now the new one you create here
-> > > 
-> > > 3) platform_set_runtime_pm_ops()
-> > > 
-> > > This new one is basically the same as platform_bus_set_pm_ops(), but
-> > > targetted only at runtime PM ops, and also has all the same problems
-> > > that have been discussed before.  Namely, it overrides the pm ops for
-> > > *every* device on the platform_bus, instead of targetting only specific
-> > > devices.
-> > 
-> > This is not a problem for this particular use case.  We really want to
-> > replace the PM ops for all of the platform devices on that platform.
-> 
-> I strongly doubt that you really want to do that.  platform_devices
-> can appear anywhere in the system, and many of them will end up being
-> entirely outside the SoC, and hence outside of any SoC specific
-> behaviour.
+On Sat, 2011-04-02 at 10:12 +0900, Mark Brown wrote:
+> On Fri, Apr 01, 2011 at 12:04:17PM +0200, Robert Rosengren wrote:
+> > "possible recursive locking detected"-warnings are issued when a
+> > regulator has specified supply regulator. Both when enabling and
+> > disabling regulators uses recursive call chains for notify the supply
+> > regulators. This is due to locking mutexes of the same lock class,
+> > i.e. the locks reside in the regulator_dev struct.
+>
+> There's actually a race here reported by David Brown in the past week
+> when working with supplies so the lock warning is probably a real issue
+> which should be fixed rather than overriding the warning.  Search the
+> list for the past week or so for the details.
 
-That is a valid observation, but I still think the way Kevin attempted to
-use the power domain callbacks wasn't the right one for addressing this
-particular issue.
+Thanks for letting me know, sorry I missed that discussion. Having
+checked that out, few comments regarding the mutex_lock_nested
+discussion.
 
-> What is the use case for overriding every platform_device's PM ops?
-
-The basic idea, which I agree with, is that we should avoid saving device
-registers when the device is not going to be powered down (i.e. we only
-want to gate its clock).  Since the saving of device registers is generally
-done by device drivers' suspend callbacks, it's better to avoid executing
-those callbacks until we know the devices in question are going to be powered
-down.  That, however, is not known to the default platform bus type
-callbacks that automatically invoke the drivers' callbacks if they exist.
-Hence, it's better to replace the default platform bus type callbacks with
-other ones that only disable the devices' clocks and let power domain
-callbacks (that should know whether or not the devices will be powered down)
-handle the rest.
-
-Thanks,
-Rafael
+If going for silencing the mutex warning in _notifier_call_chain, it
+will not be sufficient to use SINGLE_DEPTH_NESTING as there is no limit
+of just using one supply regulator, the next one may also have a supply
+so for each one we need to increase the subclass in mutex_lock_nested.
+Don't know if we have real use cases here, but at least the code admits
+it. 
