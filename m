@@ -1,564 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab1DGCEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 22:04:45 -0400
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:59928 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757180Ab1DGCEm (ORCPT
+	id S1757209Ab1DGCEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 22:04:54 -0400
+Received: from DMZ-MAILSEC-SCANNER-4.MIT.EDU ([18.9.25.15]:45323 "EHLO
+	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757107Ab1DGCEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 22:04:42 -0400
-X-AuditID: 12074425-b7c8cae00000429f-b9-4d9d1bc14c00
+	Wed, 6 Apr 2011 22:04:52 -0400
+X-AuditID: 1209190f-b7cf3ae0000046b8-b1-4d9d1bbe4116
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [RFT/PATCH v2 1/6] x86-64: Clean up vdso/kernel shared variables
-Date: Wed,  6 Apr 2011 22:03:58 -0400
-Message-Id: <c79ac2a9a1caad9865ffa3c4a05438227c59f63e.1302137785.git.luto@mit.edu>
+Subject: [RFT/PATCH v2 4/6] x86-64: vclock_gettime(CLOCK_MONOTONIC) can't ever see nsec < 0
+Date: Wed,  6 Apr 2011 22:04:01 -0400
+Message-Id: <e210b8eea527894eaf3aec8c30c8d2747e87a524.1302137785.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <cover.1302137785.git.luto@mit.edu>
 References: <cover.1302137785.git.luto@mit.edu>
 In-Reply-To: <cover.1302137785.git.luto@mit.edu>
 References: <cover.1302137785.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsUixCmqrHtQeq6vwbxmS4u+K0fZLY5c+85u
-	cXnXHDaLLZeaWS02b5rKbPFjw2NWBzaPW21/mD3m7/zI6LFz1l12j02rOtk83p07x+7xeZNc
-	AFsUl01Kak5mWWqRvl0CV8bJhXOYCrraGCuet31gbmBcntfFyMkhIWAicevaQ3YIW0ziwr31
-	bF2MXBxCAvsYJY5NXMYM4axnlGi4fgDKecoksXndEbAWNgEViY6lD5i6GDk4RASEJJberQOp
-	YRbYziixYXk7C0iNsICnxMx7R8FsFgFViQ03DzKD2LwCQRLzJx8AmsMOtFpOojkQJMopYCBx
-	8ct/VhBbSEBfYnLvN0Zc4hMYBRYwMqxilE3JrdLNTczMKU5N1i1OTszLSy3StdDLzSzRS00p
-	3cQICld2F9UdjBMOKR1iFOBgVOLhDe2c4yvEmlhWXJl7iFGSg0lJlLdTYq6vEF9SfkplRmJx
-	RnxRaU5q8SFGCQ5mJRFeJSGgHG9KYmVValE+TEqag0VJnHe+pLqvkEB6YklqdmpqQWoRTFaG
-	g0NJgjcBGJdCgkWp6akVaZk5JQhpJg5OkOE8QMMniIMMLy5IzC3OTIfIn2LU5fi/5dA+RiGW
-	vPy8VClx3jSQQQIgRRmleXBzYGnmFaM40FvCvIEgVTzAFAU36RXQEiagJQvPzQFZUpKIkJJq
-	YNzz95/9nyS2pKlJR3ufGz5YP6lK5+nss27bH11bwsrxTImhhl9LTd9vd+Yb0eMFnbPXLs0Q
-	FsrNPLa5pFigwDJf9p6Z3cJprFEF2l8bpr9rPc7XdOOhYopV6pvg/5OP/Nvp9N9X4JCm0bFX
-	F+fzqvsvWTXT69+Nmt3nfa86FTJeE4m7e7Rt6RklluKMREMt5qLiRADPlzm+DgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsUixG6nortPeq6vwYE1xhZ9V46yWxy59p3d
+	4vKuOWwWWy41s1ps3jSV2eLHhsesDmwet9r+MHvM3/mR0WPnrLvsHptWdbJ5vDt3jt3j8ya5
+	ALYoLpuU1JzMstQifbsEroxLT3gL3gtWnHl7hqmBcT9fFyMnh4SAicS9/9eZIWwxiQv31rOB
+	2EIC+xglNi6J7GLkArLXM0o8WfOJBcJ5yiRxZ/pDJpAqNgEViY6lD4BsDg4RASGJpXfrQGqY
+	BbYzSmxY3s4CUiMsEC2x+vN8sHoWAVWJhVe+MoLYvAJBEtOmNQNtYwfaLCfRHAgS5RQwkLj4
+	5T8rxA36EpN7vzHiEp/AKLCAkWEVo2xKbpVubmJmTnFqsm5xcmJeXmqRrolebmaJXmpK6SZG
+	UKBySvLvYPx2UOkQowAHoxIPb0znHF8h1sSy4srcQ4ySHExKorydEnN9hfiS8lMqMxKLM+KL
+	SnNSiw8xSnAwK4nwKgkB5XhTEiurUovyYVLSHCxK4ryzJNV9hQTSE0tSs1NTC1KLYLIyHBxK
+	ErwJwIgUEixKTU+tSMvMKUFIM3FwggznARo+QRxkeHFBYm5xZjpE/hSjLsf/LYf2MQqx5OXn
+	pUqJ86aBDBIAKcoozYObA0swrxjFgd4S5u0DqeIBJie4Sa+AljABLVl4bg7IkpJEhJRUA+MS
+	Dc5T9xw1MlZf057j9Hoz47UDsulpK6fsETKudt5QclUt+fiUzq/H/3+/+9HVM4Gr4eiR69+N
+	S51idi/4V3sgQP7g0TKXhn3ph7YZXV6ouJjh8fRuz6e5y2N8OqSyeGe9aitO+N6c9mGK4yEF
+	0RdnvE6dyovxqLrFx6nLKLvO5ZKEAsdHjTQlluKMREMt5qLiRACCABtMCwMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variables that are shared between the vdso and the kernel are
-currently a bit of a mess.  They are each defined with their own
-magic, they are accessed differently in the kernel, the vsyscall page,
-and the vdso, and one of them (vsyscall_clock) doesn't even really
-exist.
+vclock_gettime's do_monotonic helper can't ever generate a negative
+nsec value, so it doesn't need to check whether it's negative.  In
+the CLOCK_MONOTONIC_COARSE case, ns can't ever exceed 2e9-1, so we
+can avoid the loop entirely.  This saves a single easily-predicted
+branch.
 
-This changes them all to use a common mechanism.  All of them are
-delcared in vvar.h with a fixed address (validated by the linker
-script).  In the kernel (as before), they look like ordinary
-read-write variables.  In the vsyscall page and the vdso, they are
-accessed through a new macro VVAR, which gives read-only access.
-
-The vdso is now loaded verbatim into memory without any fixups.  As a
-side bonus, access from the vdso is faster because a level of
-indirection is removed.
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/vdso.h     |   14 ----------
- arch/x86/include/asm/vgtod.h    |    2 -
- arch/x86/include/asm/vsyscall.h |   12 +-------
- arch/x86/include/asm/vvar.h     |   52 +++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/time.c          |    2 +-
- arch/x86/kernel/tsc.c           |    4 +-
- arch/x86/kernel/vmlinux.lds.S   |   34 ++++++++-----------------
- arch/x86/kernel/vsyscall_64.c   |   46 +++++++++++++++-------------------
- arch/x86/vdso/Makefile          |    2 +-
- arch/x86/vdso/vclock_gettime.c  |    3 +-
- arch/x86/vdso/vdso.lds.S        |    7 -----
- arch/x86/vdso/vextern.h         |   16 ------------
- arch/x86/vdso/vgetcpu.c         |    3 +-
- arch/x86/vdso/vma.c             |   27 --------------------
- arch/x86/vdso/vvar.c            |   12 ---------
- 15 files changed, 91 insertions(+), 145 deletions(-)
- create mode 100644 arch/x86/include/asm/vvar.h
- delete mode 100644 arch/x86/vdso/vextern.h
- delete mode 100644 arch/x86/vdso/vvar.c
+ arch/x86/vdso/vclock_gettime.c |   40 ++++++++++++++++++++++------------------
+ 1 files changed, 22 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-index 9064052..bb05228 100644
---- a/arch/x86/include/asm/vdso.h
-+++ b/arch/x86/include/asm/vdso.h
-@@ -1,20 +1,6 @@
- #ifndef _ASM_X86_VDSO_H
- #define _ASM_X86_VDSO_H
- 
--#ifdef CONFIG_X86_64
--extern const char VDSO64_PRELINK[];
--
--/*
-- * Given a pointer to the vDSO image, find the pointer to VDSO64_name
-- * as that symbol is defined in the vDSO sources or linker script.
-- */
--#define VDSO64_SYMBOL(base, name)					\
--({									\
--	extern const char VDSO64_##name[];				\
--	(void *)(VDSO64_##name - VDSO64_PRELINK + (unsigned long)(base)); \
--})
--#endif
--
- #if defined CONFIG_X86_32 || defined CONFIG_COMPAT
- extern const char VDSO32_PRELINK[];
- 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 3d61e20..646b4c1 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -23,8 +23,6 @@ struct vsyscall_gtod_data {
- 	struct timespec wall_to_monotonic;
- 	struct timespec wall_time_coarse;
- };
--extern struct vsyscall_gtod_data __vsyscall_gtod_data
--__section_vsyscall_gtod_data;
- extern struct vsyscall_gtod_data vsyscall_gtod_data;
- 
- #endif /* _ASM_X86_VGTOD_H */
-diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
-index d0983d2..d555973 100644
---- a/arch/x86/include/asm/vsyscall.h
-+++ b/arch/x86/include/asm/vsyscall.h
-@@ -16,27 +16,19 @@ enum vsyscall_num {
- #ifdef __KERNEL__
- #include <linux/seqlock.h>
- 
--#define __section_vgetcpu_mode __attribute__ ((unused, __section__ (".vgetcpu_mode"), aligned(16)))
--#define __section_jiffies __attribute__ ((unused, __section__ (".jiffies"), aligned(16)))
--
- /* Definitions for CONFIG_GENERIC_TIME definitions */
--#define __section_vsyscall_gtod_data __attribute__ \
--	((unused, __section__ (".vsyscall_gtod_data"),aligned(16)))
--#define __section_vsyscall_clock __attribute__ \
--	((unused, __section__ (".vsyscall_clock"),aligned(16)))
- #define __vsyscall_fn \
- 	__attribute__ ((unused, __section__(".vsyscall_fn"))) notrace
- 
- #define VGETCPU_RDTSCP	1
- #define VGETCPU_LSL	2
- 
--extern int __vgetcpu_mode;
--extern volatile unsigned long __jiffies;
--
- /* kernel space (writeable) */
- extern int vgetcpu_mode;
- extern struct timezone sys_tz;
- 
-+#include <asm/vvar.h>
-+
- extern void map_vsyscall(void);
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-new file mode 100644
-index 0000000..131ce61
---- /dev/null
-+++ b/arch/x86/include/asm/vvar.h
-@@ -0,0 +1,52 @@
-+/*
-+ * vvar.h: Shared vDSO/kernel variable declarations
-+ * Copyright (c) 2011 Andy Lutomirski
-+ * Subject to the GNU General Public License, version 2
-+ *
-+ * A handful of variables are accessible (read-only) from userspace
-+ * code in the vsyscall page and the vdso.  They are declared here.
-+ * Some other file must define them with DEFINE_VVAR.
-+ *
-+ * In normal kernel code, they are used like any other variable.
-+ * In user code, they are accessed through the VVAR macro.
-+ *
-+ * Each of these variables lives in the vsyscall page, and each
-+ * one needs a unique offset within the little piece of the page
-+ * reserved for vvars.  Specify that offset in DECLARE_VVAR.
-+ * (There are 896 bytes available.  If you mess up, the linker will
-+ * catch it.)
-+ */
-+
-+/* Offset of vars within vsyscall page */
-+#define VSYSCALL_VARS_OFFSET (3072 + 128)
-+
-+#if defined(__VVAR_KERNEL_LDS)
-+
-+/* The kernel linker script defines its own magic to put vvars in the
-+ * right place.
-+ */
-+#define DECLARE_VVAR(offset, type, name) \
-+	EMIT_VVAR(name, VSYSCALL_VARS_OFFSET + offset)
-+
-+#else
-+
-+#define DECLARE_VVAR(offset, type, name)				\
-+	static type const * const vvaraddr_ ## name =			\
-+		(void *)(VSYSCALL_START + VSYSCALL_VARS_OFFSET + (offset));
-+
-+#define DEFINE_VVAR(type, name)						\
-+	type __vvar_ ## name						\
-+	__attribute__((section(".vsyscall_var_" #name), aligned(16)))
-+
-+#define VVAR(name) (*vvaraddr_ ## name)
-+
-+#endif
-+
-+/* DECLARE_VVAR(offset, type, name) */
-+
-+DECLARE_VVAR(0, volatile unsigned long, jiffies)
-+DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
-+DECLARE_VVAR(256, int, vgetcpu_mode)
-+
-+#undef DECLARE_VVAR
-+#undef VSYSCALL_VARS_OFFSET
-diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index 25a28a2..00cbb27 100644
---- a/arch/x86/kernel/time.c
-+++ b/arch/x86/kernel/time.c
-@@ -23,7 +23,7 @@
- #include <asm/time.h>
- 
- #ifdef CONFIG_X86_64
--volatile unsigned long __jiffies __section_jiffies = INITIAL_JIFFIES;
-+DEFINE_VVAR(volatile unsigned long, jiffies) = INITIAL_JIFFIES;
- #endif
- 
- unsigned long profile_pc(struct pt_regs *regs)
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index ffe5755..bc46566 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -777,8 +777,8 @@ static cycle_t __vsyscall_fn vread_tsc(void)
- 	ret = (cycle_t)vget_cycles();
- 	rdtsc_barrier();
- 
--	return ret >= __vsyscall_gtod_data.clock.cycle_last ?
--		ret : __vsyscall_gtod_data.clock.cycle_last;
-+	return ret >= VVAR(vsyscall_gtod_data).clock.cycle_last ?
-+		ret : VVAR(vsyscall_gtod_data).clock.cycle_last;
- }
- #endif
- 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index bf47007..bbe6cc2 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -160,6 +160,12 @@ SECTIONS
- 
- #define VVIRT_OFFSET (VSYSCALL_ADDR - __vsyscall_0)
- #define VVIRT(x) (ADDR(x) - VVIRT_OFFSET)
-+#define EMIT_VVAR(x, offset) .vsyscall_var_ ## x	\
-+	ADDR(.vsyscall_0) + offset		 	\
-+	: AT(VLOAD(.vsyscall_var_ ## x)) {     		\
-+		*(.vsyscall_var_ ## x)			\
-+	}						\
-+	x = VVIRT(.vsyscall_var_ ## x);
- 
- 	. = ALIGN(4096);
- 	__vsyscall_0 = .;
-@@ -174,18 +180,6 @@ SECTIONS
- 		*(.vsyscall_fn)
- 	}
- 
--	. = ALIGN(L1_CACHE_BYTES);
--	.vsyscall_gtod_data : AT(VLOAD(.vsyscall_gtod_data)) {
--		*(.vsyscall_gtod_data)
--	}
--
--	vsyscall_gtod_data = VVIRT(.vsyscall_gtod_data);
--	.vsyscall_clock : AT(VLOAD(.vsyscall_clock)) {
--		*(.vsyscall_clock)
--	}
--	vsyscall_clock = VVIRT(.vsyscall_clock);
--
--
- 	.vsyscall_1 ADDR(.vsyscall_0) + 1024: AT(VLOAD(.vsyscall_1)) {
- 		*(.vsyscall_1)
- 	}
-@@ -193,21 +187,14 @@ SECTIONS
- 		*(.vsyscall_2)
- 	}
- 
--	.vgetcpu_mode : AT(VLOAD(.vgetcpu_mode)) {
--		*(.vgetcpu_mode)
--	}
--	vgetcpu_mode = VVIRT(.vgetcpu_mode);
--
--	. = ALIGN(L1_CACHE_BYTES);
--	.jiffies : AT(VLOAD(.jiffies)) {
--		*(.jiffies)
--	}
--	jiffies = VVIRT(.jiffies);
--
- 	.vsyscall_3 ADDR(.vsyscall_0) + 3072: AT(VLOAD(.vsyscall_3)) {
- 		*(.vsyscall_3)
- 	}
- 
-+#define __VVAR_KERNEL_LDS
-+#include <asm/vvar.h>
-+#undef __VVAR_KERNEL_LDS
-+
- 	. = __vsyscall_0 + PAGE_SIZE;
- 
- #undef VSYSCALL_ADDR
-@@ -215,6 +202,7 @@ SECTIONS
- #undef VLOAD
- #undef VVIRT_OFFSET
- #undef VVIRT
-+#undef EMIT_VVAR
- 
- #endif /* CONFIG_X86_64 */
- 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index dcbb28c..5f6ad03 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -49,15 +49,8 @@
- 		__attribute__ ((unused, __section__(".vsyscall_" #nr))) notrace
- #define __syscall_clobber "r11","cx","memory"
- 
--/*
-- * vsyscall_gtod_data contains data that is :
-- * - readonly from vsyscalls
-- * - written by timer interrupt or systcl (/proc/sys/kernel/vsyscall64)
-- * Try to keep this structure as small as possible to avoid cache line ping pongs
-- */
--int __vgetcpu_mode __section_vgetcpu_mode;
--
--struct vsyscall_gtod_data __vsyscall_gtod_data __section_vsyscall_gtod_data =
-+DEFINE_VVAR(int, vgetcpu_mode);
-+DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- {
- 	.lock = SEQLOCK_UNLOCKED,
- 	.sysctl_enabled = 1,
-@@ -97,7 +90,7 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
-  */
- static __always_inline void do_get_tz(struct timezone * tz)
- {
--	*tz = __vsyscall_gtod_data.sys_tz;
-+	*tz = VVAR(vsyscall_gtod_data).sys_tz;
- }
- 
- static __always_inline int gettimeofday(struct timeval *tv, struct timezone *tz)
-@@ -126,23 +119,24 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
- 	unsigned long mult, shift, nsec;
- 	cycle_t (*vread)(void);
- 	do {
--		seq = read_seqbegin(&__vsyscall_gtod_data.lock);
-+		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
- 
--		vread = __vsyscall_gtod_data.clock.vread;
--		if (unlikely(!__vsyscall_gtod_data.sysctl_enabled || !vread)) {
-+		vread = VVAR(vsyscall_gtod_data).clock.vread;
-+		if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled ||
-+			     !vread)) {
- 			gettimeofday(tv,NULL);
- 			return;
- 		}
- 
- 		now = vread();
--		base = __vsyscall_gtod_data.clock.cycle_last;
--		mask = __vsyscall_gtod_data.clock.mask;
--		mult = __vsyscall_gtod_data.clock.mult;
--		shift = __vsyscall_gtod_data.clock.shift;
-+		base = VVAR(vsyscall_gtod_data).clock.cycle_last;
-+		mask = VVAR(vsyscall_gtod_data).clock.mask;
-+		mult = VVAR(vsyscall_gtod_data).clock.mult;
-+		shift = VVAR(vsyscall_gtod_data).clock.shift;
- 
--		tv->tv_sec = __vsyscall_gtod_data.wall_time_sec;
--		nsec = __vsyscall_gtod_data.wall_time_nsec;
--	} while (read_seqretry(&__vsyscall_gtod_data.lock, seq));
-+		tv->tv_sec = VVAR(vsyscall_gtod_data).wall_time_sec;
-+		nsec = VVAR(vsyscall_gtod_data).wall_time_nsec;
-+	} while (read_seqretry(&VVAR(vsyscall_gtod_data).lock, seq));
- 
- 	/* calculate interval: */
- 	cycle_delta = (now - base) & mask;
-@@ -171,15 +165,15 @@ time_t __vsyscall(1) vtime(time_t *t)
- {
- 	unsigned seq;
- 	time_t result;
--	if (unlikely(!__vsyscall_gtod_data.sysctl_enabled))
-+	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
- 		return time_syscall(t);
- 
- 	do {
--		seq = read_seqbegin(&__vsyscall_gtod_data.lock);
-+		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
- 
--		result = __vsyscall_gtod_data.wall_time_sec;
-+		result = VVAR(vsyscall_gtod_data).wall_time_sec;
- 
--	} while (read_seqretry(&__vsyscall_gtod_data.lock, seq));
-+	} while (read_seqretry(&VVAR(vsyscall_gtod_data).lock, seq));
- 
- 	if (t)
- 		*t = result;
-@@ -208,9 +202,9 @@ vgetcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *tcache)
- 	   We do this here because otherwise user space would do it on
- 	   its own in a likely inferior way (no access to jiffies).
- 	   If you don't like it pass NULL. */
--	if (tcache && tcache->blob[0] == (j = __jiffies)) {
-+	if (tcache && tcache->blob[0] == (j = VVAR(jiffies))) {
- 		p = tcache->blob[1];
--	} else if (__vgetcpu_mode == VGETCPU_RDTSCP) {
-+	} else if (VVAR(vgetcpu_mode) == VGETCPU_RDTSCP) {
- 		/* Load per CPU data from RDTSCP */
- 		native_read_tscp(&p);
- 	} else {
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index b6552b1..a651861 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -11,7 +11,7 @@ vdso-install-$(VDSO32-y)	+= $(vdso32-images)
- 
- 
- # files to link into the vdso
--vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o vvar.o
-+vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o
- 
- # files to link into kernel
- obj-$(VDSO64-y)			+= vma.o vdso.o
 diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index ee55754..0b873d4 100644
+index 0b873d4..28b2c00 100644
 --- a/arch/x86/vdso/vclock_gettime.c
 +++ b/arch/x86/vdso/vclock_gettime.c
-@@ -22,9 +22,8 @@
- #include <asm/hpet.h>
- #include <asm/unistd.h>
- #include <asm/io.h>
--#include "vextern.h"
- 
--#define gtod vdso_vsyscall_gtod_data
-+#define gtod (&VVAR(vsyscall_gtod_data))
- 
- notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
- {
-diff --git a/arch/x86/vdso/vdso.lds.S b/arch/x86/vdso/vdso.lds.S
-index 4e5dd3b..81f2500 100644
---- a/arch/x86/vdso/vdso.lds.S
-+++ b/arch/x86/vdso/vdso.lds.S
-@@ -28,10 +28,3 @@ VERSION {
+@@ -55,22 +55,6 @@ notrace static noinline int do_realtime(struct timespec *ts)
+ 	return 0;
  }
  
- VDSO64_PRELINK = VDSO_PRELINK;
--
--/*
-- * Define VDSO64_x for each VEXTERN(x), for use via VDSO64_SYMBOL.
-- */
--#define VEXTERN(x)	VDSO64_ ## x = vdso_ ## x;
--#include "vextern.h"
--#undef	VEXTERN
-diff --git a/arch/x86/vdso/vextern.h b/arch/x86/vdso/vextern.h
-deleted file mode 100644
-index 1683ba2..0000000
---- a/arch/x86/vdso/vextern.h
-+++ /dev/null
-@@ -1,16 +0,0 @@
--#ifndef VEXTERN
--#include <asm/vsyscall.h>
--#define VEXTERN(x) \
--	extern typeof(x) *vdso_ ## x __attribute__((visibility("hidden")));
--#endif
--
--#define VMAGIC 0xfeedbabeabcdefabUL
--
--/* Any kernel variables used in the vDSO must be exported in the main
--   kernel's vmlinux.lds.S/vsyscall.h/proper __section and
--   put into vextern.h and be referenced as a pointer with vdso prefix.
--   The main kernel later fills in the values.   */
--
--VEXTERN(jiffies)
--VEXTERN(vgetcpu_mode)
--VEXTERN(vsyscall_gtod_data)
-diff --git a/arch/x86/vdso/vgetcpu.c b/arch/x86/vdso/vgetcpu.c
-index 9fbc6b2..5463ad5 100644
---- a/arch/x86/vdso/vgetcpu.c
-+++ b/arch/x86/vdso/vgetcpu.c
-@@ -11,14 +11,13 @@
- #include <linux/time.h>
- #include <asm/vsyscall.h>
- #include <asm/vgtod.h>
--#include "vextern.h"
- 
- notrace long
- __vdso_getcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *unused)
- {
- 	unsigned int p;
- 
--	if (*vdso_vgetcpu_mode == VGETCPU_RDTSCP) {
-+	if (VVAR(vgetcpu_mode) == VGETCPU_RDTSCP) {
- 		/* Load per CPU data from RDTSCP */
- 		native_read_tscp(&p);
- 	} else {
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 4b5d26f..7abd2be 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -15,9 +15,6 @@
- #include <asm/proto.h>
- #include <asm/vdso.h>
- 
--#include "vextern.h"		/* Just for VMAGIC.  */
--#undef VEXTERN
--
- unsigned int __read_mostly vdso_enabled = 1;
- 
- extern char vdso_start[], vdso_end[];
-@@ -26,20 +23,10 @@ extern unsigned short vdso_sync_cpuid;
- static struct page **vdso_pages;
- static unsigned vdso_size;
- 
--static inline void *var_ref(void *p, char *name)
+-/* Copy of the version in kernel/time.c which we cannot directly access */
+-notrace static void
+-vset_normalized_timespec(struct timespec *ts, long sec, long nsec)
 -{
--	if (*(void **)p != (void *)VMAGIC) {
--		printk("VDSO: variable %s broken\n", name);
--		vdso_enabled = 0;
+-	while (nsec >= NSEC_PER_SEC) {
+-		nsec -= NSEC_PER_SEC;
+-		++sec;
 -	}
--	return p;
+-	while (nsec < 0) {
+-		nsec += NSEC_PER_SEC;
+-		--sec;
+-	}
+-	ts->tv_sec = sec;
+-	ts->tv_nsec = nsec;
 -}
 -
- static int __init init_vdso_vars(void)
+ notrace static noinline int do_monotonic(struct timespec *ts)
  {
- 	int npages = (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE;
- 	int i;
--	char *vbase;
- 
- 	vdso_size = npages << PAGE_SHIFT;
- 	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
-@@ -54,20 +41,6 @@ static int __init init_vdso_vars(void)
- 		copy_page(page_address(p), vdso_start + i*PAGE_SIZE);
- 	}
- 
--	vbase = vmap(vdso_pages, npages, 0, PAGE_KERNEL);
--	if (!vbase)
--		goto oom;
--
--	if (memcmp(vbase, "\177ELF", 4)) {
--		printk("VDSO: I'm broken; not ELF\n");
--		vdso_enabled = 0;
--	}
--
--#define VEXTERN(x) \
--	*(typeof(__ ## x) **) var_ref(VDSO64_SYMBOL(vbase, x), #x) = &__ ## x;
--#include "vextern.h"
--#undef VEXTERN
--	vunmap(vbase);
+ 	unsigned long seq, ns, secs;
+@@ -81,7 +65,17 @@ notrace static noinline int do_monotonic(struct timespec *ts)
+ 		secs += gtod->wall_to_monotonic.tv_sec;
+ 		ns += gtod->wall_to_monotonic.tv_nsec;
+ 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
+-	vset_normalized_timespec(ts, secs, ns);
++
++	/* wall_time_nsec, vgetns(), and wall_to_monotonic.tv_nsec
++	 * are all guaranteed to be nonnegative.
++	 */
++	while (ns >= NSEC_PER_SEC) {
++		ns -= NSEC_PER_SEC;
++		++secs;
++	}
++	ts->tv_sec = secs;
++	ts->tv_nsec = ns;
++
  	return 0;
+ }
  
-  oom:
-diff --git a/arch/x86/vdso/vvar.c b/arch/x86/vdso/vvar.c
-deleted file mode 100644
-index 1b7e703..0000000
---- a/arch/x86/vdso/vvar.c
-+++ /dev/null
-@@ -1,12 +0,0 @@
--/* Define pointer to external vDSO variables.
--   These are part of the vDSO. The kernel fills in the real addresses
--   at boot time. This is done because when the vdso is linked the
--   kernel isn't yet and we don't know the final addresses. */
--#include <linux/kernel.h>
--#include <linux/time.h>
--#include <asm/vsyscall.h>
--#include <asm/timex.h>
--#include <asm/vgtod.h>
--
--#define VEXTERN(x) typeof (__ ## x) *const vdso_ ## x = (void *)VMAGIC;
--#include "vextern.h"
+@@ -106,7 +100,17 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
+ 		secs += gtod->wall_to_monotonic.tv_sec;
+ 		ns += gtod->wall_to_monotonic.tv_nsec;
+ 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
+-	vset_normalized_timespec(ts, secs, ns);
++
++	/* wall_time_nsec and wall_to_monotonic.tv_nsec are
++	 * guaranteed to be between 0 and NSEC_PER_SEC.
++	 */
++	if (ns >= NSEC_PER_SEC) {
++		ns -= NSEC_PER_SEC;
++		++secs;
++	}
++	ts->tv_sec = secs;
++	ts->tv_nsec = ns;
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.4
 
