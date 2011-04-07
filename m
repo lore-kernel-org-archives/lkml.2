@@ -1,293 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1DGQJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:09:00 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:37225
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751827Ab1DGQI7 (ORCPT
+	id S1756086Ab1DGQJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:09:46 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:52387 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab1DGQJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:08:59 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJAI6N-01-4Y0-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <hpa@zytor.com>, <mingo@elte.hu>
-CC: <brgerst@gmail.com>, <tglx@linutronix.de>, <suresh.b.siddha@intel.com>,
-        <eranian@google.com>, <robert.richter@amd.com>,
-        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [RFC v4 8/8] x86, xsave: remove lazy allocation of xstate area
-Date: Thu, 7 Apr 2011 18:08:41 +0200
-Message-ID: <1302192521-322940-2-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20110407153029.GU13@escobedo.osrc.amd.com>
-References: <20110407153029.GU13@escobedo.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Thu, 7 Apr 2011 12:09:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=l+QSDV8DDCzu6hLAzDMC9VfaZJTHOprvHiYXbEpFT5TQ4YJu3cwUpc/9VNYv/xZd8x
+         cTrRQJyrkWMyllv9quPZ4EN4RPuRK+EoJkweb0fH5fSgU0h/tdYgA0uN2Y63rgIMr0vl
+         zcymqIT4kBCYaIHAWc88cI4SgBwvNZ70wFyAo=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [RFC 2/6]Fix typo "recieve" in various parts of the kernel.
+Date: Thu,  7 Apr 2011 09:09:23 -0700
+Message-Id: <1302192567-842-2-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.4.2
+In-Reply-To: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
+References: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch completely removes lazy allocation of the xstate area. All
-user tasks will always have an xstate area preallocated, just like they
-already do when non-lazy features are present. The size of the xsave
-area ranges from 112 to 960 bytes, depending on the xstates present and
-enabled. Since it is common to use SSE etc. for optimization, the actual
-overhead is expected to negligible.
+The patch below fixes "recieve" in various parts of the kernel.
+Note: patches 2,3,4,5 are fixes to comments only(no code).
 
-This removes some of the special-case handling of non-lazy xstates. It
-also greatly simplifies init_fpu() by removing the allocation code, the
-check for presence of the xstate area or init_fpu() return value.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
 ---
- arch/x86/include/asm/i387.h   |   16 ++++++----------
- arch/x86/kernel/i387.c        |   41 +++++++++--------------------------------
- arch/x86/kernel/traps.c       |   16 ++--------------
- arch/x86/kernel/xsave.c       |    8 ++------
- arch/x86/kvm/x86.c            |    4 ++--
- arch/x86/math-emu/fpu_entry.c |    8 ++------
- 6 files changed, 23 insertions(+), 70 deletions(-)
+ Documentation/networking/caif/spi_porting.txt |    2 +-
+ Documentation/scsi/ChangeLog.lpfc             |    2 +-
+ arch/arm/mach-sa1100/jornada720_ssp.c         |    2 +-
+ arch/arm/plat-omap/mcbsp.c                    |    2 +-
+ drivers/dma/intel_mid_dma_regs.h              |    4 ++--
+ drivers/gpu/drm/nouveau/nv40_graph.c          |    2 +-
+ drivers/input/mouse/bcm5974.c                 |    2 +-
+ drivers/media/dvb/frontends/s5h1420.c         |    2 +-
+ drivers/media/dvb/pluto2/pluto2.c             |    2 +-
+ drivers/media/dvb/ttusb-dec/ttusb_dec.c       |    2 +-
+ drivers/memstick/host/r592.h                  |    4 ++--
+ drivers/misc/kgdbts.c                         |    2 +-
+ drivers/net/caif/caif_spi_slave.c             |    2 +-
+ drivers/net/davinci_emac.c                    |    2 +-
+ drivers/net/natsemi.c                         |    2 +-
+ 15 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 67233a5..833b6f1 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -40,7 +40,7 @@
- extern unsigned int sig_xstate_size;
- extern void fpu_init(void);
- extern void mxcsr_feature_mask_init(void);
--extern int init_fpu(struct task_struct *child);
-+extern void init_fpu(struct task_struct *child);
- extern asmlinkage void math_state_restore(void);
- extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
- 
-@@ -332,16 +332,12 @@ extern void fpu_finit(struct fpu *fpu);
- 
- static inline void fpu_clear(struct fpu *fpu)
+diff --git a/Documentation/networking/caif/spi_porting.txt b/Documentation/networking/caif/spi_porting.txt
+index 0cb8cb9..9efd068 100644
+--- a/Documentation/networking/caif/spi_porting.txt
++++ b/Documentation/networking/caif/spi_porting.txt
+@@ -150,7 +150,7 @@ static int sspi_init_xfer(struct cfspi_xfer *xfer, struct cfspi_dev *dev)
+ void sspi_sig_xfer(bool xfer, struct cfspi_dev *dev)
  {
--	if (pcntxt_mask & XCNTXT_NONLAZY) {
--		if (!fpu_allocated(fpu) && fpu_alloc(fpu))
--			do_group_exit(SIGKILL);
-+	if (!fpu_allocated(fpu) && fpu_alloc(fpu))
-+		do_group_exit(SIGKILL);
- 
--		memset(fpu->state, 0, xstate_size);
--		fpu_finit(fpu);
--		set_used_math();
--	} else {
--		fpu_free(fpu);
--	}
-+	memset(fpu->state, 0, xstate_size);
-+	fpu_finit(fpu);
-+	set_used_math();
- }
- 
- #endif /* __ASSEMBLY__ */
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index dd9644a..df0b139 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -127,9 +127,9 @@ EXPORT_SYMBOL_GPL(fpu_finit);
-  * value at reset if we support XMM instructions and then
-  * remember the current task has used the FPU.
+ 	/* If xfer is true then you should assert the SPI_INT to indicate to
+-	 * the master that you are ready to recieve the data from the master
++	 * the master that you are ready to receive the data from the master
+ 	 * SPI. If xfer is false then you should de-assert SPI_INT to indicate
+ 	 * that the transfer is done.
+ 	 */
+diff --git a/Documentation/scsi/ChangeLog.lpfc b/Documentation/scsi/ChangeLog.lpfc
+index 5e83769..e096e19 100644
+--- a/Documentation/scsi/ChangeLog.lpfc
++++ b/Documentation/scsi/ChangeLog.lpfc
+@@ -352,7 +352,7 @@ Changes from 20041229 to 20050110
+ 	  lpfc_scsiport.c
+ 	* In remote port changes: no longer nulling target->pnode when
+ 	  removing from mapped list. Pnode get nulled when the node is
+-	  freed (after nodev tmo). This bug was causing i/o recieved in
++	  freed (after nodev tmo). This bug was causing i/o received in
+ 	  the small window while the device was blocked to be errored w/
+ 	  did_no_connect. With the fix, it returns host_busy
+ 	  (per the pre-remote port changes).
+diff --git a/arch/arm/mach-sa1100/jornada720_ssp.c b/arch/arm/mach-sa1100/jornada720_ssp.c
+index 9d490c6..dea6e03 100644
+--- a/arch/arm/mach-sa1100/jornada720_ssp.c
++++ b/arch/arm/mach-sa1100/jornada720_ssp.c
+@@ -29,7 +29,7 @@ static unsigned long jornada_ssp_flags;
+ /**
+  * jornada_ssp_reverse - reverses input byte
+  *
+- * we need to reverse all data we recieve from the mcu due to its physical location
++ * we need to reverse all data we receive from the mcu due to its physical location
+  * returns : 01110111 -> 11101110
   */
--int init_fpu(struct task_struct *tsk)
-+void init_fpu(struct task_struct *tsk)
- {
--	int ret;
-+	BUG_ON(tsk->flags & PF_KTHREAD);
+ u8 inline jornada_ssp_reverse(u8 byte)
+diff --git a/arch/arm/plat-omap/mcbsp.c b/arch/arm/plat-omap/mcbsp.c
+index d598d9f..5587acf 100644
+--- a/arch/arm/plat-omap/mcbsp.c
++++ b/arch/arm/plat-omap/mcbsp.c
+@@ -1103,7 +1103,7 @@ int omap_mcbsp_pollread(unsigned int id, u16 *buf)
+ 		/* resend */
+ 		return -1;
+ 	} else {
+-		/* wait for recieve confirmation */
++		/* wait for receive confirmation */
+ 		int attemps = 0;
+ 		while (!(MCBSP_READ(mcbsp, SPCR1) & RRDY)) {
+ 			if (attemps++ > 1000) {
+diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
+index 709fecb..aea5ee8 100644
+--- a/drivers/dma/intel_mid_dma_regs.h
++++ b/drivers/dma/intel_mid_dma_regs.h
+@@ -174,8 +174,8 @@ union intel_mid_dma_cfg_hi {
+  * @dma: dma device struture pointer
+  * @busy: bool representing if ch is busy (active txn) or not
+  * @in_use: bool representing if ch is in use or not
+- * @raw_tfr: raw trf interrupt recieved
+- * @raw_block: raw block interrupt recieved
++ * @raw_tfr: raw trf interrupt received
++ * @raw_block: raw block interrupt received
+  */
+ struct intel_mid_dma_chan {
+ 	struct dma_chan		chan;
+diff --git a/drivers/gpu/drm/nouveau/nv40_graph.c b/drivers/gpu/drm/nouveau/nv40_graph.c
+index 18d30c2..fceb44c 100644
+--- a/drivers/gpu/drm/nouveau/nv40_graph.c
++++ b/drivers/gpu/drm/nouveau/nv40_graph.c
+@@ -181,7 +181,7 @@ nv40_graph_load_context(struct nouveau_channel *chan)
+ 		  NV40_PGRAPH_CTXCTL_CUR_LOADED);
+ 	/* 0x32E0 records the instance address of the active FIFO's PGRAPH
+ 	 * context.  If at any time this doesn't match 0x40032C, you will
+-	 * recieve PGRAPH_INTR_CONTEXT_SWITCH
++	 * receive PGRAPH_INTR_CONTEXT_SWITCH
+ 	 */
+ 	nv_wr32(dev, NV40_PFIFO_GRCTX_INSTANCE, inst);
+ 	return 0;
+diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
+index 3aead91..3126983 100644
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -639,7 +639,7 @@ exit:
+  * device, resulting in trackpad malfunction under certain
+  * circumstances. To get around this problem, there is at least one
+  * example that utilizes the USB_QUIRK_RESET_RESUME quirk in order to
+- * recieve a reset_resume request rather than the normal resume.
++ * receive a reset_resume request rather than the normal resume.
+  * Since the implementation of reset_resume is equal to mode switch
+  * plus start_traffic, it seems easier to always do the switch when
+  * starting traffic on the device.
+diff --git a/drivers/media/dvb/frontends/s5h1420.c b/drivers/media/dvb/frontends/s5h1420.c
+index e87b747..17f8cdf 100644
+--- a/drivers/media/dvb/frontends/s5h1420.c
++++ b/drivers/media/dvb/frontends/s5h1420.c
+@@ -225,7 +225,7 @@ static int s5h1420_recv_slave_reply (struct dvb_frontend* fe,
+ 	unsigned long timeout;
+ 	int result = 0;
  
- 	if (tsk_used_math(tsk)) {
- 		if (HAVE_HWFP && tsk == current) {
-@@ -137,20 +137,12 @@ int init_fpu(struct task_struct *tsk)
- 			save_xstates(tsk);
- 			preempt_enable();
- 		}
--		return 0;
-+		return;
+-	/* setup for DISEQC recieve */
++	/* setup for DISEQC receive */
+ 	val = s5h1420_readreg(state, 0x3b);
+ 	s5h1420_writereg(state, 0x3b, 0x82); /* FIXME: guess - do we need to set DIS_RDY(0x08) in receive mode? */
+ 	msleep(15);
+diff --git a/drivers/media/dvb/pluto2/pluto2.c b/drivers/media/dvb/pluto2/pluto2.c
+index 6ca6713..5993e8c 100644
+--- a/drivers/media/dvb/pluto2/pluto2.c
++++ b/drivers/media/dvb/pluto2/pluto2.c
+@@ -299,7 +299,7 @@ static void pluto_dma_end(struct pluto *pluto, unsigned int nbpackets)
+ 	 *     although one packet has been transfered.
+ 	 * [3] Sometimes (actually rarely), the card gets into an erroneous
+ 	 *     mode where it continuously generates interrupts, claiming it
+-	 *     has recieved nbpackets>TS_DMA_PACKETS packets, but no packet
++	 *     has received nbpackets>TS_DMA_PACKETS packets, but no packet
+ 	 *     has been transfered. Only a reset seems to solve this
+ 	 */
+ 	if ((nbpackets == 0) || (nbpackets > TS_DMA_PACKETS)) {
+diff --git a/drivers/media/dvb/ttusb-dec/ttusb_dec.c b/drivers/media/dvb/ttusb-dec/ttusb_dec.c
+index fe1b803..f893bff 100644
+--- a/drivers/media/dvb/ttusb-dec/ttusb_dec.c
++++ b/drivers/media/dvb/ttusb-dec/ttusb_dec.c
+@@ -234,7 +234,7 @@ static void ttusb_dec_handle_irq( struct urb *urb)
+ 		 * (with buffer[3] == 0x40) in an intervall of ~100ms.
+ 		 * But to handle this correctly we had to imlemenent some
+ 		 * kind of timer which signals a 'key up' event if no
+-		 * keyrepeat signal is recieved for lets say 200ms.
++		 * keyrepeat signal is received for lets say 200ms.
+ 		 * this should/could be added later ...
+ 		 * for now lets report each signal as a key down and up*/
+ 		dprintk("%s:rc signal:%d\n", __func__, buffer[4]);
+diff --git a/drivers/memstick/host/r592.h b/drivers/memstick/host/r592.h
+index eee264e..b5a3063 100644
+--- a/drivers/memstick/host/r592.h
++++ b/drivers/memstick/host/r592.h
+@@ -46,9 +46,9 @@
+ #define R592_STATUS_RECV_ERR		(1 << 25)	/* Recieve failed */
+ 
+ 							/* Card state */
+-#define R592_STATUS_RDY			(1 << 28)	/* RDY signal recieved */
++#define R592_STATUS_RDY			(1 << 28)	/* RDY signal received */
+ #define R592_STATUS_CED			(1 << 29)	/* INT: Command done (serial mode)*/
+-#define R592_STATUS_SFIFO_INPUT		(1 << 30)	/* Small fifo recieved data*/
++#define R592_STATUS_SFIFO_INPUT		(1 << 30)	/* Small fifo received data*/
+ 
+ #define R592_SFIFO_SIZE			32		/* total size of small fifo is 32 bytes */
+ #define R592_SFIFO_PACKET		8		/* packet size of small fifo */
+diff --git a/drivers/misc/kgdbts.c b/drivers/misc/kgdbts.c
+index 27dc463..74f16f1 100644
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -645,7 +645,7 @@ static int validate_simple_test(char *put_str)
+ 
+ 	while (*chk_str != '\0' && *put_str != '\0') {
+ 		/* If someone does a * to match the rest of the string, allow
+-		 * it, or stop if the recieved string is complete.
++		 * it, or stop if the received string is complete.
+ 		 */
+ 		if (*put_str == '#' || *chk_str == '*')
+ 			return 0;
+diff --git a/drivers/net/caif/caif_spi_slave.c b/drivers/net/caif/caif_spi_slave.c
+index 1b9943a..9fee8e3 100644
+--- a/drivers/net/caif/caif_spi_slave.c
++++ b/drivers/net/caif/caif_spi_slave.c
+@@ -158,7 +158,7 @@ void cfspi_xfer(struct work_struct *work)
+ 
+ 		cfspi_dbg_state(cfspi, CFSPI_STATE_SIG_ACTIVE);
+ 
+-		/* Signal that we are ready to recieve data. */
++		/* Signal that we are ready to receive data. */
+ 		cfspi->dev->sig_xfer(true, cfspi->dev);
+ 
+ 		cfspi_dbg_state(cfspi, CFSPI_STATE_WAIT_XFER_DONE);
+diff --git a/drivers/net/davinci_emac.c b/drivers/net/davinci_emac.c
+index baca6bf..1e1859b 100644
+--- a/drivers/net/davinci_emac.c
++++ b/drivers/net/davinci_emac.c
+@@ -1013,7 +1013,7 @@ static void emac_rx_handler(void *token, int len, int status)
+ 		return;
  	}
  
--	/*
--	 * Memory allocation at the first usage of the FPU and other state.
--	 */
--	ret = fpu_alloc(&tsk->thread.fpu);
--	if (ret)
--		return ret;
--
- 	fpu_finit(&tsk->thread.fpu);
+-	/* recycle on recieve error */
++	/* recycle on receive error */
+ 	if (status < 0) {
+ 		ndev->stats.rx_errors++;
+ 		goto recycle;
+diff --git a/drivers/net/natsemi.c b/drivers/net/natsemi.c
+index 2fd3963..ae8067d 100644
+--- a/drivers/net/natsemi.c
++++ b/drivers/net/natsemi.c
+@@ -203,7 +203,7 @@ skbuff at an offset of "+2", 16-byte aligning the IP header.
+ IIId. Synchronization
  
- 	set_stopped_child_used_math(tsk);
--	return 0;
- }
- EXPORT_SYMBOL_GPL(init_fpu);
+ Most operations are synchronized on the np->lock irq spinlock, except the
+-recieve and transmit paths which are synchronised using a combination of
++receive and transmit paths which are synchronised using a combination of
+ hardware descriptor ownership, disabling interrupts and NAPI poll scheduling.
  
-@@ -173,14 +165,10 @@ int xfpregs_get(struct task_struct *target, const struct user_regset *regset,
- 		unsigned int pos, unsigned int count,
- 		void *kbuf, void __user *ubuf)
- {
--	int ret;
--
- 	if (!cpu_has_fxsr)
- 		return -ENODEV;
- 
--	ret = init_fpu(target);
--	if (ret)
--		return ret;
-+	init_fpu(target);
- 
- 	if (use_xsaveopt())
- 		sanitize_i387_state(target);
-@@ -198,9 +186,7 @@ int xfpregs_set(struct task_struct *target, const struct user_regset *regset,
- 	if (!cpu_has_fxsr)
- 		return -ENODEV;
- 
--	ret = init_fpu(target);
--	if (ret)
--		return ret;
-+	init_fpu(target);
- 
- 	if (use_xsaveopt())
- 		sanitize_i387_state(target);
-@@ -232,9 +218,7 @@ int xstateregs_get(struct task_struct *target, const struct user_regset *regset,
- 	if (!cpu_has_xsave)
- 		return -ENODEV;
- 
--	ret = init_fpu(target);
--	if (ret)
--		return ret;
-+	init_fpu(target);
- 
- 	/*
- 	 * Copy the 48bytes defined by the software first into the xstate
-@@ -262,9 +246,7 @@ int xstateregs_set(struct task_struct *target, const struct user_regset *regset,
- 	if (!cpu_has_xsave)
- 		return -ENODEV;
- 
--	ret = init_fpu(target);
--	if (ret)
--		return ret;
-+	init_fpu(target);
- 
- 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
- 				 &target->thread.fpu.state->xsave, 0, -1);
-@@ -427,11 +409,8 @@ int fpregs_get(struct task_struct *target, const struct user_regset *regset,
- 	       void *kbuf, void __user *ubuf)
- {
- 	struct user_i387_ia32_struct env;
--	int ret;
- 
--	ret = init_fpu(target);
--	if (ret)
--		return ret;
-+	init_fpu(target);
- 
- 	if (!HAVE_HWFP)
- 		return fpregs_soft_get(target, regset, pos, count, kbuf, ubuf);
-@@ -462,9 +441,7 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
- 	struct user_i387_ia32_struct env;
- 	int ret;
- 
--	ret = init_fpu(target);
--	if (ret)
--		return ret;
-+	init_fpu(target);
- 
- 	if (use_xsaveopt())
- 		sanitize_i387_state(target);
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 872fc78..c8fbd04 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -734,20 +734,8 @@ asmlinkage void math_state_restore(void)
- 	struct thread_info *thread = current_thread_info();
- 	struct task_struct *tsk = thread->task;
- 
--	if (!tsk_used_math(tsk)) {
--		local_irq_enable();
--		/*
--		 * does a slab alloc which can sleep
--		 */
--		if (init_fpu(tsk)) {
--			/*
--			 * ran out of memory!
--			 */
--			do_group_exit(SIGKILL);
--			return;
--		}
--		local_irq_disable();
--	}
-+	if (!tsk_used_math(tsk))
-+		init_fpu(tsk);
- 
- 	restore_xstates(tsk, XCNTXT_LAZY);
- }
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index a188362..62f2df8 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -264,7 +264,6 @@ int restore_xstates_sigframe(void __user *buf, unsigned int size)
- 	struct _fpstate_ia32 __user *fp = buf;
- 	struct xsave_struct *xsave;
- 	u64 xstate_mask = pcntxt_mask & XCNTXT_NONLAZY;
--	int err;
- 
- 	if (!buf) {
- 		if (used_math()) {
-@@ -277,11 +276,8 @@ int restore_xstates_sigframe(void __user *buf, unsigned int size)
- 	if (!access_ok(VERIFY_READ, buf, size))
- 		return -EACCES;
- 
--	if (!used_math()) {
--		err = init_fpu(tsk);
--		if (err)
--			return err;
--	}
-+	if (!used_math())
-+		init_fpu(tsk);
- 
- 	if (!HAVE_HWFP) {
- 		set_used_math();
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index bc04e15..17e52a9 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5386,8 +5386,8 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)
- 	int r;
- 	sigset_t sigsaved;
- 
--	if (!tsk_used_math(current) && init_fpu(current))
--		return -ENOMEM;
-+	if (!tsk_used_math(current))
-+		init_fpu(current);
- 
- 	if (vcpu->sigset_active)
- 		sigprocmask(SIG_SETMASK, &vcpu->sigset, &sigsaved);
-diff --git a/arch/x86/math-emu/fpu_entry.c b/arch/x86/math-emu/fpu_entry.c
-index 7718541..472e2b9 100644
---- a/arch/x86/math-emu/fpu_entry.c
-+++ b/arch/x86/math-emu/fpu_entry.c
-@@ -147,12 +147,8 @@ void math_emulate(struct math_emu_info *info)
- 	unsigned long code_limit = 0;	/* Initialized to stop compiler warnings */
- 	struct desc_struct code_descriptor;
- 
--	if (!used_math()) {
--		if (init_fpu(current)) {
--			do_group_exit(SIGKILL);
--			return;
--		}
--	}
-+	if (!used_math())
-+		init_fpu(current);
- 
- #ifdef RE_ENTRANT_CHECKING
- 	if (emulating) {
+ IVb. References
 -- 
-1.5.6.5
-
+1.7.4.2
 
