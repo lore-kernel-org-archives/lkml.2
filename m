@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab1DGCGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 22:06:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50944 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932162Ab1DGCGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 22:06:36 -0400
-Date: Thu, 7 Apr 2011 02:06:23 GMT
-From: tip-bot for Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, tj@kernel.org, tglx@linutronix.de,
-        rientjes@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tj@kernel.org, tglx@linutronix.de,
-        rientjes@google.com
-In-Reply-To: <1301955840-7246-8-git-send-email-tj@kernel.org>
-References: <1301955840-7246-8-git-send-email-tj@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/numa] x86-32, numa: Calculate remap size in common code
-Message-ID: <tip-7210cf9217937e470a9acbc113a590f476b9c047@git.kernel.org>
-Git-Commit-ID: 7210cf9217937e470a9acbc113a590f476b9c047
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 07 Apr 2011 02:06:23 +0000 (UTC)
+	id S932330Ab1DGCHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 22:07:03 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:58310 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757013Ab1DGCEs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 22:04:48 -0400
+X-AuditID: 12074424-b7cacae000003d70-24-4d9d1b96baf5
+From: Andy Lutomirski <luto@MIT.EDU>
+To: x86@kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@MIT.EDU>
+Subject: [RFT/PATCH v2 3/6] x86-64: Don't generate cmov in vread_tsc
+Date: Wed,  6 Apr 2011 22:04:00 -0400
+Message-Id: <49856c9e1325fd1a1f1786f05a7f2befe14666d6.1302137785.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <cover.1302137785.git.luto@mit.edu>
+References: <cover.1302137785.git.luto@mit.edu>
+In-Reply-To: <cover.1302137785.git.luto@mit.edu>
+References: <cover.1302137785.git.luto@mit.edu>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsUixG6nrjtNeq6vwez/lhZ9V46yWxy59p3d
+	4vKuOWwWWy41s1ps3jSV2eLHhsesDmwet9r+MHvM3/mR0WPnrLvsHptWdbJ5vDt3jt3j8ya5
+	ALYoLpuU1JzMstQifbsEroz/3yYxF2zmqTj6OKeB8RFnFyMnh4SAicS0Z+2sELaYxIV769m6
+	GLk4hAT2MUp86+5gAkkICaxnlNh2IR8i8ZRJ4tKe72AdbAIqEh1LHwAVcXCICAhJLL1bB1LD
+	LLCdUWLD8nYWkBphAReJ5v4pYDaLgKrEySnHmEHqeQWCJI78TuxiZAdaLCfRHAhSwClgIHHx
+	y39WiK36EpN7vzHiEp/AKLCAkWEVo2xKbpVubmJmTnFqsm5xcmJeXmqRrrlebmaJXmpK6SZG
+	cJi6qOxgbD6kdIhRgINRiYc3uXOOrxBrYllxZe4hRkkOJiVR3k6Jub5CfEn5KZUZicUZ8UWl
+	OanFhxglOJiVRHiVhIByvCmJlVWpRfkwKWkOFiVx3nmS6r5CAumJJanZqakFqUUwWRkODiUJ
+	XhVgPAoJFqWmp1akZeaUIKSZODhBhvMADZ8gDjK8uCAxtzgzHSJ/ilGX4/+WQ/sYhVjy8vNS
+	pcR5v0kBFQmAFGWU5sHNgaWXV4ziQG8J84qArOMBpia4Sa+AljABLVl4bg7IkpJEhJRUA6Ml
+	s/PHwN4lDZ7njDZodD01WPfKuV46ZJ3UpIU+8munbZ/j/U/kSAITW+W/x0zf3s+MrnFaKXZ4
+	d/y+xeuaHksm7rm0hruPLd071+HI/qfbZ0Q4XFv3WeSZSlXkpH+WqRJ3W8+EvD+/4Hbdoc6r
+	c28I/l6+kX/PB8uq203LXC4Ff+/3Mf69432mEktxRqKhFnNRcSIA59wPpgoDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7210cf9217937e470a9acbc113a590f476b9c047
-Gitweb:     http://git.kernel.org/tip/7210cf9217937e470a9acbc113a590f476b9c047
-Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Tue, 5 Apr 2011 00:23:53 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 6 Apr 2011 17:57:16 -0700
+vread_tsc checks whether rdtsc returns something less than
+cycle_last, which is an extremely predictable branch.  GCC likes
+to generate a cmov anyway, which is several cycles slower than
+a predicted branch.  This saves a couple of nanoseconds.
 
-x86-32, numa: Calculate remap size in common code
-
-Only pgdat and memmap use remap area and there isn't much benefit in
-allowing per-node override.  In addition, the use of node_remap_size[]
-is confusing in that it contains number of bytes before remap
-initialization and then number of pages afterwards.
-
-Move remap size calculation for memap from specific NUMA config
-implementations to init_alloc_remap() and make node_remap_size[]
-static.
-
-The only behavior difference is that, before this patch, numaq_32
-didn't consider max_pfn when calculating the memmap size but it's
-enforced after this patch, which is the right thing to do.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/1301955840-7246-8-git-send-email-tj@kernel.org
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/topology.h |    1 -
- arch/x86/kernel/apic/numaq_32.c |    4 ----
- arch/x86/mm/numa_32.c           |   10 ++++------
- arch/x86/mm/srat_32.c           |    1 -
- 4 files changed, 4 insertions(+), 12 deletions(-)
+ arch/x86/kernel/tsc.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index 910a708..8dba769 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -95,7 +95,6 @@ extern void setup_node_to_cpumask_map(void);
- #ifdef CONFIG_X86_32
- extern unsigned long node_start_pfn[];
- extern unsigned long node_end_pfn[];
--extern unsigned long node_remap_size[];
- #define node_has_online_mem(nid) (node_start_pfn[nid] != node_end_pfn[nid])
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 858c084..69ff619 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -794,14 +794,25 @@ static cycle_t __vsyscall_fn vread_tsc(void)
+ 	 */
  
- # define SD_CACHE_NICE_TRIES	1
-diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
-index 6273eee..0aced70 100644
---- a/arch/x86/kernel/apic/numaq_32.c
-+++ b/arch/x86/kernel/apic/numaq_32.c
-@@ -93,10 +93,6 @@ static inline void numaq_register_node(int node, struct sys_cfg_data *scd)
- 						node_end_pfn[node]);
+ 	/*
+-	 * This doesn't multiply 'zero' by anything, which *should*
+-	 * generate nicer code, except that gcc cleverly embeds the
+-	 * dereference into the cmp and the cmovae.  Oh, well.
++	 * This doesn't multiply 'zero' by anything, which generates
++	 * very slightly nicer code than multiplying it by 8.
+ 	 */
+ 	last = *( (cycle_t *)
+ 		  ((char *)&VVAR(vsyscall_gtod_data).clock.cycle_last + zero) );
  
- 	memory_present(node, node_start_pfn[node], node_end_pfn[node]);
--
--	node_remap_size[node] = node_memmap_size_bytes(node,
--					node_start_pfn[node],
--					node_end_pfn[node]);
+-	return ret >= last ? ret : last;
++	if (likely(ret >= last))
++		return ret;
++
++	/*
++	 * GCC likes to generate cmov here, but this branch is extremely
++	 * predictable (it's just a funciton of time and the likely is
++	 * very likely) and there's a data dependence, so force GCC
++	 * to generate a branch instead.  I don't barrier() because
++	 * we don't actually need a barrier, and if this function
++	 * ever gets inlined it will generate worse code.
++	 */
++	asm volatile ("");
++	return last;
  }
+ #endif
  
- /*
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 99310d2..9a73365 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -104,7 +104,7 @@ extern unsigned long highend_pfn, highstart_pfn;
- 
- #define LARGE_PAGE_BYTES (PTRS_PER_PTE * PAGE_SIZE)
- 
--unsigned long node_remap_size[MAX_NUMNODES];
-+static unsigned long node_remap_size[MAX_NUMNODES];
- static void *node_remap_start_vaddr[MAX_NUMNODES];
- void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
- 
-@@ -129,7 +129,6 @@ int __init get_memcfg_numa_flat(void)
- 	node_end_pfn[0] = max_pfn;
- 	memblock_x86_register_active_regions(0, 0, max_pfn);
- 	memory_present(0, 0, max_pfn);
--	node_remap_size[0] = node_memmap_size_bytes(0, 0, max_pfn);
- 
-         /* Indicate there is one node available. */
- 	nodes_clear(node_online_map);
-@@ -282,11 +281,10 @@ static __init unsigned long init_alloc_remap(int nid, unsigned long offset)
- 	if (node_end_pfn[nid] > max_pfn)
- 		node_end_pfn[nid] = max_pfn;
- 
--	/* ensure the remap includes space for the pgdat. */
--	size = node_remap_size[nid];
-+	/* calculate the necessary space aligned to large page size */
-+	size = node_memmap_size_bytes(nid, node_start_pfn[nid],
-+				      min(node_end_pfn[nid], max_pfn));
- 	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
--
--	/* align to large page */
- 	size = ALIGN(size, LARGE_PAGE_BYTES);
- 
- 	node_pa = memblock_find_in_range(node_start_pfn[nid] << PAGE_SHIFT,
-diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
-index 48651c6..1b9e82c 100644
---- a/arch/x86/mm/srat_32.c
-+++ b/arch/x86/mm/srat_32.c
-@@ -276,7 +276,6 @@ int __init get_memcfg_from_srat(void)
- 		unsigned long end = min(node_end_pfn[nid], max_pfn);
- 
- 		memory_present(nid, start, end);
--		node_remap_size[nid] = node_memmap_size_bytes(nid, start, end);
- 	}
- 	return 1;
- out_fail:
+-- 
+1.7.4
+
