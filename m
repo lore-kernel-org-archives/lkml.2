@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab1DGHzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 03:55:09 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48257 "EHLO mx3.mail.elte.hu"
+	id S1755262Ab1DGH4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 03:56:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33270 "EHLO linutronix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026Ab1DGHzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 03:55:07 -0400
-Date: Thu, 7 Apr 2011 09:54:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@mit.edu>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFT/PATCH v2 3/6] x86-64: Don't generate cmov in vread_tsc
-Message-ID: <20110407075456.GC24879@elte.hu>
-References: <cover.1302137785.git.luto@mit.edu>
- <49856c9e1325fd1a1f1786f05a7f2befe14666d6.1302137785.git.luto@mit.edu>
+	id S1753404Ab1DGH4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 03:56:06 -0400
+Message-ID: <4D9D6E12.6020100@linutronix.de>
+Date: Thu, 07 Apr 2011 09:56:02 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <49856c9e1325fd1a1f1786f05a7f2befe14666d6.1302137785.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, bheglaas@google.com,
+        monstr@monstr.eu, tglx@linutronix.de
+Subject: Re: [PATCH 1/5] pci/of: Match PCI devices to OF nodes dynamically
+References: <1302146796-26825-1-git-send-email-benh@kernel.crashing.org>	 <1302146796-26825-2-git-send-email-benh@kernel.crashing.org> <1302150019.2458.28.camel@pasglop>
+In-Reply-To: <1302150019.2458.28.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Benjamin Herrenschmidt wrote:
+> Thomas, Sebastian, I suppose I don't need to re-send a private copy, you
+> should be able to find the patches ? :-)
 
-* Andy Lutomirski <luto@mit.edu> wrote:
+No worries Ben, I got them. Thanks for the ping :)
 
-> vread_tsc checks whether rdtsc returns something less than
-> cycle_last, which is an extremely predictable branch.  GCC likes
-> to generate a cmov anyway, which is several cycles slower than
-> a predicted branch.  This saves a couple of nanoseconds.
+> Cheers,
+> Ben.
 > 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/kernel/tsc.c |   19 +++++++++++++++----
->  1 files changed, 15 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index 858c084..69ff619 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -794,14 +794,25 @@ static cycle_t __vsyscall_fn vread_tsc(void)
->  	 */
->  
->  	/*
-> -	 * This doesn't multiply 'zero' by anything, which *should*
-> -	 * generate nicer code, except that gcc cleverly embeds the
-> -	 * dereference into the cmp and the cmovae.  Oh, well.
-> +	 * This doesn't multiply 'zero' by anything, which generates
-> +	 * very slightly nicer code than multiplying it by 8.
->  	 */
->  	last = *( (cycle_t *)
->  		  ((char *)&VVAR(vsyscall_gtod_data).clock.cycle_last + zero) );
->  
-> -	return ret >= last ? ret : last;
-> +	if (likely(ret >= last))
-> +		return ret;
-> +
-> +	/*
-> +	 * GCC likes to generate cmov here, but this branch is extremely
-> +	 * predictable (it's just a funciton of time and the likely is
-> +	 * very likely) and there's a data dependence, so force GCC
-> +	 * to generate a branch instead.  I don't barrier() because
-> +	 * we don't actually need a barrier, and if this function
-> +	 * ever gets inlined it will generate worse code.
-> +	 */
-> +	asm volatile ("");
 
-Hm, you have not addressed the review feedback i gave in:
-
-  Message-ID: <20110329061546.GA27398@elte.hu>
-
-Thanks,
-
-	Ingo
+Sebastian
