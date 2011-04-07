@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1DGV1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 17:27:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:42952 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab1DGV1x (ORCPT
+	id S1752233Ab1DGVbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 17:31:19 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:54593 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab1DGVbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 17:27:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to;
-	b=RAQQM8R/y/DfnKN1hLIBHyLlhVlIeA+wGPdl/cHTQKF7xZoj+hv5a/i/p/CHzgk2I
-	A85Jv5yRkwYZ4fibWkIgA==
-From: Nat Gurumoorthy <natg@google.com>
-To: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Cc: Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        Nat Gurumoorthy <natg@google.com>
-Subject: [PATCH v2 3/3] Change hwmon it87 driver to use it87_io_lock.
-Date: Thu,  7 Apr 2011 14:27:20 -0700
-Message-Id: <1302211640-8159-1-git-send-email-natg@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: [PATCH v2 0/3] Make all it87 drivers SMP safe.
+	Thu, 7 Apr 2011 17:31:18 -0400
+Message-ID: <4D9E2D1C.7070102@ahsoftware.de>
+Date: Thu, 07 Apr 2011 23:31:08 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Alexander Clouter <alex@digriz.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on the
+ basis of the memory size.
+References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de> <1302122121-3652-2-git-send-email-holler@ahsoftware.de> <alpine.LFD.2.00.1104061739100.28032@xanadu.home> <4D9CED15.2010806@ahsoftware.de> <alpine.LFD.2.00.1104061850410.28032@xanadu.home> <4D9CF5B3.9020007@ahsoftware.de> <toa078-0do.ln1@chipmunk.wormnet.eu>
+In-Reply-To: <toa078-0do.ln1@chipmunk.wormnet.eu>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-03 - Adds changes to hwmon driver to use the new lock.
-   This patch adds changes to drivers/hwmon/it87.c to use it87_io_lock
-to serialize access to the hardware. Added __acquire and __release
-annotations wherever needed.
-   Change it87 driver entry in Kconfig to issue "select IT87_LOCK"
-directive to compile it87_io_lock into the kernel.
+Am 07.04.2011 10:55, schrieb Alexander Clouter:
+> In gmane.linux.kernel Alexander Holler<holler@ahsoftware.de>  wrote:
+>>
+>> Sorry, I don't feel the need to waste my time prodcuing patches to get
+>> them called "abominations". Which means my willingness to post further
+>> patches just got below zero.
+>>
+> In a posting from Nico before you got offended it was explained to you
+> *why* it was a Bad Idea(tm) and that that sort of thing simply does not
+> work.  As a game, is it really a situation with *zero* probability of
+> occuring that someone might produce a kirkwood/Sheeva flavoured board
+> with only 128MB RAM?
+>
+> As well as a willingness to 'produce' patches (which to be frank
+> *anyone* can do[1])...the hard part is producing *good* patches.  To
+> produce good patches you need to read and understand the wisdom you get
+> back from the mailing lists you post to.  If you do not understand the
+> reasoning, ask.
+>
+> This is why you see [PATCHv${BIGNUM}] so often in a number of mailing
+> lists.  If you are not willing to accept *everyone*, including yourself,
+> writes crap code...well the value of your patches falls below zero.
 
-Signed-off-by: Nat Gurumoorthy <natg@google.com>
+Requiring a machine ID and the needed stuff to handle that for a board 
+which just is using two GPIOs different than another board is why the 
+ARM tree exploded. And requiring a machine ID just to follow the rule 
+that a machine ID is much better than some pretty unique hw feature is 
+in my humble opinion senseless and that the resulting code is more 
+readable and better to maintain is a myth.
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 297bc9a..afe671a 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -436,6 +436,7 @@ config SENSORS_IBMPEX
- config SENSORS_IT87
- 	tristate "ITE IT87xx and compatibles"
- 	select HWMON_VID
-+	select IT87_LOCK
- 	help
- 	  If you say yes here you get support for ITE IT8705F, IT8712F,
- 	  IT8716F, IT8718F, IT8720F, IT8721F, IT8726F and IT8758E sensor
-diff --git a/drivers/hwmon/it87.c b/drivers/hwmon/it87.c
-index 316b648..bc32535 100644
---- a/drivers/hwmon/it87.c
-+++ b/drivers/hwmon/it87.c
-@@ -55,6 +55,8 @@
- #include <linux/dmi.h>
- #include <linux/acpi.h>
- #include <linux/io.h>
-+#include <linux/spinlock.h>
-+#include <linux/it87_lock.h>
- 
- #define DRVNAME "it87"
- 
-@@ -110,7 +112,9 @@ superio_select(int ldn)
- 
- static inline void
- superio_enter(void)
-+__acquires(&it87_io_lock)
- {
-+	spin_lock(&it87_io_lock);
- 	outb(0x87, REG);
- 	outb(0x01, REG);
- 	outb(0x55, REG);
-@@ -119,9 +123,11 @@ superio_enter(void)
- 
- static inline void
- superio_exit(void)
-+__releases(&it87_io_lock)
- {
- 	outb(0x02, REG);
- 	outb(0x02, VAL);
-+	spin_unlock(&it87_io_lock);
- }
- 
- /* Logical device 4 registers */
-@@ -1899,8 +1905,12 @@ static int __devexit it87_remove(struct platform_device *pdev)
-    would slow down the IT87 access and should not be necessary. */
- static int it87_read_value(struct it87_data *data, u8 reg)
- {
-+	int ret;
-+	spin_lock(&it87_io_lock);
- 	outb_p(reg, data->addr + IT87_ADDR_REG_OFFSET);
--	return inb_p(data->addr + IT87_DATA_REG_OFFSET);
-+	ret = inb_p(data->addr + IT87_DATA_REG_OFFSET);
-+	spin_unlock(&it87_io_lock);
-+	return ret;
- }
- 
- /* Must be called with data->update_lock held, except during initialization.
-@@ -1908,8 +1918,10 @@ static int it87_read_value(struct it87_data *data, u8 reg)
-    would slow down the IT87 access and should not be necessary. */
- static void it87_write_value(struct it87_data *data, u8 reg, u8 value)
- {
-+	spin_lock(&it87_io_lock);
- 	outb_p(reg, data->addr + IT87_ADDR_REG_OFFSET);
- 	outb_p(value, data->addr + IT87_DATA_REG_OFFSET);
-+	spin_unlock(&it87_io_lock);
- }
- 
- /* Return 1 if and only if the PWM interface is safe to use */
--- 
+Sorry that I wanted to help there. Will not try it again.
 
+Regards,
+
+Alexander
