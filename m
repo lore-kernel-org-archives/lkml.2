@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1DGO0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 10:26:20 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:65438 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab1DGO0T (ORCPT
+	id S1755538Ab1DGOfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 10:35:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47431 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755440Ab1DGOfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 10:26:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=K1B9ZpWpCsfThvHxM9m8d+RKmTCBBcuJsC+ND7IeyyYU0Uc7R/fLC0+VTexwiyfiI1
-         54I5t3b4vh5brerJXB0Hk4jOXAnmjQqMUjpmteXfgiM/EcnlDW4d4K0PBwEUpgwrSHcO
-         uXEMauHOdv6XGU+1K0YEBu/7WBXGVNcAYsyiA=
-Date: Thu, 7 Apr 2011 16:26:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH perf 0/2] perf: trace-event-parse: support more
- operators and print formats
-Message-ID: <20110407142605.GC1798@nowhere>
-References: <1300746846-28245-1-git-send-email-dhsharp@google.com>
- <BANLkTimhAis_f5OXgzfMD7uKeX5qHYUsgA@mail.gmail.com>
+	Thu, 7 Apr 2011 10:35:34 -0400
+Date: Thu, 7 Apr 2011 10:35:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Joerg Roedel <joerg.roedel@amd.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stable@kernel.org>
+Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+In-Reply-To: <1302164789-31887-1-git-send-email-joerg.roedel@amd.com>
+Message-ID: <Pine.LNX.4.44L0.1104071034070.2147-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimhAis_f5OXgzfMD7uKeX5qHYUsgA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 07:01:40PM -0700, David Sharp wrote:
-> Hi, any feedback on these patches? I think it's important that perf
-> and trace-cmd don't drift in the syntax they accept.
-> 
-> d#
+On Thu, 7 Apr 2011, Joerg Roedel wrote:
 
-Sorry, I forgot these.
- 
-> On Mon, Mar 21, 2011 at 3:34 PM, David Sharp <dhsharp@google.com> wrote:
-> > These patches correspond to similar patches recently applied to trace-cmd
-> >
-> > [ Re-sending with more Cc's ]
-> >
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Stephane Eranian <eranian@google.com>
-> >
-> >
-> > David Sharp (2):
-> >  perf: trace-event-parse: support additional operators: '!', '~',  and
-> >    '!='
-> >  perf: trace-event-parse: support printing short fields
+> Booting 2.6.38 on my test machine produces a lockdep warning
+> from the usb_amd_find_chipset_info() function:
 
-So we now have trace events that use these new operations? Which ones?
-A quick grep on "TP_printk" and "!" doesn't give me any result, probably
-because TP_printk is often multiline.
+When posting revised patches, you need to indicate this fact in the
+email Subject: line.  For example:
+
+	[PATCH v.2] USB host: Fix lockdep warning in AMD PLL quirk
+
+Otherwise people reading the email won't know which patch it refers to.
+
+Alan Stern
+
