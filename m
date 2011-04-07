@@ -1,173 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab1DGEep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 00:34:45 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:46637 "EHLO
-	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab1DGEeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 00:34:44 -0400
-X-ASG-Debug-ID: 1302150884-082c227c0001-xx1T2L
-X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
-From: Haojian Zhuang <haojian.zhuang@marvell.com>
-To: haojian.zhuang@gmail.com, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH 1/1] mfd: fix build warning on 88pm860x
-Subject: [PATCH 1/1] mfd: fix build warning on 88pm860x
-Date: Thu,  7 Apr 2011 12:30:41 +0800
-X-ASG-Orig-Subj: [PATCH 1/1] mfd: fix build warning on 88pm860x
-Message-Id: <1302150641-2580-1-git-send-email-haojian.zhuang@marvell.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <2011040701>
-References: <2011040701>
-X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1302150884
-X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: -1002.00
-X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
+	id S1751121Ab1DGFDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 01:03:34 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53137 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956Ab1DGFDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 01:03:33 -0400
+Date: Thu, 7 Apr 2011 15:03:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for April 7
+Message-Id: <20110407150324.0ae18b9b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__7_Apr_2011_15_03_24_+1000_TQPn.0PKD6pSguxx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: vmlinux.o(.devinit.text+0x6c4): Section mismatch in reference
-from the function device_onkey_init() to the (unknown reference)
-.init.data:(unknown)
-The function __devinit device_onkey_init() references a (unknown reference)
- __initdata (unknown).
-If (unknown) is only used by device_onkey_init then annotate (unknown)
-with a matching annotation.
+--Signature=_Thu__7_Apr_2011_15_03_24_+1000_TQPn.0PKD6pSguxx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's caused by using __initdata on mfd cell resources. Replace __initdata
-with __devinitdata.
+Hi all,
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
----
- drivers/mfd/88pm860x-core.c |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+Changes since 20110406:
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index 63d1c54..5d8885a 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -21,13 +21,13 @@
- 
- #define INT_STATUS_NUM			3
- 
--static struct resource bk_resources[] __initdata = {
-+static struct resource bk_resources[] __devinitdata = {
- 	{PM8606_BACKLIGHT1, PM8606_BACKLIGHT1, "backlight-0", IORESOURCE_IO,},
- 	{PM8606_BACKLIGHT2, PM8606_BACKLIGHT2, "backlight-1", IORESOURCE_IO,},
- 	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,},
- };
- 
--static struct resource led_resources[] __initdata = {
-+static struct resource led_resources[] __devinitdata = {
- 	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,},
- 	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,},
- 	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,},
-@@ -36,7 +36,7 @@ static struct resource led_resources[] __initdata = {
- 	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
- };
- 
--static struct resource regulator_resources[] __initdata = {
-+static struct resource regulator_resources[] __devinitdata = {
- 	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,},
- 	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,},
- 	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,},
-@@ -57,19 +57,19 @@ static struct resource regulator_resources[] __initdata = {
- 	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,},
- };
- 
--static struct resource rtc_resources[] __initdata = {
-+static struct resource rtc_resources[] __devinitdata = {
- 	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ,},
- };
- 
--static struct resource touch_resources[] __initdata = {
-+static struct resource touch_resources[] __devinitdata = {
- 	{PM8607_IRQ_PEN, PM8607_IRQ_PEN, "touch", IORESOURCE_IRQ,},
- };
- 
--static struct resource onkey_resources[] __initdata = {
-+static struct resource onkey_resources[] __devinitdata = {
- 	{PM8607_IRQ_ONKEY, PM8607_IRQ_ONKEY, "onkey", IORESOURCE_IRQ,},
- };
- 
--static struct resource codec_resources[] __initdata = {
-+static struct resource codec_resources[] __devinitdata = {
- 	/* Headset microphone insertion or removal */
- 	{PM8607_IRQ_MICIN,   PM8607_IRQ_MICIN,   "micin",   IORESOURCE_IRQ,},
- 	/* Hook-switch press or release */
-@@ -80,12 +80,12 @@ static struct resource codec_resources[] __initdata = {
- 	{PM8607_IRQ_AUDIO_SHORT, PM8607_IRQ_AUDIO_SHORT, "audio-short", IORESOURCE_IRQ,},
- };
- 
--static struct resource battery_resources[] __initdata = {
-+static struct resource battery_resources[] __devinitdata = {
- 	{PM8607_IRQ_CC,  PM8607_IRQ_CC,  "columb counter", IORESOURCE_IRQ,},
- 	{PM8607_IRQ_BAT, PM8607_IRQ_BAT, "battery",        IORESOURCE_IRQ,},
- };
- 
--static struct resource charger_resources[] __initdata = {
-+static struct resource charger_resources[] __devinitdata = {
- 	{PM8607_IRQ_CHG,  PM8607_IRQ_CHG,  "charger detect",  IORESOURCE_IRQ,},
- 	{PM8607_IRQ_CHG_DONE,  PM8607_IRQ_CHG_DONE,  "charging done",       IORESOURCE_IRQ,},
- 	{PM8607_IRQ_CHG_FAULT, PM8607_IRQ_CHG_FAULT, "charging timeout",    IORESOURCE_IRQ,},
-@@ -94,13 +94,13 @@ static struct resource charger_resources[] __initdata = {
- 	{PM8607_IRQ_VCHG, PM8607_IRQ_VCHG, "vchg voltage",    IORESOURCE_IRQ,},
- };
- 
--static struct mfd_cell bk_devs[] __initdata = {
-+static struct mfd_cell bk_devs[] __devinitdata = {
- 	{"88pm860x-backlight", 0,},
- 	{"88pm860x-backlight", 1,},
- 	{"88pm860x-backlight", 2,},
- };
- 
--static struct mfd_cell led_devs[] __initdata = {
-+static struct mfd_cell led_devs[] __devinitdata = {
- 	{"88pm860x-led", 0,},
- 	{"88pm860x-led", 1,},
- 	{"88pm860x-led", 2,},
-@@ -109,7 +109,7 @@ static struct mfd_cell led_devs[] __initdata = {
- 	{"88pm860x-led", 5,},
- };
- 
--static struct mfd_cell regulator_devs[] __initdata = {
-+static struct mfd_cell regulator_devs[] __devinitdata = {
- 	{"88pm860x-regulator", 0,},
- 	{"88pm860x-regulator", 1,},
- 	{"88pm860x-regulator", 2,},
-@@ -130,23 +130,23 @@ static struct mfd_cell regulator_devs[] __initdata = {
- 	{"88pm860x-regulator", 17,},
- };
- 
--static struct mfd_cell rtc_devs[] __initdata = {
-+static struct mfd_cell rtc_devs[] __devinitdata = {
- 	{"88pm860x-rtc", -1,},
- };
- 
--static struct mfd_cell touch_devs[] __initdata = {
-+static struct mfd_cell touch_devs[] __devinitdata = {
- 	{"88pm860x-touch", -1,},
- };
- 
--static struct mfd_cell onkey_devs[] __initdata = {
-+static struct mfd_cell onkey_devs[] __devinitdata = {
- 	{"88pm860x-onkey", -1,},
- };
- 
--static struct mfd_cell codec_devs[] __initdata = {
-+static struct mfd_cell codec_devs[] __devinitdata = {
- 	{"88pm860x-codec", -1,},
- };
- 
--static struct mfd_cell power_devs[] = {
-+static struct mfd_cell power_devs[] __devinitdata = {
- 	{"88pm860x-battery", -1,},
- 	{"88pm860x-charger", -1,},
- };
--- 
-1.5.6.5
+Dropped tree: xen
 
+The hid tree gained a build failure so I used the version from
+next-20110406.
+
+The net tree gained a conflict against the net-current tree.
+
+The fbdev tree gained a build failure so I used the version from
+next-20110406.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 185 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-mxs/mach-mx28evk.c
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+CONFLICT (content): Merge conflict in fs/ecryptfs/ecryptfs_kernel.h
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+CONFLICT (content): Merge conflict in fs/gfs2/log.c
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+$ git reset --hard HEAD^
+Merging refs/next/20110406/hid
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
+Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+CONFLICT (content): Merge conflict in drivers/staging/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/easycap/easycap_ioctl=
+.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/benet/be_main.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/efuse.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/rtl8192c=
+/fw_common.c
+Merging bluetooth/master
+CONFLICT (content): Merge conflict in net/bluetooth/mgmt.c
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in drivers/ide/ide-io.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+$ git reset --hard HEAD^
+Merging refs/next/20110406/fbdev
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in arch/x86/Kconfig
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Applying: x86 idle: merge fix for mwait move
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/hv/vmbus_drv.c
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+CONFLICT (content): Merge conflict in mm/truncate.c
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Thu__7_Apr_2011_15_03_24_+1000_TQPn.0PKD6pSguxx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNnUWcAAoJEDMEi1NhKgbsrLEH/2meLZdX54vmFPNpCfYfTJGh
+gH47vsgo9KRG6hMVm72pglgQY6Wv3clJSJL8o9dvfpmVbae89i6oerhkUk9ZL0Od
+v4Fbf2PjXZ0dg9XHOEId396+i8JIuvnNxUfL/m6OgddwommUG++s0cFDp0qYNhY+
+yaZ45rSf6JQ3IifnM17U2yT3FRbtFsADN6GVHm3Of3abqBlxmdQzPO7NyOMRfBjv
+ZnLGzT/JdM+FiDOk3bfeV+B6tG81R4cglpMat99IEkEWYg0sVHT3l4yjeTzCtUzy
+E709YHNqBnzPFisxqWOvNOeuLVecC+Zu1RVfwLLgzWlSK/a5XKPy6AyUo6/lNec=
+=pXdZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Apr_2011_15_03_24_+1000_TQPn.0PKD6pSguxx--
