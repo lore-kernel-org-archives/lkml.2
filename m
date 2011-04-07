@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab1DGF5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 01:57:22 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47918 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab1DGF5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 01:57:21 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6308"; a="84428337"
-Message-ID: <4D9D523F.4090506@codeaurora.org>
-Date: Wed, 06 Apr 2011 22:57:19 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1752092Ab1DGGJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 02:09:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575Ab1DGGJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 02:09:54 -0400
+Message-ID: <4D9D55EF.3090606@redhat.com>
+Date: Thu, 07 Apr 2011 02:13:03 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Len Brown <len.brown@intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] cpuidle: Fix build on ARM and SH
-References: <1301894612-10471-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1301894612-10471-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Alex,Shi" <alex.shi@intel.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [PATCH] sched: recover sched_yield task running time increase
+References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>	 <1302077064.2225.1357.camel@twins> <1302145733.15889.7472.camel@debian>
+In-Reply-To: <1302145733.15889.7472.camel@debian>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/3/2011 10:23 PM, Mark Brown wrote:
-> Commit 5f8cf82 (cpuidle: stop using pm_idle) converted arches to use
-> cpuidle_idle_call() but contained typos on ARM and SH transposing the
-> function name into cpuidle_call_idle().
->
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On 04/06/2011 11:08 PM, Alex,Shi wrote:
+> On Wed, 2011-04-06 at 16:04 +0800, Peter Zijlstra wrote:
+>> On Wed, 2011-04-06 at 06:33 +0800, Alex Shi wrote:
 
-When will this patch get into linux-next? Every ARM and SH build has
-failed for the past 3 days presumably due to this. Stephen, can you pick
-it up for the time being?
-
-> ---
->  arch/arm/kernel/process.c |    2 +-
->  arch/sh/kernel/idle.c     |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+>> You do know that any app that relies on sched_yield behaviour is more
+>> than broken? Using sched_yield() for anything other than SCHED_FIFO
+>> tasks is well outside spec.
+>>
+>> Furthermore, apparently you used sysctl_sched_compat_yield, which was
+>> bound to disappear some time, since with the default settings the yield
+>> semantics didn't actually change.
 >
-> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> index dc9d685..f47660e 100644
-> --- a/arch/arm/kernel/process.c
-> +++ b/arch/arm/kernel/process.c
-> @@ -197,7 +197,7 @@ void cpu_idle(void)
->  				cpu_relax();
->  			} else {
->  				stop_critical_timings();
-> -				if (cpuidle_call_idle())
-> +				if (cpuidle_idle_call())
->  					pm_idle();
->  				start_critical_timings();
->  				/*
-> diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
-> index 9c7099e..1db1968 100644
-> --- a/arch/sh/kernel/idle.c
-> +++ b/arch/sh/kernel/idle.c
-> @@ -101,7 +101,7 @@ void cpu_idle(void)
->  			local_irq_disable();
->  			/* Don't trace irqs off for idle */
->  			stop_critical_timings();
-> -			if (cpuidle_call_idle())
-> +			if (cpuidle_idle_call())
->  				pm_idle();
->  			/*
->  			 * Sanity check to ensure that pm_idle() returns
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> Yes, I used sched_compat_yield, otherwise volano will become extremely
+> slow in my single machine testing. We may reconsider our testing
+> setting.
+
+With what JVM is this happening?
+
+Surely not every JVM uses user space spinlocks and
+yield, when we have futexes available?
+
+
 
