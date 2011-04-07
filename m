@@ -1,65 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab1DGWRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 18:17:51 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:54987 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab1DGWRu (ORCPT
+	id S1755937Ab1DGWR4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 18:17:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34147 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755777Ab1DGWRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 18:17:50 -0400
-Subject: Re: [PATCH 2/2] make new alloc_pages_exact()
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@freescale.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1104071452070.14967@chino.kir.corp.google.com>
-References: <20110407172104.1F8B7329@kernel>
-	 <20110407172105.831B9A0A@kernel>
-	 <alpine.DEB.2.00.1104071452070.14967@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 07 Apr 2011 15:17:43 -0700
-Message-ID: <1302214663.8184.4164.camel@nimitz>
+	Thu, 7 Apr 2011 18:17:54 -0400
+Date: Thu, 7 Apr 2011 15:17:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Worsley <amworsley@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: Fix for critical bogoMIPS intermittent calculation failure
+Message-Id: <20110407151745.d2e682c6.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTikTjBAZGBF2BirRpayiL6PX=ewmh+ZEnZkZBr=s@mail.gmail.com>
+References: <AANLkTikTjBAZGBF2BirRpayiL6PX=ewmh+ZEnZkZBr=s@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-07 at 15:03 -0700, David Rientjes wrote:
-> On Thu, 7 Apr 2011, Dave Hansen wrote:
-> > What I really wanted in the end was a highmem-capable alloc_pages_exact(),
-> > so here it is.
-> 
-> Perhaps expand upon how the new alloc_pages_exact() works and what it will 
-> be used for instead of only talking about how it's named?
+On Thu, 10 Mar 2011 17:03:51 +1100
+Andrew Worsley <amworsley@gmail.com> wrote:
 
-Will do.
+> Please find attach a fix to the TSC  (Time Stamp Counter) based
+> bogoMIPS calculation used on secondary CPUs which has two faults:
 
-> > +/* 'struct page' version */
-> > +struct page *__alloc_pages_exact(gfp_t, size_t);
-> > +void __free_pages_exact(struct page *, size_t);
-> 
-> They're not required, but these should have the names of the arguments 
-> like the other prototypes in this file.
+Phil, you've had your nose in init/calibrate.c recently.  Would you
+have time to review Andrew's changes?  Thanks.
 
-Fair enough.
+Andrew, the patch was mssing a signed-off-by:.  Please review the
+description of this in Docuemntations/SubmuittingPatches and then, if
+agreeable, send one along?
 
-> > -	addr = __get_free_pages(gfp_mask, order);
-> > -	if (addr) {
-> > -		unsigned long alloc_end = addr + (PAGE_SIZE << order);
-> > -		unsigned long used = addr + PAGE_ALIGN(size);
-> > +	page = alloc_pages(gfp_mask, order);
-> > +	if (page) {
-> > +		struct page *alloc_end = page + (1 << order);
-> > +		struct page *used = page + PAGE_ALIGN(size)/PAGE_SIZE;
-> 
-> Wouldn't it better to call this "unused" rather than "used" since it 
-> represents a cursor over pages that we want to free?
 
-Yeah, agreed.  I think I screwed this up once when coding this because I
-misread it.  I'll change it.
 
--- Dave
+From: Andrew Worsley <amworsley@gmail.com>
+
+A fix to the TSC (Time Stamp Counter) based bogoMIPS calculation used on
+secondary CPUs which has two faults:
+
+1: Not handling wrapping of the lower 32 bits of the TSC counter on
+   32bit kernel - perhaps TSC is not reset by a warm reset?
+
+2: TSC and Jiffies are no incrementing together properly.  Either
+   jiffies increment too quickly or Time Stamp Counter isn't incremented
+   in during an SMI but the real time clock is and jiffies are
+   incremented.
+
+Case 1 can result in a factor of 16 too large a value which makes udelay()
+values too small and can cause mysterious driver errors.  Case 2 appears
+to give smaller 10-15% errors after averaging but enough to cause
+occasional failures on my own board
+
+I have tested this code on my own branch and attach patch suitable for
+current kernel code.  See below for examples of the failures and how the
+fix handles these situations now.
+
+I reported this issue earlier here:
+     Intermittent problem with BogoMIPs calculation on Intel AP CPUs -
+http://marc.info/?l=linux-kernel&m=129947246316875&w=4
+
+I suspect this issue has been seen by others but as it is intermittent and
+bogoMIPS for secondary CPUs are no longer printed out it might have been
+difficult to identify this as the cause.  Perhaps these unresolved issues,
+although quite old, might be relevant as possibly this fault has been
+around for a while.  In particular Case 1 may only be relevant to 32bit
+kernels on newer HW (most people run 64bit kernels?).  Case 2 is less
+dramatic since the earlier fix in this area and also intermittent.
+
+   Re: bogomips discrepancy on Intel Core2 Quad CPU -
+http://marc.info/?l=linux-kernel&m=118929277524298&w=4
+   slow system and bogus bogomips  -
+http://marc.info/?l=linux-kernel&m=116791286716107&w=4
+   Re: Re: [RFC-PATCH] clocksource: update lpj if clocksource has -
+http://marc.info/?l=linux-kernel&m=128952775819467&w=4
+
+This issue is masked a little by commit feae3203d711db0a ("timers, init:
+Limit the number of per cpu calibration bootup messages") which only
+prints out the first bogoMIPS value making it much harder to notice other
+values differing.  Perhaps it should be changed to only suppress them when
+they are similar values?
+
+Here are some outputs showing faults occurring and the new code handling
+them properly.  See my earlier message for examples of the original
+failure.
+
+    Case 1:   A Time Stamp Counter wrap:
+...
+Calibrating delay loop (skipped), value calculated using timer
+frequency.. 6332.70 BogoMIPS (lpj=31663540)
+....
+calibrate_delay_direct() timer_rate_max=31666493
+timer_rate_min=31666151 pre_start=4170369255 pre_end=4202035539
+calibrate_delay_direct() timer_rate_max=2425955274
+timer_rate_min=2425954941 pre_start=4265368533 pre_end=2396356387
+calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap
+around start=4265368581 >=post_end=2396356511
+calibrate_delay_direct() timer_rate_max=31666274
+timer_rate_min=31665942 pre_start=2440373374 pre_end=2472039515
+calibrate_delay_direct() timer_rate_max=31666492
+timer_rate_min=31666160 pre_start=2535372139 pre_end=2567038422
+calibrate_delay_direct() timer_rate_max=31666455
+timer_rate_min=31666207 pre_start=2630371084 pre_end=2662037415
+Calibrating delay using timer specific routine.. 6333.28 BogoMIPS (lpj=31666428)
+Total of 2 processors activated (12665.99 BogoMIPS).
+....
+
+    Case 2:  Some thing (presumably the SMM interrupt?) causing the
+very low increase in TSC counter for the DELAY_CALIBRATION_TICKS
+increase in jiffies
+...
+Calibrating delay loop (skipped), value calculated using timer
+frequency.. 6333.25 BogoMIPS (lpj=31666270)
+...
+calibrate_delay_direct() timer_rate_max=31666483
+timer_rate_min=31666074 pre_start=4199536526 pre_end=4231202809
+calibrate_delay_direct() timer_rate_max=864348 timer_rate_min=864016
+pre_start=2405343672 pre_end=2406207897
+calibrate_delay_direct() timer_rate_max=31666483
+timer_rate_min=31666179 pre_start=2469540464 pre_end=2501206823
+calibrate_delay_direct() timer_rate_max=31666511
+timer_rate_min=31666122 pre_start=2564539400 pre_end=2596205712
+calibrate_delay_direct() timer_rate_max=31666084
+timer_rate_min=31665685 pre_start=2659538782 pre_end=2691204657
+calibrate_delay_direct() dropping min bogoMips estimate 1 = 864348
+Calibrating delay using timer specific routine.. 6333.27 BogoMIPS (lpj=31666390)
+Total of 2 processors activated (12666.53 BogoMIPS).
+...
+
+After 70 boots I saw 2 variations <1% slip through
+
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ init/calibrate.c |   70 +++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 65 insertions(+), 5 deletions(-)
+
+diff -puN init/calibrate.c~init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure init/calibrate.c
+--- a/init/calibrate.c~init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure
++++ a/init/calibrate.c
+@@ -38,6 +38,9 @@ static unsigned long __cpuinit calibrate
+ 	unsigned long timer_rate_min, timer_rate_max;
+ 	unsigned long good_timer_sum = 0;
+ 	unsigned long good_timer_count = 0;
++	unsigned long measured_times[MAX_DIRECT_CALIBRATION_RETRIES];
++	int max = -1; /* index of measured_times with max/min values or not set */
++	int min = -1;
+ 	int i;
+ 
+ 	if (read_current_timer(&pre_start) < 0 )
+@@ -90,17 +93,74 @@ static unsigned long __cpuinit calibrate
+ 		 * If the upper limit and lower limit of the timer_rate is
+ 		 * >= 12.5% apart, redo calibration.
+ 		 */
+-		if (pre_start != 0 && pre_end != 0 &&
++		printk(KERN_DEBUG
++"calibrate_delay_direct() timer_rate_max=%lu timer_rate_min=%lu pre_start=%lu pre_end=%lu\n",
++			  timer_rate_max, timer_rate_min, pre_start, pre_end);
++		if (start >= post_end)
++			printk(KERN_NOTICE
++				"calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
++				start, post_end);
++		if (start < post_end && pre_start != 0 && pre_end != 0 &&
+ 		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
+ 			good_timer_count++;
+ 			good_timer_sum += timer_rate_max;
+-		}
++			measured_times[i] = timer_rate_max;
++			if (max < 0 || timer_rate_max > measured_times[max])
++				max = i;
++			if (min < 0 || timer_rate_max < measured_times[min])
++				min = i;
++		} else
++			measured_times[i] = 0;
++
+ 	}
+ 
+-	if (good_timer_count)
+-		return (good_timer_sum/good_timer_count);
++	/*
++	 * Find the maximum & minimum - if they differ too much throw out the one with
++	 * the largest difference from the mean and try again...
++	 */
++	while (good_timer_count > 1) {
++		unsigned long estimate;
++		unsigned long maxdiff;
++
++		/* compute the estimate */
++		estimate = (good_timer_sum/good_timer_count);
++		maxdiff = estimate >> 3;
++
++		/* if range is within 12% let's take it */
++		if ((measured_times[max] - measured_times[min]) < maxdiff)
++			return (estimate);
++
++		/* ok - drop the worse value and try again... */
++		good_timer_sum = 0;
++		good_timer_count = 0;
++		if ((measured_times[max] - estimate) < (estimate - measured_times[min])) {
++			printk(KERN_NOTICE
++	"calibrate_delay_direct() dropping min bogoMips estimate %d = %lu\n",
++				min, measured_times[min]);
++			measured_times[min] = 0;
++			min = max;
++		} else {
++			printk(KERN_NOTICE
++	"calibrate_delay_direct() dropping max bogoMips estimate %d = %lu\n",
++				max, measured_times[max]);
++			measured_times[max] = 0;
++			max = min;
++		}
++
++		for (i = 0; i < MAX_DIRECT_CALIBRATION_RETRIES; i++) {
++			if (measured_times[i] == 0)
++				continue;
++			good_timer_count++;
++			good_timer_sum += measured_times[i];
++			if (measured_times[i] < measured_times[min])
++				min = i;
++			if (measured_times[i] > measured_times[max])
++				max = i;
++		}
++
++	}
+ 
+-	printk(KERN_WARNING "calibrate_delay_direct() failed to get a good "
++	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
+ 	       "estimate for loops_per_jiffy.\nProbably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
+ 	return 0;
+ }
+_
 
