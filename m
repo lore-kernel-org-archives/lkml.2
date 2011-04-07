@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1DGHvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 03:51:00 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:18623
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752303Ab1DGHu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 03:50:58 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(zz1432N98dK179dNzz1202hzz15d4Rz32i637h668h839h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJ9V4Q-02-80P-02
-X-M-MSG: 
-Date: Thu, 7 Apr 2011 09:50:49 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Xu, Andiry" <Andiry.Xu@amd.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	id S1755031Ab1DGHzD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 03:55:03 -0400
+Received: from 80-190-117-144.ip-home.de ([80.190.117.144]:51454 "EHLO
+	bu3sch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752303Ab1DGHzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 03:55:01 -0400
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+From: Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
-Message-ID: <20110407075049.GV23633@amd.com>
-References: <1302088878-25740-1-git-send-email-joerg.roedel@amd.com>
- <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+In-Reply-To: <BANLkTinfM0QLFwcKZXfWQ_jNYfBJg_et-Q@mail.gmail.com> (sfid-20110406_205435_519066_856A6627)
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+	 <op.vtisojsk3ri7v4@arend-laptop>
+	 <BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
+	 <op.vti9ote53ri7v4@arend-laptop>
+	 <BANLkTin-u=U_-cUH9oCco0LjEBuQmh4wag@mail.gmail.com>
+	 <BANLkTi=x89+52cMeutOB7J--QQta+mX_wg@mail.gmail.com>
+	 <1302123428.20093.6.camel@maggie>
+	 <BANLkTimGSoYzp0Z4vyCS_H5PDKhgjYuLBA@mail.gmail.com>
+	 <1302124112.20093.11.camel@maggie>
+	 <BANLkTik76dwwnmmPzXL9Kkk7fdt01QPzZA@mail.gmail.com>
+	 <1302124737.27258.7.camel@dev.znau.edu.ua>
+	 <BANLkTi=4-LgrkjG96+Ar3SjMOsKh-dMuLg@mail.gmail.com>
+	 <1302134429.27258.32.camel@dev.znau.edu.ua>
+	 <BANLkTinfM0QLFwcKZXfWQ_jNYfBJg_et-Q@mail.gmail.com>
+	 (sfid-20110406_205435_519066_856A6627)
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Apr 2011 09:54:46 +0200
+Message-ID: <1302162886.10725.4.camel@maggie>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 11:16:07AM -0400, Alan Stern wrote:
-> On Wed, 6 Apr 2011, Joerg Roedel wrote:
-
-> The counter really should be a bool: Has the chipset already been
-> probed or not?  After all, nobody cares how many times this routine was 
-> called.
+On Thu, 2011-04-07 at 02:54 +0200, Rafał Miłecki wrote: 
+> W dniu 7 kwietnia 2011 02:00 użytkownik George Kashperko
+> <george@znau.edu.ua> napisał:
+> > For PCI function description take a look at PCI specs or PCI
+> > configuration space description (e. g.
+> > http://en.wikipedia.org/wiki/PCI_configuration_space)
+> >
+> > Sorry for missleading short-ups, w11 - bcm80211 core, under two-head I
+> > mean ssb/axi with two functional cores on same interconnect (like w11
+> > +w11, not a lot of these exists I guess). Also there were some b43+b44
+> > on single PCI ssb host and those where implemented as ssb interconnect
+> > on multifunctional PCI host therefore providing separate access windows
+> > for each function.
+> >
+> > Might I mussunderstood something (its late night here at my place) when
+> > you where talking about using coreswitching involved for two drivers
+> > therefore I remembered about those functions. Seems now you were talking
+> > about chipcommon+b43 access sharing same window.
+> >
+> > As for core switching requirments for earlier SSB interconnects on PCI
+> > hosts where there were no direct chipcommon access, that one can be
+> > accomplished without spin_lock/mutex for b43 or b44 cores with proper
+> > bus design.
+> >
+> > AXI doesn't need spinlocks/mutexes as both chipcommon and pci bridge are
+> > available directly and b43 will be the only one requiring window access.
 > 
-> > +	spin_unlock_irqrestore(&amd_lock, flags);
+> Ahh, so while talking about 4 windows, I guess you counted fixes
+> windows as well. That would be right, matching my knowledge.
 > 
-> This code now contains a bug: You incremented the probe_count _before_
-> doing the probe.  If another thread calls this routine right now, it
-> will get an incorrect result.
-> 
-> Fixing this up should be fairly easy.
+> When asking question about amount of cores we may want to use
+> simultaneously I didn't think about ChipCommon or PCIe. The real
+> problem would be to support for example two 802.11 cores and one
+> ethernet core at the same time. That gives us 3 cores while we have
+> only 2 sliding windows.
 
-Hmm, we can get rid of the amd_lock completly if every thread uses the
-following call-order:
+Would that really be a problem? Think of it. This combination 
+will only be available on embedded devices. But do we have windows
+on embedded devices? I guess not. If AXI is similar to SSB, the MMIO
+of all cores will always be mapped. So accesses can be done
+without switch or lock.
 
-	usb_amd_find_chipset_info();
-	usb_amd_quirk_pll_enable();
-	usb_amd_quirk_pll_disable();
-	usb_amd_dev_put();
-
-In that case we can just change the probe_count and isoc_reqs into
-atomic_t with some care and should be fine, no?
-Problem is that I don't know if the above call-order is guaranteed.
-
-	Joerg
+I do really think that engineers at broadcom are clever enough
+to design a hardware that does not require expensive window sliding
+all the time while operating.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Greetings Michael.
 
