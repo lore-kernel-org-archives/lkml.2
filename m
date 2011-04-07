@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1DGPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 11:04:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57646 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881Ab1DGPEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 11:04:24 -0400
-Message-ID: <4D9DD25D.9000000@zytor.com>
-Date: Thu, 07 Apr 2011 08:03:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	id S1754624Ab1DGPF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 11:05:58 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:15243 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569Ab1DGPF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 11:05:56 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zzbb2cK1432N98dKzz1202hzz15d4Rz32i637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJAF9L-02-2N0-02
+X-M-MSG: 
+Date: Thu, 7 Apr 2011 17:00:59 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Xu, Andiry" <Andiry.Xu@amd.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+Message-ID: <20110407150059.GY23633@amd.com>
+References: <1302164789-31887-1-git-send-email-joerg.roedel@amd.com>
+ <Pine.LNX.4.44L0.1104071034070.2147-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: tip: New "Link:" tag to replace "LKML-Reference:"
-References: <4D9CE4AE.4090303@zytor.com> <1302185312.3329.1240.camel@twins>	 <4D9DCDAB.9000707@zytor.com> <1302188050.9086.27.camel@twins>
-In-Reply-To: <1302188050.9086.27.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1104071034070.2147-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2011 07:54 AM, Peter Zijlstra wrote:
+On Thu, Apr 07, 2011 at 10:35:33AM -0400, Alan Stern wrote:
+> On Thu, 7 Apr 2011, Joerg Roedel wrote:
 > 
-> Can't we use a prepare-commit-msg or commit-msg hook to re-write the
-> commit message to include a Link tag when one is missing, using
-> something like:
+> > Booting 2.6.38 on my test machine produces a lockdep warning
+> > from the usb_amd_find_chipset_info() function:
 > 
-> Link: http://lkml.kernel.org/r/tip-$SHA@git.kernel.org
+> When posting revised patches, you need to indicate this fact in the
+> email Subject: line.  For example:
 > 
-> And have the post-commit hook that sends the messages recognize this
-> form and send the message using the correct msgid.
+> 	[PATCH v.2] USB host: Fix lockdep warning in AMD PLL quirk
 > 
-> That way the commit includes a correct and clickable link, doesn't
-> require magic knowledge and doesn't need the committer to do extra work.
-> 
+> Otherwise people reading the email won't know which patch it refers to.
 
-To summarize the problem I hinted at earlier:
+Yes, I usually do this when I post patch series. For single patches I
+just send what 'git format-patch' gives me. I should probably edit that
+output in the future on single patches.
+(This is btw. actually v3, sorry that I forgot to Cc you on v2)
 
-1. The link that ends up in the commit message needs to be unique, or
-   it is not going to be a working future-clickable link.
-2. The link that ends up in the commit message CANNOT use the SHA1 of
-   the commit itself, since the commit SHA1 is derived from the entire
-   commit object including the message;
-3. As a result, the only option is for the robot to change the
-   Message-ID to something other than the SHA1 of the commit.  It is a
-   bit unfortunate, but probably not disastrous.
-
-	-hpa
+	Joerg
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
