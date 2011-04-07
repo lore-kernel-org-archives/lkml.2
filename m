@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab1DGL1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 07:27:48 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:45930 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635Ab1DGL1r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 07:27:47 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D9DA00A.3030700@cam.ac.uk>
-Date: Thu, 07 Apr 2011 12:29:14 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1755681Ab1DGLd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 07:33:57 -0400
+Received: from gra-lx1.iram.es ([150.214.224.41]:36022 "EHLO gra-lx1.iram.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab1DGLd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 07:33:56 -0400
+Date: Thu, 7 Apr 2011 13:33:47 +0200
+From: Gabriel Paubert <paubert@iram.es>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+Message-ID: <20110407113347.GA2237@iram.es>
+References: <20110404235259.GA30132@iram.es> <20110406084101.GB13963@pengutronix.de> <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
 MIME-Version: 1.0
-To: Sonny Rao <sonnyrao@chromium.org>
-CC: linux-pm@lists.linux-foundation.org, bleung@chromium.org,
-        snanda@chromium.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Phillip Kurtenbach <pkurtenbach@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH] Enable async suspend/resume on industrial IO devices
-References: <1302057915-13549-1-git-send-email-sonnyrao@chromium.org> <4D9C477E.4050400@cam.ac.uk> <BANLkTikWBU-uW6xKwNt+zrS0JbDPOzdd0w@mail.gmail.com>
-In-Reply-To: <BANLkTikWBU-uW6xKwNt+zrS0JbDPOzdd0w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/11 23:47, Sonny Rao wrote:
-> On Wed, Apr 6, 2011 at 3:59 AM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
->> On 04/06/11 03:45, Sonny Rao wrote:
->>> Industrial I/O devices can sometimes take a long time to resume,
->>> allowing them to be asynchronus saves 50ms on one light sensor
->>>
->> Hi Sonny,
->>
->> cc'd linux-iio
->>
->> I'm not particularly familiar with this.  Are there any disadvantages?
->> I just wonder if it would be better to push this into individual drivers
->> rather than the core?
-> 
-> Yeah we could do it that way too, I sent out a similar patch for i2c
-> and people were asking if it was entirely safe.  It sounds like it may
-> depend on dependencies between devices.
-> 
-> Do you know if any of the devices in iio have inter-device dependencies?
-> I was under the impression they were mostly stand-alone sensors that
-> ordinarily wouldn't, but I haven't tried to audit all of them or anything.
-Mostly I think is the key word here.  Right now I don't think we have anything
-that would have a problem, but putting something like that in the core is
-liable to bite sometime in the future.  For now at least I think I'd prefer
-to see it in an individual driver.
+	Hi Dave,
+
+sorry, in my previous message I forgot the strace
+output, which is an inifinite loop of the following:
+
+--- SIGALRM (Alarm clock) @ 0 (0) ---
+sigreturn()                             = ? (mask now [])
+ioctl(7, 0xc0286429, 0xffdf9bb8)        = -1 EBUSY (Device or resource busy)
+--- SIGALRM (Alarm clock) @ 0 (0) ---
+sigreturn()                             = ? (mask now [])
+ioctl(7, 0xc0286429, 0xffdf9bb8)        = -1 EBUSY (Device or resource busy)
+
+Note: fd 7 is /dev/dri/card0.
+
+	Regards,
+	Gabriel
