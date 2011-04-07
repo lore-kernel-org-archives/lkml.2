@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab1DGPLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 11:11:41 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:33236 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751279Ab1DGPLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 11:11:40 -0400
-Date: Thu, 7 Apr 2011 17:11:29 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.39-rc1 noveau trouble and regression (bad commit:
- 38f1cff0863809587b5fd10ecd0c24c8b543a48c )
-Message-ID: <20110407151129.GA24977@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	airlied@redhat.com, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <20110403181206.GA19291@comet.dominikbrodowski.net>
+	id S1752849Ab1DGPN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 11:13:26 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.181]:31548
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751279Ab1DGPNZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 11:13:25 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4R8275bhz32i637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJAFM4-02-3JY-02
+X-M-MSG: 
+Date: Thu, 7 Apr 2011 17:13:16 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] dma-debug: print information about leaked entry
+Message-ID: <20110407151316.GZ23633@amd.com>
+References: <20110331120759.GA5230@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110403181206.GA19291@comet.dominikbrodowski.net>
+In-Reply-To: <20110331120759.GA5230@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-
-still no joy with 2.6.39-rc2.
-
-Best,
-	Dominik
-
-On Sun, Apr 03, 2011 at 08:12:06PM +0200, Dominik Brodowski wrote:
-> Hey,
+On Thu, Mar 31, 2011 at 08:08:09AM -0400, Stanislaw Gruszka wrote:
+> When driver leak dma mapping, print additional information about one of
+> leaked entries, to to help investigate problem. Patch should be useful
+> for debugging drivers, which maps many different class of buffers.
 > 
-> After bisecting for a day, I'm pretty confident that the commit
-> 38f1cff0863809587b5fd10ecd0c24c8b543a48c introduced an error which
-> causes one of my computers to hang during boot -- only a blank
-> screen appears. The initramfs never gets run.
-> 
-> The system consists of an Atom D525 with Intel NM10 + NVIDIA GT218/ION2
-> chipset.
-> 
-> Best,
-> 	Dominik
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+
+Applied, thanks.
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
