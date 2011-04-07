@@ -1,61 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab1DGBqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 21:46:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62445 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab1DGBqC (ORCPT
+	id S1757319Ab1DGBsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 21:48:00 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:50168 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab1DGBr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 21:46:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Date: Thu, 7 Apr 2011 03:44:44 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <Will.Deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        david@lang.hm, "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <alpine.LFD.2.00.1103310145390.28032@xanadu.home> <BANLkTinDgAwu7jg+rciMUU19fj+TKPRwmg@mail.gmail.com> <1302079304.8718.7.camel@e102109-lin.cambridge.arm.com>
-In-Reply-To: <1302079304.8718.7.camel@e102109-lin.cambridge.arm.com>
+	Wed, 6 Apr 2011 21:47:58 -0400
+Message-ID: <4D9D17B3.7020809@snapgear.com>
+Date: Thu, 7 Apr 2011 11:47:31 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: uClinux list <uclinux-dev@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] m68knommu: Remove obsolete #include <linux/sys.h>
+References: <alpine.DEB.2.00.1104062141370.28556@ayla.of.borg>
+In-Reply-To: <alpine.DEB.2.00.1104062141370.28556@ayla.of.borg>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104070344.44568.arnd@arndb.de>
-X-Provags-ID: V02:K0:LhaKxr88MbU1gR9e8EMCHJAy/9rHYccJFBk+DSu6YHn
- lpLPKierd3TbA6w+CJ1o3XvN9Q3HdK++7ezzdm5GMkPAlwK9Sa
- bERSZBvbXdUb1l7ni4cKQNzpfNUJ7Oop9VcMucSvRjTAkGf0IV
- 0W+hPbPuWLioHWpQ0QyfwkXwhAeUUdPz+aJnD2SYK4Hb9SQrNS
- XBSntqieRQr4lL3exBb+w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 April 2011, Catalin Marinas wrote:
-> On Wed, 2011-04-06 at 00:19 +0100, Linus Walleij wrote:
-> > 2011/4/1 Linus Torvalds <torvalds@linux-foundation.org>:
-> > Basically it requires you to get the physical address and size of
-> > each peripheral, then at offset -0x10 from the end address (usually
-> > at even 4K pages), if you find the magic number 0xB105F00D
-> > (ARM has a sense of humour, obviously) you can find something
-> > alike the PCI IDs at offset -0x20, manufacturer ID, version number
-> > and revision of the hardware.
-> 
-> I don't think this was ever part of the AMBA specification. It was just
-> some convention used within ARM for the PrimeCell peripherals. Other
-> AMBA licensees did something else so it's not a reliable mechanism (I
-> think ARM gave up on this as well in recent peripherals).
+Hi Geert,
 
-Do you think there is a way to get ARM ltd to make a better effort
-at this with a future specification? I suppose it would be extremely
-helpful if there was a way to specify more of the required information,
-and to require everybody to fill in correct data, in the same way that
-architecture compliance gets enforced on the CPU core.
+On 07/04/11 05:43, Geert Uytterhoeven wrote:
+> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
 
-	Arnd
+Looks good. Compile and run tested on m68knommu (at 2.6.39-rc2).
+I have added this to the m68knommu git tree.
+
+Regards
+Greg
+
+
+> ---
+> Janitors: "git grep linux/sys.h" shows many more.
+>
+>   arch/m68k/kernel/entry_no.S         |    1 -
+>   arch/m68k/kernel/syscalltable.S     |    1 -
+>   arch/m68k/platform/68328/entry.S    |    1 -
+>   arch/m68k/platform/68360/entry.S    |    1 -
+>   arch/m68k/platform/coldfire/entry.S |    1 -
+>   arch/m68k/platform/coldfire/head.S  |    1 -
+>   6 files changed, 0 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/m68k/kernel/entry_no.S b/arch/m68k/kernel/entry_no.S
+> index 2783f25..5f0f6b5 100644
+> --- a/arch/m68k/kernel/entry_no.S
+> +++ b/arch/m68k/kernel/entry_no.S
+> @@ -24,7 +24,6 @@
+>    * linux 2.4 support David McCullough<davidm@snapgear.com>
+>    */
+>
+> -#include<linux/sys.h>
+>   #include<linux/linkage.h>
+>   #include<asm/errno.h>
+>   #include<asm/setup.h>
+> diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
+> index 79b1ed1..935e10a 100644
+> --- a/arch/m68k/kernel/syscalltable.S
+> +++ b/arch/m68k/kernel/syscalltable.S
+> @@ -11,7 +11,6 @@
+>    *  Copyright (C) 1991, 1992  Linus Torvalds
+>    */
+>
+> -#include<linux/sys.h>
+>   #include<linux/linkage.h>
+>   #include<asm/unistd.h>
+>
+> diff --git a/arch/m68k/platform/68328/entry.S b/arch/m68k/platform/68328/entry.S
+> index 676960c..0747318 100644
+> --- a/arch/m68k/platform/68328/entry.S
+> +++ b/arch/m68k/platform/68328/entry.S
+> @@ -10,7 +10,6 @@
+>    * Linux/m68k support by Hamish Macdonald
+>    */
+>
+> -#include<linux/sys.h>
+>   #include<linux/linkage.h>
+>   #include<asm/thread_info.h>
+>   #include<asm/unistd.h>
+> diff --git a/arch/m68k/platform/68360/entry.S b/arch/m68k/platform/68360/entry.S
+> index 46c1b18..e1477f2 100644
+> --- a/arch/m68k/platform/68360/entry.S
+> +++ b/arch/m68k/platform/68360/entry.S
+> @@ -12,7 +12,6 @@
+>    * M68360 Port by SED Systems, and Lineo.
+>    */
+>
+> -#include<linux/sys.h>
+>   #include<linux/linkage.h>
+>   #include<asm/thread_info.h>
+>   #include<asm/unistd.h>
+> diff --git a/arch/m68k/platform/coldfire/entry.S b/arch/m68k/platform/coldfire/entry.S
+> index 5837cf0..bc15bea 100644
+> --- a/arch/m68k/platform/coldfire/entry.S
+> +++ b/arch/m68k/platform/coldfire/entry.S
+> @@ -26,7 +26,6 @@
+>    * Bug, speed and maintainability fixes by Philippe De Muyter<phdm@macqel.be>
+>    */
+>
+> -#include<linux/sys.h>
+>   #include<linux/linkage.h>
+>   #include<asm/unistd.h>
+>   #include<asm/thread_info.h>
+> diff --git a/arch/m68k/platform/coldfire/head.S b/arch/m68k/platform/coldfire/head.S
+> index 129bff4..da21180 100644
+> --- a/arch/m68k/platform/coldfire/head.S
+> +++ b/arch/m68k/platform/coldfire/head.S
+> @@ -8,7 +8,6 @@
+>
+>   /*****************************************************************************/
+>
+> -#include<linux/sys.h>
+>   #include<linux/linkage.h>
+>   #include<linux/init.h>
+>   #include<asm/asm-offsets.h>
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
