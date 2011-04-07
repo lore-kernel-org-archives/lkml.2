@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab1DGR2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 13:28:53 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58620 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756333Ab1DGR2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 13:28:52 -0400
-Date: Thu, 7 Apr 2011 19:28:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andy Lutomirski <luto@MIT.EDU>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFT/PATCH v2 2/6] x86-64: Optimize vread_tsc's barriers
-Message-ID: <20110407172832.GA13304@elte.hu>
-References: <cover.1302137785.git.luto@mit.edu>
- <80b43d57d15f7b141799a7634274ee3bfe5a5855.1302137785.git.luto@mit.edu>
- <20110407082550.GG24879@elte.hu>
- <20110407152354.GW21838@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110407152354.GW21838@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756136Ab1DGRdA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:33:00 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:55289 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab1DGRc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 13:32:59 -0400
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linux-kernel@vger.kernel.org
+Cc: "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        bluesmoke-devel@lists.sourceforge.net
+Subject: [PATCH] edac/mpc85xx: fix unused variable warning
+Date: Thu,  7 Apr 2011 10:32:48 -0700
+Message-Id: <1302197568-31725-1-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.7.3.4
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Thu, 07 Apr 2011 10:32:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit a94d7b35067ab403485a1ea06b7a3d0172d1a1ba introduced an unused
+variable warning when CONFIG_FSL_SOC_BOOKE is not defined. Fix it.
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: bluesmoke-devel@lists.sourceforge.net
+---
+ drivers/edac/mpc85xx_edac.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> > So the much better optimization would be to give up on exact GTOD coherency 
-> > and just make sure the same task does not see time going backwards. If 
-> > user-space wants precise coherency it can use synchronization primitives 
-> > itsef. By default it would get the fast and possibly off by a few cycles 
-> > thing instead. We'd never be seriously jump in time - only small jumps 
-> > would happen in practice, depending on CPU parallelism effects.
-> 
-> That would be a big user visible break in compatibility.
+diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+index 38ab8e2..6002657 100644
+--- a/drivers/edac/mpc85xx_edac.c
++++ b/drivers/edac/mpc85xx_edac.c
+@@ -1154,7 +1154,9 @@ static void __init mpc85xx_mc_clear_rfxe(void *data)
+ static int __init mpc85xx_mc_init(void)
+ {
+ 	int res = 0;
++#ifdef CONFIG_FSL_SOC_BOOKE
+ 	u32 pvr = 0;
++#endif
+ 
+ 	printk(KERN_INFO "Freescale(R) MPC85xx EDAC driver, "
+ 	       "(C) 2006 Montavista Software\n");
+-- 
+1.7.3.4
 
-Those are big scary words, but you really need to think this through:
-
-Firstly, what is the user expectation? That a GTOD timestamp is provided. What 
-will the user application do with that timestamp? Store it, for later use.
-
-So there's implicit ordering all around these timestamps.
-
-Secondly, x86 hardware never did a good job keeping our GTOD timestamps 
-coherent, so while there *is* expectation for certainl behavior (Andy's for 
-example), it's not widespread at all.
-
-I bet that Linus's single-side barrier approach will be good enough in practice 
-to meet Andy's needs. We might not be able to remove both barriers, but the 
-tricks look really fragile ...
-
-Andy, mind trying out Linus's suggestion? It should bring us more of a speedup 
-and it would keep this code even simpler.
-
-Thanks,
-
-	Ingo
