@@ -1,319 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab1DGQJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:09:44 -0400
+	id S1756215Ab1DGQKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:10:37 -0400
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:63563 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560Ab1DGQJl (ORCPT
+	with ESMTP id S1755928Ab1DGQJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:09:41 -0400
+	Thu, 7 Apr 2011 12:09:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=bLuvOGYbVMVi5nDsbgHzRYXKagLnvd66od+ytdAWDiZeeaBVmud1xahox/0QC5M/Jk
-         sV+OzdfQtJGqaWpYh3/hdOGqADod/rpFTC08nuqnZtFAEC607HCGzmF0kf0ruH/mAL9C
-         OUaUwRp2I3T8w+/vruhJdtpmUpf8GzIEZHLHE=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=bkCdsAP4R6o2YNctyglS86S6FYtvVf1brvPmhj2ZUrb7eeQgg+cXS1YQdSdG0rArDj
+         yq8u1EB7CJmmi5GeTrYhrJi0xPrkOVD+mg939XevxNyKBuX9Xkgy2vPxdPQ7RnJym0t3
+         UNZv3pxi5o9HhPtSShX0sRkgbwPspe+sR1txo=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        linux-input@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mtd@lists.infradead.org, netdev@vger.kernel.org,
-        socketcan-core@lists.berlios.de, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [RFC 1/6]Fix typo "recieve" in various parts of the kernel.
-Date: Thu,  7 Apr 2011 09:09:22 -0700
-Message-Id: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [RFC 4/6]Fix typo "recieve" in various parts of the kernel.
+Date: Thu,  7 Apr 2011 09:09:25 -0700
+Message-Id: <1302192567-842-4-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.2
+In-Reply-To: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
+References: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below fixes some typos "recieve" in various parts of the kernel.
-Note: these below are in actual code rather than comments(excpet for r852.c which
-has a code fix, and comment).
-compile tested as best as I can...
+The patch below fixes "recieve" in various parts of the kernel.
+Note: patches 2,3,4,5 are fixes to comments only(no code).
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-CC: linux-input@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org 
-CC: linux-mtd@lists.infradead.org
-CC: netdev@vger.kernel.org
-CC: socketcan-core@lists.berlios.de
-CC: linux-scsi@vger.kernel.org 
-CC: linux-usb@vger.kernel.org
----
- drivers/input/misc/keyspan_remote.c |    2 +-
- drivers/mfd/ab8500-gpadc.c          |    2 +-
- drivers/mtd/nand/r852.c             |    6 +++---
- drivers/net/bnx2x/bnx2x_link.c      |    8 ++++----
- drivers/net/can/janz-ican3.c        |    4 ++--
- drivers/scsi/scsi_netlink.c         |    2 +-
- drivers/usb/misc/ftdi-elan.c        |   28 ++++++++++++++--------------
- drivers/uwb/reset.c                 |    2 +-
- 8 files changed, 27 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/input/misc/keyspan_remote.c b/drivers/input/misc/keyspan_remote.c
-index a93c525..fc62256 100644
---- a/drivers/input/misc/keyspan_remote.c
-+++ b/drivers/input/misc/keyspan_remote.c
-@@ -312,7 +312,7 @@ static void keyspan_check_data(struct usb_keyspan *remote)
- 			remote->data.tester = remote->data.tester >> 5;
- 			remote->data.bits_left -= 5;
- 		} else {
--			err("Bad message recieved, no stop bit found.\n");
-+			err("Bad message received, no stop bit found.\n");
+---
+ drivers/scsi/cxgbi/libcxgbi.h        |    6 +++---
+ drivers/scsi/libfc/fc_lport.c        |    2 +-
+ drivers/scsi/lpfc/lpfc_bsg.c         |    2 +-
+ drivers/scsi/lpfc/lpfc_hbadisc.c     |    4 ++--
+ drivers/scsi/lpfc/lpfc_sli.c         |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    2 +-
+ drivers/scsi/qla2xxx/qla_fw.h        |    2 +-
+ drivers/scsi/qla2xxx/qla_mbx.c       |    2 +-
+ drivers/scsi/qla4xxx/ql4_def.h       |    2 +-
+ drivers/tty/mxser.h                  |    2 +-
+ drivers/usb/class/usbtmc.c           |    2 +-
+ drivers/usb/gadget/fsl_qe_udc.h      |    2 +-
+ drivers/usb/host/fhci-tds.c          |    2 +-
+ drivers/usb/host/oxu210hp-hcd.c      |    4 ++--
+ 14 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/scsi/cxgbi/libcxgbi.h b/drivers/scsi/cxgbi/libcxgbi.h
+index 0a20fd5..9267844 100644
+--- a/drivers/scsi/cxgbi/libcxgbi.h
++++ b/drivers/scsi/cxgbi/libcxgbi.h
+@@ -262,9 +262,9 @@ struct cxgbi_skb_tx_cb {
+ enum cxgbi_skcb_flags {
+ 	SKCBF_TX_NEED_HDR,	/* packet needs a header */
+ 	SKCBF_RX_COALESCED,	/* received whole pdu */
+-	SKCBF_RX_HDR,		/* recieved pdu header */
+-	SKCBF_RX_DATA,		/* recieved pdu payload */
+-	SKCBF_RX_STATUS,	/* recieved ddp status */
++	SKCBF_RX_HDR,		/* received pdu header */
++	SKCBF_RX_DATA,		/* received pdu payload */
++	SKCBF_RX_STATUS,	/* received ddp status */
+ 	SKCBF_RX_DATA_DDPD,	/* pdu payload ddp'd */
+ 	SKCBF_RX_HCRC_ERR,	/* header digest error */
+ 	SKCBF_RX_DCRC_ERR,	/* data digest error */
+diff --git a/drivers/scsi/libfc/fc_lport.c b/drivers/scsi/libfc/fc_lport.c
+index 8c08b21..7651c8a 100644
+--- a/drivers/scsi/libfc/fc_lport.c
++++ b/drivers/scsi/libfc/fc_lport.c
+@@ -771,7 +771,7 @@ EXPORT_SYMBOL(fc_lport_set_local_id);
+ 
+ /**
+  * fc_lport_recv_flogi_req() - Receive a FLOGI request
+- * @lport: The local port that recieved the request
++ * @lport: The local port that received the request
+  * @rx_fp: The FLOGI frame
+  *
+  * A received FLOGI request indicates a point-to-point connection.
+diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
+index 793b9f1..77b2871 100644
+--- a/drivers/scsi/lpfc/lpfc_bsg.c
++++ b/drivers/scsi/lpfc/lpfc_bsg.c
+@@ -1939,7 +1939,7 @@ out:
+  * @rxxri: Receive exchange id
+  * @len: Number of data bytes
+  *
+- * This function allocates and posts a data buffer of sufficient size to recieve
++ * This function allocates and posts a data buffer of sufficient size to receive
+  * an unsolicted CT command.
+  **/
+ static int lpfcdiag_loop_post_rxbufs(struct lpfc_hba *phba, uint16_t rxxri,
+diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
+index 154c715..1dbeadc 100644
+--- a/drivers/scsi/lpfc/lpfc_hbadisc.c
++++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
+@@ -4477,7 +4477,7 @@ lpfc_setup_disc_node(struct lpfc_vport *vport, uint32_t did)
+ 	if ((vport->fc_flag & FC_RSCN_MODE) &&
+ 	    !(vport->fc_flag & FC_NDISC_ACTIVE)) {
+ 		if (lpfc_rscn_payload_check(vport, did)) {
+-			/* If we've already recieved a PLOGI from this NPort
++			/* If we've already received a PLOGI from this NPort
+ 			 * we don't need to try to discover it again.
+ 			 */
+ 			if (ndlp->nlp_flag & NLP_RCV_PLOGI)
+@@ -4493,7 +4493,7 @@ lpfc_setup_disc_node(struct lpfc_vport *vport, uint32_t did)
+ 		} else
+ 			ndlp = NULL;
+ 	} else {
+-		/* If we've already recieved a PLOGI from this NPort,
++		/* If we've already received a PLOGI from this NPort,
+ 		 * or we are already in the process of discovery on it,
+ 		 * we don't need to try to discover it again.
+ 		 */
+diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+index 4746dcd..d5791e7 100644
+--- a/drivers/scsi/lpfc/lpfc_sli.c
++++ b/drivers/scsi/lpfc/lpfc_sli.c
+@@ -9684,7 +9684,7 @@ out:
+  * @cq: Pointer to the completion queue.
+  * @wcqe: Pointer to a completion queue entry.
+  *
+- * This routine process a slow-path work-queue or recieve queue completion queue
++ * This routine process a slow-path work-queue or receive queue completion queue
+  * entry.
+  *
+  * Return: true if work posted to worker thread, otherwise false.
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 6ceb775..b26502f 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -2984,7 +2984,7 @@ _scsih_check_for_pending_tm(struct MPT2SAS_ADAPTER *ioc, u16 smid)
+  *
+  * This routine added to better handle cable breaker.
+  *
+- * This handles the case where driver recieves multiple expander
++ * This handles the case where driver receives multiple expander
+  * add and delete events in a single shot.  When there is a delete event
+  * the routine will void any pending add events waiting in the event queue.
+  *
+diff --git a/drivers/scsi/qla2xxx/qla_fw.h b/drivers/scsi/qla2xxx/qla_fw.h
+index 631fefc..f5ba09c 100644
+--- a/drivers/scsi/qla2xxx/qla_fw.h
++++ b/drivers/scsi/qla2xxx/qla_fw.h
+@@ -539,7 +539,7 @@ struct sts_entry_24xx {
+ 	 * If DIF Error is set in comp_status, these additional fields are
+ 	 * defined:
+ 	 * &data[10] : uint8_t report_runt_bg[2];	- computed guard
+-	 * &data[12] : uint8_t actual_dif[8];		- DIF Data recieved
++	 * &data[12] : uint8_t actual_dif[8];		- DIF Data received
+ 	 * &data[20] : uint8_t expected_dif[8];		- DIF Data computed
+ 	*/
+ };
+diff --git a/drivers/scsi/qla2xxx/qla_mbx.c b/drivers/scsi/qla2xxx/qla_mbx.c
+index 7a7c0ec..6accb11 100644
+--- a/drivers/scsi/qla2xxx/qla_mbx.c
++++ b/drivers/scsi/qla2xxx/qla_mbx.c
+@@ -3789,7 +3789,7 @@ qla2x00_loopback_test(scsi_qla_host_t *vha, struct msg_echo_lb *mreq,
+ 	mcp->mb[20] = LSW(MSD(mreq->send_dma));
+ 	mcp->mb[21] = MSW(MSD(mreq->send_dma));
+ 
+-	/* recieve data address */
++	/* receive data address */
+ 	mcp->mb[16] = LSW(mreq->rcv_dma);
+ 	mcp->mb[17] = MSW(mreq->rcv_dma);
+ 	mcp->mb[6] = LSW(MSD(mreq->rcv_dma));
+diff --git a/drivers/scsi/qla4xxx/ql4_def.h b/drivers/scsi/qla4xxx/ql4_def.h
+index c1f8d1b..4757878 100644
+--- a/drivers/scsi/qla4xxx/ql4_def.h
++++ b/drivers/scsi/qla4xxx/ql4_def.h
+@@ -182,7 +182,7 @@ struct srb {
+ 	uint16_t flags;		/* (1) Status flags. */
+ 
+ #define SRB_DMA_VALID		BIT_3	/* DMA Buffer mapped. */
+-#define SRB_GOT_SENSE		BIT_4	/* sense data recieved. */
++#define SRB_GOT_SENSE		BIT_4	/* sense data received. */
+ 	uint8_t state;		/* (1) Status flags. */
+ 
+ #define SRB_NO_QUEUE_STATE	 0	/* Request is in between states */
+diff --git a/drivers/tty/mxser.h b/drivers/tty/mxser.h
+index 41878a6..0bf7943 100644
+--- a/drivers/tty/mxser.h
++++ b/drivers/tty/mxser.h
+@@ -113,7 +113,7 @@
+ #define MOXA_MUST_IIR_RTO		0x0C
+ #define MOXA_MUST_IIR_LSR		0x06
+ 
+-/* recieved Xon/Xoff or specical interrupt pending */
++/* received Xon/Xoff or specical interrupt pending */
+ #define MOXA_MUST_IIR_XSC		0x10
+ 
+ /* RTS/CTS change state interrupt pending */
+diff --git a/drivers/usb/class/usbtmc.c b/drivers/usb/class/usbtmc.c
+index 6a54634..385acb8 100644
+--- a/drivers/usb/class/usbtmc.c
++++ b/drivers/usb/class/usbtmc.c
+@@ -483,7 +483,7 @@ static ssize_t usbtmc_read(struct file *filp, char __user *buf,
  		}
  
- 		dev_dbg(&remote->udev->dev,
-diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-index bc93b2e..ea91ef1 100644
---- a/drivers/mfd/ab8500-gpadc.c
-+++ b/drivers/mfd/ab8500-gpadc.c
-@@ -314,7 +314,7 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
- 	/* wait for completion of conversion */
- 	if (!wait_for_completion_timeout(&gpadc->ab8500_gpadc_complete, 2*HZ)) {
- 		dev_err(gpadc->dev,
--			"timeout: didnt recieve GPADC conversion interrupt\n");
-+			"timeout: didnt receive GPADC conversion interrupt\n");
- 		ret = -EINVAL;
- 		goto out;
- 	}
-diff --git a/drivers/mtd/nand/r852.c b/drivers/mtd/nand/r852.c
-index 6322d1f..45a3f60 100644
---- a/drivers/mtd/nand/r852.c
-+++ b/drivers/mtd/nand/r852.c
-@@ -766,7 +766,7 @@ static irqreturn_t r852_irq(int irq, void *data)
- 		ret = IRQ_HANDLED;
- 		dev->card_detected = !!(card_status & R852_CARD_IRQ_INSERT);
+ 		done += n_characters;
+-		/* Terminate if end-of-message bit recieved from device */
++		/* Terminate if end-of-message bit received from device */
+ 		if ((buffer[8] &  0x01) && (actual >= n_characters + 12))
+ 			remaining = 0;
+ 		else
+diff --git a/drivers/usb/gadget/fsl_qe_udc.h b/drivers/usb/gadget/fsl_qe_udc.h
+index bea5b82..105eb62 100644
+--- a/drivers/usb/gadget/fsl_qe_udc.h
++++ b/drivers/usb/gadget/fsl_qe_udc.h
+@@ -379,7 +379,7 @@ struct qe_udc {
+ #define T_LSP         0x01000000         /* Low-speed transaction */
+ #define T_PID         0x00c00000         /* packet id */
+ #define T_NAK         0x00100000         /* No ack. */
+-#define T_STAL        0x00080000         /* Stall recieved */
++#define T_STAL        0x00080000         /* Stall received */
+ #define T_TO          0x00040000         /* time out */
+ #define T_UN          0x00020000         /* underrun */
  
--		/* we shouldn't recieve any interrupts if we wait for card
-+		/* we shouldn't receive any interrupts if we wait for card
- 			to settle */
- 		WARN_ON(dev->card_unstable);
+diff --git a/drivers/usb/host/fhci-tds.c b/drivers/usb/host/fhci-tds.c
+index 38fe058..7fd46f3 100644
+--- a/drivers/usb/host/fhci-tds.c
++++ b/drivers/usb/host/fhci-tds.c
+@@ -40,7 +40,7 @@
+ #define TD_RXER		0x0020 /* Rx error or not */
  
-@@ -794,13 +794,13 @@ static irqreturn_t r852_irq(int irq, void *data)
- 		ret = IRQ_HANDLED;
+ #define TD_NAK		0x0010 /* No ack. */
+-#define TD_STAL		0x0008 /* Stall recieved */
++#define TD_STAL		0x0008 /* Stall received */
+ #define TD_TO		0x0004 /* time out */
+ #define TD_UN		0x0002 /* underrun */
+ #define TD_NO		0x0010 /* Rx Non Octet Aligned Packet */
+diff --git a/drivers/usb/host/oxu210hp-hcd.c b/drivers/usb/host/oxu210hp-hcd.c
+index 44e4deb..4a771f6 100644
+--- a/drivers/usb/host/oxu210hp-hcd.c
++++ b/drivers/usb/host/oxu210hp-hcd.c
+@@ -2879,7 +2879,7 @@ static int oxu_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
+ 	/* Ok, we have more job to do! :) */
  
- 		if (dma_status & R852_DMA_IRQ_ERROR) {
--			dbg("recieved dma error IRQ");
-+			dbg("received dma error IRQ");
- 			r852_dma_done(dev, -EIO);
- 			complete(&dev->dma_done);
- 			goto out;
- 		}
+ 	for (i = 0; i < num - 1; i++) {
+-		/* Get free micro URB poll till a free urb is recieved */
++		/* Get free micro URB poll till a free urb is received */
  
--		/* recieved DMA interrupt out of nowhere? */
-+		/* received DMA interrupt out of nowhere? */
- 		WARN_ON_ONCE(dev->dma_stage == 0);
+ 		do {
+ 			murb = (struct urb *) oxu_murb_alloc(oxu);
+@@ -2911,7 +2911,7 @@ static int oxu_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
  
- 		if (dev->dma_stage == 0)
-diff --git a/drivers/net/bnx2x/bnx2x_link.c b/drivers/net/bnx2x/bnx2x_link.c
-index f2f367d..d25491b 100644
---- a/drivers/net/bnx2x/bnx2x_link.c
-+++ b/drivers/net/bnx2x/bnx2x_link.c
-@@ -2385,7 +2385,7 @@ static void bnx2x_check_fallback_to_cl37(struct bnx2x_phy *phy,
- 					 struct link_params *params)
- {
- 	struct bnx2x *bp = params->bp;
--	u16 rx_status, ustat_val, cl37_fsm_recieved;
-+	u16 rx_status, ustat_val, cl37_fsm_received;
- 	DP(NETIF_MSG_LINK, "bnx2x_check_fallback_to_cl37\n");
- 	/* Step 1: Make sure signal is detected */
- 	CL22_RD_OVER_CL45(bp, phy,
-@@ -2423,15 +2423,15 @@ static void bnx2x_check_fallback_to_cl37(struct bnx2x_phy *phy,
- 	CL22_RD_OVER_CL45(bp, phy,
- 			  MDIO_REG_BANK_REMOTE_PHY,
- 			  MDIO_REMOTE_PHY_MISC_RX_STATUS,
--			  &cl37_fsm_recieved);
--	if ((cl37_fsm_recieved &
-+			  &cl37_fsm_received);
-+	if ((cl37_fsm_received &
- 	     (MDIO_REMOTE_PHY_MISC_RX_STATUS_CL37_FSM_RECEIVED_OVER1G_MSG |
- 	     MDIO_REMOTE_PHY_MISC_RX_STATUS_CL37_FSM_RECEIVED_BRCM_OUI_MSG)) !=
- 	    (MDIO_REMOTE_PHY_MISC_RX_STATUS_CL37_FSM_RECEIVED_OVER1G_MSG |
- 	      MDIO_REMOTE_PHY_MISC_RX_STATUS_CL37_FSM_RECEIVED_BRCM_OUI_MSG)) {
- 		DP(NETIF_MSG_LINK, "No CL37 FSM were received. "
- 			     "misc_rx_status(0x8330) = 0x%x\n",
--			 cl37_fsm_recieved);
-+			 cl37_fsm_received);
- 		return;
- 	}
- 	/*
-diff --git a/drivers/net/can/janz-ican3.c b/drivers/net/can/janz-ican3.c
-index 102b16c..98667f9 100644
---- a/drivers/net/can/janz-ican3.c
-+++ b/drivers/net/can/janz-ican3.c
-@@ -1050,7 +1050,7 @@ static void ican3_handle_inquiry(struct ican3_dev *mod, struct ican3_msg *msg)
- 		complete(&mod->termination_comp);
- 		break;
- 	default:
--		dev_err(mod->dev, "recieved an unknown inquiry response\n");
-+		dev_err(mod->dev, "received an unknown inquiry response\n");
- 		break;
- 	}
- }
-@@ -1058,7 +1058,7 @@ static void ican3_handle_inquiry(struct ican3_dev *mod, struct ican3_msg *msg)
- static void ican3_handle_unknown_message(struct ican3_dev *mod,
- 					struct ican3_msg *msg)
- {
--	dev_warn(mod->dev, "recieved unknown message: spec 0x%.2x length %d\n",
-+	dev_warn(mod->dev, "received unknown message: spec 0x%.2x length %d\n",
- 			   msg->spec, le16_to_cpu(msg->len));
- }
+ 	/* Last urb requires special handling  */
  
-diff --git a/drivers/scsi/scsi_netlink.c b/drivers/scsi/scsi_netlink.c
-index a2ed201..26a8a45 100644
---- a/drivers/scsi/scsi_netlink.c
-+++ b/drivers/scsi/scsi_netlink.c
-@@ -499,7 +499,7 @@ scsi_netlink_init(void)
- 				SCSI_NL_GRP_CNT, scsi_nl_rcv_msg, NULL,
- 				THIS_MODULE);
- 	if (!scsi_nl_sock) {
--		printk(KERN_ERR "%s: register of recieve handler failed\n",
-+		printk(KERN_ERR "%s: register of receive handler failed\n",
- 				__func__);
- 		netlink_unregister_notifier(&scsi_netlink_notifier);
- 		return;
-diff --git a/drivers/usb/misc/ftdi-elan.c b/drivers/usb/misc/ftdi-elan.c
-index 7839c98..1871a30 100644
---- a/drivers/usb/misc/ftdi-elan.c
-+++ b/drivers/usb/misc/ftdi-elan.c
-@@ -187,7 +187,7 @@ struct usb_ftdi {
-         u32 controlreg;
-         u8 response[4 + 1024];
-         int expected;
--        int recieved;
-+        int received;
-         int ed_found;
- };
- #define kref_to_usb_ftdi(d) container_of(d, struct usb_ftdi, kref)
-@@ -353,7 +353,7 @@ static void ftdi_elan_abandon_targets(struct usb_ftdi *ftdi)
-                         mutex_lock(&ftdi->u132_lock);
-                 }
-         }
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         mutex_unlock(&ftdi->u132_lock);
-@@ -411,7 +411,7 @@ static void ftdi_elan_flush_targets(struct usb_ftdi *ftdi)
-                         }
-                 }
-         }
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         mutex_unlock(&ftdi->u132_lock);
-@@ -447,7 +447,7 @@ static void ftdi_elan_cancel_targets(struct usb_ftdi *ftdi)
-                         }
-                 }
-         }
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         mutex_unlock(&ftdi->u132_lock);
-@@ -874,7 +874,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                         mutex_unlock(&ftdi->u132_lock);
-                         ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                                 payload);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         return ftdi->response;
-@@ -890,7 +890,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                         mutex_unlock(&ftdi->u132_lock);
-                         ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                                 payload);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         return ftdi->response;
-@@ -905,7 +905,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                 mutex_unlock(&ftdi->u132_lock);
-                 ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                         payload);
--                ftdi->recieved = 0;
-+                ftdi->received = 0;
-                 ftdi->expected = 4;
-                 ftdi->ed_found = 0;
-                 return ftdi->response;
-@@ -914,7 +914,7 @@ static char *have_ed_set_response(struct usb_ftdi *ftdi,
-                 mutex_unlock(&ftdi->u132_lock);
-                 ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                         payload);
--                ftdi->recieved = 0;
-+                ftdi->received = 0;
-                 ftdi->expected = 4;
-                 ftdi->ed_found = 0;
-                 return ftdi->response;
-@@ -934,7 +934,7 @@ static char *have_ed_get_response(struct usb_ftdi *ftdi,
-         if (target->active)
-                 ftdi_elan_do_callback(ftdi, target, NULL, 0);
-         target->abandoning = 0;
--        ftdi->recieved = 0;
-+        ftdi->received = 0;
-         ftdi->expected = 4;
-         ftdi->ed_found = 0;
-         return ftdi->response;
-@@ -951,7 +951,7 @@ static char *have_ed_get_response(struct usb_ftdi *ftdi,
- */
- static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
- {
--        u8 *b = ftdi->response + ftdi->recieved;
-+        u8 *b = ftdi->response + ftdi->received;
-         int bytes_read = 0;
-         int retry_on_empty = 1;
-         int retry_on_timeout = 3;
-@@ -1043,11 +1043,11 @@ static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
-                 u8 c = ftdi->bulk_in_buffer[++ftdi->bulk_in_last];
-                 bytes_read += 1;
-                 ftdi->bulk_in_left -= 1;
--                if (ftdi->recieved == 0 && c == 0xFF) {
-+                if (ftdi->received == 0 && c == 0xFF) {
-                         goto have;
-                 } else
-                         *b++ = c;
--                if (++ftdi->recieved < ftdi->expected) {
-+                if (++ftdi->received < ftdi->expected) {
-                         goto have;
-                 } else if (ftdi->ed_found) {
-                         int ed_number = (ftdi->response[0] >> 5) & 0x03;
-@@ -1069,7 +1069,7 @@ static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
-                         }
-                         ftdi_elan_do_callback(ftdi, target, 4 + ftdi->response,
-                                 payload);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         b = ftdi->response;
-@@ -1089,7 +1089,7 @@ static int ftdi_elan_respond_engine(struct usb_ftdi *ftdi)
-                         *respond->value = data;
-                         *respond->result = 0;
-                         complete(&respond->wait_completion);
--                        ftdi->recieved = 0;
-+                        ftdi->received = 0;
-                         ftdi->expected = 4;
-                         ftdi->ed_found = 0;
-                         b = ftdi->response;
-diff --git a/drivers/uwb/reset.c b/drivers/uwb/reset.c
-index 2784929..3de630b 100644
---- a/drivers/uwb/reset.c
-+++ b/drivers/uwb/reset.c
-@@ -52,7 +52,7 @@ const char *__strerror[] = {
- 	"cancelled",
- 	"invalid state",
- 	"invalid size",
--	"ack not recieved",
-+	"ack not received",
- 	"no more asie notification",
- };
- 
+-	/* Get free micro URB poll till a free urb is recieved */
++	/* Get free micro URB poll till a free urb is received */
+ 	do {
+ 		murb = (struct urb *) oxu_murb_alloc(oxu);
+ 		if (!murb)
 -- 
 1.7.4.2
 
