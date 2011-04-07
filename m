@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab1DGRI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 13:08:56 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:59847 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756237Ab1DGRIy (ORCPT
+	id S1756388Ab1DGRLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:11:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40605 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab1DGRLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 13:08:54 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH/RFC 4/6] ARM: move SH-mobile runtime PM to arm/common for sharing with other platforms
-Organization: Texas Instruments, Inc.
-References: <1302134569-22825-1-git-send-email-khilman@ti.com>
-	<1302134569-22825-5-git-send-email-khilman@ti.com>
-	<20110407165654.GD8052@linux-sh.org>
-Date: Thu, 07 Apr 2011 10:08:41 -0700
-In-Reply-To: <20110407165654.GD8052@linux-sh.org> (Paul Mundt's message of
-	"Fri, 8 Apr 2011 01:56:54 +0900")
-Message-ID: <8739lu9eg6.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 7 Apr 2011 13:11:11 -0400
+Message-ID: <4D9DF01C.6050506@oracle.com>
+Date: Thu, 07 Apr 2011 10:10:52 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: djwong@us.ibm.com
+CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>
+Subject: Re: [PATCH 1/2] ext4: Calculate and verify inode checksums
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <20110406224547.GT32706@tux1.beaverton.ibm.com> <4D9D0ADB.9010005@oracle.com> <20110407164006.GC24354@tux1.beaverton.ibm.com>
+In-Reply-To: <20110407164006.GC24354@tux1.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D9DF022.011A:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Mundt <lethal@linux-sh.org> writes:
+On 04/07/2011 09:40 AM, Darrick J. Wong wrote:
+> Yes, I see that jbd2 has triggers, looks like a nifty feature.  I suppose if I
+> went with that approach I'd still have to calculate the checksum in
+> ext4_do_update_inode in the nojournal case, and in the journal case I'd write a
+> trigger that would figure out which inodes in a given buffer are actually dirty
+> and compute their checksums.
 
-> On Wed, Apr 06, 2011 at 05:02:47PM -0700, Kevin Hilman wrote:
->> There is really nothing SH-mobile specific about this runtime PM
->> implementation.  Any platform wanting to implement runtime PM based on
->> simple clock gating can use this implementation.
->> 
->> Signed-off-by: Kevin Hilman <khilman@ti.com>
+Yes, you could use a in-mem flag (set in update, cleared in trigger) to
+identify dirty inodes. The discussion on stable pages could be relevant for
+the nojournal case.
+
 >
-> This observation is wholly architecture agnostic, so it's not clear that
-> keeping it in arch/arm/common is any better. It seems that this would be
-> better suited for drivers/base/power/ with a generic Kconfig symbol.
+> That said, I haven't really quantified the performance impact of this naive
+> approach yet, so I wonder -- did you see a similar scenario with ocfs2, and
+> what kind of performance increase did you get by adapting the code to use the
+> jbd2 trigger?  If there's potentially a large increase, it would be interesting
+> to apply the same conversion to the group descriptor checksumming code too.
 
-Sounds fine to me.
+Joel Becker may remember the overhead. He wrote the patch. That said we have few
+differences. ocfs2 has larger (blocksized) inodes. Also, it computes ECC. The code
+is in fs/ocfs2/blockcheck.c.
 
-Thanks for the review,
-
-Kevin
+As in, you may want to generate ext4 specific numbers.
