@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab1DGANU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 20:13:20 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:35250 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab1DGANT (ORCPT
+	id S1756577Ab1DGAPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 20:15:00 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54646 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755240Ab1DGAO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 20:13:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=tzLhSlnza3l5En32lGDfrrKh6ffD6gK7Z6iW/IN0F4myqqo4KmHVrtcPv654NAvMac
-         O3uyqnhrI0ubPmPLfUaso+2E7A/QAKpShdyX/8qMXlmN+p1B5gfTA7FIc0StFGm5CET9
-         3zeOkTEphF9MK+kdPIejSwNkc7fI0oB8kYahc=
-Date: Wed, 6 Apr 2011 21:13:11 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Tim Blechmann <tim@klingt.org>, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.39-rc2] perf top fails to mmap - bisected to 70db7533
-Message-ID: <20110407001311.GA5780@ghostprotocols.net>
-References: <inhgjs$54a$1@dough.gmane.org>
- <4D9C84D5.6090303@gmail.com>
- <20110406175217.GC4987@ghostprotocols.net>
- <201104062248.23853.tim@klingt.org>
- <4D9CE610.4020603@gmail.com>
- <4D9CECF5.3090309@gmail.com>
+	Wed, 6 Apr 2011 20:14:59 -0400
+Message-ID: <4D9D0227.3000807@metafoo.de>
+Date: Thu, 07 Apr 2011 02:15:35 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D9CECF5.3090309@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benson Leung <bleung@chromium.org>
+CC: cbouatmailru@gmail.com, rklein@nvidia.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] gpio-charger: Add gpio_charger_resume
+References: <1301796792-28806-1-git-send-email-bleung@chromium.org> <1302134120-29589-1-git-send-email-bleung@chromium.org>
+In-Reply-To: <1302134120-29589-1-git-send-email-bleung@chromium.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 06, 2011 at 04:45:09PM -0600, David Ahern escreveu:
-> On 04/06/11 16:15, David Ahern wrote:
-> > On 04/06/11 14:48, Tim Blechmann wrote:
-> >>>>> this happens when running perf as the same process as the process and
-> >>>>> when running perf as root.
-> >>>
-> >>> yep, works for me as well:
-> >>>
-> >>> [acme@emilia ~]$ cat vsyscall.c
-> >>
-> >> after including unistd.h, this compiles and works fine. however i cannot profile 
-> >> any multithreaded program. does this work for you?
+On 04/07/2011 01:55 AM, Benson Leung wrote:
+> Gpio charger should notify if the gpio state had changed
+> during suspend. This will send a CHANGED event each time
+> the system resumes, ensuring a plug/unplug of the charger
+> is not missed.
+> 
+> Signed-off-by: Benson Leung <bleung@chromium.org>
+Acked-By: Lars-Peter Clausen <lars@metafoo.de>
 
-> > That does fail:
-> > # ps -C rsyslogd -L
-> >   PID   LWP TTY          TIME CMD
-> >   795   795 ?        00:00:00 rsyslogd
-> >   795   797 ?        00:00:00 rsyslogd
-> >   795   798 ?        00:00:00 rsyslogd
+> 
+> --
+> Version history :
+> v3 : Use SIMPLE_DEV_PM_OPS
+> v2 : Changed to use dev_ms_ops
+> v1 : Initial
+> ---
+>  drivers/power/gpio-charger.c |   15 +++++++++++++++
+>  1 files changed, 15 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+> index 25b88ac..718f2c5 100644
+> --- a/drivers/power/gpio-charger.c
+> +++ b/drivers/power/gpio-charger.c
+> @@ -161,12 +161,27 @@ static int __devexit gpio_charger_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_PM_SLEEP
+> +static int gpio_charger_resume(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
+> +
+> +	power_supply_changed(&gpio_charger->charger);
+> +
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(gpio_charger_pm_ops, NULL, gpio_charger_resume);
+> +
+>  static struct platform_driver gpio_charger_driver = {
+>  	.probe = gpio_charger_probe,
+>  	.remove = __devexit_p(gpio_charger_remove),
+>  	.driver = {
+>  		.name = "gpio-charger",
+>  		.owner = THIS_MODULE,
+> +		.pm = &gpio_charger_pm_ops,
+>  	},
+>  };
+>  
 
-> > # /tmp/build-perf/perf top -p 795
-> > Failed to mmap with 22 (Invalid argument)
-
-> > strace shows it failing at:
-> > ioctl(4, PERF_EVENT_IOC_SET_OUTPUT, 0x3) = -1 EINVAL (Invalid argument)
-
-> > Changing to use thread only works:
-> > # /tmp/build-perf/perf top -t 795
-> 
-> git bisect points to:
-> 
-> 70db7533caef02350ec8d6852e589491bca3a951 is the first bad commit
-> commit 70db7533caef02350ec8d6852e589491bca3a951
-> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Date:   Wed Jan 12 22:39:13 2011 -0200
-> 
-> perf evlist: Move the mmap array from perf_evsel
-> 
-> Adopting the new model used in 'perf record', where we don't have a map
-> per thread per cpu, instead we have an mmap per cpu, established on the
-> first fd for that cpu and ask the kernel using the
-> PERF_EVENT_IOC_SET_OUTPUT ioctl to send events for the other fds on that
-> cpu for the one with the mmap.
-> 
-> The methods moved from perf_evsel to perf_evlist, but for easing review
-> they were modified in place, in evsel.c, the next patch will move the
-> migrated methods to evlist.c.
-> 
-> With this 'perf top' now uses the same mmap model used by 'perf record'
-> and the next patches will make 'perf record' use these new routines,
-> establishing a common codebase for both tools.
-> 
-> ----------
-> 
-> Coincidentally, perf-record is also broken. git bisect points to:
-> 
-> dd7927f4f8ee75b032ff15aeef4bda49719a443a is the first bad commit
-> commit dd7927f4f8ee75b032ff15aeef4bda49719a443a
-> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Date:   Wed Jan 12 14:28:51 2011 -0200
-> 
-> perf record: Use perf_evsel__open
-> 
-> Now its time to factor out the mmap handling bits into the perf_evsel
-> class.
-
-I'll work on that tomorrow, if nobody fixes this till then :-)
-
-- Arnaldo
