@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab1DGTbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 15:31:19 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45606 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756683Ab1DGTbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 15:31:17 -0400
-Date: Thu, 7 Apr 2011 21:31:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        lucas.de.marchi@gmail.com
-Subject: Re: [GIT PULL] Fix common misspellings
-Message-ID: <20110407193103.GC28209@elte.hu>
-References: <20110331032307.GA27999@vigoh>
- <20110331062949.GA29526@elte.hu>
- <20110331144400.GA2618@vigoh>
- <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
- <BANLkTikDc0o6Kf5Ym5XkmpeY54fPc67SVw@mail.gmail.com>
- <BANLkTi=SZ_h5OpHpR7oa=+in51UciJA+UA@mail.gmail.com>
- <20110407191928.GA26693@elte.hu>
+	id S1756780Ab1DGTeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 15:34:14 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13345 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756591Ab1DGTeN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 15:34:13 -0400
+Date: Thu, 7 Apr 2011 21:34:30 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <error27@gmail.com>,
+        Olivier Grenie <olivier.grenie@dibcom.fr>,
+        Patrick Boettcher <patrick.boettcher@dibcom.fr>
+Subject: [PATCH][media] DVB, DiB9000: Fix leak in dib9000_attach()
+Message-ID: <alpine.LNX.2.00.1104072131050.1538@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110407191928.GA26693@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If the second memory allocation in dib9000_attach() fails, we'll leak the 
+memory allocated by the first.
 
-Ok, i went over the commit with a fine comb again and these were the ones i was 
-able to find.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ dib9000.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Btw., funniest typo was a typo in a changelog entry, which changelog entry 
-itself was about fixing a typo:
+   compile tested only...
 
-	- Tiny (mispelling->misspelling) fixed (ABORT instead of ABRT). Was fortunately
+diff --git a/drivers/media/dvb/frontends/dib9000.c b/drivers/media/dvb/frontends/dib9000.c
+index 9151876..b25ef2b 100644
+--- a/drivers/media/dvb/frontends/dib9000.c
++++ b/drivers/media/dvb/frontends/dib9000.c
+@@ -2255,8 +2255,10 @@ struct dvb_frontend *dib9000_attach(struct i2c_adapter *i2c_adap, u8 i2c_addr, c
+ 	if (st == NULL)
+ 		return NULL;
+ 	fe = kzalloc(sizeof(struct dvb_frontend), GFP_KERNEL);
+-	if (fe == NULL)
++	if (fe == NULL) {
++		kfree(st);
+ 		return NULL;
++	}
+ 
+ 	memcpy(&st->chip.d9.cfg, cfg, sizeof(struct dib9000_config));
+ 	st->i2c.i2c_adap = i2c_adap;
 
-:-)
 
-Thanks,
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-	Ingo
