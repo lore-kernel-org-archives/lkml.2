@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab1DGKaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 06:30:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56157 "EHLO linutronix.de"
+	id S1755335Ab1DGKcW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 06:32:22 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:63127 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab1DGKaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 06:30:07 -0400
-Date: Thu, 7 Apr 2011 12:30:03 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, bheglaas@google.com,
-        monstr@monstr.eu, tglx@linutronix.de
-Subject: Re: [PATCH 4/5] x86/devicetree: Use generic PCI <-> OF matching
-Message-ID: <20110407103003.GA8592@linutronix.de>
-References: <1302146796-26825-1-git-send-email-benh@kernel.crashing.org>
- <1302146796-26825-5-git-send-email-benh@kernel.crashing.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1302146796-26825-5-git-send-email-benh@kernel.crashing.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753225Ab1DGKcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 06:32:21 -0400
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 07 Apr 2011 13:35:22 +0300
+Message-Id: <20110407103522.14727.6712.sendpatchset@localhost.localdomain>
+Subject: [GIT PULL] UBI/UBIFS changes for 2.6.39
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Herrenschmidt | 2011-04-07 13:26:35 [+1000]:
+Hi Linus,
 
->Instead of walking the whole PCI tree to update the of_node's for
->PCI busses and devices after the fact, enable the new generic core
->code for doing so by providing the proper device nodes for the
->PCI host bridges
->
->Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Please, pull the UBI and UBIFS fixes for 2.6.39.
 
-Ben, please add this to the series or melt into this patch :)
+The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
 
->From 1460c529a53a393dd3b41cdcd72ecc6ff1d3646e Mon Sep 17 00:00:00 2001
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Thu, 7 Apr 2011 10:47:51 +0200
-Subject: [PATCH] x86: dt: remove unused and/or shadowed variables
+  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
 
-|arch/x86/kernel/devicetree.c: In function 'pcibios_get_phb_of_node':
-|arch/x86/kernel/devicetree.c:135:23: warning: unused variable 'child'
-|arch/x86/kernel/devicetree.c:129:15: warning: unused variable 'bus_min'
-|arch/x86/kernel/devicetree.c:144:1: warning: control reaches end of non-void function
-|arch/x86/kernel/devicetree.c:141:10: warning: 'bus' may be used uninitialized in this function
+are available in the git repository at:
+  git://git.infradead.org/ubifs-2.6.git for-linus
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- arch/x86/kernel/devicetree.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Artem Bityutskiy (10):
+      UBIFS: do not read flash unnecessarily
+      UBIFS: fix oops on error path in read_pnode
+      UBIFS: fix assertion warnings
+      UBIFS: do not select KALLSYMS_ALL
+      UBIFS: unify error path dbg_debugfs_init_fs
+      UBIFS: fix error path in dbg_debugfs_init_fs
+      UBIFS: fix debugging failure in dbg_check_space_info
+      UBI: check if we are in RO mode in the erase routine
+      UBI: do not compare array with NULL
+      UBI: do not select KALLSYMS_ALL
 
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index f6c9d67..3568496 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -123,16 +123,13 @@ static int __init add_bus_probe(void)
- module_init(add_bus_probe);
- 
- #ifdef CONFIG_PCI
--struct device_node * pcibios_get_phb_of_node(struct pci_bus *bus)
-+struct device_node *pcibios_get_phb_of_node(struct pci_bus *bus)
- {
- 	struct device_node *np;
--	unsigned int bus_min;
- 
- 	for_each_node_by_type(np, "pci") {
- 		const void *prop;
--		struct pci_bus *bus;
- 		unsigned int bus_min;
--		struct device_node *child;
- 
- 		prop = of_get_property(np, "bus-range", NULL);
- 		if (!prop)
-@@ -141,6 +138,7 @@ struct device_node * pcibios_get_phb_of_node(struct pci_bus *bus)
- 		if (bus->number == bus_min)
- 			return np;
- 	}
-+	return NULL;
- }
- 
- static int x86_of_pci_irq_enable(struct pci_dev *dev)
--- 
-1.7.4
+ drivers/mtd/ubi/Kconfig |    2 +-
+ drivers/mtd/ubi/io.c    |    8 +++++-
+ drivers/mtd/ubi/vmt.c   |    5 ---
+ fs/ubifs/Kconfig        |    2 +-
+ fs/ubifs/commit.c       |    2 +-
+ fs/ubifs/debug.c        |   63 ++++++++++++++++++++++++++++++++++------------
+ fs/ubifs/lpt.c          |    7 ++---
+ fs/ubifs/super.c        |    3 +-
+ 8 files changed, 61 insertions(+), 31 deletions(-)
 
+Thanks,
+Artem.
