@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab1DGOgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 10:36:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63153 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab1DGOgy (ORCPT
+	id S1755580Ab1DGOjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 10:39:05 -0400
+Received: from mail.digium.com ([216.207.245.2]:46054 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171Ab1DGOjE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 10:36:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=Pth1K/6G13TZIzUMxf06oBs02vYgLN7g7e2/vrBV81LVUWt8FglLXiJR9RAW4zADVT
-         W9JkBzD6jqbZA14wKMOR0AaW/kWEgoxFHm/f+Sb3j+AQJ6kokFJQsx7xfOLBXxGXYs/W
-         FoZ1uQoPkM4v5GpC9+Gi1d9iFGwYZQTyhhEmk=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: =?UTF-8?q?=5BPATCH=5Ddrivers=3Astaging=3Ahv=3Ahv=5Fmouse=2Ec=20Fix=20build=20error=20in=20hv=5Fmouse=2E?=
-Date: Thu,  7 Apr 2011 07:36:36 -0700
-Message-Id: <1302186996-23392-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.4.2
+	Thu, 7 Apr 2011 10:39:04 -0400
+Date: Thu, 7 Apr 2011 09:38:58 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>, Don Zickus <dzickus@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
+	proper MSR register to catch" and NMIs
+Message-ID: <20110407143858.GA18616@digium.com>
+References: <20110406223036.GA15721@digium.com> <20110407001658.GW12642@redhat.com> <BANLkTi=W45VbeBNThBqKv2Wbo+8sWxXjuA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=W45VbeBNThBqKv2Wbo+8sWxXjuA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below fixes a build error..
+On Thu, Apr 07, 2011 at 07:18:50AM +0400, Cyrill Gorcunov wrote:
+> On Thursday, April 7, 2011, Don Zickus <dzickus@redhat.com> wrote:
+>> On Wed, Apr 06, 2011 at 05:30:36PM -0500, Shaun Ruffell wrote:
+>>>
+>>> I was able to bisect it down to commit 242214f9c1eeaae40, but I'm not
+>>> certain where to go from here. �Is this something that is already known
+>>> or is there more information I should try to collect?
+>>
+>> Nope, this is an ongoing issue. �What happened was the perf P4 nmi handler
+>> was swallowing all the NMIs. �My patch fixed that and exposed a double NMI
+>> problem. �We have been chasing it for a couple of months. �I think Cyril
+>> was finally able to duplicate it (as he wrote the P4 code). �I have
+>> confidence that he will find a fix for it soon. :-)
+>>
+>> Thanks for the report though!
+> 
+> Hi, yeah, i got it too and i hope to fix this issue soon. Will ping as
+> only get working fix.
 
-  LD [M]  drivers/staging/hv/hv_utils.o
-  CC [M]  drivers/staging/hv/hv_mouse.o
-drivers/staging/hv/hv_mouse.c: In function ‘ReleaseInputDevice’:
-drivers/staging/hv/hv_mouse.c:293:3: error: implicit declaration of function ‘udelay’ [-Werror=implicit-function-declaration]
-drivers/staging/hv/hv_mouse.c: In function ‘MousevscOnReceiveInputReport’:
-drivers/staging/hv/hv_mouse.c:418:27: warning: variable ‘inputDriver’ set but not used [-Wunused-but-set-variable]
-drivers/staging/hv/hv_mouse.c: In function ‘MousevscOnDeviceAdd’:
-drivers/staging/hv/hv_mouse.c:663:27: warning: variable ‘inputDriver’ set but not used [-Wunused-but-set-variable]
-cc1: some warnings being treated as errors
+Don, Cyrill,
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Thanks for the explanation and my apologies for not relating the
+previous discussions about this to what I was seeing. This issue would
+be a blocker for any 2.6.39 final right?
 
----
- drivers/staging/hv/hv_mouse.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Cyrill, I would be more than happy to test any patches. It's relatively
+quick for me to reproduce.
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index 50147f8..9c6d4d2 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -23,6 +23,7 @@
- #include <linux/hiddev.h>
- #include <linux/pci.h>
- #include <linux/dmi.h>
-+#include <linux/delay.h>
- 
- #include "hv_api.h"
- #include "logging.h"
--- 
-1.7.4.2
-
+Thanks,
+Shaun
