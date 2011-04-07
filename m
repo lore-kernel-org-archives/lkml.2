@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab1DGRLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 13:11:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40605 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237Ab1DGRLL (ORCPT
+	id S1756423Ab1DGRO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:14:58 -0400
+Received: from mother.ludd.ltu.se ([130.240.16.3]:40834 "EHLO
+	mother.ludd.ltu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756329Ab1DGRO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 13:11:11 -0400
-Message-ID: <4D9DF01C.6050506@oracle.com>
-Date: Thu, 07 Apr 2011 10:10:52 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: djwong@us.ibm.com
-CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>
-Subject: Re: [PATCH 1/2] ext4: Calculate and verify inode checksums
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <20110406224547.GT32706@tux1.beaverton.ibm.com> <4D9D0ADB.9010005@oracle.com> <20110407164006.GC24354@tux1.beaverton.ibm.com>
-In-Reply-To: <20110407164006.GC24354@tux1.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 7 Apr 2011 13:14:56 -0400
+X-Greylist: delayed 2124 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Apr 2011 13:14:56 EDT
+Cc: mchehab@redhat.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <9DD52527-797E-4581-B879-A18F9084DC27@ludd.ltu.se>
+From: Nils Carlson <nils.carlson@ludd.ltu.se>
+To: Samuel Gabrielsson <samuel.gabrielsson@gmail.com>
+In-Reply-To: <1301491283-14128-1-git-send-email-samuel.gabrielsson@gmail.com>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D9DF022.011A:SCFSTAT5015188,ss=1,fgs=0
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [PATCH 1/2] i7core_edac: Add xeon 5600 generic non core registers
+Date: Thu, 7 Apr 2011 18:39:18 +0200
+References: <1301491283-14128-1-git-send-email-samuel.gabrielsson@gmail.com>
+X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2011 09:40 AM, Darrick J. Wong wrote:
-> Yes, I see that jbd2 has triggers, looks like a nifty feature.  I suppose if I
-> went with that approach I'd still have to calculate the checksum in
-> ext4_do_update_inode in the nojournal case, and in the journal case I'd write a
-> trigger that would figure out which inodes in a given buffer are actually dirty
-> and compute their checksums.
 
-Yes, you could use a in-mem flag (set in update, cleared in trigger) to
-identify dirty inodes. The discussion on stable pages could be relevant for
-the nojournal case.
+On Mar 30, 2011, at 3:21 PM, Samuel Gabrielsson wrote:
 
+> This enables writing to registers in device 0 function 0 such as
+> MC_CFG_CONTROL. This also fixes a bug for intel xeon 5600 series
+> when writing to inject_enable where we would get an Oops because
+> pvt->pci_noncore was not set.
 >
-> That said, I haven't really quantified the performance impact of this naive
-> approach yet, so I wonder -- did you see a similar scenario with ocfs2, and
-> what kind of performance increase did you get by adapting the code to use the
-> jbd2 trigger?  If there's potentially a large increase, it would be interesting
-> to apply the same conversion to the group descriptor checksumming code too.
+> Signed-off-by: Samuel Gabrielsson <samuel.gabrielsson@gmail.com>
+Acked-by: Nils Carlson <nils.carlson@ludd.ltu.se>
+> ---
+> drivers/edac/i7core_edac.c |    3 +++
+> 1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+> index 81154ab..1db6092 100644
+> --- a/drivers/edac/i7core_edac.c
+> +++ b/drivers/edac/i7core_edac.c
+> @@ -322,6 +322,9 @@ static const struct pci_id_descr  
+> pci_dev_descr_lynnfield[] = {
+> };
+>
+> static const struct pci_id_descr pci_dev_descr_i7core_westmere[] = {
+> +		/* Generic Non-core registers */
+> +	{ PCI_DESCR(0, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_REV2) },
+> +
+> 		/* Memory controller */
+> 	{ PCI_DESCR(3, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_MCR_REV2)     },
+> 	{ PCI_DESCR(3, 1, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_TAD_REV2)  },
+> -- 
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux- 
+> edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Joel Becker may remember the overhead. He wrote the patch. That said we have few
-differences. ocfs2 has larger (blocksized) inodes. Also, it computes ECC. The code
-is in fs/ocfs2/blockcheck.c.
-
-As in, you may want to generate ext4 specific numbers.
