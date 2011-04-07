@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab1DGJ4u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 05:56:50 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:16134 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab1DGJ4t (ORCPT
+	id S1754794Ab1DGJ5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 05:57:00 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:58375 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab1DGJ46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 05:56:49 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFIiy0PGjDB
-X-RZG-CLASS-ID: mo00
-Date: Thu, 7 Apr 2011 11:56:47 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: dynamic oldmem in kdump kernel
-Message-ID: <20110407095646.GA30788@aepfle.de>
+	Thu, 7 Apr 2011 05:56:58 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D9D8ACA.5050309@cam.ac.uk>
+Date: Thu, 07 Apr 2011 10:58:34 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Belisko Marek <marek.belisko@gmail.com>
+CC: nijs.michael@gmail.com, gregkh@suse.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] Staging: iio: accel : sca3000_ring: Fixing code styling
+ issues
+References: <1302117274-9986-1-git-send-email-nijs.michael@gmail.com> <BANLkTin=N2gOcvbgngwZcLEGVK2qoyeLLw@mail.gmail.com>
+In-Reply-To: <BANLkTin=N2gOcvbgngwZcLEGVK2qoyeLLw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/06/11 20:24, Belisko Marek wrote:
+> On Wed, Apr 6, 2011 at 9:14 PM,  <nijs.michael@gmail.com> wrote:
+>> From: Michael Nijs <nijs.michael@gmail.com>
+>>
+>> Fixed code styling issue.
+>>
+>> Signed-off-by: Michael Nijs <nijs.michael@gmail.com>
+>> ---
+>>  drivers/staging/iio/accel/sca3000_ring.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/iio/accel/sca3000_ring.c b/drivers/staging/iio/accel/sca3000_ring.c
+>> index fd1c844..c872fdd 100644
+>> --- a/drivers/staging/iio/accel/sca3000_ring.c
+>> +++ b/drivers/staging/iio/accel/sca3000_ring.c
+>> @@ -91,7 +91,7 @@ static int sca3000_rip_hw_rb(struct iio_ring_buffer *r,
+>>
+>>        /* Convert byte order and shift to default resolution */
+>>        if (st->bpse == 11) {
+>> -               samples = (s16 *)(*data+1);
+>> +               samples = (s16*)(*data+1);
+> Strange. My output(latest 2.6.39-rc2):
+> ./scripts/checkpatch.pl -f drivers/staging/iio/accel/sca3000_ring.c
+> ERROR: "(foo*)" should be "(foo *)"
+> #94: FILE: staging/iio/accel/sca3000_ring.c:94:
+> +		samples = (s16*)(*data+1);
+> 
+> So for me it seems it was correct and you post patch with change where
+> checkpatch will bark. Or am I missing something?
+>>                for (i = 0; i < (num_read/2); i++) {
+>>                        samples[i] = be16_to_cpup(
+>>                                        (__be16 *)&(samples[i]));
+There are some much nastier issues with that section of code. If nothing else
+I dread to think what be16_to_cpup does with unaligned pointers.  There's a
+rewrite of this code in my local tree anyway so either way the issue will probably
+go away shortly!
 
-Recently kdump for pv-on-hvm Xen guests was implemented by me.
+Thanks anyway.
 
-One issue remains:
-The xen_balloon driver in the guest frees guest pages and gives them
-back to the hypervisor. These pages are marked as mmio in the
-hypervisor. During a read of such a page via the /proc/vmcore interface
-the hypervisor calls the qemu-dm process. qemu-dm tries to map the page,
-this attempt fails because the page is not backed by ram and 0xff is
-returned. All this generates high load in dom0 because the reads come
-as 8byte requests.
-
-There seems to be no way to make the crash kernel aware of the state of
-individual pages in the crashed kernel, it is not aware of memory
-ballooning. And doing that from within the "kernel to crash" seems error
-prone. Since over time the fragmentation will increase, it would be best
-if the crash kernel itself queries the state of oldmem pages. 
-
-If copy_oldmem_page() would call a function, a hook, provided by the Xen
-pv-on-hvm drivers to query if the pfn to read from is really backed by
-ram the load issue could be avoided. Unfortunately, even Xen needs to
-get a new interface to query the state of individual hvm guest pfns for
-the purpose mentioned above.
-
-
-
-Another issue, slightly related, is memory hotplug.
-How is this currently handled for kdump?  Is there code which
-automatically reconfigures the kdump kernel with the new memory ranges?
-
-
-Olaf
-
+Jonathan
