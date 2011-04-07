@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab1DGTwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 15:52:08 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:57084 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756565Ab1DGTwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 15:52:05 -0400
-Message-ID: <4D9E15E0.5060000@sgi.com>
-Date: Thu, 07 Apr 2011 12:52:00 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Mike Habeck <habeck@sgi.com>, iommu@lists.linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Wright <chrisw@sous-sol.org>
-Subject: [PATCH 4/4] Intel pci: Use coherent DMA mask when requested
-References: <20110329233602.272459647@gulag1.americas.sgi.com>
-In-Reply-To: <20110329233602.272459647@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932089Ab1DGT4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 15:56:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46450 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab1DGT4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 15:56:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=CDaCKVVVLK/EMuWpL19HfsUjvJXgbdWRa1Wsx5IPFp251dyMpjliIWGA/Dyj1sloFy
+         sRUV9/onoq1Y8JEwFCzjml1RQgoch3YdhD1CP38QAM0HmqXkydPoErs+hD9URLljtKea
+         DVs31aHD6tLnBFOV73PKnBhzweg49BYH7qs3c=
+Subject: Re: [PATCH][media] DVB, USB, lmedm04: Fix firmware mem leak in
+ lme_firmware_switch()
+From: Malcolm Priestley <tvboxspy@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David =?ISO-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>,
+        Jarod Wilson <jarod@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1104072142540.1538@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1104072142540.1538@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Apr 2011 20:56:25 +0100
+Message-ID: <1302206185.2846.2.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    The __intel_map_single function is not honoring the passed in
-    DMA mask.  This results in not using the coherent DMA mask when
-    called from intel_alloc_coherent().
+On Thu, 2011-04-07 at 21:46 +0200, Jesper Juhl wrote:
+> Don't leak 'fw' in 
+> drivers/media/dvb/dvb-usb/lmedm04.c::lme_firmware_switch() by failing to 
+> call release_firmware().
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  lmedm04.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+>  compile tested only
+> 
+> diff --git a/drivers/media/dvb/dvb-usb/lmedm04.c b/drivers/media/dvb/dvb-usb/lmedm04.c
+> index cd26e7c..d7cc625 100644
+> --- a/drivers/media/dvb/dvb-usb/lmedm04.c
+> +++ b/drivers/media/dvb/dvb-usb/lmedm04.c
+> @@ -799,7 +799,7 @@ static int lme_firmware_switch(struct usb_device *udev, int cold)
+>  	if (cold) {
+>  		info("FRM Changing to %s firmware", fw_lme);
+>  		lme_coldreset(udev);
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+>  	}
+>  
+>  	release_firmware(fw);
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Mike Habeck <habeck@sgi.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
----
- drivers/pci/intel-iommu.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+This has already been fixed in this commit
 
---- linux.orig/drivers/pci/intel-iommu.c
-+++ linux/drivers/pci/intel-iommu.c
-@@ -2582,8 +2582,7 @@ static dma_addr_t __intel_map_single(str
- 	iommu = domain_get_iommu(domain);
- 	size = aligned_nrpages(paddr, size);
- 
--	iova = intel_alloc_iova(hwdev, domain, dma_to_mm_pfn(size),
--				pdev->dma_mask);
-+	iova = intel_alloc_iova(hwdev, domain, dma_to_mm_pfn(size), dma_mask);
- 	if (!iova)
- 		goto error;
- 
+http://git.linuxtv.org/media_tree.git?a=commit;h=b328817a2a391d1e879c4252cd3f11a352d3f3bc
 
--- 
+
