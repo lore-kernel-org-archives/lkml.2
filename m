@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab1DGXeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 19:34:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50764 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753038Ab1DGXea (ORCPT
+	id S1757209Ab1DGXgC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 19:36:02 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59786 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757159Ab1DGXf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 19:34:30 -0400
-Date: Thu, 7 Apr 2011 16:34:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: eha@doredevelopment.dk
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH] leds: Support automatic start of blinking with
- ledtrig-timer
-Message-Id: <20110407163415.0eb0f545.akpm@linux-foundation.org>
-In-Reply-To: <1300446199-3234-1-git-send-email-eha@doredevelopment.dk>
-References: <1300446199-3234-1-git-send-email-eha@doredevelopment.dk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Apr 2011 19:35:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=aHbRcccCiriLlGGSMwyOsfeV3Q7AfoVSaF1SghQOl4ioJ7yvOonNECj0xLpItu9xpd
+         RBgaX61v19AtEkJl7uQjLtKhE287gyzQzSFIJ0TFrWiDklcyrD73IAKNP2LQmOxE5GT8
+         QZbNlDwpl92iQKrIyL5X3m3n43332TGf3FRBg=
+Message-ID: <4D9E4A59.8010604@gmail.com>
+Date: Thu, 07 Apr 2011 16:35:53 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: trivial@kernel.org, linux-scsi@vger.kernel.org, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        socketcan-core@lists.berlios.de, linux-mtd@lists.infradead.org,
+        linux-input@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/6]Fix typo "recieve" in various parts of the kernel.
+References: <1302192567-842-1-git-send-email-justinmattock@gmail.com> <20110407200541.GC8569@pengutronix.de>
+In-Reply-To: <20110407200541.GC8569@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011 12:03:19 +0100
-eha@doredevelopment.dk wrote:
+On 04/07/2011 01:05 PM, Uwe Kleine-König wrote:
+> On Thu, Apr 07, 2011 at 09:09:22AM -0700, Justin P. Mattock wrote:
+>> The patch below fixes some typos "recieve" in various parts of the kernel.
+>> Note: these below are in actual code rather than comments(excpet for r852.c which
+> s/excpet/except/
+>
+>> has a code fix, and comment).
+>> compile tested as best as I can...
+> I'm not a native speaker, but "as good as" sounds better in my ears.
+>
+> Best regards
+> Uwe
+>
 
-> From: Esben Haabendal <eha@doredevelopment.dk>
-> 
-> By setting initial values blink_delay_on and blink_delay_off in a
-> led_classdev struct, this change starts the blinking when the led
-> is initialized.
-> 
-> Signed-off-by: Esben Haabendal <eha@doredevelopment.dk>
-> ---
->  drivers/leds/led-class.c     |    3 ++-
->  drivers/leds/ledtrig-timer.c |    3 +++
->  2 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-> index d5a4ade..d7bdef8 100644
-> --- a/drivers/leds/led-class.c
-> +++ b/drivers/leds/led-class.c
-> @@ -131,7 +131,8 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
->  	if (!led_cdev->blink_brightness)
->  		led_cdev->blink_brightness = led_cdev->max_brightness;
->  
-> -	if (delay_on == led_cdev->blink_delay_on &&
-> +	if (led_cdev->trigger_data &&
-> +	    delay_on == led_cdev->blink_delay_on &&
->  	    delay_off == led_cdev->blink_delay_off)
->  		return;
->  
-> diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
-> index b09bcbe..d87c9d0 100644
-> --- a/drivers/leds/ledtrig-timer.c
-> +++ b/drivers/leds/ledtrig-timer.c
-> @@ -91,6 +91,9 @@ static void timer_trig_activate(struct led_classdev *led_cdev)
->  	if (rc)
->  		goto err_out_delayon;
->  
-> +	led_blink_set(led_cdev, &led_cdev->blink_delay_on,
-> +		      &led_cdev->blink_delay_off);
-> +
->  	led_cdev->trigger_data = (void *)1;
->  
->  	return;
+your right.. gcc and friends are the one's doing all the reall work:
+"as good as *"
 
-It's unclear (to me) exactly what this patch does.  Could you please
-send a more complete description of the user-visible change in
-behaviour?
-
-Thanks.
+Justin P. Mattock
