@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab1DGB3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 21:29:38 -0400
+	id S1757296Ab1DGB36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 21:29:58 -0400
 Received: from mga01.intel.com ([192.55.52.88]:40761 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757265Ab1DGB3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 21:29:25 -0400
+	id S1757248Ab1DGB3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 21:29:22 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,313,1299484800"; 
-   d="scan'208";a="676182860"
+   d="scan'208";a="676182846"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH -v2 4/4] ACPI, APEI, GHES, printk support for recoverable error via NMI
-Date: Thu,  7 Apr 2011 09:29:06 +0800
-Message-Id: <1302139746-1030-5-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -v2 2/4] lib, Add lock-less NULL terminated single list
+Date: Thu,  7 Apr 2011 09:29:04 +0800
+Message-Id: <1302139746-1030-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302139746-1030-1-git-send-email-ying.huang@intel.com>
 References: <1302139746-1030-1-git-send-email-ying.huang@intel.com>
@@ -24,370 +26,334 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some APEI GHES recoverable errors are reported via NMI, but printk is
-not safe in NMI context.
+Cmpxchg is used to implement adding new entry to the list, deleting
+all entries from the list, deleting first entry of the list and some
+other operations.
 
-To solve the issue, a lock-less memory allocator is used to allocate
-memory in NMI handler, save the error record into the allocated
-memory, put the error record into a lock-less list.  On the other
-hand, a irq_work is used to delay the operation from NMI context to
-IRQ context.  The irq_work IRQ handler will remove nodes from
-lock-less list, printk the error record and do some further processing
-include recovery operation, then free the memory.
+Because this is a single list, so the tail can not be accessed in O(1).
+
+If there are multiple producers and multiple consumers, llist_add can
+be used in producers and llist_del_all can be used in consumers.  They
+can work simultaneously without lock.  But llist_del_first can not be
+used here.  Because llist_del_first depends on list->first->next does
+not changed if list->first is not changed during its operation, but
+llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
+llist_add) sequence in another consumer may violate that.
+
+If there are multiple producers and one consumer, llist_add can be
+used in producers and llist_del_all or llist_del_first can be used in
+the consumer.
+
+This can be summarized as follow:
+
+           |   add    | del_first |  del_all
+ add       |    -     |     -     |     -
+ del_first |          |     L     |     L
+ del_all   |          |           |     -
+
+Where "-" stands for no lock is needed, while "L" stands for lock is
+needed.
+
+The list entries deleted via llist_del_all can be traversed with
+traversing function such as llist_for_each etc.  But the list entries
+can not be traversed safely before deleted from the list.  The order
+of deleted entries is from the newest to the oldest added one.  If you
+want to traverse from the oldest to the newest, you must reverse the
+order by yourself before traversing.
+
+The basic atomic operation of this list is cmpxchg on long.  On
+architectures that don't have NMI-safe cmpxchg implementation, the
+list can NOT be used in NMI handler.  So code uses the list in NMI
+handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/acpi/apei/Kconfig |    2 
- drivers/acpi/apei/ghes.c  |  186 ++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 175 insertions(+), 13 deletions(-)
+ include/linux/llist.h |  126 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ lib/Kconfig           |    3 +
+ lib/Makefile          |    2 
+ lib/llist.c           |  125 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 256 insertions(+)
+ create mode 100644 include/linux/llist.h
+ create mode 100644 lib/llist.c
 
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -12,6 +12,8 @@ config ACPI_APEI_GHES
- 	tristate "APEI Generic Hardware Error Source"
- 	depends on ACPI_APEI && X86
- 	select ACPI_HED
-+	select LLIST
-+	select GENERIC_ALLOCATOR
- 	help
- 	  Generic Hardware Error Source provides a way to report
- 	  platform hardware errors (such as that from chipset). It
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -42,6 +42,9 @@
- #include <linux/mutex.h>
- #include <linux/ratelimit.h>
- #include <linux/vmalloc.h>
-+#include <linux/irq_work.h>
-+#include <linux/llist.h>
-+#include <linux/genalloc.h>
- #include <acpi/apei.h>
- #include <acpi/atomicio.h>
- #include <acpi/hed.h>
-@@ -53,6 +56,15 @@
- #define GHES_PFX	"GHES: "
- 
- #define GHES_ESTATUS_MAX_SIZE		65536
-+#define GHES_ESOURCE_PREALLOC_MAX_SIZE	65536
+--- /dev/null
++++ b/include/linux/llist.h
+@@ -0,0 +1,126 @@
++#ifndef LLIST_H
++#define LLIST_H
++/*
++ * Lock-less NULL terminated single linked list
++ *
++ * If there are multiple producers and multiple consumers, llist_add
++ * can be used in producers and llist_del_all can be used in
++ * consumers.  They can work simultaneously without lock.  But
++ * llist_del_first can not be used here.  Because llist_del_first
++ * depends on list->first->next does not changed if list->first is not
++ * changed during its operation, but llist_del_first, llist_add,
++ * llist_add (or llist_del_all, llist_add, llist_add) sequence in
++ * another consumer may violate that.
++ *
++ * If there are multiple producers and one consumer, llist_add can be
++ * used in producers and llist_del_all or llist_del_first can be used
++ * in the consumer.
++ *
++ * This can be summarized as follow:
++ *
++ *           |   add    | del_first |  del_all
++ * add       |    -     |     -     |     -
++ * del_first |          |     L     |     L
++ * del_all   |          |           |     -
++ *
++ * Where "-" stands for no lock is needed, while "L" stands for lock
++ * is needed.
++ *
++ * The list entries deleted via llist_del_all can be traversed with
++ * traversing function such as llist_for_each etc.  But the list
++ * entries can not be traversed safely before deleted from the list.
++ * The order of deleted entries is from the newest to the oldest added
++ * one.  If you want to traverse from the oldest to the newest, you
++ * must reverse the order by yourself before traversing.
++ *
++ * The basic atomic operation of this list is cmpxchg on long.  On
++ * architectures that don't have NMI-safe cmpxchg implementation, the
++ * list can NOT be used in NMI handler.  So code uses the list in NMI
++ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
++ */
 +
-+#define GHES_ESTATUS_POOL_MIN_ALLOC_ORDER	3
-+
-+#define GHES_ESTATUS_NODE_LEN(estatus_len)			\
-+	(sizeof(struct ghes_estatus_node) + (estatus_len))
-+#define GHES_ESTATUS_FROM_NODE(estatus_node)				\
-+	((struct acpi_hest_generic_status *)				\
-+	 ((struct ghes_estatus_node *)(estatus_node) + 1))
- 
- /*
-  * One struct ghes is created for each generic hardware error source.
-@@ -77,6 +89,11 @@ struct ghes {
- 	};
- };
- 
-+struct ghes_estatus_node {
-+	struct llist_node llnode;
-+	struct acpi_hest_generic *generic;
++struct llist_head {
++	struct llist_node *first;
 +};
 +
- static int ghes_panic_timeout	__read_mostly = 30;
- 
- /*
-@@ -121,6 +138,19 @@ static struct vm_struct *ghes_ioremap_ar
- static DEFINE_RAW_SPINLOCK(ghes_ioremap_lock_nmi);
- static DEFINE_SPINLOCK(ghes_ioremap_lock_irq);
- 
-+/*
-+ * printk is not safe in NMI context.  So in NMI handler, we allocate
-+ * required memory from lock-less memory allocator
-+ * (ghes_estatus_pool), save estatus into it, put them into lock-less
-+ * list (ghes_estatus_llist), then delay printk into IRQ context via
-+ * irq_work (ghes_proc_irq_work).  ghes_estatus_size_request record
-+ * required pool size by all NMI error source.
++struct llist_node {
++	struct llist_node *next;
++};
++
++#define LLIST_HEAD_INIT(name)	{ NULL }
++#define LLIST_HEAD(name)	struct llist_head name = LLIST_HEAD_INIT(name)
++
++/**
++ * init_llist_head - initialize lock-less list head
++ * @head:	the head for your lock-less list
 + */
-+static struct gen_pool *ghes_estatus_pool;
-+static unsigned long ghes_estatus_pool_size_request;
-+static struct llist_head ghes_estatus_llist;
-+static struct irq_work ghes_proc_irq_work;
-+
- static int ghes_ioremap_init(void)
- {
- 	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
-@@ -180,6 +210,50 @@ static void ghes_iounmap_irq(void __iome
- 	__flush_tlb_one(vaddr);
- }
- 
-+static int ghes_estatus_pool_init(void)
++static inline void init_llist_head(struct llist_head *list)
 +{
-+	ghes_estatus_pool = gen_pool_create(GHES_ESTATUS_POOL_MIN_ALLOC_ORDER, -1);
-+	if (!ghes_estatus_pool)
-+		return -ENOMEM;
-+	return 0;
++	list->first = NULL;
 +}
 +
-+static void ghes_estatus_pool_exit(void)
-+{
-+	struct gen_pool_chunk *chunk;
++/**
++ * llist_entry - get the struct of this entry
++ * @ptr:	the &struct llist_node pointer.
++ * @type:	the type of the struct this is embedded in.
++ * @member:	the name of the llist_node within the struct.
++ */
++#define llist_entry(ptr, type, member)		\
++	container_of(ptr, type, member)
 +
-+	gen_pool_for_each_chunk(chunk, ghes_estatus_pool)
-+		free_page(chunk->start_addr);
-+	gen_pool_destroy(ghes_estatus_pool);
++/**
++ * llist_for_each - iterate over some deleted entries of a lock-less list
++ * @pos:	the &struct llist_node to use as a loop cursor
++ * @node:	the first entry of deleted list entries
++ *
++ * In general, some entries of the lock-less list can be traversed
++ * safely only after being deleted from list, so start with an entry
++ * instead of list head.
++ *
++ * If being used on entries deleted from lock-less list directly, the
++ * traverse order is from the newest to the oldest added entry.  If
++ * you want to traverse from the oldest to the newest, you must
++ * reverse the order by yourself before traversing.
++ */
++#define llist_for_each(pos, node)			\
++	for (pos = (node); pos; pos = pos->next)
++
++/**
++ * llist_for_each_entry - iterate over some deleted entries of lock-less list of given type
++ * @pos:	the type * to use as a loop cursor.
++ * @node:	the fist entry of deleted list entries.
++ * @member:	the name of the llist_node with the struct.
++ *
++ * In general, some entries of the lock-less list can be traversed
++ * safely only after being removed from list, so start with an entry
++ * instead of list head.
++ *
++ * If being used on entries deleted from lock-less list directly, the
++ * traverse order is from the newest to the oldest added entry.  If
++ * you want to traverse from the oldest to the newest, you must
++ * reverse the order by yourself before traversing.
++ */
++#define llist_for_each_entry(pos, node, member)				\
++	for (pos = llist_entry((node), typeof(*pos), member);		\
++	     &pos->member != NULL;					\
++	     pos = llist_entry(pos->member.next, typeof(*pos), member))
++
++/**
++ * llist_empty - tests whether a lock-less list is empty
++ * @head:	the list to test
++ *
++ * Not guaranteed to be accurate or up to date.  Just a quick way to
++ * test whether the list is empty without deleting something from the
++ * list.
++ */
++static inline int llist_empty(const struct llist_head *head)
++{
++	return head->first == NULL;
 +}
 +
-+static int ghes_estatus_pool_expand(unsigned long len)
++void llist_add(struct llist_node *new, struct llist_head *head);
++void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
++		     struct llist_head *head);
++struct llist_node *llist_del_first(struct llist_head *head);
++struct llist_node *llist_del_all(struct llist_head *head);
++#endif /* LLIST_H */
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -272,4 +272,7 @@ config AVERAGE
+ 
+ 	  If unsure, say N.
+ 
++config LLIST
++	bool
++
+ endmenu
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -115,6 +115,8 @@ obj-$(CONFIG_AVERAGE) += average.o
+ 
+ obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
+ 
++obj-$(CONFIG_LLIST) += llist.o
++
+ hostprogs-y	:= gen_crc32table
+ clean-files	:= crc32table.h
+ 
+--- /dev/null
++++ b/lib/llist.c
+@@ -0,0 +1,125 @@
++/*
++ * Lock-less NULL terminated single linked list
++ *
++ * The basic atomic operation of this list is cmpxchg on long.  On
++ * architectures that don't have NMI-safe cmpxchg implementation, the
++ * list can NOT be used in NMI handler.  So code uses the list in NMI
++ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
++ *
++ * Copyright 2010 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/llist.h>
++
++#include <asm/system.h>
++
++/**
++ * llist_add - add a new entry
++ * @new:	new entry to be added
++ * @head:	the head for your lock-less list
++ */
++void llist_add(struct llist_node *new, struct llist_head *head)
 +{
-+	unsigned long i, pages, size, addr;
-+	int ret;
++	struct llist_node *entry;
 +
-+	ghes_estatus_pool_size_request += PAGE_ALIGN(len);
-+	size = gen_pool_size(ghes_estatus_pool);
-+	if (size >= ghes_estatus_pool_size_request)
-+		return 0;
-+	pages = (ghes_estatus_pool_size_request - size) / PAGE_SIZE;
-+	for (i = 0; i < pages; i++) {
-+		addr = __get_free_page(GFP_KERNEL);
-+		if (!addr)
-+			return -ENOMEM;
-+		ret = gen_pool_add(ghes_estatus_pool, addr, PAGE_SIZE, -1);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static void ghes_estatus_pool_shrink(unsigned long len)
-+{
-+	ghes_estatus_pool_size_request -= PAGE_ALIGN(len);
-+}
-+
- static struct ghes *ghes_new(struct acpi_hest_generic *generic)
- {
- 	struct ghes *ghes;
-@@ -341,13 +415,13 @@ static void ghes_clear_estatus(struct gh
- 	ghes->flags &= ~GHES_TO_CLEAR;
- }
- 
--static void ghes_do_proc(struct ghes *ghes)
-+static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
- {
- 	int sev, processed = 0;
- 	struct acpi_hest_generic_data *gdata;
- 
--	sev = ghes_severity(ghes->estatus->error_severity);
--	apei_estatus_for_each_section(ghes->estatus, gdata) {
-+	sev = ghes_severity(estatus->error_severity);
-+	apei_estatus_for_each_section(estatus, gdata) {
- #ifdef CONFIG_X86_MCE
- 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
- 				 CPER_SEC_PLATFORM_MEM)) {
-@@ -360,13 +434,15 @@ static void ghes_do_proc(struct ghes *gh
- 	}
- }
- 
--static void ghes_print_estatus(const char *pfx, struct ghes *ghes)
-+static void ghes_print_estatus(const char *pfx,
-+			       const struct acpi_hest_generic *generic,
-+			       const struct acpi_hest_generic_status *estatus)
- {
- 	/* Not more than 2 messages every 5 seconds */
- 	static DEFINE_RATELIMIT_STATE(ratelimit, 5*HZ, 2);
- 
- 	if (pfx == NULL) {
--		if (ghes_severity(ghes->estatus->error_severity) <=
-+		if (ghes_severity(estatus->error_severity) <=
- 		    GHES_SEV_CORRECTED)
- 			pfx = KERN_WARNING HW_ERR;
- 		else
-@@ -375,8 +451,8 @@ static void ghes_print_estatus(const cha
- 	if (__ratelimit(&ratelimit)) {
- 		printk(
- 	"%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
--	pfx, ghes->generic->header.source_id);
--		apei_estatus_print(pfx, ghes->estatus);
-+	pfx, generic->header.source_id);
-+		apei_estatus_print(pfx, estatus);
- 	}
- }
- 
-@@ -387,8 +463,8 @@ static int ghes_proc(struct ghes *ghes)
- 	rc = ghes_read_estatus(ghes, 0);
- 	if (rc)
- 		goto out;
--	ghes_print_estatus(NULL, ghes);
--	ghes_do_proc(ghes);
-+	ghes_print_estatus(NULL, ghes->generic, ghes->estatus);
-+	ghes_do_proc(ghes->estatus);
- 
- out:
- 	ghes_clear_estatus(ghes);
-@@ -447,6 +523,40 @@ static int ghes_notify_sci(struct notifi
- 	return ret;
- }
- 
-+static void ghes_proc_in_irq(struct irq_work *irq_work)
-+{
-+	struct llist_node *llnode, *next, *tail = NULL;
-+	struct ghes_estatus_node *estatus_node;
-+	struct acpi_hest_generic_status *estatus;
-+	u32 len, node_len;
-+
-+	/*
-+	 * Because the time order of estatus in list is reversed,
-+	 * revert it back to proper order.
-+	 */
-+	llnode = llist_del_all(&ghes_estatus_llist);
-+	while (llnode) {
-+		next = llnode->next;
-+		llnode->next = tail;
-+		tail = llnode;
-+		llnode = next;
-+	}
-+	llnode = tail;
-+	while (llnode) {
-+		next = llnode->next;
-+		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
-+					   llnode);
-+		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
-+		len = apei_estatus_len(estatus);
-+		node_len = GHES_ESTATUS_NODE_LEN(len);
-+		ghes_do_proc(estatus);
-+		ghes_print_estatus(NULL, estatus_node->generic, estatus);
-+		gen_pool_free(ghes_estatus_pool, (unsigned long)estatus_node,
-+			      node_len);
-+		llnode = next;
-+	}
-+}
-+
- static int ghes_notify_nmi(struct notifier_block *this,
- 				  unsigned long cmd, void *data)
- {
-@@ -476,7 +586,8 @@ static int ghes_notify_nmi(struct notifi
- 
- 	if (sev_global >= GHES_SEV_PANIC) {
- 		oops_begin();
--		ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global);
-+		ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global->generic,
-+				   ghes_global->estatus);
- 		/* reboot to log the error! */
- 		if (panic_timeout == 0)
- 			panic_timeout = ghes_panic_timeout;
-@@ -484,12 +595,31 @@ static int ghes_notify_nmi(struct notifi
- 	}
- 
- 	list_for_each_entry_rcu(ghes, &ghes_nmi, list) {
-+#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+		u32 len, node_len;
-+		struct ghes_estatus_node *estatus_node;
-+		struct acpi_hest_generic_status *estatus;
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
 +#endif
- 		if (!(ghes->flags & GHES_TO_CLEAR))
- 			continue;
--		/* Do not print estatus because printk is not NMI safe */
--		ghes_do_proc(ghes);
-+#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+		/* Save estatus for further processing in IRQ context */
-+		len = apei_estatus_len(ghes->estatus);
-+		node_len = GHES_ESTATUS_NODE_LEN(len);
-+		estatus_node = (void *)gen_pool_alloc(ghes_estatus_pool,
-+						      node_len);
-+		if (estatus_node) {
-+			estatus_node->generic = ghes->generic;
-+			estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
-+			memcpy(estatus, ghes->estatus, len);
-+			llist_add(&estatus_node->llnode, &ghes_estatus_llist);
-+		}
-+#endif
- 		ghes_clear_estatus(ghes);
- 	}
-+#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	irq_work_queue(&ghes_proc_irq_work);
-+#endif
- 
- out:
- 	raw_spin_unlock(&ghes_nmi_lock);
-@@ -504,10 +634,26 @@ static struct notifier_block ghes_notifi
- 	.notifier_call = ghes_notify_nmi,
- };
- 
-+static unsigned long ghes_esource_prealloc_size(
-+	const struct acpi_hest_generic *generic)
-+{
-+	unsigned long block_length, prealloc_records, prealloc_size;
 +
-+	block_length = min_t(unsigned long, generic->error_block_length,
-+			     GHES_ESTATUS_MAX_SIZE);
-+	prealloc_records = max_t(unsigned long,
-+				 generic->records_to_preallocate, 1);
-+	prealloc_size = min_t(unsigned long, block_length * prealloc_records,
-+			      GHES_ESOURCE_PREALLOC_MAX_SIZE);
-+
-+	return prealloc_size;
++	do {
++		entry = head->first;
++		new->next = entry;
++		cpu_relax();
++	} while (cmpxchg(&head->first, entry, new) != entry);
 +}
++EXPORT_SYMBOL_GPL(llist_add);
 +
- static int __devinit ghes_probe(struct platform_device *ghes_dev)
- {
- 	struct acpi_hest_generic *generic;
- 	struct ghes *ghes = NULL;
-+	unsigned long len;
- 	int rc = -EINVAL;
- 
- 	generic = *(struct acpi_hest_generic **)ghes_dev->dev.platform_data;
-@@ -573,6 +719,8 @@ static int __devinit ghes_probe(struct p
- 		mutex_unlock(&ghes_list_mutex);
- 		break;
- 	case ACPI_HEST_NOTIFY_NMI:
-+		len = ghes_esource_prealloc_size(generic);
-+		ghes_estatus_pool_expand(len);
- 		mutex_lock(&ghes_list_mutex);
- 		if (list_empty(&ghes_nmi))
- 			register_die_notifier(&ghes_notifier_nmi);
-@@ -597,6 +745,7 @@ static int __devexit ghes_remove(struct
- {
- 	struct ghes *ghes;
- 	struct acpi_hest_generic *generic;
-+	unsigned long len;
- 
- 	ghes = platform_get_drvdata(ghes_dev);
- 	generic = ghes->generic;
-@@ -627,6 +776,8 @@ static int __devexit ghes_remove(struct
- 		 * freed after NMI handler finishes.
- 		 */
- 		synchronize_rcu();
-+		len = ghes_esource_prealloc_size(generic);
-+		ghes_estatus_pool_shrink(len);
- 		break;
- 	default:
- 		BUG();
-@@ -662,15 +813,23 @@ static int __init ghes_init(void)
- 		return -EINVAL;
- 	}
- 
-+	init_irq_work(&ghes_proc_irq_work, ghes_proc_in_irq);
++/**
++ * llist_add_batch - add several linked entries in batch
++ * @new_first:	first entry in batch to be added
++ * @new_last:	last entry in batch to be added
++ * @head:	the head for your lock-less list
++ */
++void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
++		     struct llist_head *head)
++{
++	struct llist_node *entry;
 +
- 	rc = ghes_ioremap_init();
- 	if (rc)
- 		goto err;
- 
--	rc = platform_driver_register(&ghes_platform_driver);
-+	rc = ghes_estatus_pool_init();
- 	if (rc)
- 		goto err_ioremap_exit;
- 
-+	rc = platform_driver_register(&ghes_platform_driver);
-+	if (rc)
-+		goto err_pool_exit;
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
 +
- 	return 0;
-+err_pool_exit:
-+	ghes_estatus_pool_exit();
- err_ioremap_exit:
- 	ghes_ioremap_exit();
- err:
-@@ -680,6 +839,7 @@ err:
- static void __exit ghes_exit(void)
- {
- 	platform_driver_unregister(&ghes_platform_driver);
-+	ghes_estatus_pool_exit();
- 	ghes_ioremap_exit();
- }
- 
++	do {
++		entry = head->first;
++		new_last->next = entry;
++		cpu_relax();
++	} while (cmpxchg(&head->first, entry, new_first) != entry);
++}
++EXPORT_SYMBOL_GPL(llist_add_batch);
++
++/**
++ * llist_del_first - delete the first entry of lock-less list
++ * @head:	the head for your lock-less list
++ *
++ * If list is empty, return NULL, otherwise, return the first entry
++ * deleted, this is the newest added one.
++ *
++ * Only one llist_del_first user can be used simultaneously with
++ * multiple llist_add users without lock.  Because otherwise
++ * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
++ * llist_add) sequence in another user may change @head->first->next,
++ * but keep @head->first.  If multiple consumers are needed, please
++ * use llist_del_all or use lock between consumers.
++ */
++struct llist_node *llist_del_first(struct llist_head *head)
++{
++	struct llist_node *entry;
++
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
++
++	do {
++		entry = head->first;
++		if (entry == NULL)
++			return NULL;
++		cpu_relax();
++	} while (cmpxchg(&head->first, entry, entry->next) != entry);
++
++	return entry;
++}
++EXPORT_SYMBOL_GPL(llist_del_first);
++
++/**
++ * llist_del_all - delete all entries from lock-less list
++ * @head:	the head of lock-less list to delete all entries
++ *
++ * If list is empty, return NULL, otherwise, delete all entries and
++ * return the pointer to the first entry.  The order of entries
++ * deleted is from the newest to the oldest added one.
++ */
++struct llist_node *llist_del_all(struct llist_head *head)
++{
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
++
++	return xchg(&head->first, NULL);
++}
++EXPORT_SYMBOL_GPL(llist_del_all);
