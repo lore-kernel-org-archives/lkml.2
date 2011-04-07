@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab1DGLd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 07:33:57 -0400
-Received: from gra-lx1.iram.es ([150.214.224.41]:36022 "EHLO gra-lx1.iram.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633Ab1DGLd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 07:33:56 -0400
-Date: Thu, 7 Apr 2011 13:33:47 +0200
-From: Gabriel Paubert <paubert@iram.es>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	id S1755415Ab1DGLiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 07:38:11 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:11867 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753568Ab1DGLiJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 07:38:09 -0400
+From: "Boivie, Victor" <Victor.Boivie@sonyericsson.com>
+To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
 	<u.kleine-koenig@pengutronix.de>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
-Message-ID: <20110407113347.GA2237@iram.es>
-References: <20110404235259.GA30132@iram.es> <20110406084101.GB13963@pengutronix.de> <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
+        Paul Bolle <pebolle@tiscali.nl>
+CC: =?iso-8859-1?Q?=22Ander=F6=2C_Oskar=22?= 
+	<Oskar.Andero@sonyericsson.com>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 7 Apr 2011 13:38:05 +0200
+Subject: RE: [PATCH] ARM: Allow for kernel command line concatenation
+Thread-Topic: [PATCH] ARM: Allow for kernel command line concatenation
+Thread-Index: Acv1EtYelM98O64wQ6qoQ3Exu3E4MQABFjjw
+Message-ID: <56A05FDF86209947BB88FDF67E6D4A1073F0B97360@SELDMBX04.corpusers.net>
+References: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
+ <1302172525.24493.7.camel@t41.thuisdomein>
+ <20110407105850.GJ13963@pengutronix.de>
+In-Reply-To: <20110407105850.GJ13963@pengutronix.de>
+Accept-Language: sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: sv-SE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Dave,
+> > This suggests the parameters provided by the boot loader will override
+> > corresponding parameters of the default kernel command string. Is that
+> > correct (for all possible parameters)?
+> >
+> > Either way, shouldn't it be documented, perhaps in this help text, what
+> > will happen if a parameter of the default kernel command string and a
+> > parameter provided by the boot loader somehow conflict?
+> Then you will end up with both parameters I guess. What happens depends
+> on the parameter in question I guess. IMHO the description is fine.
+> But I wonder if the new mechanism is useful in the end.
 
-sorry, in my previous message I forgot the strace
-output, which is an inifinite loop of the following:
+The way it was intended from my point of view was to only specify (in 
+CONFIG_CMDLINE) the parameters that the boot loader doesn't specify. 
 
---- SIGALRM (Alarm clock) @ 0 (0) ---
-sigreturn()                             = ? (mask now [])
-ioctl(7, 0xc0286429, 0xffdf9bb8)        = -1 EBUSY (Device or resource busy)
---- SIGALRM (Alarm clock) @ 0 (0) ---
-sigreturn()                             = ? (mask now [])
-ioctl(7, 0xc0286429, 0xffdf9bb8)        = -1 EBUSY (Device or resource busy)
+We use it to let the boot loader (which is generic and whose config is
+rather tricky to change) specify startup reasons and other probed 
+information that the kernel can't probe itself, and let the kernel handle
+the rest, such as specifying memory regions and console tty's.
 
-Note: fd 7 is /dev/dri/card0.
+Thanks for reviewing, both of you.
 
-	Regards,
-	Gabriel
+Best regards,
+Victor Boivie
