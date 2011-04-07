@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1DGNXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:23:06 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2135 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751647Ab1DGNXF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:23:05 -0400
-From: "Boivie, Victor" <Victor.Boivie@sonyericsson.com>
-To: Nick Bowler <nbowler@elliptictech.com>,
-        =?iso-8859-1?Q?=22Ander=F6=2C_Oskar=22?= 
-	<Oskar.Andero@sonyericsson.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 7 Apr 2011 15:22:57 +0200
-Subject: RE: [PATCH] ARM: Allow for kernel command line concatenation
-Thread-Topic: [PATCH] ARM: Allow for kernel command line concatenation
-Thread-Index: Acv1JkfxTg79fbJLRJKuYjmNGg/eyAAABMDQ
-Message-ID: <56A05FDF86209947BB88FDF67E6D4A1073F0B973E2@SELDMBX04.corpusers.net>
-References: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
- <20110407131810.GA6450@elliptictech.com>
-In-Reply-To: <20110407131810.GA6450@elliptictech.com>
-Accept-Language: sv-SE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: sv-SE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752741Ab1DGN3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:29:17 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:34031 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab1DGN3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 09:29:16 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D9DBC90.6080401@cam.ac.uk>
+Date: Thu, 07 Apr 2011 14:30:56 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Possible to software trigger an interrupt?
+References: <4D989A8A.3050700@cam.ac.uk> <4D98A185.1080704@cam.ac.uk> <20110407132048.GA7257@home.goodmis.org>
+In-Reply-To: <20110407132048.GA7257@home.goodmis.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +config CMDLINE_EXTEND
-> > +	bool "Extend bootloader kernel arguments"
-> > +	depends on CMDLINE != ""
-> > +	help
-> > +	  The default kernel command string will be concatenated with the
-> > +	  arguments provided by the boot loader.
+On 04/07/11 14:20, Steven Rostedt wrote:
+> On Sun, Apr 03, 2011 at 05:34:13PM +0100, Jonathan Cameron wrote:
+>> On 04/03/11 17:04, Jonathan Cameron wrote:
+>>> Hi,
+>>>
+>>> Having produced a proof of concept for using gpio chips
+>>> to handle the triggers in IIO I am looking at converting
+>>> over our sysfs trigger.  This trigger is used to initialize
+>>> capture on devices in a similar way to dataready interrupts.
+>>> The key point is we want to handle this in the same way within
+>>> drivers as the hardware event triggers. 
+>>>
+>>> It is a very useful tool.  So the upshot is, what is the best
+>>> way to handle causing an interrupt to occur from userspace?
+>>>
+>>> Any pointers on how to do this would be most welcome.
+>>
+>> For what it is worth, the incredibly dumb approach of just
+>> calling handle_nested_irq seems to 'work'.   I dread to think
+>> what that might be quietly breaking though...
 > 
-> Since concatenation is not commutative, this help text should describe
-> exactly the order in which the arguments are concatenated.  How about
-> this instead:
+> I think you are fine in calling that. It's made to be called from a
+> threaded context. But if you are testing code that will someday be
+> called in an interrupt context, it may not catch everything you need.
+That's not the primary aim. Some of these triggers really are only called
+from userspace and there are devices that some users will only ever
+trigger that way.  It's also step one in allowing a bridge to input for
+polled devices (via uinput).
 > 
->   The command-line arguments provided by the boot loader will be
->   appended to the default kernel command string.
+> For example, a mutex is allowed to be called from a threaded context,
+> but not from a hard irq one. There may be other subtle locking issues as
+> well. These could be caught with lockdep, but only when the code is
+> really been executed from hard irq context.
+Cool.  We have plenty of real irq triggers as well. I'll just pester
+people to make sure they have tested with both if at all possible!
 
-I completely agree. New patch upcoming. Thanks.
+Thanks for the reassurance that isn't all that likely to blow up
+in my face ;)
 
-Best regards,
-Victor Boivie,
-Sony Ericsson Mobile Communications AB
+Jonathan
