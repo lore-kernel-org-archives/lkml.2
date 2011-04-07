@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022Ab1DGMHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 08:07:37 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48362 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775Ab1DGMHf (ORCPT
+	id S1755974Ab1DGMJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 08:09:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60279 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab1DGMJb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 08:07:35 -0400
+	Thu, 7 Apr 2011 08:09:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=ul21pWHfdSiPXWxGmzzrnNp+mpmQ1xru5Mf7Mz8GKK5eGFxDaR5Qg6krATdsH/Reh4
-         PDiSboc8HEgkxFfQLJ1w/ydED+I2Nqh6U2kvOUETwxsavNDBU8fu7fperne6bO5XJXHJ
-         eoOuxfU3UbXe4ZvbTsjxkoSJShWPoS+l0BHdk=
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ivWjiqLnCYyJOye+MuPJ1ySFpWA9B6mYN5IPHNbBFp8cew9KDD+h7fzR66jINuY/Di
+         UVhpzIhS5/u8Mh9hJTKaPdjl3TC0dpsD5vEkohFzMiS+sQtfDKj//i7SCVpy0nN6uBtd
+         sHyFUW3qVWSEzo8pCuIXa++SQQShrw7OQhV44=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <BANLkTi=GFbgwV_7XJAJgKrY6A6J8-4FAdQ@mail.gmail.com>
-References: <BANLkTim5Yv2Ekg1yXQy-8KZfS=hF0i2+2Q@mail.gmail.com>
-	<BANLkTi=GFbgwV_7XJAJgKrY6A6J8-4FAdQ@mail.gmail.com>
-Date: Thu, 7 Apr 2011 14:07:34 +0200
-Message-ID: <BANLkTiketFqStHcucXPFnuL3awGgpHQMQw@mail.gmail.com>
-Subject: Re: [net-next-2.6] Revert "net: Allow no-cache copy from user on transmit"
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
-        Jesse Gross <jesse@nicira.com>,
-        =?UTF-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <20110329101630.1f1f0364@lxorguk.ukuu.org.uk>
+References: <AANLkTi=de3yDfXxCDp082+e3T+g_1wRWKWjqS0n1vy0+@mail.gmail.com>
+	<AANLkTi=W0mW2o2muNgMnb1OQ6WaBeOmu1VBHr8Zf63r9@mail.gmail.com>
+	<20110326120847.71b6ae4d@lxorguk.ukuu.org.uk>
+	<20110328180655.GI2287@linux.vnet.ibm.com>
+	<AANLkTin6kg84P50RHR7h6NG+P_nJK=N_Nefc1q4NxzY_@mail.gmail.com>
+	<20110328231818.2297408f@lxorguk.ukuu.org.uk>
+	<AANLkTimXztH_4f1=7-Ez6j-7UESroqwBvVuDNW7Fmewb@mail.gmail.com>
+	<20110329101630.1f1f0364@lxorguk.ukuu.org.uk>
+Date: Thu, 7 Apr 2011 13:09:29 +0100
+Message-ID: <BANLkTinrEKyYhi3ZuQz4KeA+2m6pvU4ddg@mail.gmail.com>
+Subject: Re: advice sought: practicality of SMP cache coherency implemented in
+ assembler (and a hardware detect line)
+From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: paulmck@linux.vnet.ibm.com, Will Newton <will.newton@gmail.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 7, 2011 at 1:03 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> ...will try the patch from [1]:
->
-> - Sedat -
->
-> [1] http://marc.info/?l=linux-netdev&m=130215119417648&w=2
->
+alan, paul, will, apologies for not responding sooner, i've just moved
+to near stranraer, in scotland.  och-aye.  the removal lorry has been
+rescued from the mud by an 18 tonne tractor and we have not run over
+any sheep.  yet.
 
-The patch from above fixes my network problems.
-Thanks.
-
-- Sedat -
-
-> On Thu, Apr 7, 2011 at 12:49 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->> [ The long CC list I got via ./scripts/get_maintainer.pl ]
->>
->> Hi,
->>
->> with yesterday's linux-next (next-20110406) I discovered first time
->> network problems.
->> Today's next-20110407 shows the same symptoms.
->> In my IRC client the connection via SSL-encryption to freenode and
->> oftc are not established.
->> Also, I saw "stalls" on websites in firefox.
->>
->> Luckily, next-20110405 was OK, so I started to look at the
->> net-next-2.6 merge and its commits.
->> ( Furthermore, I tested a 2.6.39-rc2 vanilla kernel to ensure the
->> problem comes from linux-next patch. )
->>
->> By reverting all 10 commits my system worked as expected, here the list:
->>
->> 0001-Revert-net-Allow-no-cache-copy-from-user-on-transmit.patch
->> 0002-Revert-bridge-range-check-STP-parameters.patch
->> 0003-Revert-bridge-allow-creating-bridge-devices-with-net.patch
->> 0004-Revert-bridge-allow-creating-deleting-fdb-entries-vi.patch
->> 0005-Revert-bridge-add-netlink-notification-on-forward-en.patch
->> 0006-Revert-bridge-split-rcu-and-no-rcu-cases-of-fdb-look.patch
->> 0007-Revert-bridge-track-last-used-time-in-forwarding-tab.patch
->> 0008-Revert-bridge-change-arguments-to-fdb_create.patch
->> 0009-Revert-pkt_sched-QFQ-quick-fair-queue-scheduler.patch
->> 0010-Revert-xen-netfront-assume-all-hw-features-are-avail.patch
->>
->> In a next run, I started with only
->> "0001-Revert-net-Allow-no-cache-copy-from-user-on-transmit.patch".
->> It turned out that this is the culprit commit.
->> ( I have not played with the new ethtool option tx-nocache-copy in
->> "BROKEN" kernel. )
->>
->> My wificard is an Atheros ath5k.
->> I attached my kernel-config and the revert-patch which makes the
->> system stable again.
->>
->> Can you have a look at it?
->>
->> I you want me to help with debugging, please give me precise instructions.
->>
->> Regards,
->> - Sedat -
->>
+On Tue, Mar 29, 2011 at 10:16 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>  hmmm, the question is, therefore: would the MOSIX DSM solution be
+>> preferable, which i presume assumes that memory cannot be shared at
+>> all, to a situation where you *could* at least get cache coherency in
+>> userspace, if you're happy to tolerate a software interrupt handler
+>> flushing the cache line manually?
 >
+> In theory DSM goes further than this. One way to think about DSM is cache
+> coherency in software with a page size granularity. So you could imagine
+> a hypothetical example where the physical MMU of each node and a memory
+> manager layer comnunicating between them implemented a virtualised
+> machine on top which was cache coherent.
+
+> [...details of M.E.S.I ... ]
+
+ well... the thing is that there already exists an MMU per core.
+standard page-faults occur, etc. in this instance (i think!), just as
+would occur in any much more standard SIMD architecture (with normal
+hardware-based 1st level cache coherency)
+
+ hm - does this statement sound reasonable:  this is sort-of a
+second-tier of MMU principles, with a page size granularity of 8 bytes
+(!) with oo 4096 or 8192 such "pages" (32 or 64k or whatever of 1st
+level cache).  thus, the principles you're describing [M.E.S.I] could
+be applied, even at that rather small level of granularity.
+
+ or... wait... "invalid" is taken care of at a hardware level, isn't
+it? [this is 1st level cache]
+
+ much appreciated the thoughts and discussion so far.
+
+ l.
