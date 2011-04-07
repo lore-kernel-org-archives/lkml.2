@@ -1,117 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1DGWLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 18:11:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:56747 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab1DGWLg (ORCPT
+	id S1755570Ab1DGWQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 18:16:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53747 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754565Ab1DGWQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 18:11:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=kat9I4OM24eWZZNbLs4d8qolgipaVuQTSZFHiT7TfrKCuT9wLOtynNPaWgMEv5imga
-         BkPY5a4/+vR0Jn3vIC9g==
-Date: Thu, 7 Apr 2011 15:11:28 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] print vmalloc() state after allocation failures
-In-Reply-To: <20110407172302.3B7546DA@kernel>
-Message-ID: <alpine.DEB.2.00.1104071504380.14967@chino.kir.corp.google.com>
-References: <20110407172302.3B7546DA@kernel>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 7 Apr 2011 18:16:51 -0400
+X-Authenticated: #1474915
+X-Provags-ID: V01U2FsdGVkX1/sWV5gpBrsedkw/EKeAkSgOFLT/PivA236lblj5N
+	G5ncOnFi40NC95
+Message-ID: <4D9E38CD.2000006@gmx.de>
+Date: Fri, 08 Apr 2011 00:21:01 +0200
+From: Thomas Sattler <tsattler@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.38.x: system hangs, iowait ~75, no resource-hogs, no logs
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Apr 2011, Dave Hansen wrote:
+Hi there ...
 
-> 
-> I was tracking down a page allocation failure that ended up in vmalloc().
-> Since vmalloc() uses 0-order pages, if somebody asks for an insane amount
-> of memory, we'll still get a warning with "order:0" in it.  That's not
-> very useful.
-> 
-> During recovery, vmalloc() also nicely frees all of the memory that it
-> got up to the point of the failure.  That is wonderful, but it also
-> quickly hides any issues.  We have a much different sitation if vmalloc()
-> repeatedly fails 10GB in to:
-> 
-> 	vmalloc(100 * 1<<30);
-> 
-> versus repeatedly failing 4096 bytes in to a:
-> 
-> 	vmalloc(8192);
-> 
-> This will print out messages that look like this:
-> 
-> [   30.040774] bash: vmalloc failure allocating after 0 / 73728 bytes
-> 
+I observed three system hangs since 2.6.38 (two times 2.6.38,
+once 2.6.38.2). I have no idea what triggers the problem, I
+cannot find the cause myself. I tried these:
 
-Won't it print "bash: vmalloc: allocation failure, allocated 0 of 73728 
-bytes" instead?
+top:
+~~~~
+ - no cpu-hogg, still a bit free RAM, lots of free SWAP
+ - iowait is constantly high at ~75%, I don't know why
 
-> As a side issue, I also noticed that ctl_ioctl() does vmalloc() based
-> solely on an unverified value passed in from userspace.  Granted, it's
-> under CAP_SYS_ADMIN, but it still frightens me a bit.
-> 
-> multipathd: page allocation failure. order:0, mode:0xd2
-> Call Trace:
-> [c0000000f34ef570] [c000000000012d84] .show_stack+0x74/0x1c0 (unreliable)
-> [c0000000f34ef620] [c000000000159ed4] .__alloc_pages_nodemask+0x574/0x830
-> [c0000000f34ef7a0] [c00000000019306c] .alloc_pages_current+0x8c/0x110
-> [c0000000f34ef840] [c000000000183bdc] .__vmalloc_area_node+0x17c/0x220
-> [c0000000f34ef900] [d00000000132bb24] .copy_params+0x74/0xc0 [dm_mod]
-> [c0000000f34efad0] [d00000000132bcec] .ctl_ioctl+0x17c/0x2c0 [dm_mod]
-> [c0000000f34efb90] [d00000000132be48] .dm_ctl_ioctl+0x18/0x30 [dm_mod]
-> [c0000000f34efc00] [c0000000001c4ee4] .vfs_ioctl+0x54/0x140
-> [c0000000f34efc90] [c0000000001c5130] .do_vfs_ioctl+0x90/0x7c0
-> [c0000000f34efd80] [c0000000001c5914] .SyS_ioctl+0xb4/0xd0
-> [c0000000f34efe30] [c00000000000852c] syscall_exit+0x0/0x40
-> Mem-Info:
-> Node 0 DMA per-cpu:
-> ...
-> 
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> ---
-> 
->  linux-2.6.git-dave/mm/vmalloc.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff -puN mm/vmalloc.c~vmalloc-warn mm/vmalloc.c
-> --- linux-2.6.git/mm/vmalloc.c~vmalloc-warn	2011-04-07 10:21:27.792401938 -0700
-> +++ linux-2.6.git-dave/mm/vmalloc.c	2011-04-07 10:21:27.800401934 -0700
-> @@ -1579,6 +1579,18 @@ static void *__vmalloc_area_node(struct 
->  	return area->addr;
->  
->  fail:
-> +	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
-> +		/*
-> +		 * We probably did a show_mem() and a stack dump above
-> +		 * inside of alloc_page*().  This is only so we can
-> +		 * tell how big the vmalloc() really was.  This will
-> +		 * also not be exactly the same as what was passed
-> +		 * to vmalloc() due to alignment and the guard page.
-> +		 */
-> +		printk(KERN_WARNING "%s: vmalloc: allocation failure, "
-> +			"allocated %ld of %ld bytes\n", current->comm,
-> +			(area->nr_pages*PAGE_SIZE), area->size);
-> +	}
->  	vfree(area->addr);
->  	return NULL;
->  }
+dmesg, /var/log/*:
+~~~~~~~~~~~~~~~~~~
+Nothing in 'dmesg', nothing in the logfiles.
 
-Looks good.
+pkill / iotop / ps:
+~~~~~~~~~~~~~~~~~~~
+they all hang quite soon, no reaction on Ctrl-C. While 'ps'
+shows some lines of output, 'pkill' and 'iotop' just hang.
 
-Acked-by: David Rientjes <rientjes@google.com>
+vmstat 1:
+~~~~~~~~~
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 0  4     72 421008  54560 326652    0    0     0     0  518 1293 25  9  0 66
+ 0  4     72 421008  54560 326652    0    0     0     0  311  535 13  4  0 83
+ 2  4     72 420208  54560 326652    0    0     0     0  450  882 18  9  0 73
+ 0  4     72 421008  54560 326652    0    0     0     0  377  914 19  5  0 76
+(I collected about 90 lines, there's not much to be seen.)
 
-__vmalloc_area_node() can also be moved into __vmalloc_node_range() since 
-that's its only caller if you're interested.
+I run 'strace -o dump command' with iotop, ps and su.
+(And lost a tty to each of them.)
+
+$ tail dump_*
+==> dump_iotop <==
+fstat64(9, {st_mode=S_IFREG|0644, st_size=2952, ...}) = 0
+mmap2(NULL, 2952, PROT_READ, MAP_SHARED, 9, 0) = 0xb6d80000
+_llseek(9, 2952, [2952], SEEK_SET)      = 0
+munmap(0xb6d80000, 2952)                = 0
+close(9)                                = 0
+open("/proc/5904/cmdline", O_RDONLY|O_LARGEFILE) = 9
+fstat64(9, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+fstat64(9, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) =
+0xb6d80000
+read(9,
+==> dump_ps <==
+stat64("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2309, ...}) = 0
+stat64("/proc/5904", {st_mode=S_IFDIR|0555, st_size=0, ...}) = 0
+open("/proc/5904/stat", O_RDONLY)       = 6
+read(6, "5904 (thunderbird-bin) D 5900 58"..., 1023) = 242
+close(6)                                = 0
+open("/proc/5904/status", O_RDONLY)     = 6
+read(6, "Name:\tthunderbird-bin\nState:\tD ("..., 1023) = 836
+close(6)                                = 0
+open("/proc/5904/cmdline", O_RDONLY)    = 6
+read(6,
+==> dump_su <==
+stat64("/home/tsattler/.pam_environment", 0xbffdb3e0) = -1 ENOENT (No such
+file or directory)
+access("/usr/bin/xauth", X_OK)          = 0
+setuid32(1000)                          = 0
+chdir("/home/tsattler")                 = 0
+close(3)                                = 0
+clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD,
+child_tidptr=0xb75f3728) = 25247
+rt_sigprocmask(SIG_BLOCK, ~[RTMIN RT_1], NULL, 8) = 0
+rt_sigaction(SIGTERM, {0x8049ce0, [], 0}, NULL, 8) = 0
+rt_sigprocmask(SIG_UNBLOCK, [ALRM TERM], NULL, 8) = 0
+waitpid(-1,
+
+'top' showed constantly increasing sysload, I rebooted
+(via Alt-SysRq-[S][U][B]) at a load of about 25-30.
+
+My system is as follows:
+~~~~~~~~~~~~~~~~~~~~~~~~
+IBM T41p, 1.5GB RAM, 4GB SWAP (nearly unused), two HDs
+160/80GB. Gentoo Linux, kernel 2.6.38.2 (vanilla sources).
+
+I compiled the kernel myself. I skipped 2.6.37 but run
+2.6.36.3 with sabayon's fourth version of a backport of
+sched-automated-per-session-task-groups.patch for more
+than two months without any problems.
+
+CPU-Speed is 1700MHz (hardware) but I run the machine
+at 1400MHz most of the time as the fans become loud
+when running at full speed.
+
+** Please CC: me, as I'm not on the list. **
+
+Thomas
+
