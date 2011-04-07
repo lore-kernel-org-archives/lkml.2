@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab1DGUTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 16:19:30 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13723 "EHLO
+	id S1756912Ab1DGUVn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 16:21:43 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13752 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756687Ab1DGUT3 (ORCPT
+	with ESMTP id S1756565Ab1DGUVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 16:19:29 -0400
-Date: Thu, 7 Apr 2011 22:19:47 +0200 (CEST)
+	Thu, 7 Apr 2011 16:21:42 -0400
+Date: Thu, 7 Apr 2011 22:22:00 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
 To: "Justin P. Mattock" <justinmattock@gmail.com>
 cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 3/6]Fix typo "recieve" in various parts of the kernel. 
-In-Reply-To: <1302192567-842-3-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1104072217300.1538@swampdragon.chaosbits.net>
-References: <1302192567-842-1-git-send-email-justinmattock@gmail.com> <1302192567-842-3-git-send-email-justinmattock@gmail.com>
+Subject: Re: [RFC 4/6]Fix typo "recieve" in various parts of the kernel.
+In-Reply-To: <1302192567-842-4-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1104072220240.1538@swampdragon.chaosbits.net>
+References: <1302192567-842-1-git-send-email-justinmattock@gmail.com> <1302192567-842-4-git-send-email-justinmattock@gmail.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
