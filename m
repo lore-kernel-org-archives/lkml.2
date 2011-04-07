@@ -1,38 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab1DGUVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 16:21:43 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13752 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756565Ab1DGUVm (ORCPT
+	id S1756925Ab1DGUWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 16:22:54 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:20770 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756871Ab1DGUWx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 16:21:42 -0400
-Date: Thu, 7 Apr 2011 22:22:00 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 4/6]Fix typo "recieve" in various parts of the kernel.
-In-Reply-To: <1302192567-842-4-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1104072220240.1538@swampdragon.chaosbits.net>
-References: <1302192567-842-1-git-send-email-justinmattock@gmail.com> <1302192567-842-4-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 7 Apr 2011 16:22:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=c873CEbxe1AR65y9D2plu/ho57ZFccq8+GBq23bx8KGqwhyLdSQRZEgfshvMhcd0f6
+         lzwarnVRKkk3Gpdtihyg==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110407120608.GB1798@nowhere>
+References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
+ <20110407013349.GH1867@nowhere> <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
+ <20110407120608.GB1798@nowhere>
+From: David Sharp <dhsharp@google.com>
+Date: Thu, 7 Apr 2011 13:22:30 -0700
+Message-ID: <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
+Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Stephane Eranian <eranian@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Apr 2011, Justin P. Mattock wrote:
+On Thu, Apr 7, 2011 at 5:06 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Apr 06, 2011 at 08:17:33PM -0700, Vaibhav Nagarnaik wrote:
+>> On Wed, Apr 6, 2011 at 6:33 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Wed, Apr 06, 2011 at 11:50:21AM -0700, Vaibhav Nagarnaik wrote:
+>> >> All
+>> >> The cgroup functionality is being used widely in different scenarios. It also
+>> >> is being integrated with other parts of kernel to take advantage of its
+>> >> features. One of the areas that is not yet aware of cgroup functionality is
+>> >> the ftrace framework.
+>> >>
+>> >> Although ftrace provides a way to filter based on PIDs of tasks to be traced,
+>> >> it is restricted to specific tracers, like function tracer. Also it becomes
+>> >> difficult to keep track of all PIDs in a dynamic environment with processes
+>> >> being created and destroyed in a short amount of time.
+>> >>
+>> >> An application that creates many processes/tasks is convenient to track and
+>> >> control with cgroups, but it is difficult to track these processes for the
+>> >> purposes of tracing. And if child processes are moved to another cgroup, it
+>> >> makes sense to trace only the original cgroup.
+>> >>
+>> >> This proposal is to create a file in the tracing directory called
+>> >> set_trace_cgroup to which a user can write the path of an active cgroup, one
+>> >> at a time. If no cgroups are specified, no filtering is done and all tasks are
+>> >> traced. When a cgroup path is added in, it sets a boolean tracing_enabled for
+>> >> the enabled cgroup in all the hierarchies, which enables tracing for all the
+>> >> assigned tasks under the specified cgroup.
+>> >>
+>> >> Though creating a new file in the directory is not desirable, but this
+>> >> interface seems the most appropriate change required to implement the new
+>> >> feature.
+>> >>
+>> >> This tracing_enabled flag is also exported in the cgroupfs directory structure
+>> >> which can be turned on/off for a specific hierarchy/cgroup combination. This
+>> >> gives control to enable/disable tracing over a cgroup in a specific hierarchy
+>> >> only.
+>> >>
+>> >> This gives more fine-grained control over the tasks being traced. I would like
+>> >> to know your thoughts on this interface and the approach to make tracing
+>> >> cgroup aware.
+>> >
+>> > So I have to ask, why can't you use perf events to do tracing limited on cgroups?
+>> > It has this cgroup context awareness.
 
-> The patch below fixes "recieve" in various parts of the kernel.
-> Note: patches 2,3,4,5 are fixes to comments only(no code).
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+Perf doesn't have the same latency characteristics as ftrace. It costs
+a full microsecond for every trace event.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+https://lkml.org/lkml/2010/10/28/261
 
+It's possible these results need to be updated. Has any effort been
+made to improve the tracing latency of perf?
+
+>> The perf event cgroup awareness comes from creating a different hierarchy for
+>> perf events. When the events and the current task's cgroup match, the events
+>> are logged. So the changes are pretty specific to the perf events.
+>>
+>> Even in the case where changes are made to handle trace events, the interface
+>> files are still needed. The interface used to specify perf events uses the
+>> perf_event syscall which isn't available to specify trace events.
+>>
+>> This is based on my limited understanding of the perf_events cgroup awareness
+>> patch. Please correct me if I am missing anything.
+>
+>
+> Ah but perf events can do much more than counting and sampling
+> hardware events. Trace events can be used as perf events too.
+>
+> List the events:
+>
+>        perf list -e tracepoints
+>
+> List of pre-defined events (to be used in -e):
+>
+>  skb:kfree_skb                              [Tracepoint event]
+>  skb:consume_skb                            [Tracepoint event]
+>  skb:skb_copy_datagram_iovec                [Tracepoint event]
+>  net:net_dev_xmit                           [Tracepoint event]
+>  net:net_dev_queue                          [Tracepoint event]
+>  net:netif_receive_skb                      [Tracepoint event]
+>  net:netif_rx                               [Tracepoint event]
+>  napi:napi_poll                             [Tracepoint event]
+>  scsi:scsi_dispatch_cmd_start               [Tracepoint event]
+>  scsi:scsi_dispatch_cmd_error               [Tracepoint event]
+>  scsi:scsi_dispatch_cmd_done                [Tracepoint event]
+>  scsi:scsi_dispatch_cmd_timeout             [Tracepoint event]
+>  scsi:scsi_eh_wakeup                        [Tracepoint event]
+>  drm:drm_vblank_event                       [Tracepoint event]
+>  drm:drm_vblank_event_queued                [Tracepoint event]
+>  drm:drm_vblank_event_delivered             [Tracepoint event]
+>  block:block_rq_abort                       [Tracepoint event]
+>  block:block_rq_requeue                     [Tracepoint event]
+>  block:block_rq_complete                    [Tracepoint event]
+>  block:block_rq_insert                      [Tracepoint event]
+>  etc...
+>
+>
+> Trace sched switch events:
+>
+>        perf record -e sched:sched_switch -a
+>        ^C
+>
+>
+> Print them:
+>
+>        perf script
+>
+>         swapper     0 [000]  1132.964598: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm
+>     kworker/0:1  4358 [000]  1132.964641: sched_switch: prev_comm=kworker/0:1 prev_pid=4358 prev_prio=120 prev_state=S ==> ne
+>         syslogd  2703 [000]  1132.964720: sched_switch: prev_comm=syslogd prev_pid=2703 prev_prio=120 prev_state=D ==> next_c
+>         swapper     0 [000]  1132.965100: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm
+>            perf  4725 [001]  1132.965178: sched_switch: prev_comm=perf prev_pid=4725 prev_prio=120 prev_state=D ==> next_comm
+>         swapper     0 [001]  1132.965227: sched_switch: prev_comm=kworker/0:0 prev_pid=0 prev_prio=120 prev_state=R ==> next_
+>            perf  4725 [001]  1132.965246: sched_switch: prev_comm=perf prev_pid=4725 prev_prio=120 prev_state=D ==> next_comm
+>        etc...
+>
+>
