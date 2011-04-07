@@ -1,150 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab1DGQoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:44:16 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42913 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab1DGQoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:44:14 -0400
-Date: Thu, 7 Apr 2011 09:44:06 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation
-	problem
-Message-ID: <20110407164406.GG1110@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <20110321140451.GA7153@quack.suse.cz> <1300716666-sup-2087@think> <20110321164305.GC7153@quack.suse.cz> <20110406232938.GF1110@tux1.beaverton.ibm.com>
+	id S1756173Ab1DGQti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:49:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:7613 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294Ab1DGQth convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 12:49:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=DjRBUuyBvx5FFw8bvR5AtA8MOuknIDzYKVBndd6+z2dxS2uV4U+iZCBr/C+ZP19pKW
+         eBILeEQ9c6KRCK5sEQ7g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110406232938.GF1110@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <4D9D4D23.6000805@codeaurora.org>
+References: <1302131890-20953-1-git-send-email-sjg@chromium.org>
+	<4D9D4D23.6000805@codeaurora.org>
+Date: Thu, 7 Apr 2011 09:49:33 -0700
+X-Google-Sender-Auth: r3TpPtZgNf5uBo8KwMjDGTQjtWM
+Message-ID: <BANLkTimaii4zNXVuUPqiWGZabRRdYM8JmQ@mail.gmail.com>
+Subject: Re: [PATCH v3] ARM: Use generic BUG() handler
+From: Simon Glass <sjg@chromium.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Dave Martin <dave.martin@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 06, 2011 at 04:29:38PM -0700, Darrick J. Wong wrote:
-> On Mon, Mar 21, 2011 at 05:43:05PM +0100, Jan Kara wrote:
-> > On Mon 21-03-11 10:24:41, Chris Mason wrote:
-> > > Excerpts from Jan Kara's message of 2011-03-21 10:04:51 -0400:
-> > > > On Fri 18-03-11 17:07:55, Darrick J. Wong wrote:
-> > > > > > > Ok, here's what I have so far.  I took everyone's suggestions of where to add
-> > > > > > > calls to wait_on_page_writeback, which seems to handle the multiple-write case
-> > > > > > > adequately.  Unfortunately, it is still possible to generate checksum errors by
-> > > > > > > scribbling furiously on a mmap'd region, even after adding the writeback wait
-> > > > > > > in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
-> > > > > > > removing its wait_for_page_writeback call, so I suspect there's a bit more
-> > > > > > > going on in btrfs than I've been able to figure out.
-> > > > > 
-> > > > > I wonder, is it possible for this to happen:
-> > > > > 
-> > > > > 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
-> > > > >    but there's no ongoing writeback, so it returns without delay.
-> > > > > 2. Thread A starts writing furiously to the page.
-> > > > > 3. Thread B runs fsync() or something that results in the page being
-> > > > >    checksummed and scheduled for writeout.
-> > > > > 4. Thread A continues to write furiously(!) on that same page before the
-> > > > >    controller finishes the DMA transfer.
-> > > > > 5. Disk gets the page, which now doesn't match its checksum, and *boom*
-> > > >   What happens on writepage (see mm/page-writeback.c:write_cache_pages())
-> > > > is:
-> > > >   lock_page(page)
-> > > >   ...
-> > > >   clear_page_dirty_for_io() - removes PageDirty, marks page as read-only in
-> > > >     PTE
-> > > >   ...
-> > > >   set_page_writeback() (happens e.g. in __block_write_full_page() called
-> > > > from filesystem's writepage implementation).
-> > > >   unlock_page(page)
-> > > > 
-> > > >   So if you compute the checksum after set_page_writeback() is done in the
-> > > > writepage() implementation (you cannot use __block_write_full_page() in
-> > > > that case)
-> >   I should add that if you are computing the checksum in the block layer
-> > once the bio is submitted, you obviously are computing it after the page is
-> > marked as writeback. So that should be fine...
-> > 
-> > > > and you call wait_on_page_writeback() in ext4_page_mkwrite()
-> > > > under page lock, you should be safe. If you do all this and still see
-> > > > errors, something is broken I'd say...
-> > > 
-> > > Looking at the ext4_page_mkwrite, it does this:
-> > > 
-> > > lock the page
-> > > check for holes
-> > > unlock the page
-> > > if (no_holes)
-> > > 	return;
-> > > 
-> > > write_begin/write_end
-> > > return
-> > > 
-> > > So, to have page_mkwrite work, you need to wait for writeback with the
-> > > page locked in both the no holes case and after the
-> > > write_begin/write_end.  write_begin will dirty the page, so someone can
-> > > wander in and start the IO while we are still in page_mkwrite.
-> >   Oh right, that's a good point.
-> > 
-> > > This is untested and uncompiled, but it should
-> > > do the trick.
-> > > 
-> > > Jan, did you get rid of all the buffer head based writeback for
-> > > data=ordered in ext4?  That's my only other idea, that someone is doing
-> > > writeback directly without taking the page lock.
-> >   Yes, ext4 shouldn't do any buffer based writeback.
-> > 
-> > > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> > > index 9f7f9e4..8a75e12 100644
-> > > --- a/fs/ext4/inode.c
-> > > +++ b/fs/ext4/inode.c
-> > > @@ -5880,6 +5880,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > >  	if (page_has_buffers(page)) {
-> > >  		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
-> > >  					ext4_bh_unmapped)) {
-> > > +			wait_on_page_writeback(page);
-> > >  			unlock_page(page);
-> > >  			goto out_unlock;
-> > >  		}
-> > > @@ -5901,6 +5902,16 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > >  	if (ret < 0)
-> > >  		goto out_unlock;
-> > >  	ret = 0;
-> > > +
-> > > +	/*
-> > > +	 * write_begin/end might have created a dirty page and someone
-> > > +	 * could wander in and start the IO.  Make sure that hasn't
-> > > +	 * happened
-> > > +	 */
-> > > +	lock_page(page);
-> > > +	wait_on_page_writeback(page);
-> > > +	unlock_page(page);
-> > > +
-> > >  out_unlock:
-> > >  	if (ret)
-> > >  		ret = VM_FAULT_SIGBUS;
-> > > 
-> >   This looks good AFAICT.
-> 
-> I gave this a spin a couple of weeks ago (and accidentally left the test
-> machines running for a full week!)  From what I can tell, with all the various
-> wait_for_page_writeback stuff-ins, we've cut the frequency of writeback errors
-> down to about 7-8 per day.  Not bad, but not fixed.
-> 
-> On the odd chance that jbd2 really can provide stable pages during writeback, I
-> am now rerunning the test with no patches and data=journal, while noting that
-> (a) DIO mode doesn't work with data=journal and (b) the first write failure
-> will probably cause the journal to abort == game over.  When that's done I'll
+On Wed, Apr 6, 2011 at 10:35 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 4/6/2011 4:18 PM, Simon Glass wrote:
+>> v3: Remove old BUG() implementation in favor of this one.
+>> Remove the Backtrace: message (will submit this separately).
+>> Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
+>> thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
+>> define GENERIC_BUG this might be academic.)
+>
+> Its not entirely academic because CONFIG_BUG=n and CONFIG_SMP_ON_UP=n
+> would allow us to remove the exit text. This could be huge for people
+> who want to cram kernel's onto space constrained devices.
 
-Heh, nope, even with data=journal I still see checksum errors.  So much for
-that hare-brained theory. :(
+OK I see. On my kernel this is 8KB but every little helps and no point
+it having it in there if it isn't needed.
 
---D
+>> Rebase to linux-2.6.git master.
+>>
+>> Change-Id: I07d77c832e816f5ad2390e25f466ddf750adecf4
+>
+> Don't forget to remove these before submitting to the patch tracker (and
+> sending to the list).
+
+OK thanks.
+
+>> diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
+>> index 4d88425..2914724 100644
+>> --- a/arch/arm/include/asm/bug.h
+>> +++ b/arch/arm/include/asm/bug.h
+>> @@ -3,21 +3,58 @@
+>>
+>>
+>>  #ifdef CONFIG_BUG
+>> -#ifdef CONFIG_DEBUG_BUGVERBOSE
+>> -extern void __bug(const char *file, int line) __attribute__((noreturn));
+>> -
+>> -/* give file/line information */
+>> -#define BUG()                __bug(__FILE__, __LINE__)
+>
+> Does anybody reference __bug() anymore? If not you can remove that too.
+
+No one is using it now, I will do this.
+
+Regards,
+Simon
