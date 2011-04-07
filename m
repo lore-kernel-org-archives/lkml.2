@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab1DGI1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 04:27:16 -0400
-Received: from host.nettoday.co.th ([61.19.251.237]:4931 "EHLO nettoday.co.th"
+	id S1751702Ab1DGIxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 04:53:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36969 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932070Ab1DGI1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 04:27:14 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Apr 2011 04:27:12 EDT
-Message-ID: <20110407152106.ehhaiii5wc8sg84g@webmail.kppacific.com>
-Date: Thu, 07 Apr 2011 15:21:06 +0700
-From: "Mr. Chia-Juch Chang" <info@csc.com>
-Reply-to: ChinaSteelCorporation@email.com
-To: undisclosed-recipients:;
-Subject: Agent Needed !!!
+	id S1750727Ab1DGIxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 04:53:12 -0400
+Date: Thu, 7 Apr 2011 10:52:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Alex,Shi" <alex.shi@intel.com>
+Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [PATCH] sched: recover sched_yield task running time increase
+Message-ID: <20110407085258.GC16840@elte.hu>
+References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
+ <1302077064.2225.1357.camel@twins>
+ <1302145733.15889.7472.camel@debian>
+ <4D9D55EF.3090606@redhat.com>
+ <1302158596.15889.7499.camel@debian>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.0.1)
+In-Reply-To: <1302158596.15889.7499.camel@debian>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-China Steel Corporation (CSC).
-HEAD OFFICE 1 Chung-Kang Road,
-Siaogang District, Kaohsiung
-81233, Taiwan, R.O.C.
-REF:CSC/REP/887
 
-i. Introduction.
-My Name is Chia-Juch Chang. I am the Chief Executive Officer of China Steel
-Corporation (CSC). We need a reputable company/firm to serve as our payment
-collection agent in North America, Europe, Asia. You shall earn 10% of every
-payment issued to you on behalf of China Steel Corporation.
+* Alex,Shi <alex.shi@intel.com> wrote:
 
-ii. Requirement (Contact Information):
-1. Full Names:
-2. Company Name:
-3. Full Contact Address:
-4. Tel and Fax Numbers:
+> On Thu, 2011-04-07 at 14:13 +0800, Rik van Riel wrote:
+> > On 04/06/2011 11:08 PM, Alex,Shi wrote:
+> > > On Wed, 2011-04-06 at 16:04 +0800, Peter Zijlstra wrote:
+> > >> On Wed, 2011-04-06 at 06:33 +0800, Alex Shi wrote:
+> > 
+> > >> You do know that any app that relies on sched_yield behaviour is more
+> > >> than broken? Using sched_yield() for anything other than SCHED_FIFO
+> > >> tasks is well outside spec.
+> > >>
+> > >> Furthermore, apparently you used sysctl_sched_compat_yield, which was
+> > >> bound to disappear some time, since with the default settings the yield
+> > >> semantics didn't actually change.
+> > >
+> > > Yes, I used sched_compat_yield, otherwise volano will become extremely
+> > > slow in my single machine testing. We may reconsider our testing
+> > > setting.
+> > 
+> > With what JVM is this happening?
+> 
+> I used openjdk from fedora 10~13 and jrockit-R27.3.1-jre1.5.0_11, both
+> of them use sched_yield much. And I just did a quick try with
+> jrockit-R27.4.0-jre1.6.0_02.x86_64, it had same problem.
 
-If interested, please email us immediately at ChinaSteelCorporation@email.com
+Well, switching openjdk to futexes would be a nice performance optimization for 
+sure - especially if you can show the speedups with VolanoMark.
 
-Contact Person: Ethan Downing
-Regional Manager
-Tel: +886-7-802-1111
-Email: ChinaSteelCorporation@email.com
-Website: www.csc.com.tw
+It would also put all the performance claims to rest. If indeed yield() is 
+faster then this would give us an opportunity to improve futex performance to 
+the point (or beyond) yield() based locks.
 
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+Thanks,
 
-
+	Ingo
