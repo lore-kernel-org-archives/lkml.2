@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1DGIxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 04:53:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36969 "EHLO mx3.mail.elte.hu"
+	id S1751385Ab1DGI6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 04:58:46 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3021 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727Ab1DGIxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 04:53:12 -0400
-Date: Thu, 7 Apr 2011 10:52:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	id S1750712Ab1DGI6o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 04:58:44 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        =?utf-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>
+cc: "George Kashperko" <george@znau.edu.ua>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Russell King" <rmk@arm.linux.org.uk>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH] sched: recover sched_yield task running time increase
-Message-ID: <20110407085258.GC16840@elte.hu>
-References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
- <1302077064.2225.1357.camel@twins>
- <1302145733.15889.7472.camel@debian>
- <4D9D55EF.3090606@redhat.com>
- <1302158596.15889.7499.camel@debian>
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+ <op.vtisojsk3ri7v4@arend-laptop>
+ <BANLkTinubrmryu=Bco5_AVcj_arn7SWZxw@mail.gmail.com>
+ <op.vti9ote53ri7v4@arend-laptop>
+ <BANLkTin-u=U_-cUH9oCco0LjEBuQmh4wag@mail.gmail.com>
+ <BANLkTi=x89+52cMeutOB7J--QQta+mX_wg@mail.gmail.com>
+ <1302123428.20093.6.camel@maggie>
+ <BANLkTimGSoYzp0Z4vyCS_H5PDKhgjYuLBA@mail.gmail.com>
+ <1302124112.20093.11.camel@maggie>
+ <BANLkTik76dwwnmmPzXL9Kkk7fdt01QPzZA@mail.gmail.com>
+ <1302124737.27258.7.camel@dev.znau.edu.ua>
+ <BANLkTi=4-LgrkjG96+Ar3SjMOsKh-dMuLg@mail.gmail.com>
+ <1302134429.27258.32.camel@dev.znau.edu.ua>
+ <BANLkTinfM0QLFwcKZXfWQ_jNYfBJg_et-Q@mail.gmail.com>
+ <1302162886.10725.4.camel@maggie>
+Date: Thu, 7 Apr 2011 10:58:25 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302158596.15889.7499.camel@debian>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+From: "Arend van Spriel" <arend@broadcom.com>
+Organization: Broadcom
+Message-ID: <op.vtj8jn133ri7v4@arend-laptop>
+In-Reply-To: <1302162886.10725.4.camel@maggie>
+User-Agent: Opera Mail/11.01 (Linux)
+X-WSS-ID: 6183A2EA3I87430941-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed;
+ delsp=yes
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 07 Apr 2011 09:54:46 +0200, Michael Büsch <mb@bu3sch.de> wrote:
 
-* Alex,Shi <alex.shi@intel.com> wrote:
+>> Ahh, so while talking about 4 windows, I guess you counted fixes
+>> windows as well. That would be right, matching my knowledge.
+>>
+>> When asking question about amount of cores we may want to use
+>> simultaneously I didn't think about ChipCommon or PCIe. The real
+>> problem would be to support for example two 802.11 cores and one
+>> ethernet core at the same time. That gives us 3 cores while we have
+>> only 2 sliding windows.
+>
+> Would that really be a problem? Think of it. This combination
+> will only be available on embedded devices. But do we have windows
+> on embedded devices? I guess not. If AXI is similar to SSB, the MMIO
+> of all cores will always be mapped. So accesses can be done
+> without switch or lock.
 
-> On Thu, 2011-04-07 at 14:13 +0800, Rik van Riel wrote:
-> > On 04/06/2011 11:08 PM, Alex,Shi wrote:
-> > > On Wed, 2011-04-06 at 16:04 +0800, Peter Zijlstra wrote:
-> > >> On Wed, 2011-04-06 at 06:33 +0800, Alex Shi wrote:
-> > 
-> > >> You do know that any app that relies on sched_yield behaviour is more
-> > >> than broken? Using sched_yield() for anything other than SCHED_FIFO
-> > >> tasks is well outside spec.
-> > >>
-> > >> Furthermore, apparently you used sysctl_sched_compat_yield, which was
-> > >> bound to disappear some time, since with the default settings the yield
-> > >> semantics didn't actually change.
-> > >
-> > > Yes, I used sched_compat_yield, otherwise volano will become extremely
-> > > slow in my single machine testing. We may reconsider our testing
-> > > setting.
-> > 
-> > With what JVM is this happening?
-> 
-> I used openjdk from fedora 10~13 and jrockit-R27.3.1-jre1.5.0_11, both
-> of them use sched_yield much. And I just did a quick try with
-> jrockit-R27.4.0-jre1.6.0_02.x86_64, it had same problem.
+Agree. For embedded systems there is no need to switch cores. Each core  
+register space and wrapper register space is mapped. In the brcm80211 we  
+have the concept of fast versus slow host interface. The criteria for fast  
+host interface is based on following expression:
 
-Well, switching openjdk to futexes would be a nice performance optimization for 
-sure - especially if you can show the speedups with VolanoMark.
+fast_host_bus = (host_bus_coretype == PCIE_CORE_ID) ||
+	((host_bus_coretype == PCI_CORE_ID) && (host_bus_corerev >= 13))
 
-It would also put all the performance claims to rest. If indeed yield() is 
-faster then this would give us an opportunity to improve futex performance to 
-the point (or beyond) yield() based locks.
+If this is true, chipcommon and pci/pcie registers are accessed without  
+sliding the window using the fixed offsets Rafał mentioned earlier. The  
+BAR0 window size is 16KB.
 
-Thanks,
+> I do really think that engineers at broadcom are clever enough
+> to design a hardware that does not require expensive window sliding
+> all the time while operating.
+>
 
-	Ingo
+If a bigger window is clever enough ;-)
+
+Gr. AvS
+-- 
+"The most merciful thing in the world, I think, is the inability of the  
+human
+mind to correlate all its contents." - "The Call of Cthulhu"
+
