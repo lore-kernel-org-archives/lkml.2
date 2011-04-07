@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab1DGCoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 22:44:37 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:50939 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751012Ab1DGCog (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 22:44:36 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+ke6EV5Nikh8B0IkaC3sr3yVmyrfGO40Ly1ouDRu
-	P0M34zWsLbdZHN
-Subject: RE: [PATCH] sched: recover sched_yield task running time increase
-From: Mike Galbraith <efault@gmx.de>
-To: "Shi, Alex" <alex.shi@intel.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mingo@elte.hu" <mingo@elte.hu>, "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B4BBA01D83D@shsmsx502.ccr.corp.intel.com>
-References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
-	 <4D9BF512.6080309@redhat.com>  <1302070509.15889.7351.camel@debian>
-	 <1302073289.21156.17.camel@marge.simson.net>
-	 <6E3BC7F7C9A4BF4286DD4C043110F30B4BBA01D83D@shsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Apr 2011 04:44:30 +0200
-Message-ID: <1302144270.7441.21.camel@marge.simson.net>
+	id S932217Ab1DGCsz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 22:48:55 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59188 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754936Ab1DGCsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 22:48:54 -0400
+Date: Thu, 7 Apr 2011 12:48:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ondrej Zary <linux@rainbow-software.org>
+Subject: linux-next: build failure after merge of the fbdev tree
+Message-Id: <20110407124841.d37bf9fe.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-06 at 21:28 +0800, Shi, Alex wrote:
-> >> > NACK
-> >> >
-> >> > This was switched off by default and under
-> >> > the sysctl sched_compat_yield for a reason.
-> >> >
-> >> > Reintroducing it under that sysctl option
-> >> > may be acceptable, but by default it would
-> >> > be doing the wrong thing for other workloads.
-> >>
-> >> I can implement this as sysctl option. But when I checked again the man
-> >> page of sched_yield. I have some concerns on this.
-> >>
-> >> ----
-> >>        int sched_yield(void);
-> >>
-> >> DESCRIPTION
-> >>        A  process  can  relinquish  the processor voluntarily without blocking by calling sched_yield().
-> >>        The process will then be moved to the end of the queue for its static priority and a new  process
-> >>        gets to run.
-> >> ----
-> >>
-> >> If a application calls sched_yield system call, most of time it is not
-> >> want to be launched again right now. so the man page said "the caller
-> >> process will then be moved to the _end_ of the queue..."
-> >
-> >Moving a yielding nice 0 task behind a SCHED_IDLE (or nice 19) task
-> >could be incredibly painful.
-> 
-> Good reminder! Do you have more detailed idea on this?
+--Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Other than 'don't do that'?  Nope.  sched_yield() semantics suck.
+Hi Paul,
 
-	-Mike
+After merging the fbdev tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+drivers/video/s3fb.c:29:26: error: linux/i2c-id.h: No such file or directory
+
+Caused by commit f4d186dc6a28 ("s3fb: add DDC support").
+
+I have used the version of the fbdev tree from next-20110406 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNnSYJAAoJEDMEi1NhKgbsz2UH/jNwaj3NbvgEc2MPF7pP0o/e
+sEhI1m1dZbkBMDkCgWpsA2SYJVbXmLqw9n4DZ6nq4AsAIg4onGbS1GwqlGQ6WjuZ
+SrBe0hAwmOtJxTvoBXNe87L2U2Tq17emwaG8K5hHcnavX1fE5PuVw6XBQxkGzC/4
+nNnK/3jUNTs8NymPNLcWuS3lLzF+/EFiHVWkX0MXwtEyzst4MjSvABiEDLmy3WWR
+TbEhXRdrOGdjnKSW2ejMpac3Z/PUmWw46ZcXgXDF99VswDIyqzkLfjyraNx7DTG0
+3ZkmHQOOfhXKwACysEl6NaFU2cFehTj/Pbpy9FH1pnPxioTUk5md/OHGcXab/M8=
+=xePn
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF--
