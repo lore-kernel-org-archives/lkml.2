@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab1DGCsz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 22:48:55 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59188 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754936Ab1DGCsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 22:48:54 -0400
-Date: Thu, 7 Apr 2011 12:48:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ondrej Zary <linux@rainbow-software.org>
-Subject: linux-next: build failure after merge of the fbdev tree
-Message-Id: <20110407124841.d37bf9fe.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF"
+	id S1757036Ab1DGCzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 22:55:32 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:36492 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756336Ab1DGCzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 22:55:31 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 06 Apr 2011 22:55:30 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
+        Eric Cooper <ecc@cmu.edu>
+Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on the
+ basis of the memory size.
+In-reply-to: <4D9CF5B3.9020007@ahsoftware.de>
+Message-id: <alpine.LFD.2.00.1104062228410.28032@xanadu.home>
+References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de>
+ <1302122121-3652-2-git-send-email-holler@ahsoftware.de>
+ <alpine.LFD.2.00.1104061739100.28032@xanadu.home>
+ <4D9CED15.2010806@ahsoftware.de>
+ <alpine.LFD.2.00.1104061850410.28032@xanadu.home>
+ <4D9CF5B3.9020007@ahsoftware.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 7 Apr 2011, Alexander Holler wrote:
 
-Hi Paul,
+> > > So I don't think this in any way a fragile hack.
+> > 
+> > Determining a machine type based on its amount of RAM is fragile, ugly
+> > and sets up a bad example for even more hacky tricks like this to crop
+> > up. If someone is experimenting with his SheevaPlug by giving different
+> > memory information in the kernel cmdline e.g. to create memory holes in
+> > order to test some memory allocator changes, then the kernel may think
+> > that it is not running on a SheevaPlug but a DockStar, and the resulting
+> > behavior will certainly be unexpected.
+> 
+> People doing such should now what they do. And the pr_info() in the
+> "abomination" should be enough to give those experimenters a hint (if it is
+> missing or new).
 
-After merging the fbdev tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+They shouldn't have to.  We have a well defined system to identify 
+machines/platforms with a unique number already.  It is completely 
+unambiguous.  What you're proposing is to break that system.
 
-drivers/video/s3fb.c:29:26: error: linux/i2c-id.h: No such file or directory
+The proper way to go about this rationalization is to move that stuff 
+over to device tree.
 
-Caused by commit f4d186dc6a28 ("s3fb: add DDC support").
+> > > Anyway, it was just a suggestion.
+> > 
+> > Better luck next time.
+> 
+> Sorry, I don't feel the need to waste my time prodcuing patches to get them
+> called "abominations". Which means my willingness to post further patches just
+> got below zero.
 
-I have used the version of the fbdev tree from next-20110406 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I'm sorry if you feel like that.  You shouldn't take this too personal.  
+It is not like if I qualified _you_ as a moron and a pariah (yes this 
+happened to me last week from our master penguin himself).
 
---Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNnSYJAAoJEDMEi1NhKgbsz2UH/jNwaj3NbvgEc2MPF7pP0o/e
-sEhI1m1dZbkBMDkCgWpsA2SYJVbXmLqw9n4DZ6nq4AsAIg4onGbS1GwqlGQ6WjuZ
-SrBe0hAwmOtJxTvoBXNe87L2U2Tq17emwaG8K5hHcnavX1fE5PuVw6XBQxkGzC/4
-nNnK/3jUNTs8NymPNLcWuS3lLzF+/EFiHVWkX0MXwtEyzst4MjSvABiEDLmy3WWR
-TbEhXRdrOGdjnKSW2ejMpac3Z/PUmWw46ZcXgXDF99VswDIyqzkLfjyraNx7DTG0
-3ZkmHQOOfhXKwACysEl6NaFU2cFehTj/Pbpy9FH1pnPxioTUk5md/OHGcXab/M8=
-=xePn
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Apr_2011_12_48_41_+1000_F2KDPyGT30O=96sF--
+Nicolas
