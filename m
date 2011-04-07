@@ -1,141 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab1DGCJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 22:09:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51067 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932092Ab1DGCJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 22:09:20 -0400
-Date: Thu, 7 Apr 2011 02:09:13 GMT
-From: tip-bot for Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, tj@kernel.org, tglx@linutronix.de,
-        rientjes@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tj@kernel.org, tglx@linutronix.de,
-        rientjes@google.com
-In-Reply-To: <1301955840-7246-15-git-send-email-tj@kernel.org>
-References: <1301955840-7246-15-git-send-email-tj@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/numa] x86-32, numa: Update remap allocator comments
-Message-ID: <tip-993ba1585cbb03fab012e41d1a5d24330a283b31@git.kernel.org>
-Git-Commit-ID: 993ba1585cbb03fab012e41d1a5d24330a283b31
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S932310Ab1DGCLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 22:11:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54969 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab1DGCLs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 22:11:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=bDGhBECx4cTOAd+iN+XrHzwZvf3tofyxdMTjZRRodPiBNnzuE0jKfi8g714/unIhxf
+         gov062EBCYCsbOhIiSsxg37Js34FVBTO9U2XKjF8ToYsUZqVcE1qYvxkF33RfvrW+0Qx
+         zsXNYQ8PXHmBuO80rpBALimYcU7uQxp0q3s5Q=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 07 Apr 2011 02:09:14 +0000 (UTC)
+From: Gottfried Haider <gottfried.haider@gmail.com>
+Date: Thu, 7 Apr 2011 04:11:27 +0200
+Message-ID: <BANLkTim8anqNv4MEaxCTyC8HyOZp2x=ixQ@mail.gmail.com>
+Subject: [Regression] USB tethering does not work anymore in 2.6.29-rc2
+ (rndis_host, does not receive DHCP offer anymore)
+To: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  993ba1585cbb03fab012e41d1a5d24330a283b31
-Gitweb:     http://git.kernel.org/tip/993ba1585cbb03fab012e41d1a5d24330a283b31
-Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Tue, 5 Apr 2011 00:24:00 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 6 Apr 2011 17:57:56 -0700
+Hello,
 
-x86-32, numa: Update remap allocator comments
+I am using an Android phone connected over USB to connect to the
+internet. Something in -rc2 broke this, as I am not getting
+connections through NetworkManager anymore (it doesn't receive a
+DHCPOFFER anymore and times out).
 
-Now that remap allocator is cleaned up, update comments such that they
-are in docbook function description format and reflect the actual
-implementation.
+This does work on the -rc1 kernel and is 100% reproducible here (same
+USB port, rebooting the phone between tries).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/1301955840-7246-15-git-send-email-tj@kernel.org
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/mm/numa_32.c |   56 ++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 42 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index f325e6f..c757c0a 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -176,17 +176,31 @@ static void __init allocate_pgdat(int nid)
- }
- 
- /*
-- * In the DISCONTIGMEM and SPARSEMEM memory model, a portion of the kernel
-- * virtual address space (KVA) is reserved and portions of nodes are mapped
-- * using it. This is to allow node-local memory to be allocated for
-- * structures that would normally require ZONE_NORMAL. The memory is
-- * allocated with alloc_remap() and callers should be prepared to allocate
-- * from the bootmem allocator instead.
-+ * Remap memory allocator
-  */
- static unsigned long node_remap_start_pfn[MAX_NUMNODES];
- static void *node_remap_end_vaddr[MAX_NUMNODES];
- static void *node_remap_alloc_vaddr[MAX_NUMNODES];
- 
-+/**
-+ * alloc_remap - Allocate remapped memory
-+ * @nid: NUMA node to allocate memory from
-+ * @size: The size of allocation
-+ *
-+ * Allocate @size bytes from the remap area of NUMA node @nid.  The
-+ * size of the remap area is predetermined by init_alloc_remap() and
-+ * only the callers considered there should call this function.  For
-+ * more info, please read the comment on top of init_alloc_remap().
-+ *
-+ * The caller must be ready to handle allocation failure from this
-+ * function and fall back to regular memory allocator in such cases.
-+ *
-+ * CONTEXT:
-+ * Single CPU early boot context.
-+ *
-+ * RETURNS:
-+ * Pointer to the allocated memory on success, %NULL on failure.
-+ */
- void *alloc_remap(int nid, unsigned long size)
- {
- 	void *allocation = node_remap_alloc_vaddr[nid];
-@@ -238,6 +252,28 @@ void resume_map_numa_kva(pgd_t *pgd_base)
- }
- #endif
- 
-+/**
-+ * init_alloc_remap - Initialize remap allocator for a NUMA node
-+ * @nid: NUMA node to initizlie remap allocator for
-+ *
-+ * NUMA nodes may end up without any lowmem.  As allocating pgdat and
-+ * memmap on a different node with lowmem is inefficient, a special
-+ * remap allocator is implemented which can be used by alloc_remap().
-+ *
-+ * For each node, the amount of memory which will be necessary for
-+ * pgdat and memmap is calculated and two memory areas of the size are
-+ * allocated - one in the node and the other in lowmem; then, the area
-+ * in the node is remapped to the lowmem area.
-+ *
-+ * As pgdat and memmap must be allocated in lowmem anyway, this
-+ * doesn't waste lowmem address space; however, the actual lowmem
-+ * which gets remapped over is wasted.  The amount shouldn't be
-+ * problematic on machines this feature will be used.
-+ *
-+ * Initialization failure isn't fatal.  alloc_remap() is used
-+ * opportunistically and the callers will fall back to other memory
-+ * allocation mechanisms on failure.
-+ */
- static __init void init_alloc_remap(int nid)
- {
- 	unsigned long size, pfn;
-@@ -306,14 +342,6 @@ void __init initmem_init(void)
- {
- 	int nid;
- 
--	/*
--	 * When mapping a NUMA machine we allocate the node_mem_map arrays
--	 * from node local memory.  They are then mapped directly into KVA
--	 * between zone normal and vmalloc space.  Calculate the size of
--	 * this space and use it to adjust the boundary between ZONE_NORMAL
--	 * and ZONE_HIGHMEM.
--	 */
--
- 	get_memcfg_numa();
- 	numa_init_array();
- 
+dmesg is about the same in both cases (the usb-storage is here as the
+phone frist tries to act as a mass storage device after connect and I
+have to manually activate a checkbox to switch to tethering
+functionality):
+
+[  235.150385] usb 1-3: new high speed USB device number 3 using ehci_hcd
+[  235.320523] scsi2 : usb-storage 1-3:1.0
+[  235.801209] usb 1-3: USB disconnect, device number 3
+[  236.200390] usb 1-3: new high speed USB device number 4 using ehci_hcd
+[  236.452982] usbcore: registered new interface driver cdc_ether
+[  236.473241] rndis_host 1-3:1.0: usb0: register 'rndis_host' at
+usb-0000:00:12.2-3, RNDIS device, 06:0f:e2:6a:61:cd
+[  236.474151] usbcore: registered new interface driver rndis_host
+[  236.487433] usbcore: registered new interface driver rndis_wlan
+[  246.850094] usb0: no IPv6 routers present
+
+
+lspci is at http://sukzessiv.net/x120e , let me know if you need any more info.
+
+cheers,
+gohai
+
+
+
+Below the full NetworkMonitor output of the working (-rc1) case and
+below the failing (-rc2) one. I noticed the different ifindex in line
+two, but other than that I don't see any difference except the
+obviously missing DHCPOFFER.
+
+-- begin working (-rc1) --
+NetworkManager[1958]: <info> (usb0): carrier is OFF
+NetworkManager[1958]: <info> (usb0): new Ethernet device (driver:
+'rndis_host' ifindex: 5)
+NetworkManager[1958]: <info> (usb0): exported as
+/org/freedesktop/NetworkManager/Devices/2
+NetworkManager[1958]: <info> (usb0): now managed
+NetworkManager[1958]: <info> (usb0): device state change: 1 -> 2 (reason 2)
+NetworkManager[1958]: <info> (usb0): bringing up device.
+NetworkManager[1958]: <info> (usb0): preparing device.
+NetworkManager[1958]: <info> (usb0): deactivating device (reason: 2).
+NetworkManager[1958]: <info> Added default wired connection 'Auto
+usb0' for /sys/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3:1.0/net/usb0
+NetworkManager[1958]: <info> (usb0): carrier now ON (device state 2)
+NetworkManager[1958]: <info> (usb0): device state change: 2 -> 3 (reason 40)
+NetworkManager[1958]:    SCPlugin-Ifupdown: devices added (path:
+/sys/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3:1.0/net/usb0, iface:
+usb0)
+NetworkManager[1958]:    SCPlugin-Ifupdown: device added (path:
+/sys/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3:1.0/net/usb0, iface:
+usb0): no ifupdown configuration found.
+NetworkManager[1958]: <info> Activation (usb0) starting connection 'Auto usb0'
+NetworkManager[1958]: <info> (usb0): device state change: 3 -> 4 (reason 0)
+NetworkManager[1958]: <info> Activation (usb0) Stage 1 of 5 (Device
+Prepare) scheduled...
+NetworkManager[1958]: <info> Activation (usb0) Stage 1 of 5 (Device
+Prepare) started...
+NetworkManager[1958]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) scheduled...
+NetworkManager[1958]: <info> Activation (usb0) Stage 1 of 5 (Device
+Prepare) complete.
+NetworkManager[1958]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) starting...
+NetworkManager[1958]: <info> (usb0): device state change: 4 -> 5 (reason 0)
+NetworkManager[1958]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) successful.
+NetworkManager[1958]: <info> Activation (usb0) Stage 3 of 5 (IP
+Configure Start) scheduled.
+NetworkManager[1958]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) complete.
+NetworkManager[1958]: <info> Activation (usb0) Stage 3 of 5 (IP
+Configure Start) started...
+NetworkManager[1958]: <info> (usb0): device state change: 5 -> 7 (reason 0)
+NetworkManager[1958]: <info> Activation (usb0) Beginning DHCPv4
+transaction (timeout in 45 seconds)
+NetworkManager[1958]: <info> dhclient started with pid 2030
+NetworkManager[1958]: <info> Activation (usb0) Stage 3 of 5 (IP
+Configure Start) complete.
+Internet Systems Consortium DHCP Client 4.1.1-P1
+Copyright 2004-2010 Internet Systems Consortium.
+All rights reserved.
+For info, please visit https://www.isc.org/software/dhcp/
+
+NetworkManager[1958]: <info> (usb0): DHCPv4 state changed nbi -> preinit
+Listening on LPF/usb0/3e:fd:8f:24:d4:25
+Sending on   LPF/usb0/3e:fd:8f:24:d4:25
+Sending on   Socket/fallback
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 3
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 5
+DHCPOFFER of 192.168.42.47 from 192.168.42.129
+DHCPREQUEST of 192.168.42.47 on usb0 to 255.255.255.255 port 67
+DHCPACK of 192.168.42.47 from 192.168.42.129
+NetworkManager[1958]: <info> (usb0): DHCPv4 state changed preinit -> bound
+NetworkManager[1958]: <info> Activation (usb0) Stage 4 of 5 (IP4
+Configure Get) scheduled...
+NetworkManager[1958]: <info> Activation (usb0) Stage 4 of 5 (IP4
+Configure Get) started...
+NetworkManager[1958]: <info>   address 192.168.42.47
+NetworkManager[1958]: <info>   prefix 24 (255.255.255.0)
+NetworkManager[1958]: <info>   gateway 192.168.42.129
+NetworkManager[1958]: <info>   hostname 'x120e'
+NetworkManager[1958]: <info>   nameserver '192.168.42.129'
+bound to 192.168.42.47 -- renewal in 1587 seconds.
+NetworkManager[1958]: <info> Scheduling stage 5
+NetworkManager[1958]: <info> Activation (usb0) Stage 5 of 5 (IP
+Configure Commit) scheduled...
+NetworkManager[1958]: <info> Done scheduling stage 5
+NetworkManager[1958]: <info> Activation (usb0) Stage 4 of 5 (IP4
+Configure Get) complete.
+NetworkManager[1958]: <info> Activation (usb0) Stage 5 of 5 (IP
+Configure Commit) started...
+NetworkManager[1958]: <info> (usb0): device state change: 7 -> 8 (reason 0)
+NetworkManager[1958]: <info> Policy set 'Auto usb0' (usb0) as default
+for IPv4 routing and DNS.
+NetworkManager[1958]: <info> Activation (usb0) successful, device activated.
+NetworkManager[1958]: <info> Activation (usb0) Stage 5 of 5 (IP
+Configure Commit) complete.
+-- end working (-rc1) --
+
+-- begin fail (-rc2) --
+NetworkManager[2541]: <info> (usb0): carrier is OFF
+NetworkManager[2541]: <info> (usb0): new Ethernet device (driver:
+'rndis_host' ifindex: 6)
+NetworkManager[2541]: <info> (usb0): exported as
+/org/freedesktop/NetworkManager/Devices/2
+NetworkManager[2541]: <info> (usb0): now managed
+NetworkManager[2541]: <info> (usb0): device state change: 1 -> 2 (reason 2)
+NetworkManager[2541]: <info> (usb0): bringing up device.
+NetworkManager[2541]: <info> (usb0): preparing device.
+NetworkManager[2541]: <info> (usb0): deactivating device (reason: 2).
+NetworkManager[2541]: <info> Added default wired connection 'Auto
+usb0' for /sys/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3:1.0/net/usb0
+NetworkManager[2541]: <info> (usb0): carrier now ON (device state 2)
+NetworkManager[2541]: <info> (usb0): device state change: 2 -> 3 (reason 40)
+NetworkManager[2541]:    SCPlugin-Ifupdown: devices added (path:
+/sys/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3:1.0/net/usb0, iface:
+usb0)
+NetworkManager[2541]:    SCPlugin-Ifupdown: device added (path:
+/sys/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3:1.0/net/usb0, iface:
+usb0): no ifupdown configuration found.
+NetworkManager[2541]: <info> Activation (usb0) starting connection 'Auto usb0'
+NetworkManager[2541]: <info> (usb0): device state change: 3 -> 4 (reason 0)
+NetworkManager[2541]: <info> Activation (usb0) Stage 1 of 5 (Device
+Prepare) scheduled...
+NetworkManager[2541]: <info> Activation (usb0) Stage 1 of 5 (Device
+Prepare) started...
+NetworkManager[2541]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) scheduled...
+NetworkManager[2541]: <info> Activation (usb0) Stage 1 of 5 (Device
+Prepare) complete.
+NetworkManager[2541]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) starting...
+NetworkManager[2541]: <info> (usb0): device state change: 4 -> 5 (reason 0)
+NetworkManager[2541]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) successful.
+NetworkManager[2541]: <info> Activation (usb0) Stage 3 of 5 (IP
+Configure Start) scheduled.
+NetworkManager[2541]: <info> Activation (usb0) Stage 2 of 5 (Device
+Configure) complete.
+NetworkManager[2541]: <info> Activation (usb0) Stage 3 of 5 (IP
+Configure Start) started...
+NetworkManager[2541]: <info> (usb0): device state change: 5 -> 7 (reason 0)
+NetworkManager[2541]: <info> Activation (usb0) Beginning DHCPv4
+transaction (timeout in 45 seconds)
+NetworkManager[2541]: <info> dhclient started with pid 2609
+NetworkManager[2541]: <info> Activation (usb0) Stage 3 of 5 (IP
+Configure Start) complete.
+Internet Systems Consortium DHCP Client 4.1.1-P1
+Copyright 2004-2010 Internet Systems Consortium.
+All rights reserved.
+For info, please visit https://www.isc.org/software/dhcp/
+
+NetworkManager[2541]: <info> (usb0): DHCPv4 state changed nbi -> preinit
+Listening on LPF/usb0/06:eb:ae:9f:5d:5d
+Sending on   LPF/usb0/06:eb:ae:9f:5d:5d
+Sending on   Socket/fallback
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 3
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 4
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 5
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 13
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 18
+DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 14
+NetworkManager[2541]: <warn> (usb0): DHCPv4 request timed out.
+NetworkManager[2541]: <info> (usb0): canceled DHCP transaction, DHCP
+client pid 2609
+NetworkManager[2541]: <info> Activation (usb0) Stage 4 of 5 (IP4
+Configure Timeout) scheduled...
+NetworkManager[2541]: <info> Activation (usb0) Stage 4 of 5 (IP4
+Configure Timeout) started...
+NetworkManager[2541]: <info> Activation (usb0) Stage 5 of 5 (IP
+Configure Commit) scheduled...
+NetworkManager[2541]: <info> Activation (usb0) Stage 4 of 5 (IP4
+Configure Timeout) complete.
+NetworkManager[2541]: <info> Activation (usb0) Stage 5 of 5 (IP
+Configure Commit) started...
+NetworkManager[2541]: <info> Activation (usb0) Stage 5 of 5 (IP
+Configure Commit) failed (no IP configuration found)
+NetworkManager[2541]: <info> (usb0): device state change: 7 -> 9 (reason 5)
+NetworkManager[2541]: <info> Marking connection 'Auto usb0' invalid.
+NetworkManager[2541]: <warn> Activation (usb0) failed.
+NetworkManager[2541]: <info> Activation (usb0) Stage 5 of 5 (IP
+Configure Commit) complete.
+NetworkManager[2541]: <info> (usb0): device state change: 9 -> 3 (reason 0)
+NetworkManager[2541]: <info> (usb0): deactivating device (reason: 0).
+-- end fail (-rc2) --
