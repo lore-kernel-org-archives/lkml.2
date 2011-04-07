@@ -1,51 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab1DHCtY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 22:49:24 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:51153 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932123Ab1DHCtX (ORCPT
+	id S1757446Ab1DHDTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 23:19:03 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:25464 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757409Ab1DHDS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 22:49:23 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19hdXcNBMRh2Rrk1ENeKsrgZK8jJx0X0LBzvnwMtS
-	f2Ugi6s9MijH5Q
-Subject: Re: [PATCH]sched: convert wall-time to vruntime for
- check_preempt_tick
-From: Mike Galbraith <efault@gmx.de>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>
-In-Reply-To: <1302222953.3981.88.camel@sli10-conroe>
-References: <20110407124332.GA31809@sli10-conroe.sh.intel.com>
-	 <1302183260.8065.9.camel@marge.simson.net>
-	 <1302222953.3981.88.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Apr 2011 04:49:19 +0200
-Message-ID: <1302230959.7551.14.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Thu, 7 Apr 2011 23:18:59 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=H95gfW32JB/XYJSBuOTvJ8IIviFcsPdfxXHbM7LS6jM= c=1 sm=1
+ a=ote_Dx-jOzsA:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
+ a=n3DLBDIp2lSvWb96zoUu4Q==:17 a=47LbCVvxAAAA:8 a=RraesHExQI7iyWNwnQUA:9
+ a=iGWFB84BjxTUncLoh8MA:7 a=QhNQsjeWOoAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+From: Simon Wood <simon@mungewell.org>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, davem@davemloft.net,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Simon Wood <simon@mungewell.org>
+Subject: [PatchV3 2/3] usb: plusb: Add support for PL-25A1
+Date: Thu,  7 Apr 2011 00:40:14 -0700
+Message-Id: <1302162015-22504-2-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1302162015-22504-1-git-send-email-simon@mungewell.org>
+References: <1301456667-1648-1-git-send-email-simon@mungewell.org>
+ <1302162015-22504-1-git-send-email-simon@mungewell.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-08 at 08:35 +0800, Shaohua Li wrote:
-> On Thu, 2011-04-07 at 21:34 +0800, Mike Galbraith wrote:
-> > On Thu, 2011-04-07 at 20:43 +0800, Shaohua Li wrote:
-> > > In check_preempt_tick(), delta is vruntime and ideal_runtime is wall runtime.
-> > > Comparing vruntime and ideal_runtime looks buggy.
-> > 
-> > Why is that buggy?  It's a distance in units ns, ala wakeup_granularity,
-> > a number.  This number just happens to be variable.
-> vruntime is scaled wall-time. In all other places we do the scale from
-> my understanding. I'm wondering why not do it here.
+From: simon <simon@ubuntu.(none)>
 
-The purpose was to ensure that there is not too much spread, just like
-wakeup preemption.  Using the number that determines tick induced spread
-as the spread caliper seems perfectly fine to me.
+This patch adds support for the PL-25A1 by adding the appropriate
+USB ID's. This chip is used in the Belkin 'Windows Easy Transfer'
+Cables.
 
-	-Mike
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/net/usb/Kconfig |    2 +-
+ drivers/net/usb/plusb.c |   22 ++++++++++++++++++++--
+ 2 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
+index 3ec22c3..9d4f911 100644
+--- a/drivers/net/usb/Kconfig
++++ b/drivers/net/usb/Kconfig
+@@ -258,7 +258,7 @@ config USB_NET_NET1080
+ 	  optionally with LEDs that indicate traffic
+ 
+ config USB_NET_PLUSB
+-	tristate "Prolific PL-2301/2302 based cables"
++	tristate "Prolific PL-2301/2302/25A1 based cables"
+ 	# if the handshake/init/reset problems, from original 'plusb',
+ 	# are ever resolved ... then remove "experimental"
+ 	depends on USB_USBNET && EXPERIMENTAL
+diff --git a/drivers/net/usb/plusb.c b/drivers/net/usb/plusb.c
+index 2fe1bb5..f46aa07 100644
+--- a/drivers/net/usb/plusb.c
++++ b/drivers/net/usb/plusb.c
+@@ -45,6 +45,14 @@
+  * seems to get wedged under load.  Prolific docs are weak, and
+  * don't identify differences between PL2301 and PL2302, much less
+  * anything to explain the different PL2302 versions observed.
++ *
++ * NOTE:  pl2501 has several modes, including pl2301 and pl2302
++ * compatibility.   Some docs suggest the difference between 2301
++ * and 2302 is only to make MS-Windows use a different driver...
++ *
++ * pl25a1 glue based on patch from Tony Gibbs.  Prolific "docs" on
++ * this chip are as usual incomplete about what control messages
++ * are supported.
+  */
+ 
+ /*
+@@ -95,7 +103,7 @@ static int pl_reset(struct usbnet *dev)
+ }
+ 
+ static const struct driver_info	prolific_info = {
+-	.description =	"Prolific PL-2301/PL-2302",
++	.description =	"Prolific PL-2301/PL-2302/PL-25A1",
+ 	.flags =	FLAG_POINTTOPOINT | FLAG_NO_SETINT,
+ 		/* some PL-2302 versions seem to fail usb_set_interface() */
+ 	.reset =	pl_reset,
+@@ -111,6 +119,7 @@ static const struct driver_info	prolific_info = {
+ 
+ static const struct usb_device_id	products [] = {
+ 
++/* full speed cables */
+ {
+ 	USB_DEVICE(0x067b, 0x0000),	// PL-2301
+ 	.driver_info =	(unsigned long) &prolific_info,
+@@ -119,6 +128,15 @@ static const struct usb_device_id	products [] = {
+ 	.driver_info =	(unsigned long) &prolific_info,
+ },
+ 
++/* high speed cables */
++{
++	USB_DEVICE(0x067b, 0x25a1),     /* PL-25A1, no eeprom */
++	.driver_info =  (unsigned long) &prolific_info,
++}, {
++	USB_DEVICE(0x050d, 0x258a),     /* Belkin F5U258/F5U279 (PL-25A1) */
++	.driver_info =  (unsigned long) &prolific_info,
++},
++
+ 	{ },		// END
+ };
+ MODULE_DEVICE_TABLE(usb, products);
+@@ -145,5 +163,5 @@ static void __exit plusb_exit(void)
+ module_exit(plusb_exit);
+ 
+ MODULE_AUTHOR("David Brownell");
+-MODULE_DESCRIPTION("Prolific PL-2301/2302 USB Host to Host Link Driver");
++MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1 USB Host to Host Link Driver");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.4.1
 
