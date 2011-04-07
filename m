@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab1DGK7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 06:59:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41318 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab1DGK7K (ORCPT
+	id S1755569Ab1DGK7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 06:59:33 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:35048 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755499Ab1DGK7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 06:59:10 -0400
-Date: Thu, 7 Apr 2011 12:58:50 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: oskar.andero@sonyericsson.com, nicolas.pitre@linaro.org,
-        linux@arm.linux.org.uk, catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, eric.y.miao@gmail.com,
-        linux-arm-kernel@lists.infradead.org,
-        Victor Boivie <victor.boivie@sonyericsson.com>
-Subject: Re: [PATCH] ARM: Allow for kernel command line concatenation
-Message-ID: <20110407105850.GJ13963@pengutronix.de>
-References: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
- <1302172525.24493.7.camel@t41.thuisdomein>
+	Thu, 7 Apr 2011 06:59:30 -0400
+From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
+        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: [PATCH v4] Add ST-Ericsson CG2900 driver
+Date: Thu, 7 Apr 2011 12:58:28 +0200
+Message-ID: <1302173908-25326-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302172525.24493.7.camel@t41.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 12:35:01PM +0200, Paul Bolle wrote:
-> On Thu, 2011-04-07 at 10:17 +0200, oskar.andero@sonyericsson.com wrote:
-> > +config CMDLINE_EXTEND
-> > +	bool "Extend bootloader kernel arguments"
-> > +	depends on CMDLINE != ""
-> > +	help
-> > +	  The default kernel command string will be concatenated with the
-> > +	  arguments provided by the boot loader.
-> 
-> This suggests the parameters provided by the boot loader will override
-> corresponding parameters of the default kernel command string. Is that
-> correct (for all possible parameters)?
-> 
-> Either way, shouldn't it be documented, perhaps in this help text, what
-> will happen if a parameter of the default kernel command string and a
-> parameter provided by the boot loader somehow conflict?
-Then you will end up with both parameters I guess. What happens depends
-on the parameter in question I guess. IMHO the description is fine.
-But I wonder if the new mechanism is useful in the end.
+This patch adds a driver for the ST-Ericsson CG2900 connectivity controller.
+It has earlier been tried to add this driver to the mfd and bluetooth areas,
+but due to continued discussions the driver is placed into staging for the moment.
 
-Best regards
-Uwe
+Compared to v3 this patch has the following update:
+ - Kconfig: Removed selecting BT and BTHCIUART when CG2900_UART is enabled.
+   It now depends on BT instead.
+
+Par-Gunnar Hjalmdahl (1):
+  staging: Add ST-Ericsson CG2900 driver
+
+ drivers/staging/Kconfig                          |    2 +
+ drivers/staging/Makefile                         |    1 +
+ drivers/staging/cg2900/Kconfig                   |   70 +
+ drivers/staging/cg2900/Makefile                  |   12 +
+ drivers/staging/cg2900/TODO                      |   23 +
+ drivers/staging/cg2900/bluetooth/Makefile        |    9 +
+ drivers/staging/cg2900/bluetooth/btcg2900.c      | 1203 ++++++++
+ drivers/staging/cg2900/bluetooth/cg2900_uart.c   | 2074 +++++++++++++
+ drivers/staging/cg2900/bluetooth/hci_ldisc.c     |  657 ++++
+ drivers/staging/cg2900/bluetooth/hci_uart.h      |  105 +
+ drivers/staging/cg2900/board-mop500-cg2900.c     |  204 ++
+ drivers/staging/cg2900/devices-cg2900.c          |  342 +++
+ drivers/staging/cg2900/devices-cg2900.h          |   31 +
+ drivers/staging/cg2900/include/cg2900.h          |  278 ++
+ drivers/staging/cg2900/include/cg2900_audio.h    |  473 +++
+ drivers/staging/cg2900/include/cg2900_hci.h      |   19 +
+ drivers/staging/cg2900/mfd/Makefile              |   18 +
+ drivers/staging/cg2900/mfd/cg2900_audio.c        | 3462 ++++++++++++++++++++++
+ drivers/staging/cg2900/mfd/cg2900_char_devices.c |  701 +++++
+ drivers/staging/cg2900/mfd/cg2900_chip.c         | 3415 +++++++++++++++++++++
+ drivers/staging/cg2900/mfd/cg2900_chip.h         |  613 ++++
+ drivers/staging/cg2900/mfd/cg2900_core.c         |  713 +++++
+ drivers/staging/cg2900/mfd/cg2900_core.h         |   51 +
+ drivers/staging/cg2900/mfd/cg2900_lib.c          |  281 ++
+ drivers/staging/cg2900/mfd/cg2900_lib.h          |   61 +
+ drivers/staging/cg2900/mfd/cg2900_test.c         |  402 +++
+ drivers/staging/cg2900/mfd/stlc2690_chip.c       | 1653 +++++++++++
+ drivers/staging/cg2900/mfd/stlc2690_chip.h       |   47 +
+ 28 files changed, 16920 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/cg2900/Kconfig
+ create mode 100644 drivers/staging/cg2900/Makefile
+ create mode 100644 drivers/staging/cg2900/TODO
+ create mode 100644 drivers/staging/cg2900/bluetooth/Makefile
+ create mode 100644 drivers/staging/cg2900/bluetooth/btcg2900.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/cg2900_uart.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/hci_ldisc.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/hci_uart.h
+ create mode 100644 drivers/staging/cg2900/board-mop500-cg2900.c
+ create mode 100644 drivers/staging/cg2900/devices-cg2900.c
+ create mode 100644 drivers/staging/cg2900/devices-cg2900.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900_audio.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900_hci.h
+ create mode 100644 drivers/staging/cg2900/mfd/Makefile
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_audio.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_char_devices.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_chip.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_chip.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_core.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_core.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_lib.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_lib.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_test.c
+ create mode 100644 drivers/staging/cg2900/mfd/stlc2690_chip.c
+ create mode 100644 drivers/staging/cg2900/mfd/stlc2690_chip.h
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.4.3
+
