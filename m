@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab1DGFSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 01:18:00 -0400
-Received: from mail.meckcom.net ([65.254.160.36]:32444 "EHLO mail.meckcom.net"
+	id S1751709Ab1DGFR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 01:17:59 -0400
+Received: from mail.meckcom.net ([65.254.160.36]:32450 "EHLO mail.meckcom.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528Ab1DGFR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751527Ab1DGFR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Apr 2011 01:17:57 -0400
-Date: Thu,  7 Apr 2011 01:02:30 -0400
-Message-Id: <201104070102.AA139526180@mail.meckcom.net>
+X-Greylist: delayed 789 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Apr 2011 01:17:57 EDT
+Date: Thu,  7 Apr 2011 01:05:14 -0400
+Message-Id: <201104070105.AA139984932@mail.meckcom.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 From: "Ronald C. Foster" <zenithfinhlronaldfoster@gmail.com>
