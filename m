@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab1DGDSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 23:18:52 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39802 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab1DGDSv convert rfc822-to-8bit (ORCPT
+	id S1757193Ab1DGDTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 23:19:15 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42901 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755441Ab1DGDTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 23:18:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=dn89SVBKhZDai3XN9xzqEiKPojf2aZuqtbLRisdhjmufkZQZ5gPklmkNYbWRsF8UYA
-         36pzAn+u6BjnaImRSNFjlwG/TlWvcv5y9y7kMZvLXNluADd+PNbWcVEXatM3Y2fT/H4I
-         zCkl924TQCqd9QJqKhPff438qEI4DzCkvKYUE=
+	Wed, 6 Apr 2011 23:19:13 -0400
+X-AuditID: b753bd60-9c7ccba000000f4e-6e-4d9d2d2eeefa
+X-AuditID: b753bd60-9c7ccba000000f4e-6e-4d9d2d2eeefa
+Message-ID: <4D9D2D28.4040508@hitachi.com>
+Date: Thu, 07 Apr 2011 12:19:04 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20110407001658.GW12642@redhat.com>
-References: <20110406223036.GA15721@digium.com>
-	<20110407001658.GW12642@redhat.com>
-Date: Thu, 7 Apr 2011 07:18:50 +0400
-X-Google-Sender-Auth: rHpOS7MycNV_guMh2WCXhipTBwc
-Message-ID: <BANLkTi=W45VbeBNThBqKv2Wbo+8sWxXjuA@mail.gmail.com>
-Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
- proper MSR register to catch" and NMIs
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Shaun Ruffell <sruffell@digium.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 26/26] 26: uprobes: filter chain
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6> <20110401143737.15455.30181.sendpatchset@localhost6.localdomain6> <4D9A6FE8.2010301@hitachi.com> <20110406224148.GA5806@linux.vnet.ibm.com>
+In-Reply-To: <20110406224148.GA5806@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 7, 2011, Don Zickus <dzickus@redhat.com> wrote:
-> On Wed, Apr 06, 2011 at 05:30:36PM -0500, Shaun Ruffell wrote:
->> Hello Don,
+(2011/04/07 7:41), Srikar Dronamraju wrote:
+>>> +static bool filter_chain(struct uprobe *uprobe, struct task_struct *t)
+>>> +{
+>>> +	struct uprobe_consumer *consumer;
+>>> +	bool ret = false;
+>>> +
+>>> +	down_read(&uprobe->consumer_rwsem);
+>>> +	for (consumer = uprobe->consumers; consumer;
+>>> +					consumer = consumer->next) {
+>>> +		if (!consumer->filter || consumer->filter(consumer, t)) {
+>>> +			ret = true;
+>>> +			break;
+>>> +		}
+>>> +	}
+>>> +	up_read(&uprobe->consumer_rwsem);
+>>> +	return ret;
+>>> +}
+>>> +
 >>
->> I was able to bisect it down to commit 242214f9c1eeaae40, but I'm not
->> certain where to go from here.  Is this something that is already known
->> or is there more information I should try to collect?
->
-> Nope, this is an ongoing issue.  What happened was the perf P4 nmi handler
-> was swallowing all the NMIs.  My patch fixed that and exposed a double NMI
-> problem.  We have been chasing it for a couple of months.  I think Cyril
-> was finally able to duplicate it (as he wrote the P4 code).  I have
-> confidence that he will find a fix for it soon. :-)
->
-> Thanks for the report though!
->
-> Cheers,
-> Don
->
+>> Where this function is called from ? This patch seems the last one of this series...
+>>
+> 
+> Sorry for the delayed reply, I was travelling to LFCS.
+> Still I have to connect the filter from trace/perf probe. 
 
-Hi, yeah, i got it too and i hope to fix this issue soon. Will ping as
-only get working fix.
+I see, and I'd like to suggest you to separate that series
+from this "uprobe" series. For upstream merge, indeed, we
+need a consumer of the uprobe. However, it should be as simple
+as possible, so that we can focus on reviewing uprobe itself.
+
+> Thats listed as todo and thats the next thing I am planning to work on.
+
+Interesting:) Could you tell us what the plan will introduce?
+How will it be connected? how will we use it?
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
