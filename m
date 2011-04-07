@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1DGP0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 11:26:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57670 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab1DGP0R convert rfc822-to-8bit (ORCPT
+	id S1754181Ab1DGP1t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 11:27:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48313 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab1DGP1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 11:26:17 -0400
-Subject: Re: tip: New "Link:" tag to replace "LKML-Reference:"
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D9DD62E.2050308@zytor.com>
-References: <4D9CE4AE.4090303@zytor.com> <1302185312.3329.1240.camel@twins>
-	 <4D9DCDAB.9000707@zytor.com> <1302188050.9086.27.camel@twins>
-	 <4D9DD08C.2080101@zytor.com> <1302188635.9086.44.camel@twins>
-	 <4D9DD62E.2050308@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 07 Apr 2011 17:26:05 +0200
-Message-ID: <1302189965.9086.71.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 7 Apr 2011 11:27:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=dd0bavnekXSf3cdwHdS9zp/mN6VXZOiWQWAXMg+YZG6IDobWGhjJKst+3+lNYMiP0j
+         bD/7/pevht/i94j/yG0CnbP01r97P87MwJr1cG8SX3IBEloUGoPEtk5arKSd4mUux3/N
+         5A5O626ZKS26xmBgpl8ekzYLHChWBER4YQu/Y=
+MIME-Version: 1.0
+In-Reply-To: <1302178426.3357.34.camel@edumazet-laptop>
+References: <20110315132527.130FB80018F1@mail1005.cent> <20110317001519.GB18911@kroah.com>
+ <20110407120112.E08DCA03@pobox.sk> <4D9D8FAA.9080405@suse.cz>
+ <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com> <1302177428.3357.25.camel@edumazet-laptop>
+ <1302178426.3357.34.camel@edumazet-laptop>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Thu, 7 Apr 2011 23:27:26 +0800
+Message-ID: <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
+Subject: Re: Regression from 2.6.36
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Content-Type: multipart/mixed; boundary=0016368e1b8d65b44804a055c0e9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-07 at 08:20 -0700, H. Peter Anvin wrote:
-> 
-> OK, this doesn't really need any hooks at all (the tip-bot is not a
-> hook).  The committer is, and *has to be* responsible for getting the
-> unique string into the Link: tag, through whatever means they feel is
-> appropriate.
-> 
-> Based on the previous message, I'm going to modify the bot to
-> recognize
-> the pattern:
-> 
-> Link: http://lkml.kernel.org/r/tip-`ranpwd -l 24`@git.kernel.org
-> 
-> ... to override the Message-ID.  It seems like the least ugly of a lot
-> of ugly options. 
+--0016368e1b8d65b44804a055c0e9
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-OK, but to qualify, it needn't be the committer, that is, Ingo usually
-commits the stuff for me, but I usually provide him with complete
-patches including LKML-Reference, now Link, tag.
+On Thu, Apr 7, 2011 at 8:13 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote=
+:
+> Le jeudi 07 avril 2011 =E0 13:57 +0200, Eric Dumazet a =E9crit :
+>
+>> We had a similar memory problem in fib_trie in the past =A0: We force a
+>> synchronize_rcu() every XXX Mbytes allocated to make sure we dont have
+>> too much ram waiting to be freed in rcu queues.
 
-I'll change my script to:
+I don't think there is too much memory allocated by vmalloc to free.
+My patch should reduce the size of the memory allocated by vmalloc().
+I think the real problem is kfree always returns the memory, whose
+size is aligned to 2^n pages, and more memory are used than before.
 
-Use an existing Link tag provided it doesn't match the above pattern, if
-there's no such tag, use Message-id, lacking that, generate one using
-the above pattern.
+>
+> This was done in commit c3059477fce2d956
+> (ipv4: Use synchronize_rcu() during trie_rebalance())
+>
+> It was possible in fib_trie because we hold RTNL lock, so managing
+> a counter was free.
+>
+> In fs case, we might use a percpu_counter if we really want to limit the
+> amount of space.
+>
+> Now, I am not even sure we should care that much and could just forget
+> about this high order pages use.
 
-Thanks!
+In normal cases, only a few fds are used, the ftable isn't larger than
+one page, so we should use kmalloc to reduce the memory cost. Maybe we
+should set a upper limit for kmalloc() here. One page?
+
+azurlt, would you please test the patch attached? Thanks.
+
+--=20
+Regards,
+Changli Gao(xiaosuo@gmail.com)
+
+--0016368e1b8d65b44804a055c0e9
+Content-Type: application/octet-stream; name="x.diff"
+Content-Disposition: attachment; filename="x.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gm7ubqed0
+
+ZGlmZiAtLWdpdCBhL2ZzL2ZpbGUuYyBiL2ZzL2ZpbGUuYwppbmRleCAwYmUzNDQ3Li45NjZiZjBj
+IDEwMDY0NAotLS0gYS9mcy9maWxlLmMKKysrIGIvZnMvZmlsZS5jCkBAIC00Myw5ICs0MywxMSBA
+QCBzdGF0aWMgaW5saW5lIHZvaWQgKmFsbG9jX2ZkbWVtKHVuc2lnbmVkIGludCBzaXplKQogewog
+CXZvaWQgKmRhdGE7CiAKLQlkYXRhID0ga21hbGxvYyhzaXplLCBHRlBfS0VSTkVMfF9fR0ZQX05P
+V0FSTik7Ci0JaWYgKGRhdGEgIT0gTlVMTCkKLQkJcmV0dXJuIGRhdGE7CisJaWYgKHNpemUgPD0g
+UEFHRV9TSVpFKSB7CisJCWRhdGEgPSBrbWFsbG9jKHNpemUsIEdGUF9LRVJORUx8X19HRlBfTk9X
+QVJOKTsKKwkJaWYgKGRhdGEgIT0gTlVMTCkKKwkJCXJldHVybiBkYXRhOworCX0KIAogCXJldHVy
+biB2bWFsbG9jKHNpemUpOwogfQo=
+--0016368e1b8d65b44804a055c0e9--
