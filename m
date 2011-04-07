@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab1DGQk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:40:56 -0400
-Received: from kroah.org ([198.145.64.141]:48577 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754060Ab1DGQkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:40:55 -0400
-Date: Thu, 7 Apr 2011 09:42:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Gottfried Haider <gottfried.haider@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [Regression] USB tethering does not work anymore in 2.6.29-rc2
- (rndis_host, does not receive DHCP offer anymore)
-Message-ID: <20110407164202.GA31291@kroah.com>
-References: <BANLkTim8anqNv4MEaxCTyC8HyOZp2x=ixQ@mail.gmail.com>
- <20110407163948.GD31060@kroah.com>
-MIME-Version: 1.0
+	id S1755891Ab1DGQmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:42:50 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44737 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab1DGQms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 12:42:48 -0400
+Date: Thu, 7 Apr 2011 18:42:45 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFT/PATCH v2 2/6] x86-64: Optimize vread_tsc's barriers
+Message-ID: <20110407164245.GA21838@one.firstfloor.org>
+References: <cover.1302137785.git.luto@mit.edu> <80b43d57d15f7b141799a7634274ee3bfe5a5855.1302137785.git.luto@mit.edu> <BANLkTi=RkeFMpcb36RrJ=+eYm-xk4B2zYw@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110407163948.GD31060@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTi=RkeFMpcb36RrJ=+eYm-xk4B2zYw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 09:39:48AM -0700, Greg KH wrote:
-> On Thu, Apr 07, 2011 at 04:11:27AM +0200, Gottfried Haider wrote:
-> > Hello,
-> > 
-> > I am using an Android phone connected over USB to connect to the
-> > internet. Something in -rc2 broke this, as I am not getting
-> > connections through NetworkManager anymore (it doesn't receive a
-> > DHCPOFFER anymore and times out).
-> > 
-> > This does work on the -rc1 kernel and is 100% reproducible here (same
-> > USB port, rebooting the phone between tries).
-> 
-> Any chance you can run 'git bisect' to narrow down the problem to the
-> offending change?
+> But before that, I would check that the second lfence is needed AT
+> ALL. I don't know whether we ever tried the "only barrier before"
+> version, because quite frankly, if you call this thing in a loop, then
 
-I just tested this myself and can confirm it doesn't work, but I will
-not have the time to run 'git bisect' until next week as I'm on the road
-:(
+> a single barrier will still mean that there are barriers in between
+> iterations. So...
 
-thanks,
+The testers will call it in a loop, but real users (e.g. using it for
+a logging timestamp) may not.
 
-greg k-h
+I'm sure a single barrier would have fixed the testers, as you point out,
+but the goal wasn't to only fix testers.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
