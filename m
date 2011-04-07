@@ -1,154 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab1DGJBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 05:01:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52514 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab1DGJBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 05:01:37 -0400
-Date: Thu, 7 Apr 2011 11:01:25 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: oskar.andero@sonyericsson.com
-Cc: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, eric.y.miao@gmail.com,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Victor Boivie <victor.boivie@sonyericsson.com>
-Subject: Re: [PATCH] ARM: Allow for kernel command line concatenation
-Message-ID: <20110407090125.GH13963@pengutronix.de>
-References: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302164236-1516-1-git-send-email-oskar.andero@sonyericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752114Ab1DGJI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 05:08:28 -0400
+Received: from lo.gmane.org ([80.91.229.12]:48398 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751832Ab1DGJI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 05:08:26 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alexander Clouter <alex@digriz.org.uk>
+Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on the basis of the memory size.
+Date: Thu, 7 Apr 2011 09:55:25 +0100
+Message-ID: <toa078-0do.ln1@chipmunk.wormnet.eu>
+References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de> <1302122121-3652-2-git-send-email-holler@ahsoftware.de> <alpine.LFD.2.00.1104061739100.28032@xanadu.home> <4D9CED15.2010806@ahsoftware.de> <alpine.LFD.2.00.1104061850410.28032@xanadu.home> <4D9CF5B3.9020007@ahsoftware.de>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
+User-Agent: tin/1.9.6-20100522 ("Lochruan") (UNIX) (Linux/2.6.32-5-sparc64-smp (sparc64))
+Cc: linux-arm-kernel@lists.infradead.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 10:17:16AM +0200, oskar.andero@sonyericsson.com wrote:
-> From: Victor Boivie <victor.boivie@sonyericsson.com>
+In gmane.linux.kernel Alexander Holler <holler@ahsoftware.de> wrote:
 > 
-> This patch allows the provided CONFIG_CMDLINE to be concatenated
-> with the one provided by the boot loader. This is useful to
-> merge the static values defined in CONFIG_CMDLINE with the
-> boot loader's (possibly) more dynamic values, such as startup
-> reasons and more.
+> Sorry, I don't feel the need to waste my time prodcuing patches to get 
+> them called "abominations". Which means my willingness to post further 
+> patches just got below zero.
 > 
-> Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
-> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
-> ---
->  arch/arm/Kconfig        |   21 +++++++++++++++++++--
->  arch/arm/kernel/setup.c |    9 ++++++++-
->  2 files changed, 27 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 5b9f78b..71b35e6 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1743,6 +1743,24 @@ config CMDLINE
->  	  time by entering them here. As a minimum, you should specify the
->  	  memory size and the root device (e.g., mem=64M root=/dev/nfs).
->  
-> +choice
-> +	prompt "Kernel command line type"
-> +	default CMDLINE_DEFAULT
-I'm not sure this works, but maybe use:
+In a posting from Nico before you got offended it was explained to you 
+*why* it was a Bad Idea(tm) and that that sort of thing simply does not 
+work.  As a game, is it really a situation with *zero* probability of 
+occuring that someone might produce a kirkwood/Sheeva flavoured board 
+with only 128MB RAM?
 
-	choice
-		prompt "Kernel command line type" if CMDLINE != ""
-		default CMDLINE_DEFAULT
+As well as a willingness to 'produce' patches (which to be frank 
+*anyone* can do[1])...the hard part is producing *good* patches.  To 
+produce good patches you need to read and understand the wisdom you get 
+back from the mailing lists you post to.  If you do not understand the 
+reasoning, ask.
 
-and then remove the explicit
+This is why you see [PATCHv${BIGNUM}] so often in a number of mailing 
+lists.  If you are not willing to accept *everyone*, including yourself, 
+writes crap code...well the value of your patches falls below zero.
 
-	depends on CMDLINE != ""
+Cheers
 
-from the options. This might hide the choice from the user if there is
-only a single option to choose.
-
-Best regards
-Uwe
-
-> +
-> +config CMDLINE_DEFAULT
-> +	bool "Use bootloader kernel arguments if available"
-> +	help
-> +	  Uses the command-line options passed by the boot loader. If
-> +	  the boot loader doesn't provide any, the default kernel command
-> +	  string provided in CMDLINE will be used.
-"CMDLINE_DEFAULT" isn't a good name IMHO. It conflicts with
-
-	config CMDLINE
-		string "Default kernel command string"
-
-Maybe better use CMDLINE_FROM_BOOTLOADER or similar?
-
-> +
-> +config CMDLINE_EXTEND
-> +	bool "Extend bootloader kernel arguments"
-> +	depends on CMDLINE != ""
-> +	help
-> +	  The default kernel command string will be concatenated with the
-> +	  arguments provided by the boot loader.
-> +
->  config CMDLINE_FORCE
->  	bool "Always use the default kernel command string"
->  	depends on CMDLINE != ""
-> @@ -1751,8 +1769,7 @@ config CMDLINE_FORCE
->  	  loader passes other arguments to the kernel.
->  	  This is useful if you cannot or don't want to change the
->  	  command-line options your boot loader passes to the kernel.
-> -
-> -	  If unsure, say N.
-> +endchoice
->  
->  config XIP_KERNEL
->  	bool "Kernel Execute-In-Place from ROM"
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index 006c1e8..465bc7e 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -673,7 +673,14 @@ __tagtable(ATAG_REVISION, parse_tag_revision);
->  static int __init parse_tag_cmdline(const struct tag *tag)
->  {
->  #ifndef CONFIG_CMDLINE_FORCE
-> -	strlcpy(default_command_line, tag->u.cmdline.cmdline, COMMAND_LINE_SIZE);
-> +#ifdef CONFIG_CMDLINE_EXTEND
-> +	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
-> +	strlcat(default_command_line, tag->u.cmdline.cmdline,
-> +		COMMAND_LINE_SIZE);
-> +#else
-> +	strlcpy(default_command_line, tag->u.cmdline.cmdline,
-> +		COMMAND_LINE_SIZE);
-> +#endif
->  #else
->  	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
->  #endif /* CONFIG_CMDLINE_FORCE */
-> -- 
-> 1.7.4.2
-I would prefer
-
-	#ifdef CONFIG_CMDLINE_DEFAULT
-		strlcpy(default_command_line, tag->u.cmdline.cmdline,
-			COMMAND_LINE_SIZE);
-	#elif CONFIG_CMDLINE_EXTEND
-		...
-	#else /* CMDLINE_FORCE */
-		...
-	#endif
-
-as it is easier to parse for a human.
-
-Best regards
-Uwe
+[1] just look at the abomination Marvell released for their 'orion5x' 
+	chipset originally
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Alexander Clouter
+.sigmonster says: But Captain -- the engines can't take this much longer!
+
