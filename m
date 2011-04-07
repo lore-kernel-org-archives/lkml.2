@@ -1,94 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab1DGAqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 20:46:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32921 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755864Ab1DGAqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 20:46:12 -0400
-Date: Thu, 7 Apr 2011 00:45:59 GMT
-From: tip-bot for Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: linux-kernel@vger.kernel.org, hans.rosenfeld@amd.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, hans.rosenfeld@amd.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1302106003-366952-1-git-send-email-hans.rosenfeld@amd.com>
-References: <1302106003-366952-1-git-send-email-hans.rosenfeld@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-32, fpu: Fix FPU exception handling on non-SSE systems
-Message-ID: <tip-f994d99cf140dbb637e49882891c89b3fd84becd@git.kernel.org>
-Git-Commit-ID: f994d99cf140dbb637e49882891c89b3fd84becd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756968Ab1DGAsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 20:48:25 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:14900 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755619Ab1DGAsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Apr 2011 20:48:24 -0400
+Date: Thu, 7 Apr 2011 10:48:03 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Nikolai Kondrashov <spbnick@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Bagwell <chris@cnpbagwell.com>
+Subject: Re: [PATCH v4] Documentation: Add evdev type and code definitions
+Message-ID: <20110407004802.GA31867@barra.redhat.com>
+References: <1302121172-16703-1-git-send-email-chase.douglas@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 07 Apr 2011 00:46:00 +0000 (UTC)
+In-Reply-To: <1302121172-16703-1-git-send-email-chase.douglas@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Thu, 07 Apr 2011 10:18:10 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f994d99cf140dbb637e49882891c89b3fd84becd
-Gitweb:     http://git.kernel.org/tip/f994d99cf140dbb637e49882891c89b3fd84becd
-Author:     Hans Rosenfeld <hans.rosenfeld@amd.com>
-AuthorDate: Wed, 6 Apr 2011 18:06:43 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 6 Apr 2011 16:53:01 -0700
+On Wed, Apr 06, 2011 at 04:19:31PM -0400, Chase Douglas wrote:
+> This commit adds the file Documentation/input/evdev-codes.txt.
+> 
+> Cc: Henrik Rydberg <rydberg@euromail.se>
+> Cc: Peter Hutterer <peter.hutterer@who-t.net>
+> Cc: Nikolai Kondrashov <spbnick@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Acked-by: Henrik Rydberg <rydberg@euromail.se>
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+> ---
+>  Documentation/input/evdev-codes.txt |  256 +++++++++++++++++++++++++++++++++++
+>  1 files changed, 256 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/input/evdev-codes.txt
+> 
 
-x86-32, fpu: Fix FPU exception handling on non-SSE systems
+Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
 
-On 32bit systems without SSE (that is, they use FSAVE/FRSTOR for FPU
-context switches), FPU exceptions in user mode cause Oopses, BUGs,
-recursive faults and other nasty things:
+thanks!
 
-fpu exception: 0000 [#1]
-last sysfs file: /sys/power/state
-Modules linked in: psmouse evdev pcspkr serio_raw [last unloaded: scsi_wait_scan]
+Cheers,
+  Peter
 
-Pid: 1638, comm: fxsave-32-excep Not tainted 2.6.35-07798-g58a992b-dirty #633 VP3-596B-DD/VT82C597
-EIP: 0060:[<c1003527>] EFLAGS: 00010202 CPU: 0
-EIP is at math_error+0x1b4/0x1c8
-EAX: 00000003 EBX: cf9be7e0 ECX: 00000000 EDX: cf9c5c00
-ESI: cf9d9fb4 EDI: c1372db3 EBP: 00000010 ESP: cf9d9f1c
-DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-Process fxsave-32-excep (pid: 1638, ti=cf9d8000 task=cf9be7e0 task.ti=cf9d8000)
-Stack:
-00000000 00000301 00000004 00000000 00000000 cf9d3000 cf9da8f0 00000001
-<0> 00000004 cf9b6b60 c1019a6b c1019a79 00000020 00000242 000001b6 cf9c5380
-<0> cf806b40 cf791880 00000000 00000282 00000282 c108a213 00000020 cf9c5380
-Call Trace:
-[<c1019a6b>] ? need_resched+0x11/0x1a
-[<c1019a79>] ? should_resched+0x5/0x1f
-[<c108a213>] ? do_sys_open+0xbd/0xc7
-[<c108a213>] ? do_sys_open+0xbd/0xc7
-[<c100353b>] ? do_coprocessor_error+0x0/0x11
-[<c12d5965>] ? error_code+0x65/0x70
-Code: a8 20 74 30 c7 44 24 0c 06 00 03 00 8d 54 24 04 89 d9 b8 08 00 00 00 e8 9b 6d 02 00 eb 16 8b 93 5c 02 00 00 eb 05 e9 04 ff ff ff <9b> dd 32 9b e9 16 ff ff ff 81 c4 84 00 00 00 5b 5e 5f 5d c3 c6
-EIP: [<c1003527>] math_error+0x1b4/0x1c8 SS:ESP 0068:cf9d9f1c
 
-This usually continues in slight variations until the system is reset.
-
-This bug was introduced by commit 58a992b9cbaf449aeebd3575c3695a9eb5d95b5e:
-	x86-32, fpu: Rewrite fpu_save_init()
-
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Link: http://lkml.kernel.org/r/1302106003-366952-1-git-send-email-hans.rosenfeld@amd.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/i387.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index ef32890..c9e09ea 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -237,7 +237,7 @@ static inline void fpu_save_init(struct fpu *fpu)
- 	} else if (use_fxsr()) {
- 		fpu_fxsave(fpu);
- 	} else {
--		asm volatile("fsave %[fx]; fwait"
-+		asm volatile("fnsave %[fx]; fwait"
- 			     : [fx] "=m" (fpu->state->fsave));
- 		return;
- 	}
+> diff --git a/Documentation/input/evdev-codes.txt b/Documentation/input/evdev-codes.txt
+> new file mode 100644
+> index 0000000..b50bc49
+> --- /dev/null
+> +++ b/Documentation/input/evdev-codes.txt
+> @@ -0,0 +1,256 @@
+> +The evdev protocol uses a map of types and codes to express input device values
+> +to userspace. This document describes the types and codes and how and when they
+> +may be used.
+> +
+> +A single hardware event generates multiple input events. Each input event
+> +contains the new value of a single data item. A special event type, EV_SYN, is
+> +used to separate input events into packets of input data changes occurring at
+> +the same moment in time. In the following, the term "event" refers to a single
+> +input event encompassing a type, code, and value.
+> +
+> +The evdev protocol is a stateful protocol. Events are emitted only when values
+> +of evdev codes have changed. However, the state is maintained within the Linux
+> +input subsystem; drivers do not need to maintain the state and may attempt to
+> +emit unchanged values without harm. Userspace may obtain the current state of
+> +evdev code values using the EVIOCG* ioctls defined in linux/input.h. The evdev
+> +reports supported by a device are also provided by sysfs in
+> +class/input/event*/device/capabilities/, and the properties of a device are
+> +provided in class/input/event*/device/properties.
+> +
+> +Types:
+> +==========
+> +Types are groupings of codes under a logical input construct. Each type has a
+> +set of applicable codes to be used in generating events. See the Codes section
+> +for details on valid codes for each type.
+> +
+> +* EV_SYN:
+> +  - Used as markers to separate events. Events may be separated in time or in
+> +    space, such as with the multitouch protocol.
+> +
+> +* EV_KEY:
+> +  - Used to describe state changes of keyboards, buttons, or other key-like
+> +    devices.
+> +
+> +* EV_REL:
+> +  - Used to describe relative axis value changes, e.g. moving the mouse 5 units
+> +    to the left.
+> +
+> +* EV_ABS:
+> +  - Used to describe absolute axis value changes, e.g. describing the
+> +    coordinates of a touch on a touchscreen.
+> +
+> +* EV_MSC:
+> +  - Used to describe miscellaneous input data that do not fit into other types.
+> +
+> +* EV_SW:
+> +  - Used to describe binary state input switches.
+> +
+> +* EV_LED:
+> +  - Used to turn LEDs on devices on and off.
+> +
+> +* EV_SND:
+> +  - Used to output sound to devices.
+> +
+> +* EV_REP:
+> +  - Used for autorepeating devices.
+> +
+> +* EV_FF:
+> +  - Used to send force feedback commands to an input device.
+> +
+> +* EV_PWR:
+> +  - A special type for power button and switch input.
+> +
+> +* EV_FF_STATUS:
+> +  - Used to receive force feedback device status.
+> +
+> +Codes:
+> +==========
+> +Codes define the precise type of event.
+> +
+> +EV_SYN:
+> +----------
+> +EV_SYN event values are undefined. Their usage is defined only by when they are
+> +sent in the evdev event stream.
+> +
+> +* SYN_REPORT:
+> +  - Used to synchronize and separate events into packets of input data changes
+> +    occurring at the same moment in time. For example, motion of a mouse may set
+> +    the REL_X and REL_Y values for one motion, then emit a SYN_REPORT. The next
+> +    motion will emit more REL_X and REL_Y values and send another SYN_REPORT.
+> +
+> +* SYN_CONFIG:
+> +  - TBD
+> +
+> +* SYN_MT_REPORT:
+> +  - Used to synchronize and separate touch events. See the
+> +    multi-touch-protocol.txt document for more information.
+> +
+> +EV_KEY:
+> +----------
+> +EV_KEY events take the form KEY_<name> or BTN_<name>. For example, KEY_A is used
+> +to represent the 'A' key on a keyboard. When a key is depressed, an event with
+> +the key's code is emitted with value 1. When the key is released, an event is
+> +emitted with value 0. Some hardware send events when a key is repeated. These
+> +events have a value of 2. In general, KEY_<name> is used for keyboard keys, and
+> +BTN_<name> is used for other types of momentary switch events.
+> +
+> +A few EV_KEY codes have special meanings:
+> +
+> +* BTN_TOOL_<name>:
+> +  - These codes are used in conjunction with input trackpads, tablets, and
+> +    touchscreens. These devices may be used with fingers, pens, or other tools.
+> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
+> +    code should be set to a value of 1. When the tool is no longer interacting
+> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
+> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
+> +    code when events are generated.
+> +
+> +* BTN_TOUCH:
+> +    BTN_TOUCH is used for touch contact. While an input tool is determined to be
+> +    within meaningful physical contact, the value of this property must be set
+> +    to 1. Meaningful physical contact may mean any contact, or it may mean
+> +    contact conditioned by an implementation defined property. For example, a
+> +    touchpad may set the value to 1 only when the touch pressure rises above a
+> +    certain value. BTN_TOUCH may be combined with BTN_TOOL_<name> codes. For
+> +    example, a pen tablet may set BTN_TOOL_PEN to 1 and BTN_TOUCH to 0 while the
+> +    pen is hovering over but not touching the tablet surface.
+> +
+> +Note: For appropriate function of the legacy mousedev emulation driver,
+> +BTN_TOUCH must be the first evdev code emitted in a synchronization frame.
+> +
+> +Note: Historically a touch device with BTN_TOOL_FINGER and BTN_TOUCH was
+> +interpreted as a touchpad by userspace, while a similar device without
+> +BTN_TOOL_FINGER was interpreted as a touchscreen. For backwards compatibility
+> +with current userspace it is recommended to follow this distinction. In the
+> +future, this distinction will be deprecated and the device properties ioctl
+> +EVIOCGPROP, defined in linux/input.h, will be used to convey the device type.
+> +
+> +* BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_TOOL_TRIPLETAP, BTN_TOOL_QUADTAP:
+> +  - These codes denote one, two, three, and four finger interaction on a
+> +    trackpad or touchscreen. For example, if the user uses two fingers and moves
+> +    them on the touchpad in an effort to scroll content on screen,
+> +    BTN_TOOL_DOUBLETAP should be set to value 1 for the duration of the motion.
+> +    Note that all BTN_TOOL_<name> codes and the BTN_TOUCH code are orthogonal in
+> +    purpose. A trackpad event generated by finger touches should generate events
+> +    for one code from each group. At most only one of these BTN_TOOL_<name>
+> +    codes should have a value of 1 during any synchronization frame.
+> +
+> +Note: Historically some drivers emitted multiple of the finger count codes with
+> +a value of 1 in the same synchronization frame. This usage is deprecated.
+> +
+> +Note: In multitouch drivers, the input_mt_report_finger_count() function should
+> +be used to emit these codes. Please see multi-touch-protocol.txt for details.
+> +
+> +EV_REL:
+> +----------
+> +EV_REL events describe relative changes in a property. For example, a mouse may
+> +move to the left by a certain number of units, but its absolute position in
+> +space is unknown. If the absolute position is known, EV_ABS codes should be used
+> +instead of EV_REL codes.
+> +
+> +A few EV_REL codes have special meanings:
+> +
+> +* REL_WHEEL, REL_HWHEEL:
+> +  - These codes are used for vertical and horizontal scroll wheels,
+> +    respectively.
+> +
+> +EV_ABS:
+> +----------
+> +EV_ABS events describe absolute changes in a property. For example, a touchpad
+> +may emit coordinates for a touch location.
+> +
+> +A few EV_ABS codes have special meanings:
+> +
+> +* ABS_DISTANCE:
+> +  - Used to describe the distance of a tool from an interaction surface. This
+> +    event should only be emitted while the tool is hovering, meaning in close
+> +    proximity of the device and while the value of the BTN_TOUCH code is 0. If
+> +    the input device may be used freely in three dimensions, consider ABS_Z
+> +    instead.
+> +
+> +* ABS_MT_<name>:
+> +  - Used to describe multitouch input events. Please see
+> +    multi-touch-protocol.txt for details.
+> +
+> +EV_SW:
+> +----------
+> +EV_SW events describe stateful binary switches. For example, the SW_LID code is
+> +used to denote when a laptop lid is closed.
+> +
+> +Upon binding to a device or resuming from suspend, a driver must report the
+> +the current switch state. This ensures that the device, kernel, and userspace
+> +state is in sync.
+> +
+> +Upon resume, if the switch state is the same as before suspend, then the input
+> +subsystem will filter out the duplicate switch state reports. The driver does
+> +not need to keep the state of the switch at any time.
+> +
+> +EV_MSC:
+> +----------
+> +EV_MSC events are used for input and output events that do not fall under other
+> +categories.
+> +
+> +EV_LED:
+> +----------
+> +EV_LED events are used for input and output to set and query the state of
+> +various LEDs on devices.
+> +
+> +EV_REP:
+> +----------
+> +EV_REP events are used for specifying autorepeating events.
+> +
+> +EV_SND:
+> +----------
+> +EV_SND events are used for sending sound commands to simple sound output
+> +devices.
+> +
+> +EV_FF:
+> +----------
+> +EV_FF events are used to initialize a force feedback capable device and to cause
+> +such device to feedback.
+> +
+> +EV_PWR:
+> +----------
+> +EV_PWR events are a special type of event used specifically for power
+> +mangement. Its usage is not well defined. To be addressed later.
+> +
+> +Guidelines:
+> +==========
+> +The guidelines below ensure proper single-touch and multi-finger functionality.
+> +For multi-touch functionality, see the multi-touch-protocol.txt document for
+> +more information.
+> +
+> +Mice:
+> +----------
+> +REL_{X,Y} must be reported when the mouse moves. BTN_LEFT must be used to report
+> +the primary button press. BTN_{MIDDLE,RIGHT,4,5,etc.} should be used to report
+> +further buttons of the device. REL_WHEEL and REL_HWHEEL should be used to report
+> +scroll wheel events where available.
+> +
+> +Touchscreens:
+> +----------
+> +ABS_{X,Y} must be reported with the location of the touch. BTN_TOUCH must be
+> +used to report when a touch is active on the screen.
+> +BTN_{MOUSE,LEFT,MIDDLE,RIGHT} must not be reported as the result of touch
+> +contact. BTN_TOOL_<name> events should be reported where possible.
+> +
+> +Trackpads:
+> +----------
+> +Legacy trackpads that only provide relative position information must report
+> +events like mice described above.
+> +
+> +Trackpads that provide absolute touch position must report ABS_{X,Y} for the
+> +location of the touch. BTN_TOUCH should be used to report when a touch is active
+> +on the trackpad. Where multi-finger support is available, BTN_TOOL_<name> should
+> +be used to report the number of touches active on the trackpad.
+> +
+> +Tablets:
+> +----------
+> +BTN_TOOL_<name> events must be reported when a stylus or other tool is active on
+> +the tablet. ABS_{X,Y} must be reported with the location of the tool. BTN_TOUCH
+> +should be used to report when the tool is in contact with the tablet.
+> +BTN_{STYLUS,STYLUS2} should be used to report buttons on the tool itself. Any
+> +button may be used for buttons on the tablet except BTN_{MOUSE,LEFT}.
+> +BTN_{0,1,2,etc} are good generic codes for unlabeled buttons. Do not use
+> +meaningful buttons, like BTN_FORWARD, unless the button is labeled for that
+> +purpose on the device.
+> -- 
+> 1.7.4.1
+> 
