@@ -1,190 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab1DGNkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:40:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31106 "EHLO mga02.intel.com"
+	id S1754284Ab1DGNlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:41:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48694 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab1DGNk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:40:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,316,1299484800"; 
-   d="scan'208";a="624997387"
-Date: Thu, 7 Apr 2011 15:40:23 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Mocean Laboratories <info@mocean-labs.com>
-Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
- to drivers
-Message-ID: <20110407133717.GA3923@sortiz-mobl>
-References: <20110401235239.GE29397@sortiz-mobl>
- <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
- <20110404100314.GC2751@sortiz-mobl>
- <20110405030428.GB29522@ponder.secretlab.ca>
- <20110406152322.GA2757@sortiz-mobl>
- <20110406155805.GA20095@suse.de>
- <20110406170537.GB2757@sortiz-mobl>
- <20110406175647.GA8048@suse.de>
- <20110406184733.GD2757@sortiz-mobl>
- <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
+	id S1751418Ab1DGNlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 09:41:15 -0400
+Date: Thu, 7 Apr 2011 09:40:46 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Milton Miller <miltonm@bga.com>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, WANG Cong <xiyou.wangcong@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2] generic-ipi: Initialize call_single_queue before
+ enabling interrupt
+Message-ID: <20110407134046.GA27778@redhat.com>
+References: <D6CBEE2F420741indou.takao@jp.fujitsu.com>
+ <20110406204742.GH18777@redhat.com>
+ <EBCBF4AC9FDAD4indou.takao@jp.fujitsu.com>
+ <ECCBF4AD4D39CDindou.takao@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <ECCBF4AD4D39CDindou.takao@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-
-On Wed, Apr 06, 2011 at 09:59:02PM +0300, Felipe Balbi wrote:
-> Hi,
+On Wed, Apr 06, 2011 at 06:52:27PM -0400, Takao Indoh wrote:
+> On Wed, 06 Apr 2011 18:47:36 -0400, Takao Indoh wrote:
 > 
-> On Wed, Apr 06, 2011 at 08:47:34PM +0200, Samuel Ortiz wrote:
-> > > > > What is a "MFD cell pointer" and why is it needed in struct device?
-> > > > An MFD cell is an MFD instantiated device.
-> > > > MFD (Multi Function Device) drivers instantiate platform devices. Those
-> > > > devices drivers sometimes need a platform data pointer, sometimes an MFD
-> > > > specific pointer, and sometimes both. Also, some of those drivers have been
-> > > > implemented as MFD sub drivers, while others know nothing about MFD and just
-> > > > expect a plain platform_data pointer.
-> > > 
-> > > That sounds like a bug in those drivers, why not fix them to properly
-> > > pass in the correct pointer?
-> > Because they're drivers for generic IPs, not MFD ones. By forcing them to use
-> > MFD specific structure and APIs, we make it more difficult for platform code
-> > to instantiate them.
+> >On Wed, 6 Apr 2011 16:47:42 -0400, Vivek Goyal wrote:
+> >
+> >>On Tue, Mar 29, 2011 at 12:35:04PM -0400, Takao Indoh wrote:
+> >>> Hi all,
+> >>> 
+> >>> This patch renames init_call_single_data() to call_function_init() and
+> >>> calls it in start_kernel() so that call_single_queue can be initialized
+> >>> before enabling interrupt.
+> >>> 
+> >>> There is a problem that kdump(2nd kernel) sometimes hangs up due to
+> >>> pending IPI from 1st kernel. Kernel panic occurs because IPI comes
+> >>> before call_single_queue is initialized. The details are as follows.
+> >>> (1) 2nd kernel boot up
+> >>> (2) A pending IPI from 1st kernel comes when irqs are first enabled
+> >>>     in start_kernel().
+> >>> (3) Kernel tries to handle the interrupt, but call_single_queue is not
+> >>>     initialized yet at this point. As a result, in the
+> >>>     generic_smp_call_function_single_interrupt(), NULL pointer
+> >>>     dereference occurs when list_replace_init() tries to access
+> >>>     &q->list.next.
+> >>> Therefore this patch changes the name of init_call_single_data() to
+> >>> call_function_init() and calls it before local_irq_enable() in
+> >>> start_kernel().
+> >>> 
+> >>> v2:
+> >>> - Rename init_call_single_data() to call_function_init() and calls it in
+> >>>   start_kernel()
+> >>> - Change insert position in start_kernel().
+> >>> - Adjust for CONFIG_SMP/CONFIG_USE_GENERIC_SMP_HELPERS options
+> >>> - Rebased to Linus's latest tree
+> >>> 
+> >>> v1:
+> >>> https://lkml.org/lkml/2011/3/25/317
+> >>> - Divide init_call_single_data() into two functions,
+> >>>    o init_call_single_data: initialize call_single_queue
+> >>>    o init_hotplug_cfd: initialize hotplug_cfd_notifier
+> >>>   And call init_call_single_data before local_irq_enable() in
+> >>>   start_kernel().
+> >>> 
+> >>> v0:
+> >>> https://lkml.org/lkml/2011/3/23/417
+> >>> - In generic_smp_call_function_single_interrupt(), check if
+> >>>   call_single_queue was initialized or not, and just return if not
+> >>>   initialized.
+> >>> 
+> >>> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+
+[..]
+> >So, list_empty(list)? is always false, if I am not missing something.
 > 
-> I agree. What I do on those cases is to have a simple platform_device
-> for the core IP driver and use platform_device_id tables to do runtime
-> checks of the small differences. If one platform X doesn't use a
-> platform_bus, it uses e.g. PCI, then you make a PCI "bridge" which
-> allocates a platform_device with the correct name and adds that to the
-> driver model.
-I see, thanks.
-Below is a patch for the Xilinx SPI example. Although this would fix the
-issue, we'd still have to do that on device per device basis. I had a similar
-solution where MFD drivers would set a flag for sub drivers that don't need
-any of the MFD bits. In that case the MFD core code would just forward the
-platform data, instead of embedding it through an MFD cell.
+> No, list_empty(list)? is always *true*.
+> 
 
-Cheers,
-Samuel.
+ok, I got it. So list_replace_init() is fine even if q->list is empty. So
+when a pending IPI from previous kernel comes, q->list will be empty
+and we will simply do nothing. Sounds reaosnable to me.
 
----
- drivers/mfd/timberdale.c |    8 ++++----
- drivers/spi/xilinx_spi.c |   19 ++++++++++++++++++-
- include/linux/mfd/core.h |    3 +++
- 3 files changed, 25 insertions(+), 5 deletions(-)
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
-index 94c6c8a..c9220ce 100644
---- a/drivers/mfd/timberdale.c
-+++ b/drivers/mfd/timberdale.c
-@@ -416,7 +416,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
- 		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
--		.name = "xilinx_spi",
-+		.name = "mfd_xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
- 		.mfd_data = &timberdale_xspi_platform_data,
-@@ -476,7 +476,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
- 		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
--		.name = "xilinx_spi",
-+		.name = "mfd_xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
- 		.mfd_data = &timberdale_xspi_platform_data,
-@@ -526,7 +526,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
- 		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
--		.name = "xilinx_spi",
-+		.name = "mfd_xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
- 		.mfd_data = &timberdale_xspi_platform_data,
-@@ -570,7 +570,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
- 		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
--		.name = "xilinx_spi",
-+		.name = "mfd_xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
- 		.mfd_data = &timberdale_xspi_platform_data,
-diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/xilinx_spi.c
-index c69c6f2..3287b84 100644
---- a/drivers/spi/xilinx_spi.c
-+++ b/drivers/spi/xilinx_spi.c
-@@ -471,7 +471,11 @@ static int __devinit xilinx_spi_probe(struct platform_device *dev)
- 	struct spi_master *master;
- 	u8 i;
- 
--	pdata = mfd_get_data(dev);
-+	if (platform_get_device_id(dev) &&
-+	    platform_get_device_id(dev)->driver_data & MFD_PLATFORM_DEVICE)
-+		pdata = mfd_get_data(dev);
-+	else
-+		pdata = dev->dev.platform_data;
- 	if (pdata) {
- 		num_cs = pdata->num_chipselect;
- 		little_endian = pdata->little_endian;
-@@ -530,6 +534,18 @@ static int __devexit xilinx_spi_remove(struct platform_device *dev)
- /* work with hotplug and coldplug */
- MODULE_ALIAS("platform:" XILINX_SPI_NAME);
- 
-+static const struct platform_device_id xilinx_spi_id_table[] = {
-+	{
-+		.name	= XILINX_SPI_NAME,
-+	},
-+	{
-+		.name	= "mfd_xilinx_spi",
-+		.driver_data = MFD_PLATFORM_DEVICE,
-+	},
-+	{  },	/* Terminating Entry */
-+};
-+MODULE_DEVICE_TABLE(platform, xilinx_spi_id_table);
-+
- static struct platform_driver xilinx_spi_driver = {
- 	.probe = xilinx_spi_probe,
- 	.remove = __devexit_p(xilinx_spi_remove),
-@@ -538,6 +554,7 @@ static struct platform_driver xilinx_spi_driver = {
- 		.owner = THIS_MODULE,
- 		.of_match_table = xilinx_spi_of_match,
- 	},
-+	.id_table	= xilinx_spi_id_table,
- };
- 
- static int __init xilinx_spi_pltfm_init(void)
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index ad1b19a..13f31f4 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -89,6 +89,9 @@ static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
- 	return pdev->dev.platform_data;
- }
- 
-+/* */
-+#define MFD_PLATFORM_DEVICE BIT(0)
-+
- /*
-  * Given a platform device that's been created by mfd_add_devices(), fetch
-  * the .mfd_data entry from the mfd_cell that created it.
-
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks
+Vivek
