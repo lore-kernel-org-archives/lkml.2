@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab1DGIIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 04:08:37 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40189 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755393Ab1DGIIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 04:08:34 -0400
-Date: Thu, 7 Apr 2011 10:08:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFT/PATCH v2 1/6] x86-64: Clean up vdso/kernel shared variables
-Message-ID: <20110407080825.GF24879@elte.hu>
-References: <cover.1302137785.git.luto@mit.edu>
- <c79ac2a9a1caad9865ffa3c4a05438227c59f63e.1302137785.git.luto@mit.edu>
+	id S1755550Ab1DGIJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 04:09:32 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:59177 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751069Ab1DGIJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 04:09:28 -0400
+Date: Thu, 7 Apr 2011 11:09:22 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Felipe Balbi <balbi@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-i2c@vger.kernel.org, linux-media@vger.kernel.org,
+        netdev@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mocean Laboratories <info@mocean-labs.com>
+Subject: Re: [PATCH 07/19] timberdale: mfd_cell is now implicitly available
+ to drivers
+Message-ID: <20110407080921.GD29038@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <BANLkTi=bq=OGzXFp7qiBr7x_BnGOWf=DRQ@mail.gmail.com>
+ <20110404100314.GC2751@sortiz-mobl>
+ <20110405030428.GB29522@ponder.secretlab.ca>
+ <20110406152322.GA2757@sortiz-mobl>
+ <20110406155805.GA20095@suse.de>
+ <20110406170537.GB2757@sortiz-mobl>
+ <20110406175647.GA8048@suse.de>
+ <20110406184733.GD2757@sortiz-mobl>
+ <20110406185902.GN25654@legolas.emea.dhcp.ti.com>
+ <20110406220900.GA16117@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c79ac2a9a1caad9865ffa3c4a05438227c59f63e.1302137785.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110406220900.GA16117@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Andy Lutomirski <luto@MIT.EDU> wrote:
-
-> Variables that are shared between the vdso and the kernel are
-> currently a bit of a mess.  They are each defined with their own
-> magic, they are accessed differently in the kernel, the vsyscall page,
-> and the vdso, and one of them (vsyscall_clock) doesn't even really
-> exist.
+On Wed, Apr 06, 2011 at 03:09:00PM -0700, Greg KH wrote:
+> On Wed, Apr 06, 2011 at 09:59:02PM +0300, Felipe Balbi wrote:
+> > Hi,
+> > 
+> > On Wed, Apr 06, 2011 at 08:47:34PM +0200, Samuel Ortiz wrote:
+> > > > > > What is a "MFD cell pointer" and why is it needed in struct device?
+> > > > > An MFD cell is an MFD instantiated device.
+> > > > > MFD (Multi Function Device) drivers instantiate platform devices. Those
+> > > > > devices drivers sometimes need a platform data pointer, sometimes an MFD
+> > > > > specific pointer, and sometimes both. Also, some of those drivers have been
+> > > > > implemented as MFD sub drivers, while others know nothing about MFD and just
+> > > > > expect a plain platform_data pointer.
+> > > > 
+> > > > That sounds like a bug in those drivers, why not fix them to properly
+> > > > pass in the correct pointer?
+> > > Because they're drivers for generic IPs, not MFD ones. By forcing them to use
+> > > MFD specific structure and APIs, we make it more difficult for platform code
+> > > to instantiate them.
+> > 
+> > I agree. What I do on those cases is to have a simple platform_device
+> > for the core IP driver and use platform_device_id tables to do runtime
+> > checks of the small differences. If one platform X doesn't use a
+> > platform_bus, it uses e.g. PCI, then you make a PCI "bridge" which
+> > allocates a platform_device with the correct name and adds that to the
+> > driver model.
+> > 
+> > See [1] (for the core driver) and [2] (for a PCI bridge driver) for an
+> > example of what I'm talking about.
 > 
-> This changes them all to use a common mechanism.  All of them are
-> delcared in vvar.h with a fixed address (validated by the linker
-> script).  In the kernel (as before), they look like ordinary
-> read-write variables.  In the vsyscall page and the vdso, they are
-> accessed through a new macro VVAR, which gives read-only access.
-> 
-> The vdso is now loaded verbatim into memory without any fixups.  As a
-> side bonus, access from the vdso is faster because a level of
-> indirection is removed.
+> Yes, thanks for providing a real example, this is the best way to handle
+> this.
 
-Ok, that's a pretty nice consolidation and speedup.
+no problem.
 
-This layout:
+ps: that's the driver for the USB3 controller which will come on OMAP5.
+Driver being validate on a pre-silicon platform right now :-D In a few
+weeks I'll send the driver for integration.
 
-> +DECLARE_VVAR(0, volatile unsigned long, jiffies)
-> +DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
-> +DECLARE_VVAR(256, int, vgetcpu_mode)
-
-Is spread out too much, using up several separate cachelines with nothing else 
-on them. Why not pack it tightly, with natural alignment taken into 
-consideration?
-
-Thanks,
-
-	Ingo
+-- 
+balbi
