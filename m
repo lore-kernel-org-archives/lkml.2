@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab1DGSkk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 14:40:40 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:37879 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754889Ab1DGSki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 14:40:38 -0400
-Subject: [PATCH] iwl4965: drop a lone pr_err()
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Apr 2011 20:40:32 +0200
-Message-ID: <1302201632.9085.7.camel@x61.thuisdomein>
+	id S1756538Ab1DGSms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 14:42:48 -0400
+Received: from linux-sh.org ([111.68.239.195]:35319 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754889Ab1DGSmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 14:42:47 -0400
+Date: Fri, 8 Apr 2011 03:42:41 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh fixes for 2.6.39-rc3
+Message-ID: <20110407184241.GF8052@linux-sh.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-iwl4965_rate_control_register() prints a message at KERN_ERR level. It
-looks like it's just a debugging message, so pr_err() seems to be
-overdone. But none of the similar functions in drivers/net/wireless
-print a message, so let's just drop it.
+Please pull from:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- drivers/net/wireless/iwlegacy/iwl-4965-rs.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-fixes-for-linus
 
-diff --git a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
-index 31ac672..8950939 100644
---- a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
-@@ -2860,7 +2860,6 @@ static struct rate_control_ops rs_4965_ops = {
- 
- int iwl4965_rate_control_register(void)
- {
--	pr_err("Registering 4965 rate control operations\n");
- 	return ieee80211_rate_control_register(&rs_4965_ops);
- }
- 
--- 
-1.7.4
+Which contains:
 
+Alexandre Courbot (1):
+      serial: sh-sci: prevent setup of uninitialized serial console
 
+Nobuhiro Iwamatsu (3):
+      sh: sh-sci: Fix double initialization by serial_console_setup
+      sh: landisk: Remove mv_nr_irqs
+      sh: landisk: Remove whitespace
 
+Paul Mundt (1):
+      sh: select ARCH_NO_SYSDEV_OPS.
+
+Yoshihiro Shimoda (2):
+      dma: shdma: add checking the DMAOR_AE in sh_dmae_err
+      sh: fix build error in board-sh7757lcr.c
+
+ arch/sh/Kconfig                     |    1 +
+ arch/sh/boards/board-sh7757lcr.c    |    2 +-
+ arch/sh/boards/mach-landisk/setup.c |    5 ++---
+ drivers/dma/shdma.c                 |    7 ++++++-
+ drivers/tty/serial/sh-sci.c         |   25 ++++++++++++-------------
+ 5 files changed, 22 insertions(+), 18 deletions(-)
