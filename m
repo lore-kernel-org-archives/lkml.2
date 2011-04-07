@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab1DGSST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 14:18:19 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:35827 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753106Ab1DGSSS (ORCPT
+	id S1756374Ab1DGS3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 14:29:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44880 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756236Ab1DGS3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 14:18:18 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Cc: linux-pm@lists.linux-foundation.org, Len Brown <lenb@kernel.org>,
-        Nicole Chalhoub <n-chalhoub@ti.com>, Vincent Bour <v-bour@ti.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] nohz: delay going tickless under CPU load to favor deeper C states
-Date: Thu,  7 Apr 2011 11:18:31 -0700
-Message-Id: <1302200311-24263-1-git-send-email-khilman@ti.com>
-X-Mailer: git-send-email 1.7.4
+	Thu, 7 Apr 2011 14:29:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
+References: <20110331032307.GA27999@vigoh> <20110331062949.GA29526@elte.hu>
+ <20110331144400.GA2618@vigoh> <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 7 Apr 2011 11:28:43 -0700
+Message-ID: <BANLkTikDc0o6Kf5Ym5XkmpeY54fPc67SVw@mail.gmail.com>
+Subject: Re: [GIT PULL] Fix common misspellings
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, lucas.de.marchi@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicole Chalhoub <n-chalhoub@ti.com>
+On Wed, Apr 6, 2011 at 7:17 AM, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+> Hi Linus,
+>
+> On Thu, Mar 31, 2011 at 11:44 AM, Lucas De Marchi
+> <lucas.demarchi@profusion.mobi> wrote:
+>> I've created a new patch, removing the copyright changes. New
+>> patch can be pulled from:
+>>
+>> git://git.profusion.mobi/users/lucas/linux-2.6.git for-linus2
+>
+> Maybe you could consider this patch now that rc2 is out? It still
+> applies cleanly on top of -rc2.
 
-While there is CPU load, continue the periodic tick in order to give
-CPUidle another opportunity to pick a deeper C-state instead of
-spending potentially long idle times in a shallow C-state.
+Ok, I pulled it, but some checking shows that not all of the
+corrections are correct.
 
-Long winded version:
+For example:
 
-When going idle with a high load average, CPUidle menu governor will
-decide to pick a shallow C-state since one of the guiding principles
-of the menu governor is "The busier the system, the less impact of C
-states is acceptable" (taken from cpuidle/governors/menu.c.)  That
-makes perfect sense.
+  @@ -557 +557 @@ struct sctp_ulpevent *sctp_ulpevent_make_send_failed(
+  	 * ressemble/resemble a fragmented message.
 
-However, there are missed power-saving opportunities for bursty
-workloads with long idle times (e.g. MP3 playback.)  Given such a
-workload, because of the load average, CPUidle tends to pick a shallow
-C-state.  Because we also go tickless, this shallow C-state is used
-for the duration of the idle period.  If the idle period is long, a
-deeper C state would've resulted in better power savings.
+(this is with "word diff"), the "ressemble" was corrected to
+"resemble". But the correct spelling in this case is actually
+"reassemble".
 
-This patch delays going tickless when there is a load such that on the
-next tick, the CPUidle governor will have another opportunity to to
-pick a deeper C-state.  Since the system will have been idle for
-potentially a full tick, the load average will drop and a deeper C
-state will most likely be chosen.
+Another example:
 
-Delaying NOHZ decisions until the load is zero improved the load
-estimation on our ARM/OMAP4 platform where HZ=128 and increased the
-time spent in deep C-states (~50% of idle time in C-states deeper than
-C1).  A power saving of ~20mA at battery level is observed during MP3
-playback on OMAP4/Blaze board.
+  @@ -317 +317 @@ static struct clk timer2_clk = {
+          .usecount = 1,              /* REVISIT: why cant'can't' this
+be disabled? */
 
-Signed-off-by: Nicole Chalhoub <n-chalhoub@ti.com>
-Signed-off-by: Vincent Bour <v-bour@ti.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-[khilman@ti.com: rework changelog]
-Signed-off-by: Kevin Hilman <khilman@ti.com>
----
- kernel/time/tick-sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+where (cant') was changed into (can't') - notice the extra apostrophe
+(it used to be there, just transposed with the 't' - there were at
+least three of those).
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index d5097c4..418066c 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -324,7 +324,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
--	    arch_needs_cpu(cpu)) {
-+	    arch_needs_cpu(cpu) || this_cpu_load()) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
- 	} else {
--- 
-1.7.4
+Regardless, those were the only ones I _noticed_, there may well be
+others. I'd suggest people try to find more. The easiest way I found
+to go through it was:
 
+   git show -U0 --color-words 25985edcedea
+
+which makes it reasonably dense and easy to see.
+
+                      Linus
