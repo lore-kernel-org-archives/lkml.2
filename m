@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab1DGTOM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 15:14:12 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13156 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716Ab1DGTOL (ORCPT
+	id S1756741Ab1DGTQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 15:16:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42803 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756703Ab1DGTQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 15:14:11 -0400
-Date: Thu, 7 Apr 2011 21:14:27 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: James Bottomley <James.Bottomley@suse.de>, Christoph Hellwig <hch@lst.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] SCSI, target, loopback: Fix memory leak in
- tcm_loop_make_scsi_hba()
-Message-ID: <alpine.LNX.2.00.1104072108370.1538@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 7 Apr 2011 15:16:15 -0400
+Date: Thu, 7 Apr 2011 21:15:53 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: oskar.andero@sonyericsson.com
+Cc: nbowler@elliptictech.com, pebolle@tiscali.nl, nicolas.pitre@linaro.org,
+        linux@arm.linux.org.uk, catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, eric.y.miao@gmail.com,
+        linux-arm-kernel@lists.infradead.org,
+        Victor Boivie <victor.boivie@sonyericsson.com>
+Subject: Re: [PATCH] ARM: Allow for kernel command line concatenation
+Message-ID: <20110407191553.GA8569@pengutronix.de>
+References: <1302182968-16708-1-git-send-email-oskar.andero@sonyericsson.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1302182968-16708-1-git-send-email-oskar.andero@sonyericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a memory leak in tcm_loop_make_scsi_hba().
+Hello,
 
-If all the strstr() calls return NULL and we end up at 
-  return ERR_PTR(-EINVAL);
-then we'll be leaking the memory previously allocated to tl_hba as that 
-variable goes out of scope.
+On Thu, Apr 07, 2011 at 03:29:28PM +0200, oskar.andero@sonyericsson.com wrote:
+> From: Victor Boivie <victor.boivie@sonyericsson.com>
+> 
+> This patch allows the provided CONFIG_CMDLINE to be concatenated
+> with the one provided by the boot loader. This is useful to
+> merge the static values defined in CONFIG_CMDLINE with the
+> boot loader's (possibly) more dynamic values, such as startup
+> reasons and more.
+> 
+> Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
+> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
+> Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-This patch fixes the leak.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- tcm_loop.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-  compile tested only.
-
-diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
-index aed4e46..c4f81ec 100644
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -1330,7 +1330,8 @@ struct se_wwn *tcm_loop_make_scsi_hba(
- 
- 	printk(KERN_ERR "Unable to locate prefix for emulated Target Port:"
- 			" %s\n", name);
--	return ERR_PTR(-EINVAL);
-+	ret = -EINVAL;
-+	goto out;
- 
- check_len:
- 	if (strlen(name) > TL_WWN_ADDR_LEN) {
-
+Thanks
+Uwe
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
