@@ -1,151 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab1DGQ5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:57:54 -0400
-Received: from kroah.org ([198.145.64.141]:35772 "EHLO coco.kroah.org"
+	id S1756254Ab1DGRCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:02:12 -0400
+Received: from linux-sh.org ([111.68.239.195]:55391 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756180Ab1DGQ5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:57:52 -0400
-Date: Thu, 7 Apr 2011 09:58:56 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] STAGING fixes for .39-rc
-Message-ID: <20110407165856.GA32136@kroah.com>
-MIME-Version: 1.0
+	id S1756207Ab1DGRCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 13:02:11 -0400
+Date: Fri, 8 Apr 2011 02:01:51 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] s3fb: add DDC support
+Message-ID: <20110407170151.GE8052@linux-sh.org>
+References: <201104032236.18936.linux@rainbow-software.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201104032236.18936.linux@rainbow-software.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a round of bugfixes and a driver removal for your .39-rc tree.
-
-A number of build fixes (one that has been reported numerous times), and
-other reported bugfixes are in here, as well as we remove a driver that
-was requested to be removed by the author as it will not be needed due
-to the cancelation of the hardware project.
-
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
-
-All of these patches have been in the mm and -next trees for a while.
-
-These patches will be sent to the linux driver project list for all to
-see.
-
-thanks,
-
-greg k-h
-
---------------
-
- drivers/staging/Kconfig                            |    2 -
- drivers/staging/Makefile                           |    1 -
- drivers/staging/brcm80211/brcmsmac/wlc_main.c      |    9 +-
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |   78 +-
- drivers/staging/hv/channel.c                       |    8 +-
- drivers/staging/hv/connection.c                    |    4 +-
- drivers/staging/hv/hv_mouse.c                      |    5 +-
- drivers/staging/hv/netvsc_drv.c                    |   24 +
- drivers/staging/hv/tools/hv_kvp_daemon.c           |   90 ++-
- drivers/staging/hv/vmbus_drv.c                     |    2 +-
- drivers/staging/hv/vmbus_private.h                 |    1 +
- drivers/staging/iio/imu/adis16400.h                |    3 +-
- drivers/staging/iio/imu/adis16400_core.c           |   20 +-
- drivers/staging/iio/imu/adis16400_ring.c           |   12 +-
- drivers/staging/memrar/Kconfig                     |   15 -
- drivers/staging/memrar/Makefile                    |    2 -
- drivers/staging/memrar/TODO                        |   43 -
- drivers/staging/memrar/memrar-abi                  |   89 --
- drivers/staging/memrar/memrar.h                    |  174 ----
- drivers/staging/memrar/memrar_allocator.c          |  432 ---------
- drivers/staging/memrar/memrar_allocator.h          |  149 ---
- drivers/staging/memrar/memrar_handler.c            | 1007 --------------------
- drivers/staging/olpc_dcon/Kconfig                  |    2 +-
- drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c       |    1 +
- drivers/staging/rtl8187se/Kconfig                  |    1 +
- drivers/staging/rtl8192e/Kconfig                   |    1 +
- drivers/staging/rtl8192u/Kconfig                   |    1 +
- drivers/staging/rts_pstor/rtsx.c                   |   14 +-
- drivers/staging/rts_pstor/rtsx_chip.c              |   11 +-
- drivers/staging/sep/sep_driver.c                   |   15 +-
- drivers/staging/sm7xx/smtcfb.c                     |    6 +-
- drivers/staging/usbip/stub_dev.c                   |    6 +-
- drivers/staging/usbip/stub_rx.c                    |   40 +-
- drivers/staging/usbip/stub_tx.c                    |   74 ++-
- drivers/staging/usbip/usbip_common.c               |   64 ++-
- drivers/staging/usbip/usbip_common.h               |    2 +
- drivers/staging/usbip/vhci_rx.c                    |    3 +
- drivers/staging/vt6655/Kconfig                     |    2 +-
- drivers/staging/vt6656/Kconfig                     |    2 +-
- .../staging/westbridge/astoria/gadget/cyasgadget.c |    1 +
- 40 files changed, 324 insertions(+), 2092 deletions(-)
- delete mode 100644 drivers/staging/memrar/Kconfig
- delete mode 100644 drivers/staging/memrar/Makefile
- delete mode 100644 drivers/staging/memrar/TODO
- delete mode 100644 drivers/staging/memrar/memrar-abi
- delete mode 100644 drivers/staging/memrar/memrar.h
- delete mode 100644 drivers/staging/memrar/memrar_allocator.c
- delete mode 100644 drivers/staging/memrar/memrar_allocator.h
- delete mode 100644 drivers/staging/memrar/memrar_handler.c
-
----------------
-
-Alan Cox (1):
-      staging: sep: remove last memrar remnants
-
-Arjan Mels (4):
-      staging: usbip: fix shutdown problems.
-      staging: usbip: bugfixes related to kthread conversion
-      staging: usbip: bugfix add number of packets for isochronous frames
-      staging: usbip: bugfix for isochronous packets and optimization
-
-Dan Carpenter (1):
-      Staging: westbridge/astoria: unlock on error path
-
-Dave Jones (1):
-      staging: hv: fix reversed memset arguments in hv_mouse
-
-Greg Kroah-Hartman (2):
-      Staging: vt665?: prevent modules from being built into the kernel.
-      staging: memrar: remove driver from tree
-
-Haiyang Zhang (1):
-      staging: hv: Fix GARP not sent after Quick Migration
-
-Javier M. Mellid (1):
-      staging: sm7xx: fixed defines
-
-Michael Hennerich (6):
-      staging: IIO: IMU: ADIS16400: Fix up SPI messages cs_change behavior
-      staging: IIO: IMU: ADIS16400: Add delay after self test
-      staging: IIO: IMU: ADIS16400: Fix addresses of GYRO and ACCEL calibration offset
-      staging: IIO: IMU: ADIS16400: Make sure only enabled scan_elements are pushed into the ring
-      staging: IIO: IMU: ADIS16400: Fix product ID check, skip embedded revision number
-      staging: IIO: IMU: ADIS16400: Avoid using printk facility directly
-
-Olaf Hering (2):
-      staging: hv: use sync_bitops when interacting with the hypervisor
-      staging: hv: update dist release parsing in hv_kvp_daemon
-
-Randy Dunlap (2):
-      staging: fix hv_mouse build, needs delay.h
-      staging/rtl81*: build as loadable modules only
-
-Roland Vossen (3):
-      staging: brcm80211: fix for 'AC_BE txop..' logs spammed problem
-      staging: brcm80211: fix for 'Short CCK' log spam
-      staging: brcm80211: removed 'is_amsdu causing toss' log spam
-
-Sascha Silbe (1):
-      staging: fix olpc_dcon build errors
-
-pixo (1):
-      staging: ft1000-pcmcia: Fix ft1000_dnld() to work also on 64bit architectures.
-
-wwang (2):
-      staging: rts_pstor: modify initial card clock
-      staging: rts_pstor: set lun_mode in a different place
-
+On Sun, Apr 03, 2011 at 10:36:15PM +0200, Ondrej Zary wrote:
+> Add I2C support for the DDC bus and also default mode initialization by
+> reading monitor EDID to the s3fb driver.
+> 
+> Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
+> Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
+> 
+> Will probably not work on Trio32 - my 2 cards have DDC support in BIOS that
+> looks different from the other cards but the DDC pins on the VGA connector
+> are not connected.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> 
+This no longer builds with the latest i2c changes merged, please respin
+this against the current kernel and resubmit.
