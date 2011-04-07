@@ -1,108 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab1DGBNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 21:13:22 -0400
-Received: from infernal.debian.net ([87.230.26.131]:59728 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab1DGBNU (ORCPT
+	id S1757223Ab1DGB0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 21:26:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9026 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755887Ab1DGB0n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 21:13:20 -0400
-X-Greylist: delayed 2684 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Apr 2011 21:13:20 EDT
-Date: Thu, 7 Apr 2011 02:28:33 +0200
-From: Andreas Bombe <andreas.bombe@mytum.de>
-To: linux-kernel@vger.kernel.org
-Subject: OOPS procfs in vma_stop() from bad vma pointer
-Message-ID: <20110407002832.GA5185@amos.fritz.box>
+	Wed, 6 Apr 2011 21:26:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,313,1299484800"; 
+   d="scan'208";a="676182375"
+Date: Thu, 7 Apr 2011 09:30:21 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: <jacob.jun.pan@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>, <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        <arjan@linux.intel.com>, <alan@linux.intel.com>
+Subject: Re: [PATCH] x86/mrst: move sfi timer irqs after gsi_top
+Message-ID: <20110407093021.1a778324@feng-i7>
+In-Reply-To: <BANLkTi=VZCtNnx2dK9hgWmUVGb8ntMrxuw@mail.gmail.com>
+References: <1301962175-4336-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<BANLkTi=VZCtNnx2dK9hgWmUVGb8ntMrxuw@mail.gmail.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="gb2312"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I got this Oops in an x86-64 2.6.38-08569-g16c29da (not the very
-latest, so maybe it is known already). It was triggered by Debian's
-popularity-contest program that was started from cron. Here it is:
+Hi Jacob,
 
-[ 2106.743933] BUG: unable to handle kernel paging request at fffffffffffffff3
-[ 2106.744039] IP: [<ffffffff81158b01>] vma_stop.clone.3+0x13/0x2e
-[ 2106.744118] PGD 1805067 PUD 1806067 PMD 0 
-[ 2106.744180] Oops: 0000 [#1] PREEMPT SMP 
-[ 2106.744240] last sysfs file: /sys/devices/pci0000:00/0000:00:1c.5/0000:02:00.0/net/eth0/statistics/collisions
-[ 2106.744356] CPU 0 
-[ 2106.744381] Modules linked in: acpi_cpufreq mperf cpufreq_powersave cpufreq_stats cpufreq_userspace cpufreq_conservative snd_hrtimer binfmt_misc kvm_intel kvm uinput fuse xfs sha256_generic twofish_generic twofish_x86_64 twofish_common cbc dm_crypt snd_hda_codec_hdmi snd_emu10k1_synth snd_emux_synth snd_seq_virmidi snd_hda_codec_realtek snd_seq_midi_emul snd_emu10k1 snd_hda_intel snd_ac97_codec ac97_bus snd_hda_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_util_mem snd_hwdep snd_seq_midi snd_rawmidi snd_seq_midi_event radeon snd_seq snd_timer snd_seq_device snd ttm intel_agp joydev emu10k1_gp drm_kms_helper processor intel_gtt wacom soundcore i2c_i801 pcspkr gameport evdev snd_page_alloc thermal_sys asus_atk0110 button dm_mod usbhid ahci libahci firewire_ohci atl1e firewire_core libata crc_itu_t uhci_hcd ehci_hcd [last unloaded: scsi_wait_scan]
-[ 2106.745580] 
-[ 2106.745600] Pid: 5874, comm: popularity-cont Not tainted 2.6.38-08569-g16c29da #64 System manufacturer P5Q/P5Q
-[ 2106.745730] RIP: 0010:[<ffffffff81158b01>]  [<ffffffff81158b01>] vma_stop.clone.3+0x13/0x2e
-[ 2106.745834] RSP: 0018:ffff8800c9877e48  EFLAGS: 00010286
-[ 2106.745897] RAX: 00000000fffffff3 RBX: ffff880129b7fde0 RCX: ffff8800be696900
-[ 2106.745979] RDX: ffffffff814169d0 RSI: fffffffffffffff3 RDI: ffff880129b7fdf0
-[ 2106.746064] RBP: ffff8800c9877e58 R08: ffff8800be696900 R09: ffff8800c9877e08
-[ 2106.746149] R10: 0000000000000001 R11: ffff88012aab2600 R12: ffff8800b65fbe00
-[ 2106.746232] R13: ffff8800be696900 R14: fffffffffffffff3 R15: 0000000000000000
-[ 2106.746321] FS:  00007f6babc8f700(0000) GS:ffff88012fc00000(0000) knlGS:0000000000000000
-[ 2106.746420] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2106.746488] CR2: fffffffffffffff3 CR3: 0000000036f66000 CR4: 00000000000406f0
-[ 2106.746571] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 2106.746654] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 2106.746737] Process popularity-cont (pid: 5874, threadinfo ffff8800c9876000, task ffff880127239fb0)
-[ 2106.746841] Stack:
-[ 2106.746866]  0000000000000004 ffff880129b7fde0 ffff8800c9877e78 ffffffff81158b78
-[ 2106.746878]  0000000000000004 0000000000001000 ffff8800c9877ef8 ffffffff8112901f
-[ 2106.746878]  0000000000000001 ffff8800fffffff3 0000000000000004 ffff8800be696938
-[ 2106.746878] Call Trace:
-[ 2106.746878]  [<ffffffff81158b78>] m_stop+0x19/0x2b
-[ 2106.746878]  [<ffffffff8112901f>] seq_read+0x23b/0x369
-[ 2106.746878]  [<ffffffff8110de6e>] vfs_read+0xa4/0xf7
-[ 2106.746878]  [<ffffffff8110f0fe>] ? fget_light+0x3d/0x9b
-[ 2106.746878]  [<ffffffff8110df06>] sys_read+0x45/0x69
-[ 2106.746878]  [<ffffffff813e2612>] system_call_fastpath+0x16/0x1b
-[ 2106.746878] Code: 39 c4 74 05 49 8b 54 24 08 48 89 53 30 41 5d 31 c0 5b 41 5c 41 5d c9 c3 55 48 89 e5 53 48 83 ec 08 48 85 f6 74 1c 48 3b 37 74 17 
-[ 2106.746878]  8b 1e 48 8d bb 98 00 00 00 e8 2f 17 f1 ff 48 89 df e8 95 f7 
-[ 2106.746878] RIP  [<ffffffff81158b01>] vma_stop.clone.3+0x13/0x2e
-[ 2106.746878]  RSP <ffff8800c9877e48>
-[ 2106.746878] CR2: fffffffffffffff3
-[ 2107.173115] ---[ end trace 8cdfece298b5cc14 ]---
+The mrst vrtc driver has the similar irq number problem in 2.6.39-rc2,
+how about the following patch to solve it in ioapic code.
 
+Also I saw NR_IRQS_LEGACY are used in several other places of io_apic code,
+it may has some potential issue for mrst which I'm not sure.
 
-I disassembled vma_stop:
-| Dump of assembler code for function vma_stop:
-| 91	static void vma_stop(struct proc_maps_private *priv, struct vm_area_struct *vma)
-|    0xffffffff81158aee <+0>:	push   %rbp
-|    0xffffffff81158aef <+1>:	mov    %rsp,%rbp
-|    0xffffffff81158af2 <+4>:	push   %rbx
-|    0xffffffff81158af3 <+5>:	sub    $0x8,%rsp
-| 
-| 92	{
-| 93		if (vma && vma != priv->tail_vma) {
-|    0xffffffff81158af7 <+9>:	test   %rsi,%rsi
-|    0xffffffff81158afa <+12>:	je     0xffffffff81158b18 <vma_stop+42>
-|    0xffffffff81158afc <+14>:	cmp    (%rdi),%rsi
-|    0xffffffff81158aff <+17>:	je     0xffffffff81158b18 <vma_stop+42>
-| 
-| 94			struct mm_struct *mm = vma->vm_mm;
-|    0xffffffff81158b01 <+19>:	mov    (%rsi),%rbx
-Oops here                       ^^^^^^^^^^^^^^^^^^
-| 95			up_read(&mm->mmap_sem);
-|    0xffffffff81158b04 <+22>:	lea    0x98(%rbx),%rdi
-|    0xffffffff81158b0b <+29>:	callq  0xffffffff8106a23f <up_read>
-| 
-| 96			mmput(mm);
-|    0xffffffff81158b10 <+34>:	mov    %rbx,%rdi
-|    0xffffffff81158b13 <+37>:	callq  0xffffffff810482ad <mmput>
-| 
-| 97		}
-| 98	}
-|    0xffffffff81158b18 <+42>:	pop    %rax
-|    0xffffffff81158b19 <+43>:	pop    %rbx
-|    0xffffffff81158b1a <+44>:	leaveq 
-|    0xffffffff81158b1b <+45>:	retq   
-| 
-| End of assembler dump.
+Thanks,
+Feng
+---------------------
 
-It looks like vma_stop() got called with -13 as the vma pointer. This is
-the first time that happened and I have no way to reproduce it.
+>From 9bfe95ca6b1737a0418c6403f9684da9fb844cbf Mon Sep 17 00:00:00 2001
+From: Feng Tang <feng.tang@intel.com>
+Date: Thu, 7 Apr 2011 09:08:00 +0800
+Subject: [PATCH] x86: ioapic: use legacy_pic->nr_legacy_irqs instead of NR_IRQS_LEGACY for pin_2_irq()
 
+legacy_pic->nr_legacy_irqs has the correct number of legacy irqs for
+a x86 platform (legacy PC, Moorestown etc).
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 68df09b..2dcad66 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -954,7 +954,7 @@ static int pin_2_irq(int idx, int apic, int pin)
+ 	} else {
+ 		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
+ 
+-		if (gsi >= NR_IRQS_LEGACY)
++		if (gsi >= legacy_pic->nr_legacy_irqs)
+ 			irq = gsi;
+ 		else
+ 			irq = gsi_top + gsi;
 -- 
-Andreas Bombe
+1.7.0.4
+
+> From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Date: 2011/4/5
+> Subject: [PATCH] x86/mrst: move sfi timer irqs after gsi_top
+> To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin"
+> <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>, Thomas Gleixner
+> <tglx@linutronix.de>, Arjan van de Ven <arjan@linux.intel.com>, Alan
+> Cox <alan@linux.intel.com>
+> ³­ËÍ£º Jacob Pan <jacob.jun.pan@linux.intel.com>
+> 
+> 
+> Moorestown borrows mp_irqs for its early SFI device IRQs, it used
+> to be 1:1 mapped between irq # and ioapic pin#. After gsi_top is
+> introduced, we have to allocate irqs on top of gsi_top since below
+> that irqs are not set to ioapic chip whereas Moorestown SFI device
+> irqs are all routed via ioapic chip.
+> 
+> Without this fix, Moorestown fails to boot at secondary clock setup
+> since it cannot do request_irq on cpu 1 timer which does not have a
+> valid irq_chip.
+> 
+> Also use correct MP configuration table entry type INTSRC, which is
+> used for IO interrupt assignment.
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  arch/x86/kernel/apb_timer.c   |    2 +-
+>  arch/x86/platform/mrst/mrst.c |    4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+> index cd1ffed..f9f82cb 100644
+> --- a/arch/x86/kernel/apb_timer.c
+> +++ b/arch/x86/kernel/apb_timer.c
+> @@ -630,7 +630,7 @@ void __init apbt_time_init(void)
+>                p_mtmr = sfi_get_mtmr(i);
+>                if (p_mtmr) {
+>                        adev->tick = p_mtmr->freq_hz;
+> -                       adev->irq = p_mtmr->irq;
+> +                       adev->irq = p_mtmr->irq + gsi_top;
+>                } else
+>                        printk(KERN_ERR "Failed to get timer for cpu
+> %d\n", i); adev->count = 0;
+> diff --git a/arch/x86/platform/mrst/mrst.c
+> b/arch/x86/platform/mrst/mrst.c index 5c0207b..448c20d 100644
+> --- a/arch/x86/platform/mrst/mrst.c
+> +++ b/arch/x86/platform/mrst/mrst.c
+> @@ -97,12 +97,12 @@ static int __init sfi_parse_mtmr(struct
+> sfi_table_header *table)
+>                        pentry->freq_hz, pentry->irq);
+>                        if (!pentry->irq)
+>                                continue;
+> -                       mp_irq.type = MP_IOAPIC;
+> +                       mp_irq.type = MP_INTSRC;
+>                        mp_irq.irqtype = mp_INT;
+>  /* triggering mode edge bit 2-3, active high polarity bit 0-1 */
+>                        mp_irq.irqflag = 5;
+>                        mp_irq.srcbus = 0;
+> -                       mp_irq.srcbusirq = pentry->irq; /* IRQ */
+> +                       mp_irq.srcbusirq = pentry->irq + gsi_top; /*
+> IRQ */ mp_irq.dstapic = MP_APIC_ALL;
+>                        mp_irq.dstirq = pentry->irq;
+>                        mp_save_irq(&mp_irq);
+> --
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
