@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab1DGN3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:29:17 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:34031 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab1DGN3Q (ORCPT
+	id S1755218Ab1DGN3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:29:35 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:3878 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754184Ab1DGN3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:29:16 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D9DBC90.6080401@cam.ac.uk>
-Date: Thu, 07 Apr 2011 14:30:56 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Thu, 7 Apr 2011 09:29:34 -0400
+From: <oskar.andero@sonyericsson.com>
+To: <nbowler@elliptictech.com>, <u.kleine-koenig@pengutronix.de>,
+        <pebolle@tiscali.nl>
+CC: <nicolas.pitre@linaro.org>, <linux@arm.linux.org.uk>,
+        <catalin.marinas@arm.com>, <will.deacon@arm.com>,
+        <linux-kernel@vger.kernel.org>, <eric.y.miao@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Victor Boivie <victor.boivie@sonyericsson.com>,
+        Oskar Andero <oskar.andero@sonyericsson.com>
+Subject: [PATCH] ARM: Allow for kernel command line concatenation
+Date: Thu, 7 Apr 2011 15:29:28 +0200
+Message-ID: <1302182968-16708-1-git-send-email-oskar.andero@sonyericsson.com>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Possible to software trigger an interrupt?
-References: <4D989A8A.3050700@cam.ac.uk> <4D98A185.1080704@cam.ac.uk> <20110407132048.GA7257@home.goodmis.org>
-In-Reply-To: <20110407132048.GA7257@home.goodmis.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/11 14:20, Steven Rostedt wrote:
-> On Sun, Apr 03, 2011 at 05:34:13PM +0100, Jonathan Cameron wrote:
->> On 04/03/11 17:04, Jonathan Cameron wrote:
->>> Hi,
->>>
->>> Having produced a proof of concept for using gpio chips
->>> to handle the triggers in IIO I am looking at converting
->>> over our sysfs trigger.  This trigger is used to initialize
->>> capture on devices in a similar way to dataready interrupts.
->>> The key point is we want to handle this in the same way within
->>> drivers as the hardware event triggers. 
->>>
->>> It is a very useful tool.  So the upshot is, what is the best
->>> way to handle causing an interrupt to occur from userspace?
->>>
->>> Any pointers on how to do this would be most welcome.
->>
->> For what it is worth, the incredibly dumb approach of just
->> calling handle_nested_irq seems to 'work'.   I dread to think
->> what that might be quietly breaking though...
-> 
-> I think you are fine in calling that. It's made to be called from a
-> threaded context. But if you are testing code that will someday be
-> called in an interrupt context, it may not catch everything you need.
-That's not the primary aim. Some of these triggers really are only called
-from userspace and there are devices that some users will only ever
-trigger that way.  It's also step one in allowing a bridge to input for
-polled devices (via uinput).
-> 
-> For example, a mutex is allowed to be called from a threaded context,
-> but not from a hard irq one. There may be other subtle locking issues as
-> well. These could be caught with lockdep, but only when the code is
-> really been executed from hard irq context.
-Cool.  We have plenty of real irq triggers as well. I'll just pester
-people to make sure they have tested with both if at all possible!
+From: Victor Boivie <victor.boivie@sonyericsson.com>
 
-Thanks for the reassurance that isn't all that likely to blow up
-in my face ;)
+This patch allows the provided CONFIG_CMDLINE to be concatenated
+with the one provided by the boot loader. This is useful to
+merge the static values defined in CONFIG_CMDLINE with the
+boot loader's (possibly) more dynamic values, such as startup
+reasons and more.
 
-Jonathan
+Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
+Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
+---
+ arch/arm/Kconfig        |   21 ++++++++++++++++++---
+ arch/arm/kernel/setup.c |   13 +++++++++----
+ 2 files changed, 27 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 5b9f78b..fe34ed7 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1743,16 +1743,31 @@ config CMDLINE
+ 	  time by entering them here. As a minimum, you should specify the
+ 	  memory size and the root device (e.g., mem=64M root=/dev/nfs).
+ 
++choice
++	prompt "Kernel command line type" if CMDLINE != ""
++	default CMDLINE_FROM_BOOTLOADER
++
++config CMDLINE_FROM_BOOTLOADER
++	bool "Use bootloader kernel arguments if available"
++	help
++	  Uses the command-line options passed by the boot loader. If
++	  the boot loader doesn't provide any, the default kernel command
++	  string provided in CMDLINE will be used.
++
++config CMDLINE_EXTEND
++	bool "Extend bootloader kernel arguments"
++	help
++	  The command-line arguments provided by the boot loader will be
++	  appended to the default kernel command string.
++
+ config CMDLINE_FORCE
+ 	bool "Always use the default kernel command string"
+-	depends on CMDLINE != ""
+ 	help
+ 	  Always use the default kernel command string, even if the boot
+ 	  loader passes other arguments to the kernel.
+ 	  This is useful if you cannot or don't want to change the
+ 	  command-line options your boot loader passes to the kernel.
+-
+-	  If unsure, say N.
++endchoice
+ 
+ config XIP_KERNEL
+ 	bool "Kernel Execute-In-Place from ROM"
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 006c1e8..6dce209 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -672,11 +672,16 @@ __tagtable(ATAG_REVISION, parse_tag_revision);
+ 
+ static int __init parse_tag_cmdline(const struct tag *tag)
+ {
+-#ifndef CONFIG_CMDLINE_FORCE
+-	strlcpy(default_command_line, tag->u.cmdline.cmdline, COMMAND_LINE_SIZE);
+-#else
++#if defined(CONFIG_CMDLINE_EXTEND)
++	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
++	strlcat(default_command_line, tag->u.cmdline.cmdline,
++		COMMAND_LINE_SIZE);
++#elif defined(CONFIG_CMDLINE_FORCE)
+ 	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
+-#endif /* CONFIG_CMDLINE_FORCE */
++#else
++	strlcpy(default_command_line, tag->u.cmdline.cmdline,
++		COMMAND_LINE_SIZE);
++#endif
+ 	return 0;
+ }
+ 
+-- 
+1.7.4.2
+
