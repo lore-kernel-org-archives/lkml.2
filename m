@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab1DGMkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 08:40:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48133 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab1DGMkp (ORCPT
+	id S1752155Ab1DGMwM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 08:52:12 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:58799 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab1DGMwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 08:40:45 -0400
-Message-Id: <20110407122942.298339503@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Thu, 07 Apr 2011 14:09:51 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 10/23] sched: Simplify the free path some
-References: <20110407120941.400629539@chello.nl>
-Content-Disposition: inline; filename=sched-foo9.patch
+	Thu, 7 Apr 2011 08:52:10 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zzbb2cK1432N98dKzz1202hzz15d4Rz32i637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJA92S-01-9YJ-02
+X-M-MSG: 
+Date: Thu, 7 Apr 2011 14:52:02 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: "Xu, Andiry" <Andiry.Xu@amd.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>, "He, Alex" <Alex.He@amd.com>
+Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+Message-ID: <20110407125202.GW23633@amd.com>
+References: <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
+ <1302164789-31887-1-git-send-email-joerg.roedel@amd.com>
+ <2DEEA3AB13739D45A22ADDB5086AEA0B013084C4@sshaexmb1.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <2DEEA3AB13739D45A22ADDB5086AEA0B013084C4@sshaexmb1.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we check the root_domain reference count we can see if its been
-used or not, use this observation to simplify some of the return
-paths.
+On Thu, Apr 07, 2011 at 05:58:14AM -0400, Xu, Andiry wrote:
+> > +     spin_lock_irqsave(&amd_lock, flags);
+> > +     if (amd_chipset.probe_count > 0) {
+> > +             /* race - someone else was faster - drop devices */
+> > +             if (info.nb_dev)
+> > +                     pci_dev_put(info.nb_dev);
+> > +             if (info.smbus_dev)
+> > +                     pci_dev_put(info.smbus_dev);
+> 
+> You need to increase info.probe_count here and set
+> amd_chipset.probe_count with it, because it's decreased during every
+> host controller stop routine.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+Right, the correct return value needs to be set too. I'll fix it.
 
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -7009,7 +7009,8 @@ static void __free_domain_allocs(struct 
- 
- 	switch (what) {
- 	case sa_rootdomain:
--		free_rootdomain(&d->rd->rcu); /* fall through */
-+		if (!atomic_read(&d->rd->refcount))
-+			free_rootdomain(&d->rd->rcu); /* fall through */
- 	case sa_sd:
- 		free_percpu(d->sd); /* fall through */
- 	case sa_sd_storage:
-@@ -7194,7 +7195,7 @@ static int build_sched_domains(const str
- 	enum s_alloc alloc_state = sa_none;
- 	struct sched_domain *sd;
- 	struct s_data d;
--	int i;
-+	int i, ret = -ENOMEM;
- 
- 	alloc_state = __visit_domain_allocation_hell(&d, cpu_map);
- 	if (alloc_state != sa_rootdomain)
-@@ -7248,12 +7249,10 @@ static int build_sched_domains(const str
- 	}
- 	rcu_read_unlock();
- 
--	__free_domain_allocs(&d, sa_sd, cpu_map);
--	return 0;
--
-+	ret = 0;
- error:
- 	__free_domain_allocs(&d, alloc_state, cpu_map);
--	return -ENOMEM;
-+	return ret;
- }
- 
- static cpumask_var_t *doms_cur;	/* current sched domains */
+> > +     } else {
+> > +             /* no race - commit the result */
+> > +             info.probe_count++;
+> > +             amd_chipset = info;
+> > +     }
+> >       spin_unlock_irqrestore(&amd_lock, flags);
+> > -     return amd_chipset.probe_result;
+> > +
+> > +     return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(usb_amd_find_chipset_info);
+> >
+> > --
+> > 1.7.1
+> 
+> The original design target is to probe the chipset only once, so other
+> host controllers will not probe the chipset again. This patch allows
+> multiple threads to probe the chipset at the same time, and only one
+> thread is doing the valid work. It may add unnecessary cost.
 
+Not necessarily. With this patch more than one thread could do the valid
+work at the same time. With the old code the other threads would
+have spent this time spinning on the lock. So I don't think there is
+much additional cost introduced with this patch. And as a plus, it fixes
+a bug :-)
+I'll send a fixed version soon.
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
