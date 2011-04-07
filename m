@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164Ab1DGCaI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Apr 2011 22:30:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50886 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab1DGCaG (ORCPT
+	id S1756577Ab1DGCoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Apr 2011 22:44:37 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50939 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751012Ab1DGCog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Apr 2011 22:30:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=R3NSs5bAsTETCNnd1PHKFycfSv+r4dmRMjei+rWyV1V/1rG0drRyMWFmjuF9aoZfG9
-         3UL9L3zmHM+nEhJtTS+W+4BUL3BckD/UShxBeC4vDLIUk1yky55cpCWWRhkgcWlziSWE
-         gGFk7HTrfvciUvSwlbbco57HTm5EwLtSxdEac=
-Subject: printk: /dev/kmsg - properly support writev() to avoid interleaved
- printk() lines
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 07 Apr 2011 04:29:20 +0200
-Message-ID: <1302143360.1143.3.camel@zag>
+	Wed, 6 Apr 2011 22:44:36 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+ke6EV5Nikh8B0IkaC3sr3yVmyrfGO40Ly1ouDRu
+	P0M34zWsLbdZHN
+Subject: RE: [PATCH] sched: recover sched_yield task running time increase
+From: Mike Galbraith <efault@gmx.de>
+To: "Shi, Alex" <alex.shi@intel.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "mingo@elte.hu" <mingo@elte.hu>, "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B4BBA01D83D@shsmsx502.ccr.corp.intel.com>
+References: <1302042823-23022-1-git-send-email-alex.shi@intel.com>
+	 <4D9BF512.6080309@redhat.com>  <1302070509.15889.7351.camel@debian>
+	 <1302073289.21156.17.camel@marge.simson.net>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B4BBA01D83D@shsmsx502.ccr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Apr 2011 04:44:30 +0200
+Message-ID: <1302144270.7441.21.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay.sievers@vrfy.org>
+On Wed, 2011-04-06 at 21:28 +0800, Shi, Alex wrote:
+> >> > NACK
+> >> >
+> >> > This was switched off by default and under
+> >> > the sysctl sched_compat_yield for a reason.
+> >> >
+> >> > Reintroducing it under that sysctl option
+> >> > may be acceptable, but by default it would
+> >> > be doing the wrong thing for other workloads.
+> >>
+> >> I can implement this as sysctl option. But when I checked again the man
+> >> page of sched_yield. I have some concerns on this.
+> >>
+> >> ----
+> >>        int sched_yield(void);
+> >>
+> >> DESCRIPTION
+> >>        A  process  can  relinquish  the processor voluntarily without blocking by calling sched_yield().
+> >>        The process will then be moved to the end of the queue for its static priority and a new  process
+> >>        gets to run.
+> >> ----
+> >>
+> >> If a application calls sched_yield system call, most of time it is not
+> >> want to be launched again right now. so the man page said "the caller
+> >> process will then be moved to the _end_ of the queue..."
+> >
+> >Moving a yielding nice 0 task behind a SCHED_IDLE (or nice 19) task
+> >could be incredibly painful.
+> 
+> Good reminder! Do you have more detailed idea on this?
 
-printk: /dev/kmsg - properly support writev() to avoid interleaved printk lines
+Other than 'don't do that'?  Nope.  sched_yield() semantics suck.
 
-We should avoid calling printk() in a loop, when we pass a single
-string to /dev/kmsg with writev(). 
-
-Cc: Lennart Poettering <lennart@poettering.net>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
----
- mem.c |   41 ++++++++++++++++++++++++++---------------
- 1 file changed, 26 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 436a990..78923a9 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -806,29 +806,40 @@ static const struct file_operations oldmem_fops = {
- };
- #endif
- 
--static ssize_t kmsg_write(struct file *file, const char __user *buf,
--			  size_t count, loff_t *ppos)
-+static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
-+			   unsigned long count, loff_t pos)
- {
--	char *tmp;
--	ssize_t ret;
-+	char *line, *p;
-+	int len, i;
-+	ssize_t ret = -EFAULT;
- 
--	tmp = kmalloc(count + 1, GFP_KERNEL);
--	if (tmp == NULL)
-+	len = iov_length(iv, count);
-+	line = p = kmalloc(len + 1, GFP_KERNEL);
-+	if (line == NULL)
- 		return -ENOMEM;
--	ret = -EFAULT;
--	if (!copy_from_user(tmp, buf, count)) {
--		tmp[count] = 0;
--		ret = printk("%s", tmp);
--		if (ret > count)
--			/* printk can add a prefix */
--			ret = count;
-+
-+	/*
-+	 * copy all vectors into a single string, to ensure we do
-+	 * not interleave our log line with other printk calls
-+	 */
-+	for (i = 0; i < count; i++) {
-+		if (copy_from_user(p, iv[i].iov_base, iv[i].iov_len))
-+			goto out;
-+		p += iv[i].iov_len;
- 	}
--	kfree(tmp);
-+	p[0] = '\0';
-+
-+	ret = printk("%s", line);
-+	/* printk can add a prefix */
-+	if (ret > len)
-+		ret = len;
-+out:
-+	kfree(line);
- 	return ret;
- }
- 
- static const struct file_operations kmsg_fops = {
--	.write = kmsg_write,
-+	.aio_write = kmsg_writev,
- 	.llseek = noop_llseek,
- };
- 
+	-Mike
 
