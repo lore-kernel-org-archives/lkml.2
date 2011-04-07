@@ -1,142 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab1DGWxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 18:53:25 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50626
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756442Ab1DGWxX (ORCPT
+	id S1753632Ab1DGXCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 19:02:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55504 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751141Ab1DGXCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 18:53:23 -0400
-Date: Thu, 07 Apr 2011 15:52:47 -0700 (PDT)
-Message-Id: <20110407.155247.260074665.davem@davemloft.net>
-To: benh@kernel.crashing.org
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bheglaas@google.com, monstr@monstr.eu,
-        tglx@linuxtronix.de, bigeasy@linuxtronix.de
-Subject: Re: [PATCH 1/5] pci/of: Match PCI devices to OF nodes dynamically
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110407.153121.115952367.davem@davemloft.net>
-References: <20110407.152707.39195948.davem@davemloft.net>
-	<20110407.152937.59699180.davem@davemloft.net>
-	<20110407.153121.115952367.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 7 Apr 2011 19:02:38 -0400
+Date: Thu, 7 Apr 2011 16:01:42 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, kernel-janitors@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/rtc/rtc-mrst.c: Use release_mem_region after
+ request_mem_region
+Message-Id: <20110407160142.0a9d399c.akpm@linux-foundation.org>
+In-Reply-To: <1300136425-3311-1-git-send-email-julia@diku.dk>
+References: <1300136425-3311-1-git-send-email-julia@diku.dk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Thu, 07 Apr 2011 15:31:21 -0700 (PDT)
+On Mon, 14 Mar 2011 22:00:25 +0100
+Julia Lawall <julia@diku.dk> wrote:
 
-> I don't think it's a good idea to mix the things you're trying to do
-> with all of the existing stuff in of_pci.c, why not create a new file
-> for the stuff you're trying to consolidate?
+> The memory allocated using request_mem_region should be released using
+> release_mem_region, not release_region.
+> 
+> The semantic patch that fixes part of this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression E1,E2,E3;
+> @@
+> 
+> request_mem_region(E1,E2,E3)
+> ...
+> ?- release_region(E1,E2)
+> + release_mem_region(E1,E2)
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/rtc/rtc-mrst.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+> index b86bc32..558dd7d 100644
+> --- a/drivers/rtc/rtc-mrst.c
+> +++ b/drivers/rtc/rtc-mrst.c
+> @@ -379,7 +379,7 @@ cleanup1:
+>  	mrst_rtc.dev = NULL;
+>  	rtc_device_unregister(mrst_rtc.rtc);
+>  cleanup0:
+> -	release_region(iomem->start, iomem->end + 1 - iomem->start);
+> +	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
+>  	dev_err(dev, "rtc-mrst: unable to initialise\n");
+>  	return retval;
+>  }
+> @@ -405,7 +405,7 @@ static void __exit rtc_mrst_do_remove(struct device *dev)
+>  	mrst->rtc = NULL;
+>  
+>  	iomem = mrst->iomem;
+> -	release_region(iomem->start, iomem->end + 1 - iomem->start);
+> +	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
+>  	mrst->iomem = NULL;
+>  
+>  	mrst->dev = NULL;
 
-Something like the following could be done to your first patch.
+We may as well clean this up too.
 
-My sparc64 machine boots up properly with this change added to your
-patch series:
-
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index f7861ed..ceb340e 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -10,3 +10,4 @@ obj-$(CONFIG_OF_NET)	+= of_net.o
- obj-$(CONFIG_OF_SPI)	+= of_spi.o
- obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
- obj-$(CONFIG_OF_PCI)	+= of_pci.o
-+obj-$(CONFIG_PCI)	+= of_pci_base.o
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index 9d179c4..ac1ec54 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -90,39 +90,3 @@ int of_irq_map_pci(struct pci_dev *pdev, struct of_irq *out_irq)
- 	return of_irq_map_raw(ppnode, &lspec_be, 1, laddr, out_irq);
+--- a/drivers/rtc/rtc-mrst.c~drivers-rtc-rtc-mrstc-use-release_mem_region-after-request_mem_region-fix
++++ a/drivers/rtc/rtc-mrst.c
+@@ -380,7 +380,7 @@ cleanup1:
+ cleanup0:
+ 	dev_set_drvdata(dev, NULL);
+ 	mrst_rtc.dev = NULL;
+-	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
++	release_mem_region(iomem->start, resource_size(iomem));
+ 	dev_err(dev, "rtc-mrst: unable to initialise\n");
+ 	return retval;
  }
- EXPORT_SYMBOL_GPL(of_irq_map_pci);
--
--
--static inline int __of_pci_pci_compare(struct device_node *node, unsigned int devfn)
--{
--	unsigned int size;
--	const __be32 *reg = of_get_property(node, "reg", &size);
--
--	if (!reg || size < 5 * sizeof(__be32))
--		return 0;
--	return ((be32_to_cpup(&reg[0]) >> 8) & 0xff) == devfn;
--}
--
--struct device_node *of_pci_find_child_device(struct device_node *parent,
--					     unsigned int devfn)
--{
--	struct device_node *node, *node2;
--	
--	for_each_child_of_node(parent, node) {
--		if (__of_pci_pci_compare(node, devfn))
--			return node;
--		/*
--		 * Some OFs create a parent node "multifunc-device" as
--		 * a fake root for all functions of a multi-function
--		 * device we go down them as well.
--		 */
--                if (!strcmp(node->name, "multifunc-device")) {
--			for_each_child_of_node(node, node2) {
--				if (__of_pci_pci_compare(node2, devfn)) {
--					of_node_put(node);
--					return node2;
--				}
--			}
--                }
--	}
--	return NULL;
--}
-diff --git a/drivers/of/of_pci_base.c b/drivers/of/of_pci_base.c
-new file mode 100644
-index 0000000..c5a2d96
---- /dev/null
-+++ b/drivers/of/of_pci_base.c
-@@ -0,0 +1,39 @@
-+#include <linux/kernel.h>
-+#include <linux/of_pci.h>
-+#include <linux/of_irq.h>
-+#include <asm/prom.h>
-+
-+static inline int __of_pci_pci_compare(struct device_node *node, unsigned int devfn)
-+{
-+	unsigned int size;
-+	const __be32 *reg = of_get_property(node, "reg", &size);
-+
-+	if (!reg || size < 5 * sizeof(__be32))
-+		return 0;
-+	return ((be32_to_cpup(&reg[0]) >> 8) & 0xff) == devfn;
-+}
-+
-+struct device_node *of_pci_find_child_device(struct device_node *parent,
-+					     unsigned int devfn)
-+{
-+	struct device_node *node, *node2;
-+	
-+	for_each_child_of_node(parent, node) {
-+		if (__of_pci_pci_compare(node, devfn))
-+			return node;
-+		/*
-+		 * Some OFs create a parent node "multifunc-device" as
-+		 * a fake root for all functions of a multi-function
-+		 * device we go down them as well.
-+		 */
-+                if (!strcmp(node->name, "multifunc-device")) {
-+			for_each_child_of_node(node, node2) {
-+				if (__of_pci_pci_compare(node2, devfn)) {
-+					of_node_put(node);
-+					return node2;
-+				}
-+			}
-+                }
-+	}
-+	return NULL;
-+}
--- 
-1.7.4.3
+@@ -406,7 +406,7 @@ static void __devexit rtc_mrst_do_remove
+ 	mrst->rtc = NULL;
+ 
+ 	iomem = mrst->iomem;
+-	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
++	release_mem_region(iomem->start, resource_size(iomem));
+ 	mrst->iomem = NULL;
+ 
+ 	mrst->dev = NULL;
+_
 
+which makes one wonder why we don't have
+
+void release_resource_mem(struct resource *r)
+{
+	release_mem_region(r->start, resource_size(r));
+}
