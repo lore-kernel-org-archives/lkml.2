@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab1DGTQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 15:16:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42803 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756703Ab1DGTQP (ORCPT
+	id S1756763Ab1DGTQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 15:16:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37368 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756573Ab1DGTQw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 15:16:15 -0400
-Date: Thu, 7 Apr 2011 21:15:53 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: oskar.andero@sonyericsson.com
-Cc: nbowler@elliptictech.com, pebolle@tiscali.nl, nicolas.pitre@linaro.org,
-        linux@arm.linux.org.uk, catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, eric.y.miao@gmail.com,
-        linux-arm-kernel@lists.infradead.org,
-        Victor Boivie <victor.boivie@sonyericsson.com>
-Subject: Re: [PATCH] ARM: Allow for kernel command line concatenation
-Message-ID: <20110407191553.GA8569@pengutronix.de>
-References: <1302182968-16708-1-git-send-email-oskar.andero@sonyericsson.com>
+	Thu, 7 Apr 2011 15:16:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302182968-16708-1-git-send-email-oskar.andero@sonyericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTikDc0o6Kf5Ym5XkmpeY54fPc67SVw@mail.gmail.com>
+References: <20110331032307.GA27999@vigoh> <20110331062949.GA29526@elte.hu>
+ <20110331144400.GA2618@vigoh> <BANLkTin76790Y=6Q8vmq92b_4+7f+hzWZQ@mail.gmail.com>
+ <BANLkTikDc0o6Kf5Ym5XkmpeY54fPc67SVw@mail.gmail.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Thu, 7 Apr 2011 16:16:31 -0300
+Message-ID: <BANLkTi=SZ_h5OpHpR7oa=+in51UciJA+UA@mail.gmail.com>
+Subject: Re: [GIT PULL] Fix common misspellings
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, lucas.de.marchi@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Apr 7, 2011 at 3:28 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Ok, I pulled it, but some checking shows that not all of the
+> corrections are correct.
+>
+> For example:
+>
+>  @@ -557 +557 @@ struct sctp_ulpevent *sctp_ulpevent_make_send_failed(
+>         * ressemble/resemble a fragmented message.
+>
+> (this is with "word diff"), the "ressemble" was corrected to
+> "resemble". But the correct spelling in this case is actually
+> "reassemble".
 
-On Thu, Apr 07, 2011 at 03:29:28PM +0200, oskar.andero@sonyericsson.com wrote:
-> From: Victor Boivie <victor.boivie@sonyericsson.com>
-> 
-> This patch allows the provided CONFIG_CMDLINE to be concatenated
-> with the one provided by the boot loader. This is useful to
-> merge the static values defined in CONFIG_CMDLINE with the
-> boot loader's (possibly) more dynamic values, such as startup
-> reasons and more.
-> 
-> Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
-> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Ok, I'll disable the automatic fix for this one in codespell, so it
+doesn't hides itself  with other fixes.
 
-Thanks
-Uwe
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
+> Another example:
+>
+>  @@ -317 +317 @@ static struct clk timer2_clk = {
+>          .usecount = 1,              /* REVISIT: why cant'can't' this
+> be disabled? */
+>
+> where (cant') was changed into (can't') - notice the extra apostrophe
+> (it used to be there, just transposed with the 't' - there were at
+> least three of those).
+
+Right.. the problem here is that  ' was considered a word boundary.
+
+>
+> Regardless, those were the only ones I _noticed_, there may well be
+> others. I'd suggest people try to find more. The easiest way I found
+> to go through it was:
+>
+>   git show -U0 --color-words 25985edcedea
+
+This is awesome! Much easier than the --word-diff I was using. Thanks.
+
+Lucas De Marchi
