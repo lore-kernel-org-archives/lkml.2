@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab1DGLZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 07:25:57 -0400
-Received: from gra-lx1.iram.es ([150.214.224.41]:35236 "EHLO gra-lx1.iram.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777Ab1DGLZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 07:25:56 -0400
-Date: Thu, 7 Apr 2011 13:25:48 +0200
-From: Gabriel Paubert <paubert@iram.es>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
-Message-ID: <20110407112548.GA30805@iram.es>
-References: <20110404235259.GA30132@iram.es> <20110406084101.GB13963@pengutronix.de> <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
+	id S1755640Ab1DGL13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 07:27:29 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64694 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633Ab1DGL12 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 07:27:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=gsl8TnpJ1ZIPxuYnHzM9hIaU0Dute6E1LbtpAPC+1SSMOpOcu2C6bVlFkPCVxatLHk
+         ZqyZSAalr+FKKPUUx7EfQpR1eV8REUFM2kyFROfeA6jvHZz2YE8xxpCbnMGTKfDcDHHY
+         m0dpw3zCdCk5TuMwMlpkVOwfxjY2ZtHPqqMzA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110407075703.GD24879@elte.hu>
+References: <cover.1302137785.git.luto@mit.edu> <e210b8eea527894eaf3aec8c30c8d2747e87a524.1302137785.git.luto@mit.edu>
+ <20110407075703.GD24879@elte.hu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 7 Apr 2011 07:27:07 -0400
+X-Google-Sender-Auth: 67fMsHaH8lO_Wqv2tTIpOakSofI
+Message-ID: <BANLkTikDDkq7P0MDwrScbrcvJEN9rmVAKQ@mail.gmail.com>
+Subject: Re: [RFT/PATCH v2 4/6] x86-64: vclock_gettime(CLOCK_MONOTONIC) can't
+ ever see nsec < 0
+To: Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Dave,
+On Thu, Apr 7, 2011 at 3:57 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Andy Lutomirski <luto@MIT.EDU> wrote:
+>
+>> +
+>> +     /* wall_time_nsec, vgetns(), and wall_to_monotonic.tv_nsec
+>> +      * are all guaranteed to be nonnegative.
+>> +      */
+>
+>> +     /* wall_time_nsec and wall_to_monotonic.tv_nsec are
+>> +      * guaranteed to be between 0 and NSEC_PER_SEC.
+>> +      */
+>
+> Nor have you addressed stylistic review feedback i gave before ...
+>
+> Really, we absolutely must insist on 110% attention to small details for
+> patches that modify assembly code.
 
-> This is the old DRM driver for radeon, which relies on userspace to
-> start X then calls the kernel
+Crud, I fixed most of those.  I'll get these in v3.  (I assume you're
+talking about comment style.)
 
-Actually, even the old DRM driver occasionally hangs on this machine,
-I suspect a missing barrier, but I might be completely off base.
+--Andy
 
-The system is up, only X uses 100% of one core and according to
-gdb X is there:
-
-(gdb) info stack
-#0  0x0fbafb08 in ioctl () from /lib/libc.so.6
-#1  0x0f7be1c8 in drmDMA () from /usr/lib/libdrm.so.2
-#2  0x0f65330c in ?? () from /usr/lib/xorg/modules/drivers/radeon_drv.so
-#3  0x0f65380c in ?? () from /usr/lib/xorg/modules/drivers/radeon_drv.so
-#4  0x0f6f89b8 in ?? () from /usr/lib/xorg/modules/drivers/radeon_drv.so
-#5  0x0f562538 in ?? () from /usr/lib/xorg/modules/libexa.so
-#6  0x0f56298c in ?? () from /usr/lib/xorg/modules/libexa.so
-#7  0x0f56351c in ?? () from /usr/lib/xorg/modules/libexa.so
-#8  0x0f55fba0 in ?? () from /usr/lib/xorg/modules/libexa.so
-#9  0x0f56ab18 in ?? () from /usr/lib/xorg/modules/libexa.so
-#10 0x0f56b810 in ?? () from /usr/lib/xorg/modules/libexa.so
-#11 0x100f168c in ?? ()
-#12 0x100df0fc in CompositePicture ()
-#13 0x0f56a748 in ?? () from /usr/lib/xorg/modules/libexa.so
-#14 0x100dee08 in CompositeTrapezoids ()
-#15 0x100eb318 in ?? ()
-#16 0x100e3ae8 in ?? ()
-#17 0x1004a1f0 in ?? ()
-#18 0x1001d0d4 in ?? ()
-#19 0x0faea63c in ?? () from /lib/libc.so.6
-#20 0x0faea800 in __libc_start_main () from /lib/libc.so.6
-#21 0x00000000 in ?? ()
-
-
-I don't know how to get more details.
-
-	Regards,
-	Gabriel
+>
+> Thanks,
+>
+>        Ingo
+>
