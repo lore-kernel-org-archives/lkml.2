@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab1DGRiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 13:38:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35904 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019Ab1DGRiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 13:38:12 -0400
-Date: Thu, 7 Apr 2011 19:38:01 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fix
-Message-ID: <20110407173801.GA24944@elte.hu>
+	id S1755655Ab1DGRjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 13:39:31 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35011 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1DGRja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 13:39:30 -0400
+Date: Thu, 7 Apr 2011 18:39:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Nico Erfurth <ne@erfurth.eu>, Eric Cooper <ecc@cmu.edu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH 0/2] ARM: Unify setup for Marvell SheevaPlugs and
+	Seagate DockStars
+Message-ID: <20110407173912.GA17049@n2100.arm.linux.org.uk>
+References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de> <4D9CEE24.1080501@erfurth.eu> <4D9D81ED.7090809@ahsoftware.de> <4D9D85E4.2040606@erfurth.eu> <4D9D8762.3080207@ahsoftware.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D9D8762.3080207@ahsoftware.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Apr 07, 2011 at 11:44:02AM +0200, Alexander Holler wrote:
+> Am 07.04.2011 11:37, schrieb Nico Erfurth:
+>> Alexander Holler wrote:
+>>
+>>> I wonder how many people believe that either there will be another
+>>> DockStar with the same HW and GPIOs for the LEDs but more memory (and
+>>> still without sata) or that there will be another SheevaPlug with just
+>>> 128MB RAM or that someone could have a reason to change the memory
+>>> layout using a mem= parameter.
+>>>
+>>> For me all that is pretty unlikely.
+>>
+>> As Nicolas stated it's not just about "Oh, thats totally unlikely to
+>> happen!". It is about maintainable code, if somebody looks at it in 3
+>> years they should not think "WTF?!?!". Using machine ids and the
+>> generated macros helps to keep the code clean and readable.
+>
+> Sorry, I can't agree. For me some unique hardware identifier is more  
+> reasonable, than some machine id which comes from outerspace.
 
-Please pull the latest sched-fixes-for-linus git tree from:
+I agree 100% with Nicolas - using memory size is far from obvious and
+is not clean and understandable.  Using memory size as a way of detecting
+the machine type is far worse than just mere "silly".
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-fixes-for-linus
+We have an established API and convention in the kernel which you claim
+is "from outerspace".  It's not "from outerspace" but a designed API to
+allow platforms to live together in the same kernel image.  So I find
+your arguments totally unreasonable.
 
- Thanks,
-
-	Ingo
-
------------------->
-Peter Zijlstra (1):
-      sched: Clean up rebalance_domains() load-balance interval calculation
-
-
- kernel/sched.c      |    3 +++
- kernel/sched_fair.c |   16 ++++++++++++----
- 2 files changed, 15 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index a884551..17b4d22 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -6331,6 +6331,9 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- #endif
- 	}
-+
-+	update_max_interval();
-+
- 	return NOTIFY_OK;
- }
- 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index c7ec5c8..80ecd09 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3820,6 +3820,17 @@ void select_nohz_load_balancer(int stop_tick)
- 
- static DEFINE_SPINLOCK(balancing);
- 
-+static unsigned long __read_mostly max_load_balance_interval = HZ/10;
-+
-+/*
-+ * Scale the max load_balance interval with the number of CPUs in the system.
-+ * This trades load-balance latency on larger machines for less cross talk.
-+ */
-+static void update_max_interval(void)
-+{
-+	max_load_balance_interval = HZ*num_online_cpus()/10;
-+}
-+
- /*
-  * It checks each scheduling domain to see if it is due to be balanced,
-  * and initiates a balancing operation if so.
-@@ -3849,10 +3860,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
- 
- 		/* scale ms to jiffies */
- 		interval = msecs_to_jiffies(interval);
--		if (unlikely(!interval))
--			interval = 1;
--		if (interval > HZ*num_online_cpus()/10)
--			interval = HZ*num_online_cpus()/10;
-+		interval = clamp(interval, 1UL, max_load_balance_interval);
- 
- 		need_serialize = sd->flags & SD_SERIALIZE;
- 
+I fully support Nicolas in rejecting your patches outright on this point
+alone.
