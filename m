@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab1DGPgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 11:36:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47541 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab1DGPgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 11:36:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=KNH++jBTvrkKI7KEABLVhYFYTkdmpsXd8f2MGQAbWADun5Ub/zqZJj0g059Q2IcXI6
-         f7SB0SNOmeV+nS8v9S1fwt2gMc3fy9izaavvUgKiNCV0L4RpvpaO06oo0VV61qIMN00i
-         YYMzUMohOpR21n+E+RGrzRa7YA21k7SmSz6ck=
-Subject: Re: Regression from 2.6.36
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-In-Reply-To: <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
-References: <20110315132527.130FB80018F1@mail1005.cent>
-	 <20110317001519.GB18911@kroah.com> <20110407120112.E08DCA03@pobox.sk>
-	 <4D9D8FAA.9080405@suse.cz>
-	 <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>
-	 <1302177428.3357.25.camel@edumazet-laptop>
-	 <1302178426.3357.34.camel@edumazet-laptop>
-	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Apr 2011 17:36:26 +0200
-Message-ID: <1302190586.3357.45.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754656Ab1DGPqM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 11:46:12 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:38618 "EHLO smtp208.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751861Ab1DGPqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 11:46:08 -0400
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: linux-media@vger.kernel.org
+Cc: Antonio Ospite <ospite@studenti.unina.it>,
+        Steven Toth <stoth@kernellabs.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Drew Fisher <drew.m.fisher@gmail.com>,
+        OpenKinect <openkinect@googlegroups.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Add a GSPCA subdriver for the Microsoft Kinect sensor
+Date: Thu,  7 Apr 2011 17:45:50 +0200
+Message-Id: <1302191152-7218-1-git-send-email-ospite@studenti.unina.it>
+X-Mailer: git-send-email 1.7.4.1
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 07 avril 2011 à 23:27 +0800, Changli Gao a écrit :
+Hi,
 
-> azurlt, would you please test the patch attached? Thanks.
-> 
+This patchset adds support for using the Kinect[1] sensor device as a 
+regular Webcam or as a IR camera.
+[1] http://en.wikipedia.org/wiki/Kinect
 
-Yes of course, I meant to reverse the patch
+The first patch adds a new Y10B pixelformat used to expose the raw IR 
+data the sensor can provide, the second patch adds a gspca subdriver for 
+the Kinect sensor.
 
-(use kmalloc() under PAGE_SIZE, vmalloc() for 'big' allocs)
+There was some positive feedback about calling the new format Y10B from 
+Hans Verkuil, Mauro Carvalho Chehab and Guennadi Liakhovetski.
 
+Any comment is appreciated.
 
-Dont fallback to vmalloc if kmalloc() fails.
+Thanks,
+   Antonio
 
+Antonio Ospite (2):
+  Add Y10B, a 10 bpp bit-packed greyscale format.
+  gspca: add a subdriver for the Microsoft Kinect sensor device
 
-if (size <= PAGE_SIZE)
-	return kmalloc(size, GFP_KERNEL);
-else
-	return vmalloc(size);
+ Documentation/DocBook/media-entities.tmpl |    1 +
+ Documentation/DocBook/v4l/pixfmt-y10b.xml |   43 +++
+ Documentation/DocBook/v4l/pixfmt.xml      |    1 +
+ Documentation/DocBook/v4l/videodev2.h.xml |    3 +
+ drivers/media/video/gspca/Kconfig         |    9 +
+ drivers/media/video/gspca/Makefile        |    2 +
+ drivers/media/video/gspca/kinect.c        |  427 +++++++++++++++++++++++++++++
+ include/linux/videodev2.h                 |    3 +
+ 8 files changed, 489 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/DocBook/v4l/pixfmt-y10b.xml
+ create mode 100644 drivers/media/video/gspca/kinect.c
 
+-- 
+Antonio Ospite
+http://ao2.it
 
+PGP public key ID: 0x4553B001
 
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
