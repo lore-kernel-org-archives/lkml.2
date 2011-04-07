@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab1DGQJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 12:09:51 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:54473 "EHLO
+	id S1756192Ab1DGQJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 12:09:53 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:52387 "EHLO
 	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664Ab1DGQJr (ORCPT
+	with ESMTP id S1755995Ab1DGQJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 12:09:47 -0400
+	Thu, 7 Apr 2011 12:09:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=kZdmIoOBiJug0+fhuqzxRxI0morM5YyVbUpWkKWl1aBsw2Q0pJMqovy5uxB10e3EOa
-         Zuot2rY/xoOUT7j+8+Gqw3wy0reMKE3u0Y9LPOtb2xaRa0eSPKoaxOiOsdPrN8G0nDel
-         JkFXHb2mexXclWV64vS++oqO8QahZ4Oz6SZCU=
+        b=ALupviGZP4W5uv5W9Rx+HniXPNrENKpmHNLByDGpiGQ0nDQlMdZcI+lMqJdT/iadmY
+         twbip/Z3ooWrecJqD4JRvbE/zf8JmeSEc4WWCAg1HXC8lR0xWa/cLGPfqDaR9+IvyIeS
+         Ku0B7alKVsFCJ96bRvGOSMUEbSUeF+OlaN4UU=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org
-Subject: [RFC 6/6]drivers:staging Fix typo "recieve" in various parts of the kernel.
-Date: Thu,  7 Apr 2011 09:09:27 -0700
-Message-Id: <1302192567-842-6-git-send-email-justinmattock@gmail.com>
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [RFC 5/6]Fix typo "recieve" in various parts of the kernel.
+Date: Thu,  7 Apr 2011 09:09:26 -0700
+Message-Id: <1302192567-842-5-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
 References: <1302192567-842-1-git-send-email-justinmattock@gmail.com>
@@ -30,685 +28,321 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The patch below fixes "recieve" in various parts of the kernel.
-Note: This is a mix of code and comments that are fixed.
+Note: patches 2,3,4,5 are fixes to comments only(no code).
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: devel@driverdev.osuosl.org
-CC: linux-wireless@vger.kernel.org
----
- .../ath6kl/htc2/AR6000/ar6k_gmbox_hciuart.c        |    2 +-
- drivers/staging/bcm/Adapter.h                      |    2 +-
- drivers/staging/bcm/HostMIBSInterface.h            |    2 +-
- drivers/staging/bcm/Qos.c                          |    2 +-
- drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c  |    2 +-
- drivers/staging/comedi/drivers/s626.c              |   10 +++++-----
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |    2 +-
- drivers/staging/iio/accel/adis16201.h              |    2 +-
- drivers/staging/iio/accel/adis16203.h              |    2 +-
- drivers/staging/iio/accel/adis16204.h              |    2 +-
- drivers/staging/iio/accel/adis16209.h              |    2 +-
- drivers/staging/iio/accel/adis16220.h              |    2 +-
- drivers/staging/iio/accel/adis16240.h              |    2 +-
- drivers/staging/iio/accel/lis3l02dq.h              |    2 +-
- drivers/staging/iio/accel/lis3l02dq_ring.c         |    2 +-
- drivers/staging/iio/accel/sca3000.h                |    2 +-
- drivers/staging/iio/gyro/adis16060_core.c          |    2 +-
- drivers/staging/iio/gyro/adis16080_core.c          |    2 +-
- drivers/staging/iio/gyro/adis16260.h               |    2 +-
- drivers/staging/iio/iio.h                          |    2 +-
- drivers/staging/iio/imu/adis16300.h                |    2 +-
- drivers/staging/iio/imu/adis16350.h                |    2 +-
- drivers/staging/iio/imu/adis16400.h                |    2 +-
- drivers/staging/iio/meter/ade7753.h                |    2 +-
- drivers/staging/iio/meter/ade7754.h                |    2 +-
- drivers/staging/iio/meter/ade7758.h                |    2 +-
- drivers/staging/iio/meter/ade7759.h                |    2 +-
- drivers/staging/iio/meter/ade7854.h                |    2 +-
- .../staging/intel_sst/intel_sst_app_interface.c    |   12 ++++++------
- drivers/staging/lirc/lirc_ene0100.h                |    2 +-
- drivers/staging/quatech_usb2/quatech_usb2.c        |    4 ++--
- drivers/staging/rt2860/common/cmm_data_usb.c       |    2 +-
- .../staging/westbridge/astoria/api/src/cyasmisc.c  |    4 ++--
- .../westbridge/astoria/block/cyasblkdev_queue.c    |    2 +-
- .../astoria/include/linux/westbridge/cyasstorage.h |   20 ++++++++++----------
- 35 files changed, 55 insertions(+), 55 deletions(-)
 
-diff --git a/drivers/staging/ath6kl/htc2/AR6000/ar6k_gmbox_hciuart.c b/drivers/staging/ath6kl/htc2/AR6000/ar6k_gmbox_hciuart.c
-index c6488e0..00cdac9 100644
---- a/drivers/staging/ath6kl/htc2/AR6000/ar6k_gmbox_hciuart.c
-+++ b/drivers/staging/ath6kl/htc2/AR6000/ar6k_gmbox_hciuart.c
-@@ -507,7 +507,7 @@ static int HCIUartMessagePending(void *pContext, u8 LookAheadBytes[], int ValidB
-         
-     } while (false);
-         
--        /* check if we need to disable the reciever */
-+        /* check if we need to disable the receiver */
-     if (status || blockRecv) {
-         DevGMboxIRQAction(pProt->pDev, GMBOX_RECV_IRQ_DISABLE, PROC_IO_SYNC); 
-     }
-diff --git a/drivers/staging/bcm/Adapter.h b/drivers/staging/bcm/Adapter.h
-index 32909e2..c37d795 100644
---- a/drivers/staging/bcm/Adapter.h
-+++ b/drivers/staging/bcm/Adapter.h
-@@ -412,7 +412,7 @@ struct _MINI_ADAPTER
- 
- 	// this to keep track of the Tx and Rx MailBox Registers.
- 	atomic_t		    CurrNumFreeTxDesc;
--	// to keep track the no of byte recieved
-+	// to keep track the no of byte received
- 	USHORT				PrevNumRecvDescs;
- 	USHORT				CurrNumRecvDescs;
- 	UINT				u32TotalDSD;
-diff --git a/drivers/staging/bcm/HostMIBSInterface.h b/drivers/staging/bcm/HostMIBSInterface.h
-index f17a4f1..e34531b 100644
---- a/drivers/staging/bcm/HostMIBSInterface.h
-+++ b/drivers/staging/bcm/HostMIBSInterface.h
-@@ -62,7 +62,7 @@ typedef struct _S_MIBS_HOST_INFO
- 	ULONG			NumDesUsed;
- 	ULONG			CurrNumFreeDesc;
- 	ULONG			PrevNumFreeDesc;
--	// to keep track the no of byte recieved
-+	// to keep track the no of byte received
- 	ULONG			PrevNumRcevBytes;
- 	ULONG			CurrNumRcevBytes;
- 
-diff --git a/drivers/staging/bcm/Qos.c b/drivers/staging/bcm/Qos.c
-index feade94..c97020f 100644
---- a/drivers/staging/bcm/Qos.c
-+++ b/drivers/staging/bcm/Qos.c
-@@ -727,7 +727,7 @@ static BOOLEAN EthCSMatchVLANRules(S_CLASSIFIER_RULE *pstClassifierRule,struct s
- 
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s  CLS UserPrio:%x CLS VLANID:%x\n",__FUNCTION__,ntohs(*((USHORT *)pstClassifierRule->usUserPriority)),pstClassifierRule->usVLANID);
- 
--	/* In case FW didn't recieve the TLV, the priority field should be ignored */
-+	/* In case FW didn't receive the TLV, the priority field should be ignored */
- 	if(pstClassifierRule->usValidityBitMap & (1<<PKT_CLASSIFICATION_USER_PRIORITY_VALID))
- 	{
- 		if(pstEthCsPktInfo->eNwpktEthFrameType!=eEth802QVLANFrame)
-diff --git a/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c b/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c
-index 65313fa..71c3571 100644
---- a/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c
-+++ b/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c
-@@ -264,7 +264,7 @@ extern SDIOH_API_RC sdioh_disable_func_intr(void)
- }
- #endif				/* defined(OOB_INTR_ONLY) && defined(HW_OOB) */
- 
--/* Configure callback to client when we recieve client interrupt */
-+/* Configure callback to client when we receive client interrupt */
- extern SDIOH_API_RC
- sdioh_interrupt_register(sdioh_info_t *sd, sdioh_cb_fn_t fn, void *argh)
- {
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index d5ba3ab..b706476 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -1048,7 +1048,7 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 	uint8_t group;
- 	uint16_t irqbit;
- 
--	DEBUG("s626_irq_handler: interrupt request recieved!!!\n");
-+	DEBUG("s626_irq_handler: interrupt request received!!!\n");
- 
- 	if (dev->attached == 0)
- 		return IRQ_NONE;
-@@ -1165,7 +1165,7 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 							(16 * group)))
- 					    == 1 && cmd->start_src == TRIG_EXT) {
- 						DEBUG
--						    ("s626_irq_handler: Edge capture interrupt recieved from channel %d\n",
-+						    ("s626_irq_handler: Edge capture interrupt received from channel %d\n",
- 						     cmd->start_arg);
- 
- 						/*  Start executing the RPS program. */
-@@ -1194,7 +1194,7 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 					    && cmd->scan_begin_src ==
- 					    TRIG_EXT) {
- 						DEBUG
--						    ("s626_irq_handler: Edge capture interrupt recieved from channel %d\n",
-+						    ("s626_irq_handler: Edge capture interrupt received from channel %d\n",
- 						     cmd->scan_begin_arg);
- 
- 						/*  Trigger ADC scan loop start by setting RPS Signal 0. */
-@@ -1236,7 +1236,7 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 					    == 1
- 					    && cmd->convert_src == TRIG_EXT) {
- 						DEBUG
--						    ("s626_irq_handler: Edge capture interrupt recieved from channel %d\n",
-+						    ("s626_irq_handler: Edge capture interrupt received from channel %d\n",
- 						     cmd->convert_arg);
- 
- 						/*  Trigger ADC scan loop start by setting RPS Signal 0. */
-@@ -1805,7 +1805,7 @@ static int s626_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		DEBUG("s626_ai_cmd: NULL command\n");
- 		return -EINVAL;
- 	} else {
--		DEBUG("s626_ai_cmd: command recieved!!!\n");
-+		DEBUG("s626_ai_cmd: command received!!!\n");
- 	}
- 
- 	if (dev->irq == 0) {
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index e047c03..f2ecb3e 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -364,7 +364,7 @@ struct prov_record {
- 
- #define ISR_EMPTY			(u8)0x00 	 // no bits set in ISR
- 
--#define ISR_DOORBELL_ACK	(u8)0x01		 //  the doorbell i sent has been recieved.
-+#define ISR_DOORBELL_ACK	(u8)0x01		 //  the doorbell i sent has been received.
- 
- #define ISR_DOORBELL_PEND	(u8)0x02 	 //  doorbell for me
- 
-diff --git a/drivers/staging/iio/accel/adis16201.h b/drivers/staging/iio/accel/adis16201.h
-index c9bf22c..23fe54d 100644
---- a/drivers/staging/iio/accel/adis16201.h
-+++ b/drivers/staging/iio/accel/adis16201.h
-@@ -70,7 +70,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16201_state {
-diff --git a/drivers/staging/iio/accel/adis16203.h b/drivers/staging/iio/accel/adis16203.h
-index b39323e..b886881 100644
---- a/drivers/staging/iio/accel/adis16203.h
-+++ b/drivers/staging/iio/accel/adis16203.h
-@@ -65,7 +65,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16203_state {
-diff --git a/drivers/staging/iio/accel/adis16204.h b/drivers/staging/iio/accel/adis16204.h
-index e9ed7cb..e618446 100644
---- a/drivers/staging/iio/accel/adis16204.h
-+++ b/drivers/staging/iio/accel/adis16204.h
-@@ -73,7 +73,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16204_state {
-diff --git a/drivers/staging/iio/accel/adis16209.h b/drivers/staging/iio/accel/adis16209.h
-index 4e97596..8b0da13 100644
---- a/drivers/staging/iio/accel/adis16209.h
-+++ b/drivers/staging/iio/accel/adis16209.h
-@@ -109,7 +109,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16209_state {
-diff --git a/drivers/staging/iio/accel/adis16220.h b/drivers/staging/iio/accel/adis16220.h
-index 7013314..4d5758c 100644
---- a/drivers/staging/iio/accel/adis16220.h
-+++ b/drivers/staging/iio/accel/adis16220.h
-@@ -132,7 +132,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16220_state {
-diff --git a/drivers/staging/iio/accel/adis16240.h b/drivers/staging/iio/accel/adis16240.h
-index 51a807d..76a4579 100644
---- a/drivers/staging/iio/accel/adis16240.h
-+++ b/drivers/staging/iio/accel/adis16240.h
-@@ -132,7 +132,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16240_state {
-diff --git a/drivers/staging/iio/accel/lis3l02dq.h b/drivers/staging/iio/accel/lis3l02dq.h
-index 579b3a2..c7ee170 100644
---- a/drivers/staging/iio/accel/lis3l02dq.h
-+++ b/drivers/staging/iio/accel/lis3l02dq.h
-@@ -155,7 +155,7 @@ Form of high byte dependant on justification set in ctrl reg */
-  * @inter:		used to check if new interrupt has been triggered
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct lis3l02dq_state {
-diff --git a/drivers/staging/iio/accel/lis3l02dq_ring.c b/drivers/staging/iio/accel/lis3l02dq_ring.c
-index 2c461a3..6af7e2a 100644
---- a/drivers/staging/iio/accel/lis3l02dq_ring.c
-+++ b/drivers/staging/iio/accel/lis3l02dq_ring.c
-@@ -217,7 +217,7 @@ static const u8 read_all_tx_array[] = {
- /**
-  * lis3l02dq_read_all() Reads all channels currently selected
-  * @st:		device specific state
-- * @rx_array:	(dma capable) recieve array, must be at least
-+ * @rx_array:	(dma capable) receive array, must be at least
-  *		4*number of channels
-  **/
- static int lis3l02dq_read_all(struct lis3l02dq_state *st, u8 *rx_array)
-diff --git a/drivers/staging/iio/accel/sca3000.h b/drivers/staging/iio/accel/sca3000.h
-index 2389284..5971f1d 100644
---- a/drivers/staging/iio/accel/sca3000.h
-+++ b/drivers/staging/iio/accel/sca3000.h
-@@ -213,7 +213,7 @@ struct sca3000_chip_info {
-  * sca3000_read_data() read a series of values from the device
-  * @dev:		device
-  * @reg_address_high:	start address (decremented read)
-- * @rx:			pointer where recieved data is placed. Callee
-+ * @rx:			pointer where received data is placed. Callee
-  *			responsible for freeing this.
-  * @len:		number of bytes to read
+---
+ drivers/uwb/drp.c                                |    4 ++--
+ drivers/xen/events.c                             |    2 +-
+ fs/ocfs2/namei.c                                 |    2 +-
+ fs/ocfs2/stackglue.h                             |    2 +-
+ include/linux/cgroup.h                           |    2 +-
+ include/linux/netfilter/nf_conntrack_proto_gre.h |    2 +-
+ include/scsi/libiscsi_tcp.h                      |    2 +-
+ include/scsi/osd_initiator.h                     |    2 +-
+ kernel/cgroup.c                                  |    2 +-
+ mm/slub.c                                        |    4 ++--
+ net/netfilter/ipvs/ip_vs_proto_sctp.c            |    8 ++++----
+ net/rds/ib_send.c                                |    2 +-
+ net/rds/iw_send.c                                |    2 +-
+ net/sctp/sm_statefuns.c                          |    2 +-
+ net/sctp/ulpqueue.c                              |    2 +-
+ net/wireless/reg.c                               |    2 +-
+ sound/pci/asihpi/hpi.h                           |    2 +-
+ sound/soc/atmel/atmel_ssc_dai.c                  |    2 +-
+ sound/soc/omap/ams-delta.c                       |    2 +-
+ 19 files changed, 24 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/uwb/drp.c b/drivers/uwb/drp.c
+index a8d83e2..458326d 100644
+--- a/drivers/uwb/drp.c
++++ b/drivers/uwb/drp.c
+@@ -741,12 +741,12 @@ void uwb_drp_process_all(struct uwb_rc *rc, struct uwb_rc_evt_drp *drp_evt,
+  * DRP notifications can occur for three different reasons:
   *
-diff --git a/drivers/staging/iio/gyro/adis16060_core.c b/drivers/staging/iio/gyro/adis16060_core.c
-index 700eb39..ae53e71 100644
---- a/drivers/staging/iio/gyro/adis16060_core.c
-+++ b/drivers/staging/iio/gyro/adis16060_core.c
-@@ -30,7 +30,7 @@
-  * @us_w:		actual spi_device to write config
-  * @us_r:		actual spi_device to read back data
-  * @indio_dev:		industrial I/O device structure
-- * @buf:		transmit or recieve buffer
-+ * @buf:		transmit or receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16060_state {
-diff --git a/drivers/staging/iio/gyro/adis16080_core.c b/drivers/staging/iio/gyro/adis16080_core.c
-index fb4336c..ef9e304 100644
---- a/drivers/staging/iio/gyro/adis16080_core.c
-+++ b/drivers/staging/iio/gyro/adis16080_core.c
-@@ -35,7 +35,7 @@
-  * struct adis16080_state - device instance specific data
-  * @us:			actual spi_device to write data
-  * @indio_dev:		industrial I/O device structure
-- * @buf:		transmit or recieve buffer
-+ * @buf:		transmit or receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16080_state {
-diff --git a/drivers/staging/iio/gyro/adis16260.h b/drivers/staging/iio/gyro/adis16260.h
-index c1fd4364..1369501 100644
---- a/drivers/staging/iio/gyro/adis16260.h
-+++ b/drivers/staging/iio/gyro/adis16260.h
-@@ -91,7 +91,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  * @negate:		negate the scale parameter
-  **/
-diff --git a/drivers/staging/iio/iio.h b/drivers/staging/iio/iio.h
-index 248bdd2..7127f26 100644
---- a/drivers/staging/iio/iio.h
-+++ b/drivers/staging/iio/iio.h
-@@ -92,7 +92,7 @@ void iio_remove_event_from_list(struct iio_event_handler_list *el,
-  *			changes
-  * @available_scan_masks: [DRIVER] optional array of allowed bitmasks
-  * @trig:		[INTERN] current device trigger (ring buffer modes)
-- * @pollfunc:		[DRIVER] function run on trigger being recieved
-+ * @pollfunc:		[DRIVER] function run on trigger being received
-  **/
- struct iio_dev {
- 	int				id;
-diff --git a/drivers/staging/iio/imu/adis16300.h b/drivers/staging/iio/imu/adis16300.h
-index 1f25d68..c095759 100644
---- a/drivers/staging/iio/imu/adis16300.h
-+++ b/drivers/staging/iio/imu/adis16300.h
-@@ -99,7 +99,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16300_state {
-diff --git a/drivers/staging/iio/imu/adis16350.h b/drivers/staging/iio/imu/adis16350.h
-index b00001e..b1ad486 100644
---- a/drivers/staging/iio/imu/adis16350.h
-+++ b/drivers/staging/iio/imu/adis16350.h
-@@ -105,7 +105,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16350_state {
-diff --git a/drivers/staging/iio/imu/adis16400.h b/drivers/staging/iio/imu/adis16400.h
-index 6ff33e1..7a12702 100644
---- a/drivers/staging/iio/imu/adis16400.h
-+++ b/drivers/staging/iio/imu/adis16400.h
-@@ -131,7 +131,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct adis16400_state {
-diff --git a/drivers/staging/iio/meter/ade7753.h b/drivers/staging/iio/meter/ade7753.h
-index 70dabae..3b9c7f6 100644
---- a/drivers/staging/iio/meter/ade7753.h
-+++ b/drivers/staging/iio/meter/ade7753.h
-@@ -62,7 +62,7 @@
-  * @us:			actual spi_device
-  * @indio_dev:		industrial I/O device structure
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct ade7753_state {
-diff --git a/drivers/staging/iio/meter/ade7754.h b/drivers/staging/iio/meter/ade7754.h
-index 8faa9b3..0aa0522 100644
---- a/drivers/staging/iio/meter/ade7754.h
-+++ b/drivers/staging/iio/meter/ade7754.h
-@@ -80,7 +80,7 @@
-  * @us:			actual spi_device
-  * @indio_dev:		industrial I/O device structure
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct ade7754_state {
-diff --git a/drivers/staging/iio/meter/ade7758.h b/drivers/staging/iio/meter/ade7758.h
-index df5bb7b..c6fd94f 100644
---- a/drivers/staging/iio/meter/ade7758.h
-+++ b/drivers/staging/iio/meter/ade7758.h
-@@ -98,7 +98,7 @@
-  * @indio_dev:		industrial I/O device structure
-  * @trig:		data ready trigger registered with iio
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct ade7758_state {
-diff --git a/drivers/staging/iio/meter/ade7759.h b/drivers/staging/iio/meter/ade7759.h
-index e9d1c43..cc76c2c 100644
---- a/drivers/staging/iio/meter/ade7759.h
-+++ b/drivers/staging/iio/meter/ade7759.h
-@@ -43,7 +43,7 @@
-  * @us:			actual spi_device
-  * @indio_dev:		industrial I/O device structure
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct ade7759_state {
-diff --git a/drivers/staging/iio/meter/ade7854.h b/drivers/staging/iio/meter/ade7854.h
-index 4ad84a3..79a2110 100644
---- a/drivers/staging/iio/meter/ade7854.h
-+++ b/drivers/staging/iio/meter/ade7854.h
-@@ -149,7 +149,7 @@
-  * @spi:			actual spi_device
-  * @indio_dev:		industrial I/O device structure
-  * @tx:			transmit buffer
-- * @rx:			recieve buffer
-+ * @rx:			receive buffer
-  * @buf_lock:		mutex to protect tx and rx
-  **/
- struct ade7854_state {
-diff --git a/drivers/staging/intel_sst/intel_sst_app_interface.c b/drivers/staging/intel_sst/intel_sst_app_interface.c
-index a367991..3522ee1 100644
---- a/drivers/staging/intel_sst/intel_sst_app_interface.c
-+++ b/drivers/staging/intel_sst/intel_sst_app_interface.c
-@@ -871,7 +871,7 @@ int sst_send_algo_ipc(struct ipc_post **msg)
+  * - UWB_DRP_NOTIF_DRP_IE_RECVD: one or more DRP IEs with the RC as
+- *   the target or source have been recieved.
++ *   the target or source have been received.
+  *
+  *   These DRP IEs could be new or for an existing reservation.
+  *
+  *   If the DRP IE for an existing reservation ceases to be to
+- *   recieved for at least mMaxLostBeacons, the reservation should be
++ *   received for at least mMaxLostBeacons, the reservation should be
+  *   considered to be terminated.  Note that the TERMINATE reason (see
+  *   below) may not always be signalled (e.g., the remote device has
+  *   two or more reservations established with the RC).
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 036343b..972b805 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -5,7 +5,7 @@
+  * domain gets 1024 event channels, but NR_IRQ is not that large, we
+  * must dynamically map irqs<->event channels.  The event channels
+  * interface with the rest of the kernel by defining a xen interrupt
+- * chip.  When an event is recieved, it is mapped to an irq and sent
++ * chip.  When an event is received, it is mapped to an irq and sent
+  * through the normal interrupt processing path.
+  *
+  * There are four kinds of events which can be mapped to an event
+diff --git a/fs/ocfs2/namei.c b/fs/ocfs2/namei.c
+index 28f2cc1..e5d738c 100644
+--- a/fs/ocfs2/namei.c
++++ b/fs/ocfs2/namei.c
+@@ -2128,7 +2128,7 @@ leave:
  }
  
  /**
-- * intel_sst_ioctl_dsp - recieves the device ioctl's
-+ * intel_sst_ioctl_dsp - receives the device ioctl's
-  *
-  * @cmd:Ioctl cmd
-  * @arg:data
-@@ -1067,7 +1067,7 @@ long intel_sst_ioctl(struct file *file_ptr, unsigned int cmd, unsigned long arg)
- 			retval = -EFAULT;
- 			break;
- 		}
--		pr_debug("SET_VOLUME recieved for %d!\n",
-+		pr_debug("SET_VOLUME received for %d!\n",
- 				set_vol.stream_id);
- 		if (minor == STREAM_MODULE && set_vol.stream_id == 0) {
- 			pr_debug("invalid operation!\n");
-@@ -1085,7 +1085,7 @@ long intel_sst_ioctl(struct file *file_ptr, unsigned int cmd, unsigned long arg)
- 			retval = -EFAULT;
- 			break;
- 		}
--		pr_debug("IOCTL_GET_VOLUME recieved for stream = %d!\n",
-+		pr_debug("IOCTL_GET_VOLUME received for stream = %d!\n",
- 				get_vol.stream_id);
- 		if (minor == STREAM_MODULE && get_vol.stream_id == 0) {
- 			pr_debug("invalid operation!\n");
-@@ -1117,7 +1117,7 @@ long intel_sst_ioctl(struct file *file_ptr, unsigned int cmd, unsigned long arg)
- 			retval = -EFAULT;
- 			break;
- 		}
--		pr_debug("SNDRV_SST_SET_VOLUME recieved for %d!\n",
-+		pr_debug("SNDRV_SST_SET_VOLUME received for %d!\n",
- 			set_mute.stream_id);
- 		if (minor == STREAM_MODULE && set_mute.stream_id == 0) {
- 			retval = -EPERM;
-@@ -1153,7 +1153,7 @@ long intel_sst_ioctl(struct file *file_ptr, unsigned int cmd, unsigned long arg)
- 	case _IOC_NR(SNDRV_SST_MMAP_CAPTURE): {
- 		struct snd_sst_mmap_buffs mmap_buf;
- 
--		pr_debug("SNDRV_SST_MMAP_PLAY/CAPTURE recieved!\n");
-+		pr_debug("SNDRV_SST_MMAP_PLAY/CAPTURE received!\n");
- 		if (minor != STREAM_MODULE) {
- 			retval = -EBADRQC;
- 			break;
-@@ -1239,7 +1239,7 @@ long intel_sst_ioctl(struct file *file_ptr, unsigned int cmd, unsigned long arg)
- 	case _IOC_NR(SNDRV_SST_SET_TARGET_DEVICE): {
- 		struct snd_sst_target_device target_device;
- 
--		pr_debug("SET_TARGET_DEVICE recieved!\n");
-+		pr_debug("SET_TARGET_DEVICE received!\n");
- 		if (copy_from_user(&target_device, (void __user *)arg,
- 				sizeof(target_device))) {
- 			retval = -EFAULT;
-diff --git a/drivers/staging/lirc/lirc_ene0100.h b/drivers/staging/lirc/lirc_ene0100.h
-index 776b693..ed39aa8 100644
---- a/drivers/staging/lirc/lirc_ene0100.h
-+++ b/drivers/staging/lirc/lirc_ene0100.h
-@@ -81,7 +81,7 @@
- 
- /* CIR block settings */
- #define ENE_CIR_CONF1		0xFEC0
--#define ENE_CIR_CONF1_ADC_ON	0x7	 /* reciever on gpio40 enabled */
-+#define ENE_CIR_CONF1_ADC_ON	0x7	 /* receiver on gpio40 enabled */
- #define ENE_CIR_CONF1_LEARN1	(1 << 3) /* enabled on learning mode */
- #define ENE_CIR_CONF1_TX_ON	0x30	 /* enabled on transmit */
- #define ENE_CIR_CONF1_TX_CARR	(1 << 7) /* send TX carrier or not */
-diff --git a/drivers/staging/quatech_usb2/quatech_usb2.c b/drivers/staging/quatech_usb2/quatech_usb2.c
-index c45b09e..111b9a0 100644
---- a/drivers/staging/quatech_usb2/quatech_usb2.c
-+++ b/drivers/staging/quatech_usb2/quatech_usb2.c
-@@ -156,7 +156,7 @@ static struct usb_driver quausb2_usb_driver = {
-  * includes the size (excluding header) of URBs that have been submitted but
-  * have not yet been sent to to the device, and bytes that have been sent out
-  * of the port but not yet reported sent by the "xmit_empty" messages (which
-- * indicate the number of bytes sent each time they are recieved, despite the
-+ * indicate the number of bytes sent each time they are received, despite the
-  * misleading name).
-  * - Starts at zero when port is initialised.
-  * - is incremented by the size of the data to be written (no headers)
-@@ -823,7 +823,7 @@ static int qt2_write_room(struct tty_struct *tty)
- 	 * reduce the free space count by the size of the dispatched write.
- 	 * When a "transmit empty" message comes back up the USB read stream,
- 	 * we decrement the count by the number of bytes reported sent, thus
--	 * keeping track of the difference between sent and recieved bytes.
-+	 * keeping track of the difference between sent and received bytes.
+- * ocfs2_prep_new_orphaned_file() - Prepare the orphan dir to recieve a newly
++ * ocfs2_prep_new_orphaned_file() - Prepare the orphan dir to receive a newly
+  * allocated file. This is different from the typical 'add to orphan dir'
+  * operation in that the inode does not yet exist. This is a problem because
+  * the orphan dir stringifies the inode block number to come up with it's
+diff --git a/fs/ocfs2/stackglue.h b/fs/ocfs2/stackglue.h
+index 8ce7398..1ec56fd 100644
+--- a/fs/ocfs2/stackglue.h
++++ b/fs/ocfs2/stackglue.h
+@@ -126,7 +126,7 @@ struct ocfs2_stack_operations {
+ 	 *
+ 	 * ->connect() must not return until it is guaranteed that
+ 	 *
+-	 *  - Node down notifications for the filesystem will be recieved
++	 *  - Node down notifications for the filesystem will be received
+ 	 *    and passed to conn->cc_recovery_handler().
+ 	 *  - Locking requests for the filesystem will be processed.
  	 */
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index e654fa2..5ac7ebc 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -240,7 +240,7 @@ struct cgroup {
+ 	/* For RCU-protected deletion */
+ 	struct rcu_head rcu_head;
  
- 	room = (QT2_FIFO_DEPTH - port_extra->tx_pending_bytes);
-diff --git a/drivers/staging/rt2860/common/cmm_data_usb.c b/drivers/staging/rt2860/common/cmm_data_usb.c
-index 7c56c2f..b0de809 100644
---- a/drivers/staging/rt2860/common/cmm_data_usb.c
-+++ b/drivers/staging/rt2860/common/cmm_data_usb.c
-@@ -702,7 +702,7 @@ Arguments:
- 	*pRxPending			pending received packet flag
+-	/* List of events which userspace want to recieve */
++	/* List of events which userspace want to receive */
+ 	struct list_head event_list;
+ 	spinlock_t event_list_lock;
+ };
+diff --git a/include/linux/netfilter/nf_conntrack_proto_gre.h b/include/linux/netfilter/nf_conntrack_proto_gre.h
+index 2a10efd..6a0664c 100644
+--- a/include/linux/netfilter/nf_conntrack_proto_gre.h
++++ b/include/linux/netfilter/nf_conntrack_proto_gre.h
+@@ -60,7 +60,7 @@ struct gre_hdr_pptp {
+ 	__be16 payload_len;	/* size of ppp payload, not inc. gre header */
+ 	__be16 call_id;		/* peer's call_id for this session */
+ 	__be32 seq;		/* sequence number.  Present if S==1 */
+-	__be32 ack;		/* seq number of highest packet recieved by */
++	__be32 ack;		/* seq number of highest packet received by */
+ 				/*  sender in this session */
+ };
  
- Return Value:
--    the recieved packet
-+    the received packet
+diff --git a/include/scsi/libiscsi_tcp.h b/include/scsi/libiscsi_tcp.h
+index e6b9fd2..ac0cc1d 100644
+--- a/include/scsi/libiscsi_tcp.h
++++ b/include/scsi/libiscsi_tcp.h
+@@ -52,7 +52,7 @@ struct iscsi_segment {
+ 	iscsi_segment_done_fn_t	*done;
+ };
  
- Note:
- ========================================================================
-diff --git a/drivers/staging/westbridge/astoria/api/src/cyasmisc.c b/drivers/staging/westbridge/astoria/api/src/cyasmisc.c
-index 7852410..5748ae6 100644
---- a/drivers/staging/westbridge/astoria/api/src/cyasmisc.c
-+++ b/drivers/staging/westbridge/astoria/api/src/cyasmisc.c
-@@ -428,7 +428,7 @@ my_misc_callback(cy_as_device *dev_p, uint8_t context,
- 				if (v & CY_AS_MEM_P0_VM_SET_CFGMODE)
- 					cy_as_hal_print_message(
- 					"initialization message "
--					"recieved, but config bit "
-+					"received, but config bit "
- 					"still set\n");
+-/* Socket connection recieve helper */
++/* Socket connection receive helper */
+ struct iscsi_tcp_recv {
+ 	struct iscsi_hdr	*hdr;
+ 	struct iscsi_segment	segment;
+diff --git a/include/scsi/osd_initiator.h b/include/scsi/osd_initiator.h
+index 53a9e88..0a50799 100644
+--- a/include/scsi/osd_initiator.h
++++ b/include/scsi/osd_initiator.h
+@@ -265,7 +265,7 @@ int osd_execute_request_async(struct osd_request *or,
+  * @osi           - Recievs a more detailed error report information (optional).
+  * @silent        - Do not print to dmsg (Even if enabled)
+  * @bad_obj_list  - Some commands act on multiple objects. Failed objects will
+- *                  be recieved here (optional)
++ *                  be received here (optional)
+  * @max_obj       - Size of @bad_obj_list.
+  * @bad_attr_list - List of failing attributes (optional)
+  * @max_attr      - Size of @bad_attr_list.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e31b220..25c7eb5 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -157,7 +157,7 @@ struct css_id {
+ };
  
- 				v = cy_as_hal_read_register(dev_p->tag,
-@@ -436,7 +436,7 @@ my_misc_callback(cy_as_device *dev_p, uint8_t context,
- 				if ((v & CY_AS_MEM_RST_RSTCMPT) == 0)
- 					cy_as_hal_print_message(
- 					"initialization message "
--					"recieved, but reset complete "
-+					"received, but reset complete "
- 					"bit still not set\n");
- 			}
- 			break;
-diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
-index 0bbb8a3..d1996a2 100644
---- a/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
-+++ b/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
-@@ -222,7 +222,7 @@ static int cyasblkdev_queue_thread(void *d)
- 			continue;
- 		}
+ /*
+- * cgroup_event represents events which userspace want to recieve.
++ * cgroup_event represents events which userspace want to receive.
+  */
+ struct cgroup_event {
+ 	/*
+diff --git a/mm/slub.c b/mm/slub.c
+index f881874..cca3f8b 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3547,7 +3547,7 @@ void *__kmalloc_track_caller(size_t size, gfp_t gfpflags, unsigned long caller)
  
--		/* new req recieved, issue it to the driver  */
-+		/* new req received, issue it to the driver  */
- 		set_current_state(TASK_RUNNING);
+ 	ret = slab_alloc(s, gfpflags, NUMA_NO_NODE, caller);
  
- 		#ifndef WESTBRIDGE_NDEBUG
-diff --git a/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h b/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h
-index 64f078c..8e7096b 100644
---- a/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h
-+++ b/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h
-@@ -1985,7 +1985,7 @@ cy_as_storage_erase(
-    *	type was made
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
-    * CY_AS_ERROR_INVALID_RESPONSE - an error message was
--   *	recieved from the firmware
-+   *	received from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error in
-    *	reading from the media
-    * CY_AS_ERROR_INVALID_FUNCTION - An IO attempt was made to
-@@ -2047,7 +2047,7 @@ cy_as_sdio_get_c_i_s_info(
-    *	pair does not exist
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
-    * CY_AS_ERROR_INVALID_RESPONSE - an error message was
--   *	recieved from the firmware
-+   *	received from the firmware
+-	/* Honor the call site pointer we recieved. */
++	/* Honor the call site pointer we received. */
+ 	trace_kmalloc(caller, ret, size, s->size, gfpflags);
  
- */
- cy_as_return_status_t
-@@ -2095,7 +2095,7 @@ cy_as_sdio_query_card(
-    *	pair does not exist
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
-    * CY_AS_ERROR_INVALID_RESPONSE - an error message was
--   *	recieved from the firmware
-+   *	received from the firmware
-    */
- cy_as_return_status_t
- cy_as_sdio_reset_card(
-@@ -2139,7 +2139,7 @@ cy_as_sdio_reset_card(
-    * CY_AS_ERROR_NO_SUCH_DEVICE - the specified media/device pair
-    *	does not exist
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
--   * CY_AS_ERROR_INVALID_RESPONSE - an error message was recieved
-+   * CY_AS_ERROR_INVALID_RESPONSE - an error message was received
-    *	from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error in reading
-    *	from the media
-@@ -2198,7 +2198,7 @@ cy_as_sdio_direct_read(
-    * CY_AS_ERROR_NO_SUCH_DEVICE - the specified media/device
-    * pair does not exist
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
--   * CY_AS_ERROR_INVALID_RESPONSE - an error message was recieved
-+   * CY_AS_ERROR_INVALID_RESPONSE - an error message was received
-    * from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error in
-    * reading from the media
-@@ -2262,7 +2262,7 @@ cy_as_sdio_direct_write(
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory
-    *	available
-    * CY_AS_ERROR_INVALID_RESPONSE - an error message was
--   *	recieved from the firmware
-+   *	received from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error in
-    *	reading from the media
-    * CY_AS_ERROR_INVALID_FUNCTION - An IO attempt was made
-@@ -2319,7 +2319,7 @@ cy_as_sdio_set_blocksize(
-    *	pair does not exist
-    * CY_AS_ERROR_ASYNC_PENDING - an async operation is pending
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
--   * CY_AS_ERROR_INVALID_RESPONSE - an error message was recieved
-+   * CY_AS_ERROR_INVALID_RESPONSE - an error message was received
-    *	from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error in
-    *	reading from the media
-@@ -2396,7 +2396,7 @@ cy_as_sdio_extended_read(
-    * CY_AS_ERROR_ASYNC_PENDING - an async operation is pending
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
-    * CY_AS_ERROR_INVALID_RESPONSE - an error message was
--   *	recieved from the firmware
-+   *	received from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error in
-    *	reading from the media
-    * CY_AS_ERROR_INVALID_FUNCTION - An IO attempt was made
-@@ -2471,7 +2471,7 @@ cy_as_sdio_extended_write(
-    * pair does not exist
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory available
-    * CY_AS_ERROR_INVALID_RESPONSE - an error message was
--   *	recieved from the firmware
-+   *	received from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error in
-    *	reading from the media
-    * CY_AS_ERROR_INVALID_FUNCTION - An IO attempt was made
-@@ -2714,7 +2714,7 @@ cy_as_sdio_suspend(
-    * CY_AS_ERROR_OUT_OF_MEMORY - insufficient memory
-    *	available
-    * CY_AS_ERROR_INVALID_RESPONSE - an error message was
--   *	recieved from the firmware
-+   *	received from the firmware
-    * CY_AS_ERROR_MEDIA_ACCESS_FAILURE - there was error
-    *	in reading from the media
-    * CY_AS_ERROR_INVALID_FUNCTION - An IO attempt was
+ 	return ret;
+@@ -3577,7 +3577,7 @@ void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
+ 
+ 	ret = slab_alloc(s, gfpflags, node, caller);
+ 
+-	/* Honor the call site pointer we recieved. */
++	/* Honor the call site pointer we received. */
+ 	trace_kmalloc_node(caller, ret, size, s->size, gfpflags, node);
+ 
+ 	return ret;
+diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+index b027ccc..d12ed53 100644
+--- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
++++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+@@ -566,7 +566,7 @@ static struct ipvs_sctp_nextstate
+ 	 * SHUTDOWN sent from the client, waitinf for SHUT ACK from the server
+ 	 */
+ 	/*
+-	 * We recieved the data chuck, keep the state unchanged. I assume
++	 * We received the data chuck, keep the state unchanged. I assume
+ 	 * that still data chuncks  can be received by both the peers in
+ 	 * SHUDOWN state
+ 	 */
+@@ -633,7 +633,7 @@ static struct ipvs_sctp_nextstate
+ 	 * SHUTDOWN sent from the server, waitinf for SHUTDOWN ACK from client
+ 	 */
+ 	/*
+-	 * We recieved the data chuck, keep the state unchanged. I assume
++	 * We received the data chuck, keep the state unchanged. I assume
+ 	 * that still data chuncks  can be received by both the peers in
+ 	 * SHUDOWN state
+ 	 */
+@@ -701,7 +701,7 @@ static struct ipvs_sctp_nextstate
+ 	 * SHUTDOWN ACK from the client, awaiting for SHUTDOWN COM from server
+ 	 */
+ 	/*
+-	 * We recieved the data chuck, keep the state unchanged. I assume
++	 * We received the data chuck, keep the state unchanged. I assume
+ 	 * that still data chuncks  can be received by both the peers in
+ 	 * SHUDOWN state
+ 	 */
+@@ -771,7 +771,7 @@ static struct ipvs_sctp_nextstate
+ 	 * SHUTDOWN ACK from the server, awaiting for SHUTDOWN COM from client
+ 	 */
+ 	/*
+-	 * We recieved the data chuck, keep the state unchanged. I assume
++	 * We received the data chuck, keep the state unchanged. I assume
+ 	 * that still data chuncks  can be received by both the peers in
+ 	 * SHUDOWN state
+ 	 */
+diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
+index c47a511..7c4dce8 100644
+--- a/net/rds/ib_send.c
++++ b/net/rds/ib_send.c
+@@ -355,7 +355,7 @@ void rds_ib_send_cq_comp_handler(struct ib_cq *cq, void *context)
+  *
+  * Conceptually, we have two counters:
+  *  -	send credits: this tells us how many WRs we're allowed
+- *	to submit without overruning the reciever's queue. For
++ *	to submit without overruning the receiver's queue. For
+  *	each SEND WR we post, we decrement this by one.
+  *
+  *  -	posted credits: this tells us how many WRs we recently
+diff --git a/net/rds/iw_send.c b/net/rds/iw_send.c
+index 6280ea0..545d8ee 100644
+--- a/net/rds/iw_send.c
++++ b/net/rds/iw_send.c
+@@ -307,7 +307,7 @@ void rds_iw_send_cq_comp_handler(struct ib_cq *cq, void *context)
+  *
+  * Conceptually, we have two counters:
+  *  -	send credits: this tells us how many WRs we're allowed
+- *	to submit without overruning the reciever's queue. For
++ *	to submit without overruning the receiver's queue. For
+  *	each SEND WR we post, we decrement this by one.
+  *
+  *  -	posted credits: this tells us how many WRs we recently
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index 4b4eb7c..ff6a678 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -4402,7 +4402,7 @@ static sctp_disposition_t sctp_sf_violation_ctsn(
+ }
+ 
+ /* Handle protocol violation of an invalid chunk bundling.  For example,
+- * when we have an association and we recieve bundled INIT-ACK, or
++ * when we have an association and we receive bundled INIT-ACK, or
+  * SHUDOWN-COMPLETE, our peer is clearly violationg the "MUST NOT bundle"
+  * statement from the specs.  Additinally, there might be an attacker
+  * on the path and we may not want to continue this communication.
+diff --git a/net/sctp/ulpqueue.c b/net/sctp/ulpqueue.c
+index 1767818..f2d1de7 100644
+--- a/net/sctp/ulpqueue.c
++++ b/net/sctp/ulpqueue.c
+@@ -240,7 +240,7 @@ int sctp_ulpq_tail_event(struct sctp_ulpq *ulpq, struct sctp_ulpevent *event)
+ 		} else {
+ 			/*
+ 			 * If fragment interleave is enabled, we
+-			 * can queue this to the recieve queue instead
++			 * can queue this to the receive queue instead
+ 			 * of the lobby.
+ 			 */
+ 			if (sctp_sk(sk)->frag_interleave)
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 3332d5b..1d17292 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -809,7 +809,7 @@ static void handle_channel(struct wiphy *wiphy,
+ 	if (r) {
+ 		/*
+ 		 * We will disable all channels that do not match our
+-		 * recieved regulatory rule unless the hint is coming
++		 * received regulatory rule unless the hint is coming
+ 		 * from a Country IE and the Country IE had no information
+ 		 * about a band. The IEEE 802.11 spec allows for an AP
+ 		 * to send only a subset of the regulatory rules allowed,
+diff --git a/sound/pci/asihpi/hpi.h b/sound/pci/asihpi/hpi.h
+index 6fc025c..255429c 100644
+--- a/sound/pci/asihpi/hpi.h
++++ b/sound/pci/asihpi/hpi.h
+@@ -725,7 +725,7 @@ enum HPI_AESEBU_ERRORS {
+ #define HPI_PAD_TITLE_LEN               64
+ /** The text string containing the comment. */
+ #define HPI_PAD_COMMENT_LEN             256
+-/** The PTY when the tuner has not recieved any PTY. */
++/** The PTY when the tuner has not received any PTY. */
+ #define HPI_PAD_PROGRAM_TYPE_INVALID    0xffff
+ /** \} */
+ 
+diff --git a/sound/soc/atmel/atmel_ssc_dai.c b/sound/soc/atmel/atmel_ssc_dai.c
+index 5d230ce..7fbfa05 100644
+--- a/sound/soc/atmel/atmel_ssc_dai.c
++++ b/sound/soc/atmel/atmel_ssc_dai.c
+@@ -672,7 +672,7 @@ static int atmel_ssc_resume(struct snd_soc_dai *cpu_dai)
+ 	/* re-enable interrupts */
+ 	ssc_writel(ssc_p->ssc->regs, IER, ssc_p->ssc_state.ssc_imr);
+ 
+-	/* Re-enable recieve and transmit as appropriate */
++	/* Re-enable receive and transmit as appropriate */
+ 	cr = 0;
+ 	cr |=
+ 	    (ssc_p->ssc_state.ssc_sr & SSC_BIT(SR_RXEN)) ? SSC_BIT(CR_RXEN) : 0;
+diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
+index 3167be6..d0737ed 100644
+--- a/sound/soc/omap/ams-delta.c
++++ b/sound/soc/omap/ams-delta.c
+@@ -330,7 +330,7 @@ static int cx81801_hangup(struct tty_struct *tty)
+ 	return 0;
+ }
+ 
+-/* Line discipline .recieve_buf() */
++/* Line discipline .receive_buf() */
+ static void cx81801_receive(struct tty_struct *tty,
+ 				const unsigned char *cp, char *fp, int count)
+ {
 -- 
 1.7.4.2
 
