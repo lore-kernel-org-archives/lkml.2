@@ -1,51 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab1DGO4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 10:56:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46365 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab1DGO4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 10:56:40 -0400
-Message-ID: <4D9DD08C.2080101@zytor.com>
-Date: Thu, 07 Apr 2011 07:56:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	id S1754037Ab1DGO7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 10:59:07 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:33133 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751171Ab1DGO7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 10:59:04 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@suse.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH/RFC 0/6] ARM: runtime PM: consolidate runtime PM implementations
+Organization: Texas Instruments, Inc.
+References: <1302134569-22825-1-git-send-email-khilman@ti.com>
+	<201104070738.42956.rjw@suse.com>
+Date: Thu, 07 Apr 2011 07:58:57 -0700
+In-Reply-To: <201104070738.42956.rjw@suse.com> (Rafael J. Wysocki's message of
+	"Thu, 7 Apr 2011 07:38:42 +0200")
+Message-ID: <871v1eaz0u.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: tip: New "Link:" tag to replace "LKML-Reference:"
-References: <4D9CE4AE.4090303@zytor.com> <1302185312.3329.1240.camel@twins>	 <4D9DCDAB.9000707@zytor.com> <1302188050.9086.27.camel@twins>
-In-Reply-To: <1302188050.9086.27.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2011 07:54 AM, Peter Zijlstra wrote:
-> 
-> Can't we use a prepare-commit-msg or commit-msg hook to re-write the
-> commit message to include a Link tag when one is missing, using
-> something like:
-> 
-> Link: http://lkml.kernel.org/r/tip-$SHA@git.kernel.org
-> 
-> And have the post-commit hook that sends the messages recognize this
-> form and send the message using the correct msgid.
-> 
-> That way the commit includes a correct and clickable link, doesn't
-> require magic knowledge and doesn't need the committer to do extra work.
-> 
+[adding linux-pm, which I forgot to add in original post]
 
-Think about it... hint: the SHA1 is a cryptographically secure signature
-of the commit object.
+"Rafael J. Wysocki" <rjw@suse.com> writes:
 
-	-hpa
+> On Thursday, April 07, 2011, Kevin Hilman wrote:
+>> This series aims to consolidate OMAP and SH-mobile runtime PM
+>> implementations around the new device power domains.
+>> 
+>> In 2.6.39, device power domains were added (commit
+>> 7538e3db6e015e890825fbd9f8659952896ddd5b, PM: add support for device
+>> power domains).  In converting both OMAP and SH-mobile to use device
+>> power domains, the overlap between implementations was almost 100%.  
+>> 
+>> To share the runtime PM implementation based on simple clock gating,
+>> move it to arch/arm/common and initialize it from OMAP and SH-mobile.
+>> 
+>> Also, OMAP was the only user of platform_bus_set_pm_ops().  Now that
+>> it has been converted to device power domains, remove
+>> platform_bus_set_pm_ops().
+>
+> Please, don't do it this way.
+>
+> First, we'll still need platform_bus_set_pm_ops() on shmobile and the reason
+> is that we want to override the platform bus type PM ops for _all_ devices on
+> that platform, which power domains are not really suitable for.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+That doesn't sound quite right to me.
+
+Magnus should step in here to clarify the situation on SH-mobile, but
+like Grant, I'm pretty sure that we don't need (or want) to replace PM
+ops for _all_ platform devices.
+
+Looking at the replacement ops used, they simply manage device clocks,
+and this probably only applies to on-chip devices (at least that's true
+on OMAP.)
+
+Replacing the PM ops for all devices was done on OMAP and SH-mobile
+because that was the only approach we had.  Now that we have device
+power domains (thanks Rafael!), we can be more selective about which
+devices to apply them to.
+
+Note that my RFC patch/series did not do the selective part of deciding
+which devices to override and which ones not to, that part will be
+platform specific.  
+
+> Second, we're going to introduce code for handling real power domains for
+> shmobile that would conflict with the way you're using power domains for
+> overriding the default PM ops.
+
+Conflict in what way?
+
+If you have new device power domain callbacks for specific devices in a
+an on-chp power domain, they would just override the "default" ones that
+only do basic clock gating.  I'm guessing the new callbacks will do some
+management of the SoC specific powerdomains in addition to clock gating.
+That's how it works on OMAP.
+
+Put a different way, the device power domain callbacks in this proposal
+will be the defaults, providing a simple clock-gating only approach to
+device power management.   However, when new code comes along to manage
+the actual SoC power domains, devices in those power domains will just
+override these default clock-gating-only versions.
+
+This is exactly how things are working in OMAP.  On OMAP1, we use only
+the simple, clock-gating only callbacks because the OMAP1 PM
+capabilities are much more limited.  On OMAP2+, we override these
+callbacks with different ones that in addition to managing clocks, also
+manage the SoC power domains.
+
+> Besides, the way you've used power domains appears to assume that drivers
+> will not define their own runtime PM callbacks, because if they do, those
+> callbacks will be called _in_ _addition_ to the power domain callbacks you're
+> trying to add (from the default platform bus type callbacks).
+
+That was intentional.
+
+If all a driver needs to do for runtime PM is manage clocks, it doesn't
+need runtime PM callbacks since it's hanlded by core code.  If it has
+additional things to do (save context, quiesce hardware, wait for
+somthing to finish etc.) it can do that in it's own callbacks, and then
+the clock gating will happen in the device power domain callbacks.
+
+The point is use both levels of callbacks. The device power domain
+callbacks handle all the operations that are common to the device power
+domain, and the driver callbacks handle driver specific stuff.  
+
+It also means that drivers don't have to manage their own clocks, at
+least for PM purposes.  This is a big win for drivers that are used on
+multiple platforms, or even multiple SoCs in the same family where
+clocking may be different.  Drivers that can remain ignorant of the
+underlying clocking (and power domain layout) are much more portable.
+
+Kevin
+
+
 
