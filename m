@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab1DGNAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 09:00:20 -0400
-Received: from core.signal11.us ([64.251.29.136]:37354 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab1DGNAS convert rfc822-to-8bit (ORCPT
+	id S1755350Ab1DGNAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 09:00:19 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:20317 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab1DGNAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 09:00:18 -0400
-Message-ID: <4D9DB560.7000200@signal11.us>
-Date: Thu, 07 Apr 2011 09:00:16 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	Thu, 7 Apr 2011 09:00:17 -0400
+X-SpamScore: -40
+X-BigFish: VPS-40(zz9371O542M1dbaL1432N98dK179dNzz1202hzz15d4R8275dhz32i637h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJA9G8-02-H4H-02
+X-M-MSG: 
+Date: Thu, 7 Apr 2011 15:00:08 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: "Xu, Andiry" <Andiry.Xu@amd.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+Message-ID: <20110407130008.GX23633@amd.com>
+References: <1302088878-25740-1-git-send-email-joerg.roedel@amd.com>
+ <Pine.LNX.4.44L0.1104061110251.1907-100000@iolanthe.rowland.org>
+ <20110407075049.GV23633@amd.com>
+ <2DEEA3AB13739D45A22ADDB5086AEA0B01308475@sshaexmb1.amd.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: linux-next: build failure after merge of the hid tree
-References: <20110407110626.397202fb.sfr@canb.auug.org.au>
-In-Reply-To: <20110407110626.397202fb.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Apr  7 09:00:17 2011
-X-DSPAM-Confidence: 1.0000
-X-DSPAM-Probability: 0.0023
-X-DSPAM-Signature: 4d9db561189409355917481
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <2DEEA3AB13739D45A22ADDB5086AEA0B01308475@sshaexmb1.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2011 09:06 PM, Stephen Rothwell wrote:
-> After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
->
-> samples/hidraw/hid-example.c: In function 'main':
-> samples/hidraw/hid-example.c:103: warning: implicit declaration of function 'HIDIOCSFEATURE'
-> samples/hidraw/hid-example.c:111: warning: implicit declaration of function 'HIDIOCGFEATURE'
-> tmp/ccK96SHd.o: In function `main':
-> hid-example.c:(.text+0x205): undefined reference to `HIDIOCSFEATURE'
-> hid-example.c:(.text+0x23e): undefined reference to `HIDIOCGFEATURE'
->
-> Caused by commit c54ea4918c2b ("HID: Documentation for hidraw").  I can
-> only assume that linux/hidraw.h is being included from /usr/include and
-> not the kernel tree being built?
+On Thu, Apr 07, 2011 at 05:01:01AM -0400, Xu, Andiry wrote:
+> > -----Original Message-----
+> > From: Roedel, Joerg [mailto:Joerg.Roedel@amd.com]
+> > Sent: Thursday, April 07, 2011 3:51 PM
+> > To: Alan Stern
+> > Cc: Greg Kroah-Hartman; Sarah Sharp; Xu, Andiry; linux-usb@vger.kernel.org;
+> > linux-kernel@vger.kernel.org; stable@kernel.org
+> > Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+> >
+> > On Wed, Apr 06, 2011 at 11:16:07AM -0400, Alan Stern wrote:
+> > > On Wed, 6 Apr 2011, Joerg Roedel wrote:
+> >
+> > > The counter really should be a bool: Has the chipset already been
+> > > probed or not?  After all, nobody cares how many times this routine was
+> > > called.
+> > >
+> > > > + spin_unlock_irqrestore(&amd_lock, flags);
+> > >
+> > > This code now contains a bug: You incremented the probe_count _before_
+> > > doing the probe.  If another thread calls this routine right now, it
+> > > will get an incorrect result.
+> > >
+> > > Fixing this up should be fairly easy.
+> >
+> > Hmm, we can get rid of the amd_lock completly if every thread uses the
+> > following call-order:
+> >
+> >       usb_amd_find_chipset_info();
+> >       usb_amd_quirk_pll_enable();
+> >       usb_amd_quirk_pll_disable();
+> >       usb_amd_dev_put();
+> >
+> 
+> The correct order is:
+> 
+> usb_amd_find_chipset_info();
+> usb_amd_quirk_pll_disable();
+> usb_amd_quirk_pll_enable();
+> usb_amd_dev_put();
+> 
+> The pair of pll disable and enable may be called for multiple times.
 
-Hi Stephen,
+So we could access the data structure without any locks if we want using
+atomic_t for the probe_count and isoc_reqs members. But as I've seen
+meanwhile the lock still needs to protect the access to the hardware in
+the usb_amd_quirk_pll() function.
+So its probably not worth the work, what do you think?
 
-That sounds like a reasonable explanation. What's the right way to do
-this? I suppose I had incorrectly assumed that the include path would be
-set by the build system to the kernel tree being built. The other
-samples seem to do the same thing (simply #including whatever they
-need), and don't seem to do anything special with include paths to make
-it use the current tree.
+Regards,
 
-Maybe Randy can shed some light.
+	Joerg
 
-Sorry for the bother,
+-- 
+AMD Operating System Research Center
 
-Alan.
-
-
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
