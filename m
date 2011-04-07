@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab1DGL13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 07:27:29 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64694 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab1DGL12 convert rfc822-to-8bit (ORCPT
+	id S1755724Ab1DGL1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 07:27:48 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:45930 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755635Ab1DGL1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 07:27:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=gsl8TnpJ1ZIPxuYnHzM9hIaU0Dute6E1LbtpAPC+1SSMOpOcu2C6bVlFkPCVxatLHk
-         ZqyZSAalr+FKKPUUx7EfQpR1eV8REUFM2kyFROfeA6jvHZz2YE8xxpCbnMGTKfDcDHHY
-         m0dpw3zCdCk5TuMwMlpkVOwfxjY2ZtHPqqMzA=
+	Thu, 7 Apr 2011 07:27:47 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D9DA00A.3030700@cam.ac.uk>
+Date: Thu, 07 Apr 2011 12:29:14 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110407075703.GD24879@elte.hu>
-References: <cover.1302137785.git.luto@mit.edu> <e210b8eea527894eaf3aec8c30c8d2747e87a524.1302137785.git.luto@mit.edu>
- <20110407075703.GD24879@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 7 Apr 2011 07:27:07 -0400
-X-Google-Sender-Auth: 67fMsHaH8lO_Wqv2tTIpOakSofI
-Message-ID: <BANLkTikDDkq7P0MDwrScbrcvJEN9rmVAKQ@mail.gmail.com>
-Subject: Re: [RFT/PATCH v2 4/6] x86-64: vclock_gettime(CLOCK_MONOTONIC) can't
- ever see nsec < 0
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+To: Sonny Rao <sonnyrao@chromium.org>
+CC: linux-pm@lists.linux-foundation.org, bleung@chromium.org,
+        snanda@chromium.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Phillip Kurtenbach <pkurtenbach@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH] Enable async suspend/resume on industrial IO devices
+References: <1302057915-13549-1-git-send-email-sonnyrao@chromium.org> <4D9C477E.4050400@cam.ac.uk> <BANLkTikWBU-uW6xKwNt+zrS0JbDPOzdd0w@mail.gmail.com>
+In-Reply-To: <BANLkTikWBU-uW6xKwNt+zrS0JbDPOzdd0w@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 7, 2011 at 3:57 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Andy Lutomirski <luto@MIT.EDU> wrote:
->
->> +
->> +     /* wall_time_nsec, vgetns(), and wall_to_monotonic.tv_nsec
->> +      * are all guaranteed to be nonnegative.
->> +      */
->
->> +     /* wall_time_nsec and wall_to_monotonic.tv_nsec are
->> +      * guaranteed to be between 0 and NSEC_PER_SEC.
->> +      */
->
-> Nor have you addressed stylistic review feedback i gave before ...
->
-> Really, we absolutely must insist on 110% attention to small details for
-> patches that modify assembly code.
-
-Crud, I fixed most of those.  I'll get these in v3.  (I assume you're
-talking about comment style.)
-
---Andy
-
->
-> Thanks,
->
->        Ingo
->
+On 04/06/11 23:47, Sonny Rao wrote:
+> On Wed, Apr 6, 2011 at 3:59 AM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+>> On 04/06/11 03:45, Sonny Rao wrote:
+>>> Industrial I/O devices can sometimes take a long time to resume,
+>>> allowing them to be asynchronus saves 50ms on one light sensor
+>>>
+>> Hi Sonny,
+>>
+>> cc'd linux-iio
+>>
+>> I'm not particularly familiar with this.  Are there any disadvantages?
+>> I just wonder if it would be better to push this into individual drivers
+>> rather than the core?
+> 
+> Yeah we could do it that way too, I sent out a similar patch for i2c
+> and people were asking if it was entirely safe.  It sounds like it may
+> depend on dependencies between devices.
+> 
+> Do you know if any of the devices in iio have inter-device dependencies?
+> I was under the impression they were mostly stand-alone sensors that
+> ordinarily wouldn't, but I haven't tried to audit all of them or anything.
+Mostly I think is the key word here.  Right now I don't think we have anything
+that would have a problem, but putting something like that in the core is
+liable to bite sometime in the future.  For now at least I think I'd prefer
+to see it in an individual driver.
