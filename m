@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab1DHWt4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 18:49:56 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:22259 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab1DHWtz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 18:49:55 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=sma64emKALigICJU+V2L7RL3kPAolu7RCFSKDgo279k= c=1 sm=1
- a=sPSRf2qYkfMA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=EB9cujeC2cXrS1pQ2UAA:9 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 1/2] ext4: Calculate and verify inode checksums
-Mime-Version: 1.0 (Apple Message framework v1082)
+	id S1757392Ab1DHWy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 18:54:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55743 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752943Ab1DHWyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 18:54:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,326,1299484800"; 
+   d="scan'208";a="625779996"
+Date: Sat, 9 Apr 2011 00:54:52 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC] [PATCH] mfd: Fetch cell pointer from
+ platform_device->mfd_cell
+Message-ID: <20110408225451.GC30969@sortiz-mobl>
+References: <20110408004007.GC3923@sortiz-mobl>
+ <20110407193855.1e9182bb@debxo>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <20110408191250.GD24354@tux1.beaverton.ibm.com>
-Date: Fri, 8 Apr 2011 16:49:54 -0600
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C1228346-6174-4AD9-8384-E60197C7C85E@dilger.ca>
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <20110406224547.GT32706@tux1.beaverton.ibm.com> <86716762-8041-4209-961C-5C0BAB139C5B@dilger.ca> <20110408191250.GD24354@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1082)
+Content-Disposition: inline
+In-Reply-To: <20110407193855.1e9182bb@debxo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-08, at 1:12 PM, Darrick J. Wong wrote:
-> On Fri, Apr 08, 2011 at 02:58:27AM -0600, Andreas Dilger wrote:
->> On 2011-04-06, at 4:45 PM, Darrick J. Wong wrote:
->>> @@ -617,7 +617,7 @@ struct ext4_inode {
->>> 		} masix2;
->>> 	} osd2;				/* OS dependent 2 */
->>> 	__le16	i_extra_isize;
->>> -	__le16	i_pad1;
->>> +	__le16  i_checksum;		/* crc16(sb_uuid+inodenum+inode) */
->> 
->> In previous discussions, we thought about using part/all of the l_i_reserved2
->> field to store the inode checksum.  The inode checksum is important enough to
->> warrant a field in the core inode, so that it also works on upgraded
->> filesystems.
+Hi Andres,
+
+On Thu, Apr 07, 2011 at 07:38:55PM -0700, Andres Salomon wrote:
+> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > index f051cff..6c3a2bd 100644
+> > --- a/drivers/base/platform.c
+> > +++ b/drivers/base/platform.c
+> > @@ -149,6 +149,7 @@ static void platform_device_release(struct device
+> > *dev) 
+> >  	of_device_node_put(&pa->pdev.dev);
+> >  	kfree(pa->pdev.dev.platform_data);
+> > +	kfree(pa->pdev.mfd_cell);
 > 
-> Hmm, yes, I better like using that field too, it'll simplify the code.  Does
-> anyone know which of the s_creator_os codes map to the Linux format?  I'm going
-> to guess 1 and 2 don't... for now I suppose the mount code can check for a
-> Linux creator code if the inode checksum feature is set, and fail the mount if
-> it finds 1 or 2.  I'm not sure which version of the osd2 union FreeBSD or
-> "Lites" use.
+> Hm, given that most platform devices won't be mfd devices (and thus
+> mfd_cell will be NULL), is it better to rely on kfree's
+> unlikely(ZERO_OR_NULL_PTR(...)), or have this be "if
+> (pa->pdev.mfd_cell) kfree(pa->pdev.mfd_cell);"?
+I'd say the former (obviously), unless Greg wants it to be otherwise.
 
-Actually, the e2fsprogs code has already removed the "masix" part of the union years ago, and I'm not even sure why the "hurd" part of the union remains in the kernel code.  I think only Hurd is using the "h_i_author" field, so I suspect all that is needed is to refuse tune2fs to enable EXT4_FEATURE_RO_COMPAT_INODE_CSUM if s_creator_os == EXT2_OS_HURD (1).
-
-The kernel shouldn't really care about this field - if the checksum feature isn't enabled, then this field will be ignored, and if the checksum feature IS enabled it could only have been done by mke2fs, or tune2fs which should check if it is allowed based on s_creator_os.
-
->>> +static __le16 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw)
->>> +{
->>> +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
->>> +	struct ext4_inode_info *ei = EXT4_I(inode);
->>> +	int offset = offsetof(struct ext4_inode, i_checksum);
->>> +	__le32 inum = cpu_to_le32(inode->i_ino);
->>> +	__u16 crc = 0;
->>> +
->>> +	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
->>> +		EXT4_FEATURE_RO_COMPAT_INODE_CSUM) &&
->>> +	    le16_to_cpu(raw->i_extra_isize) >= 4) {
->> 
->> If this field remains in the large part of the inode, then this check is
->> incorrect.  i_extra_isize is itself only valid if (s_inode_size is >
->> EXT4_GOOD_OLD_INODE_SIZE), otherwise it points at the next inode's i_mode.
->> 
->> Also, instead of hard-coding ">= 4" here, it would be better to use
->> EXT4_FITS_IN_INODE(raw, EXT4_I(inode), i_checksum).  Probably no reason to
->> put "ei" on the stack at all.
+> > --- a/include/linux/mfd/core.h
+> > +++ b/include/linux/mfd/core.h
+> > @@ -86,16 +86,20 @@ extern int mfd_clone_cell(const char *cell, const
+> > char **clones, */
+> >  static inline const struct mfd_cell *mfd_get_cell(struct
+> > platform_device *pdev) {
+> > -	return pdev->dev.platform_data;
+> > +	return pdev->mfd_cell;
+> >  }
+> >  
+> >  /*
+> >   * Given a platform device that's been created by mfd_add_devices(),
+> > fetch
+> >   * the .mfd_data entry from the mfd_cell that created it.
+> > + * Otherwise just return the platform_data pointer.
 > 
-> As always, thank you for the feedback!
+> I'd also suggest describing why we fall back to
+> platform_data; to the casual reader, it would be confusing.  Perhaps
+> something to the effect of, "This maintains compatibility with
+> platform drivers whose devices aren't created by the mfd layer, and
+> expect platform_data to contain what would've otherwise been in
+> mfd_data."
+Right. I'll add that.
+
+ 
+> >   */
+> >  static inline void *mfd_get_data(struct platform_device *pdev)
+> >  {
+> > -	return mfd_get_cell(pdev)->mfd_data;
+> > +	if (pdev->mfd_cell)
+> > +		return mfd_get_cell(pdev)->mfd_data;
+> > +	else
+> > +		return pdev->dev.platform_data;
 > 
-> --D
+> Not much point checking pdev->mfd_cell and then using an abstraction.
+That's right as well. I'll send v1 next with those 2 fixes.
 
+Thanks for the review.
 
-Cheers, Andreas
+Cheers,
+Samuel.
 
-
-
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
