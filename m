@@ -1,338 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab1DHUcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:32:10 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42736 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab1DHUcI (ORCPT
+	id S1757918Ab1DHUho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:37:44 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:35971 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab1DHUhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:32:08 -0400
-From: mathieu.poirier@linaro.org
-To: linux-kernel@vger.kernel.org
-Cc: ohad@wizery.com, mathieu.poirier@linaro.org, lee.jones@linaro.org,
-        patches@linaro.org, linus.walleij@stericsson.com
-Subject: [PATCH] ux500: Adding support for u8500 Hsem functionality.
-Date: Fri,  8 Apr 2011 14:31:53 -0600
-Message-Id: <1302294713-6626-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.7.1
+	Fri, 8 Apr 2011 16:37:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=s3oTiTr2hOFWy6x8Dw4UcsP7s4EL5NWGHWbwDhz2knx5swrtC3C8t3hFX8302tOQ8V
+         2YQwpCXLz6sa7smDjWjw==
+Date: Fri, 8 Apr 2011 13:37:35 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+In-Reply-To: <20110408202253.6D6D231C@kernel>
+Message-ID: <alpine.DEB.2.00.1104081333260.12689@chino.kir.corp.google.com>
+References: <20110408202253.6D6D231C@kernel>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu J. Poirier <mathieu.poirier@linaro.org>
+On Fri, 8 Apr 2011, Dave Hansen wrote:
 
-The driver is folded in the hwspinlock framework and implements
-protocol 1 without interrupts.
+> 
+> This originally started as a simple patch to give vmalloc()
+> some more verbose output on failure on top of the plain
+> page allocator messages.  Johannes suggested that it might
+> be nicer to lead with the vmalloc() info _before_ the page
+> allocator messages.
+> 
+> But, I do think there's a lot of value in what
+> __alloc_pages_slowpath() does with its filtering and so
+> forth.
+> 
+> This patch creates a new function which other allocators
+> can call instead of relying on the internal page allocator
+> warnings.  It also gives this function private rate-limiting
+> which separates it from other printk_ratelimit() users.
+> 
+> ---
+> 
+>  linux-2.6.git-dave/include/linux/mm.h |    2 +
+>  linux-2.6.git-dave/mm/page_alloc.c    |   65 +++++++++++++++++++++++-----------
+>  2 files changed, 46 insertions(+), 21 deletions(-)
+> 
+> diff -puN include/linux/mm.h~break-out-alloc-failure-messages include/linux/mm.h
+> --- linux-2.6.git/include/linux/mm.h~break-out-alloc-failure-messages	2011-04-08 13:07:18.978332687 -0700
+> +++ linux-2.6.git-dave/include/linux/mm.h	2011-04-08 13:07:18.990332675 -0700
+> @@ -1365,6 +1365,8 @@ extern void si_meminfo(struct sysinfo * 
+>  extern void si_meminfo_node(struct sysinfo *val, int nid);
+>  extern int after_bootmem;
+>  
+> +extern void nopage_warning(gfp_t gfp_mask, int order, const char *fmt, ...);
+> +
+>  extern void setup_per_cpu_pageset(void);
+>  
+>  extern void zone_pcp_update(struct zone *zone);
+> diff -puN mm/page_alloc.c~break-out-alloc-failure-messages mm/page_alloc.c
+> --- linux-2.6.git/mm/page_alloc.c~break-out-alloc-failure-messages	2011-04-08 13:07:18.982332683 -0700
+> +++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-08 13:07:18.990332675 -0700
+> @@ -54,6 +54,7 @@
+>  #include <trace/events/kmem.h>
+>  #include <linux/ftrace_event.h>
+>  #include <linux/memcontrol.h>
+> +#include <linux/ratelimit.h>
+>  
+>  #include <asm/tlbflush.h>
+>  #include <asm/div64.h>
+> @@ -1734,6 +1735,48 @@ static inline bool should_suppress_show_
+>  	return ret;
+>  }
+>  
+> +static DEFINE_RATELIMIT_STATE(nopage_rs,
+> +		DEFAULT_RATELIMIT_INTERVAL,
+> +		DEFAULT_RATELIMIT_BURST);
+> +
+> +void nopage_warning(gfp_t gfp_mask, int order, const char *fmt, ...)
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- drivers/hwspinlock/Kconfig      |   23 +++-
- drivers/hwspinlock/Makefile     |    1 +
- drivers/hwspinlock/u8500_hsem.c |  241 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 261 insertions(+), 4 deletions(-)
- create mode 100644 drivers/hwspinlock/u8500_hsem.c
+I suggest a different name for this, something like warn_alloc_failure() 
+or such.
 
-diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
-index 1f29bab..aa62055 100644
---- a/drivers/hwspinlock/Kconfig
-+++ b/drivers/hwspinlock/Kconfig
-@@ -2,10 +2,11 @@
- # Generic HWSPINLOCK framework
- #
- 
--config HWSPINLOCK
--	tristate "Generic Hardware Spinlock framework"
--	depends on ARCH_OMAP4
--	help
-+menuconfig HWSPINLOCK
-+	bool "Generic Hardware Spinlock framework"
-+	depends on ARCH_OMAP4 || ARCH_U8500
-+	default n
-+	---help---
- 	  Say y here to support the generic hardware spinlock framework.
- 	  You only need to enable this if you have hardware spinlock module
- 	  on your system (usually only relevant if your system has remote slave
-@@ -13,6 +14,8 @@ config HWSPINLOCK
- 
- 	  If unsure, say N.
- 
-+if HWSPINLOCK 
-+
- config HWSPINLOCK_OMAP
- 	tristate "OMAP Hardware Spinlock device"
- 	depends on HWSPINLOCK && ARCH_OMAP4
-@@ -21,3 +24,15 @@ config HWSPINLOCK_OMAP
- 	  introduced in OMAP4).
- 
- 	  If unsure, say N.
-+
-+config HSEM_U8500
-+	tristate "STE Hardware Semaphore functionality"
-+	depends on HWSPINLOCK && ARCH_U8500
-+	help
-+	  Say y here to support the STE Hardware Semaphore functionality.  They
-+	  provide a synchronisation mechanism for the various processor on the 
-+	  SoC.
-+
-+	  If unsure, say N.
-+
-+endif # HWSPINLOCK 
-diff --git a/drivers/hwspinlock/Makefile b/drivers/hwspinlock/Makefile
-index 5729a3f..93eb64b 100644
---- a/drivers/hwspinlock/Makefile
-+++ b/drivers/hwspinlock/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_HWSPINLOCK)		+= hwspinlock_core.o
- obj-$(CONFIG_HWSPINLOCK_OMAP)		+= omap_hwspinlock.o
-+obj-$(CONFIG_HSEM_U8500)		+= u8500_hsem.o
-diff --git a/drivers/hwspinlock/u8500_hsem.c b/drivers/hwspinlock/u8500_hsem.c
-new file mode 100644
-index 0000000..3963f2a
---- /dev/null
-+++ b/drivers/hwspinlock/u8500_hsem.c
-@@ -0,0 +1,241 @@
-+/*
-+ * u8500 HWSEM driver
-+ *
-+ * Copyright (C) 2010-2011 ST-Ericsson
-+ *  
-+ * Implements u8500 semaphore handling for protocol 1, no interrupts.
-+ *
-+ * Author: Mathieu Poirier <mathieu.poirier@linaro.org>
-+ * Heavily borrowed from the work of :
-+ *   Simon Que <sque@ti.com>
-+ *   Hddari Kanigeri <h-kanigeri2@ti.com>
-+ *   Ohad Ben-Cohen <ohad@wizery.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/bitops.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/hwspinlock.h>
-+#include <linux/platform_device.h>
-+#include <asm/mach-types.h>
-+
-+#include "hwspinlock_internal.h"
-+
-+#define U8500_MAX_SEMAPHORE		32	/* a total of 32 semaphore */
-+#define RESET_SEMAPHORE			(0)	/* free */
-+
-+/* CPU ID for master running u8500 kernel.
-+ * Hswpinlocks should only be used to synchonise operations
-+ * between the Cortex A9 core and the other CPUs.  Hence 
-+ * forcing the masterID to a preset value.
-+ */
-+#define HSEM_MASTER_ID			0x01		
-+
-+#define HSEM_REGISTER_OFFSET		0x08
-+
-+#define HSEM_CTRL_REG			0x00
-+#define HSEM_ICRALL			0x90
-+#define HSEM_PROTOCOL_1			0x01
-+
-+#define to_u8500_hsem(lock)	\
-+	container_of(lock, struct u8500_hsem, lock)
-+
-+struct u8500_hsem {
-+	struct hwspinlock lock;
-+	void __iomem *addr;
-+};
-+
-+struct u8500_hsem_state {
-+	void __iomem *io_base;		/* Mapped base address */
-+};
-+
-+static int u8500_hsem_trylock(struct hwspinlock *lock)
-+{
-+	struct u8500_hsem *u8500_lock = to_u8500_hsem(lock);
-+
-+	writel(HSEM_MASTER_ID, u8500_lock->addr);
-+
-+	/* get only first 4 bit and compare to masterID.
-+	 * if equal, we have the semaphore, otherwise 
-+	 * someone else has it.
-+	 */
-+	return (HSEM_MASTER_ID == (0x0F & readl(u8500_lock->addr)));
-+}
-+
-+static void u8500_hsem_unlock(struct hwspinlock *lock)
-+{
-+	struct u8500_hsem *u8500_lock = to_u8500_hsem(lock);
-+
-+	/* release the lock by writing 0 to it */
-+	writel(RESET_SEMAPHORE, u8500_lock->addr);
-+}
-+
-+/*
-+ * u8500: what value is recommended here ?
-+ */
-+static void u8500_hsem_relax(struct hwspinlock *lock)
-+{
-+	ndelay(50);
-+}
-+
-+static const struct hwspinlock_ops u8500_hwspinlock_ops = {
-+	.trylock 	= u8500_hsem_trylock,
-+	.unlock 	= u8500_hsem_unlock,
-+	.relax 		= u8500_hsem_relax,
-+};
-+
-+static int __devinit u8500_hsem_probe(struct platform_device *pdev)
-+{
-+
-+	struct u8500_hsem *u8500_lock;
-+	struct u8500_hsem_state *state;
-+	struct hwspinlock *lock;
-+	struct resource *res;
-+	void __iomem *io_base;
-+	int i, ret;
-+	ulong offset, val;
-+
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENODEV;
-+
-+	state = kzalloc(sizeof(*state), GFP_KERNEL);
-+	if (!state)
-+		return -ENOMEM;
-+
-+	io_base = ioremap(res->start, resource_size(res));
-+	if (!io_base) {
-+		ret = -ENOMEM;
-+		goto free_state;
-+	}
-+
-+	/* make sure protocol 1 is selected */
-+	val = readl(io_base + HSEM_CTRL_REG);
-+	writel((val & ~HSEM_PROTOCOL_1), io_base + HSEM_CTRL_REG);	
-+
-+	/* clear all interrupts */
-+	writel(0xFFFF, io_base + HSEM_ICRALL);
-+
-+	state->io_base = io_base;
-+
-+	platform_set_drvdata(pdev, state);
-+
-+	/* no pm needed for HSem but required to comply
-+	 * with hwspilock core.
-+	 */
-+	pm_runtime_enable(&pdev->dev);
-+
-+	offset = HSEM_REGISTER_OFFSET;
-+
-+	for (i = 0; i < U8500_MAX_SEMAPHORE; i++) {
-+		u8500_lock = kzalloc(sizeof(*u8500_lock), GFP_KERNEL);
-+		if (!u8500_lock) {
-+			ret = -ENOMEM;
-+			goto free_locks;
-+		}
-+
-+		u8500_lock->lock.dev = &pdev->dev;
-+		u8500_lock->lock.owner = THIS_MODULE;
-+		u8500_lock->lock.id = i;
-+		u8500_lock->lock.ops = &u8500_hwspinlock_ops;
-+		u8500_lock->addr = io_base + offset + sizeof(u32) * i;
-+
-+		ret = hwspin_lock_register(&u8500_lock->lock);
-+		if (ret) {
-+			kfree(u8500_lock);
-+			goto free_locks;
-+		}
-+	}
-+
-+	return 0;
-+
-+free_locks:
-+	while (--i >= 0) {
-+		lock = hwspin_lock_unregister(i);
-+		/* this should't happen, but let's give our best effort */
-+		if (!lock) {
-+			dev_err(&pdev->dev, "%s: cleanups failed\n", __func__);
-+			continue;
-+		}
-+		u8500_lock = to_u8500_hsem(lock);
-+		kfree(u8500_lock);
-+	}
-+
-+	iounmap(io_base);
-+free_state:
-+	kfree(state);
-+	return ret;
-+}
-+
-+static int u8500_hsem_remove(struct platform_device *pdev)
-+{
-+	struct u8500_hsem_state *state = platform_get_drvdata(pdev);
-+	struct hwspinlock *lock;
-+	struct u8500_hsem *u8500_lock;
-+	void __iomem *io_base;
-+	int i;
-+
-+	io_base = state->io_base;
-+
-+	/* clear all interrupts */
-+	writel(0xFFFF, io_base + HSEM_ICRALL);
-+
-+	for (i = 0; i < U8500_MAX_SEMAPHORE; i++) {
-+		lock = hwspin_lock_unregister(i);
-+		/* this shouldn't happen at this point. if it does, at least
-+		 * don't continue with the remove */
-+		if (!lock) {
-+			dev_err(&pdev->dev, "%s: failed on %d\n", __func__, i);
-+			return -EBUSY;
-+		}
-+
-+		u8500_lock = to_u8500_hsem(lock);
-+		kfree(u8500_lock);
-+	}
-+
-+	iounmap(io_base);
-+	kfree(state);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver u8500_hsem_driver = {
-+	.probe		= u8500_hsem_probe,
-+	.remove		= u8500_hsem_remove,
-+	.driver		= {
-+		.name	= "u8500_hsem",
-+	},
-+};
-+
-+static int __init u8500_hsem_init(void)
-+{
-+	return platform_driver_register(&u8500_hsem_driver);
-+}
-+/* board init code might need to reserve hwspinlocks for predefined purposes */
-+postcore_initcall(u8500_hsem_init);
-+
-+static void __exit u8500_hsem_exit(void)
-+{
-+	platform_driver_unregister(&u8500_hsem_driver);
-+}
-+module_exit(u8500_hsem_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Hardware Semaphore driver for u8500");
-+MODULE_AUTHOR("Mathieu Poirier <mathieu.poirier@linaro.org");
--- 
-1.7.1
+I guess this isn't general enough where it could be used in the oom killer 
+as well?
 
+> +{
+> +	va_list args;
+> +	int r;
+> +	unsigned int filter = SHOW_MEM_FILTER_NODES;
+> +	const gfp_t wait = gfp_mask & __GFP_WAIT;
+> +
+> +	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs))
+> +		return;
+> +
+> +	/*
+> +	 * This documents exceptions given to allocations in certain
+> +	 * contexts that are allowed to allocate outside current's set
+> +	 * of allowed nodes.
+> +	 */
+> +	if (!(gfp_mask & __GFP_NOMEMALLOC))
+> +		if (test_thread_flag(TIF_MEMDIE) ||
+> +		    (current->flags & (PF_MEMALLOC | PF_EXITING)))
+> +			filter &= ~SHOW_MEM_FILTER_NODES;
+> +	if (in_interrupt() || !wait)
+> +		filter &= ~SHOW_MEM_FILTER_NODES;
+> +
+> +	if (fmt) {
+> +		printk(KERN_WARNING);
+> +		va_start(args, fmt);
+> +		r = vprintk(fmt, args);
+> +		va_end(args);
+> +	}
+> +
+> +	printk(KERN_WARNING);
+> +	printk("%s: page allocation failure: order:%d, mode:0x%x\n",
+> +			current->comm, order, gfp_mask);
+
+This shouldn't be here, it should have been printed already.
+
+> +
+> +	dump_stack();
+> +	if (!should_suppress_show_mem())
+> +		show_mem(filter);
+> +}
+> +
+>  static inline int
+>  should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+>  				unsigned long pages_reclaimed)
+> @@ -2176,27 +2219,7 @@ rebalance:
+>  	}
+>  
+>  nopage:
+> -	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
+> -		unsigned int filter = SHOW_MEM_FILTER_NODES;
+> -
+> -		/*
+> -		 * This documents exceptions given to allocations in certain
+> -		 * contexts that are allowed to allocate outside current's set
+> -		 * of allowed nodes.
+> -		 */
+> -		if (!(gfp_mask & __GFP_NOMEMALLOC))
+> -			if (test_thread_flag(TIF_MEMDIE) ||
+> -			    (current->flags & (PF_MEMALLOC | PF_EXITING)))
+> -				filter &= ~SHOW_MEM_FILTER_NODES;
+> -		if (in_interrupt() || !wait)
+> -			filter &= ~SHOW_MEM_FILTER_NODES;
+> -
+> -		pr_warning("%s: page allocation failure. order:%d, mode:0x%x\n",
+> -			current->comm, order, gfp_mask);
+> -		dump_stack();
+> -		if (!should_suppress_show_mem())
+> -			show_mem(filter);
+> -	}
+> +	nopage_warning(gfp_mask, order, NULL);
+>  	return page;
+>  got_pg:
+>  	if (kmemcheck_enabled)
