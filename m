@@ -1,144 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904Ab1DHUXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:23:13 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:52475 "EHLO e7.ny.us.ibm.com"
+	id S1757887Ab1DHU1O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:27:14 -0400
+Received: from mail.aknet.ru ([78.158.192.28]:40468 "EHLO mail.aknet.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757780Ab1DHUW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:22:58 -0400
-Subject: [PATCH 1/2] break out page allocation warning code
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 08 Apr 2011 13:22:53 -0700
-Message-Id: <20110408202253.6D6D231C@kernel>
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757780Ab1DHU1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 16:27:13 -0400
+Message-ID: <4D9F6F6E.6040107@aknet.ru>
+Date: Sat, 09 Apr 2011 00:26:22 +0400
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Bryan Donlan <bdonlan@gmail.com>
+CC: Linux kernel <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+References: <4D6510A3.90905@aknet.ru> <BANLkTinfOKf+aSKy+Rj+2+v42JeGuzzrNg@mail.gmail.com>
+In-Reply-To: <BANLkTinfOKf+aSKy+Rj+2+v42JeGuzzrNg@mail.gmail.com>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-This originally started as a simple patch to give vmalloc()
-some more verbose output on failure on top of the plain
-page allocator messages.  Johannes suggested that it might
-be nicer to lead with the vmalloc() info _before_ the page
-allocator messages.
-
-But, I do think there's a lot of value in what
-__alloc_pages_slowpath() does with its filtering and so
-forth.
-
-This patch creates a new function which other allocators
-can call instead of relying on the internal page allocator
-warnings.  It also gives this function private rate-limiting
-which separates it from other printk_ratelimit() users.
-
----
-
- linux-2.6.git-dave/include/linux/mm.h |    2 +
- linux-2.6.git-dave/mm/page_alloc.c    |   65 +++++++++++++++++++++++-----------
- 2 files changed, 46 insertions(+), 21 deletions(-)
-
-diff -puN include/linux/mm.h~break-out-alloc-failure-messages include/linux/mm.h
---- linux-2.6.git/include/linux/mm.h~break-out-alloc-failure-messages	2011-04-08 13:07:18.978332687 -0700
-+++ linux-2.6.git-dave/include/linux/mm.h	2011-04-08 13:07:18.990332675 -0700
-@@ -1365,6 +1365,8 @@ extern void si_meminfo(struct sysinfo * 
- extern void si_meminfo_node(struct sysinfo *val, int nid);
- extern int after_bootmem;
- 
-+extern void nopage_warning(gfp_t gfp_mask, int order, const char *fmt, ...);
-+
- extern void setup_per_cpu_pageset(void);
- 
- extern void zone_pcp_update(struct zone *zone);
-diff -puN mm/page_alloc.c~break-out-alloc-failure-messages mm/page_alloc.c
---- linux-2.6.git/mm/page_alloc.c~break-out-alloc-failure-messages	2011-04-08 13:07:18.982332683 -0700
-+++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-08 13:07:18.990332675 -0700
-@@ -54,6 +54,7 @@
- #include <trace/events/kmem.h>
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
-+#include <linux/ratelimit.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -1734,6 +1735,48 @@ static inline bool should_suppress_show_
- 	return ret;
- }
- 
-+static DEFINE_RATELIMIT_STATE(nopage_rs,
-+		DEFAULT_RATELIMIT_INTERVAL,
-+		DEFAULT_RATELIMIT_BURST);
-+
-+void nopage_warning(gfp_t gfp_mask, int order, const char *fmt, ...)
-+{
-+	va_list args;
-+	int r;
-+	unsigned int filter = SHOW_MEM_FILTER_NODES;
-+	const gfp_t wait = gfp_mask & __GFP_WAIT;
-+
-+	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs))
-+		return;
-+
-+	/*
-+	 * This documents exceptions given to allocations in certain
-+	 * contexts that are allowed to allocate outside current's set
-+	 * of allowed nodes.
-+	 */
-+	if (!(gfp_mask & __GFP_NOMEMALLOC))
-+		if (test_thread_flag(TIF_MEMDIE) ||
-+		    (current->flags & (PF_MEMALLOC | PF_EXITING)))
-+			filter &= ~SHOW_MEM_FILTER_NODES;
-+	if (in_interrupt() || !wait)
-+		filter &= ~SHOW_MEM_FILTER_NODES;
-+
-+	if (fmt) {
-+		printk(KERN_WARNING);
-+		va_start(args, fmt);
-+		r = vprintk(fmt, args);
-+		va_end(args);
-+	}
-+
-+	printk(KERN_WARNING);
-+	printk("%s: page allocation failure: order:%d, mode:0x%x\n",
-+			current->comm, order, gfp_mask);
-+
-+	dump_stack();
-+	if (!should_suppress_show_mem())
-+		show_mem(filter);
-+}
-+
- static inline int
- should_alloc_retry(gfp_t gfp_mask, unsigned int order,
- 				unsigned long pages_reclaimed)
-@@ -2176,27 +2219,7 @@ rebalance:
- 	}
- 
- nopage:
--	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
--		unsigned int filter = SHOW_MEM_FILTER_NODES;
--
--		/*
--		 * This documents exceptions given to allocations in certain
--		 * contexts that are allowed to allocate outside current's set
--		 * of allowed nodes.
--		 */
--		if (!(gfp_mask & __GFP_NOMEMALLOC))
--			if (test_thread_flag(TIF_MEMDIE) ||
--			    (current->flags & (PF_MEMALLOC | PF_EXITING)))
--				filter &= ~SHOW_MEM_FILTER_NODES;
--		if (in_interrupt() || !wait)
--			filter &= ~SHOW_MEM_FILTER_NODES;
--
--		pr_warning("%s: page allocation failure. order:%d, mode:0x%x\n",
--			current->comm, order, gfp_mask);
--		dump_stack();
--		if (!should_suppress_show_mem())
--			show_mem(filter);
--	}
-+	nopage_warning(gfp_mask, order, NULL);
- 	return page;
- got_pg:
- 	if (kmemcheck_enabled)
-_
+08.04.2011 22:13, Bryan Donlan wrote:
+> I can't comment on the patch itself, but, if your application knows it
+> might have to daemonize after spinning up threads, why not simply
+> fork() immediately on startup, and have the parent simply wait forever
+> for either the child to die or for a daemonize signal from the child?
+> If done early enough it shouldn't tie up too much memory, and it
+> wouldn't require any of these invasive kernel changes. As an added
+> bonus, it's portable to all unixen :)
+Yes, thats almost always true. Except when you deal with
+the vendor-provided poorly-coded drivers and libs, where
+you get the drivers initialized only via the lib. And the
+initialization process must be finished before the boot-up
+can continue, but that's not the whole story: only the
+process that initialized that lib, can then work with it.
+And of course that lib creates a dozen of threads...
+OK, you've got the idea. :)
+But anyway. Yes, not everyone have to deal with such a
+nightmare, this is very rare. But people being confused
+by the fact that daemon() silently loses threads, are not
+rare. So I just wonder: even if the workaround is simple,
+why searching for the workaround at all? If you need
+2 syscalls to detach from parent, and you loose the threads
+in a process, then why not to have a single call, that
+detaches without loosing threads?
+But in any case, I am mostly inclinced to leave that patch
+for my project only.
