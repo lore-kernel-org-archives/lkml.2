@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab1DHSku (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 14:40:50 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:9939 "EHLO mx2.netapp.com"
+	id S1757342Ab1DHSqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 14:46:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58820 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752946Ab1DHSkt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 14:40:49 -0400
-X-IronPort-AV: E=Sophos;i="4.63,325,1299484800"; 
-   d="scan'208";a="540080410"
-Subject: [GIT PULL] please pull NFS client bugfixes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Fri, 08 Apr 2011 11:40:47 -0700
-Message-ID: <1302288047.15735.1.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 08 Apr 2011 18:40:49.0098 (UTC) FILETIME=[7ADC82A0:01CBF61C]
+	id S1753067Ab1DHSqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 14:46:18 -0400
+Message-ID: <4D9F57CE.1080903@zytor.com>
+Date: Fri, 08 Apr 2011 11:45:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: tip: New "Link:" tag to replace "LKML-Reference:"
+References: <4D9CE4AE.4090303@zytor.com> <BANLkTinT=UoVCwwEcpfPvCCL-e-Zh0r1qw@mail.gmail.com>
+In-Reply-To: <BANLkTinT=UoVCwwEcpfPvCCL-e-Zh0r1qw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/08/2011 07:36 AM, Bjorn Helgaas wrote:
+> On Wed, Apr 6, 2011 at 4:09 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Hi all,
+>>
+>> At Linus' request, I have modified the tip-bot to recognize a new form
+>> of email archive references, which should work as clickable links.
+>> Instead of:
+>>
+>> LKML-Reference: <message-id>
+>>
+>> use, instead:
+>>
+>> Link: http://lkml.kernel.org/r/message-id
+> 
+> Really cool idea.  I assume you'll mention this in
+> Documentation/SubmittingPatches or somewhere similar.
+> 
 
-Please pull from the "bugfixes" branch of the repository at
+Well, it is better done by the committers rather than the patch
+submitters, so it's mostly an issue for people using git as opposed to
+submitting patches by email.
 
-   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
-
-This will update the following files through the appended changesets.
-
-  Cheers,
-    Trond
-
-----
- fs/nfs/namespace.c                  |   58 +++++++++++++++--------------------
- fs/nfs/nfs4proc.c                   |    4 +--
- net/sunrpc/auth_gss/gss_krb5_mech.c |    2 +-
- 3 files changed, 27 insertions(+), 37 deletions(-)
-
-commit 37adb89fadd65ce47f7e5cfd564938a76b351948
-Author: Bryan Schumaker <bjschuma@netapp.com>
-Date:   Thu Apr 7 16:02:20 2011 -0400
-
-    NFS: Change initial mount authflavor only when server returns NFS4ERR_WRONGSEC
-    
-    When attempting an initial mount, we should only attempt other
-    authflavors if AUTH_UNIX receives a NFS4ERR_WRONGSEC error.
-    This allows other errors to be passed back to userspace programs.
-    
-    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 418875900e3de4831c84f86ae4756690dac5be77
-Author: Bryan Schumaker <bjschuma@netapp.com>
-Date:   Wed Apr 6 14:33:28 2011 -0400
-
-    NFS: Fix a signed vs. unsigned secinfo bug
-    
-    rpc_authflavor_t is cast from an unsigned int, but the
-    initial code tried to use it as a signed int.  I fix
-    this by passing an rpc_authflavor_t pointer around, and
-    returning signed integers from functions.
-    
-    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-    Reported-by: Dan Carpenter <error27@gmail.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 0867659fa3c245bf203d837a82e0f6ea5079c2c5
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed Apr 6 10:13:32 2011 -0700
-
-    Revert "net/sunrpc: Use static const char arrays"
-    
-    This reverts commit 411b5e05617593efebc06241dbc56f42150f2abe.
-    
-    Olga Kornievskaia reports:
-    
-    Problem: linux client mounting linux server using rc4-hmac-md5
-    enctype. gssd fails with create a context after receiving a reply from
-    the server.
-    
-    Diagnose: putting printout statements in the server kernel and
-    kerberos libraries revealed that client and server derived different
-    integrity keys.
-    
-    Server kernel code was at fault due the the commit
-    
-    [aglo@skydive linux-pnfs]$ git show 411b5e05617593efebc06241dbc56f42150f2abe
-    
-    Trond: The problem is that since it relies on virt_to_page(), you cannot
-    call sg_set_buf() for data in the const section.
-    
-    Reported-by: Olga Kornievskaia <aglo@citi.umich.edu>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@kernel.org	[2.6.36+]
-
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+	-hpa
 
