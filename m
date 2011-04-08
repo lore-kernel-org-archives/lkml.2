@@ -1,110 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab1DHUwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:52:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63814 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab1DHUwq (ORCPT
+	id S1757952Ab1DHUzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:55:51 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57857 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401Ab1DHUzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:52:46 -0400
+	Fri, 8 Apr 2011 16:55:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=u9BVisorGu9SgU1o3VYT9pdnqer0iY+DMDn7FsxLOUhvKOoBk/EYC5gPPzui2hT7Vj
-         /6XOigRiu6J0PZXrEfH29dneOcfeTFHGfAaBL0OTqOa1cNH2CobTqsoRH+kBLbY/bAjQ
-         UkqoWuJne1FHaaLM/DR4qc6z+JZ66u/uYIttE=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=krzwTH/2DaphuYOV19vuyScydrqOySjz2C8eBOLJ0mZFc3tExJGeWBiASek2SwGvlv
+         8b8y7NlNkVKXd2jblzhNWZzeogUj/u2lt8UQ7vVKP1jUjk+TSf1MheeONtj0PtpqWJBh
+         0VchSP0YHi5/HqejwzkcB86+OHpnkVln5mbDQ=
+Date: Fri, 8 Apr 2011 13:57:20 -0700
+From: "Carlos R. Mafra" <crmafra@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Removal of staging/rt2860sta (and rt2870sta)
+Message-ID: <20110408205720.GA16065@Pilar.site>
+References: <4D9F2185.10108@lwfinger.net>
 MIME-Version: 1.0
-In-Reply-To: <4D9F6F6E.6040107@aknet.ru>
-References: <4D6510A3.90905@aknet.ru> <BANLkTinfOKf+aSKy+Rj+2+v42JeGuzzrNg@mail.gmail.com>
- <4D9F6F6E.6040107@aknet.ru>
-From: Bryan Donlan <bdonlan@gmail.com>
-Date: Fri, 8 Apr 2011 16:52:05 -0400
-Message-ID: <BANLkTimbB4rhbdTy07DuneSf=SydGYvbBA@mail.gmail.com>
-Subject: Re: [path][rfc] add PR_DETACH prctl command
-To: Stas Sergeev <stsp@aknet.ru>
-Cc: Linux kernel <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=KOI8-R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D9F2185.10108@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/8 Stas Sergeev <stsp@aknet.ru>:
-> 08.04.2011 22:13, Bryan Donlan wrote:
->>
->> I can't comment on the patch itself, but, if your application knows it
->> might have to daemonize after spinning up threads, why not simply
->> fork() immediately on startup, and have the parent simply wait forever
->> for either the child to die or for a daemonize signal from the child?
->> If done early enough it shouldn't tie up too much memory, and it
->> wouldn't require any of these invasive kernel changes. As an added
->> bonus, it's portable to all unixen :)
->
-> Yes, thats almost always true. Except when you deal with
-> the vendor-provided poorly-coded drivers and libs, where
-> you get the drivers initialized only via the lib. And the
-> initialization process must be finished before the boot-up
-> can continue, but that's not the whole story: only the
-> process that initialized that lib, can then work with it.
-> And of course that lib creates a dozen of threads...
-> OK, you've got the idea. :)
+On Fri,  8 Apr 2011 at  9:53:57 -0500, Larry Finger wrote:
+> 
+> I did the changes on my local git tree, committed them, and used
+> 'git format-patch'. I expected that 'git rm' statements would be
+> used to delete the files, but I got normal patch format. As a
+> result, the resulting patch is over 2.4 GB, and has over 75,000
+> lines. Obviously, I'm reluctant to dump a patch of this size on the
+> lists. Is there a way to force git to use "rm" statements, or is
+> there some way to handle this large patch?
 
-Still, you can workaround this by either:
-a) Load the vendor library via dlopen()
-b) Use a separate launcher executable to handle the fork-and-wait
+I've just remembered about this patch in the git list, which I think
+does what you want:
 
-Either of these approaches are far simpler than patching the kernel,
-more portable, and much, much easier to get right. In fact, here's a
-quick and dirty implementation of the latter:
+http://thread.gmane.org/gmane.comp.version-control.git/170537/focus=170581
 
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
-void sigusr1_handler(int unused)
-{
-        (void)unused;
-
-        _exit(0);
-}
-
-int main(int argc, char **argv)
-{
-        int waitstatus;
-        pid_t child, parent = getpid();
-
-        (void)argc;
-
-        signal(SIGUSR1, sigusr1_handler);
-
-        child = fork();
-        if (child < 0) {
-                perror("Fork failed");
-                return EXIT_FAILURE;
-        }
-        if (child == 0) {
-                char envbuf[20];
-                sprintf(envbuf, "%d", (int)parent);
-                setenv("LAUNCHER_PID", envbuf, 1);
-
-                execvp(argv[1], &argv[1]);
-                perror("Launching child failed");
-                _exit(EXIT_FAILURE);
-        }
-
-        wait(&waitstatus);
-
-        if (WIFEXITED(waitstatus))
-                _exit(WEXITSTATUS(waitstatus));
-
-        _exit(256);
-}
-
-Just kill(atoi(getenv("LAUNCHER_PID")), SIGUSR1) to detach. Much
-easier than doing some very racy things in the kernel, no? It's
-certainly more obvious that this ought to be correct in the face of
-races with its parent :)
