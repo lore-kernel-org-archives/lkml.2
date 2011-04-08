@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab1DHI1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 04:27:20 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:55472 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab1DHI1S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 04:27:18 -0400
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-From: Pekka Enberg <penberg@kernel.org>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
-        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        aarcange@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-        joro@8bytes.org, asias.hejun@gmail.com, gorcunov@gmail.com
-In-Reply-To: <4D9EBBC3.2040803@siemens.com>
-References: <1301592656.586.15.camel@jaguar>	<4D982E89.8070502@redhat.com>
-	 <BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com>
-	 <4D9847BC.9060906@redhat.com>	<4D98716D.9040307@codemonkey.ws>
-	 <4D9873CD.3080207@redhat.com>	<20110406093333.GB6465@elte.hu>
-	 <4D9E6F6E.9050709@codemonkey.ws>
-	 <BANLkTimEwAuL4PM9vBfogkrua-Z44AZQvg@mail.gmail.com>
-	 <4D9EBBC3.2040803@siemens.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 08 Apr 2011 11:27:16 +0300
-Message-ID: <1302251236.27918.31.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752968Ab1DHI2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 04:28:36 -0400
+Received: from mx1.orcon.net.nz ([219.88.242.51]:39940 "EHLO mx1.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751568Ab1DHI2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 04:28:34 -0400
+Message-ID: <4D9EC730.2090105@orcon.net.nz>
+Date: Fri, 08 Apr 2011 20:28:32 +1200
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Linux 2.6.39-rc2 doesn't boot on alpha.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx1.orcon.net.nz on Fri, 08 Apr 2011 20:28:33 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Fri Apr  8 20:28:33 2011
+X-DSPAM-Confidence: 0.5682
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+[Resent with correction to linux-alpha email list]
 
-On Fri, 2011-04-08 at 09:39 +0200, Jan Kiszka wrote:
-> I agree that it's easy to change 2kSomething LOC for this. But if you
-> now wait too long designing in essential features like SMP, a scalable
-> execution model, and - very important - portability (*), it can get
-> fairly painful to fix such architectural deficits later on. How long did
-> it take for Linux to overcome the BKL? QEMU is in the same unfortunate
-> position.
+Linux 2.6.39-rc[12] doesn't boot at all on Alpha.  As soon as the kernel 
+has loaded the system freezes.
 
-Yup, and we're taking your feedback seriously (and are thankful for
-it!). We're hoping to look at SMP in the near future - help is
-appreciated!
+Bisection gave the following as the first bad commit:
 
-			Pekka
+commit 091738a266fc74329ae186f22ff2b3f01319112d genirq: Remove real old 
+transition functions
 
+If I reverse (as far as possible) the second half of the commit (the bit 
+that applies to kernel/irq/chip.c) from 2.6.39-rc2 then I get a kernel 
+that starts booting but freezes when it prints "Calibrating delay loop..."
+
+Cheers
+Michael.
