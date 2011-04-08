@@ -1,59 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1DHImn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 04:42:43 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40924 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab1DHImm (ORCPT
+	id S1753039Ab1DHI6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 04:58:30 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:14799 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab1DHI62 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 04:42:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Subject: Re: [PATCH] mm: Check we have the right vma in __access_remote_vm()
-Cc: kosaki.motohiro@jp.fujitsu.com, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <hughd@google.com>, <walken@google.com>,
-        <aarcange@redhat.com>, <riel@redhat.com>,
-        Andrew Morton <akpm@osdl.org>, <linuxppc-dev@ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-In-Reply-To: <10e5cbf67c850b6ae511979bdbad1761236ad9b0.1302247435.git.michael@ellerman.id.au>
-References: <10e5cbf67c850b6ae511979bdbad1761236ad9b0.1302247435.git.michael@ellerman.id.au>
-Message-Id: <20110408174244.9B6F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Fri,  8 Apr 2011 17:42:36 +0900 (JST)
+	Fri, 8 Apr 2011 04:58:28 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=dyVpuHYQJROgCHwBBw1H+I+7e1rgZIKdHwrI0HSbuo4= c=1 sm=1
+ a=sPSRf2qYkfMA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VnNF1IyMAAAA:8 a=cv6odLPkZ6NlpwAGq3QA:9
+ a=P1NJ5w1ZGeDNcaRucg0A:7 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 1/2] ext4: Calculate and verify inode checksums
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20110406224547.GT32706@tux1.beaverton.ibm.com>
+Date: Fri, 8 Apr 2011 02:58:27 -0600
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <86716762-8041-4209-961C-5C0BAB139C5B@dilger.ca>
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <20110406224547.GT32706@tux1.beaverton.ibm.com>
+To: djwong@us.ibm.com
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In __access_remote_vm() we need to check that we have found the right
-> vma, not the following vma, before we try to access it. Otherwise we
-> might call the vma's access routine with an address which does not
-> fall inside the vma.
+On 2011-04-06, at 4:45 PM, Darrick J. Wong wrote:
+> This patch introduces to ext4 the ability to calculate and verify inode
+> checksums.  This requires the use of a new ro compatibility flag and some
+> accompanying e2fsprogs patches to provide the relevant features in tune2fs and
+> e2fsck.
 > 
-> Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 > ---
->  mm/memory.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 9da8cab..ce999ca 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3678,7 +3678,7 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
->  			 */
->  #ifdef CONFIG_HAVE_IOREMAP_PROT
->  			vma = find_vma(mm, addr);
-> -			if (!vma)
-> +			if (!vma || vma->vm_start > addr)
->  				break;
->  			if (vma->vm_ops && vma->vm_ops->access)
->  				ret = vma->vm_ops->access(vma, addr, buf,
+> fs/ext4/ext4.h  |    6 ++++--
+> fs/ext4/inode.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+> 2 files changed, 55 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 4daaf2b..8815928 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -617,7 +617,7 @@ struct ext4_inode {
+> 		} masix2;
+> 	} osd2;				/* OS dependent 2 */
+> 	__le16	i_extra_isize;
+> -	__le16	i_pad1;
+> +	__le16  i_checksum;		/* crc16(sb_uuid+inodenum+inode) */
 
-Looks good to me.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+In previous discussions, we thought about using part/all of the l_i_reserved2 field to store the inode checksum.  The inode checksum is important enough to warrant a field in the core inode, so that it also works on upgraded filesystems.
+
+> +static __le16 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw)
+> +{
+> +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> +	struct ext4_inode_info *ei = EXT4_I(inode);
+> +	int offset = offsetof(struct ext4_inode, i_checksum);
+> +	__le32 inum = cpu_to_le32(inode->i_ino);
+> +	__u16 crc = 0;
+> +
+> +	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> +		EXT4_FEATURE_RO_COMPAT_INODE_CSUM) &&
+> +	    le16_to_cpu(raw->i_extra_isize) >= 4) {
+
+If this field remains in the large part of the inode, then this check is incorrect.  i_extra_isize is itself only valid if (s_inode_size is > EXT4_GOOD_OLD_INODE_SIZE), otherwise it points at the next inode's i_mode.
+
+Also, instead of hard-coding ">= 4" here, it would be better to use EXT4_FITS_IN_INODE(raw, EXT4_I(inode), i_checksum).  Probably no reason to put "ei" on the stack at all.
+
+> +		crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
+> +		crc = crc16(crc, (__u8 *)&inum, sizeof(inum));
+> +		crc = crc16(crc, (__u8 *)raw, offset);
+> +		offset += sizeof(raw->i_checksum); /* skip checksum */
+> +		/* for checksum of struct ext4_inode do the rest...*/
+> +		if (ei->i_extra_isize > 4)
+> +			crc = crc16(crc, (__u8 *)raw + offset,
+> +				    ei->i_extra_isize - 4);
+
+
+> +	}
+> +
+> +	return cpu_to_le16(crc);
+> +}
+> +
+> +static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw)
+> +{
+> +	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> +		EXT4_FEATURE_RO_COMPAT_INODE_CSUM) &&
+> +	    (raw->i_checksum != ext4_inode_csum(inode, raw)))
+> +		return 0;
+> +
+> +	return 1;
+> +}
+> +
+> static inline int ext4_begin_ordered_truncate(struct inode *inode,
+> 					      loff_t new_size)
+> {
+> @@ -4802,7 +4837,8 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+> 	struct ext4_inode *raw_inode;
+> 	struct ext4_inode_info *ei;
+> 	struct inode *inode;
+> -	journal_t *journal = EXT4_SB(sb)->s_journal;
+> +	struct ext4_sb_info *sbi = EXT4_SB(sb);
+> +	journal_t *journal = sbi->s_journal;
+> 	long ret;
+> 	int block;
+> 
+> @@ -4916,6 +4952,14 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+> 	} else
+> 		ei->i_extra_isize = 0;
+> 
+> +	if (!ext4_inode_csum_verify(inode, raw_inode)) {
+> +		EXT4_ERROR_INODE(inode, "checksum invalid (%u != %u)",
+> +		       le16_to_cpu(ext4_inode_csum(inode, raw_inode)),
+> +		       le16_to_cpu(raw_inode->i_checksum));
+> +		ret = -EIO;
+> +		goto bad_inode;
+> +	}
+> +
+> 	EXT4_INODE_GET_XTIME(i_ctime, inode, raw_inode);
+> 	EXT4_INODE_GET_XTIME(i_mtime, inode, raw_inode);
+> 	EXT4_INODE_GET_XTIME(i_atime, inode, raw_inode);
+> @@ -5138,6 +5182,12 @@ static int ext4_do_update_inode(handle_t *handle,
+> 			raw_inode->i_version_hi =
+> 			cpu_to_le32(inode->i_version >> 32);
+> 		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
+> +
+> +		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> +			EXT4_FEATURE_RO_COMPAT_INODE_CSUM) &&
+> +		    EXT4_FITS_IN_INODE(raw_inode, ei, i_checksum))
+> +			raw_inode->i_checksum =
+> +				ext4_inode_csum(inode, raw_inode);
+> 	}
+> 
+> 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
+
+
+Cheers, Andreas
+
+
 
 
 
