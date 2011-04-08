@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab1DHPBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 11:01:21 -0400
-Received: from static.customer-201-144-247-84.uninet-ide.com.mx ([201.144.247.84]:37449
-	"EHLO mail.fidena.gob.mx" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1757204Ab1DHPBU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 11:01:20 -0400
-X-Greylist: delayed 736 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Apr 2011 11:01:20 EDT
-Date: Fri, 8 Apr 2011 09:50:26 -0500 (CDT)
-From: "ronaldfinson_01@yahoo.co.jp" <juridico@fidena.gob.mx>
-Reply-To: "ronaldfinson_01@yahoo.co.jp" <ronaldfinson_01@yahoo.co.jp>
-Message-ID: <969254218.22015.1302274226385.JavaMail.root@mail.fidena.gob.mx>
-Subject: MONEY TRANSFER REFERENCE:66-097-334
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.220.69.132]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - SAF3 (Win)/6.0.9_GA_2686)
-To: undisclosed-recipients:;
+	id S1757433Ab1DHPCV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 11:02:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58296 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757204Ab1DHPCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 11:02:20 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: mjg@redhat.com
+Cc: gregkh@suse.de, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Fix up samsung-laptop.c duplication
+Date: Fri,  8 Apr 2011 17:02:02 +0200
+Message-Id: <1302274926-25985-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+The samsung-laptop.c driver got merged into drivers/platform/x86/, but a
+copy also stayed in drivers/staging and further fixes got applied there.
+A parallel build decides randomly which version to link into
+samsung-laptop.ko, so this cannot work even if it was intentional. This
+series applies the missing patches to drivers/platform/x86/ and deletes
+the old version.
 
-MONEY GRAM CUSTOMER CARE
-21st Floor, Jalan Kampar, Plaza Permata,
-50400, Kuala Lumpur, Wilayah Persekutuan
-MOBILE:+6016-3544-376
+Michal
 
-The G-20 Group in relationship with HSBC London has concluded that
-our working partner (Money Gram Malaysia) has helped us to send your
-first instalmental payment of US$5,000 as instructed by the Group of
-Twenty (G-20) in conjuction with the Malaysia government and will keep
-sending you $5000 twice a week until the full payment of (US$820,000 )
-is fully remitted to you.
+Alberto Mardegan (1):
+  samsung-laptop: Samsung R410P backlight driver
 
-Here is the informations of the $5000.00 your first payout
+Greg Kroah-Hartman (1):
+  samsung-laptop: add support for N230 model
 
-MONEY TRANSFER REFERENCE:66-097-334
-SENDER'S NAME: kelly Pedersen
-AMOUNT: US$5000
+Michal Marek (2):
+  samsung-laptop: set backlight type
+  staging: samsung-laptop has moved to platform/x86
 
-To track your funds, You are to forward your name to our money gram agent
-(Mr Ronald Finson) via email:ronaldfinson_01@yahoo.co.jp
+ drivers/platform/x86/samsung-laptop.c           |   17 +-
+ drivers/staging/Makefile                        |    1 -
+ drivers/staging/samsung-laptop/Kconfig          |   10 -
+ drivers/staging/samsung-laptop/Makefile         |    1 -
+ drivers/staging/samsung-laptop/TODO             |    5 -
+ drivers/staging/samsung-laptop/samsung-laptop.c |  843 -----------------------
+ 6 files changed, 14 insertions(+), 863 deletions(-)
+ delete mode 100644 drivers/staging/samsung-laptop/Kconfig
+ delete mode 100644 drivers/staging/samsung-laptop/Makefile
+ delete mode 100644 drivers/staging/samsung-laptop/TODO
+ delete mode 100644 drivers/staging/samsung-laptop/samsung-laptop.c
 
-Your Name __________________________
-Phone number _______________________
-
-
-Best Regards,
-Dr Ronald Finson
-Money Gram Malaysia.
+-- 
+1.7.4.1
 
