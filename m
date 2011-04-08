@@ -1,197 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab1DHISf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 04:18:35 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:5148
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750896Ab1DHIRT (ORCPT
+	id S1751979Ab1DHIXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 04:23:00 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:36458 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab1DHIW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 04:17:19 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJBR0R-01-AHL-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/5] PCI: Move ATS declarations in seperate header file
-Date: Fri, 8 Apr 2011 10:17:06 +0200
-Message-ID: <1302250630-8183-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1302250630-8183-1-git-send-email-joerg.roedel@amd.com>
-References: <1302250630-8183-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Fri, 8 Apr 2011 04:22:57 -0400
+Date: Fri, 8 Apr 2011 10:22:49 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 2.6.39-rc2
+Message-ID: <20110408102249.13a916a6@mschwide.boeblingen.de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the relevant declarations from the local
-header file in drivers/pci to a more accessible locations so
-that it can be used by the AMD IOMMU driver too.
-The file is named pci-ats-pri.h because support for the PCI
-PRI capability will also be added there in a later
-patch-set.
+Hi Linus,
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/pci/intel-iommu.c |    1 +
- drivers/pci/iov.c         |    1 +
- drivers/pci/pci.h         |   37 --------------------------------
- include/linux/pci-ats.h   |   52 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 54 insertions(+), 37 deletions(-)
- create mode 100644 include/linux/pci-ats.h
+please pull from 'for-linus' branch of
 
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 7da3bef..fdb2cef 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -39,6 +39,7 @@
- #include <linux/syscore_ops.h>
- #include <linux/tboot.h>
- #include <linux/dmi.h>
-+#include <linux/pci-ats.h>
- #include <asm/cacheflush.h>
- #include <asm/iommu.h>
- #include "pci.h"
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 553d8ee..42fae47 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -13,6 +13,7 @@
- #include <linux/mutex.h>
- #include <linux/string.h>
- #include <linux/delay.h>
-+#include <linux/pci-ats.h>
- #include "pci.h"
+	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
+
+to receive the following updates:
+
+Jan Glauber (1):
+      [S390] oprofile s390: prevent stack corruption
+
+Martin Schwidefsky (1):
+      [S390] compile fix for latest binutils
+
+Michael Holzheu (1):
+      [S390] Fix parameter passing for smp_switch_to_cpu()
+
+Peter Oberparleiter (1):
+      [S390] cio: prevent purging of CCW devices in the online state
+
+Sebastian Ott (1):
+      [S390] qdio: fix init sequence
+
+ arch/s390/kernel/head.S         |    2 +-
+ arch/s390/kernel/switch_cpu.S   |    4 +++-
+ arch/s390/kernel/switch_cpu64.S |    4 +++-
+ arch/s390/oprofile/hwsampler.c  |    6 +-----
+ drivers/s390/cio/device.c       |   24 ++++++++++++++++++------
+ drivers/s390/cio/qdio_main.c    |   16 ++++++++--------
+ 6 files changed, 34 insertions(+), 22 deletions(-)
+
+diff --git a/arch/s390/kernel/head.S b/arch/s390/kernel/head.S
+index 7061398..fb317bf 100644
+--- a/arch/s390/kernel/head.S
++++ b/arch/s390/kernel/head.S
+@@ -460,7 +460,7 @@ startup:
+ #ifndef CONFIG_MARCH_G5
+ 	# check capabilities against MARCH_{G5,Z900,Z990,Z9_109,Z10}
+ 	xc	__LC_STFL_FAC_LIST(8),__LC_STFL_FAC_LIST
+-	stfl	__LC_STFL_FAC_LIST	# store facility list
++	.insn	s,0xb2b10000,__LC_STFL_FAC_LIST	# store facility list
+ 	tm	__LC_STFL_FAC_LIST,0x01	# stfle available ?
+ 	jz	0f
+ 	la	%r0,0
+diff --git a/arch/s390/kernel/switch_cpu.S b/arch/s390/kernel/switch_cpu.S
+index 469f11b..20530dd 100644
+--- a/arch/s390/kernel/switch_cpu.S
++++ b/arch/s390/kernel/switch_cpu.S
+@@ -46,7 +46,9 @@ smp_restart_cpu:
+ 	ltr	%r4,%r4			/* New stack ? */
+ 	jz	1f
+ 	lr	%r15,%r4
+-1:	basr	%r14,%r2
++1:	lr	%r14,%r2		/* r14: Function to call */
++	lr	%r2,%r3			/* r2 : Parameter for function*/
++	basr	%r14,%r14		/* Call function */
  
- #define VIRTFN_ID_LEN	16
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index a6ec200..4020025 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -250,15 +250,6 @@ struct pci_sriov {
- 	u8 __iomem *mstate;	/* VF Migration State Array */
- };
+ .gprregs_addr:
+ 	.long	.gprregs
+diff --git a/arch/s390/kernel/switch_cpu64.S b/arch/s390/kernel/switch_cpu64.S
+index d94aacc..5be3f43 100644
+--- a/arch/s390/kernel/switch_cpu64.S
++++ b/arch/s390/kernel/switch_cpu64.S
+@@ -42,7 +42,9 @@ smp_restart_cpu:
+ 	ltgr	%r4,%r4			/* New stack ? */
+ 	jz	1f
+ 	lgr	%r15,%r4
+-1:	basr	%r14,%r2
++1:	lgr	%r14,%r2		/* r14: Function to call */
++	lgr	%r2,%r3			/* r2 : Parameter for function*/
++	basr	%r14,%r14		/* Call function */
  
--/* Address Translation Service */
--struct pci_ats {
--	int pos;	/* capability position */
--	int stu;	/* Smallest Translation Unit */
--	int qdep;	/* Invalidate Queue Depth */
--	int ref_cnt;	/* Physical Function reference count */
--	unsigned int is_enabled:1;	/* Enable bit is set */
--};
--
- #ifdef CONFIG_PCI_IOV
- extern int pci_iov_init(struct pci_dev *dev);
- extern void pci_iov_release(struct pci_dev *dev);
-@@ -269,19 +260,6 @@ extern resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev,
- extern void pci_restore_iov_state(struct pci_dev *dev);
- extern int pci_iov_bus_range(struct pci_bus *bus);
+ 	.section .data,"aw",@progbits
+ .gprregs:
+diff --git a/arch/s390/oprofile/hwsampler.c b/arch/s390/oprofile/hwsampler.c
+index 3d48f4d..4952872 100644
+--- a/arch/s390/oprofile/hwsampler.c
++++ b/arch/s390/oprofile/hwsampler.c
+@@ -517,12 +517,8 @@ stop_exit:
  
--extern int pci_enable_ats(struct pci_dev *dev, int ps);
--extern void pci_disable_ats(struct pci_dev *dev);
--extern int pci_ats_queue_depth(struct pci_dev *dev);
--/**
-- * pci_ats_enabled - query the ATS status
-- * @dev: the PCI device
-- *
-- * Returns 1 if ATS capability is enabled, or 0 if not.
-- */
--static inline int pci_ats_enabled(struct pci_dev *dev)
--{
--	return dev->ats && dev->ats->is_enabled;
--}
- #else
- static inline int pci_iov_init(struct pci_dev *dev)
+ static int check_hardware_prerequisites(void)
  {
-@@ -304,21 +282,6 @@ static inline int pci_iov_bus_range(struct pci_bus *bus)
+-	unsigned long long facility_bits[2];
+-
+-	memcpy(facility_bits, S390_lowcore.stfle_fac_list, 32);
+-	if (!(facility_bits[1] & (1ULL << 59)))
++	if (!test_facility(68))
+ 		return -EOPNOTSUPP;
+-
  	return 0;
  }
+ /*
+diff --git a/drivers/s390/cio/device.c b/drivers/s390/cio/device.c
+index df14c51..8e04c00 100644
+--- a/drivers/s390/cio/device.c
++++ b/drivers/s390/cio/device.c
+@@ -541,15 +541,24 @@ static ssize_t online_store (struct device *dev, struct device_attribute *attr,
+ 	int force, ret;
+ 	unsigned long i;
  
--static inline int pci_enable_ats(struct pci_dev *dev, int ps)
--{
--	return -ENODEV;
--}
--static inline void pci_disable_ats(struct pci_dev *dev)
--{
--}
--static inline int pci_ats_queue_depth(struct pci_dev *dev)
--{
--	return -ENODEV;
--}
--static inline int pci_ats_enabled(struct pci_dev *dev)
--{
--	return 0;
--}
- #endif /* CONFIG_PCI_IOV */
+-	if (!dev_fsm_final_state(cdev) &&
+-	    cdev->private->state != DEV_STATE_DISCONNECTED)
+-		return -EAGAIN;
++	/* Prevent conflict between multiple on-/offline processing requests. */
+ 	if (atomic_cmpxchg(&cdev->private->onoff, 0, 1) != 0)
+ 		return -EAGAIN;
++	/* Prevent conflict between internal I/Os and on-/offline processing. */
++	if (!dev_fsm_final_state(cdev) &&
++	    cdev->private->state != DEV_STATE_DISCONNECTED) {
++		ret = -EAGAIN;
++		goto out_onoff;
++	}
++	/* Prevent conflict between pending work and on-/offline processing.*/
++	if (work_pending(&cdev->private->todo_work)) {
++		ret = -EAGAIN;
++		goto out_onoff;
++	}
  
- static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
-diff --git a/include/linux/pci-ats.h b/include/linux/pci-ats.h
-new file mode 100644
-index 0000000..655824f
---- /dev/null
-+++ b/include/linux/pci-ats.h
-@@ -0,0 +1,52 @@
-+#ifndef LINUX_PCI_ATS_H
-+#define LINUX_PCI_ATS_H
-+
-+/* Address Translation Service */
-+struct pci_ats {
-+	int pos;        /* capability position */
-+	int stu;        /* Smallest Translation Unit */
-+	int qdep;       /* Invalidate Queue Depth */
-+	int ref_cnt;    /* Physical Function reference count */
-+	unsigned int is_enabled:1;      /* Enable bit is set */
-+};
-+
-+#ifdef CONFIG_PCI_IOV
-+
-+extern int pci_enable_ats(struct pci_dev *dev, int ps);
-+extern void pci_disable_ats(struct pci_dev *dev);
-+extern int pci_ats_queue_depth(struct pci_dev *dev);
-+/**
-+ * pci_ats_enabled - query the ATS status
-+ * @dev: the PCI device
-+ *
-+ * Returns 1 if ATS capability is enabled, or 0 if not.
-+ */
-+static inline int pci_ats_enabled(struct pci_dev *dev)
-+{
-+	return dev->ats && dev->ats->is_enabled;
-+}
-+
-+#else /* CONFIG_PCI_IOV */
-+
-+static inline int pci_enable_ats(struct pci_dev *dev, int ps)
-+{
-+	return -ENODEV;
-+}
-+
-+static inline void pci_disable_ats(struct pci_dev *dev)
-+{
-+}
-+
-+static inline int pci_ats_queue_depth(struct pci_dev *dev)
-+{
-+	return -ENODEV;
-+}
-+
-+static inline int pci_ats_enabled(struct pci_dev *dev)
-+{
-+	return 0;
-+}
-+
-+#endif /* CONFIG_PCI_IOV */
-+
-+#endif /* LINUX_PCI_ATS_H*/
--- 
-1.7.1
-
-
+ 	if (cdev->drv && !try_module_get(cdev->drv->driver.owner)) {
+-		atomic_set(&cdev->private->onoff, 0);
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto out_onoff;
+ 	}
+ 	if (!strncmp(buf, "force\n", count)) {
+ 		force = 1;
+@@ -574,6 +583,7 @@ static ssize_t online_store (struct device *dev, struct device_attribute *attr,
+ out:
+ 	if (cdev->drv)
+ 		module_put(cdev->drv->driver.owner);
++out_onoff:
+ 	atomic_set(&cdev->private->onoff, 0);
+ 	return (ret < 0) ? ret : count;
+ }
+@@ -1311,10 +1321,12 @@ static int purge_fn(struct device *dev, void *data)
+ 
+ 	spin_lock_irq(cdev->ccwlock);
+ 	if (is_blacklisted(id->ssid, id->devno) &&
+-	    (cdev->private->state == DEV_STATE_OFFLINE)) {
++	    (cdev->private->state == DEV_STATE_OFFLINE) &&
++	    (atomic_cmpxchg(&cdev->private->onoff, 0, 1) == 0)) {
+ 		CIO_MSG_EVENT(3, "ccw: purging 0.%x.%04x\n", id->ssid,
+ 			      id->devno);
+ 		ccw_device_sched_todo(cdev, CDEV_TODO_UNREG);
++		atomic_set(&cdev->private->onoff, 0);
+ 	}
+ 	spin_unlock_irq(cdev->ccwlock);
+ 	/* Abort loop in case of pending signal. */
+diff --git a/drivers/s390/cio/qdio_main.c b/drivers/s390/cio/qdio_main.c
+index 479c665..c532ba9 100644
+--- a/drivers/s390/cio/qdio_main.c
++++ b/drivers/s390/cio/qdio_main.c
+@@ -1649,26 +1649,26 @@ static int __init init_QDIO(void)
+ {
+ 	int rc;
+ 
+-	rc = qdio_setup_init();
++	rc = qdio_debug_init();
+ 	if (rc)
+ 		return rc;
++	rc = qdio_setup_init();
++	if (rc)
++		goto out_debug;
+ 	rc = tiqdio_allocate_memory();
+ 	if (rc)
+ 		goto out_cache;
+-	rc = qdio_debug_init();
+-	if (rc)
+-		goto out_ti;
+ 	rc = tiqdio_register_thinints();
+ 	if (rc)
+-		goto out_debug;
++		goto out_ti;
+ 	return 0;
+ 
+-out_debug:
+-	qdio_debug_exit();
+ out_ti:
+ 	tiqdio_free_memory();
+ out_cache:
+ 	qdio_setup_exit();
++out_debug:
++	qdio_debug_exit();
+ 	return rc;
+ }
+ 
+@@ -1676,8 +1676,8 @@ static void __exit exit_QDIO(void)
+ {
+ 	tiqdio_unregister_thinints();
+ 	tiqdio_free_memory();
+-	qdio_debug_exit();
+ 	qdio_setup_exit();
++	qdio_debug_exit();
+ }
+ 
+ module_init(init_QDIO);
