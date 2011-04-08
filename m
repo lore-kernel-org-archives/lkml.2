@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab1DHSdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 14:33:09 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:35093 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757574Ab1DHSdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 14:33:07 -0400
-From: Rolf Eike Beer <eike@sf-mail.de>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 1/5] PCI: Move ATS declarations in seperate header file
-Date: Fri, 08 Apr 2011 20:33:04 +0200
-Message-Id: <4435339.aQcLV4iHRH@donald.sf-tec.de>
-User-Agent: KMail/4.6 beta4 (Linux/2.6.37-12-desktop; KDE/4.6.1; i686; ; )
-In-Reply-To: <1302250630-8183-2-git-send-email-joerg.roedel@amd.com>
-References: <1302250630-8183-1-git-send-email-joerg.roedel@amd.com> <1302250630-8183-2-git-send-email-joerg.roedel@amd.com>
+	id S1757652Ab1DHSdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 14:33:24 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50244 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757627Ab1DHSdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 14:33:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=b895nMLk2wGhsy57INW4Vtk6sN05oCVGmE93tWkrTGWDKZnvfHUFDyL1VOJlfUbyVj
+         oLTu2qyCP3GrFU/pGxsg==
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2491071.nCS1T0UNAk"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+In-Reply-To: <1302271672.9086.155.camel@twins>
+References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
+ <20110407013349.GH1867@nowhere> <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
+ <20110407120608.GB1798@nowhere> <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
+ <20110407213208.GE1798@nowhere> <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
+ <20110408002812.GG1798@nowhere> <1302248268.21026.18.camel@frodo>
+ <20110408134537.GA1967@nowhere> <1302271672.9086.155.camel@twins>
+From: Michael Rubin <mrubin@google.com>
+Date: Fri, 8 Apr 2011 11:32:53 -0700
+Message-ID: <BANLkTikOi1Y_5RH1juPmchWHjW8f=ynuRA@mail.gmail.com>
+Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ken Chen <kenchen@google.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Minor history, Google wrote ktrace which we started to push upstream
+and then jumped on the ftrace train. ftrace was a very good drop in
+replacement for us. ftrace has a lot of features ktrace did not. We
+use perf also in other contexts.
 
---nextPart2491071.nCS1T0UNAk
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
+We have devoted a lot of time and energy from many engineers outside
+of kernel to use ftrace. It's not just the kernel code, but we have
+built a lot of sw on ftrace as we examine systems in the cloud. It was
+not easy to make this migration since it had a lot of user impact. It
+was less the low level API but the fact that the tracepoints semantics
+had changed. Google is in the process of no longer using ktrace.
 
-Am Freitag, 8. April 2011, 10:17:06 schrieb Joerg Roedel:
-> This patch moves the relevant declarations from the local
-> header file in drivers/pci to a more accessible locations so
-> that it can be used by the AMD IOMMU driver too.
-> The file is named pci-ats-pri.h because support for the PCI
-                    ^^^^^^^^^^^^^
+Requirements for tracing for us seem to be:
+1) Around 250ns latencies when enabled
+2) Small events - We have worked on shrinking the ftrace event size.
+Since we are constrained on the amount of memory we can use in the
+ring buffer, every byte counts. A nice sized event is on the order of
+<= 8 bytes. Some of the 2.6.34 ftrace events like irq_enter and exit
+were too big around 20 bytes. sched_switch is around 60 bytes.
 
->  include/linux/pci-ats.h   |   52
-                 ^^^^^^^^^
+I am not sure that perf meets these requirements. We need to use
+ftrace for tracing _now_.  Google also needs to focus on improving
+ftrace upstream so we can contribute our changes to the community. We
+are submitting patches and working with upstream to improve ftrace.
+Currently we depend on ftrace and being around for a long time.
 
-Ehm, no, it is not ;)
+Fredric wrote:" Nonetheless you can't be such a significant
+user/developer of the upstream kernel tracing and at the same time
+ignore some key problems of the actual big picture of it."
 
-Eike
---nextPart2491071.nCS1T0UNAk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+I see less of a big picture issue and more of an awkward two pictures.
+>From my view it's a question of whether ftrace should continue to be
+supported and improved or whether perf will do everything as well and
+when. We depend on ftrace today and as such we have invested our time
+there.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-
-iEYEABECAAYFAk2fVOYACgkQXKSJPmm5/E4b0gCfZuP8pTt6JmMntFOAOW8N5MpZ
-PbEAoJP/OKbFaMsFUIDyJZLoE+O091+0
-=feAW
------END PGP SIGNATURE-----
-
---nextPart2491071.nCS1T0UNAk--
-
+mrubin
