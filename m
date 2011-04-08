@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab1DHWBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 18:01:39 -0400
-Received: from kroah.org ([198.145.64.141]:44293 "EHLO coco.kroah.org"
+	id S1757615Ab1DHWDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 18:03:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6435 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab1DHWBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 18:01:38 -0400
-Date: Fri, 8 Apr 2011 15:01:57 -0700
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
-Message-ID: <20110408220157.GC26019@kroah.com>
-References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755335Ab1DHWDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 18:03:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,326,1299484800"; 
+   d="scan'208";a="730999712"
+Date: Fri, 8 Apr 2011 15:03:03 -0700
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, johnstul@us.ibm.com, tglx@linutronix.de,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCHv2 1/2] x86, mrst: share APB timer code with other
+ platforms
+Message-ID: <20110408150303.67ac8d80@jacob-laptop>
+In-Reply-To: <1302273218-7263-2-git-send-email-jamie@jamieiles.com>
+References: <1302273218-7263-1-git-send-email-jamie@jamieiles.com>
+	<1302273218-7263-2-git-send-email-jamie@jamieiles.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 09:45:00PM +0200, Rafał Miłecki wrote:
-> Cc: Michael Büsch <mb@bu3sch.de>
-> Cc: Larry Finger <Larry.Finger@lwfinger.net>
-> Cc: George Kashperko <george@znau.edu.ua>
-> Cc: Arend van Spriel <arend@broadcom.com>
-> Cc: linux-arm-kernel@lists.infradead.org <linux-arm-kernel@lists.infradead.org>
-> Cc: Russell King <rmk@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linuxdriverproject <devel@linuxdriverproject.org>
-> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
-> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+On Fri,  8 Apr 2011 15:33:37 +0100
+Jamie Iles <jamie@jamieiles.com> wrote:
+
+> The APB timers are an IP block from Synopsys (DesignWare APB timers)
+> and are also found in other systems including ARM SoC's.  This patch
+> adds functions for creating clock_event_devices and clocksources from
+> APB timers but does not do the resource allocation.  This is handled
+> in a higher layer to allow the timers to be created from multiple
+> methods such as platform_devices.
+> 
+> Changes since v1:
+> 	- Use the correct timer for clocksource on x86
+> 	- Select the correct timer rating for x86
+> 	- Restore freerunning timer behaviour for oneshot event
+> devices
+> 	- Reenable event irq correctly for hotplug
+> 
+> Cc: John Stultz <johnstul@us.ibm.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 > ---
-> This is second try for introducing new bus driver.
-> V2: Rename to axi
->     Use DEFINE_PCI_DEVICE_TABLE in bridge
->     Make use of pr_fmt and pr_*
->     Store core class
->     Rename bridge to not b43 specific
->     Replace magic 0x1000 with BCMAI_CORE_SIZE
->     Remove some old "ssb" names and defines
->     Move BCMAI_ADDR_BASE def
->     Add drvdata field
-> TODO:
-> - Interrupts
-> - Reloading driver
+>  arch/x86/Kconfig                   |    1 +
+>  arch/x86/include/asm/apb_timer.h   |   22 +--
+>  arch/x86/kernel/apb_timer.c        |  421
+> ++++++------------------------------
+> drivers/Kconfig                    |    2 +
+> drivers/clocksource/Kconfig        |    6 +
+> drivers/clocksource/Makefile       |    1 +
+> drivers/clocksource/dw_apb_timer.c |  322 +++++++++++++++++++++++++++
+> include/linux/dw_apb_timer.h       |  129 +++++++++++ 8 files
+> changed, 535 insertions(+), 369 deletions(-) create mode 100644
+> drivers/clocksource/Kconfig create mode 100644
+> drivers/clocksource/dw_apb_timer.c create mode 100644
+> include/linux/dw_apb_timer.h
+> 
 
-Please add to the TODO list:
-	- Documentation/ABI entries for new sysfs files
-	- proper Kconfig entry documentation for the different options
-	- remove unneeded pcicore_write* wrapper functions that do
-	  nothing.
-
-
-> +static void axi_release_core_dev(struct device *dev)
+> +static void apbt_eoi(struct dw_apb_timer *timer)
 > +{
-> +	kfree(dev);
+> +	apbt_readl(timer, APBTMR_N_EOI);
 > +}
+> +
+> +static irqreturn_t dw_apb_clockevent_irq(int irq, void *data)
+> +{
+> +	struct clock_event_device *evt = data;
+> +	struct dw_apb_clock_event_device *dw_ced =
+> ced_to_dw_apb_ced(evt); +
+> +	if (!evt->event_handler) {
+> +		pr_info("Spurious APBT timer interrupt %d", irq);
+> +		return IRQ_NONE;
+> +	}
+> +
+> +	dw_ced->eoi(&dw_ced->timer);
+I know I proposed this to deal with the fact that X86_MRST does not
+need eoi. I was hoping gcc to generate nops but it doesn't, especially
+with FRAME_POINTER turned on in our build.
 
-This is wrong, unless you are really only creating a 'struct device'.
-Why are you doing that instead of embedding struct device in your
-structure?
+Since this is in the performance critical path and across ARM and X86
+architectures, can we use #define to skip eoi() for CONFIG_X86_MRST?
 
-thanks,
 
-greg k-h
+Thanks,
+
+Jacob
