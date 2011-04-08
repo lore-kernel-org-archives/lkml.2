@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab1DHGlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 02:41:05 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41665 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab1DHGlD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 02:41:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=INMLxTrPDeMmJx7yfwSuRPenOMRpWSjEyWqcFRPJU1Jzcgf56udij0DZXyGw1VZ75+
-         XVs/xgS1iK+uanHBQD8m2Pc8ub5cCs4HdB2zidxiMvEeTseVc4lwU715NB3hjPeipuOZ
-         MEVtlJ5HWg9eCyHN5HoYeVfE4aR+H4fiY2SVM=
+	id S1754664Ab1DHGlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 02:41:32 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46178 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754397Ab1DHGlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 02:41:12 -0400
+Date: Fri, 8 Apr 2011 08:40:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Mike Travis <travis@sgi.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
+        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/2] memblock: add error return when CONFIG_HAVE_MEMBLOCK
+ is not set
+Message-ID: <20110408064055.GA14602@elte.hu>
+References: <20110225180634.017570095@gulag1.americas.sgi.com>
+ <20110227120949.GF16453@elte.hu>
+ <20110227121518.GA19165@elte.hu>
+ <4D6AFBB0.70401@kernel.org>
+ <4D6BF63D.2020404@sgi.com>
+ <AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>
+ <4D6BFF46.3050001@sgi.com>
+ <AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com>
+ <4D93CDD7.8000708@sgi.com>
+ <4D9E13D4.3080702@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimHwt=q4K9uMNX4kR6Q8LJhHHSysw@mail.gmail.com>
-References: <BANLkTin7=j8-feeJw5fqDsMd9BYrq09KbQ@mail.gmail.com>
-	<1302024458.2225.1350.camel@twins>
-	<BANLkTinU5s8FgC9acCPcQqDRBnwi4EqA2g@mail.gmail.com>
-	<1302077959.2225.1378.camel@twins>
-	<BANLkTimHwt=q4K9uMNX4kR6Q8LJhHHSysw@mail.gmail.com>
-Date: Fri, 8 Apr 2011 14:41:02 +0800
-Message-ID: <BANLkTimP-uhj7PQqgvpnedy_y9sQga99ug@mail.gmail.com>
-Subject: Re: KGTP (Linux Kernel debugger and tracer) 20110405 release
-From: Dongdong Deng <libfetion@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>, Hui Zhu <teawater@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D9E13D4.3080702@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 8, 2011 at 1:36 PM, Hui Zhu <teawater@gmail.com> wrote:
-> On Wed, Apr 6, 2011 at 16:19, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Wed, 2011-04-06 at 13:54 +0800, Hui Zhu wrote:
->>
->>> This is a good question.
->>>
->>> The KGTP is completely different with KGDB.  It will not supply simple
->>> gdbrsp debug interface to user.  It just supply  interface between the
->>> kernel tracepoint(Now, just support kprobe, will add others later) and
->>> GDB tracepoint function.
->>>
->>> So user can debug and trace Linux kernel with GDB without stop the
->>> Linux Kernel (So the GDB can running on this Kernel).  It is a trace
->>> tools and debug tools.
->>
->> But this isn't really an answer either. Could you extend the existing
->> KGDB infrastructure to provide these features and thereby re-use
->> existing infrastructure to reduce your patch size and code duplication?
->>
->> Jason (the KGDB maintainer) certainly thought there was much possibility
->> there when I spoke to him yesterday.
->>
->> Think of it this way, wouldn't it be much better if there was one tool
->> that could provide the combined feature set of KGDB and KGTP?
->>
->
-> Thanks Peter.  I think it is very good.
->
-> Which part do you think kgtp can share with kgdb?
 
+* Mike Travis <travis@sgi.com> wrote:
 
-The main realizing of "kgtp" was based on the sub protocol
-'Tracepoint-Packets' of 'gdb Remote Serial Protocol'.
+> Was there any further objections to these patches?
 
-http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoint-Packets.html#Tracepoint-Packets
-
-and kgdb have realized most of gdb remote serial protocols.
-
-
-thus the protocol 'Tracepoint-Packets' implement of kgtp could share
-with kgdb, and the breakpoint handler could follow kgdb's from kprobe,
-
-the offline gdb operate interface(an kernel inside gdbserver for gdb)
-could realize a module like "kgdbts" module implement
-(linux-2.6/drivers/misc/kgdbts.c).
+No big objections that i remember - so assuming review feedback has been 
+addressed please send the latest and greatest in a new thread, this one is 
+getting a bit deep :-)
 
 Thanks,
-Dongdong
+
+	Ingo
