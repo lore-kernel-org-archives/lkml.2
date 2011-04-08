@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab1DHLiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 07:38:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43599 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541Ab1DHLh6 convert rfc822-to-8bit (ORCPT
+	id S1755771Ab1DHLjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 07:39:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44011 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900Ab1DHLju convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 07:37:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=u8cukBEb+X20Bacy4VGzO4bA1zbhGbZ38CVbQKL4DSzCtb0JasV8Rj+u3nhtL6gFez
-         1LrtgR0NkVIfSJQoKM42bjVc88hwaf1FTU+KUz1tgL857MihoaFoOzXP3nJR7xxD/T5m
-         6X0dv4JioCDp/aXBM+iphaGT+Bq3JEI+uZiIw=
-MIME-Version: 1.0
-In-Reply-To: <20110406100620.GA4142@mtj.dyndns.org>
-References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
-	<20110401154327.GA6593@mtj.dyndns.org>
-	<20110405065129.GC2872@amit-x200.redhat.com>
-	<20110406100620.GA4142@mtj.dyndns.org>
-Date: Fri, 8 Apr 2011 12:37:56 +0100
-Message-ID: <BANLkTinpRJHr+293kPzS1=hCWRPamOOGfw@mail.gmail.com>
-Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Apr 2011 07:39:50 -0400
+Subject: Re: Subject: [PATCH] sched: fixed erroneous all_pinned logic.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ken Chen <kenchen@google.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
+In-Reply-To: <20110408002420.3F3A912217F@elm.corp.google.com>
+References: <20110408002420.3F3A912217F@elm.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 08 Apr 2011 13:39:41 +0200
+Message-ID: <1302262781.9086.135.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 6, 2011 at 11:06 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Apr 05, 2011 at 12:21:30PM +0530, Amit Shah wrote:
->> > But I don't think this is the correct place to do it.  The problem
->> > happens because block layer consumes the event but doesn't remember it
->> > when the time for revalidation comes.  It should be done by block
->> > layer, not sr.  Hmmm... looking at the code, the new disk event code
->> > should handle this correctly.  Was 2.6.38 showing the problem too?
->>
->> Yes, 2.6.38 shows the same problem.  I went back to ancient kernels
->> (2.6.31 on Fedora 11-alpha) which had the previous media_changed
->> infrastructure and those places too show the same behaviour (with the
->> TEST_UNIT_READY way of detecting media changes).
->
-> Can you please the patch attached in the following bz and see whether
-> it makes any difference?
->
->  https://bugzilla.kernel.org/show_bug.cgi?id=13029
+On Thu, 2011-04-07 at 17:24 -0700, Ken Chen wrote:
+> The scheduler load balancer has specific code to deal with cases of
+> unbalanced system due to lots of unmovable tasks (for example because
+> of hard CPU affinity). In those situation, it exclude the busiest CPU
+> that has pinned tasks for load balance consideration such that it can
+> perform second 2nd load balance pass on the rest of the system.  This
+> all works as designed if there is only one cgroup in the system.
+> 
+> However, when we have multiple cgroups, this logic has false positive
+> and triggers multiple load balance passes despite there are actually
+> no pinned tasks at all.
+> 
+> The reason it has false positive is that the all pinned logic is deep
+> in the lowest function of can_migrate_task() and is too low level.
+> load_balance_fair() iterate each task group and calls balance_tasks()
+> to migrate target load.  Along the way, balance_tasks() will also set
+> a all_pinned variable.  Given that task-groups are iterated, this
+> all_pinned variable is essentially the status of last group in the
+> scanning process.  Task group can have number of reasons that no load
+> being migrated, none due to cpu affinity.  However, this status bit
+> is being propagated back up to the higher level load_balance(), which
+> incorrectly think that no tasks were moved.  It kick off the all pinned
+> logic and start multiple passes attempt to move load onto puller CPU.
+> 
+> Moved the all_pinned logic up at the iterator level.  This ensures
+> that the logic is aggregated over all task-groups, not just the last
+> one in the list.  The core change is in the move_tasks() function:
+> 
+> +       if (total_load_moved)
+> +               *all_pinned = 0;
+> 
+> The rest of the patch are code churn that removes parameter passing
+> in the lower level functions. 
 
-Hi Tejun,
-There is a related issue I have been discussing with Amit:
-https://lkml.org/lkml/2011/3/23/156
+Very nice!
 
-On media change the inode size is not updated by the sr driver or the
-universal cdrom driver.  A userspace process that holds a /dev/sr0
-file descriptor open across media change causes all processes on the
-system to see the old medium size when they do lseek(fd, 0, SEEK_END).
+This looks applicable to earlier kernels as well, so I stuck a stable
+tag on it.
 
-I think it would make sense to refresh the inode size on media change
-so that even open file descriptors see the new size and a single
-process cannot force a stale value for all other userspace processes
-on the system.
-
-Thoughts?
-
-Stefan
+Also, your From: field is somewhat weird as it consists of and addr-spec
+and comment instead of the regular name-addr.
