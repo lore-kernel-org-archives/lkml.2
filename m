@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab1DHDtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 23:49:47 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35053
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757408Ab1DHDtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 23:49:46 -0400
-Date: Thu, 07 Apr 2011 20:49:09 -0700 (PDT)
-Message-Id: <20110407.204909.115926267.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lucas.demarchi@profusion.mobi,
-        joe@perches.com
-Subject: Re: linux-next: manual merge of the net tree with Linus' tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110408134551.521c6606.sfr@canb.auug.org.au>
-References: <20110408134551.521c6606.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1751317Ab1DHEKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 00:10:51 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52847 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167Ab1DHEKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 00:10:49 -0400
+Date: Fri, 8 Apr 2011 14:10:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Christian Lamparter <chunkeey@googlemail.com>
+Subject: linux-next: manual merge of the wireless tree with Linus' tree
+Message-Id: <20110408141043.80673558.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__8_Apr_2011_14_10_43_+1000_tB9ETZir.SKAsL0+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 8 Apr 2011 13:45:51 +1000
+--Signature=_Fri__8_Apr_2011_14_10_43_+1000_tB9ETZir.SKAsL0+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Today's linux-next merge of the net tree got a conflict in
-> drivers/net/smsc911x.c between commit 25985edcedea ("Fix common
-> misspellings") from Linus' tree and commit dffc6b2432ea ("smsc911x: Use
-> pr_fmt, netdev_<level>, and netif_<level>") from the net tree.
-> 
-> I fixedd it up (see below) anc can carry the fix as necessary.
+Hi John,
 
-Thanks Stephen, I'll clear this one up some time in the next week.
+Today's linux-next merge of the wireless tree got a conflict in
+drivers/net/wireless/ath/ar9170/main.c and
+drivers/net/wireless/ath/ar9170/phy.c between commit 25985edcedea ("Fix
+common misspellings") from Linus' tree and commit b0006e696158
+("ar9170usb: purge obsolete driver") from the wireless tree.
+
+The latter just removed the files, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__8_Apr_2011_14_10_43_+1000_tB9ETZir.SKAsL0+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNnorDAAoJEDMEi1NhKgbscPwH/1U0QC5iWFJTPqEbHzKDKgRh
+uM6uMQ3S+92sL952BkBG0ntzsvp8YhzR5dGRyqyWsyEGvkjizU+IHFzmDooMcRL8
+7odBjI0ao0yqORVHT4Z/YiAs1xKfc4wHMVqIOJpmRj3PAPANsgJkJbGItl7olTkw
+pMYDJ1ESCZXdWU0OR7rvItRzAORH9FaW2qzbNpUKXvhh1FSOl3pFwzSySYAwARhl
+8lRzMT6u5oVbBmxd2vlYc4i6cl8Ns8nhS1tNaOSUFeUSWr8TWkiyDWQW5xxXRz3g
+Y753zvng1aaIKgO0WdhQ2RK2lkxXM6yeHDGBtyHsmJiRCnemmEH+8XhYZh3ZrM0=
+=CIe9
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__8_Apr_2011_14_10_43_+1000_tB9ETZir.SKAsL0+--
