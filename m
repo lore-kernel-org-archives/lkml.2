@@ -1,74 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab1DHAla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 20:41:30 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:56420 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757204Ab1DHAl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 20:41:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6309"; a="84623558"
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-To: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] msm: platsmp: actually read core count in get_core_count
-Date: Thu,  7 Apr 2011 17:41:09 -0700
-Message-Id: <1302223269-32047-1-git-send-email-johlstei@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757320Ab1DHBDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 21:03:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35018 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757142Ab1DHBDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 21:03:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,320,1299484800"; 
+   d="scan'208";a="625292510"
+Message-ID: <4D9E5EED.7030301@intel.com>
+Date: Fri, 08 Apr 2011 09:03:41 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -v2 2/4] lib, Add lock-less NULL terminated single list
+References: <1302139746-1030-1-git-send-email-ying.huang@intel.com> <1302139746-1030-3-git-send-email-ying.huang@intel.com> <20110407183034.GA6104@Krystal>
+In-Reply-To: <20110407183034.GA6104@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously we just assumed there were CONFIG_NR_CPUS cpus present in
-the system. Instead, figure out the number of cpus from the MIDR
-register.
+Hi, Mathieu,
 
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
----
- arch/arm/mach-msm/platsmp.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+Thanks for review.
 
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 0f427bc..58c1d7b 100644
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -18,6 +18,7 @@
- 
- #include <asm/hardware/gic.h>
- #include <asm/cacheflush.h>
-+#include <asm/cputype.h>
- #include <asm/mach-types.h>
- 
- #include <mach/msm_iomap.h>
-@@ -40,6 +41,12 @@ volatile int pen_release = -1;
- 
- static DEFINE_SPINLOCK(boot_lock);
- 
-+static inline int get_core_count(void)
-+{
-+	/* 1 + the PART[1:0] field of MIDR */
-+	return ((read_cpuid_id() >> 4) & 3) + 1;
-+}
-+
- void __cpuinit platform_secondary_init(unsigned int cpu)
- {
- 	/* Configure edge-triggered PPIs */
-@@ -147,9 +154,9 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
-  */
- void __init smp_init_cpus(void)
- {
--	unsigned int i;
-+	unsigned int i, ncores = get_core_count();
- 
--	for (i = 0; i < NR_CPUS; i++)
-+	for (i = 0; i < ncores; i++)
- 		set_cpu_possible(i, true);
- }
- 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+On 04/08/2011 02:30 AM, Mathieu Desnoyers wrote:
+> * Huang Ying (ying.huang@intel.com) wrote:
+[snip]
+>> +/**
+>> + * llist_for_each - iterate over some deleted entries of a lock-less list
+>> + * @pos:     the &struct llist_node to use as a loop cursor
+>> + * @node:    the first entry of deleted list entries
+>> + *
+>> + * In general, some entries of the lock-less list can be traversed
+>> + * safely only after being deleted from list, so start with an entry
+>> + * instead of list head.
+>> + *
+>> + * If being used on entries deleted from lock-less list directly, the
+>> + * traverse order is from the newest to the oldest added entry.  If
+>> + * you want to traverse from the oldest to the newest, you must
+>> + * reverse the order by yourself before traversing.
+>> + */
+>> +#define llist_for_each(pos, node)                    \
+>> +     for (pos = (node); pos; pos = pos->next)
+> 
+> I know list.h has the same lack of ( ) around "pos" in the for_each
+> iterator, but shouldn't we add some around it to ensure that especially
+> (pos)->next uses the right operator prececence ? e.g.
+> 
+>         for ((pos) = (node); pos; (pos) = (pos)->next)
+> 
+> maybe there is some reason for not putting parenthesis there that I am
+> missing, but I'm asking anyway.
 
+Don't know either.  But I think there should be no harm to add
+parenthesis here.  Will change this and similar code in patch.
+
+[snip]
+>> +/**
+>> + * llist_empty - tests whether a lock-less list is empty
+>> + * @head:    the list to test
+>> + *
+>> + * Not guaranteed to be accurate or up to date.  Just a quick way to
+>> + * test whether the list is empty without deleting something from the
+>> + * list.
+>> + */
+>> +static inline int llist_empty(const struct llist_head *head)
+>> +{
+>> +     return head->first == NULL;
+> 
+> Would it make sense to do:
+> 
+>  return ACCESS_ONCE(head->first) == NULL;
+> 
+> instead ? Otherwise the compiler can choose to keep the result around in
+> registers without re-reading (e.g. busy waiting loop).
+
+Although I think that llist_empty() in a loop is not the typical usage
+model, adding ACCESS_ONCE can support that better without other harm.  I
+will change this.
+
+[snip]
+>> + * The basic atomic operation of this list is cmpxchg on long.  On
+>> + * architectures that don't have NMI-safe cmpxchg implementation, the
+>> + * list can NOT be used in NMI handler.  So code uses the list in NMI
+>> + * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+>> + *
+>> + * Copyright 2010 Intel Corp.
+> 
+> 2010, 2011
+
+Will change this.
+
+[snip]
+>> +/**
+>> + * llist_add - add a new entry
+>> + * @new:     new entry to be added
+>> + * @head:    the head for your lock-less list
+>> + */
+>> +void llist_add(struct llist_node *new, struct llist_head *head)
+>> +{
+>> +     struct llist_node *entry;
+>> +
+>> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>> +     BUG_ON(in_nmi());
+>> +#endif
+>> +
+>> +     do {
+>> +             entry = head->first;
+>> +             new->next = entry;
+>> +             cpu_relax();
+>> +     } while (cmpxchg(&head->first, entry, new) != entry);
+> 
+> Could be turned into:
+> 
+> struct llist_node *entry, *old_entry;
+> 
+> entry = head->first;
+> 
+> do {
+>         old_entry = entry;
+>         new->next = entry;
+>         cpu_relax();
+> } while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
+> 
+> It should generate more compact code, and slightly faster retry.
+
+Yes. Will change this and similar code in patch.
+
+Best Regards,
+Huang Ying
