@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab1DHUuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:50:51 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52927 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757841Ab1DHUuu convert rfc822-to-8bit (ORCPT
+	id S1757945Ab1DHUwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:52:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63814 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401Ab1DHUwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:50:50 -0400
+	Fri, 8 Apr 2011 16:52:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=avrchYWmGi4bq0XvGRqrguKZXH3GNet71E7W2RltPCDOXDIHAdGlU5kubAKI3OyJGf
-         kbXlQJWKNbvzZ17EcZ8AUZohdq/G2lPeVOxdSa5UVA3G6xwzUycqNdSl9RrIyERcWHiL
-         9WizjNNlgudWFwr0+9ffBaAN22bKm0O7FFWCE=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=u9BVisorGu9SgU1o3VYT9pdnqer0iY+DMDn7FsxLOUhvKOoBk/EYC5gPPzui2hT7Vj
+         /6XOigRiu6J0PZXrEfH29dneOcfeTFHGfAaBL0OTqOa1cNH2CobTqsoRH+kBLbY/bAjQ
+         UkqoWuJne1FHaaLM/DR4qc6z+JZ66u/uYIttE=
 MIME-Version: 1.0
-In-Reply-To: <4D9F59AC.6080707@gmail.com>
-References: <4D9F59AC.6080707@gmail.com>
-Date: Fri, 8 Apr 2011 21:50:49 +0100
-Message-ID: <BANLkTi=3FmfeATtdMV1J6ipexk49pvD_BQ@mail.gmail.com>
-Subject: Re: trace-cmd errors on kvm events
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        KVM mailing list <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4D9F6F6E.6040107@aknet.ru>
+References: <4D6510A3.90905@aknet.ru> <BANLkTinfOKf+aSKy+Rj+2+v42JeGuzzrNg@mail.gmail.com>
+ <4D9F6F6E.6040107@aknet.ru>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Fri, 8 Apr 2011 16:52:05 -0400
+Message-ID: <BANLkTimbB4rhbdTy07DuneSf=SydGYvbBA@mail.gmail.com>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+To: Stas Sergeev <stsp@aknet.ru>
+Cc: Linux kernel <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=KOI8-R
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 8, 2011 at 7:53 PM, David Ahern <dsahern@gmail.com> wrote:
-> 2.6.38.2 kernel with trace-cmd git pulled this morning:
+2011/4/8 Stas Sergeev <stsp@aknet.ru>:
+> 08.04.2011 22:13, Bryan Donlan wrote:
+>>
+>> I can't comment on the patch itself, but, if your application knows it
+>> might have to daemonize after spinning up threads, why not simply
+>> fork() immediately on startup, and have the parent simply wait forever
+>> for either the child to die or for a daemonize signal from the child?
+>> If done early enough it shouldn't tie up too much memory, and it
+>> wouldn't require any of these invasive kernel changes. As an added
+>> bonus, it's portable to all unixen :)
 >
-> trace-cmd record -e kvm
->
-> trace-cmd report 2>&1 | less
->
-> trace-cmd: No such file or directory
->  function ftrace_print_symbols_seq not defined
->  failed to read event print fmt for kvm_nested_vmexit_inject
->  function ftrace_print_symbols_seq not defined
->  failed to read event print fmt for kvm_nested_vmexit
->  function ftrace_print_symbols_seq not defined
->  failed to read event print fmt for kvm_exit
->  bad op token {
->  failed to read event print fmt for kvm_emulate_insn
->
->        qemu-kvm-1864  [002]  2253.714134: kvm_entry:            vcpu 1
->        qemu-kvm-1863  [008]  2253.714136: kvm_exit:             [FAILED
-> TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
->        qemu-kvm-1864  [002]  2253.714138: kvm_exit:             [FAILED
-> TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
->        qemu-kvm-1863  [008]  2253.714145: kvm_emulate_insn:     [FAILED
-> TO PARSE] rip=3222373869 csbase=0 len=2 insn=<89>^H]<C3><8B>^U<EC><95>K<C0>U
-> <89><E5>]<8D>^E flags=5 failed=0
->
-> I have not used trace-cmd much, so I am not familiar with the code. Is
-> this a known issue? Suggestions on how to debug?
+> Yes, thats almost always true. Except when you deal with
+> the vendor-provided poorly-coded drivers and libs, where
+> you get the drivers initialized only via the lib. And the
+> initialization process must be finished before the boot-up
+> can continue, but that's not the whole story: only the
+> process that initialized that lib, can then work with it.
+> And of course that lib creates a dozen of threads...
+> OK, you've got the idea. :)
 
-I think there have been issues for a long time.  I've never gotten
-perf or trace-cmd to be happy with kvm:* events.  Here is a related
-thread from a while back:
+Still, you can workaround this by either:
+a) Load the vendor library via dlopen()
+b) Use a separate launcher executable to handle the fork-and-wait
 
-https://lkml.org/lkml/2010/5/26/194
+Either of these approaches are far simpler than patching the kernel,
+more portable, and much, much easier to get right. In fact, here's a
+quick and dirty implementation of the latter:
 
-When I looked a while back the problem was due to how there is some
-preprocessor magic in Linux that ends up exporting C expressions as
-strings to userspace and neither perf nor trace-cmd have the parsing
-smarts to evaluate the C expressions at runtime.
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-I ended up using ftrace instead which handles everything inside the
-kernel and compiles in those C expressions.
+void sigusr1_handler(int unused)
+{
+        (void)unused;
 
-Stefan
+        _exit(0);
+}
+
+int main(int argc, char **argv)
+{
+        int waitstatus;
+        pid_t child, parent = getpid();
+
+        (void)argc;
+
+        signal(SIGUSR1, sigusr1_handler);
+
+        child = fork();
+        if (child < 0) {
+                perror("Fork failed");
+                return EXIT_FAILURE;
+        }
+        if (child == 0) {
+                char envbuf[20];
+                sprintf(envbuf, "%d", (int)parent);
+                setenv("LAUNCHER_PID", envbuf, 1);
+
+                execvp(argv[1], &argv[1]);
+                perror("Launching child failed");
+                _exit(EXIT_FAILURE);
+        }
+
+        wait(&waitstatus);
+
+        if (WIFEXITED(waitstatus))
+                _exit(WEXITSTATUS(waitstatus));
+
+        _exit(256);
+}
+
+Just kill(atoi(getenv("LAUNCHER_PID")), SIGUSR1) to detach. Much
+easier than doing some very racy things in the kernel, no? It's
+certainly more obvious that this ought to be correct in the face of
+races with its parent :)
