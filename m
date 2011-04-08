@@ -1,63 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab1DHTBC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 15:01:02 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49320 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756846Ab1DHTBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 15:01:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VQfLvToW1s8L7aSFGuwpTY/BdRqjX6avHRyfqd7Me7Gokgy37kmH1f8PHgx9rZmF1X
-         imRQPzuzUA3W27IDx994ZBo8DBFctRD/8hGG4nzsQsqruRfqvcsSPxSIGXgLO4ALsrdl
-         3l5bA+jbpULy1Nz/98fKM6Razov6dq5bEwRBg=
-Date: Fri, 8 Apr 2011 21:00:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
-Message-ID: <20110408190052.GC1967@nowhere>
-References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
- <20110407013349.GH1867@nowhere>
- <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
- <20110407120608.GB1798@nowhere>
- <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
- <20110407213208.GE1798@nowhere>
- <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
- <20110408002812.GG1798@nowhere>
- <1302248268.21026.18.camel@frodo>
+	id S1757691Ab1DHTEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 15:04:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757650Ab1DHTEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 15:04:51 -0400
+Message-ID: <4D9F5B6D.1070102@redhat.com>
+Date: Fri, 08 Apr 2011 15:01:01 -0400
+From: Josef Bacik <josef@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-1.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302248268.21026.18.camel@frodo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-fsdevel@vger.kernel.org
+CC: linux-btrfs <linux-btrfs@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        npiggin@kernel.dk, eparis@redhat.com,
+        Chris Mason <chris.mason@oracle.com>
+Subject: O_DIRECT and Btrfs == checksumming nightmare
+Content-Type: multipart/mixed;
+ boundary="------------010802010000090501080801"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 03:37:48AM -0400, Steven Rostedt wrote:
-> I actually agree, as perf is more focused on per process (or group) than
-> ftrace. But that said, I guess the issue is also, if they have a simple
-> solution that is not invasive and suits their needs, what's the harm in
-> accepting it?
+This is a multi-part message in MIME format.
+--------------010802010000090501080801
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-What about a kind of cgroup_of(path) operator that we can use on
-filters?
+Hello,
 
-	common_pid cgroup_of(path)
-or
-	common_pid __cgroup_of__ path
+So I've been trying to track down checksumming errors Eric Paris was 
+getting while running Windows 7 in qemu.  Turns out we had one valid 
+problem (we don't deal well with reading with an iovec with two 
+iov_base's that are the same), and we have a problem with the pages 
+being changed in flight.  I'm not entirely sure the second thing is what 
+is happening, but I'm looking at finding that out for sure soon.  But in 
+the meantime I've crafted a fun little reproducer that will blow btrfs 
+up quickly.  It just mmaps an anonymous range, fork()'s, and then one 
+thread does writes/reads with the anonymous map and then the other one 
+just sits there and loops and changes the anonymous map.  This will 
+result in getting a -EIO on the reader thread pretty quickly and you get 
+a bunch of checksum errors in your messages.
 
-That way you don't bloat the tracing fast path?
+This is going to screw anybody who needs the pages to be stable during 
+IO, and since its O_DIRECT we don't get to do any of our normal tricks 
+to make sure things stay stable.  I even tried using set_memory_ro() to 
+see if I could catch userspace modifying the page and it didn't do 
+anything.  For now in btrfs the plan is to check the crc of the page 
+when the IO completes (for writes) and if it's not create a bounce 
+buffer and re-submit that.  This sucks, it would be good to have a way 
+to make sure the pages were stable throughout the IO like we can with 
+normal pages.  Nick, Chris said you had something in mind for this?  If 
+you don't have time to do the actual work I can try and put together a 
+fix if you can describe what to do.  I'm attaching my reproducer here in 
+case anybody else wants to try it.  Thanks,
+
+Josef
+
+--------------010802010000090501080801
+Content-Type: text/plain;
+ name="modify-dio-in-flight.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="modify-dio-in-flight.c"
+
+#define _GNU_SOURCE
+#define _XOPEN_SOURCE  600
+
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+static pid_t pid;
+static int finished = 0;
+
+static void child(char *buf, size_t size)
+{
+	char c = 'b';
+
+	printf("child: Buf is %p\n", buf);
+	while (1) {
+		memset(buf, c, size);
+		c++;
+		sleep(1);
+	}
+}
+
+void sig_handler(int sig)
+{
+	kill(pid, SIGINT);
+	finished = 1;
+	printf("Caught signal\n");
+}
+
+int main(int argc, char **argv)
+{
+	char *obuf, *ibuf;
+	size_t size = 1024 * 1024 * 1;
+	int err;
+	int fd;
+	int status;
+	sighandler_t handler;
+
+	err = posix_memalign((void **)&ibuf, 4096, size);
+	if (err) {
+		fprintf(stderr, "Error allocating buf: %d\n", err);
+		return 1;
+	}
+
+	obuf = mmap(0, size, PROT_READ | PROT_WRITE,
+		    MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+	if (obuf == MAP_FAILED) {
+		free(obuf);
+		fprintf(stderr, "Error allocating buf: %d\n", err);
+		return 1;
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		fprintf(stderr, "Problem forking: %d\n", errno);
+		return 1;
+	}
+
+	if (pid == 0) {
+		child(obuf, size);
+		return 0;
+	}
+
+	handler = signal(SIGINT, sig_handler);
+
+	fd = open("testfile", O_RDWR|O_CREAT|O_DIRECT, 0644);
+	if (fd < 0) {
+		fprintf(stderr, "Error opening file: %d\n", errno);
+		err = 1;
+		goto out;
+	}
+
+	printf("obuf is %p\n", obuf);
+
+	while (!finished) {
+		ssize_t copied;
+
+		memset(obuf, 'a', size);
+		lseek(fd, 0, SEEK_SET);
+		copied = write(fd, obuf, size);
+		if (copied < 0) {
+			fprintf(stderr, "Error writing: %d\n", errno);
+			err = 1;
+			break;
+		} else if (copied < size) {
+			fprintf(stderr, "Weird, short write: %d\n", copied);
+		}
+
+		lseek(fd, 0, SEEK_SET);
+		copied = read(fd, ibuf, copied);
+		if (copied < 0) {
+			fprintf(stderr, "Read failed: %d\n", copied);
+			err = 1;
+			break;
+		}
+	}
+
+out:
+	if (err)
+		kill(pid, SIGINT);
+
+	waitpid(pid, &status, 0);
+	close(fd);
+	munmap(obuf, 4096);
+	free(ibuf);
+
+	return err;
+}
+
+--------------010802010000090501080801--
