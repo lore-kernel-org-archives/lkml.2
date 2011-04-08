@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab1DHDbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 23:31:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53076 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757401Ab1DHDbl convert rfc822-to-8bit (ORCPT
+	id S932134Ab1DHDjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 23:39:08 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:59735 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757453Ab1DHDjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 23:31:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=i34qzoQ4kihaJSg7F6bGOvv/iDgeIRY1bhwYZbPdu2HCondEwTa+SNCY9kB/HG6/kS
-         WEo3dyvIsJh+iyCoJ8FHuZc4CGjWJHx6wovYonw2JWhbcc77a1BvFUfA4NWHkZsxhIwn
-         SZFWQ+optH3xeGC8LAS36mY5TwBQqs+1Y4IjQ=
+	Thu, 7 Apr 2011 23:39:07 -0400
+Message-ID: <4D9E834E.2030705@ahsoftware.de>
+Date: Fri, 08 Apr 2011 05:38:54 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <BANLkTik5VGziYQLQTzMDhYD7CA0QpSNK6g@mail.gmail.com>
-References: <BANLkTim8anqNv4MEaxCTyC8HyOZp2x=ixQ@mail.gmail.com>
- <20110407163948.GD31060@kroah.com> <BANLkTikUrdte93L=3Nq3TXYMpeqRJfj2YQ@mail.gmail.com>
- <BANLkTik5VGziYQLQTzMDhYD7CA0QpSNK6g@mail.gmail.com>
-From: Gottfried Haider <gottfried.haider@gmail.com>
-Date: Fri, 8 Apr 2011 05:31:20 +0200
-Message-ID: <BANLkTik4W7+1YY+dkP4NrQZ7J3e0crmXbg@mail.gmail.com>
-Subject: Re: [Regression] USB tethering does not work anymore in 2.6.29-rc2
- (rndis_host, does not receive DHCP offer anymore)
-To: huajun li <huajun.li.lee@gmail.com>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-net@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Nico Erfurth <ne@erfurth.eu>, Eric Cooper <ecc@cmu.edu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH 0/2] ARM: Unify setup for Marvell SheevaPlugs and	Seagate
+ DockStars
+References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de> <4D9CEE24.1080501@erfurth.eu> <4D9D81ED.7090809@ahsoftware.de> <4D9D85E4.2040606@erfurth.eu> <4D9D8762.3080207@ahsoftware.de> <20110407173912.GA17049@n2100.arm.linux.org.uk>
+In-Reply-To: <20110407173912.GA17049@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->   I found the new added mask code 'FLAG_POINTTOPOINT' overlapped
-> 'FLAG_MULTI_PACKET' in    include/linux/usb/usbnet.h, this maybe
-> caused logic issue in rx_process(). I create a patch for this, but
-> have no such a device to test it, could you have a try? thanks.
+Am 07.04.2011 19:39, schrieb Russell King - ARM Linux:
 
-Will try the patch tomorrow morning and report back.
+> We have an established API and convention in the kernel which you claim
+> is "from outerspace".  It's not "from outerspace" but a designed API to
+> allow platforms to live together in the same kernel image.  So I find
+> your arguments totally unreasonable.
 
-Gottfried
+I've claimed that the specific machine ID is from outerspace not the 
+API. This one (ID) got invented just because of a different usage of two 
+GPIOs (and not even by the manufacturerer). And I still think using the 
+(fixed) memory size here is totally reasonable. There is nothing else to 
+differentiate these HWs, it's extremely unlikely that this difference 
+will get proved wrong, and if that would really happen, than one could 
+still add some code to fix this specific problem. _Always_ dealing with 
+"what happens when" is (imho) fruitless and no solution or API can deal 
+with everything.
 
+> I fully support Nicolas in rejecting your patches outright on this point
+> alone.
 
-> [PATCH]    Clean up mask code overlaps in driver_info of usbnet
->
-> Signed-off-by:  Huajun Li <huajun.li.lee@gmail.com>
-> ---
->  include/linux/usb/usbnet.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
-> index 3c7329b..0e18550 100644
-> --- a/include/linux/usb/usbnet.h
-> +++ b/include/linux/usb/usbnet.h
-> @@ -103,8 +103,8 @@ struct driver_info {
->  * Indicates to usbnet, that USB driver accumulates multiple IP packets.
->  * Affects statistic (counters) and short packet handling.
->  */
-> -#define FLAG_MULTI_PACKET      0x1000
-> -#define FLAG_RX_ASSEMBLE       0x2000  /* rx packets may span >1 frames */
-> +#define FLAG_MULTI_PACKET      0x2000
-> +#define FLAG_RX_ASSEMBLE       0x4000  /* rx packets may span >1 frames */
->
->        /* init device ... can sleep, or cause probe() failure */
->        int     (*bind)(struct usbnet *, struct usb_interface *);
+Which I fully understand. And I wouldn't have started to defend me, if 
+that would have happened in a more civil language.
+
+But because I don't want to get involved in more discussions with people 
+who are missing the needed manners (at least how I learned them) to talk 
+with other people without offending them (not you), I better try to stay 
+away posting patches.
+
+Maybe I'm getting too old and lacking the needed enthusiasm needed to 
+discuss such stuff (and with everyone who thinks he must enter this 
+discussion too, again, not you). ;)
+
+I wish you all a nice day,
+
+Alexander
