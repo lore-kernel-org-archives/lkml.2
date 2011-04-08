@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561Ab1DHQNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 12:13:22 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51607 "EHLO mx1.suse.de"
+	id S1757594Ab1DHQNp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 12:13:45 -0400
+Received: from kroah.org ([198.145.64.141]:48036 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752656Ab1DHQNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753031Ab1DHQNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Apr 2011 12:13:21 -0400
-Date: Fri, 8 Apr 2011 09:05:58 -0700
-From: Greg KH <gregkh@suse.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: wireless <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Removal of staging/rt2860sta (and rt2870sta)
-Message-ID: <20110408160558.GA11902@suse.de>
-References: <4D9F2185.10108@lwfinger.net>
+Date: Fri, 8 Apr 2011 09:14:20 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Hannes Reinecke <hare@suse.de>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
+ in Kernel.
+Message-ID: <20110408161420.GB12111@kroah.com>
+References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110405161400.GA885@kroah.com>
+ <4D9F17DF.5030601@hitachi.com>
+ <4D9F1CD1.2020600@suse.de>
+ <1302275652.4090.10.camel@mulgrave.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D9F2185.10108@lwfinger.net>
+In-Reply-To: <1302275652.4090.10.camel@mulgrave.site>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 09:53:57AM -0500, Larry Finger wrote:
-> Greg,
+On Fri, Apr 08, 2011 at 08:14:12AM -0700, James Bottomley wrote:
+> So, while I agree totally with the above: udev and userspace is the way
+> to go, I'm not totally opposed to having a non-invasive mechanism for
+> indicating a user's preferred name for a device.  I think there are a
+> couple of ways to do this:
 > 
-> When I looked again at the removal of rt2860sta from staging, it was
-> quickly obvious that unless rt2870sta was also removed, very little
-> of the code could be removed. As I have no experience with
-> rt2800usb, the mainline driver for that device, I went to the
-> wireless mailing list with the question. There was one objection to
-> the removal, but the maintainers were in favor, thus I will be
-> submitting a patch to delete both drivers.
-> 
-> I did the changes on my local git tree, committed them, and used
-> 'git format-patch'. I expected that 'git rm' statements would be
-> used to delete the files, but I got normal patch format. As a
-> result, the resulting patch is over 2.4 GB, and has over 75,000
-> lines. Obviously, I'm reluctant to dump a patch of this size on the
-> lists. Is there a way to force git to use "rm" statements, or is
-> there some way to handle this large patch?
+>      1. Entirely in userspace: just have udev consult a preferred name
+>         file and create say /dev/disk/by-preferred.  Then have all the
+>         tools that normally output device information do the same (i.e.
+>         since real name to preferred name is 1:1, they could all do a
+>         reverse lookup).
+>      2. have a writeable sysfs preferred_name field, either in the
+>         generic device or just in SCSI.  The preferred name would be
+>         used by outbound only (i.e. kernel dev_printk messages and
+>         possibly /proc/partitions).  All inbound uses of the device
+>         would come via the standard udev mechanisms
+>         (i.e. /dev/disk/by-preferred would be the usual symlink).  This
+>         means from the kernel point of view, no renaming has happened.
+>         We'd just try to print out the preferred name in certain
+>         circumstances, which should solve most of the described problem.
 
-You can point me at the git tree and I can pull from it :)
+Either, or both, of those options are fine with me as well.
 
 thanks,
 
