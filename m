@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab1DHFOZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 01:14:25 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53629 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab1DHFOX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 01:14:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=EMnL8LlfT4ZKi/UsDrb0h2TTNgP6Sj2om8dOwbE+RxLn9gylpynVPrIM/rKrNkXS6m
-         bQvXELh22aCA5VxA8bRcxzM+vDag3uhzqAYqpXAAGcvQpBtWJnGq9BkM96IkN4ayvP9E
-         s1lvRdzntxcE5oDYkEd9y9NVD38zzIvHQo9iE=
+	id S1752181Ab1DHFO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 01:14:56 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:54259 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab1DHFOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 01:14:55 -0400
+Date: Fri, 8 Apr 2011 07:14:48 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, kernel-janitors@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/rtc/rtc-mrst.c: Use release_mem_region after
+ request_mem_region
+In-Reply-To: <20110407160142.0a9d399c.akpm@linux-foundation.org>
+Message-ID: <Pine.LNX.4.64.1104080657520.16547@ask.diku.dk>
+References: <1300136425-3311-1-git-send-email-julia@diku.dk>
+ <20110407160142.0a9d399c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <4D9E6F6E.9050709@codemonkey.ws>
-References: <1301592656.586.15.camel@jaguar>
-	<4D982E89.8070502@redhat.com>
-	<BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com>
-	<4D9847BC.9060906@redhat.com>
-	<4D98716D.9040307@codemonkey.ws>
-	<4D9873CD.3080207@redhat.com>
-	<20110406093333.GB6465@elte.hu>
-	<4D9E6F6E.9050709@codemonkey.ws>
-Date: Fri, 8 Apr 2011 08:14:22 +0300
-X-Google-Sender-Auth: tIHCm4MkqQzbwt-kQzpwEkv4R_U
-Message-ID: <BANLkTimEwAuL4PM9vBfogkrua-Z44AZQvg@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-From: Pekka Enberg <penberg@kernel.org>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org, aarcange@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, joro@8bytes.org, penberg@cs.helsinki.fi,
-        asias.hejun@gmail.com, gorcunov@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anthony,
+On Thu, 7 Apr 2011, Andrew Morton wrote:
 
-On Fri, Apr 8, 2011 at 5:14 AM, Anthony Liguori <anthony@codemonkey.ws> wrote:
-> If someone was going to seriously go about doing something like this, a
-> better approach would be to start with QEMU and remove anything non-x86 and
-> all of the UI/command line/management bits and start there.
->
-> There's nothing more I'd like to see than a viable alternative to QEMU but
-> ignoring any of the architectural mistakes in QEMU and repeating them in a
-> new project isn't going to get there.
+> On Mon, 14 Mar 2011 22:00:25 +0100
+> Julia Lawall <julia@diku.dk> wrote:
+> 
+> > The memory allocated using request_mem_region should be released using
+> > release_mem_region, not release_region.
+> > 
+> > The semantic patch that fixes part of this problem is as follows:
+> > (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @@
+> > expression E1,E2,E3;
+> > @@
+> > 
+> > request_mem_region(E1,E2,E3)
+> > ...
+> > ?- release_region(E1,E2)
+> > + release_mem_region(E1,E2)
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> >  drivers/rtc/rtc-mrst.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+> > index b86bc32..558dd7d 100644
+> > --- a/drivers/rtc/rtc-mrst.c
+> > +++ b/drivers/rtc/rtc-mrst.c
+> > @@ -379,7 +379,7 @@ cleanup1:
+> >  	mrst_rtc.dev = NULL;
+> >  	rtc_device_unregister(mrst_rtc.rtc);
+> >  cleanup0:
+> > -	release_region(iomem->start, iomem->end + 1 - iomem->start);
+> > +	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
+> >  	dev_err(dev, "rtc-mrst: unable to initialise\n");
+> >  	return retval;
+> >  }
+> > @@ -405,7 +405,7 @@ static void __exit rtc_mrst_do_remove(struct device *dev)
+> >  	mrst->rtc = NULL;
+> >  
+> >  	iomem = mrst->iomem;
+> > -	release_region(iomem->start, iomem->end + 1 - iomem->start);
+> > +	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
+> >  	mrst->iomem = NULL;
+> >  
+> >  	mrst->dev = NULL;
+> 
+> We may as well clean this up too.
+> 
+> --- a/drivers/rtc/rtc-mrst.c~drivers-rtc-rtc-mrstc-use-release_mem_region-after-request_mem_region-fix
+> +++ a/drivers/rtc/rtc-mrst.c
+> @@ -380,7 +380,7 @@ cleanup1:
+>  cleanup0:
+>  	dev_set_drvdata(dev, NULL);
+>  	mrst_rtc.dev = NULL;
+> -	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
+> +	release_mem_region(iomem->start, resource_size(iomem));
+>  	dev_err(dev, "rtc-mrst: unable to initialise\n");
+>  	return retval;
+>  }
+> @@ -406,7 +406,7 @@ static void __devexit rtc_mrst_do_remove
+>  	mrst->rtc = NULL;
+>  
+>  	iomem = mrst->iomem;
+> -	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
+> +	release_mem_region(iomem->start, resource_size(iomem));
+>  	mrst->iomem = NULL;
+>  
+>  	mrst->dev = NULL;
+> _
+> 
+> which makes one wonder why we don't have
+> 
+> void release_resource_mem(struct resource *r)
+> {
+> 	release_mem_region(r->start, resource_size(r));
+> }
 
-Hey, feel free to help out! ;-)
+Perhaps the name is not quite good, because release resource is something 
+different from:
 
-I don't agree that a working 2500 LOC program is 'repeating the same
-architectural mistakes' as QEMU. I hope you realize that we've gotten
-here with just three part-time hackers working from their proverbial
-basements. So what you call mistakes, we call features for the sake of
-simplicity.
+void release_resource(struct resource *r)
+{
+      release_region(r->start, resource_size(r));
+}
 
-I also don't agree with this sentiment that unless we have SMP,
-migration, yadda yadda yadda, now, it's impossible to change that in
-the future. It ignores the fact that this is exactly how the Linux
-kernel evolved and the fact that we're aggressively trying to keep the
-code size as small and tidy as possible so that changing things is as
-easy as possible.
+It would be really nice to have such a wrapper for both of them, since the 
+code is so common, and the size computation is so error prone.
 
-I've looked at QEMU sources over the years and especially over the
-past year and I think you might be way too familiar with its inner
-workings to see how complex (even the core code) has become for
-someone who isn't familiar with it. I think it has to do with lots of
-indirection and code cleanliness issues (and I think that was the case
-even before KVM came into the picture). So I don't agree at all that
-taking QEMU as a starting point would make things any easier. (That
-is, unless someone intimately familiar with QEMU does it.)
-
-On Fri, Apr 8, 2011 at 5:14 AM, Anthony Liguori <anthony@codemonkey.ws> wrote:
-> Too much effort in QEMU goes into working around previous mistakes.  That
-> doesn't mean that QEMU doesn't have a lot of useful bits in it and hasn't
-> figured out a lot of good ways to do things.
-
-Completely agreed.
-
-                        Pekka
+julia
