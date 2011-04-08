@@ -1,47 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab1DHU4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:56:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56537 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757948Ab1DHU4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:56:10 -0400
-Message-ID: <4D9F7630.1090503@zytor.com>
-Date: Fri, 08 Apr 2011 13:55:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        x86@kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] x86 APM: delete Linux kernel APM support
-References: <alpine.LFD.2.02.1103232321070.3848@x980> <alpine.LFD.2.02.1103241929450.16085@x980> <20110325113048.GC29521@elte.hu> <201103252333.23880.rjw@sisk.pl> <20110408062506.GB1596@ucw.cz>
-In-Reply-To: <20110408062506.GB1596@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757960Ab1DHU6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:58:04 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35169 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab1DHU6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 16:58:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=nqqf/Y+p3xmTV88W1GpjoNBC5xrmvUQMQIvbjsk9NZOHY7N0ZM/JDjOV9hAl6TtdC0
+         NZSgYg6PT0aHtDruNMqve48quwGa9NQoydjYXvfbdz/FudjvnC/+MwSJ/9DXqLlwttDC
+         RBt/8ejL1nokIEvAjFZtSKQN+7zgZSyUZrHpo=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf: Don't schedule tracepoints when exclude_kernel is set
+Date: Fri,  8 Apr 2011 22:57:55 +0200
+Message-Id: <1302296275-26767-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2011 11:25 PM, Pavel Machek wrote:
->>
->> Well, it kind of does but not really. :-)
->>
->> The main problem with APM is that nobody really works on it and I'm not sure
->> if there are any active users.  At least no one reports any problems with it,
->> which is kind of surprising, given the number of chages we've made in the PM
->> core for the last couple of years.  So quite likely it's just become
->> non-functional over time anyway, but we have no confirmation.
-> 
-> It was working ok last time I tried -- cca 6/2010.
-> 								Pavel
+Instead of checking attr.exclude_kernel anytime a tracepoint
+event triggers, simply don't schedule the tracepoint it that
+attribute is set. This makes one test less in the tracing
+path.
 
-What aspects of it did you test, and on what platform?
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ kernel/perf_event.c             |    5 -----
+ kernel/trace/trace_event_perf.c |    6 +++++-
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-	-hpa
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index c75925c..2f3fb90 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -5491,11 +5491,6 @@ static int perf_tp_event_match(struct perf_event *event,
+ {
+ 	if (event->hw.state & PERF_HES_STOPPED)
+ 		return 0;
+-	/*
+-	 * All tracepoints are from kernel-space.
+-	 */
+-	if (event->attr.exclude_kernel)
+-		return 0;
+ 
+ 	if (!perf_tp_filter_match(event, data))
+ 		return 0;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 19a359d..427314b 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -136,6 +136,10 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 	struct hlist_head __percpu *pcpu_list;
+ 	struct hlist_head *list;
+ 
++	/* Tracepoints always trigger in the kernel */
++	if (p_event->attr.exclude_kernel)
++		return 0;
++
+ 	pcpu_list = tp_event->perf_events;
+ 	if (WARN_ON_ONCE(!pcpu_list))
+ 		return -EINVAL;
+@@ -151,7 +155,7 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 
+ void perf_trace_del(struct perf_event *p_event, int flags)
+ {
+-	hlist_del_rcu(&p_event->hlist_entry);
++	hlist_del_init_rcu(&p_event->hlist_entry);
+ }
+ 
+ void perf_trace_destroy(struct perf_event *p_event)
+-- 
+1.7.3.2
 
