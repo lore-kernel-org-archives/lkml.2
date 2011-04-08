@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab1DHATx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 20:19:53 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:36066 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757161Ab1DHATw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 20:19:52 -0400
-Date: Thu, 7 Apr 2011 17:19:42 -0700
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] print vmalloc() state after allocation failures
-Message-ID: <20110408001942.GC2874@cmpxchg.org>
-References: <20110407172302.3B7546DA@kernel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110407172302.3B7546DA@kernel>
+	id S1757243Ab1DHAXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 20:23:31 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:27318 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755609Ab1DHAXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 20:23:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=to:subject:cc:message-id:date:from:x-system-of-record;
+	b=wJvhsu4w9uRFCPAx3gRQzIq4uU5y/jYPQ5YRQMLNvhhx+ypR3ySb2/cI6A226PvTS
+	VThoTG/1itKFKn/0QR+IQ==
+To: a.p.zijlstra@chello.nl, mingo@elte.hu
+Subject: [PATCH] sched: fix sched-domain avg_load calculation.
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <20110408002322.3A0D812217F@elm.corp.google.com>
+Date: Thu,  7 Apr 2011 17:23:22 -0700 (PDT)
+From: kenchen@google.com (Ken Chen)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 10:23:02AM -0700, Dave Hansen wrote:
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+In function find_busiest_group(), the sched-domain avg_load isn't
+calculated at all if there is a group imbalance within the domain.
+This will cause erroneous imbalance calculation.  The reason is
+that calculate_imbalance() sees sds->avg_load = 0 and it will dump
+entire sds->max_load into imbalance variable, which is used later
+on to migrate entire load from busiest CPU to the puller CPU. It
+has two really bad effect:
 
-I agree with this in general, but have some nitpicks.
+1. stampede of task migration, and they won't be able to break out
+   of the bad state because of positive feedback loop: large load
+   delta -> heavier load migration -> larger imbalance and the cycle
+   goes on.
 
-> @@ -1579,6 +1579,18 @@ static void *__vmalloc_area_node(struct 
->  	return area->addr;
->  
->  fail:
-> +	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
+2. severe imbalance in CPU queue depth.  This causes really long
+   scheduling latency blip which affects badly on application that
+   has tight latency requirement.
 
-There is a comment above the declaration of printk_ratelimit:
+The fix is to have kernel calculate domain avg_load in both cases.
+This will ensure that imbalance calculation is always sensible and
+the target is usually half way between busiest and puller CPU.
 
-/*
- * Please don't use printk_ratelimit(), because it shares ratelimiting state
- * with all other unrelated printk_ratelimit() callsites.  Instead use
- * printk_ratelimited() or plain old __ratelimit().
- */
+Signed-off-by: Ken Chen <kenchen@google.com>
+---
+ kernel/sched_fair.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I realize that the page allocator does it the same way, but I think it
-should probably be fixed in there, rather than spread any further.
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index c7ec5c8..c46568a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3127,6 +3127,8 @@ find_busiest_group(
+ 	if (!sds.busiest || sds.busiest_nr_running == 0)
+ 		goto out_balanced;
+ 
++	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
++
+ 	/*
+ 	 * If the busiest group is imbalanced the below checks don't
+ 	 * work because they assumes all things are equal, which typically
+@@ -3151,7 +3153,6 @@ find_busiest_group(
+ 	 * Don't pull any tasks if this group is already above the domain
+ 	 * average load.
+ 	 */
+-	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
+ 	if (sds.this_load >= sds.avg_load)
+ 		goto out_balanced;
+ 
+-- 
+1.7.3.1
 
-> +		/*
-> +		 * We probably did a show_mem() and a stack dump above
-> +		 * inside of alloc_page*().  This is only so we can
-> +		 * tell how big the vmalloc() really was.  This will
-> +		 * also not be exactly the same as what was passed
-> +		 * to vmalloc() due to alignment and the guard page.
-> +		 */
-> +		printk(KERN_WARNING "%s: vmalloc: allocation failure, "
-> +			"allocated %ld of %ld bytes\n", current->comm,
-> +			(area->nr_pages*PAGE_SIZE), area->size);
-> +	}
-
-To me, this does not look like something that should just be appended
-to the whole pile spewed out by dump_stack() and show_mem().  What do
-you think about doing the page allocation with __GFP_NOWARN and have
-the full report come from this place, with the line you introduce as
-leader?
-
-	Hannes
