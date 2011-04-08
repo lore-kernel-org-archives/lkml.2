@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab1DHD0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 23:26:52 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:6008 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757375Ab1DHD0u convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 23:26:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=WJDPLuxX1BqYJZNgPd5XbtFduS8yLDE6yOx7K9870xOe5IZyoaWi5+7IKnOtkGUiB3
-         4iIQWlOlcRZom4UwL9Kw==
-MIME-Version: 1.0
-In-Reply-To: <4D9DA00A.3030700@cam.ac.uk>
-References: <1302057915-13549-1-git-send-email-sonnyrao@chromium.org>
- <4D9C477E.4050400@cam.ac.uk> <BANLkTikWBU-uW6xKwNt+zrS0JbDPOzdd0w@mail.gmail.com>
- <4D9DA00A.3030700@cam.ac.uk>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Thu, 7 Apr 2011 20:26:27 -0700
-X-Google-Sender-Auth: 60IJnhm0IgeX3XEJGzWtPiMxIkM
-Message-ID: <BANLkTikRPz_NYY=mJ8Mqe9k2cyu-ouC4iw@mail.gmail.com>
-Subject: Re: [PATCH] Enable async suspend/resume on industrial IO devices
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-pm@lists.linux-foundation.org, bleung@chromium.org,
-        snanda@chromium.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Phillip Kurtenbach <pkurtenbach@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1757422Ab1DHD1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 23:27:55 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57566 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757375Ab1DHD1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 23:27:53 -0400
+Date: Fri, 8 Apr 2011 13:27:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Message-Id: <20110408132747.57085f64.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__8_Apr_2011_13_27_47_+1000_bNnpd6VEArhkqytF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 7, 2011 at 4:29 AM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
-> On 04/06/11 23:47, Sonny Rao wrote:
->> On Wed, Apr 6, 2011 at 3:59 AM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
->>> On 04/06/11 03:45, Sonny Rao wrote:
->>>> Industrial I/O devices can sometimes take a long time to resume,
->>>> allowing them to be asynchronus saves 50ms on one light sensor
->>>>
->>> Hi Sonny,
->>>
->>> cc'd linux-iio
->>>
->>> I'm not particularly familiar with this.  Are there any disadvantages?
->>> I just wonder if it would be better to push this into individual drivers
->>> rather than the core?
->>
->> Yeah we could do it that way too, I sent out a similar patch for i2c
->> and people were asking if it was entirely safe.  It sounds like it may
->> depend on dependencies between devices.
->>
->> Do you know if any of the devices in iio have inter-device dependencies?
->> I was under the impression they were mostly stand-alone sensors that
->> ordinarily wouldn't, but I haven't tried to audit all of them or anything.
-> Mostly I think is the key word here.  Right now I don't think we have anything
-> that would have a problem, but putting something like that in the core is
-> liable to bite sometime in the future.  For now at least I think I'd prefer
-> to see it in an individual driver.
->
-Ok sure, FYI, I had a similar discussion with the i2c folks and I
-think the consensus was to do it per-driver as well.
-The driver I was interested in was the tsl258x which isn't in staging
-yet.  When it goes in, I shall submit my patch on top of that.
+--Signature=_Fri__8_Apr_2011_13_27_47_+1000_bNnpd6VEArhkqytF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Mauro,
 
-Thanks,
-Sonny
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+drivers/media/dvb/frontends/drx397xD.c between commit 25985edcedea ("Fix
+common misspellings") from Linus' tree and commit a8e8541bc7af ("Remove
+the now obsolete drx397xD") from the v4l-dvb tree.
+
+The latter removed the file, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__8_Apr_2011_13_27_47_+1000_bNnpd6VEArhkqytF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNnoCzAAoJEDMEi1NhKgbs7joH/0WZhkjqUZuncHjLqmvN0Yc5
+1AOIVJtiT/nQ/5rrhAgZb31NVTKHPPnXwTmpd0gFUeHcMm/3Z7LV4x2AzlT+Fz/h
+D/ur+qam4ueFCGO771Uq4JkzYzC0e3FM4dMR8R2Zsga/LAjYA1ITr1424FSc2iaH
+WanzoF6iCT33dt/JpuLC61oIZTSJCQZr/Adtxc5+B93/9PP3AWMMXtnDKrdFko0E
+r8LB1lsyY3kuSv7+ZFrEYgJyd89upBLj2FEOFwa2M1f/coc8d9XyK4IP5+jABTHL
+1YBFm/5qPHfrYB6GK5en4Rwpb4C54AFJVPJZj7PAtob4w/8xfJoaYeZR0PaKxcw=
+=tS1C
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__8_Apr_2011_13_27_47_+1000_bNnpd6VEArhkqytF--
