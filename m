@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab1DHG07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 02:26:59 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:58016 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753198Ab1DHG06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 02:26:58 -0400
-Date: Fri, 8 Apr 2011 08:26:46 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: 2.6.39-rc2 on zaurus: does not build, does not boot
-Message-ID: <20110408062646.GA1472@ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754472Ab1DHGbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 02:31:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48037 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753198Ab1DHGbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 02:31:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,322,1299484800"; 
+   d="scan'208";a="676686591"
+Subject: [PATCH -tip] perf hists browser: Fix seg fault when annotate null
+ symbol
+From: Lin Ming <ming.m.lin@intel.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Apr 2011 14:31:26 +0800
+Message-ID: <1302244286.4106.36.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+In hists browser, press hotkey 'a' to annotate current symbol.
+Now it causes segment fault if 'a' is pressed on a null symbol.
 
-Build fix is below. Maybe it is pending in the trees somewhere
-already...
+Here are 2 small bugs:
+- In perf_evsel__hists_browse, the condition check after 'a' is pressed
+  is not correct, we should check ->sym instead of ->map.
+- In symbol__tui_annotate we must check whether sym is NULL or not
+  before getting annotation structure.
 
-Boot stops just after mounting root filesystem; cursor stops
-flashing. (Any idea what goes on there?)
+This patch fixes above 2 small bugs.
 
-								Pavel
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ tools/perf/util/ui/browsers/annotate.c |    6 ++++--
+ tools/perf/util/ui/browsers/hists.c    |    2 +-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---- ./drivers/video.ofic/pxafb.c	2011-04-06 15:19:51.000000000 +0200
-+++ ./drivers/video/pxafb.c	2011-04-07 06:20:20.000000000 +0200
-@@ -1648,7 +1648,7 @@
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 8c17a87..15633d6 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -256,10 +256,9 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			 int refresh)
+ {
+ 	struct objdump_line *pos, *n;
+-	struct annotation *notes = symbol__annotation(sym);
++	struct annotation *notes;
+ 	struct annotate_browser browser = {
+ 		.b = {
+-			.entries = &notes->src->source,
+ 			.refresh = ui_browser__list_head_refresh,
+ 			.seek	 = ui_browser__list_head_seek,
+ 			.write	 = annotate_browser__write,
+@@ -281,6 +280,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
  
- 	switch (val) {
- 	case CPUFREQ_PRECHANGE:
--		if (!fbi->overlay[0].usage && !fbi->overlay[1].usage)
-+//		if (!fbi->overlay[0].usage && !fbi->overlay[1].usage)
- 			set_ctrlr_state(fbi, C_DISABLE_CLKCHANGE);
- 		break;
+ 	ui_helpline__push("Press <- or ESC to exit");
  
++	notes = symbol__annotation(sym);
++
+ 	list_for_each_entry(pos, &notes->src->source, node) {
+ 		struct objdump_line_rb_node *rbpos;
+ 		size_t line_len = strlen(pos->line);
+@@ -291,6 +292,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 		rbpos->idx = browser.b.nr_entries++;
+ 	}
+ 
++	browser.b.entries = &notes->src->source,
+ 	browser.b.width += 18; /* Percentage */
+ 	ret = annotate_browser__run(&browser, evidx, refresh);
+ 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 798efdc..5d767c6 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -851,7 +851,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel,
+ 			goto out_free_stack;
+ 		case 'a':
+ 			if (browser->selection == NULL ||
+-			    browser->selection->map == NULL ||
++			    browser->selection->sym == NULL ||
+ 			    browser->selection->map->dso->annotate_warned)
+ 				continue;
+ 			goto do_annotate;
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
