@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab1DHPi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 11:38:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45273 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932276Ab1DHPi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 11:38:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=bJwVDn+uKxSvWoPhifINozKCwGGeNfvlRgOaBQ1fQmz9ugNgFvjjqDcBCRsYY8/wQN
-         5mDkBRAQzirIGDyry0UsruguGB+DY/7X4rqAZjM31uxFSjXmbUMP5iibcP4Uq80sJU1f
-         doQn8KIm3nmM/2NAhoz1huCwCiazkeUge7LvM=
-Message-ID: <4D9F2C0C.5090400@gmail.com>
-Date: Fri, 08 Apr 2011 08:38:52 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	id S1757316Ab1DHPp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 11:45:57 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52350 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752575Ab1DHPpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 11:45:55 -0400
+Date: Fri, 8 Apr 2011 17:45:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] x86/mrst: correct pin to irq mapping
+Message-ID: <20110408154540.GC17934@elte.hu>
+References: <1302201172-1254-1-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: trivial@kernel.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5 V2]arch:common:Makefile Remove unused config in the
- Makefile.
-References: <1302219529-8864-1-git-send-email-justinmattock@gmail.com> <20110408073153.GA18601@pengutronix.de>
-In-Reply-To: <20110408073153.GA18601@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302201172-1254-1-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2011 12:31 AM, Uwe Kleine-König wrote:
-> Hi Justin,
->
-> On Thu, Apr 07, 2011 at 04:38:49PM -0700, Justin P. Mattock wrote:
->> The patch below removes an unused config variable found by using a kernel
->> cleanup script.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->> Acked-by: Uwe Kleine-König<u.kleine-koenig@pengutronix.de>
->> Acked-by: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
->> ---
-> Russell asked you to send this to his patch system.
-> See http://www.arm.linux.org.uk/developer/patches/info.php for more info
-> about that.
->
-> Best regards
-> Uwe
->
 
+* Jacob Pan <jacob.jun.pan@linux.intel.com> wrote:
 
-alright I read up and sent this to the address listed on that 
-page(patches@arm.linux.org.uk) if it is incorrect let me know and I will 
-resend so that I get things correct..
+> Set mp_bus_not_pci bit to allow 1:1 mapping of pin2irq on Moorestown.
+> Refer to discussion in:
+> https://lkml.org/lkml/2010/6/10/70
+> 
+> Suggested-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  arch/x86/platform/mrst/mrst.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Justin P. Mattock
+Could you please improve the changelog to explain to the reader:
+
+ - why has this change been done
+ - what are the effects on users (if any)
+ - what is the urgency of the patch (needed for .39, or can wait for .40)
+
+lkml.org links may or may not work in the future, we really need proper 
+background information in changelogs.
+
+Thanks,
+
+	Ingo
