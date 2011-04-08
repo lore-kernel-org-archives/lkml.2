@@ -1,181 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab1DHNpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 09:45:52 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41825 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab1DHNpu (ORCPT
+	id S1756937Ab1DHNyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 09:54:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54062 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756647Ab1DHNyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 09:45:50 -0400
+	Fri, 8 Apr 2011 09:54:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=googlemail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=kK1l9gDEbnRFTeXbvaPWcIBGiaV/xwMNlcRsB4PbqiLUfR/c5bcQwVSR7O7k2igQAf
-         eF8fCVqOnaaQP7CksR2kP9JZeJL4j4uSyZPBb9guqfkxsUi0fyRUOep4+VajvyNxPTmX
-         zOvJIRrwk3dEUfltuTYFKseT7ODDJuBR6zpJk=
-Date: Fri, 8 Apr 2011 15:45:42 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
-Message-ID: <20110408134537.GA1967@nowhere>
-References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
- <20110407013349.GH1867@nowhere>
- <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
- <20110407120608.GB1798@nowhere>
- <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
- <20110407213208.GE1798@nowhere>
- <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
- <20110408002812.GG1798@nowhere>
- <1302248268.21026.18.camel@frodo>
+        b=c15dW0UI2+5qJvOC32HLr3sijJz3at/PjK0gxhp+nC1+IIeGcaQbOi+5eLTTvYbgol
+         tjEkwF7MnmGnY7NQnxzh4j2Sh7z2fMg/j48TRlh8wo7dVdcxZ3gOrR+hxQsU4ePm66SA
+         Eih1fp4CH1DgIRNzSejX4VcWleCo65j0nc87A=
+Date: Fri, 8 Apr 2011 15:54:07 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Thomas Renninger <trenn@suse.de>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH v4] hwmon: Add driver for AMD family 15h processor power
+ information
+Message-ID: <20110408135407.GA12014@alberich.amd.com>
+References: <20110404160733.GA11818@alberich.amd.com>
+ <20110405144536.GA5054@alberich.amd.com>
+ <20110406135424.GC2177@alberich.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1302248268.21026.18.camel@frodo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110406135424.GC2177@alberich.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 03:37:48AM -0400, Steven Rostedt wrote:
-> On Fri, 2011-04-08 at 02:28 +0200, Frederic Weisbecker wrote:
-> 
-> > > This is all very interesting, but doesn't really help us. I'd prefer
-> > > to focus on the proposal itself than discuss the merits of perf and
-> > > ftrace. We're using ftrace for the foreseeable future, and afaik, it's
-> > > still a maintained part of the kernel. If perf improves its
-> > > performance for tracing, then we can consider switching to it. We
-> > > could invest time improving perf, and that might be worthwhile, but
-> > > ftrace is here now.
-> > 
-> > You are investing upstream for your tracing needs. And that's really
-> > a nice step that I appreciate, as IIRC, Google had its own internal tracing
-> > (ktrace?) before. Nonetheless you can't be such a significant
-> > user/developer of the upstream kernel tracing and at the same time ignore some
-> > key problems of the actual big picture of it.
-> > 
-> > You need to be aware that we are not going anywhere if we duplicate
-> > every features between perf and ftrace. We want to merge the common
-> > pieces, keep the best of them and not expand the two tier tracing of today.
-> 
-> 
-> I agree that it would be great if we can start to merge the two. But
-> until we have a road map that we can all agree upon, I don't see that
-> happening in the near future. But I may be wrong ;)
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-Nah, I don't think it's necessary to have a roadmap, just a kind
-of general direction. Other than that everything can be done piecewise
-without thinking too far for every single patches.
+This CPU family provides NB register values to gather following
+TDP information
 
-If we were to create a buffer abstraction, something we can create with an
-fd, we can have a shared buffer implementation. And this buffer may be
-able to accept different modes in the future.
+* ProcessorPwrWatts: Specifies in Watts the maximum amount of power
+  the processor can support.
+* CurrPwrWatts: Specifies in Watts the current amount of power being
+  consumed by the processor.
 
-Then one could attach the fd to a perf event, which would override the
-default perf event buffer settings.
+This driver provides
 
-And ftrace can use that same buffer internally.
+* power1_max (ProcessorPwrWatts)
+* power1_input (CurrPwrWatts)
 
-I bet this idea is not controversial. What has yet to be solved is
-the debate on the writers that can run in overwriting mode at the same
-time we have readers. Which comes along debates on using subbuffers, etc..
+Changes from v2:
+ - fix format strings
+ - removed paranoid checks for existense of functions 3 and 5
+ - changed return type of function f15h_power_is_internal_node0
+ - use power1_max instead of power1_cap
+ - use dev_warn instead of WARN_ON
+ - rebased against 2.6.39-rc2
+ - added Documentation/hwmon/f15h_power
 
-But I guess we can solve that along the way?
+Changes from v3:
+ - read static power information only once (during driver initialization)
+ - made use of attribute groups
+ - renamed f15h_power to fam15h_power
 
-There are many other things we want to do to unify even more: have the
-function tracers usable as trace events, same for trace_printk, etc...
-Those parts are pretty uncontroversial.
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ Documentation/hwmon/fam15h_power |   37 ++++++
+ drivers/hwmon/Kconfig            |   10 ++
+ drivers/hwmon/Makefile           |    1 +
+ drivers/hwmon/fam15h_power.c     |  229 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 277 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwmon/fam15h_power
+ create mode 100644 drivers/hwmon/fam15h_power.c
 
-I don't consider the tracing merge as a one block thing, it's actually
-many standalone pieces that require incremental changes.
+At this stage I consider the _max attribute as the right one for
+reporting ProcessorPwrWatts.
+
+Hopefully I've addressed all your coments.
+Please apply.
+
+
+Thanks,
+
+Andreas
+
+diff --git a/Documentation/hwmon/fam15h_power b/Documentation/hwmon/fam15h_power
+new file mode 100644
+index 0000000..2f4d291
+--- /dev/null
++++ b/Documentation/hwmon/fam15h_power
+@@ -0,0 +1,37 @@
++Kernel driver fam15h_power
++==========================
++
++Supported chips:
++* AMD Family 15h Processors
++
++  Prefix: 'fam15h_power'
++  Addresses scanned: PCI space
++  Datasheets:
++  BIOS and Kernel Developer's Guide (BKDG) For AMD Family 15h Processors
++    (not yet published)
++
++Author: Andreas Herrmann <andreas.herrmann3@amd.com>
++
++Description
++-----------
++
++This driver permits reading of registers providing power information
++of AMD Family 15h processors.
++
++For AMD Family 15h processors the following power values can be
++calculated using different processor northbridge function registers:
++
++* BasePwrWatts: Specifies in watts the maximum amount of power
++  consumed by the processor for NB and logic external to the core.
++* ProcessorPwrWatts: Specifies in watts the maximum amount of power
++  the processor can support.
++* CurrPwrWatts: Specifies in watts the current amount of power being
++  consumed by the processor.
++
++This driver provides ProcessorPwrWatts and CurrPwrWatts:
++* power1_max (ProcessorPwrWatts)
++* power1_input (CurrPwrWatts)
++
++On multi-node processors the calculated value is for the entire
++package and not for a single node. Thus the driver creates sysfs
++attributes only for internal node0 of a multi-node processor.
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 060ef63..fb3e334 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -249,6 +249,16 @@ config SENSORS_K10TEMP
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called k10temp.
  
-> > 
-> > I wish people stop thinking about perf and ftrace as
-> > competitors.
-> 
-> I don't think this is about perf and ftrace as competitors, but they are
-> currently two different infrastructures that are existing in the kernel.
-> They are currently optimized for different purposes. ftrace is optimized
-> for system tracing (persistent buffers and such) where as perf is
-> optimized for user tracing. But the two can do both but the other
-> feature is not as efficient as the other tool.
++config SENSORS_FAM15H_POWER
++	tristate "AMD Family 15h processor power"
++	depends on X86 && PCI
++	help
++	  If you say yes here you get support for processor power
++	  information of your AMD family 15h CPU.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called fam15h_power.
++
+ config SENSORS_ASB100
+ 	tristate "Asus ASB100 Bach"
+ 	depends on X86 && I2C && EXPERIMENTAL
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 967d0ea..236d3f9 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -49,6 +49,7 @@ obj-$(CONFIG_SENSORS_EMC2103)	+= emc2103.o
+ obj-$(CONFIG_SENSORS_F71805F)	+= f71805f.o
+ obj-$(CONFIG_SENSORS_F71882FG)	+= f71882fg.o
+ obj-$(CONFIG_SENSORS_F75375S)	+= f75375s.o
++obj-$(CONFIG_SENSORS_FAM15H_POWER) += fam15h_power.o
+ obj-$(CONFIG_SENSORS_FSCHMD)	+= fschmd.o
+ obj-$(CONFIG_SENSORS_G760A)	+= g760a.o
+ obj-$(CONFIG_SENSORS_GL518SM)	+= gl518sm.o
+diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+new file mode 100644
+index 0000000..cb6eb99
+--- /dev/null
++++ b/drivers/hwmon/fam15h_power.c
+@@ -0,0 +1,229 @@
++/*
++ * fam15h_power.c - AMD Family 15h processor power monitoring
++ *
++ * Copyright (c) 2011 Advanced Micro Devices, Inc.
++ * Author: Andreas Herrmann <andreas.herrmann3@amd.com>
++ *
++ *
++ * This driver is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This driver is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++ * See the GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this driver; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/err.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/bitops.h>
++#include <asm/processor.h>
++
++MODULE_DESCRIPTION("AMD Family 15h CPU processor power monitor");
++MODULE_AUTHOR("Andreas Herrmann <andreas.herrmann3@amd.com>");
++MODULE_LICENSE("GPL");
++
++/* D18F3 */
++#define REG_NORTHBRIDGE_CAP		0xe8
++
++/* D18F4 */
++#define REG_PROCESSOR_TDP		0x1b8
++
++/* D18F5 */
++#define REG_TDP_RUNNING_AVERAGE		0xe0
++#define REG_TDP_LIMIT3			0xe8
++
++struct fam15h_power_data {
++	struct device *hwmon_dev;
++	unsigned int tdp_to_watt;
++	unsigned int base_tdp;
++	unsigned int processor_pwr_watts;
++};
++
++static ssize_t show_power(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	u32 val, tdp_limit, running_avg_range;
++	s32 running_avg_capture;
++	u64 curr_pwr_watts;
++	struct pci_dev *f4 = to_pci_dev(dev);
++	struct fam15h_power_data *data = pci_get_drvdata(f4);
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
++				  REG_TDP_RUNNING_AVERAGE, &val);
++	running_avg_capture = (val >> 4) & 0x3fffff;
++	running_avg_capture = sign_extend32(running_avg_capture, 22);
++	running_avg_range = val & 0xf;
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
++				  REG_TDP_LIMIT3, &val);
++
++	tdp_limit = val >> 16;
++	curr_pwr_watts = tdp_limit  + data->base_tdp -
++		(s32)(running_avg_capture >> (running_avg_range + 1));
++	curr_pwr_watts *= data->tdp_to_watt;
++
++	/*
++	 * Convert to microWatt
++	 *
++	 * power is in Watt provided as fixed point integer with
++	 * scaling factor 1/(2^16).  For conversion we use
++	 * (10^6)/(2^16) = 15625/(2^10)
++	 */
++	curr_pwr_watts = (curr_pwr_watts * 15625) >> 10;
++	return sprintf(buf, "%u\n", (unsigned int) curr_pwr_watts);
++}
++static DEVICE_ATTR(power1_input, S_IRUGO, show_power, NULL);
++
++static ssize_t show_power_max(struct device *dev,
++			     struct device_attribute *attr, char *buf)
++{
++	struct pci_dev *f4 = to_pci_dev(dev);
++	struct fam15h_power_data *data = pci_get_drvdata(f4);
++
++	return sprintf(buf, "%u\n", data->processor_pwr_watts);
++}
++static DEVICE_ATTR(power1_max, S_IRUGO, show_power_max, NULL);
++
++static ssize_t show_name(struct device *dev,
++			 struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "fam15h_power\n");
++}
++static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
++
++static struct attribute *fam15h_power_attrs[] = {
++	&dev_attr_power1_input.attr,
++	&dev_attr_power1_max.attr,
++	&dev_attr_name.attr,
++	NULL
++};
++
++static struct attribute_group fam15h_power_attr_group = {
++	.attrs	= fam15h_power_attrs,
++};
++
++static bool __devinit fam15h_power_is_internal_node0(struct pci_dev *f4)
++{
++	u32 val;
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 3),
++				  REG_NORTHBRIDGE_CAP, &val);
++	if ((val & BIT(29)) && ((val >> 30) & 3))
++		return false;
++
++	return true;
++}
++
++static void __devinit fam15h_power_init_data(struct pci_dev *f4,
++					     struct fam15h_power_data *data)
++{
++	u32 val;
++	u64 tmp;
++
++	pci_read_config_dword(f4, REG_PROCESSOR_TDP, &val);
++	data->base_tdp = val >> 16;
++	tmp = val & 0xffff;
++
++	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
++				  REG_TDP_LIMIT3, &val);
++
++	data->tdp_to_watt = ((val & 0x3ff) << 6) | ((val >> 10) & 0x3f);
++	tmp *= data->tdp_to_watt;
++
++	/* result not allowed to be >= 256W */
++	if ((tmp>>16) >= 256)
++		dev_warn(&f4->dev, "Bogus value for ProcessorPwrWatts "
++			 "(processor_pwr_watts>=%u)\n",
++			 (unsigned int) (tmp >> 16));
++
++	/* convert to microWatt */
++	data->processor_pwr_watts = (tmp * 15625) >> 10;
++}
++
++static int __devinit fam15h_power_probe(struct pci_dev *pdev,
++					const struct pci_device_id *id)
++{
++	struct fam15h_power_data *data;
++	struct device *dev;
++	int err;
++
++	if (!fam15h_power_is_internal_node0(pdev)) {
++		err = -ENODEV;
++		goto exit;
++	}
++
++	data = kzalloc(sizeof(struct fam15h_power_data), GFP_KERNEL);
++	if (!data) {
++		err = -ENOMEM;
++		goto exit;
++	}
++	fam15h_power_init_data(pdev, data);
++
++	dev = &pdev->dev;
++	err = sysfs_create_group(&dev->kobj, &fam15h_power_attr_group);
++	if (err)
++		goto exit_free_data;
++
++	data->hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		err = PTR_ERR(data->hwmon_dev);
++		goto exit_remove_group;
++	}
++	pci_set_drvdata(pdev, data);
++
++	return 0;
++
++exit_remove_group:
++	sysfs_remove_group(&dev->kobj, &fam15h_power_attr_group);
++exit_free_data:
++	kfree(data);
++exit:
++	return err;
++}
++
++static void __devexit fam15h_power_remove(struct pci_dev *pdev)
++{
++	struct device *dev;
++	struct fam15h_power_data *data = pci_get_drvdata(pdev);
++
++	dev = &pdev->dev;
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&dev->kobj, &fam15h_power_attr_group);
++	pci_set_drvdata(pdev, NULL);
++	kfree(data);
++}
++
++static DEFINE_PCI_DEVICE_TABLE(fam15h_power_id_table) = {
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
++	{}
++};
++MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
++
++static struct pci_driver fam15h_power_driver = {
++	.name = "fam15h_power",
++	.id_table = fam15h_power_id_table,
++	.probe = fam15h_power_probe,
++	.remove = __devexit_p(fam15h_power_remove),
++};
++
++static int __init fam15h_power_init(void)
++{
++	return pci_register_driver(&fam15h_power_driver);
++}
++
++static void __exit fam15h_power_exit(void)
++{
++	pci_unregister_driver(&fam15h_power_driver);
++}
++
++module_init(fam15h_power_init)
++module_exit(fam15h_power_exit)
+-- 
+1.7.4.1
 
-But that's an accidental two tier optimization. At least yeah ftrace
-goal is deemed for per cpu tracing, thus it is optimized this way.
-But perf should work well on both cases.
-
-> As you said perf has a lot of overhead due to data that it saves per
-> event. How easy is it to modify that without breaking the ABI?
-
-It doesn't need to break the ABI. We can add a field in the perf event
-attr to drop the ftrace headers. We can even remove the support for these
-headers in the pretty long term.
-
-> >  Probably developers could start having a sane view
-> > once both will have close performances and then we can start
-> > thinking about a common backend (a buffer abstraction, which development
-> > can be iterated incrementally, usable with a syscall) and eliminate the
-> > overlapping pieces.
-> 
-> I wouldn't say eliminate, but at least merge the overlapping pieces. I'm
-> still totally against stripping out the debugfs code, and as tools have
-> been made to depend on it, I'm not sure we can rip it out. But I do not
-> see any harm in supporting both a debugfs feature along with a syscall
-> interface. I'm willing to do the leg work here to keep it.
-
-I have no strong problem with that either. We can keep the debugfs interface
-or part of it, while merging the overlapping pieces.
-
-I think it's actually not even in question currently. We are far from a state
-where we can remove the debugfs interface. 
-
-> > 
-> > I'm not asking you to unify the kernel tracing all alone. But you need to
-> > start to enlarge your view.
-> 
-> You might want to be a bit more specific by what you mean here.
-
-I was just grumpy :)
-
-But instead of moaning against others I guess I should rather try to
-start to work on it.
-
-> > 
-> > I tend to think perf is more suitable for finegrained context definition
-> > in general.
-> 
-> I actually agree, as perf is more focused on per process (or group) than
-> ftrace. But that said, I guess the issue is also, if they have a simple
-> solution that is not invasive and suits their needs, what's the harm in
-> accepting it?
-
-To enter more details, perf and ftrace have different ways of dealing
-with contexts of tracing.
-
-ftrace would have a check on every exclusion point in the fast path
-(pid, cgroups, etc...) while perf would actually schedule events on
-top of these criterias. So that there should be only one check to know
-if we are running in the fast path.
-
-In practice we have much more checks from the fast path, but that again
-waits for more optimizations.
-
-So that's the reason why I think perf is more suitable when it's about
-dealing with contexts. Adding a cgroup check in the ftrace fastpath
-is automatically going to be invasive, this is one more check in any
-trace event fast path. As you said ftrace is more optimized for global
-tracing, which makes it the wrong place for that IMHO.
-
-I won't oppose, and may be they even have a non-invasive solution to
-propose that I haven't thought about. Until then I think they are
-investing the wrong place.
