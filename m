@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab1DHXqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 19:46:32 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:42263 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab1DHXqa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 19:46:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=o4YTwTrm7tUd3KqldcSiLTve1dseEiQnSyvwka8kEhGZ3mFoNFDXe9YU2g/HRQ8xcb
-         u89rIk4vj1inHPZ+PNofa5GwqNufORzkCmq7RmmHX5fj28Khb2Ih+qL+M6hiFc9CZ4WF
-         AtHMAOjVHAUAuuW3uqK7djfQDHQj1MG7klKvg=
+	id S1757953Ab1DHXyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 19:54:55 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35121 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752440Ab1DHXyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 19:54:53 -0400
+Date: Fri, 8 Apr 2011 16:54:51 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Ott <alan@signal11.us>
+Subject: Re: linux-next: build failure after merge of the hid tree
+In-Reply-To: <20110407110626.397202fb.sfr@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1104081645480.6022@pobox.suse.cz>
+References: <20110407110626.397202fb.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110408220157.GC26019@kroah.com>
-References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
-	<20110408220157.GC26019@kroah.com>
-Date: Sat, 9 Apr 2011 01:46:29 +0200
-Message-ID: <BANLkTin_-hhcexTd67HviTqM4bjXMZxweA@mail.gmail.com>
-Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/9 Greg KH <greg@kroah.com>:
->> +static void axi_release_core_dev(struct device *dev)
->> +{
->> +     kfree(dev);
->> +}
->
-> This is wrong, unless you are really only creating a 'struct device'.
-> Why are you doing that instead of embedding struct device in your
-> structure?
+On Thu, 7 Apr 2011, Stephen Rothwell wrote:
 
-Hm, I think Greg found explanation why we can not reload axi driver
-successfully :)
+> Hi Jiri,
+> 
+> After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> samples/hidraw/hid-example.c: In function 'main':
+> samples/hidraw/hid-example.c:103: warning: implicit declaration of function 'HIDIOCSFEATURE'
+> samples/hidraw/hid-example.c:111: warning: implicit declaration of function 'HIDIOCGFEATURE'
+> tmp/ccK96SHd.o: In function `main':
+> hid-example.c:(.text+0x205): undefined reference to `HIDIOCSFEATURE'
+> hid-example.c:(.text+0x23e): undefined reference to `HIDIOCGFEATURE'
+> 
+> Caused by commit c54ea4918c2b ("HID: Documentation for hidraw").  I can
+> only assume that linux/hidraw.h is being included from /usr/include and
+> not the kernel tree being built?
+> 
+> I have used the hid tree from next-20110406 for today.
 
-I'll take care of your comment after weekend, thank you everybody.
+OK, I have introduced the patch below to the branch now. I am not proud of 
+it, but I don't see other option currently. Will remove it after some 
+time.
 
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] HID: hidraw: fix samples miscompilation
+
+On systems where userspace doesn't have new hidraw.h populated to
+/usr/include, the hidraw sample won't compile as it's missing the new
+ioctl defitions.
+
+Introduce temporary ugly workaround to define the ioctls "manually"
+in such cases, just to avoid miscompilation in allmodconfig cases.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ samples/hidraw/hid-example.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/samples/hidraw/hid-example.c b/samples/hidraw/hid-example.c
+index 40e3d62..816e2dc 100644
+--- a/samples/hidraw/hid-example.c
++++ b/samples/hidraw/hid-example.c
+@@ -14,6 +14,17 @@
+ #include <linux/input.h>
+ #include <linux/hidraw.h>
+ 
++/*
++ * Ugly hack to work around failing compilation on systems that don't
++ * yet populate new version of hidraw.h to userspace.
++ *
++ * If you need this, please have your distro update the kernel headers.
++ */
++#ifndef HIDIOCSFEATURE
++#define HIDIOCSFEATURE(len)    _IOC(_IOC_WRITE|_IOC_READ, 'H', 0x06, len)
++#define HIDIOCGFEATURE(len)    _IOC(_IOC_WRITE|_IOC_READ, 'H', 0x07, len)
++#endif
++
+ /* Unix */
+ #include <sys/ioctl.h>
+ #include <sys/types.h>
 -- 
-Rafał
+1.7.3.1
+
+
