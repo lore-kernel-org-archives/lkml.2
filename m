@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab1DHUN5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:13:57 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:59643 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757782Ab1DHUN4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:13:56 -0400
-Date: Fri, 8 Apr 2011 21:13:54 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] signal.c: fix erroneous syscall kernel-doc
-Message-ID: <20110408211354.43c1ec14@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110408105346.9218d4db.rdunlap@xenotime.net>
-References: <20110404145803.8663081d.rdunlap@xenotime.net>
-	<20110404150026.46478a04.rdunlap@xenotime.net>
-	<20110405093214.0dd7278d@mfleming-mobl1.ger.corp.intel.com>
-	<20110408105346.9218d4db.rdunlap@xenotime.net>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932098Ab1DHUPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:15:19 -0400
+Received: from mail.digium.com ([216.207.245.2]:46174 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757782Ab1DHUPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 16:15:17 -0400
+Date: Fri, 8 Apr 2011 15:15:13 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [2.6.39-rc2][bisected] Constant DISK_MEDIA_CHANGE_EVENTS from
+	CDROM drive.
+Message-ID: <20110408201513.GA3040@digium.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Apr 2011 10:53:46 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+Running with 2.6.39-rc2 on a CentOS 5.5 installation with a "IDE interface:
+Intel Corporation 82801CA Ultra ATA Storage Controller (rev 02)" (8086:248b),
+I've noticed constant DISK_MEDIA_CHANGE uevents.  In my kernel log: 
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix erroneous syscall kernel-doc comments in kernel/signal.c. 
-> 
-> Reported-by: Matt Fleming <matt@console-pimps.org>
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+[ 1107.530699] kobject: 'hda' (f5372610): fill_kobj_path: path = '/block/hda'
+[ 1109.580559] kobject: 'hda' (f5372610): kobject_uevent_env
+[ 1109.580594] kobject: 'hda' (f5372610): fill_kobj_path: path = '/block/hda'
+[ 1111.630560] kobject: 'hda' (f5372610): kobject_uevent_env
+[ 1111.630595] kobject: 'hda' (f5372610): fill_kobj_path: path = '/block/hda'
+[ 1113.680560] kobject: 'hda' (f5372610): kobject_uevent_env
 
-Looks good to me!
+And from udevmonitor --env:
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+UEVENT[1302291995.789487] change@/block/hda
+ACTION=change
+DEVPATH=/block/hda
+SUBSYSTEM=block
+DISK_MEDIA_CHANGE=1
+MAJOR=3
+MINOR=0
+DEVNAME=hda
+DEVTYPE=disk
+SEQNUM=1318
+
+I bisected it down to 929e27252e8ca69363f81f26af5eaba62cb4c572 'ide:
+ide_requeue_and_plug() reinstate "always plug" behaviour'
+
+I haven't yet looked into how that change would result in the change in
+behavior I'm seeing but I thought I would let you know sooner rather than
+leter in case this is something that is already known.
