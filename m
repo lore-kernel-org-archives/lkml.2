@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab1DHHo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 03:44:56 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39486 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab1DHHoz (ORCPT
+	id S1757112Ab1DHH7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 03:59:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48870 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756258Ab1DHH7A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 03:44:55 -0400
-Date: Fri, 8 Apr 2011 08:24:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Alexander Clouter <alex@digriz.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on the
-	basis of the memory size.
-Message-ID: <20110408072420.GA27450@n2100.arm.linux.org.uk>
-References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de> <1302122121-3652-2-git-send-email-holler@ahsoftware.de> <alpine.LFD.2.00.1104061739100.28032@xanadu.home> <4D9CED15.2010806@ahsoftware.de> <alpine.LFD.2.00.1104061850410.28032@xanadu.home> <4D9CF5B3.9020007@ahsoftware.de> <toa078-0do.ln1@chipmunk.wormnet.eu> <4D9E2D1C.7070102@ahsoftware.de> <20110407220855.GD17049@n2100.arm.linux.org.uk> <4D9E42E1.1060902@ahsoftware.de>
+	Fri, 8 Apr 2011 03:59:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=gXLpSQSYOPBZ2X8NCHDbrnRPJ1qierAgFzo8U7tVrzUTSjuqton5GA7yFl9J3juNBp
+         54aNSwKkxUrRrR5JtwBwMIN/jEMzsogPU2JobpHfH7MDECo2Zh+U1p2D0mERNa8cBumO
+         SWvLLfIkTRzMy9/vw6A4naG8JSg6bWxJaDIME=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D9E42E1.1060902@ahsoftware.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <BANLkTimP-uhj7PQqgvpnedy_y9sQga99ug@mail.gmail.com>
+References: <BANLkTin7=j8-feeJw5fqDsMd9BYrq09KbQ@mail.gmail.com>
+ <1302024458.2225.1350.camel@twins> <BANLkTinU5s8FgC9acCPcQqDRBnwi4EqA2g@mail.gmail.com>
+ <1302077959.2225.1378.camel@twins> <BANLkTimHwt=q4K9uMNX4kR6Q8LJhHHSysw@mail.gmail.com>
+ <BANLkTimP-uhj7PQqgvpnedy_y9sQga99ug@mail.gmail.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Fri, 8 Apr 2011 15:58:39 +0800
+Message-ID: <BANLkTi=KZyi-e02Rc=agnVDOk+4=VLdZ-w@mail.gmail.com>
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20110405 release
+To: Dongdong Deng <libfetion@gmail.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 01:04:01AM +0200, Alexander Holler wrote:
-> Am 08.04.2011 00:08, schrieb Russell King - ARM Linux:
+On Fri, Apr 8, 2011 at 14:41, Dongdong Deng <libfetion@gmail.com> wrote:
+> On Fri, Apr 8, 2011 at 1:36 PM, Hui Zhu <teawater@gmail.com> wrote:
+>> On Wed, Apr 6, 2011 at 16:19, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Wed, 2011-04-06 at 13:54 +0800, Hui Zhu wrote:
+>>>
+>>>> This is a good question.
+>>>>
+>>>> The KGTP is completely different with KGDB.  It will not supply simple
+>>>> gdbrsp debug interface to user.  It just supply  interface between the
+>>>> kernel tracepoint(Now, just support kprobe, will add others later) and
+>>>> GDB tracepoint function.
+>>>>
+>>>> So user can debug and trace Linux kernel with GDB without stop the
+>>>> Linux Kernel (So the GDB can running on this Kernel).  It is a trace
+>>>> tools and debug tools.
+>>>
+>>> But this isn't really an answer either. Could you extend the existing
+>>> KGDB infrastructure to provide these features and thereby re-use
+>>> existing infrastructure to reduce your patch size and code duplication?
+>>>
+>>> Jason (the KGDB maintainer) certainly thought there was much possibility
+>>> there when I spoke to him yesterday.
+>>>
+>>> Think of it this way, wouldn't it be much better if there was one tool
+>>> that could provide the combined feature set of KGDB and KGTP?
+>>>
+>>
+>> Thanks Peter.  I think it is very good.
+>>
+>> Which part do you think kgtp can share with kgdb?
 >
->>> Requiring a machine ID and the needed stuff to handle that for a board
->>> which just is using two GPIOs different than another board is why the
->>> ARM tree exploded.
->>
->> You can not be any more wrong than that.
->>
->> The reason the ARM tree exploded is because of the compartmentalized
->> sub-community structure, where the vast majority of (eg) OMAP development
->> is done independently of the (eg) Samsung development.
->>
->> Consequently, there's no attempt to consolidate code between the SoCs,
->> even for basic stuff like 32-bit up-counting timers.  We've ended up with
->> _nine_ implementations of clocksources all doing the same thing in that
->> respect.
->>
->> That's got precisely zilch to do with machine IDs, and your attempt to
->> blame the bloat on machine IDs just shows how misinformed you are.
 >
-> I had a look at what's going on in the OMAP linux world for more than a  
-> year now and I think I've seen a lot of the stuff you are referring to.
+> The main realizing of "kgtp" was based on the sub protocol
+> 'Tracepoint-Packets' of 'gdb Remote Serial Protocol'.
 >
-> And I think one of the reasons that the mess happened is the same I've  
-> got trapped in. Why should anyone try to submit patches if he must fear  
-> to get caught in some senseless endless discussion about one line.
+> http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoint-Packets.html#Tracepoint-Packets
+>
+> and kgdb have realized most of gdb remote serial protocols.
+>
+>
+> thus the protocol 'Tracepoint-Packets' implement of kgtp could share
+> with kgdb, and the breakpoint handler could follow kgdb's from kprobe,
+>
+> the offline gdb operate interface(an kernel inside gdbserver for gdb)
+> could realize a module like "kgdbts" module implement
+> (linux-2.6/drivers/misc/kgdbts.c).
+>
+> Thanks,
+> Dongdong
+>
 
-Because matching against the memory size is _technically_ the wrong thing
-to do, as you've already been told.
+Cool.  Wish someone can do that.
+
+Thanks,
+Hui
