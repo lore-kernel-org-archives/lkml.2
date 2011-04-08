@@ -1,81 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab1DHQwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 12:52:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42511 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757203Ab1DHQwN (ORCPT
+	id S1757670Ab1DHQxE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 12:53:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60377 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab1DHQxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 12:52:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=CSiOfj417zxCIkdtlRL0am2VCHbSYXB9Jh+Fkui9ChR0o6DyxSNWjMcrGa4pxuhL7D
-         NQREcColUoKaWEhKqCLgo4DRcoePb4f4VDBKQq0msVvChbbRK0cZg2PJM+CoY65vcqmi
-         PvfAhA+4i5sDzWg+aubXfKYBRhCcVgdcSFDRk=
-Date: Fri, 8 Apr 2011 09:52:07 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>
-Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
-Message-ID: <20110408165207.GD3871@mtj.dyndns.org>
-References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
- <20110401154327.GA6593@mtj.dyndns.org>
- <20110405065129.GC2872@amit-x200.redhat.com>
- <20110406100620.GA4142@mtj.dyndns.org>
- <BANLkTinpRJHr+293kPzS1=hCWRPamOOGfw@mail.gmail.com>
- <20110408162041.GB3871@mtj.dyndns.org>
- <BANLkTimYBDvcUO9Z2wdk4VFk88NpGJiZJA@mail.gmail.com>
+	Fri, 8 Apr 2011 12:53:02 -0400
+Date: Fri, 8 Apr 2011 09:52:52 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Andres Salomon <dilinger@queued.net>
+Cc: devicetree-discuss@lists.ozlabs.org, Daniel Drake <dsd@laptop.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] of: rework of_attach_node, removing CONFIG_OF_DYNAMIC
+Message-ID: <20110408165252.GB27556@angua.secretlab.ca>
+References: <1300408356-15253-1-git-send-email-dilinger@queued.net>
+ <1300408356-15253-2-git-send-email-dilinger@queued.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimYBDvcUO9Z2wdk4VFk88NpGJiZJA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1300408356-15253-2-git-send-email-dilinger@queued.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Apr 08, 2011 at 05:43:16PM +0100, Stefan Hajnoczi wrote:
-> >> I think it would make sense to refresh the inode size on media change
-> >> so that even open file descriptors see the new size and a single
-> >> process cannot force a stale value for all other userspace processes
-> >> on the system.
-> >
-> > Hmmm... I don't know.  Maybe we can but I'm not sure whether there's a
-> > good reason for it.  cdrom is locked while opened after all.  Are
-> > there actual problems?
+On Thu, Mar 17, 2011 at 05:32:33PM -0700, Andres Salomon wrote:
+> Remove the OF_DYNAMIC config option, which makes of_attach_node/of_detach_node
+> available without a specific config option.  CONFIG_OF_DYNAMIC wasn't actually
+> being used by anything, as the drivers which made use of of_attach_node
+> weren't depending upon or selecting it.
 > 
-> Yeah, sorry I didn't explain what the use case was.  With QEMU you can
-> pass through the physical CD-ROM into the virtual machine.
+> This also reworks of_attach_node to honor node ordering by time, rather than
+> creating the allnext/sibling list in reverse order.  This has a number of
+> ramifications worth mentioning:
 > 
-> QEMU opens /dev/cdrom with O_NONBLOCK | O_RDONLY.  The guest can test
-> if the medium is present and QEMU will do ioctl(fd,
-> CDROM_DRIVE_STATUS, CDSL_CURRENT).  The guest can also lock the tray
-> and eject, again using the respective ioctls.  Read operations are
-> serviced by performing a read on the file descriptor in QEMU.  And
-> finally the medium size is queried by QEMU using lseek(fd, 0,
-> SEEK_END).
+>  - 'last_child' is added to the device_node struct, and used to figure out
+>    where a node should be added in the tree.  This will take the place of
+>    the 'next' field.
+>  - 'allnodes' is no longer used.  It is assumed that the parent node is already
+>    attached to the tree.  What this really means is a simple assignment of
+>    "allnodes = root_node;" prior to calling of_attach_node(root_node).
+>  - The sibling list is guaranteed to retain order by insertion (later
+>    insertions showing up later in the list).
+>  - There are no similar guarantees for the allnext list with respect to
+>    parents, their children, and their siblings.  While siblings are
+>    guaranteed to be ordered by time, children may come before a sibling,
+>    or after.  That is, one ordering of the allnext list may be: "/", "/pci",
+>    "/isa", "/pci/foo", "/pci/bar".  Another perfectly valid ordering (and
+>    this *will* happen depending upon how insertions are done) is: "/",
+>    "/pci", "/pci/foo", "/pci/bar", "/isa".  The only thing that is
+>    guaranteed is that the sibling list will be "/pci", "/isa" (if "/isa"
+>    is added later), and that "/pci" will come before "/isa" in the allnext
+>    list.
 > 
-> Today QEMU cannot keep /dev/cdrom open across media change because it
-> will have an outdated inode size returned from lseek(fd, 0, SEEK_END).
->  But if the cdrom driver (or sr) refresh the inode size on media
-> change then there is no need to work around this from userspace.
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-Hmmm... ISTR there was some discussion about changing inode size on
-the fly quite a while ago.  I didn't follow the discussion but it
-seemed to have rather nasty/delicate implications.
+Hi Andres, comment below.
 
-Jens, any ideas?
+> ---
+>  drivers/of/Kconfig |    4 ----
+>  drivers/of/base.c  |   47 ++++++++++++++++++++++++++++++++---------------
+>  include/linux/of.h |    5 ++---
+>  3 files changed, 34 insertions(+), 22 deletions(-)
+> 
+> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+> index d06a637..ba90122 100644
+> --- a/drivers/of/Kconfig
+> +++ b/drivers/of/Kconfig
+> @@ -26,10 +26,6 @@ config OF_EARLY_FLATTREE
+>  config OF_PROMTREE
+>  	bool
+>  
+> -config OF_DYNAMIC
+> -	def_bool y
+> -	depends on PPC_OF
+> -
+>  config OF_ADDRESS
+>  	def_bool y
+>  	depends on !SPARC
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 710b53b..9e94267 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -849,27 +849,46 @@ int prom_update_property(struct device_node *np,
+>  	return 0;
+>  }
+>  
+> -#if defined(CONFIG_OF_DYNAMIC)
+> -/*
+> - * Support for dynamic device trees.
+> - *
+> - * On some platforms, the device tree can be manipulated at runtime.
+> - * The routines in this section support adding, removing and changing
+> - * device tree nodes.
+> - */
+> -
+>  /**
+>   * of_attach_node - Plug a device node into the tree and global list.
+>   */
+>  void of_attach_node(struct device_node *np)
+>  {
+> +	struct device_node *parent;
+>  	unsigned long flags;
+>  
+> +	parent = np->parent;
+> +	if (!parent)
+> +		return;
+> +
+>  	write_lock_irqsave(&devtree_lock, flags);
+> -	np->sibling = np->parent->child;
+> -	np->allnext = allnodes;
+> -	np->parent->child = np;
+> -	allnodes = np;
+> +	if (parent->child) {
+> +		/*
+> +		 * We have at least 1 sibling, and last_child points to the
+> +		 * last one that we've inserted.
+> +		 *
+> +		 * After insertion, the current node will be the last sibling
+> +		 * in the sibling list (maintaining tree order), but will come
+> +		 * before any siblings' children in the allnext list.  That
+> +		 * holds true so long as the device tree is generated in a
+> +		 * depth-first fashion.  Children added later may screw with
+> +		 * the allnext ordering, but siblings are always guaranteed to
+> +		 * remain in the order in which they were added.
+> +		 */
+> +		parent->last_child->sibling = np;
+> +		np->allnext = parent->last_child->allnext;
+> +		parent->last_child->allnext = np;
+> +
+> +	} else {
+> +		/*
+> +		 * This node is an only child.  Allnext descends into the
+> +		 * child nodes from the parent.
+> +		 */
+> +		parent->child = np;
+> +		np->allnext = parent->allnext;
+> +		parent->allnext = np;
+> +	}
+> +	parent->last_child = np;
 
-Thanks.
+Hmmm... this screams to me that it shouldn't be open-coded.  Instead,
+it really should be using list_head.  Unfortunately, that is a more
+complex change, but I don't think I want to open code a new list
+implementation.
 
--- 
-tejun
+blech.  I need to think about that more.
+
+g.
+
