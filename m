@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab1DHNho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 09:37:44 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:55786 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752500Ab1DHNhn (ORCPT
+	id S1756898Ab1DHNjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 09:39:10 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:51709 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab1DHNjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 09:37:43 -0400
-Date: Fri, 8 Apr 2011 15:37:42 +0200
-From: Cyril Hrubis <metan@ucw.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Zaurus-devel] 2.6.39-rc2 on zaurus: does not build, does not
-	boot
-Message-ID: <20110408133742.GA21399@atrey.karlin.mff.cuni.cz>
-References: <20110408062646.GA1472@ucw.cz> <20110408130715.GA1632@ucw.cz>
+	Fri, 8 Apr 2011 09:39:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=cDRyPD3uHIy0dXHE+/rstkMlZT3obw3pEGRfuJyI0dVtSBF/ZGuPVHYWL4Lz53zG2I
+         O0Hs8DQZ4sTkE6cF9yatA+2UwlO7Xh6WBPloIlioH4iR1iN7Z5U6nc1DSzr0qv7q8b2q
+         zK5dnM44LeYigT7V0RtcDaAMxhBqsWGv/B85s=
+From: =?UTF-8?q?Weiping=20Pan=28=E6=BD=98=E5=8D=AB=E5=B9=B3=29?= 
+	<panweiping3@gmail.com>
+To: fubar@us.ibm.com, andy@greyhouse.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Weiping=20Pan (=E6=BD=98=E5=8D=AB=E5=B9=B3) ?= 
+	<panweiping3@gmail.com>
+Subject: [PATCH] bonding:set save_load to 0 when initializing
+Date: Fri,  8 Apr 2011 21:40:19 +0800
+Message-Id: <1302270019-11698-1-git-send-email-panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110408130715.GA1632@ucw.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> > Boot stops just after mounting root filesystem; cursor stops
-> > flashing. (Any idea what goes on there?)
-> 
-> With CF bluetooth unplugged, it gets  up to userland.
-> 
-> Once it hung in eaarly boot, once early in runlevel 2.
+It is unnecessary to set save_load to 1 here,
+as the tx_hashtbl is just kzalloced.
 
-Hmm, the cf seems to be crippled a little.
+Signed-off-by: Weiping Pan(潘卫平) <panweiping3@gmail.com>
+---
+ drivers/net/bonding/bond_alb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I've got oops in pccard, but only when cf wifi is compiled in kernel and
-inserted while booting, it stopped when the driver is compiled as module.
-
-Note that zaurus has two cf slots, one for internal hd and one outside, so it
-may be some race in cf/pccardd initalization.
-
-Some parts of the trace:
-
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = c0004000
-[00000000] mpad=00000000
-Internal error: Oops: f5 [#1] PREEMPT
-las sysfs file:
-CPU: 0 Not tainted (2.6.38....)
-PC is at complete+0x30/0x90
-LR is at giveback+0x134/0x150
-pc: [<c0032070>]  lr : [<c019a4278>] psr: a0000093
-sp : c38a4cb0  ip : c38atc70  fp : c38a5cc4
-
-...
-
-Flags: NzCv  IRQs off  FIQs on  Mode SYC_32  ISA ARM segment kernel
-Control: 0000397f  Table a0004000  DAC: 00000017
-Process: pccardd (pid 275, stack limit = 0xc38a4278)
-Stack (0xc38a5cb0 to 0xc38a6000)
-...
-
-Which seems like problem occured in complete() ...
-
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index 9bc5de3..ab69e5a 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -176,7 +176,7 @@ static int tlb_initialize(struct bonding *bond)
+ 	bond_info->tx_hashtbl = new_hashtbl;
+ 
+ 	for (i = 0; i < TLB_HASH_TABLE_SIZE; i++) {
+-		tlb_init_table_entry(&bond_info->tx_hashtbl[i], 1);
++		tlb_init_table_entry(&bond_info->tx_hashtbl[i], 0);
+ 	}
+ 
+ 	_unlock_tx_hashtbl(bond);
 -- 
-metan
+1.7.4
+
