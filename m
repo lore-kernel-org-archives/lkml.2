@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab1DHNA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 09:00:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756419Ab1DHNA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 09:00:28 -0400
-Subject: Re: [PATCH] selinux: downgrade two printks to KERN_DEBUG
-From: Eric Paris <eparis@redhat.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
-Date: Fri, 08 Apr 2011 09:00:20 -0400
-In-Reply-To: <1302253422.7787.2.camel@t41.thuisdomein>
-References: <1302253422.7787.2.camel@t41.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1302267622.3937.3.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1756718Ab1DHNBc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 09:01:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59640 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756419Ab1DHNBa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 09:01:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ck995JYRAcLJkrw8+dGGkO2g1/5HreF8oEWjIYwnp67D9QAqMAG50eYnnTgZR6tv9q
+         szUjN1cwlbgvhoex684T4X+BwBeTWhmPGnlUpJk0zxsCjNFRjQf+2mErDvLhdb14n7mM
+         k9Fj+32k4Ye4sPQyRtbRWwWrA9/HbeueKUr8Y=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTik5VGziYQLQTzMDhYD7CA0QpSNK6g@mail.gmail.com>
+References: <BANLkTim8anqNv4MEaxCTyC8HyOZp2x=ixQ@mail.gmail.com>
+ <20110407163948.GD31060@kroah.com> <BANLkTikUrdte93L=3Nq3TXYMpeqRJfj2YQ@mail.gmail.com>
+ <BANLkTik5VGziYQLQTzMDhYD7CA0QpSNK6g@mail.gmail.com>
+From: Gottfried Haider <gottfried.haider@gmail.com>
+Date: Fri, 8 Apr 2011 15:01:10 +0200
+Message-ID: <BANLkTinYxtZzGOQ708BBAU5CX64S0V017g@mail.gmail.com>
+Subject: Re: [Regression] USB tethering does not work anymore in 2.6.29-rc2
+ (rndis_host, does not receive DHCP offer anymore)
+To: huajun li <huajun.li.lee@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-net@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They shouldn't be there at all and it was a big screw up on my part that
-they were left in the committed code.  I already applied but haven't
-sent or pushed a patch to remove these.  Thanks Paul!
+> Hi,
+>   I found the new added mask code 'FLAG_POINTTOPOINT' overlapped
+> 'FLAG_MULTI_PACKET' in    include/linux/usb/usbnet.h, this maybe
+> caused logic issue in rx_process(). I create a patch for this, but
+> have no such a device to test it, could you have a try? thanks.
 
--Eric
+That patch fixes it, thanks!
 
-On Fri, 2011-04-08 at 11:03 +0200, Paul Bolle wrote:
-> A recent (Fedora Rawhide) selinux policy update triggers this error:
->     filename_trans_read: nel=0
-> 
-> But there seems to be no reason why filename_trans_read() prints this
-> message (and a similar message) at KERN_ERR level. So downgrade it to
-> KERN_DEBUG level.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Compile tested only.
-> 
->  security/selinux/ss/policydb.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-> index e7b850a..8e9cc8d10 100644
-> --- a/security/selinux/ss/policydb.c
-> +++ b/security/selinux/ss/policydb.c
-> @@ -1819,7 +1819,7 @@ static int filename_trans_read(struct policydb *p, void *fp)
->  		goto out;
->  	nel = le32_to_cpu(buf[0]);
->  
-> -	printk(KERN_ERR "%s: nel=%d\n", __func__, nel);
-> +	printk(KERN_DEBUG "%s: nel=%d\n", __func__, nel);
->  
->  	last = p->filename_trans;
->  	while (last && last->next)
-> @@ -1857,7 +1857,7 @@ static int filename_trans_read(struct policydb *p, void *fp)
->  			goto out;
->  		name[len] = 0;
->  
-> -		printk(KERN_ERR "%s: ft=%p ft->name=%p ft->name=%s\n", __func__, ft, ft->name, ft->name);
-> +		printk(KERN_DEBUG "%s: ft=%p ft->name=%p ft->name=%s\n", __func__, ft, ft->name, ft->name);
->  
->  		rc = next_entry(buf, fp, sizeof(u32) * 4);
->  		if (rc)
-
-
+Gottfried
