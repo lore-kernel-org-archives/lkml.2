@@ -1,49 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab1DHJ5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 05:57:52 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37489 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab1DHJ5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 05:57:51 -0400
+	id S1756287Ab1DHJ6K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 05:58:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51545 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756208Ab1DHJ6G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 05:58:06 -0400
 From: pavan_savoy@ti.com
 To: greg@kroah.com, linux-kernel@vger.kernel.org
 Cc: pavan_savoy@sify.com, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 2/3] drivers:misc:ti-st: remove rfkill dependency
-Date: Fri,  8 Apr 2011 04:57:43 -0500
-Message-Id: <1302256664-23688-3-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 1/3] drivers:misc:ti-st: handle delayed tty receive
+Date: Fri,  8 Apr 2011 04:57:42 -0500
+Message-Id: <1302256664-23688-2-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1302256664-23688-2-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1302256664-23688-1-git-send-email-pavan_savoy@ti.com>
 References: <1302256664-23688-1-git-send-email-pavan_savoy@ti.com>
- <1302256664-23688-2-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-rfkill is no longer used by Texas Instruments shared transport driver to
-communicate with user-space.
-This patch removes the dependency of rfkill to be enabled to build
-shared transport driver in the Kconfig.
+When certain technologies shutdown their interface without waiting for
+the acknowledgement from the chip. The receive_buf from the TTY would be
+invoked a while after the relevant technology is unregistered.
+
+This patch introduces a new flag "is_registered" which maintains the
+state of protocols BT, FM or GPS and thereby removes the need to clear
+the protocol data from ST when protocols gets unregistered.
+
+This fixes corner cases when HCI RESET is sent down from bluetooth stack
+and the receive_buf is called from tty after 250ms before which
+bluetooth would have unregistered from the system.
+OR - when FM application decides to close down the device without
+sending a power-off FM command resulting in some RDS data or interrupt
+data coming in after the driver is unregistered.
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/ti-st/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/misc/ti-st/st_core.c |   23 +++++++++++++----------
+ include/linux/ti_wilink_st.h |    3 ++-
+ 2 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
-index 2c8c3f3..7c3e106 100644
---- a/drivers/misc/ti-st/Kconfig
-+++ b/drivers/misc/ti-st/Kconfig
-@@ -5,7 +5,6 @@
- menu "Texas Instruments shared transport line discipline"
- config TI_ST
- 	tristate "Shared transport core driver"
--	depends on RFKILL
- 	select FW_LOADER
- 	help
- 	  This enables the shared transport core driver for TI
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index 486117f..f91f82e 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -43,13 +43,15 @@ static void add_channel_to_table(struct st_data_s *st_gdata,
+ 	pr_info("%s: id %d\n", __func__, new_proto->chnl_id);
+ 	/* list now has the channel id as index itself */
+ 	st_gdata->list[new_proto->chnl_id] = new_proto;
++	st_gdata->is_registered[new_proto->chnl_id] = true;
+ }
+ 
+ static void remove_channel_from_table(struct st_data_s *st_gdata,
+ 		struct st_proto_s *proto)
+ {
+ 	pr_info("%s: id %d\n", __func__, proto->chnl_id);
+-	st_gdata->list[proto->chnl_id] = NULL;
++/*	st_gdata->list[proto->chnl_id] = NULL; */
++	st_gdata->is_registered[proto->chnl_id] = false;
+ }
+ 
+ /*
+@@ -104,7 +106,7 @@ void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
+ 
+ 	if (unlikely
+ 	    (st_gdata == NULL || st_gdata->rx_skb == NULL
+-	     || st_gdata->list[chnl_id] == NULL)) {
++	     || st_gdata->is_registered[chnl_id] == false)) {
+ 		pr_err("chnl_id %d not registered, no data to send?",
+ 			   chnl_id);
+ 		kfree_skb(st_gdata->rx_skb);
+@@ -141,14 +143,15 @@ void st_reg_complete(struct st_data_s *st_gdata, char err)
+ 	unsigned char i = 0;
+ 	pr_info(" %s ", __func__);
+ 	for (i = 0; i < ST_MAX_CHANNELS; i++) {
+-		if (likely(st_gdata != NULL && st_gdata->list[i] != NULL &&
+-			   st_gdata->list[i]->reg_complete_cb != NULL)) {
++		if (likely(st_gdata != NULL &&
++			st_gdata->is_registered[i] == true &&
++				st_gdata->list[i]->reg_complete_cb != NULL)) {
+ 			st_gdata->list[i]->reg_complete_cb
+ 				(st_gdata->list[i]->priv_data, err);
+ 			pr_info("protocol %d's cb sent %d\n", i, err);
+ 			if (err) { /* cleanup registered protocol */
+ 				st_gdata->protos_registered--;
+-				st_gdata->list[i] = NULL;
++				st_gdata->is_registered[i] = false;
+ 			}
+ 		}
+ 	}
+@@ -475,9 +478,9 @@ void kim_st_list_protocols(struct st_data_s *st_gdata, void *buf)
+ {
+ 	seq_printf(buf, "[%d]\nBT=%c\nFM=%c\nGPS=%c\n",
+ 			st_gdata->protos_registered,
+-			st_gdata->list[0x04] != NULL ? 'R' : 'U',
+-			st_gdata->list[0x08] != NULL ? 'R' : 'U',
+-			st_gdata->list[0x09] != NULL ? 'R' : 'U');
++			st_gdata->is_registered[0x04] == true ? 'R' : 'U',
++			st_gdata->is_registered[0x08] == true ? 'R' : 'U',
++			st_gdata->is_registered[0x09] == true ? 'R' : 'U');
+ }
+ 
+ /********************************************************************/
+@@ -504,7 +507,7 @@ long st_register(struct st_proto_s *new_proto)
+ 		return -EPROTONOSUPPORT;
+ 	}
+ 
+-	if (st_gdata->list[new_proto->chnl_id] != NULL) {
++	if (st_gdata->is_registered[new_proto->chnl_id] == true) {
+ 		pr_err("chnl_id %d already registered", new_proto->chnl_id);
+ 		return -EALREADY;
+ 	}
+@@ -563,7 +566,7 @@ long st_register(struct st_proto_s *new_proto)
+ 		/* check for already registered once more,
+ 		 * since the above check is old
+ 		 */
+-		if (st_gdata->list[new_proto->chnl_id] != NULL) {
++		if (st_gdata->is_registered[new_proto->chnl_id] == true) {
+ 			pr_err(" proto %d already registered ",
+ 				   new_proto->chnl_id);
+ 			return -EALREADY;
+diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
+index 7071ec5..b004e55 100644
+--- a/include/linux/ti_wilink_st.h
++++ b/include/linux/ti_wilink_st.h
+@@ -140,12 +140,12 @@ extern long st_unregister(struct st_proto_s *);
+  */
+ struct st_data_s {
+ 	unsigned long st_state;
+-	struct tty_struct *tty;
+ 	struct sk_buff *tx_skb;
+ #define ST_TX_SENDING	1
+ #define ST_TX_WAKEUP	2
+ 	unsigned long tx_state;
+ 	struct st_proto_s *list[ST_MAX_CHANNELS];
++	bool is_registered[ST_MAX_CHANNELS];
+ 	unsigned long rx_state;
+ 	unsigned long rx_count;
+ 	struct sk_buff *rx_skb;
+@@ -155,6 +155,7 @@ struct st_data_s {
+ 	unsigned char	protos_registered;
+ 	unsigned long ll_state;
+ 	void *kim_data;
++	struct tty_struct *tty;
+ };
+ 
+ /*
 -- 
 1.7.0.4
 
