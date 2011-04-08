@@ -1,397 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab1DHUbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:31:42 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53656 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753401Ab1DHUbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:31:39 -0400
-Date: Fri, 8 Apr 2011 13:31:35 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation
-	problem
-Message-ID: <20110408203135.GH1110@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <20110321140451.GA7153@quack.suse.cz> <1300716666-sup-2087@think> <20110321164305.GC7153@quack.suse.cz> <20110406232938.GF1110@tux1.beaverton.ibm.com> <20110407165700.GB7363@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110407165700.GB7363@quack.suse.cz>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757922Ab1DHUcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:32:10 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42736 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab1DHUcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 16:32:08 -0400
+From: mathieu.poirier@linaro.org
+To: linux-kernel@vger.kernel.org
+Cc: ohad@wizery.com, mathieu.poirier@linaro.org, lee.jones@linaro.org,
+        patches@linaro.org, linus.walleij@stericsson.com
+Subject: [PATCH] ux500: Adding support for u8500 Hsem functionality.
+Date: Fri,  8 Apr 2011 14:31:53 -0600
+Message-Id: <1302294713-6626-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 06:57:00PM +0200, Jan Kara wrote:
-> On Wed 06-04-11 16:29:38, Darrick J. Wong wrote:
-> > On Mon, Mar 21, 2011 at 05:43:05PM +0100, Jan Kara wrote:
-> > > On Mon 21-03-11 10:24:41, Chris Mason wrote:
-> > > > Excerpts from Jan Kara's message of 2011-03-21 10:04:51 -0400:
-> > > > > On Fri 18-03-11 17:07:55, Darrick J. Wong wrote:
-> > > > > > > > Ok, here's what I have so far.  I took everyone's suggestions of where to add
-> > > > > > > > calls to wait_on_page_writeback, which seems to handle the multiple-write case
-> > > > > > > > adequately.  Unfortunately, it is still possible to generate checksum errors by
-> > > > > > > > scribbling furiously on a mmap'd region, even after adding the writeback wait
-> > > > > > > > in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
-> > > > > > > > removing its wait_for_page_writeback call, so I suspect there's a bit more
-> > > > > > > > going on in btrfs than I've been able to figure out.
-> > > > > > 
-> > > > > > I wonder, is it possible for this to happen:
-> > > > > > 
-> > > > > > 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
-> > > > > >    but there's no ongoing writeback, so it returns without delay.
-> > > > > > 2. Thread A starts writing furiously to the page.
-> > > > > > 3. Thread B runs fsync() or something that results in the page being
-> > > > > >    checksummed and scheduled for writeout.
-> > > > > > 4. Thread A continues to write furiously(!) on that same page before the
-> > > > > >    controller finishes the DMA transfer.
-> > > > > > 5. Disk gets the page, which now doesn't match its checksum, and *boom*
-> > > > >   What happens on writepage (see mm/page-writeback.c:write_cache_pages())
-> > > > > is:
-> > > > >   lock_page(page)
-> > > > >   ...
-> > > > >   clear_page_dirty_for_io() - removes PageDirty, marks page as read-only in
-> > > > >     PTE
-> > > > >   ...
-> > > > >   set_page_writeback() (happens e.g. in __block_write_full_page() called
-> > > > > from filesystem's writepage implementation).
-> > > > >   unlock_page(page)
-> > > > > 
-> > > > >   So if you compute the checksum after set_page_writeback() is done in the
-> > > > > writepage() implementation (you cannot use __block_write_full_page() in
-> > > > > that case)
-> > >   I should add that if you are computing the checksum in the block layer
-> > > once the bio is submitted, you obviously are computing it after the page is
-> > > marked as writeback. So that should be fine...
-> > > 
-> > > > > and you call wait_on_page_writeback() in ext4_page_mkwrite()
-> > > > > under page lock, you should be safe. If you do all this and still see
-> > > > > errors, something is broken I'd say...
-> > > > 
-> > > > Looking at the ext4_page_mkwrite, it does this:
-> > > > 
-> > > > lock the page
-> > > > check for holes
-> > > > unlock the page
-> > > > if (no_holes)
-> > > > 	return;
-> > > > 
-> > > > write_begin/write_end
-> > > > return
-> > > > 
-> > > > So, to have page_mkwrite work, you need to wait for writeback with the
-> > > > page locked in both the no holes case and after the
-> > > > write_begin/write_end.  write_begin will dirty the page, so someone can
-> > > > wander in and start the IO while we are still in page_mkwrite.
-> > >   Oh right, that's a good point.
-> > > 
-> > > > This is untested and uncompiled, but it should
-> > > > do the trick.
-> > > > 
-> > > > Jan, did you get rid of all the buffer head based writeback for
-> > > > data=ordered in ext4?  That's my only other idea, that someone is doing
-> > > > writeback directly without taking the page lock.
-> > >   Yes, ext4 shouldn't do any buffer based writeback.
-> > > 
-> > > > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> > > > index 9f7f9e4..8a75e12 100644
-> > > > --- a/fs/ext4/inode.c
-> > > > +++ b/fs/ext4/inode.c
-> > > > @@ -5880,6 +5880,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > > >  	if (page_has_buffers(page)) {
-> > > >  		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
-> > > >  					ext4_bh_unmapped)) {
-> > > > +			wait_on_page_writeback(page);
-> > > >  			unlock_page(page);
-> > > >  			goto out_unlock;
-> > > >  		}
-> > > > @@ -5901,6 +5902,16 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > > >  	if (ret < 0)
-> > > >  		goto out_unlock;
-> > > >  	ret = 0;
-> > > > +
-> > > > +	/*
-> > > > +	 * write_begin/end might have created a dirty page and someone
-> > > > +	 * could wander in and start the IO.  Make sure that hasn't
-> > > > +	 * happened
-> > > > +	 */
-> > > > +	lock_page(page);
-> > > > +	wait_on_page_writeback(page);
-> > > > +	unlock_page(page);
-> > > > +
-> > > >  out_unlock:
-> > > >  	if (ret)
-> > > >  		ret = VM_FAULT_SIGBUS;
-> > > > 
-> > >   This looks good AFAICT.
-> > 
-> > I gave this a spin a couple of weeks ago (and accidentally left the test
-> > machines running for a full week!)  From what I can tell, with all the various
-> > wait_for_page_writeback stuff-ins, we've cut the frequency of writeback errors
-> > down to about 7-8 per day.  Not bad, but not fixed.
->   Ugh, strange. Can you post the full patch you are currently using? I've
-> already lost track of all the proposed changes... Thanks.
+From: Mathieu J. Poirier <mathieu.poirier@linaro.org>
 
-Yes, me too.  Attached is the giant patch I've been working on.
+The driver is folded in the hwspinlock framework and implements
+protocol 1 without interrupts.
 
---D
-
-fs: Wait for page writeback when rewrite detected, and mark pages ro during writeback
-
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
-diff --git a/fs/buffer.c b/fs/buffer.c
-index a08bb8e..dd429fe 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2357,6 +2357,8 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	else
- 		end = PAGE_CACHE_SIZE;
+ drivers/hwspinlock/Kconfig      |   23 +++-
+ drivers/hwspinlock/Makefile     |    1 +
+ drivers/hwspinlock/u8500_hsem.c |  241 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 261 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/hwspinlock/u8500_hsem.c
+
+diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
+index 1f29bab..aa62055 100644
+--- a/drivers/hwspinlock/Kconfig
++++ b/drivers/hwspinlock/Kconfig
+@@ -2,10 +2,11 @@
+ # Generic HWSPINLOCK framework
+ #
  
-+	WARN_ON(!PageLocked(page));
-+	wait_on_page_writeback(page);
- 	ret = __block_write_begin(page, 0, end, get_block);
- 	if (!ret)
- 		ret = block_commit_write(page, 0, end);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 1a86282..57cd028 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2666,6 +2666,8 @@ static int ext4_writepage(struct page *page,
- 		 */
- 		goto redirty_page;
- 	}
-+	WARN_ON(!PageLocked(page));
-+	wait_on_page_writeback(page);
- 	if (commit_write)
- 		/* now mark the buffer_heads as dirty and uptodate */
- 		block_commit_write(page, 0, len);
-@@ -2778,7 +2780,8 @@ static int write_cache_pages_da(struct address_space *mapping,
- 			}
+-config HWSPINLOCK
+-	tristate "Generic Hardware Spinlock framework"
+-	depends on ARCH_OMAP4
+-	help
++menuconfig HWSPINLOCK
++	bool "Generic Hardware Spinlock framework"
++	depends on ARCH_OMAP4 || ARCH_U8500
++	default n
++	---help---
+ 	  Say y here to support the generic hardware spinlock framework.
+ 	  You only need to enable this if you have hardware spinlock module
+ 	  on your system (usually only relevant if your system has remote slave
+@@ -13,6 +14,8 @@ config HWSPINLOCK
  
- 			lock_page(page);
--
-+			if (PageWriteback(page))
-+				wait_on_page_writeback(page);
- 			/*
- 			 * If the page is no longer dirty, or its
- 			 * mapping no longer corresponds to inode we
-@@ -5803,12 +5806,14 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (PageMappedToDisk(page))
- 		goto out_unlock;
+ 	  If unsure, say N.
  
-+	lock_page(page);
-+	/* this one seems to handle mmap */
-+	wait_on_page_writeback(page);
- 	if (page->index == size >> PAGE_CACHE_SHIFT)
- 		len = size & ~PAGE_CACHE_MASK;
- 	else
- 		len = PAGE_CACHE_SIZE;
- 
--	lock_page(page);
- 	/*
- 	 * return if we have all the buffers mapped. This avoid
- 	 * the need to call write_begin/write_end which does a
-@@ -5839,6 +5844,15 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (ret < 0)
- 		goto out_unlock;
- 	ret = 0;
++if HWSPINLOCK 
 +
-+	/*
-+	 * write_begin/end might have created a dirty page and someone
-+	 * could wander in and start the IO.  Make sure that hasn't
-+	 * happened.
-+	 */
-+	lock_page(page);
-+	wait_on_page_writeback(page);
-+	unlock_page(page);
- out_unlock:
- 	if (ret)
- 		ret = VM_FAULT_SIGBUS;
-diff --git a/mm/filemap.c b/mm/filemap.c
-index c641edf..3ed13a3 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2277,8 +2277,9 @@ EXPORT_SYMBOL(generic_file_direct_write);
-  * Find or create a page at the given pagecache position. Return the locked
-  * page. This function is specifically for buffered writes.
-  */
--struct page *grab_cache_page_write_begin(struct address_space *mapping,
--					pgoff_t index, unsigned flags)
-+static struct page *
-+__grab_cache_page_write_begin(struct address_space *mapping, pgoff_t index,
-+			      unsigned flags)
- {
- 	int status;
- 	struct page *page;
-@@ -2303,6 +2304,20 @@ repeat:
- 	}
- 	return page;
- }
+ config HWSPINLOCK_OMAP
+ 	tristate "OMAP Hardware Spinlock device"
+ 	depends on HWSPINLOCK && ARCH_OMAP4
+@@ -21,3 +24,15 @@ config HWSPINLOCK_OMAP
+ 	  introduced in OMAP4).
+ 
+ 	  If unsure, say N.
 +
-+struct page *grab_cache_page_write_begin(struct address_space *mapping,
-+					pgoff_t index, unsigned flags)
++config HSEM_U8500
++	tristate "STE Hardware Semaphore functionality"
++	depends on HWSPINLOCK && ARCH_U8500
++	help
++	  Say y here to support the STE Hardware Semaphore functionality.  They
++	  provide a synchronisation mechanism for the various processor on the 
++	  SoC.
++
++	  If unsure, say N.
++
++endif # HWSPINLOCK 
+diff --git a/drivers/hwspinlock/Makefile b/drivers/hwspinlock/Makefile
+index 5729a3f..93eb64b 100644
+--- a/drivers/hwspinlock/Makefile
++++ b/drivers/hwspinlock/Makefile
+@@ -4,3 +4,4 @@
+ 
+ obj-$(CONFIG_HWSPINLOCK)		+= hwspinlock_core.o
+ obj-$(CONFIG_HWSPINLOCK_OMAP)		+= omap_hwspinlock.o
++obj-$(CONFIG_HSEM_U8500)		+= u8500_hsem.o
+diff --git a/drivers/hwspinlock/u8500_hsem.c b/drivers/hwspinlock/u8500_hsem.c
+new file mode 100644
+index 0000000..3963f2a
+--- /dev/null
++++ b/drivers/hwspinlock/u8500_hsem.c
+@@ -0,0 +1,241 @@
++/*
++ * u8500 HWSEM driver
++ *
++ * Copyright (C) 2010-2011 ST-Ericsson
++ *  
++ * Implements u8500 semaphore handling for protocol 1, no interrupts.
++ *
++ * Author: Mathieu Poirier <mathieu.poirier@linaro.org>
++ * Heavily borrowed from the work of :
++ *   Simon Que <sque@ti.com>
++ *   Hddari Kanigeri <h-kanigeri2@ti.com>
++ *   Ohad Ben-Cohen <ohad@wizery.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/bitops.h>
++#include <linux/pm_runtime.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/hwspinlock.h>
++#include <linux/platform_device.h>
++#include <asm/mach-types.h>
++
++#include "hwspinlock_internal.h"
++
++#define U8500_MAX_SEMAPHORE		32	/* a total of 32 semaphore */
++#define RESET_SEMAPHORE			(0)	/* free */
++
++/* CPU ID for master running u8500 kernel.
++ * Hswpinlocks should only be used to synchonise operations
++ * between the Cortex A9 core and the other CPUs.  Hence 
++ * forcing the masterID to a preset value.
++ */
++#define HSEM_MASTER_ID			0x01		
++
++#define HSEM_REGISTER_OFFSET		0x08
++
++#define HSEM_CTRL_REG			0x00
++#define HSEM_ICRALL			0x90
++#define HSEM_PROTOCOL_1			0x01
++
++#define to_u8500_hsem(lock)	\
++	container_of(lock, struct u8500_hsem, lock)
++
++struct u8500_hsem {
++	struct hwspinlock lock;
++	void __iomem *addr;
++};
++
++struct u8500_hsem_state {
++	void __iomem *io_base;		/* Mapped base address */
++};
++
++static int u8500_hsem_trylock(struct hwspinlock *lock)
 +{
-+	struct page *p;
++	struct u8500_hsem *u8500_lock = to_u8500_hsem(lock);
 +
-+	p = __grab_cache_page_write_begin(mapping, index, flags);
-+	if (p) {
-+		WARN_ON(!PageLocked(p));
-+		wait_on_page_writeback(p);
++	writel(HSEM_MASTER_ID, u8500_lock->addr);
++
++	/* get only first 4 bit and compare to masterID.
++	 * if equal, we have the semaphore, otherwise 
++	 * someone else has it.
++	 */
++	return (HSEM_MASTER_ID == (0x0F & readl(u8500_lock->addr)));
++}
++
++static void u8500_hsem_unlock(struct hwspinlock *lock)
++{
++	struct u8500_hsem *u8500_lock = to_u8500_hsem(lock);
++
++	/* release the lock by writing 0 to it */
++	writel(RESET_SEMAPHORE, u8500_lock->addr);
++}
++
++/*
++ * u8500: what value is recommended here ?
++ */
++static void u8500_hsem_relax(struct hwspinlock *lock)
++{
++	ndelay(50);
++}
++
++static const struct hwspinlock_ops u8500_hwspinlock_ops = {
++	.trylock 	= u8500_hsem_trylock,
++	.unlock 	= u8500_hsem_unlock,
++	.relax 		= u8500_hsem_relax,
++};
++
++static int __devinit u8500_hsem_probe(struct platform_device *pdev)
++{
++
++	struct u8500_hsem *u8500_lock;
++	struct u8500_hsem_state *state;
++	struct hwspinlock *lock;
++	struct resource *res;
++	void __iomem *io_base;
++	int i, ret;
++	ulong offset, val;
++
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	state = kzalloc(sizeof(*state), GFP_KERNEL);
++	if (!state)
++		return -ENOMEM;
++
++	io_base = ioremap(res->start, resource_size(res));
++	if (!io_base) {
++		ret = -ENOMEM;
++		goto free_state;
 +	}
 +
-+	return p;
-+}
- EXPORT_SYMBOL(grab_cache_page_write_begin);
- 
- static ssize_t generic_perform_write(struct file *file,
-diff --git a/mm/memory.c b/mm/memory.c
-index 9da8cab..17fb560 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3146,6 +3146,9 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 				} else
- 					VM_BUG_ON(!PageLocked(page));
- 				page_mkwrite = 1;
-+			} else {
-+				WARN_ON(!PageLocked(page));
-+				wait_on_page_writeback(page);
- 			}
- 		}
- 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 9c5e6b2..7d2c57d 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -25,6 +25,7 @@
- #include <linux/bio.h>
- #include <linux/workqueue.h>
- #include <linux/slab.h>
-+#include <asm/tlbflush.h>
- 
- struct integrity_slab {
- 	struct kmem_cache *slab;
-@@ -382,6 +383,52 @@ static inline unsigned short blk_integrity_tuple_size(struct blk_integrity *bi)
- 	return 0;
- }
- 
-+static int set_page_ro(struct page *page)
-+{
-+	int set_memory_ro(unsigned long addr, int numpages);
-+	unsigned long addr = (unsigned long)page_address(page);
-+	if (PageHighMem(page))
-+		return 0;
-+	return set_memory_ro(addr, 1);
++	/* make sure protocol 1 is selected */
++	val = readl(io_base + HSEM_CTRL_REG);
++	writel((val & ~HSEM_PROTOCOL_1), io_base + HSEM_CTRL_REG);	
++
++	/* clear all interrupts */
++	writel(0xFFFF, io_base + HSEM_ICRALL);
++
++	state->io_base = io_base;
++
++	platform_set_drvdata(pdev, state);
++
++	/* no pm needed for HSem but required to comply
++	 * with hwspilock core.
++	 */
++	pm_runtime_enable(&pdev->dev);
++
++	offset = HSEM_REGISTER_OFFSET;
++
++	for (i = 0; i < U8500_MAX_SEMAPHORE; i++) {
++		u8500_lock = kzalloc(sizeof(*u8500_lock), GFP_KERNEL);
++		if (!u8500_lock) {
++			ret = -ENOMEM;
++			goto free_locks;
++		}
++
++		u8500_lock->lock.dev = &pdev->dev;
++		u8500_lock->lock.owner = THIS_MODULE;
++		u8500_lock->lock.id = i;
++		u8500_lock->lock.ops = &u8500_hwspinlock_ops;
++		u8500_lock->addr = io_base + offset + sizeof(u32) * i;
++
++		ret = hwspin_lock_register(&u8500_lock->lock);
++		if (ret) {
++			kfree(u8500_lock);
++			goto free_locks;
++		}
++	}
++
++	return 0;
++
++free_locks:
++	while (--i >= 0) {
++		lock = hwspin_lock_unregister(i);
++		/* this should't happen, but let's give our best effort */
++		if (!lock) {
++			dev_err(&pdev->dev, "%s: cleanups failed\n", __func__);
++			continue;
++		}
++		u8500_lock = to_u8500_hsem(lock);
++		kfree(u8500_lock);
++	}
++
++	iounmap(io_base);
++free_state:
++	kfree(state);
++	return ret;
 +}
 +
-+static int set_page_rw(struct page *page)
++static int u8500_hsem_remove(struct platform_device *pdev)
 +{
-+	int set_memory_rw(unsigned long addr, int numpages);
-+	unsigned long addr = (unsigned long)page_address(page);
-+	if (PageHighMem(page))
-+		return 0;
-+	return set_memory_rw(addr, 1);
-+}
-+
-+static void bio_integrity_write_fn(struct work_struct *work)
-+{
-+	struct bio_integrity_payload *bip =
-+		container_of(work, struct bio_integrity_payload, bip_work);
-+	struct bio *bio = bip->bip_bio;
-+	struct bio_vec *from;
++	struct u8500_hsem_state *state = platform_get_drvdata(pdev);
++	struct hwspinlock *lock;
++	struct u8500_hsem *u8500_lock;
++	void __iomem *io_base;
 +	int i;
 +
-+	__bio_for_each_segment(from, bio, i, 0) {
-+		set_page_rw(from->bv_page);
-+	}
++	io_base = state->io_base;
 +
-+	/* Restore original bio completion handler */
-+	bio->bi_end_io = bip->bip_end_io;
-+	bio_endio(bio, bip->bip_error);
-+}
++	/* clear all interrupts */
++	writel(0xFFFF, io_base + HSEM_ICRALL);
 +
-+static void bio_integrity_endio_write(struct bio *bio, int error)
-+{
-+	struct bio_integrity_payload *bip = bio->bi_integrity;
-+
-+	BUG_ON(bip->bip_bio != bio);
-+
-+	bip->bip_error = error;
-+	INIT_WORK(&bip->bip_work, bio_integrity_write_fn);
-+	queue_work(kintegrityd_wq, &bip->bip_work);
-+}
-+
- /**
-  * bio_integrity_prep - Prepare bio for integrity I/O
-  * @bio:	bio to prepare
-@@ -468,8 +515,30 @@ int bio_integrity_prep(struct bio *bio)
- 	}
- 
- 	/* Auto-generate integrity metadata if this is a write */
--	if (bio_data_dir(bio) == WRITE)
-+	if (bio_data_dir(bio) == WRITE) {
-+		struct bio_vec *from;
-+		int i;
-+
-+		bip->bip_end_io = bio->bi_end_io;
-+		bio->bi_end_io = bio_integrity_endio_write;
-+		__bio_for_each_segment(from, bio, i, 0) {
-+			set_page_writeback(from->bv_page);
-+#if 0
-+			if (!PagePrivate(from->bv_page) &&
-+			    !PageWriteback(from->bv_page) &&
-+			    from->bv_page->mapping &&
-+			    from->bv_page->mapping->host &&
-+			    !from->bv_page->mapping->host->i_bdev)
-+			{
-+				printk(KERN_ERR "%s: writebacking file(?) page=%p flags=%lx mode=%x...\n", __FUNCTION__, from->bv_page, from->bv_page->flags, from->bv_page->mapping->host->i_mode);
-+				set_page_writeback(from->bv_page);
-+			}
-+#endif
-+			set_page_ro(from->bv_page);
-+			flush_tlb_all();
++	for (i = 0; i < U8500_MAX_SEMAPHORE; i++) {
++		lock = hwspin_lock_unregister(i);
++		/* this shouldn't happen at this point. if it does, at least
++		 * don't continue with the remove */
++		if (!lock) {
++			dev_err(&pdev->dev, "%s: failed on %d\n", __func__, i);
++			return -EBUSY;
 +		}
- 		bio_integrity_generate(bio);
++
++		u8500_lock = to_u8500_hsem(lock);
++		kfree(u8500_lock);
 +	}
- 
- 	return 0;
- }
-diff --git a/fs/buffer.c b/fs/buffer.c
-index dd429fe..02156c5 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -376,8 +376,10 @@ void end_buffer_async_write(struct buffer_head *bh, int uptodate)
- 		if (!quiet_error(bh)) {
- 			buffer_io_error(bh);
- 			printk(KERN_WARNING "lost page write due to "
--					"I/O error on %s\n",
--			       bdevname(bh->b_bdev, b));
-+					"I/O error on %s, flags=%lx\n",
-+			       bdevname(bh->b_bdev, b), page->flags);
-+if (page->mapping && page->mapping->host)
-+printk(KERN_ERR "mode=%x inode=%d dev=%d\n", page->mapping->host->i_mode, page->mapping->host->i_ino, (page->mapping->host->i_rdev));
- 		}
- 		set_bit(AS_EIO, &page->mapping->flags);
- 		set_buffer_write_io_error(bh);
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ce33e68..ea36e89 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -180,6 +180,7 @@ struct bio_integrity_payload {
- 	unsigned short		bip_vcnt;	/* # of integrity bio_vecs */
- 	unsigned short		bip_idx;	/* current bip_vec index */
- 
-+	int			bip_error;	/* bio completion status? */
- 	struct work_struct	bip_work;	/* I/O completion */
- 	struct bio_vec		bip_vec[0];	/* embedded bvec array */
- };
++
++	iounmap(io_base);
++	kfree(state);
++
++	return 0;
++}
++
++static struct platform_driver u8500_hsem_driver = {
++	.probe		= u8500_hsem_probe,
++	.remove		= u8500_hsem_remove,
++	.driver		= {
++		.name	= "u8500_hsem",
++	},
++};
++
++static int __init u8500_hsem_init(void)
++{
++	return platform_driver_register(&u8500_hsem_driver);
++}
++/* board init code might need to reserve hwspinlocks for predefined purposes */
++postcore_initcall(u8500_hsem_init);
++
++static void __exit u8500_hsem_exit(void)
++{
++	platform_driver_unregister(&u8500_hsem_driver);
++}
++module_exit(u8500_hsem_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Hardware Semaphore driver for u8500");
++MODULE_AUTHOR("Mathieu Poirier <mathieu.poirier@linaro.org");
+-- 
+1.7.1
+
