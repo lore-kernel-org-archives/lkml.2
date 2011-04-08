@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab1DHAif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 20:38:35 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:53478 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757204Ab1DHAid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 20:38:33 -0400
-Date: Thu, 7 Apr 2011 17:37:42 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Nat Gurumoorthy <natg@google.com>
-CC: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Mike Waychison <mikew@google.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] Make all it87 drivers SMP safe.
-Message-ID: <20110408003742.GD3942@ericsson.com>
-References: <1302211560-8052-1-git-send-email-natg@google.com>
+	id S1757310Ab1DHAio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 20:38:44 -0400
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:40458 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757260Ab1DHAim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Apr 2011 20:38:42 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Paul Mundt <lethal@linux-sh.org>, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+Subject: Re: [PATCH/RFC 4/6] ARM: move SH-mobile runtime PM to arm/common for sharing with other platforms
+Organization: Texas Instruments, Inc.
+References: <1302134569-22825-1-git-send-email-khilman@ti.com>
+	<20110407165654.GD8052@linux-sh.org> <8739lu9eg6.fsf@ti.com>
+	<201104080035.26989.rjw@sisk.pl>
+Date: Thu, 07 Apr 2011 17:38:38 -0700
+In-Reply-To: <201104080035.26989.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Fri, 8 Apr 2011 00:35:26 +0200")
+Message-ID: <87vcyp37ch.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1302211560-8052-1-git-send-email-natg@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 05:26:00PM -0400, Nat Gurumoorthy wrote:
-> There are 3 different drivers that touch the it87 hardware registers.
-> The 3 drivers have been written independently and access the it87 hardware
-> registers assuming they are the only driver accessing it. This change
-> attempts to serialize access to the hardware by defining a global spinlock
-> it87_io_lock in a file it87_lock.c. This lock has to be acquired by each
-> of the it87 drivers before it can access the hardware. We have defined
-> a new Kconfig option IT87_LOCK. When it is selected it87_lock.c is compiled
-> into the kernel thereby making the lock global and accessable to the it87
-> drivers which are typically built as loadable modules. All the it87 drivers
-> select IT87_LOCK to compile the lock into the kernel.
-> The routines accessing the hardware are being called from module init,
-> open, ioctl and module exit routines and hence it is sufficient to use
-> calls to spin_lock and spin_unlock to acquire and release the locks. For
-> the same reasons it87_wdt.c has extensive changes to remove calls to
-> spin_lock_irqsave and spin_unlock_irqrestore. The lock is now acquired
-> in superio_enter and released in superio_exit. This is now identical
-> to the code in drivers/hwmon/it87.c and drivers/watchdog/it8712f_wdt.c.
-> Added __acquire and __release annotations wherever needed.
-> 
-> 01 - Adds the relevant lock files.
->  drivers/watchdog/Kconfig
->  drivers/watchdog/Makefile
->  drivers/watchdog/it87_lock.c
->  include/linux/it87_lock.h
-> 
-Did you consider naming this file include/linux/it87.h as suggested ?
-I thought that was a goodd idea.
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-When you send out new versions of your patch set, it would be prudent
-to list the patch version, as well as the changes made compared to previous
-versions of your patch. See Documents/SubmittingPatches, rule #2.
+> On Thursday, April 07, 2011, Kevin Hilman wrote:
+>> Paul Mundt <lethal@linux-sh.org> writes:
+>> 
+>> > On Wed, Apr 06, 2011 at 05:02:47PM -0700, Kevin Hilman wrote:
+>> >> There is really nothing SH-mobile specific about this runtime PM
+>> >> implementation.  Any platform wanting to implement runtime PM based on
+>> >> simple clock gating can use this implementation.
+>> >> 
+>> >> Signed-off-by: Kevin Hilman <khilman@ti.com>
+>> >
+>> > This observation is wholly architecture agnostic, so it's not clear that
+>> > keeping it in arch/arm/common is any better. It seems that this would be
+>> > better suited for drivers/base/power/ with a generic Kconfig symbol.
+>> 
+>> Sounds fine to me.
+>
+> Well, what platforms is the clock framework available on?
 
-Thanks,
-Guenter
+Well, the majority of implementations of <linux/clk.h> are certainly in
+ARM, but I know it's also implemented for SH, and a quick grep shows
+implementations in powerpc, mips and m68k also.
+
+Kevin
