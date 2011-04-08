@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab1DHSdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 14:33:24 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50244 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757627Ab1DHSdT (ORCPT
+	id S1757588Ab1DHSku (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 14:40:50 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:9939 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752946Ab1DHSkt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 14:33:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=b895nMLk2wGhsy57INW4Vtk6sN05oCVGmE93tWkrTGWDKZnvfHUFDyL1VOJlfUbyVj
-         oLTu2qyCP3GrFU/pGxsg==
-MIME-Version: 1.0
-In-Reply-To: <1302271672.9086.155.camel@twins>
-References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
- <20110407013349.GH1867@nowhere> <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
- <20110407120608.GB1798@nowhere> <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
- <20110407213208.GE1798@nowhere> <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
- <20110408002812.GG1798@nowhere> <1302248268.21026.18.camel@frodo>
- <20110408134537.GA1967@nowhere> <1302271672.9086.155.camel@twins>
-From: Michael Rubin <mrubin@google.com>
-Date: Fri, 8 Apr 2011 11:32:53 -0700
-Message-ID: <BANLkTikOi1Y_5RH1juPmchWHjW8f=ynuRA@mail.gmail.com>
-Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ken Chen <kenchen@google.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 8 Apr 2011 14:40:49 -0400
+X-IronPort-AV: E=Sophos;i="4.63,325,1299484800"; 
+   d="scan'208";a="540080410"
+Subject: [GIT PULL] please pull NFS client bugfixes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Fri, 08 Apr 2011 11:40:47 -0700
+Message-ID: <1302288047.15735.1.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 08 Apr 2011 18:40:49.0098 (UTC) FILETIME=[7ADC82A0:01CBF61C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor history, Google wrote ktrace which we started to push upstream
-and then jumped on the ftrace train. ftrace was a very good drop in
-replacement for us. ftrace has a lot of features ktrace did not. We
-use perf also in other contexts.
+Hi Linus,
 
-We have devoted a lot of time and energy from many engineers outside
-of kernel to use ftrace. It's not just the kernel code, but we have
-built a lot of sw on ftrace as we examine systems in the cloud. It was
-not easy to make this migration since it had a lot of user impact. It
-was less the low level API but the fact that the tracepoints semantics
-had changed. Google is in the process of no longer using ktrace.
+Please pull from the "bugfixes" branch of the repository at
 
-Requirements for tracing for us seem to be:
-1) Around 250ns latencies when enabled
-2) Small events - We have worked on shrinking the ftrace event size.
-Since we are constrained on the amount of memory we can use in the
-ring buffer, every byte counts. A nice sized event is on the order of
-<= 8 bytes. Some of the 2.6.34 ftrace events like irq_enter and exit
-were too big around 20 bytes. sched_switch is around 60 bytes.
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
 
-I am not sure that perf meets these requirements. We need to use
-ftrace for tracing _now_.  Google also needs to focus on improving
-ftrace upstream so we can contribute our changes to the community. We
-are submitting patches and working with upstream to improve ftrace.
-Currently we depend on ftrace and being around for a long time.
+This will update the following files through the appended changesets.
 
-Fredric wrote:" Nonetheless you can't be such a significant
-user/developer of the upstream kernel tracing and at the same time
-ignore some key problems of the actual big picture of it."
+  Cheers,
+    Trond
 
-I see less of a big picture issue and more of an awkward two pictures.
->From my view it's a question of whether ftrace should continue to be
-supported and improved or whether perf will do everything as well and
-when. We depend on ftrace today and as such we have invested our time
-there.
+----
+ fs/nfs/namespace.c                  |   58 +++++++++++++++--------------------
+ fs/nfs/nfs4proc.c                   |    4 +--
+ net/sunrpc/auth_gss/gss_krb5_mech.c |    2 +-
+ 3 files changed, 27 insertions(+), 37 deletions(-)
 
-mrubin
+commit 37adb89fadd65ce47f7e5cfd564938a76b351948
+Author: Bryan Schumaker <bjschuma@netapp.com>
+Date:   Thu Apr 7 16:02:20 2011 -0400
+
+    NFS: Change initial mount authflavor only when server returns NFS4ERR_WRONGSEC
+    
+    When attempting an initial mount, we should only attempt other
+    authflavors if AUTH_UNIX receives a NFS4ERR_WRONGSEC error.
+    This allows other errors to be passed back to userspace programs.
+    
+    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 418875900e3de4831c84f86ae4756690dac5be77
+Author: Bryan Schumaker <bjschuma@netapp.com>
+Date:   Wed Apr 6 14:33:28 2011 -0400
+
+    NFS: Fix a signed vs. unsigned secinfo bug
+    
+    rpc_authflavor_t is cast from an unsigned int, but the
+    initial code tried to use it as a signed int.  I fix
+    this by passing an rpc_authflavor_t pointer around, and
+    returning signed integers from functions.
+    
+    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+    Reported-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 0867659fa3c245bf203d837a82e0f6ea5079c2c5
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Apr 6 10:13:32 2011 -0700
+
+    Revert "net/sunrpc: Use static const char arrays"
+    
+    This reverts commit 411b5e05617593efebc06241dbc56f42150f2abe.
+    
+    Olga Kornievskaia reports:
+    
+    Problem: linux client mounting linux server using rc4-hmac-md5
+    enctype. gssd fails with create a context after receiving a reply from
+    the server.
+    
+    Diagnose: putting printout statements in the server kernel and
+    kerberos libraries revealed that client and server derived different
+    integrity keys.
+    
+    Server kernel code was at fault due the the commit
+    
+    [aglo@skydive linux-pnfs]$ git show 411b5e05617593efebc06241dbc56f42150f2abe
+    
+    Trond: The problem is that since it relies on virt_to_page(), you cannot
+    call sg_set_buf() for data in the const section.
+    
+    Reported-by: Olga Kornievskaia <aglo@citi.umich.edu>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org	[2.6.36+]
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
