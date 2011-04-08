@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab1DHBuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Apr 2011 21:50:11 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34869 "EHLO
+	id S1757379Ab1DHCEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Apr 2011 22:04:15 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58718 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757343Ab1DHBuK convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757347Ab1DHCEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Apr 2011 21:50:10 -0400
+	Thu, 7 Apr 2011 22:04:14 -0400
+Message-ID: <4D9E6D19.1040809@codemonkey.ws>
+Date: Thu, 07 Apr 2011 21:04:09 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <1302197593-31815-1-git-send-email-iws@ovro.caltech.edu>
-References: <1302197593-31815-1-git-send-email-iws@ovro.caltech.edu>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 7 Apr 2011 18:49:49 -0700
-X-Google-Sender-Auth: HwFW040fHfDS_IQiJFkBOLcneEg
-Message-ID: <BANLkTik4baLHkRTkuKNE9hzwnKp4wX--5g@mail.gmail.com>
-Subject: Re: [PATCH] watchdog: mpc8xxx: fix build failure
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: Olivier Galibert <galibert@pobox.com>, Avi Kivity <avi@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        aarcange@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
+        joro@8bytes.org, penberg@cs.helsinki.fi, asias.hejun@gmail.com,
+        gorcunov@gmail.com
+Subject: Re: [ANNOUNCE] Native Linux KVM tool
+References: <1301592656.586.15.camel@jaguar> <4D982E89.8070502@redhat.com> <BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com> <4D9847BC.9060906@redhat.com> <4D98716D.9040307@codemonkey.ws> <4D9873CD.3080207@redhat.com> <20110406093333.GB6465@elte.hu> <20110406101405.GA65838@dspnet.fr> <20110406105547.GA13766@elte.hu>
+In-Reply-To: <20110406105547.GA13766@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Ira.  Peter has already sent out a fix for tihs.
+On 04/06/2011 05:55 AM, Ingo Molnar wrote:
+> Splitting up a project into several trees, often unnecessarily, is a
+> self-inflicted wound really.
 
-g.
+There's certainly something to this but the bit that surprises me is the 
+approaching being taken.
 
-On Thu, Apr 7, 2011 at 10:33 AM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
-> Commit 1c48a5c93da63132b92c4bbcd18e690c51539df6 caused a build failure
-> for the mpc8xxx watchdog driver. Fix it.
->
-> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: linux-watchdog@vger.kernel.org
-> ---
->  drivers/watchdog/mpc8xxx_wdt.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/watchdog/mpc8xxx_wdt.c b/drivers/watchdog/mpc8xxx_wdt.c
-> index 6709d72..528bceb 100644
-> --- a/drivers/watchdog/mpc8xxx_wdt.c
-> +++ b/drivers/watchdog/mpc8xxx_wdt.c
-> @@ -195,7 +195,7 @@ static int __devinit mpc8xxx_wdt_probe(struct platform_device *ofdev)
->
->        if (!ofdev->dev.of_match)
->                return -EINVAL;
-> -       wdt_type = match->data;
-> +       wdt_type = ofdev->dev.of_match->data;
->
->        if (!freq || freq == -1)
->                return -EINVAL;
-> --
-> 1.7.3.4
->
->
+Why not take perf and all the other tools, stick them in their own git 
+repos, and use git submodules to track them in the main kernel source 
+tree.  It seems like a nicer way to separate git histories while still 
+getting the benefits of a shared repository.
 
+Regards,
 
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Anthony Liguori
