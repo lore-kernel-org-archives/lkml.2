@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1DHROL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 13:14:11 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49537 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756077Ab1DHROK convert rfc822-to-8bit (ORCPT
+	id S1755790Ab1DHRVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 13:21:36 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:58271 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab1DHRVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 13:14:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=m/uJbcNO0bsL3Djskc0Cci9e+T2TFzuyYRrWt6/J0Ob1WhszCHwUwfPAcBMY2ly5LK
-         S0xDCDAhpmqgM12fNKWgezxdWpg8/DKlgm/Sro3KQDY5wp9JTDFGEFPh1hErwybhN4C1
-         WZllVGdzIJO93bnDG+LzEmC07hlKa7JTFfZIA=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=DiGX=yg9HAxYHwKdOvedJdYC_sw@mail.gmail.com>
-References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
-	<op.vtisojsk3ri7v4@arend-laptop>
-	<BANLkTin1yyow595tcYveB5fh8q3x+U_GOw@mail.gmail.com>
-	<BANLkTi=DiGX=yg9HAxYHwKdOvedJdYC_sw@mail.gmail.com>
-Date: Fri, 8 Apr 2011 19:14:09 +0200
-Message-ID: <BANLkTinCFnFELn_BPFWE+WCHtZB7d0o1gg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Apr 2011 13:21:35 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 8 Apr 2011 19:21:13 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
+ in Kernel.
+Message-ID: <20110408192113.2f3d5eda@stein>
+In-Reply-To: <4D9F17DF.5030601@hitachi.com>
+References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
+	<20110405161400.GA885@kroah.com>
+	<4D9F17DF.5030601@hitachi.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/8 Rafał Miłecki <zajec5@gmail.com>:
-> 2011/4/8 Rafał Miłecki <zajec5@gmail.com>:
->> Could you say something more about *class*, please? For my BCM43224 it
->> seems to be 0x0. WIll check BCM4313 in a moment.
->
-> Same for BCM4313.
->
-> BCM43224:
-> axi: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
-> axi: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
-> axi: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev 0x0F, class 0x0)
->
-> BCM4313
-> axi: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800, rev 0x24, class 0x0)
-> axi: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812, rev 0x18, class 0x0)
-> axi: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev 0x11, class 0x0)
+On Apr 08 Nao Nishijima wrote:
+> (2011/04/06 1:14), Greg KH wrote:
+> > On Tue, Apr 05, 2011 at 09:49:46PM +0900, Nao Nishijima wrote:
+> >> Todo:
+> >> - usb support
+> > 
+> > Why?  USB uses scsi, so why would it not work as-is today?  What about
+> > libata devices?
+> > 
+> 
+> Sorry, my explanation was not sufficient.
+> It is required to get scsi id using a scsi inguiry command in order to
+> create the udev rule, especially in ATTR(disk_id) item in it. The USB
+> devices, however, do not respond to the command and we can not get their
+> scsi id.
 
-This is last one, really ;)
+Identifiers and names of target ports and of logical units (per SAM-2 and
+later, Annex A) --- whether they are persistent, in which scope they are
+unique, how they look like, and how they can be obtained --- are transport
+specific.
 
-This is MMIO dump (from wl):
-R 4 92.541328 1 0xfaafc000 0x4bf80001 0x0 0
-R 4 92.541351 1 0xfaafc014 0x4bf81201 0x0 0
-R 4 92.541373 1 0xfaafc028 0x4bf82001 0x0 0
+Neither the INQUIRY command (per SPC) nor any other command is generally
+useful to obtain e.g. logical unit identifiers.  Any tool that needs to
+obtain identifiers or names of target ports and of logical units must talk
+with the transport driver through driver-specific interfaces.
 
-So there is not any mistake in my reading code. This the youngest 0x1
-is SCAN_ER_VALID.
+Years ago it was suggested on this list that scsi-mod exposes standard
+sysfs attributes for target and LU identifiers and names for all devices,
+so that tools that need identfiers or names have a single place where they
+can look them up.  (The read() method of these attributes would have to
+be provided kernel-internally by transport drivers; and tools that read
+these attributes need to be aware that there is not a single format for
+identifiers and names.)
 
+The SCSI folks were not interested in such a more standardized sysfs ABI
+at that time.  (There was only a proposal anyway, not a patch.)  Hence,
+tools have to dig at various places for these SAM-2 artifacts.  These ABIs
+have been defined ad hoc by the transport driver implementers.
+
+Anyway.  /How/ to obtain identifiers is just a side issue.  Back to the
+proposal of letting userland tell the kernel how to name devices:
+
+> >> I create unnamed devices (not
+> >> a block device, but an intermediate device.
+[...]
+> >> After udev finds the unnamed
+> >> device, udev assigns a persistent device name to a specific device
+> >> according to udev rules and registers it as a block device. Hence,
+> >> this is just a naming, not a renaming.
+
+I disagree to this conclusion.  The "unnamed" device most definitely will
+have a name before it can be shown to userland.  This preliminary name
+fulfills the very same requirement that "s[drt][a-z]+[0-9]*" fulfill
+today:  It is unique within the system during the lifetime of the
+device.  So, this /is/ renaming, only that the first name is only exposed
+to special tools that know of this new ABI.
+
+It seems to me that today's procedure of /not/ renaming devices but of
+providing as many alternative additional names as anyone could ever need
+(symlinks within /dev/) is more robust.
+
+If the contents of /var/log/messages or the output of iostat etc. is not
+what is needed, how about simply filtering that through a grep/ sed based
+script that rewrites names?  (This needs to be run during the lifetime of
+the device of course, otherwise a wrong name could be put in.)  The fine
+symlinks that udev provides can be used in such a text filter.
 -- 
-Rafał
+Stefan Richter
+-=====-==-== -=-- -=---
+http://arcgraph.de/sr/
