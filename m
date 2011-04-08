@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab1DHLQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 07:16:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:32902 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab1DHLQD convert rfc822-to-8bit (ORCPT
+	id S1754799Ab1DHL3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 07:29:54 -0400
+Received: from mail.funkymunkey.co.uk ([62.49.133.98]:56752 "EHLO
+	mail.funkymunkey.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798Ab1DHL3x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 07:16:03 -0400
-Subject: Re: [PATCH] sched: fix sched-domain avg_load calculation.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ken Chen <kenchen@google.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-In-Reply-To: <20110408002322.3A0D812217F@elm.corp.google.com>
-References: <20110408002322.3A0D812217F@elm.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 8 Apr 2011 07:29:53 -0400
+X-Greylist: delayed 1166 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Apr 2011 07:29:53 EDT
+Date: Fri, 8 Apr 2011 12:10:26 +0100 (BST)
+From: Charlie Clark <charlie@funkymunkey.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <463592458.36.1302261026267.JavaMail.open-xchange@server.funky.local>
+In-Reply-To: <0LJB007XLYKB2360@a-mtaout23.012.net.il>
+References: <0LJB007XLYKB2360@a-mtaout23.012.net.il>
+Subject: Re: winner
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 08 Apr 2011 13:15:50 +0200
-Message-ID: <1302261350.9086.120.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v6.18.0-Rev20
+X-Originating-IP: 78.33.237.149
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: charlie@funkymunkey.com
+X-SA-Exim-Scanned: No (on mail.funkymunkey.co.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-07 at 17:23 -0700, Ken Chen wrote:
-> In function find_busiest_group(), the sched-domain avg_load isn't
-> calculated at all if there is a group imbalance within the domain.
-> This will cause erroneous imbalance calculation.  The reason is
-> that calculate_imbalance() sees sds->avg_load = 0 and it will dump
-> entire sds->max_load into imbalance variable, which is used later
-> on to migrate entire load from busiest CPU to the puller CPU. It
-> has two really bad effect:
-> 
-> 1. stampede of task migration, and they won't be able to break out
->    of the bad state because of positive feedback loop: large load
->    delta -> heavier load migration -> larger imbalance and the cycle
->    goes on.
-> 
-> 2. severe imbalance in CPU queue depth.  This causes really long
->    scheduling latency blip which affects badly on application that
->    has tight latency requirement.
-> 
-> The fix is to have kernel calculate domain avg_load in both cases.
-> This will ensure that imbalance calculation is always sensible and
-> the target is usually half way between busiest and puller CPU.
+WOO.. Its nice to see Microsoft investing in Linux!
+ 
+On 08 April 2011 at 05:31 Microsoft <m.loto.yahoo.co.uk@[69.249.8.173]> wrote:
 
-Indeed so, it looks like I broke that in 866ab43efd32. Out of curiosity,
-what kind of workload did you observe this on?
-
+> You have won 500.000 GBP
+> send your phone number
+> and address
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
