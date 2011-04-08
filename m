@@ -1,48 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab1DHXIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 19:08:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34257 "EHLO mx1.suse.de"
+	id S1757894Ab1DHXLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 19:11:14 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58999 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab1DHXIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 19:08:20 -0400
-Date: Fri, 8 Apr 2011 16:08:17 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Evgeniy Dushistov <dushistov@mail.ru>, LKML <linux-kernel@vger.kernel.org>,
-        Trivial patches <trivial@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH] ufs: Fix a typo
-In-Reply-To: <1302283987-22248-1-git-send-email-abogani@kernel.org>
-Message-ID: <alpine.LNX.2.00.1104081608010.6022@pobox.suse.cz>
-References: <1302283987-22248-1-git-send-email-abogani@kernel.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757377Ab1DHXLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 19:11:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,327,1299484800"; 
+   d="scan'208";a="416298248"
+Date: Sat, 9 Apr 2011 01:11:09 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Andres Salomon <dilinger@queued.net>
+Subject: [PATCH v1] mfd: Fetch cell pointer from platform_device->mfd_cell
+Message-ID: <20110408231108.GD30969@sortiz-mobl>
+References: <20110408004007.GC3923@sortiz-mobl>
+ <20110407193855.1e9182bb@debxo>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110407193855.1e9182bb@debxo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Apr 2011, Alessio Igor Bogani wrote:
 
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
-> ---
->  fs/ufs/inode.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ufs/inode.c b/fs/ufs/inode.c
-> index 27a4bab..c72b6ce 100644
-> --- a/fs/ufs/inode.c
-> +++ b/fs/ufs/inode.c
-> @@ -409,7 +409,7 @@ out:
->  }
->  
->  /**
-> - * ufs_getfrag_bloc() - `get_block_t' function, interface between UFS and
-> + * ufs_getfrag_block() - `get_block_t' function, interface between UFS and
+In order for MFD drivers to fetch their cell pointer but also their
+platform data one, an mfd cell pointer is added to the platform_device
+structure.
+That allows all MFD sub devices drivers to be MFD agnostic, unless
+they really need to access their MFD cell data. Most of them don't,
+especially the ones for IPs used by both MFD and non MFD SoCs.
 
-Applied, thanks.
+Cc: Greg KH <gregkh@suse.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+---
+
+RFC -> v1:
+- Add more mfd_get_data() comments. 
+- Cleaned up mfd_get_data()
+
+---
+ drivers/base/platform.c         |    1 +
+ drivers/mfd/mfd-core.c          |   16 ++++++++++++++--
+ include/linux/mfd/core.h        |   13 +++++++++++--
+ include/linux/platform_device.h |    5 +++++
+ 4 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index f051cff..6c3a2bd 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -149,6 +149,7 @@ static void platform_device_release(struct device *dev)
+ 
+ 	of_device_node_put(&pa->pdev.dev);
+ 	kfree(pa->pdev.dev.platform_data);
++	kfree(pa->pdev.mfd_cell);
+ 	kfree(pa->pdev.resource);
+ 	kfree(pa);
+ }
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index d01574d..f4c8c84 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -55,6 +55,19 @@ int mfd_cell_disable(struct platform_device *pdev)
+ }
+ EXPORT_SYMBOL(mfd_cell_disable);
+ 
++static int mfd_platform_add_cell(struct platform_device *pdev,
++				 const struct mfd_cell *cell)
++{
++	if (!cell)
++		return 0;
++
++	pdev->mfd_cell = kmemdup(cell, sizeof(*cell), GFP_KERNEL);
++	if (!pdev->mfd_cell)
++		return -ENOMEM;
++
++	return 0;
++}
++
+ static int mfd_add_device(struct device *parent, int id,
+ 			  const struct mfd_cell *cell,
+ 			  struct resource *mem_base,
+@@ -75,7 +88,7 @@ static int mfd_add_device(struct device *parent, int id,
+ 
+ 	pdev->dev.parent = parent;
+ 
+-	ret = platform_device_add_data(pdev, cell, sizeof(*cell));
++	ret = mfd_platform_add_cell(pdev, cell);
+ 	if (ret)
+ 		goto fail_res;
+ 
+@@ -123,7 +136,6 @@ static int mfd_add_device(struct device *parent, int id,
+ 
+ 	return 0;
+ 
+-/*	platform_device_del(pdev); */
+ fail_res:
+ 	kfree(res);
+ fail_device:
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index ad1b19a..aef23309 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -86,16 +86,25 @@ extern int mfd_clone_cell(const char *cell, const char **clones,
+  */
+ static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
+ {
+-	return pdev->dev.platform_data;
++	return pdev->mfd_cell;
+ }
+ 
+ /*
+  * Given a platform device that's been created by mfd_add_devices(), fetch
+  * the .mfd_data entry from the mfd_cell that created it.
++ * Otherwise just return the platform_data pointer.
++ * This maintains compatibility with platform drivers whose devices aren't
++ * created by the mfd layer, and expect platform_data to contain what would've
++ * otherwise been in mfd_data.
+  */
+ static inline void *mfd_get_data(struct platform_device *pdev)
+ {
+-	return mfd_get_cell(pdev)->mfd_data;
++	const struct mfd_cell *cell = mfd_get_cell(pdev);
++
++	if (cell)
++		return cell->mfd_data;
++	else
++		return pdev->dev.platform_data;
+ }
+ 
+ extern int mfd_add_devices(struct device *parent, int id,
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index d96db98..744942c 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -14,6 +14,8 @@
+ #include <linux/device.h>
+ #include <linux/mod_devicetable.h>
+ 
++struct mfd_cell;
++
+ struct platform_device {
+ 	const char	* name;
+ 	int		id;
+@@ -23,6 +25,9 @@ struct platform_device {
+ 
+ 	const struct platform_device_id	*id_entry;
+ 
++	/* MFD cell pointer */
++	struct mfd_cell *mfd_cell;
++
+ 	/* arch specific additions */
+ 	struct pdev_archdata	archdata;
+ };
+-- 
+1.7.2.3
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Intel Open Source Technology Centre
+http://oss.intel.com/
