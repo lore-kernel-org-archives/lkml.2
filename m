@@ -1,168 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab1DHUho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:37:44 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:35971 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757841Ab1DHUhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:37:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=s3oTiTr2hOFWy6x8Dw4UcsP7s4EL5NWGHWbwDhz2knx5swrtC3C8t3hFX8302tOQ8V
-         2YQwpCXLz6sa7smDjWjw==
-Date: Fri, 8 Apr 2011 13:37:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-In-Reply-To: <20110408202253.6D6D231C@kernel>
-Message-ID: <alpine.DEB.2.00.1104081333260.12689@chino.kir.corp.google.com>
-References: <20110408202253.6D6D231C@kernel>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757936Ab1DHUhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:37:52 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57093 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757920Ab1DHUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 16:37:48 -0400
+Date: Fri, 8 Apr 2011 20:37:03 GMT
+From: tip-bot for Ian Campbell <ijc@hellion.org.uk>
+Message-ID: <tip-ce9c99af8d4b3b0b9463654fd252d8640d804dc3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        ian.campbell@citrix.com, ijc@hellion.org.uk, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ijc@hellion.org.uk, ian.campbell@citrix.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1302245177.31620.47.camel@localhost.localdomain>
+References: <1302245177.31620.47.camel@localhost.localdomain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, cpu: Move AMD Elan Kconfig under "Processor family"
+Git-Commit-ID: ce9c99af8d4b3b0b9463654fd252d8640d804dc3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 08 Apr 2011 20:37:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Apr 2011, Dave Hansen wrote:
+Commit-ID:  ce9c99af8d4b3b0b9463654fd252d8640d804dc3
+Gitweb:     http://git.kernel.org/tip/ce9c99af8d4b3b0b9463654fd252d8640d804dc3
+Author:     Ian Campbell <ijc@hellion.org.uk>
+AuthorDate: Fri, 8 Apr 2011 07:42:29 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 8 Apr 2011 13:01:25 -0700
 
-> 
-> This originally started as a simple patch to give vmalloc()
-> some more verbose output on failure on top of the plain
-> page allocator messages.  Johannes suggested that it might
-> be nicer to lead with the vmalloc() info _before_ the page
-> allocator messages.
-> 
-> But, I do think there's a lot of value in what
-> __alloc_pages_slowpath() does with its filtering and so
-> forth.
-> 
-> This patch creates a new function which other allocators
-> can call instead of relying on the internal page allocator
-> warnings.  It also gives this function private rate-limiting
-> which separates it from other printk_ratelimit() users.
-> 
-> ---
-> 
->  linux-2.6.git-dave/include/linux/mm.h |    2 +
->  linux-2.6.git-dave/mm/page_alloc.c    |   65 +++++++++++++++++++++++-----------
->  2 files changed, 46 insertions(+), 21 deletions(-)
-> 
-> diff -puN include/linux/mm.h~break-out-alloc-failure-messages include/linux/mm.h
-> --- linux-2.6.git/include/linux/mm.h~break-out-alloc-failure-messages	2011-04-08 13:07:18.978332687 -0700
-> +++ linux-2.6.git-dave/include/linux/mm.h	2011-04-08 13:07:18.990332675 -0700
-> @@ -1365,6 +1365,8 @@ extern void si_meminfo(struct sysinfo * 
->  extern void si_meminfo_node(struct sysinfo *val, int nid);
->  extern int after_bootmem;
->  
-> +extern void nopage_warning(gfp_t gfp_mask, int order, const char *fmt, ...);
-> +
->  extern void setup_per_cpu_pageset(void);
->  
->  extern void zone_pcp_update(struct zone *zone);
-> diff -puN mm/page_alloc.c~break-out-alloc-failure-messages mm/page_alloc.c
-> --- linux-2.6.git/mm/page_alloc.c~break-out-alloc-failure-messages	2011-04-08 13:07:18.982332683 -0700
-> +++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-08 13:07:18.990332675 -0700
-> @@ -54,6 +54,7 @@
->  #include <trace/events/kmem.h>
->  #include <linux/ftrace_event.h>
->  #include <linux/memcontrol.h>
-> +#include <linux/ratelimit.h>
->  
->  #include <asm/tlbflush.h>
->  #include <asm/div64.h>
-> @@ -1734,6 +1735,48 @@ static inline bool should_suppress_show_
->  	return ret;
->  }
->  
-> +static DEFINE_RATELIMIT_STATE(nopage_rs,
-> +		DEFAULT_RATELIMIT_INTERVAL,
-> +		DEFAULT_RATELIMIT_BURST);
-> +
-> +void nopage_warning(gfp_t gfp_mask, int order, const char *fmt, ...)
+x86, cpu: Move AMD Elan Kconfig under "Processor family"
 
-I suggest a different name for this, something like warn_alloc_failure() 
-or such.
+Currently the option resides under X86_EXTENDED_PLATFORM due to historical
+nonstandard A20M# handling. However that is no longer the case and so Elan can
+be treated as part of the standard processor choice Kconfig option.
 
-I guess this isn't general enough where it could be used in the oom killer 
-as well?
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Link: http://lkml.kernel.org/r/1302245177.31620.47.camel@localhost.localdomain
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig                    |   11 -----------
+ arch/x86/Kconfig.cpu                |   16 ++++++++++------
+ arch/x86/Makefile_32.cpu            |    2 +-
+ arch/x86/include/asm/module.h       |    2 +-
+ arch/x86/kernel/cpu/cpufreq/Kconfig |    4 ++--
+ 5 files changed, 14 insertions(+), 21 deletions(-)
 
-> +{
-> +	va_list args;
-> +	int r;
-> +	unsigned int filter = SHOW_MEM_FILTER_NODES;
-> +	const gfp_t wait = gfp_mask & __GFP_WAIT;
-> +
-> +	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs))
-> +		return;
-> +
-> +	/*
-> +	 * This documents exceptions given to allocations in certain
-> +	 * contexts that are allowed to allocate outside current's set
-> +	 * of allowed nodes.
-> +	 */
-> +	if (!(gfp_mask & __GFP_NOMEMALLOC))
-> +		if (test_thread_flag(TIF_MEMDIE) ||
-> +		    (current->flags & (PF_MEMALLOC | PF_EXITING)))
-> +			filter &= ~SHOW_MEM_FILTER_NODES;
-> +	if (in_interrupt() || !wait)
-> +		filter &= ~SHOW_MEM_FILTER_NODES;
-> +
-> +	if (fmt) {
-> +		printk(KERN_WARNING);
-> +		va_start(args, fmt);
-> +		r = vprintk(fmt, args);
-> +		va_end(args);
-> +	}
-> +
-> +	printk(KERN_WARNING);
-> +	printk("%s: page allocation failure: order:%d, mode:0x%x\n",
-> +			current->comm, order, gfp_mask);
-
-This shouldn't be here, it should have been printed already.
-
-> +
-> +	dump_stack();
-> +	if (!should_suppress_show_mem())
-> +		show_mem(filter);
-> +}
-> +
->  static inline int
->  should_alloc_retry(gfp_t gfp_mask, unsigned int order,
->  				unsigned long pages_reclaimed)
-> @@ -2176,27 +2219,7 @@ rebalance:
->  	}
->  
->  nopage:
-> -	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
-> -		unsigned int filter = SHOW_MEM_FILTER_NODES;
-> -
-> -		/*
-> -		 * This documents exceptions given to allocations in certain
-> -		 * contexts that are allowed to allocate outside current's set
-> -		 * of allowed nodes.
-> -		 */
-> -		if (!(gfp_mask & __GFP_NOMEMALLOC))
-> -			if (test_thread_flag(TIF_MEMDIE) ||
-> -			    (current->flags & (PF_MEMALLOC | PF_EXITING)))
-> -				filter &= ~SHOW_MEM_FILTER_NODES;
-> -		if (in_interrupt() || !wait)
-> -			filter &= ~SHOW_MEM_FILTER_NODES;
-> -
-> -		pr_warning("%s: page allocation failure. order:%d, mode:0x%x\n",
-> -			current->comm, order, gfp_mask);
-> -		dump_stack();
-> -		if (!should_suppress_show_mem())
-> -			show_mem(filter);
-> -	}
-> +	nopage_warning(gfp_mask, order, NULL);
->  	return page;
->  got_pg:
->  	if (kmemcheck_enabled)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cc6c53a..f00a3f3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -365,17 +365,6 @@ config X86_UV
+ # Following is an alphabetically sorted list of 32 bit extended platforms
+ # Please maintain the alphabetic order if and when there are additions
+ 
+-config X86_ELAN
+-	bool "AMD Elan"
+-	depends on X86_32
+-	depends on X86_EXTENDED_PLATFORM
+-	---help---
+-	  Select this for an AMD Elan processor.
+-
+-	  Do not use this option for K6/Athlon/Opteron processors!
+-
+-	  If unsure, choose "PC-compatible" instead.
+-
+ config X86_INTEL_CE
+ 	bool "CE4100 TV platform"
+ 	depends on PCI
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index d161e93..6a7cfdf 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -1,6 +1,4 @@
+ # Put here option for CPU selection and depending optimization
+-if !X86_ELAN
+-
+ choice
+ 	prompt "Processor family"
+ 	default M686 if X86_32
+@@ -203,6 +201,14 @@ config MWINCHIP3D
+ 	  stores for this CPU, which can increase performance of some
+ 	  operations.
+ 
++config MELAN
++	bool "AMD Elan"
++	depends on X86_32
++	---help---
++	  Select this for an AMD Elan processor.
++
++	  Do not use this option for K6/Athlon/Opteron processors!
++
+ config MGEODEGX1
+ 	bool "GeodeGX1"
+ 	depends on X86_32
+@@ -292,8 +298,6 @@ config X86_GENERIC
+ 	  This is really intended for distributors who need more
+ 	  generic optimizations.
+ 
+-endif
+-
+ #
+ # Define implied options from the CPU selection here
+ config X86_INTERNODE_CACHE_SHIFT
+@@ -312,7 +316,7 @@ config X86_L1_CACHE_SHIFT
+ 	int
+ 	default "7" if MPENTIUM4 || MPSC
+ 	default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
+-	default "4" if X86_ELAN || M486 || M386 || MGEODEGX1
++	default "4" if MELAN || M486 || M386 || MGEODEGX1
+ 	default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
+ 
+ config X86_XADD
+@@ -358,7 +362,7 @@ config X86_POPAD_OK
+ 
+ config X86_ALIGNMENT_16
+ 	def_bool y
+-	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || X86_ELAN || MK6 || M586MMX || M586TSC || M586 || M486 || MVIAC3_2 || MGEODEGX1
++	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MELAN || MK6 || M586MMX || M586TSC || M586 || M486 || MVIAC3_2 || MGEODEGX1
+ 
+ config X86_INTEL_USERCOPY
+ 	def_bool y
+diff --git a/arch/x86/Makefile_32.cpu b/arch/x86/Makefile_32.cpu
+index f2ee1ab..86cee7b 100644
+--- a/arch/x86/Makefile_32.cpu
++++ b/arch/x86/Makefile_32.cpu
+@@ -37,7 +37,7 @@ cflags-$(CONFIG_MATOM)		+= $(call cc-option,-march=atom,$(call cc-option,-march=
+ 	$(call cc-option,-mtune=atom,$(call cc-option,-mtune=generic))
+ 
+ # AMD Elan support
+-cflags-$(CONFIG_X86_ELAN)	+= -march=i486
++cflags-$(CONFIG_MELAN)		+= -march=i486
+ 
+ # Geode GX1 support
+ cflags-$(CONFIG_MGEODEGX1)	+= -march=pentium-mmx
+diff --git a/arch/x86/include/asm/module.h b/arch/x86/include/asm/module.h
+index 67763c5..9eae775 100644
+--- a/arch/x86/include/asm/module.h
++++ b/arch/x86/include/asm/module.h
+@@ -35,7 +35,7 @@
+ #define MODULE_PROC_FAMILY "K7 "
+ #elif defined CONFIG_MK8
+ #define MODULE_PROC_FAMILY "K8 "
+-#elif defined CONFIG_X86_ELAN
++#elif defined CONFIG_MELAN
+ #define MODULE_PROC_FAMILY "ELAN "
+ #elif defined CONFIG_MCRUSOE
+ #define MODULE_PROC_FAMILY "CRUSOE "
+diff --git a/arch/x86/kernel/cpu/cpufreq/Kconfig b/arch/x86/kernel/cpu/cpufreq/Kconfig
+index 870e6cc..0ab9b22 100644
+--- a/arch/x86/kernel/cpu/cpufreq/Kconfig
++++ b/arch/x86/kernel/cpu/cpufreq/Kconfig
+@@ -43,7 +43,7 @@ config X86_ACPI_CPUFREQ
+ config ELAN_CPUFREQ
+ 	tristate "AMD Elan SC400 and SC410"
+ 	select CPU_FREQ_TABLE
+-	depends on X86_ELAN
++	depends on MELAN
+ 	---help---
+ 	  This adds the CPUFreq driver for AMD Elan SC400 and SC410
+ 	  processors.
+@@ -59,7 +59,7 @@ config ELAN_CPUFREQ
+ config SC520_CPUFREQ
+ 	tristate "AMD Elan SC520"
+ 	select CPU_FREQ_TABLE
+-	depends on X86_ELAN
++	depends on MELAN
+ 	---help---
+ 	  This adds the CPUFreq driver for AMD Elan SC520 processor.
+ 
