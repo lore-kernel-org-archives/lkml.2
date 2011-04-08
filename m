@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551Ab1DHSYh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 14:24:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63892 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752916Ab1DHSYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 14:24:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,325,1299484800"; 
-   d="scan'208";a="625671343"
-Date: Fri, 8 Apr 2011 11:24:36 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] x86/mrst: correct pin to irq mapping
-Message-ID: <20110408112436.299b00d7@jacob-laptop>
-In-Reply-To: <20110408154540.GC17934@elte.hu>
-References: <1302201172-1254-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20110408154540.GC17934@elte.hu>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757562Ab1DHSZp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 14:25:45 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:47465 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab1DHSZo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 14:25:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=cAsR5Kew0JKtf6WxUJPDjR1gUDELwva+hXTySRSIyRBVUEWcDCesrgvDeSVnjE38py
+         sdX0FZxqneYUle+5E+9Q==
+MIME-Version: 1.0
+In-Reply-To: <870910A1-62AF-412F-A989-1FA57B715E35@parallels.com>
+References: <20110408002420.3F3A912217F@elm.corp.google.com>
+	<870910A1-62AF-412F-A989-1FA57B715E35@parallels.com>
+Date: Fri, 8 Apr 2011 11:25:28 -0700
+Message-ID: <BANLkTinWBdURcb2+P5YC99audiVohX4DQA@mail.gmail.com>
+Subject: Re: Subject: [PATCH] sched: fixed erroneous all_pinned logic.
+From: Ken Chen <kenchen@google.com>
+To: Vladimir Davydov <VDavydov@parallels.com>
+Cc: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 8, 2011 at 3:57 AM, Vladimir Davydov wrote:
+>
+> As far as I understand, this patch sets the all_pinned flag if
+> and only if we fail to move any tasks during the load balance.
+> However, the migration can fail because e.g. all tasks are
+> cache hot on their cpus (can_migrate_task() returns 0 in this
+> case), and in this case we shouldn't treat all tasks as cpu
+> bound, should we?
 
-> Could you please improve the changelog to explain to the reader:
-Yes, I just sent out an updated version 2 with documentation and little
-more clean ups.
+all_pinned logic is not restricted for tasks that have hard CPU affinity.
+In balance_tasks(), e.g. if all tasks have high weight, it would also trip
+all_pinned to 1.  See ( p->se.load.weight >> 1) > rem_load_move).  I don't
+see much difference whether a task has high weight, or is cache hot, or
+has hard cpu affinity.
 
-Thanks for pointing it out.
+The effect of classifying cache_hot as pinned task or not is difficult to
+measure, I think.  Because that state is more temporal compare to the
+other two conditions.
 
-Jacob
+I don't have enough data to indicate which way is better though.
+
+- Ken
