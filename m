@@ -1,168 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab1DHQLS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 12:11:18 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51979 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757438Ab1DHQLR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 12:11:17 -0400
-Date: Fri, 8 Apr 2011 17:11:13 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, grant.likely@secretlab.ca,
-        arnd@arndb.de, nico@fluxnic.net
-Subject: Re: [PATCHv2 6/7] basic_mmio_gpio: support different input/output
- registers
-Message-ID: <20110408161113.GG2933@pulham.picochip.com>
-References: <1302272211-30242-1-git-send-email-jamie@jamieiles.com>
- <1302272211-30242-7-git-send-email-jamie@jamieiles.com>
- <20110408144628.GC25237@oksana.dev.rtsoft.ru>
+	id S1757578Ab1DHQNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 12:13:23 -0400
+Received: from kroah.org ([198.145.64.141]:48030 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752680Ab1DHQNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 12:13:21 -0400
+Date: Fri, 8 Apr 2011 09:12:12 -0700
+From: Greg KH <greg@kroah.com>
+To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
+ in Kernel.
+Message-ID: <20110408161212.GA12111@kroah.com>
+References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110405161454.GB885@kroah.com>
+ <4D9F16AD.2090408@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110408144628.GC25237@oksana.dev.rtsoft.ru>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D9F16AD.2090408@hitachi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 06:46:28PM +0400, Anton Vorontsov wrote:
-> On Fri, Apr 08, 2011 at 03:16:50PM +0100, Jamie Iles wrote:
-> > Some controllers have separate input and output registers.  For these
-> > controllers, allow a register named "in" to be used for reading the
-> > value of a GPIO pin.
-> > 
-> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> > Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > ---
-> >  drivers/gpio/basic_mmio_gpio.c |   31 +++++++++++++++++++++++++++++--
-> >  1 files changed, 29 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-> > index 9be1867..ed4b0c6 100644
-> > --- a/drivers/gpio/basic_mmio_gpio.c
-> > +++ b/drivers/gpio/basic_mmio_gpio.c
-> > @@ -70,6 +70,7 @@ struct bgpio_chip {
-> >  	void __iomem *reg_dat;
-> >  	void __iomem *reg_set;
-> >  	void __iomem *reg_clr;
-> > +	void __iomem *reg_in;
+On Fri, Apr 08, 2011 at 11:07:41PM +0900, Nao Nishijima wrote:
+> Hi,
 > 
-> Btw, I wonder if it makes sense (and more logical) for separate output/
-> input registers case to use "reg_dat" for 'input' and 'reg_set' for
-> output?
+> (2011/04/06 1:14), Greg KH wrote:
+> > On Tue, Apr 05, 2011 at 09:49:46PM +0900, Nao Nishijima wrote:
+> >> This patch series provides a SCSI option for persistent device
+> >> names in kernel. With this option, user can always assign a
+> >> same device name (e.g. sda) to a specific device according to
+> >> udev rules and device id.
+> >>
+> >> Issue:
+> >> Recently, kernel registers block devices in parallel. As a result,
+> >> different device names will be assigned at each boot time. This
+> >> will confuse file-system mounter, thus we usually use persistent
+> >> symbolic links provided by udev. However, dmesg and procfs outputs
+> >> show device names instead of the symbolic link names. This causes
+> >> a serious problem when managing multiple devices (e.g. on a
+> >> large-scale storage), because usually, device errors are output
+> >> with device names on dmesg. We also concern about some commands
+> >> which output device names, as well as kernel messages.
+> >>
+> >> Solution:
+> >> To assign a persistent device name, I create unnamed devices (not
+> >> a block device, but an intermediate device. users cannot read/write
+> >> this device). When scsi device driver finds a LU, the LU is registered
+> >> as an unnamed device and inform to udev. After udev finds the unnamed
+> >> device, udev assigns a persistent device name to a specific device
+> >> according to udev rules and registers it as a block device. Hence,
+> >> this is just a naming, not a renaming.
+> >>
+> >> Some users are satisfied with current udev solution. Therefore, my
+> >> proposal is implemented as an option.
+> >>
+> >> If using this option, add the following kernel parameter.
+> >>
+> >> 	scsi_mod.persistent_name=1
+> >>
+> >> Also, if you want to assign a device name with sda, add the
+> >> following udev rules.
+> >>
+> >> SUBSYSTEM=="scsi_unnamed", ATTR{disk_id}=="xxx", PROGRAM="/bin/sh
+> >> -c 'echo -n sda > /sys/%p/disk_name'"
+> > 
+> > Also, where is the "real" program you have created to properly name
+> > devices from userspace?  You need that to properly test this patch,
+> > right?
+> > 
+> 
+> In the udev rule described above, notation “xxx” indicated by
+> ATTR(disk_id) is scsi id given by disk. Then, when udev finds this rule,
+> "/bin/sh -c 'echo -n sda>  /sys/%p/disk_name'" indicated by PROGRAM is
+> operated using xxx (scsi id) if udev find the disk with scic id xxx.
+> Thus, persistent device name is assigned.
+> 
+> I have tested this patch using the udev rule. and It works well.
 
-Sounds like a good idea.  Something like this?
+That's nice, but it's a "toy".  What have you used to test this with
+20000 scsi devices to properly work like it does today?  Where is the
+program that will name them in a deterministic manner?
 
-Jamie
+We have that functionality today, you can't break it.
 
-diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-index 054fbee..fc3826a 100644
---- a/drivers/gpio/basic_mmio_gpio.c
-+++ b/drivers/gpio/basic_mmio_gpio.c
-@@ -185,6 +185,24 @@ static void bgpio_set_with_clear(struct gpio_chip *gc, unsigned int gpio,
- 		bgc->write_reg(bgc->reg_clr, mask);
- }
- 
-+static void bgpio_set_set(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+	unsigned long mask = bgc->pin2mask(bgc, gpio);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&bgc->lock, flags);
-+
-+	if (val)
-+		bgc->data |= mask;
-+	else
-+		bgc->data &= ~mask;
-+
-+	bgc->write_reg(bgc->reg_set, bgc->data);
-+
-+	spin_unlock_irqrestore(&bgc->lock, flags);
-+}
-+
- static int bgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
- {
- 	return 0;
-@@ -245,10 +263,12 @@ static int bgpio_setup_accessors(struct platform_device *pdev,
- 
- /*
-  * Create the device and allocate the resources.  For setting GPIO's there are
-- * two supported configurations:
-+ * three supported configurations:
-  *
-- *	- single output register resource (named "dat").
-+ *	- single input/output register resource (named "dat").
-  *	- set/clear pair (named "set" and "clr").
-+ *	- single output register resource and single input resource ("set" and
-+ *	dat").
-  *
-  * For the single output register, this drives a 1 by setting a bit and a zero
-  * by clearing a bit.  For the set clr pair, this drives a 1 by setting a bit
-@@ -260,6 +280,15 @@ static int bgpio_setup_io(struct platform_device *pdev,
- {
- 	struct resource *res_set;
- 	struct resource *res_clr;
-+	struct resource *res_dat;
-+
-+	res_dat = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dat");
-+	if (!res_dat)
-+		return -EINVAL;
-+
-+	bgc->reg_dat = bgpio_request_and_map(&pdev->dev, res_dat);
-+	if (!bgc->reg_dat)
-+		return -ENOMEM;
- 
- 	res_set = platform_get_resource_byname(pdev, IORESOURCE_MEM, "set");
- 	res_clr = platform_get_resource_byname(pdev, IORESOURCE_MEM, "clr");
-@@ -274,12 +303,22 @@ static int bgpio_setup_io(struct platform_device *pdev,
- 			return -ENOMEM;
- 
- 		bgc->gc.set = bgpio_set_with_clear;
--	} else if (res_set || res_clr) {
--		return -EINVAL;
-+	} else if (res_set && !res_clr) {
-+		if (resource_size(res_set) != resource_size(res_dat) ||
-+		    resource_size(res_set) != bgc->bits / 8)
-+			return -EINVAL;
-+
-+		bgc->reg_set = bgpio_request_and_map(&pdev->dev, res_set);
-+		if (!bgc->reg_set)
-+			return -ENOMEM;
-+
-+		bgc->gc.set = bgpio_set_set;
- 	} else {
- 		bgc->gc.set = bgpio_set;
- 	}
- 
-+	bgc->gc.get = bgpio_get;
-+
- 	return 0;
- }
- 
-@@ -311,10 +350,6 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 	if (!bgc)
- 		return -ENOMEM;
- 
--	bgc->reg_dat = bgpio_request_and_map(dev, res_dat);
--	if (!bgc->reg_dat)
--		return -ENOMEM;
--
- 	if (pdata) {
- 		bgc->gc.base = pdata->base;
- 		if (pdata->ngpio > 0)
-@@ -338,7 +373,6 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 	bgc->gc.ngpio = ngpio;
- 	bgc->gc.direction_input = bgpio_dir_in;
- 	bgc->gc.direction_output = bgpio_dir_out;
--	bgc->gc.get = bgpio_get;
- 	bgc->gc.dev = dev;
- 	bgc->gc.label = dev_name(dev);
- 
--- 
-1.7.4.2
+thanks,
 
+greg k-h
