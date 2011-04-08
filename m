@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab1DHOi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 10:38:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47590 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab1DHOi1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 10:38:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=uWDCh39hmrlHWzKdluaZAdHO7bAcT6jEuAvRpdhjNFCFOa8RZKSKdnU7ou93BRFF1N
-         uW560ZfeZDbnite+evrHo1qtox05g4SJ/71+aSQX9nE/mWeBslhSlmKWWi01VjjdMdrh
-         cNjWJhSEbgMO6rtcsNyf1xKxTHhS8L8d11+lc=
-Date: Fri, 8 Apr 2011 18:38:22 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net
-Subject: Re: [PATCHv2 7/7] basic_mmio_gpio: support direction registers
-Message-ID: <20110408143822.GB25237@oksana.dev.rtsoft.ru>
-References: <1302272211-30242-1-git-send-email-jamie@jamieiles.com>
- <1302272211-30242-8-git-send-email-jamie@jamieiles.com>
+	id S1757300Ab1DHOjr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 10:39:47 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:60718 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756889Ab1DHOjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 10:39:46 -0400
+Date: Fri, 8 Apr 2011 10:39:32 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Pekka Enberg <penberg@kernel.org>,
+        Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+        Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "asias.hejun@gmail.com" <asias.hejun@gmail.com>
+Subject: Re: [ANNOUNCE] Native Linux KVM tool
+Message-ID: <20110408143932.GA21044@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Cyrill Gorcunov <gorcunov@gmail.com>,
+	Jan Kiszka <jan.kiszka@siemens.com>,
+	Pekka Enberg <penberg@kernel.org>,
+	Anthony Liguori <anthony@codemonkey.ws>,
+	Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"aarcange@redhat.com" <aarcange@redhat.com>,
+	"mtosatti@redhat.com" <mtosatti@redhat.com>,
+	"kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	"joro@8bytes.org" <joro@8bytes.org>,
+	"asias.hejun@gmail.com" <asias.hejun@gmail.com>
+References: <4D9847BC.9060906@redhat.com>
+ <4D98716D.9040307@codemonkey.ws>
+ <4D9873CD.3080207@redhat.com>
+ <20110406093333.GB6465@elte.hu>
+ <4D9E6F6E.9050709@codemonkey.ws>
+ <BANLkTimEwAuL4PM9vBfogkrua-Z44AZQvg@mail.gmail.com>
+ <4D9EBBC3.2040803@siemens.com>
+ <1302251236.27918.31.camel@jaguar>
+ <4D9ED146.7040004@siemens.com>
+ <BANLkTimuicK-7Og8V+W1Oz6MqL3sa13H4A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1302272211-30242-8-git-send-email-jamie@jamieiles.com>
+In-Reply-To: <BANLkTimuicK-7Og8V+W1Oz6MqL3sa13H4A@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 03:16:51PM +0100, Jamie Iles wrote:
-[...]
->  static int bgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
->  {
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
+On Fri, Apr 08, 2011 at 01:32:24PM +0400, Cyrill Gorcunov wrote:
+> 
+> It seems there is a misunderstanding. KVM-tool is quite far from been KVM
+> replacement (if ever). And what we're doing -- extremely tiny/small HV which
+> would help us to debug/test kernel code.
 
-For readability, I would still add an empty line here.
+If that's true, then perhaps the command-line invocation shouldn't be
+named "kvm"?  The collision on the name of executable that claims that
+it will replace the kvm shipped in qemu seems to make the claim quite
+clearly that it's going to replace qemu's kvm in short order?
 
-> +	bgc->dir &= ~bgc->pin2mask(bgc, gpio);
-> +	bgc->write_reg(bgc->reg_dir, bgc->dir);
-
-And here.
-
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +
->  	return 0;
->  }
->  
->  static int bgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
->  {
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	unsigned long flags;
-> +
-> +	gc->set(gc, gpio, val);
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-
-Ditto.
-
-> +	bgc->dir |= bgc->pin2mask(bgc, gpio);
-> +	bgc->write_reg(bgc->reg_dir, bgc->dir);
-
-Ditto.
-
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static int bgpio_dir_in_inv(struct gpio_chip *gc, unsigned int gpio)
-> +{
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-
-etc...
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+	     	  	   	   	      	 - Ted
