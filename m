@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab1DHSxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 14:53:39 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:52882 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757098Ab1DHSxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 14:53:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=m9eTSMfQtUyfAfYwgEH+JEmLyNeCKOIHSv69tbjVzkWz7HBgoIrbmsgQ3yyb6kLSNz
-         0bhhlnlXSchLbB9AGNScOYkqYGLG/3aBbVatrcAAp0fvQwBk1FbhlfPn9r7R9YaN/jpA
-         m7YuVTiXRxnkYwsm3wxG4mrsquXQ3dren6Cyg=
-Message-ID: <4D9F59AC.6080707@gmail.com>
-Date: Fri, 08 Apr 2011 12:53:32 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1757639Ab1DHS4B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 14:56:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47155 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917Ab1DHS4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 14:56:00 -0400
+Date: Fri, 8 Apr 2011 20:55:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stas Sergeev <stsp@aknet.ru>
+Cc: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+Message-ID: <20110408185531.GA3697@redhat.com>
+References: <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com> <4D99D6E6.4070008@aknet.ru> <20110404160351.GA23655@redhat.com> <4D9A24A0.5050105@aknet.ru> <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com> <4D9EE899.5040109@aknet.ru>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        KVM mailing list <kvm@vger.kernel.org>
-Subject: trace-cmd errors on kvm events
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D9EE899.5040109@aknet.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38.2 kernel with trace-cmd git pulled this morning:
+On 04/08, Stas Sergeev wrote:
+>
+> I updated patch to fix the race between wait_task_detached()
+> and wait_task_zombie() by using is_detaching flag.
+> Here's the patch.
+> What problems do remain here?
 
-trace-cmd record -e kvm
+Stas, sorry, I simply have no time to read this patch. Not to mention,
+you know that I dislike it in any case.
 
-trace-cmd report 2>&1 | less
+I only quickly looked at the changes in sys_prctl and they are definitely
+wrong.
 
-trace-cmd: No such file or directory
-  function ftrace_print_symbols_seq not defined
-  failed to read event print fmt for kvm_nested_vmexit_inject
-  function ftrace_print_symbols_seq not defined
-  failed to read event print fmt for kvm_nested_vmexit
-  function ftrace_print_symbols_seq not defined
-  failed to read event print fmt for kvm_exit
-  bad op token {
-  failed to read event print fmt for kvm_emulate_insn
+> +			me->real_parent = pid_ns->child_reaper;
+> +			if (thread_group_leader(me)) {
+> +				list_move_tail(&me->sibling,
+> +						&me->real_parent->children);
+> +				/* reparent threads */
+> +				p = me;
+> +				while_each_thread(me, p) {
+> +					if (!task_ptrace(p))
+> +						p->parent = pid_ns->child_reaper;
+> +					p->real_parent = pid_ns->child_reaper;
 
-        qemu-kvm-1864  [002]  2253.714134: kvm_entry:            vcpu 1
-        qemu-kvm-1863  [008]  2253.714136: kvm_exit:             [FAILED
-TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
-        qemu-kvm-1864  [002]  2253.714138: kvm_exit:             [FAILED
-TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
-        qemu-kvm-1863  [008]  2253.714145: kvm_emulate_insn:     [FAILED
-TO PARSE] rip=3222373869 csbase=0 len=2 insn=<89>^H]<C3><8B>^U<EC><95>K<C0>U
-<89><E5>]<8D>^E flags=5 failed=0
+Why do you check thread_group_leader() ???? What if the caller is not
+the leader?
 
-I have not used trace-cmd much, so I am not familiar with the code. Is
-this a known issue? Suggestions on how to debug?
+I told this many times, and I got lost. If you reparent, you should
+always reparent the whole group.
 
-Thanks,
-David
+Also, you are doing do_signal_parent(me). I do not know what it does
+(once again, I didn't read the patch), but this looks suspicious.
+A sub-thread shouldn't notify the parent.
+
+Oleg.
+
