@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab1DHRxu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 13:53:50 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:43916 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751871Ab1DHRxt (ORCPT
+	id S1755096Ab1DHR4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 13:56:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47372 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751871Ab1DHR4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 13:53:49 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=ckQhCTk4a8sZb9Q52zOsAM1/va2Hd/dYQCFnhRXa/ca28Ab7/Ue6aSoFqNfkRgOnUPK0tqFFxXoPTsTMe5lQ2pwP5npMBPKO7ZpArA1X/2lB2sHZKVI+TL4tRcaoDktE;
-Date: Fri, 8 Apr 2011 10:53:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] signal.c: fix erroneous syscall kernel-doc
-Message-Id: <20110408105346.9218d4db.rdunlap@xenotime.net>
-In-Reply-To: <20110405093214.0dd7278d@mfleming-mobl1.ger.corp.intel.com>
-References: <20110404145803.8663081d.rdunlap@xenotime.net>
-	<20110404150026.46478a04.rdunlap@xenotime.net>
-	<20110405093214.0dd7278d@mfleming-mobl1.ger.corp.intel.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Fri, 8 Apr 2011 13:56:06 -0400
+Date: Fri, 8 Apr 2011 10:56:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steve Rago <sar@nec-labs.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] Allow O_SYNC to be set by fcntl(F_SETFL)
+Message-Id: <20110408105602.bb8f1b49.akpm@linux-foundation.org>
+In-Reply-To: <4D9F4844.7090908@nec-labs.com>
+References: <4D6824A4.6030009@nec-labs.com>
+	<20110407143719.4044c00d.akpm@linux-foundation.org>
+	<4D9F4844.7090908@nec-labs.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, 08 Apr 2011 13:39:16 -0400
+Steve Rago <sar@nec-labs.com> wrote:
 
-Fix erroneous syscall kernel-doc comments in kernel/signal.c. 
+> > I wonder if we should sync the file when someone sets O_SYNC this way.
+> > If we don't then there is a period during which we have an fd which has
+> > O_SYNC set, but it has pending unwritten data.  An O_SYNC fd should
+> > never be in such a state!
+> 
+> Why not?
 
-Reported-by: Matt Fleming <matt@console-pimps.org>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- kernel/signal.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Because it's inconsistent.  An O_SYNC fd never has outstanding writeout. 
+Except for in this one new and special time window between a setfl()
+and the next write().
 
---- linux-2.6.39-rc2.orig/kernel/signal.c
-+++ linux-2.6.39-rc2/kernel/signal.c
-@@ -2711,8 +2711,8 @@ out:
- /**
-  *  sys_rt_sigaction - alter an action taken by a process
-  *  @sig: signal to be sent
-- *  @act: the thread group ID of the thread
-- *  @oact: the PID of the thread
-+ *  @act: new sigaction
-+ *  @oact: used to save the previous sigaction
-  *  @sigsetsize: size of sigset_t type
-  */
- SYSCALL_DEFINE4(rt_sigaction, int, sig,
+It's not a big deal, but it's somewhat ugly and merits thinking about.
+
+>  If I write something in non-synchronous mode, then change the file descriptor to synchronous mode, I should 
+> not make any assumptions about what was written prior to this point.  If I care that much, I'll call fsync.
+
+Well.  You can call fsync() after every write() too.
+
+>  All that 
+> matters is that the operating system honors the contract as specified by the system call API.
+
+There's a lot more to it than that.  Things like
+quality-of-implementation and principle-of-least-surprise.  We used to
+have a particular relationship between an O_SYNC fd and the state of
+the inode which it represents.  With this patch, that relationship no
+longer holds.
+
+As I say: not a big deal IMO, but it should be aired and thought about.
