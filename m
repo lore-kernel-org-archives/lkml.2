@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab1DHT2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 15:28:38 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:34021 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757763Ab1DHT2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 15:28:37 -0400
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-From: Mingming Cao <cmm@us.ibm.com>
-To: djwong@us.ibm.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110406224410.GB24354@tux1.beaverton.ibm.com>
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Apr 2011 12:27:48 -0700
-Message-ID: <1302290868.4461.7.camel@mingming-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757784Ab1DHT3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 15:29:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8329 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757658Ab1DHT3f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 15:29:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=C8UE8mzby0zWmBdkF59nns49FgxypG8tTk08fKr7kcEJru4oc3wBW7352Q7O8/rWEv
+         6RLHitEXcocmA2uAb8Tw==
+MIME-Version: 1.0
+In-Reply-To: <1302261350.9086.120.camel@twins>
+References: <20110408002322.3A0D812217F@elm.corp.google.com>
+	<1302261350.9086.120.camel@twins>
+Date: Fri, 8 Apr 2011 12:29:33 -0700
+Message-ID: <BANLkTin4aQ7Gc+h0YCPo=Eokc2iz06WNbw@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix sched-domain avg_load calculation.
+From: Ken Chen <kenchen@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-06 at 15:44 -0700, Darrick J. Wong wrote:
-> Hi all,
-> 
-> I spent last week analyzing a client's corrupted ext3 image to see if I could
-> determine what had gone wrong and caused the filesystem to blow apart.  As best
-> as I could tell, a data block got miswritten into a different sector ... which
-> happened to be an indirect block.  Some time later the indirect block, which
-> now pointed at one of the inode tables (among other things that shouldn't ever
-> become file data) was loaded as part of a file write, which caused that inode
-> table to be blown to smithereens.  Just for fun I tried reading from one of
-> these busted-inode files and ... failed to encounter any errors.  Somehow, they
-> didn't find it funny that ext3 would read block numbers from a table with the
-> contents "ibm.com" with a straight face.  Fortunately there were backups. :)
-> 
-> The client at this point asked if ext4 would do a better job of sanity
-> checking, which got me to wonder why ext4 checksums block groups but not
-> inodes.  It's on Ted's todo list, but apparently nobody wrote any patch, so I
-> did.  The following two patches are a first draft of adding inode checksum
-> support to both the kernel driver and to the various e2fsprogs.
-> 
+On Fri, Apr 8, 2011 at 4:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2011-04-07 at 17:23 -0700, Ken Chen wrote:
+>> In function find_busiest_group(), the sched-domain avg_load isn't
+>> calculated at all if there is a group imbalance within the domain.
+>> This will cause erroneous imbalance calculation.  The reason is
+>> that calculate_imbalance() sees sds->avg_load = 0 and it will dump
+>> entire sds->max_load into imbalance variable, which is used later
+>> on to migrate entire load from busiest CPU to the puller CPU. It
+>> has two really bad effect:
+>>
+>> 1. stampede of task migration, and they won't be able to break out
+>>    of the bad state because of positive feedback loop: large load
+>>    delta -> heavier load migration -> larger imbalance and the cycle
+>>    goes on.
+>>
+>> 2. severe imbalance in CPU queue depth.  This causes really long
+>>    scheduling latency blip which affects badly on application that
+>>    has tight latency requirement.
+>>
+>> The fix is to have kernel calculate domain avg_load in both cases.
+>> This will ensure that imbalance calculation is always sensible and
+>> the target is usually half way between busiest and puller CPU.
+>
+> Indeed so, it looks like I broke that in 866ab43efd32. Out of curiosity,
+> what kind of workload did you observe this on?
 
-We had some discussion about this week at SF (at the ext4 bof at the
-linux colloboration summit). Beyond checksumming the inode itself, it
-would be more useful to checksum the extent indexing blocks, as the ext3
-corruption actually happen at the indirect block.  
+This was observed on application that serves websearch query.  There
+were uneven CPU queue depth in the system, which leads to long query
+latency tail.  The latency tail were both high in occurring frequency
+as well as streched out in time.
 
-The idea is to reduce the eh_max (the max # of extents stored in this
-block) to save some space to store the checksums in the block, 
+With this fix, both server throughput and latency response were improved.
 
-/*
- * Each block (leaves and indexes), even inode-stored has header.
- */
-struct ext4_extent_header {
-        __le16  eh_magic;       /* probably will support different
-formats */
-        __le16  eh_entries;     /* number of valid entries */
-        __le16  eh_max;         /* capacity of store in entries */
-        __le16  eh_depth;       /* has tree real underlying blocks? */
-        __le32  eh_generation;  /* generation of the tree */
-};
-This would make us a RO feature to checksum the leaves and indexes
-blocks too.
-
-> If you have an existing ext* fs with 256-byte inodes, you ought to be able to
-> "tune2fs -O inode_csum /dev/XXX", fsck /dev/XXX, and mount the filesystem with
-> checksumming enabled.  It seems to work for me (i386/x86-64), but I'm looking
-> for comments for improvement and perhaps some more testing (ppc64 is still
-> building).  This inode checksum feature is not enabled by default.
-> 
-> --D
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+- Ken
