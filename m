@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab1DHXmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 19:42:18 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:42339 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab1DHXmQ (ORCPT
+	id S1757943Ab1DHXqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 19:46:32 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42263 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab1DHXqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 19:42:16 -0400
-Message-ID: <4D9F9D56.2050109@web.de>
-Date: Sat, 09 Apr 2011 01:42:14 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Fri, 8 Apr 2011 19:46:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=o4YTwTrm7tUd3KqldcSiLTve1dseEiQnSyvwka8kEhGZ3mFoNFDXe9YU2g/HRQ8xcb
+         u89rIk4vj1inHPZ+PNofa5GwqNufORzkCmq7RmmHX5fj28Khb2Ih+qL+M6hiFc9CZ4WF
+         AtHMAOjVHAUAuuW3uqK7djfQDHQj1MG7klKvg=
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        KVM mailing list <kvm@vger.kernel.org>
-Subject: Re: trace-cmd errors on kvm events
-References: <4D9F59AC.6080707@gmail.com> <4D9F790B.2000300@web.de> <4D9F7A4B.3040606@gmail.com> <4D9F7BC0.8010003@web.de> <4D9F99AA.8060803@gmail.com>
-In-Reply-To: <4D9F99AA.8060803@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigC242A2DCA1FA240DBD7439CA"
-X-Provags-ID: V01U2FsdGVkX19AyDtW3fZpkD1lI8DsqqsvpOgSbiyuURiIazVw
-	8ZlRAHTs9hG6bg0mKkdB+sAhf4zTjt5vdkGUumvcbzneYBM52s
-	lmByAB91c=
+In-Reply-To: <20110408220157.GC26019@kroah.com>
+References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
+	<20110408220157.GC26019@kroah.com>
+Date: Sat, 9 Apr 2011 01:46:29 +0200
+Message-ID: <BANLkTin_-hhcexTd67HviTqM4bjXMZxweA@mail.gmail.com>
+Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        b43-dev@lists.infradead.org,
+        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC242A2DCA1FA240DBD7439CA
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+2011/4/9 Greg KH <greg@kroah.com>:
+>> +static void axi_release_core_dev(struct device *dev)
+>> +{
+>> +     kfree(dev);
+>> +}
+>
+> This is wrong, unless you are really only creating a 'struct device'.
+> Why are you doing that instead of embedding struct device in your
+> structure?
 
-On 2011-04-09 01:26, David Ahern wrote:
-> On 04/08/11 15:18, Jan Kiszka wrote:
->> Let me check... indeed, I'm getting the same file-not-found here with
->> trace-cmd.git 9cce1c9b5b when starting it directly from its build dire=
-ctory.
->>
->> But maybe your trace-cmd or kernel versions are too old / incompatible=
-=2E
->> I'm not getting complaints about unparseable events with the above
->> snapshot and 2.6.38.
->=20
-> 2.6.38.2 kernel, trace-cmd 3e8b5b8 which is March 18 (though git pull
-> done this morning).
->=20
-> For grins I checked-out 9cce1c9b5b and same error:
-> trace-cmd record -e kvm -- sleep 1
-> trace-cmd report 2>&1  | less
->=20
-> You do have to put stderr onto stdout to see the messages I reported
-> earlier. Or look for [FAILED TO PARSE] on the kvm_exit and
-> kvm_emulate_insn lines.
+Hm, I think Greg found explanation why we can not reload axi driver
+successfully :)
 
-I did that.
+I'll take care of your comment after weekend, thank you everybody.
 
-What I also did is updating trace-cmd git and then reinstalling the
-latest plugins: make install_plugins prefix=3D$HOME. They then end up in
-$HOME/.trace-cmd/plugins. Now I do not have a single error message
-anymore, including that file not found.
-
-Jan
-
-
---------------enigC242A2DCA1FA240DBD7439CA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk2fnVYACgkQitSsb3rl5xQaeACfahnhOaA2BHiSO1JNV9SQ3EDx
-NjMAoL4fRLt7FM8+ym8O6+FbZildfMjd
-=aVXn
------END PGP SIGNATURE-----
-
---------------enigC242A2DCA1FA240DBD7439CA--
+-- 
+Rafał
