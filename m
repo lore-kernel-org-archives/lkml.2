@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab1DHLt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 07:49:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55648 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987Ab1DHLtZ convert rfc822-to-8bit (ORCPT
+	id S1756236Ab1DHMZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 08:25:14 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49043 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab1DHMZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 07:49:25 -0400
-Subject: Re: Subject: [PATCH] sched: fixed erroneous all_pinned logic.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vladimir Davydov <VDavydov@parallels.com>
-Cc: Ken Chen <kenchen@google.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <870910A1-62AF-412F-A989-1FA57B715E35@parallels.com>
-References: <20110408002420.3F3A912217F@elm.corp.google.com>
-	 <870910A1-62AF-412F-A989-1FA57B715E35@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 08 Apr 2011 13:49:17 +0200
-Message-ID: <1302263357.9086.138.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 8 Apr 2011 08:25:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=CDGS1N6Gir7LB2BebanFJIaCSD6zQCBBJs19I4L/oZazjN8QWrg8G76ZP7pxvDyY/g
+         UmFpxPOorz/uGybNnECo8dR57gmOoIUaqOufX6sL+w769fXDUz8ao3SyhbDXsdo4bT1H
+         aHMawuZ1YMdjnhuWiGt1wiYG6bQfGbMcj8n78=
+From: wanlong.gao@gmail.com
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] INPUT:Change a more clearly name for the input handlers' table
+Date: Fri,  8 Apr 2011 20:23:44 +0800
+Message-Id: <1302265424-4434-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-08 at 14:57 +0400, Vladimir Davydov wrote:
-> 
-> On Apr 8, 2011, at 4:24 AM, Ken Chen wrote:
-> 
-> > @@ -2302,6 +2292,9 @@ static int move_tasks(
-> > #endif
-> >       } while (load_moved && max_load_move > total_load_moved);
-> > 
-> > +     if (total_load_moved)
-> > +             *all_pinned = 0;
-> > +
-> >       return total_load_moved > 0;
-> > }
-> > 
-> > @@ -3300,7 +3293,7 @@ static int load_balance(
-> >                       struct sched_domain *sd, enum cpu_idle_type idle,
-> >                       int *balance)
-> > {
-> > -     int ld_moved, all_pinned = 0, active_balance = 0;
-> > +     int ld_moved, all_pinned = 1, active_balance = 0;
-> >       struct sched_group *group;
-> >       unsigned long imbalance;
-> >       struct rq *busiest;
-> 
-> As far as I understand, this patch sets the all_pinned flag if and
-> only if we fail to move any tasks during the load balance. However,
-> the migration can fail because e.g. all tasks are cache hot on their
-> cpus (can_migrate_task() returns 0 in this case), and in this case we
-> shouldn't treat all tasks as cpu bound, should we?-- 
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-Hmm, you've got a good point there... (that'll teach me to read email in
-date order).
+Change the input handlers' table name to input_handler_table for
+making more clearly sense .
 
-Ken would it work to only push the all_pinned = 1 higher and not also
-the all_pinned = 0?
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ drivers/input/input.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index d6e8bd8..00511dc 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -45,7 +45,7 @@ static LIST_HEAD(input_handler_list);
+  */
+ static DEFINE_MUTEX(input_mutex);
+ 
+-static struct input_handler *input_table[8];
++static struct input_handler *input_handler_table[8];
+ 
+ static inline int is_event_supported(unsigned int code,
+ 				     unsigned long *bm, unsigned int max)
+@@ -1893,11 +1893,11 @@ int input_register_handler(struct input_handler *handler)
+ 	INIT_LIST_HEAD(&handler->h_list);
+ 
+ 	if (handler->fops != NULL) {
+-		if (input_table[handler->minor >> 5]) {
++		if (input_handler_table[handler->minor >> 5]) {
+ 			retval = -EBUSY;
+ 			goto out;
+ 		}
+-		input_table[handler->minor >> 5] = handler;
++		input_handler_table[handler->minor >> 5] = handler;
+ 	}
+ 
+ 	list_add_tail(&handler->node, &input_handler_list);
+@@ -1933,7 +1933,7 @@ void input_unregister_handler(struct input_handler *handler)
+ 	list_del_init(&handler->node);
+ 
+ 	if (handler->fops != NULL)
+-		input_table[handler->minor >> 5] = NULL;
++		input_handler_table[handler->minor >> 5] = NULL;
+ 
+ 	input_wakeup_procfs_readers();
+ 
+@@ -2062,7 +2062,7 @@ static int input_open_file(struct inode *inode, struct file *file)
+ 		return err;
+ 
+ 	/* No load-on-demand here? */
+-	handler = input_table[iminor(inode) >> 5];
++	handler = input_handler_table[iminor(inode) >> 5];
+ 	if (handler)
+ 		new_fops = fops_get(handler->fops);
+ 
+-- 
+1.7.3
+
