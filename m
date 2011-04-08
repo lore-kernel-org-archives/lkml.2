@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab1DHUif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:38:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40429 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757841Ab1DHUie (ORCPT
+	id S1757928Ab1DHUjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:39:49 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:36703 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757879Ab1DHUjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:38:34 -0400
+	Fri, 8 Apr 2011 16:39:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Jhh60ywZhXF8VlLkH/1XIuuxZ9T/mQJLnD3oJAW2H3mD78bdGwaZKz6sSVso/Ftyhs
-         0AdRuo3JRsMytnNZzgU4tZwG1YX62HlYwzfEF+/DgNIdGrzFf66FuZ9qiI5VzyuuBGXD
-         tMpUSbiwlemXNxSWMxPGMJd2fjECmzyj/68tA=
-Date: Fri, 8 Apr 2011 22:38:29 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
-Message-ID: <20110408203827.GA26667@nowhere>
-References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
- <20110407013349.GH1867@nowhere>
- <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
- <20110407120608.GB1798@nowhere>
- <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
- <20110407213208.GE1798@nowhere>
- <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
- <20110408002812.GG1798@nowhere>
- <1302248268.21026.18.camel@frodo>
- <20110408190052.GC1967@nowhere>
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=rTp98tRtGP6YedjibGXPy0lDFMS+93aM6RmOXmZvw15mcTH7c/g40+a9apRGSpwf7A
+         hYa80LjgSouE34UwMf1g==
+Date: Fri, 8 Apr 2011 13:39:43 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 2/2] print vmalloc() state after allocation failures
+In-Reply-To: <20110408202255.9EE67DC9@kernel>
+Message-ID: <alpine.DEB.2.00.1104081337470.12689@chino.kir.corp.google.com>
+References: <20110408202253.6D6D231C@kernel> <20110408202255.9EE67DC9@kernel>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110408190052.GC1967@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 09:00:56PM +0200, Frederic Weisbecker wrote:
-> On Fri, Apr 08, 2011 at 03:37:48AM -0400, Steven Rostedt wrote:
-> > I actually agree, as perf is more focused on per process (or group) than
-> > ftrace. But that said, I guess the issue is also, if they have a simple
-> > solution that is not invasive and suits their needs, what's the harm in
-> > accepting it?
-> 
-> What about a kind of cgroup_of(path) operator that we can use on
-> filters?
-> 
-> 	common_pid cgroup_of(path)
-> or
-> 	common_pid __cgroup_of__ path
-> 
-> That way you don't bloat the tracing fast path?
+On Fri, 8 Apr 2011, Dave Hansen wrote:
 
-Note in this example, we would simply ignore the common_pid
-value and assume that pid is the one of current. This economizes
-a step to pid -> task resolution.
+> 
+> I was tracking down a page allocation failure that ended up in vmalloc().
+> Since vmalloc() uses 0-order pages, if somebody asks for an insane amount
+> of memory, we'll still get a warning with "order:0" in it.  That's not
+> very useful.
+> 
+> During recovery, vmalloc() also nicely frees all of the memory that it
+> got up to the point of the failure.  That is wonderful, but it also
+> quickly hides any issues.  We have a much different sitation if vmalloc()
+> repeatedly fails 10GB in to:
+> 
+> 	vmalloc(100 * 1<<30);
+> 
+> versus repeatedly failing 4096 bytes in to a:
+> 
+> 	vmalloc(8192);
+> 
+> This patch will print out messages that look like this:
+> 
+> [   30.040774] bash: vmalloc failure allocating after 0 / 73728 bytes
+> 
+
+Either the changelog or the patch is still wrong because the format of 
+this string is inconsistent.
+
+> As a side issue, I also noticed that ctl_ioctl() does vmalloc() based
+> solely on an unverified value passed in from userspace.  Granted, it's
+> under CAP_SYS_ADMIN, but it still frightens me a bit.
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> ---
+> 
+>  linux-2.6.git-dave/mm/vmalloc.c |    9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff -puN mm/vmalloc.c~vmalloc-warn mm/vmalloc.c
+> --- linux-2.6.git/mm/vmalloc.c~vmalloc-warn	2011-04-08 09:36:05.877020199 -0700
+> +++ linux-2.6.git-dave/mm/vmalloc.c	2011-04-08 09:38:00.373093593 -0700
+> @@ -1534,6 +1534,7 @@ static void *__vmalloc_node(unsigned lon
+>  static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+>  				 pgprot_t prot, int node, void *caller)
+>  {
+> +	int order = 0;
+
+Unnecessary, we can continue to hardcode the 0, vmalloc isn't going to use 
+higher order allocs (it's there to avoid such things!).
+
+>  	struct page **pages;
+>  	unsigned int nr_pages, array_size, i;
+>  	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
+> @@ -1560,11 +1561,12 @@ static void *__vmalloc_area_node(struct 
+>  
+>  	for (i = 0; i < area->nr_pages; i++) {
+>  		struct page *page;
+> +		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
+
+I think it would be better to just do away with this as well and just 
+hardwire the __GFP_NOWARN directly into the two allocation calls.
+
+>  
+>  		if (node < 0)
+> -			page = alloc_page(gfp_mask);
+> +			page = alloc_page(tmp_mask);
+>  		else
+> -			page = alloc_pages_node(node, gfp_mask, 0);
+> +			page = alloc_pages_node(node, tmp_mask, order);
+>  
+>  		if (unlikely(!page)) {
+>  			/* Successfully allocated i pages, free them in __vunmap() */
+> @@ -1579,6 +1581,9 @@ static void *__vmalloc_area_node(struct 
+>  	return area->addr;
+>  
+>  fail:
+> +	nopage_warning(gfp_mask, order, "vmalloc: allocation failure, "
+> +			"allocated %ld of %ld bytes\n",
+> +			(area->nr_pages*PAGE_SIZE), area->size);
+>  	vfree(area->addr);
+>  	return NULL;
+>  }
