@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab1DHPIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 11:08:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:36506 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757438Ab1DHPIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 11:08:51 -0400
-Message-ID: <4D9F24F2.9020603@parallels.com>
-Date: Fri, 8 Apr 2011 10:08:34 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1757528Ab1DHPKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 11:10:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48133 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757204Ab1DHPKh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 11:10:37 -0400
+Date: Fri, 8 Apr 2011 11:10:36 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+cc: USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Endless loop with "detected XactErr"
+In-Reply-To: <BANLkTikj+=J3m7+1cOVHHcDqSCY7XeoCrw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1104081100250.1992-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 3/3] Compare namespaces when comparing addresses in auth_unix
- cache.
-References: <4D9431B3.2070305@parallels.com> <20110405034641.GC6764@hallyn.com>
-In-Reply-To: <20110405034641.GC6764@hallyn.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.54.86.208]
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2011 10:46 PM, Serge E. Hallyn wrote:
-> Quoting Rob Landley (rlandley@parallels.com):
->> From: Rob Landley <rlandley@parallels.com>
->>
->> The auth_unix cache needs to check network namespace when comparing
->> addresses. Add field to struct ip_map and extra argument to
->> __ip_map_lookup() so it has the information to do so, and add test.
->>
->> Signed-off-by: Rob Landley <rlandley@parallels.com>
->> ---
->>
->>  net/sunrpc/svcauth_unix.c |   21 ++++++++++++++-------
->>  1 file changed, 14 insertions(+), 7 deletions(-)
->>
->> diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
->> index 30916b0..63a2fa7 100644
->> --- a/net/sunrpc/svcauth_unix.c
->> +++ b/net/sunrpc/svcauth_unix.c
+On Fri, 8 Apr 2011, Zdenek Kabelac wrote:
 
-code code code
-
->> @@ -142,6 +145,7 @@ static void ip_map_init(struct cache_head *cnew, struct cache_head *citem)
->>  	struct ip_map *item = container_of(citem, struct ip_map, h);
->>  
->>  	strcpy(new->m_class, item->m_class);
->> +	new->m_net = item->m_net;
+> >> Just with changing last number - I've got only one such line on serial console.
+> >> By looking into  "drivers/usb/host/ehci-q.c"  - there seems to be
+> >> endless goto loop.
+> >
+> > It isn't endless.  You didn't notice the test against QH_XACTERR_MAX.
+> >
 > 
-> Does this need to take a reference?  Or is there no way for an
-> entry to outlive its netns?  It sort of looks like
-> svcauth_unix_info_release will ensure that doesn't happen, but
-> I'm not convinced because other parts of the kernel can get
-> to ip_map_init through the struct cache_detail.
+> Maybe I've not been patient enough - but I'd been waiting for quite some time
+> and the console was just scrolling this line on display - so I need to
+> turn-off the machine.
+> (After like a minute of this looping)
 
-When I wrote this I thought the transport's get_net() and put_net()
-would pin it, but after re-reading, the sunrpc code is disgustingly
-convoluted enough that I can't easily reconstruct my earlier reasoning.
- I'll add a get_net() and put_net() just to not have to worry about it.
+This is because the loop ends and then starts again (you can tell 
+because the retry counter goes back to 1).
 
-Thanks,
+> > This particular error message indicates a hardware problem in the USB
+> > signals.  A bad contact, a bad cable, a device failure -- something
+> > like that.
+> 
+> Well it's been connected to Lenovo docking station - so unsure what
+> bad cable you mean here.
+> (and AFAICT it seems to work quite well all the time).
 
-Rob
+It doesn't have to be a bad cable.  It could be any sort of hardware 
+failure.  Perhaps the docking or undocking operation itself messes 
+something up.
+
+> >> Here is the trace from last resume:
+> >
+> >> [  473.873802] ACPI: \_SB_.GDCK - undocking
+> >> [  473.897678] hub 2-0:1.0: state 7 ports 4 chg 0000 evt 0010
+> >> [  473.904809] ehci_hcd 0000:00:1a.7: detected XactErr len 0/4 retry 1
+> >
+> > And presumably additional lines containing similar messages.
+> >
+> > There's no real reason for them ever to stop, since they are only
+> > debugging messages.  If you turn off CONFIG_USB_DEBUG you'll never see
+> > tham.
+> 
+> 
+> You mean it's normal I get machine stuck in endless loop when I turn
+> on debugging ?
+
+Are you really sure the machine is stuck?  If you disable 
+CONFIG_USB_DEBUG, does it hang or can you still get useful work done?
+
+> I though debug is there to debug the problem - not to add a new one ??
+
+It doesn't add any problems, since you can always turn the debugging 
+off.  And the messages do aid in debugging -- if they weren't present, 
+you would not have been aware of the problem.
+
+> As this happened during suspend - I had no other option than to simply
+> turn off the machine.
+
+It doesn't appear that way in the log you posted.  The resume completed
+at timestamp 467.8, and the debugging messages didn't start until 6
+seconds later.
+
+You might want to track down the original source of the 
+underlying error.  Since the machine was docked the entire time, the 
+line saying:
+
+[ ï¿½473.873802] ACPI: \_SB_.GDCK - undocking
+
+definitely looks suspicious.  I bet if you can fix that then the USB 
+problems will go away.
+
+Alan Stern
+
