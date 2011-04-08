@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab1DHNHZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 09:07:25 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60008 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752234Ab1DHNHY (ORCPT
+	id S1756744Ab1DHNIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 09:08:42 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:46048 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756655Ab1DHNIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 09:07:24 -0400
-Date: Fri, 8 Apr 2011 15:07:15 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Zaurus-devel] 2.6.39-rc2 on zaurus: does not build, does not
- boot
-Message-ID: <20110408130715.GA1632@ucw.cz>
-References: <20110408062646.GA1472@ucw.cz>
+	Fri, 8 Apr 2011 09:08:41 -0400
+Date: Fri, 8 Apr 2011 15:08:11 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [RFC 3/5]arch:mips:pmc-sierra:msp71xx:Makefile Remove unused
+ config in the Makefile.
+Message-ID: <20110408130811.GA17431@linux-mips.org>
+References: <1302022702-24541-1-git-send-email-justinmattock@gmail.com>
+ <1302022702-24541-3-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110408062646.GA1472@ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1302022702-24541-3-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, Apr 05, 2011 at 09:58:20AM -0700, Justin P. Mattock wrote:
 
-> Boot stops just after mounting root filesystem; cursor stops
-> flashing. (Any idea what goes on there?)
+> The patch below removes an unused config variable found by using a kernel
+> cleanup script.
+> Note: I did try to cross compile these but hit erros while doing so..
+> (gcc is not setup to cross compile) and am unsure if anymore needs to be done.
+> Please have a look if/when anybody has free time.
 
-With CF bluetooth unplugged, it gets  up to userland.
+NACK.
 
-Once it hung in eaarly boot, once early in runlevel 2.
-								Pavel
+This need a rewrite, not just chainsawing.  Your code was only touching
+the makefile anyway, not the two referenced C files.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ Ralf
+
+  Ralf
