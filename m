@@ -1,167 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab1DHXLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 19:11:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:58999 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757377Ab1DHXLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 19:11:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,327,1299484800"; 
-   d="scan'208";a="416298248"
-Date: Sat, 9 Apr 2011 01:11:09 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Andres Salomon <dilinger@queued.net>
-Subject: [PATCH v1] mfd: Fetch cell pointer from platform_device->mfd_cell
-Message-ID: <20110408231108.GD30969@sortiz-mobl>
-References: <20110408004007.GC3923@sortiz-mobl>
- <20110407193855.1e9182bb@debxo>
-MIME-Version: 1.0
+	id S1757908Ab1DHXNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 19:13:18 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:27600 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab1DHXNR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 19:13:17 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=H95gfW32JB/XYJSBuOTvJ8IIviFcsPdfxXHbM7LS6jM= c=1 sm=1
+ a=8Sp9JVQx4AYA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=ySfo2T4IAAAA:8 a=k9Vn1F81AzEP5dj0SCMA:9
+ a=CjuIK1q_8ugA:10 a=hYDL2pDLfHIAtbbt:21 a=dSurigt1u4SLcxeg:21
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 2/2] e2fsprogs: Add support for toggling, verifying, and fixing inode checksums
+Mime-Version: 1.0 (Apple Message framework v1082)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110407193855.1e9182bb@debxo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20110408192530.GE24354@tux1.beaverton.ibm.com>
+Date: Fri, 8 Apr 2011 17:13:13 -0600
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <001599E2-27BF-48AF-BC4E-DE8B674FF46B@dilger.ca>
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <20110406224733.GU32706@tux1.beaverton.ibm.com> <A63BE624-6F88-432C-A029-C7A0DF6C2894@dilger.ca> <20110408192530.GE24354@tux1.beaverton.ibm.com>
+To: djwong@us.ibm.com
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011-04-08, at 1:25 PM, Darrick J. Wong wrote:
+> On Fri, Apr 08, 2011 at 03:14:04AM -0600, Andreas Dilger wrote:
+>> Do you have an e2fsck testcase for this code, to show that it detects/fixes
+>> inodes with data corruption, and to fix the checksums after the ROCOMPAT flag
+>> is set the first time?
+> 
+> Not yet; I suspected that some clarification of exactly that issue was needed.
+> It looks to me that in general the checksum will be zero for the "flag is
+> enabled but no checksum has yet been provided" case, and nonzero in the "inode
+> is corrupt" case.  So if e2fsck sees zero it'd first ask to correct the
+> checksum, and if it sees nonzero it'll first ask to clear the inode.  If the
+> user answers no to the first question, e2fsck can then propose the second
+> option.
 
-In order for MFD drivers to fetch their cell pointer but also their
-platform data one, an mfd cell pointer is added to the platform_device
-structure.
-That allows all MFD sub devices drivers to be MFD agnostic, unless
-they really need to access their MFD cell data. Most of them don't,
-especially the ones for IPs used by both MFD and non MFD SoCs.
+Seems reasonable, though it is possible that the inode checksums can also become invalid due to changing the filesystem UUID.  This should probably be handled by tune2fs when the UUID is changed, with an extra prompt if INODE_CSUM is enabled to indicate that the conversion may take a long time.
 
-Cc: Greg KH <gregkh@suse.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
----
+Looking at the checksum algorithm you used, the inode checksum does not change if the inode is relocated due to resize (i.e. it uses the inode number and not the underlying block number).  This is convenient, and does not impact the correctness in any way - if the wrong block is read/written then the inode number used in the checksum will not match either.
 
-RFC -> v1:
-- Add more mfd_get_data() comments. 
-- Cleaned up mfd_get_data()
+>> With the "ibadness" patch in our tree, the bad checksum should be a
+>> significant factor in marking the inode as garbage, but possibly not enough
+>> to have it thrown out if there are no other errors in the inode.
+> 
+> Or e2fsck could use that heuristic; which tree is the ibadness patch in?
+> Google shows a patch from 2008, but no recent discussion.
 
----
- drivers/base/platform.c         |    1 +
- drivers/mfd/mfd-core.c          |   16 ++++++++++++++--
- include/linux/mfd/core.h        |   13 +++++++++++--
- include/linux/platform_device.h |    5 +++++
- 4 files changed, 31 insertions(+), 4 deletions(-)
+There is a relatively up-to-date version at
+http://git.whamcloud.com/?p=tools/e2fsprogs.git;a=blob_plain;f=patches/e2fsprogs-ibadness-counter.patch;hb=8dd11ed9bdf0914d57d78d0c387bd21f747c1d29
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index f051cff..6c3a2bd 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -149,6 +149,7 @@ static void platform_device_release(struct device *dev)
- 
- 	of_device_node_put(&pa->pdev.dev);
- 	kfree(pa->pdev.dev.platform_data);
-+	kfree(pa->pdev.mfd_cell);
- 	kfree(pa->pdev.resource);
- 	kfree(pa);
- }
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index d01574d..f4c8c84 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -55,6 +55,19 @@ int mfd_cell_disable(struct platform_device *pdev)
- }
- EXPORT_SYMBOL(mfd_cell_disable);
- 
-+static int mfd_platform_add_cell(struct platform_device *pdev,
-+				 const struct mfd_cell *cell)
-+{
-+	if (!cell)
-+		return 0;
-+
-+	pdev->mfd_cell = kmemdup(cell, sizeof(*cell), GFP_KERNEL);
-+	if (!pdev->mfd_cell)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
- static int mfd_add_device(struct device *parent, int id,
- 			  const struct mfd_cell *cell,
- 			  struct resource *mem_base,
-@@ -75,7 +88,7 @@ static int mfd_add_device(struct device *parent, int id,
- 
- 	pdev->dev.parent = parent;
- 
--	ret = platform_device_add_data(pdev, cell, sizeof(*cell));
-+	ret = mfd_platform_add_cell(pdev, cell);
- 	if (ret)
- 		goto fail_res;
- 
-@@ -123,7 +136,6 @@ static int mfd_add_device(struct device *parent, int id,
- 
- 	return 0;
- 
--/*	platform_device_del(pdev); */
- fail_res:
- 	kfree(res);
- fail_device:
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index ad1b19a..aef23309 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -86,16 +86,25 @@ extern int mfd_clone_cell(const char *cell, const char **clones,
-  */
- static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
- {
--	return pdev->dev.platform_data;
-+	return pdev->mfd_cell;
- }
- 
- /*
-  * Given a platform device that's been created by mfd_add_devices(), fetch
-  * the .mfd_data entry from the mfd_cell that created it.
-+ * Otherwise just return the platform_data pointer.
-+ * This maintains compatibility with platform drivers whose devices aren't
-+ * created by the mfd layer, and expect platform_data to contain what would've
-+ * otherwise been in mfd_data.
-  */
- static inline void *mfd_get_data(struct platform_device *pdev)
- {
--	return mfd_get_cell(pdev)->mfd_data;
-+	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+
-+	if (cell)
-+		return cell->mfd_data;
-+	else
-+		return pdev->dev.platform_data;
- }
- 
- extern int mfd_add_devices(struct device *parent, int id,
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index d96db98..744942c 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -14,6 +14,8 @@
- #include <linux/device.h>
- #include <linux/mod_devicetable.h>
- 
-+struct mfd_cell;
-+
- struct platform_device {
- 	const char	* name;
- 	int		id;
-@@ -23,6 +25,9 @@ struct platform_device {
- 
- 	const struct platform_device_id	*id_entry;
- 
-+	/* MFD cell pointer */
-+	struct mfd_cell *mfd_cell;
-+
- 	/* arch specific additions */
- 	struct pdev_archdata	archdata;
- };
--- 
-1.7.2.3
+> Something along the lines of: if the inode is not very bad, ask first to fix
+> the checksum and second to clear the inode; if the inode seems bad, ask first
+> to clear it and second to fix the checksum.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Yes, that is what I was thinking.  The real question is why the checksum would be bad in the case of no other "badness"?  If it is due to the UUID, that should be handled when the UUID is changed, and if it is due to a misplaced write (i.e. bad inode number) then it will help us to distinguish between the "real" inode and the misplaced "bad" inode.
+
+>>> @@ -890,6 +890,11 @@ static struct e2fsck_problem problem_table[] = {
+>>> 	     "(size %Is, lblk %r)\n"),
+>>> 	  PROMPT_CLEAR, PR_PREEN_OK },
+>>> 
+>>> +	/* Fast symlink has EXTENTS_FL set */
+>>> +	{ PR_1_INODE_CSUM_INVALID,
+>>> +	  N_("inode %i checksum invalid.  "),
+>> 
+>> The comment for each problem should exactly mirror the text that is printed.
+>> In this case, you haven't used the abbreviations "@i" and "@n", which would
+>> normally make it much harder to search for this error string in the code, but
+>> also simplifies the translation of the message.
+> 
+> Oops, comment blooper that was a thinko on my part.  What would the @n be for?
+
+@i is "inode", @n is "invalid", per e2fsck/message.c.
+
+Cheers, Andreas
+
+
+
+
+
