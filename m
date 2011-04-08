@@ -1,32 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab1DHOou (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 10:44:50 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:54677 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab1DHOot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 10:44:49 -0400
-Message-ID: <4D9F1F43.6030903@parallels.com>
-Date: Fri, 8 Apr 2011 09:44:19 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S932094Ab1DHOqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 10:46:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60640 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab1DHOqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 10:46:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=a62bvv3L1xYRDIUb0NZ9R4G5xqA9S8ked4cAvsblqJoUMb+du0LkOxa5i0Ifwhzz5h
+         06RO9suFi77UxgBXRYPu5n2VXW3S1N240P468gYF4eowj03dJQri1I3XawKFKtWfMGm3
+         c73Q6l51ofGHFmkDo7olpwEwogJ5qw2a7zrCQ=
+Date: Fri, 8 Apr 2011 18:46:28 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tglx@linutronix.de,
+        grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net
+Subject: Re: [PATCHv2 6/7] basic_mmio_gpio: support different input/output
+ registers
+Message-ID: <20110408144628.GC25237@oksana.dev.rtsoft.ru>
+References: <1302272211-30242-1-git-send-email-jamie@jamieiles.com>
+ <1302272211-30242-7-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
-To: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: OLS 2010 papers finally indexed.
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.54.86.208]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1302272211-30242-7-git-send-email-jamie@jamieiles.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI, the individual papers, with their abstracts, are linked from:
+On Fri, Apr 08, 2011 at 03:16:50PM +0100, Jamie Iles wrote:
+> Some controllers have separate input and output registers.  For these
+> controllers, allow a register named "in" to be used for reading the
+> value of a GPIO pin.
+> 
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  drivers/gpio/basic_mmio_gpio.c |   31 +++++++++++++++++++++++++++++--
+>  1 files changed, 29 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
+> index 9be1867..ed4b0c6 100644
+> --- a/drivers/gpio/basic_mmio_gpio.c
+> +++ b/drivers/gpio/basic_mmio_gpio.c
+> @@ -70,6 +70,7 @@ struct bgpio_chip {
+>  	void __iomem *reg_dat;
+>  	void __iomem *reg_set;
+>  	void __iomem *reg_clr;
+> +	void __iomem *reg_in;
 
-  http://kernel.org/doc/ols/2010
+Btw, I wonder if it makes sense (and more logical) for separate output/
+input registers case to use "reg_dat" for 'input' and 'reg_set' for
+output?
 
-(Sorry for the delay, I kept hoping Andrew Hutton would get back to me
-with final proceedings instead of the "draft" proceedings they posted on
-the website, which are missing a half-dozen of the papers it claims to
-contain.  I've indexed what's there, anyway.)
+I.e. no need for 'reg_in', but instead modify some logic in
+bgpio_setup_io(), and implement bgpio_set_set:
 
-Rob
+	if (res_dat && res_set && !res_clr) {
+		bgc->gc.get = bgpio_get_dat;
+		bgc->gc.set = bgpio_set_set;
+	} else {
+		bgc->gc.get = bgpio_get_dat;
+		bgc->gc.set = bgpio_set_dat;
+	}
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
