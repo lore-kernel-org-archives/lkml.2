@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab1DHVo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 17:44:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53087 "EHLO linutronix.de"
+	id S1757590Ab1DHVpK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 17:45:10 -0400
+Received: from kroah.org ([198.145.64.141]:46520 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab1DHVo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 17:44:56 -0400
-Date: Fri, 8 Apr 2011 23:44:51 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Keith Packard <keithp@keithp.com>
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
- b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
-In-Reply-To: <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6>
-References: <yun1v1fj024.fsf@aiko.keithp.com> <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757405Ab1DHVpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 17:45:08 -0400
+Date: Fri, 8 Apr 2011 13:55:01 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Roland Vossen <rvossen@broadcom.com>
+Subject: Re: linux-next: manual merge of the staging tree with Linus' tree
+Message-ID: <20110408205501.GB23417@kroah.com>
+References: <20110408154756.538a59f2.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110408154756.538a59f2.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Apr 2011, Thomas Gleixner wrote:
-
-> On Wed, 6 Apr 2011, Keith Packard wrote:
-> > -rc2 was causing resume failures on my X201s -- the video mode would get
-> > reset, but the system would then lock up. I bisected the failure down to:
-> > 
-> > commit b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
-> > Author: Thomas Gleixner <tglx@linutronix.de>
-> > Date:   Thu Mar 24 20:16:42 2011 +0100
-> > 
-> >     Bluetooth: Fix warning with hci_cmd_timer
-> > 
-> > Reverting this on top of -rc2 makes resume reliable again.
+On Fri, Apr 08, 2011 at 03:47:56PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Huch. I really have a hard time to connect this. Can you revert the
-> two hunks seperately?
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/brcm80211/README between commit 25985edcedea ("Fix common
+> misspellings") from Linus' tree and commit 4a266c4fc99d ("staging:
+> brcm80211: moved several README items to website") from the staging tree.
+> 
+> The latter removed the text that the former fixed up, so I did that.
 
-Keith confirmed that reverting the second hunk fixes the
-problem. Heck, so that timer is rearmed somewhere in the teardown
-path?
+Thanks, it looks like the spelling changes hit a lot of staging stuff so
+I will merge with Linus's tree and resolve them next week.
 
-Can the bluetooth folks please have a look at that ASAP? The obvious
-fast fix for Linus tree is to revert the second hunk for now, but this
-needs to be fixed proper.
+thanks,
 
-Thanks,
-
-	tglx
+greg k-h
