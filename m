@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab1DHUrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 16:47:21 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:56836 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757944Ab1DHUrT (ORCPT
+	id S932161Ab1DHUuv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 16:50:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52927 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab1DHUuu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 16:47:19 -0400
-Subject: Re: [PATCH 2/2] print vmalloc() state after allocation failures
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <alpine.DEB.2.00.1104081337470.12689@chino.kir.corp.google.com>
-References: <20110408202253.6D6D231C@kernel>
-	 <20110408202255.9EE67DC9@kernel>
-	 <alpine.DEB.2.00.1104081337470.12689@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 08 Apr 2011 13:47:14 -0700
-Message-ID: <1302295634.7286.1146.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Apr 2011 16:50:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=avrchYWmGi4bq0XvGRqrguKZXH3GNet71E7W2RltPCDOXDIHAdGlU5kubAKI3OyJGf
+         kbXlQJWKNbvzZ17EcZ8AUZohdq/G2lPeVOxdSa5UVA3G6xwzUycqNdSl9RrIyERcWHiL
+         9WizjNNlgudWFwr0+9ffBaAN22bKm0O7FFWCE=
+MIME-Version: 1.0
+In-Reply-To: <4D9F59AC.6080707@gmail.com>
+References: <4D9F59AC.6080707@gmail.com>
+Date: Fri, 8 Apr 2011 21:50:49 +0100
+Message-ID: <BANLkTi=3FmfeATtdMV1J6ipexk49pvD_BQ@mail.gmail.com>
+Subject: Re: trace-cmd errors on kvm events
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        KVM mailing list <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-08 at 13:39 -0700, David Rientjes wrote:
-> On Fri, 8 Apr 2011, Dave Hansen wrote:
-> > This patch will print out messages that look like this:
-> > 
-> > [   30.040774] bash: vmalloc failure allocating after 0 / 73728 bytes
-> > 
-> 
-> Either the changelog or the patch is still wrong because the format of 
-> this string is inconsistent.
+On Fri, Apr 8, 2011 at 7:53 PM, David Ahern <dsahern@gmail.com> wrote:
+> 2.6.38.2 kernel with trace-cmd git pulled this morning:
+>
+> trace-cmd record -e kvm
+>
+> trace-cmd report 2>&1 | less
+>
+> trace-cmd: No such file or directory
+>  function ftrace_print_symbols_seq not defined
+>  failed to read event print fmt for kvm_nested_vmexit_inject
+>  function ftrace_print_symbols_seq not defined
+>  failed to read event print fmt for kvm_nested_vmexit
+>  function ftrace_print_symbols_seq not defined
+>  failed to read event print fmt for kvm_exit
+>  bad op token {
+>  failed to read event print fmt for kvm_emulate_insn
+>
+>        qemu-kvm-1864  [002]  2253.714134: kvm_entry:            vcpu 1
+>        qemu-kvm-1863  [008]  2253.714136: kvm_exit:             [FAILED
+> TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
+>        qemu-kvm-1864  [002]  2253.714138: kvm_exit:             [FAILED
+> TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
+>        qemu-kvm-1863  [008]  2253.714145: kvm_emulate_insn:     [FAILED
+> TO PARSE] rip=3222373869 csbase=0 len=2 insn=<89>^H]<C3><8B>^U<EC><95>K<C0>U
+> <89><E5>]<8D>^E flags=5 failed=0
+>
+> I have not used trace-cmd much, so I am not familiar with the code. Is
+> this a known issue? Suggestions on how to debug?
 
-Yeah, ya caught me. :)
-> > diff -puN mm/vmalloc.c~vmalloc-warn mm/vmalloc.c
-> > --- linux-2.6.git/mm/vmalloc.c~vmalloc-warn	2011-04-08 09:36:05.877020199 -0700
-> > +++ linux-2.6.git-dave/mm/vmalloc.c	2011-04-08 09:38:00.373093593 -0700
-> > @@ -1534,6 +1534,7 @@ static void *__vmalloc_node(unsigned lon
-> >  static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
-> >  				 pgprot_t prot, int node, void *caller)
-> >  {
-> > +	int order = 0;
-> 
-> Unnecessary, we can continue to hardcode the 0, vmalloc isn't going to use 
-> higher order allocs (it's there to avoid such things!).
+I think there have been issues for a long time.  I've never gotten
+perf or trace-cmd to be happy with kvm:* events.  Here is a related
+thread from a while back:
 
-The only reason I did that was to keep the printk from looking like
-this:
+https://lkml.org/lkml/2010/5/26/194
 
-> > +	nopage_warning(gfp_mask, 0,  "vmalloc: allocation failure, "
-> > +			"allocated %ld of %ld bytes\n",
-> > +			(area->nr_pages*PAGE_SIZE), area->size);
+When I looked a while back the problem was due to how there is some
+preprocessor magic in Linux that ends up exporting C expressions as
+strings to userspace and neither perf nor trace-cmd have the parsing
+smarts to evaluate the C expressions at runtime.
 
-The order is pretty darn obvious in the direct allocator calls, but I
-liked having it named where it wasn't as obvious.
+I ended up using ftrace instead which handles everything inside the
+kernel and compiles in those C expressions.
 
-> >  	struct page **pages;
-> >  	unsigned int nr_pages, array_size, i;
-> >  	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
-> > @@ -1560,11 +1561,12 @@ static void *__vmalloc_area_node(struct 
-> >  
-> >  	for (i = 0; i < area->nr_pages; i++) {
-> >  		struct page *page;
-> > +		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
-> 
-> I think it would be better to just do away with this as well and just 
-> hardwire the __GFP_NOWARN directly into the two allocation calls.
-
-I did it because hard-wiring it takes the alloc_pages_node() one over 80
-columns.  I figured if I was going to add a line, I might as well keep
-it pretty.
-
--- Dave
-
+Stefan
