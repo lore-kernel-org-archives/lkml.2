@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab1DHSvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 14:51:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47446 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757028Ab1DHSvD (ORCPT
+	id S1757641Ab1DHSxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 14:53:39 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:52882 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757098Ab1DHSxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 14:51:03 -0400
-Date: Fri, 8 Apr 2011 14:51:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-cc: USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Endless print of uhci_result_common: failed with status 440000
-In-Reply-To: <BANLkTikwsDtEgA4c55BSFcvh=kjM84c7JQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1104081444020.1992-100000@iolanthe.rowland.org>
+	Fri, 8 Apr 2011 14:53:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=m9eTSMfQtUyfAfYwgEH+JEmLyNeCKOIHSv69tbjVzkWz7HBgoIrbmsgQ3yyb6kLSNz
+         0bhhlnlXSchLbB9AGNScOYkqYGLG/3aBbVatrcAAp0fvQwBk1FbhlfPn9r7R9YaN/jpA
+         m7YuVTiXRxnkYwsm3wxG4mrsquXQ3dren6Cyg=
+Message-ID: <4D9F59AC.6080707@gmail.com>
+Date: Fri, 08 Apr 2011 12:53:32 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: LKML <linux-kernel@vger.kernel.org>,
+        KVM mailing list <kvm@vger.kernel.org>
+Subject: trace-cmd errors on kvm events
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Apr 2011, Zdenek Kabelac wrote:
+2.6.38.2 kernel with trace-cmd git pulled this morning:
 
-> Most probably because I've run  in the loop
-> 
-> while : ; do pm-suspend ; sleep 5; done
-> 
-> for debug purposes...
-> 
-> 
-> >> [   53.851937] btusb_intr_complete: hci0 urb ffff88011735c300 failed
-> >> to resubmit (19)
-> >> [   53.855223] btusb_bulk_complete: hci0 urb ffff88011735c540 failed
-> >> to resubmit (19)
-> >> [   53.867211] btusb_bulk_complete: hci0 urb ffff88011735c9c0 failed
-> >> to resubmit (19)
-> >> [   53.875279] btusb_send_frame: hci0 urb ffff880117204d80 submission failed
-> >> [   54.127633] systemd[1]: Service bluetooth.target is not needed
-> >> anymore. Stopping.
-> >> [   54.205292] PM: Syncing filesystems ... done.
-> >> [   54.216056] PM: Preparing system for mem sleep
-> >>
-> >> And system was 'dead' - (Moon sign on laptop was already blinking at
-> >> this moment)
-> >
-> > Why did the system suspend like this?  A software undock shouldn't
-> > cause a suspend.
-> 
-> pm-suspend - with  script executed on suspend which undocks laptop
-> (otherwise when I'd forget to press button on docking station before
-> suspend - it would stay 'red' mode - thus all buses are connected -
-> and as I've noticed in past - it's not working well, when I unplug
-> laptop in this 'still connected'  mode - so this software 'undock'
-> solved this problem)
+trace-cmd record -e kvm
 
-All right.  It looks like there are two possible sources of problems 
-here: the undock and the suspend.  It would be best to debug them 
-separately.
+trace-cmd report 2>&1 | less
 
-For example, if you change the loop above to just do the undock and
-redock without suspending, do the problems still occur?
+trace-cmd: No such file or directory
+  function ftrace_print_symbols_seq not defined
+  failed to read event print fmt for kvm_nested_vmexit_inject
+  function ftrace_print_symbols_seq not defined
+  failed to read event print fmt for kvm_nested_vmexit
+  function ftrace_print_symbols_seq not defined
+  failed to read event print fmt for kvm_exit
+  bad op token {
+  failed to read event print fmt for kvm_emulate_insn
 
-Another thing to try: Suspend by doing "echo ram >/sys/power/state" 
-instead of running pm_suspend.
+        qemu-kvm-1864  [002]  2253.714134: kvm_entry:            vcpu 1
+        qemu-kvm-1863  [008]  2253.714136: kvm_exit:             [FAILED
+TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
+        qemu-kvm-1864  [002]  2253.714138: kvm_exit:             [FAILED
+TO PARSE] exit_reason=44 guest_rip=0xc01185ed isa=1 info1=4272 info2=0
+        qemu-kvm-1863  [008]  2253.714145: kvm_emulate_insn:     [FAILED
+TO PARSE] rip=3222373869 csbase=0 len=2 insn=<89>^H]<C3><8B>^U<EC><95>K<C0>U
+<89><E5>]<8D>^E flags=5 failed=0
 
-> >> I've strong believe - it's the moment  where USB_DEBUG version was
-> >> printing those lines in endless loop.
-> >> (Or let say it this way:   More then few minutes loop  - as maybe it
-> >> will end within a week - but I don't have that much time to wait ;))
-> >
-> > Those debugging messages will continue for as long as the hardware
-> > fails to respond properly.
-> 
-> Which is probably 'forever' when the machine is suspending.
-> (note - even SysRq+B  no longer works at this moment)
+I have not used trace-cmd much, so I am not familiar with the code. Is
+this a known issue? Suggestions on how to debug?
 
-No, when the machine is suspending there should not be any errors
-because there should not be any USB traffic.  All the ongoing transfers
-are cancelled as part of the suspend transition, and they start up
-again during resume.
-
-Alan Stern
-
+Thanks,
+David
