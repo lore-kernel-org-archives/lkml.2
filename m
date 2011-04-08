@@ -1,57 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab1DHNjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 09:39:10 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51709 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab1DHNjI (ORCPT
+	id S1756913Ab1DHNpw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 09:45:52 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41825 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab1DHNpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 09:39:08 -0400
+	Fri, 8 Apr 2011 09:45:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=cDRyPD3uHIy0dXHE+/rstkMlZT3obw3pEGRfuJyI0dVtSBF/ZGuPVHYWL4Lz53zG2I
-         O0Hs8DQZ4sTkE6cF9yatA+2UwlO7Xh6WBPloIlioH4iR1iN7Z5U6nc1DSzr0qv7q8b2q
-         zK5dnM44LeYigT7V0RtcDaAMxhBqsWGv/B85s=
-From: =?UTF-8?q?Weiping=20Pan=28=E6=BD=98=E5=8D=AB=E5=B9=B3=29?= 
-	<panweiping3@gmail.com>
-To: fubar@us.ibm.com, andy@greyhouse.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Weiping=20Pan (=E6=BD=98=E5=8D=AB=E5=B9=B3) ?= 
-	<panweiping3@gmail.com>
-Subject: [PATCH] bonding:set save_load to 0 when initializing
-Date: Fri,  8 Apr 2011 21:40:19 +0800
-Message-Id: <1302270019-11698-1-git-send-email-panweiping3@gmail.com>
-X-Mailer: git-send-email 1.7.4
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kK1l9gDEbnRFTeXbvaPWcIBGiaV/xwMNlcRsB4PbqiLUfR/c5bcQwVSR7O7k2igQAf
+         eF8fCVqOnaaQP7CksR2kP9JZeJL4j4uSyZPBb9guqfkxsUi0fyRUOep4+VajvyNxPTmX
+         zOvJIRrwk3dEUfltuTYFKseT7ODDJuBR6zpJk=
+Date: Fri, 8 Apr 2011 15:45:42 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
+Message-ID: <20110408134537.GA1967@nowhere>
+References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
+ <20110407013349.GH1867@nowhere>
+ <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
+ <20110407120608.GB1798@nowhere>
+ <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
+ <20110407213208.GE1798@nowhere>
+ <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
+ <20110408002812.GG1798@nowhere>
+ <1302248268.21026.18.camel@frodo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302248268.21026.18.camel@frodo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is unnecessary to set save_load to 1 here,
-as the tx_hashtbl is just kzalloced.
+On Fri, Apr 08, 2011 at 03:37:48AM -0400, Steven Rostedt wrote:
+> On Fri, 2011-04-08 at 02:28 +0200, Frederic Weisbecker wrote:
+> 
+> > > This is all very interesting, but doesn't really help us. I'd prefer
+> > > to focus on the proposal itself than discuss the merits of perf and
+> > > ftrace. We're using ftrace for the foreseeable future, and afaik, it's
+> > > still a maintained part of the kernel. If perf improves its
+> > > performance for tracing, then we can consider switching to it. We
+> > > could invest time improving perf, and that might be worthwhile, but
+> > > ftrace is here now.
+> > 
+> > You are investing upstream for your tracing needs. And that's really
+> > a nice step that I appreciate, as IIRC, Google had its own internal tracing
+> > (ktrace?) before. Nonetheless you can't be such a significant
+> > user/developer of the upstream kernel tracing and at the same time ignore some
+> > key problems of the actual big picture of it.
+> > 
+> > You need to be aware that we are not going anywhere if we duplicate
+> > every features between perf and ftrace. We want to merge the common
+> > pieces, keep the best of them and not expand the two tier tracing of today.
+> 
+> 
+> I agree that it would be great if we can start to merge the two. But
+> until we have a road map that we can all agree upon, I don't see that
+> happening in the near future. But I may be wrong ;)
 
-Signed-off-by: Weiping Pan(潘卫平) <panweiping3@gmail.com>
----
- drivers/net/bonding/bond_alb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Nah, I don't think it's necessary to have a roadmap, just a kind
+of general direction. Other than that everything can be done piecewise
+without thinking too far for every single patches.
 
-diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
-index 9bc5de3..ab69e5a 100644
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -176,7 +176,7 @@ static int tlb_initialize(struct bonding *bond)
- 	bond_info->tx_hashtbl = new_hashtbl;
+If we were to create a buffer abstraction, something we can create with an
+fd, we can have a shared buffer implementation. And this buffer may be
+able to accept different modes in the future.
+
+Then one could attach the fd to a perf event, which would override the
+default perf event buffer settings.
+
+And ftrace can use that same buffer internally.
+
+I bet this idea is not controversial. What has yet to be solved is
+the debate on the writers that can run in overwriting mode at the same
+time we have readers. Which comes along debates on using subbuffers, etc..
+
+But I guess we can solve that along the way?
+
+There are many other things we want to do to unify even more: have the
+function tracers usable as trace events, same for trace_printk, etc...
+Those parts are pretty uncontroversial.
+
+I don't consider the tracing merge as a one block thing, it's actually
+many standalone pieces that require incremental changes.
  
- 	for (i = 0; i < TLB_HASH_TABLE_SIZE; i++) {
--		tlb_init_table_entry(&bond_info->tx_hashtbl[i], 1);
-+		tlb_init_table_entry(&bond_info->tx_hashtbl[i], 0);
- 	}
- 
- 	_unlock_tx_hashtbl(bond);
--- 
-1.7.4
+> > 
+> > I wish people stop thinking about perf and ftrace as
+> > competitors.
+> 
+> I don't think this is about perf and ftrace as competitors, but they are
+> currently two different infrastructures that are existing in the kernel.
+> They are currently optimized for different purposes. ftrace is optimized
+> for system tracing (persistent buffers and such) where as perf is
+> optimized for user tracing. But the two can do both but the other
+> feature is not as efficient as the other tool.
 
+But that's an accidental two tier optimization. At least yeah ftrace
+goal is deemed for per cpu tracing, thus it is optimized this way.
+But perf should work well on both cases.
+
+> As you said perf has a lot of overhead due to data that it saves per
+> event. How easy is it to modify that without breaking the ABI?
+
+It doesn't need to break the ABI. We can add a field in the perf event
+attr to drop the ftrace headers. We can even remove the support for these
+headers in the pretty long term.
+
+> >  Probably developers could start having a sane view
+> > once both will have close performances and then we can start
+> > thinking about a common backend (a buffer abstraction, which development
+> > can be iterated incrementally, usable with a syscall) and eliminate the
+> > overlapping pieces.
+> 
+> I wouldn't say eliminate, but at least merge the overlapping pieces. I'm
+> still totally against stripping out the debugfs code, and as tools have
+> been made to depend on it, I'm not sure we can rip it out. But I do not
+> see any harm in supporting both a debugfs feature along with a syscall
+> interface. I'm willing to do the leg work here to keep it.
+
+I have no strong problem with that either. We can keep the debugfs interface
+or part of it, while merging the overlapping pieces.
+
+I think it's actually not even in question currently. We are far from a state
+where we can remove the debugfs interface. 
+
+> > 
+> > I'm not asking you to unify the kernel tracing all alone. But you need to
+> > start to enlarge your view.
+> 
+> You might want to be a bit more specific by what you mean here.
+
+I was just grumpy :)
+
+But instead of moaning against others I guess I should rather try to
+start to work on it.
+
+> > 
+> > I tend to think perf is more suitable for finegrained context definition
+> > in general.
+> 
+> I actually agree, as perf is more focused on per process (or group) than
+> ftrace. But that said, I guess the issue is also, if they have a simple
+> solution that is not invasive and suits their needs, what's the harm in
+> accepting it?
+
+To enter more details, perf and ftrace have different ways of dealing
+with contexts of tracing.
+
+ftrace would have a check on every exclusion point in the fast path
+(pid, cgroups, etc...) while perf would actually schedule events on
+top of these criterias. So that there should be only one check to know
+if we are running in the fast path.
+
+In practice we have much more checks from the fast path, but that again
+waits for more optimizations.
+
+So that's the reason why I think perf is more suitable when it's about
+dealing with contexts. Adding a cgroup check in the ftrace fastpath
+is automatically going to be invasive, this is one more check in any
+trace event fast path. As you said ftrace is more optimized for global
+tracing, which makes it the wrong place for that IMHO.
+
+I won't oppose, and may be they even have a non-invasive solution to
+propose that I haven't thought about. Until then I think they are
+investing the wrong place.
