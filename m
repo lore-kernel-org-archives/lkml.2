@@ -1,154 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab1DHJ6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 05:58:10 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51545 "EHLO
+	id S1756367Ab1DHJ6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 05:58:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51536 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208Ab1DHJ6G (ORCPT
+	with ESMTP id S1755995Ab1DHJ5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 05:58:06 -0400
+	Fri, 8 Apr 2011 05:57:51 -0400
 From: pavan_savoy@ti.com
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Cc: pavan_savoy@sify.com, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 1/3] drivers:misc:ti-st: handle delayed tty receive
-Date: Fri,  8 Apr 2011 04:57:42 -0500
-Message-Id: <1302256664-23688-2-git-send-email-pavan_savoy@ti.com>
+Cc: pavan_savoy@sify.com, Victor Goldenshtein <victorg@ti.com>,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 3/3] drivers:misc:ti-st: fix skip remote baud logic
+Date: Fri,  8 Apr 2011 04:57:44 -0500
+Message-Id: <1302256664-23688-4-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1302256664-23688-1-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1302256664-23688-3-git-send-email-pavan_savoy@ti.com>
 References: <1302256664-23688-1-git-send-email-pavan_savoy@ti.com>
+ <1302256664-23688-2-git-send-email-pavan_savoy@ti.com>
+ <1302256664-23688-3-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+From: Victor Goldenshtein <victorg@ti.com>
 
-When certain technologies shutdown their interface without waiting for
-the acknowledgement from the chip. The receive_buf from the TTY would be
-invoked a while after the relevant technology is unregistered.
+Texas Instruments WiLink connectivity combo chipsets support custom baud
+rates over its UART interface.
+This can be achieved by sending the change remote baud rate command.
+Since the baud rate can be properly set by the user-space on shared
+transport the remote chip-side and local host-side baud rate is change
+by the User Space Init Manager.
 
-This patch introduces a new flag "is_registered" which maintains the
-state of protocols BT, FM or GPS and thereby removes the need to clear
-the protocol data from ST when protocols gets unregistered.
-
-This fixes corner cases when HCI RESET is sent down from bluetooth stack
-and the receive_buf is called from tty after 250ms before which
-bluetooth would have unregistered from the system.
-OR - when FM application decides to close down the device without
-sending a power-off FM command resulting in some RDS data or interrupt
-data coming in after the driver is unregistered.
+This patch when encounters the same command inside the firmware,
+attempts to skip such command since it is handled by the user-space.
+The logic to skip the command when it is un-commented is fixed by this
+patch.
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+Author:    Victor Goldenshtein <victorg@ti.com>
 ---
- drivers/misc/ti-st/st_core.c |   23 +++++++++++++----------
- include/linux/ti_wilink_st.h |    3 ++-
- 2 files changed, 15 insertions(+), 11 deletions(-)
+ drivers/misc/ti-st/st_kim.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index 486117f..f91f82e 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -43,13 +43,15 @@ static void add_channel_to_table(struct st_data_s *st_gdata,
- 	pr_info("%s: id %d\n", __func__, new_proto->chnl_id);
- 	/* list now has the channel id as index itself */
- 	st_gdata->list[new_proto->chnl_id] = new_proto;
-+	st_gdata->is_registered[new_proto->chnl_id] = true;
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 9ee4c78..b638a7d 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -244,9 +244,9 @@ void skip_change_remote_baud(unsigned char **ptr, long *len)
+ 		pr_err("invalid action after change remote baud command");
+ 	} else {
+ 		*ptr = *ptr + sizeof(struct bts_action) +
+-			((struct bts_action *)nxt_action)->size;
++			((struct bts_action *)cur_action)->size;
+ 		*len = *len - (sizeof(struct bts_action) +
+-				((struct bts_action *)nxt_action)->size);
++				((struct bts_action *)cur_action)->size);
+ 		/* warn user on not commenting these in firmware */
+ 		pr_warn("skipping the wait event of change remote baud");
+ 	}
+@@ -385,6 +385,8 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 	}
+ 	/* fw download complete */
+ 	release_firmware(kim_gdata->fw_entry);
++	if (len != 0)
++		pr_err("%s:failed, script not parsed completely", __func__);
+ 	return 0;
  }
  
- static void remove_channel_from_table(struct st_data_s *st_gdata,
- 		struct st_proto_s *proto)
- {
- 	pr_info("%s: id %d\n", __func__, proto->chnl_id);
--	st_gdata->list[proto->chnl_id] = NULL;
-+/*	st_gdata->list[proto->chnl_id] = NULL; */
-+	st_gdata->is_registered[proto->chnl_id] = false;
- }
- 
- /*
-@@ -104,7 +106,7 @@ void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
- 
- 	if (unlikely
- 	    (st_gdata == NULL || st_gdata->rx_skb == NULL
--	     || st_gdata->list[chnl_id] == NULL)) {
-+	     || st_gdata->is_registered[chnl_id] == false)) {
- 		pr_err("chnl_id %d not registered, no data to send?",
- 			   chnl_id);
- 		kfree_skb(st_gdata->rx_skb);
-@@ -141,14 +143,15 @@ void st_reg_complete(struct st_data_s *st_gdata, char err)
- 	unsigned char i = 0;
- 	pr_info(" %s ", __func__);
- 	for (i = 0; i < ST_MAX_CHANNELS; i++) {
--		if (likely(st_gdata != NULL && st_gdata->list[i] != NULL &&
--			   st_gdata->list[i]->reg_complete_cb != NULL)) {
-+		if (likely(st_gdata != NULL &&
-+			st_gdata->is_registered[i] == true &&
-+				st_gdata->list[i]->reg_complete_cb != NULL)) {
- 			st_gdata->list[i]->reg_complete_cb
- 				(st_gdata->list[i]->priv_data, err);
- 			pr_info("protocol %d's cb sent %d\n", i, err);
- 			if (err) { /* cleanup registered protocol */
- 				st_gdata->protos_registered--;
--				st_gdata->list[i] = NULL;
-+				st_gdata->is_registered[i] = false;
- 			}
- 		}
- 	}
-@@ -475,9 +478,9 @@ void kim_st_list_protocols(struct st_data_s *st_gdata, void *buf)
- {
- 	seq_printf(buf, "[%d]\nBT=%c\nFM=%c\nGPS=%c\n",
- 			st_gdata->protos_registered,
--			st_gdata->list[0x04] != NULL ? 'R' : 'U',
--			st_gdata->list[0x08] != NULL ? 'R' : 'U',
--			st_gdata->list[0x09] != NULL ? 'R' : 'U');
-+			st_gdata->is_registered[0x04] == true ? 'R' : 'U',
-+			st_gdata->is_registered[0x08] == true ? 'R' : 'U',
-+			st_gdata->is_registered[0x09] == true ? 'R' : 'U');
- }
- 
- /********************************************************************/
-@@ -504,7 +507,7 @@ long st_register(struct st_proto_s *new_proto)
- 		return -EPROTONOSUPPORT;
- 	}
- 
--	if (st_gdata->list[new_proto->chnl_id] != NULL) {
-+	if (st_gdata->is_registered[new_proto->chnl_id] == true) {
- 		pr_err("chnl_id %d already registered", new_proto->chnl_id);
- 		return -EALREADY;
- 	}
-@@ -563,7 +566,7 @@ long st_register(struct st_proto_s *new_proto)
- 		/* check for already registered once more,
- 		 * since the above check is old
- 		 */
--		if (st_gdata->list[new_proto->chnl_id] != NULL) {
-+		if (st_gdata->is_registered[new_proto->chnl_id] == true) {
- 			pr_err(" proto %d already registered ",
- 				   new_proto->chnl_id);
- 			return -EALREADY;
-diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
-index 7071ec5..b004e55 100644
---- a/include/linux/ti_wilink_st.h
-+++ b/include/linux/ti_wilink_st.h
-@@ -140,12 +140,12 @@ extern long st_unregister(struct st_proto_s *);
-  */
- struct st_data_s {
- 	unsigned long st_state;
--	struct tty_struct *tty;
- 	struct sk_buff *tx_skb;
- #define ST_TX_SENDING	1
- #define ST_TX_WAKEUP	2
- 	unsigned long tx_state;
- 	struct st_proto_s *list[ST_MAX_CHANNELS];
-+	bool is_registered[ST_MAX_CHANNELS];
- 	unsigned long rx_state;
- 	unsigned long rx_count;
- 	struct sk_buff *rx_skb;
-@@ -155,6 +155,7 @@ struct st_data_s {
- 	unsigned char	protos_registered;
- 	unsigned long ll_state;
- 	void *kim_data;
-+	struct tty_struct *tty;
- };
- 
- /*
 -- 
 1.7.0.4
 
