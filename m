@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab1DHHb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 03:31:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63899 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab1DHHbP (ORCPT
+	id S1756032Ab1DHHb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 03:31:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51544 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab1DHHb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 03:31:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=c0i8PFpEVtuFsspLWjxg4WJgX1HDk2pwbR9ktTJh1ocA/HGBiBHKqTJMuQQNzXlm1M
-         cmldmPGp+zhP87wJF8HErhghcyVzxItruvJhVFl2aQTPHLxrAJVWaNqHWfwMOJgM3ZDw
-         WIhUfM6uxks9dlrEOR2UrYodsQNZDnybdbZ44=
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: 2.6.39-rc2 on zaurus: does not build, does not boot
-Date: Fri, 8 Apr 2011 09:31:10 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-1-amd64; KDE/4.4.5; x86_64; ; )
-Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <20110408062646.GA1472@ucw.cz>
-In-Reply-To: <20110408062646.GA1472@ucw.cz>
+	Fri, 8 Apr 2011 03:31:58 -0400
+Date: Fri, 8 Apr 2011 09:31:53 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5 V2]arch:common:Makefile Remove unused config in the
+ Makefile.
+Message-ID: <20110408073153.GA18601@pengutronix.de>
+References: <1302219529-8864-1-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104080931.11202.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1302219529-8864-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 April 2011 08:26:46 Pavel Machek wrote:
-> Hi!
-> 
-> Build fix is below. Maybe it is pending in the trees somewhere
-> already...
+Hi Justin,
 
-Fix is already there, it was broken by a patch from someone recently. Thanks 
-though
+On Thu, Apr 07, 2011 at 04:38:49PM -0700, Justin P. Mattock wrote:
+> The patch below removes an unused config variable found by using a kernel
+> cleanup script.
 > 
-> Boot stops just after mounting root filesystem; cursor stops
-> flashing. (Any idea what goes on there?)
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> ---
+Russell asked you to send this to his patch system.
+See http://www.arm.linux.org.uk/developer/patches/info.php for more info
+about that.
 
-No idea, it works for me and doesn't hang ;-)
+Best regards
+Uwe
 
-> 
-> 								Pavel
-> 
-> --- ./drivers/video.ofic/pxafb.c	2011-04-06 15:19:51.000000000 +0200
-> +++ ./drivers/video/pxafb.c	2011-04-07 06:20:20.000000000 +0200
-> @@ -1648,7 +1648,7 @@
-> 
->  	switch (val) {
->  	case CPUFREQ_PRECHANGE:
-> -		if (!fbi->overlay[0].usage && !fbi->overlay[1].usage)
-> +//		if (!fbi->overlay[0].usage && !fbi->overlay[1].usage)
->  			set_ctrlr_state(fbi, C_DISABLE_CLKCHANGE);
->  		break;
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
