@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab1DHT2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 15:28:06 -0400
-Received: from mail.perches.com ([173.55.12.10]:4579 "EHLO mail.perches.com"
+	id S1757794Ab1DHT2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 15:28:38 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:34021 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757680Ab1DHT2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 15:28:04 -0400
-Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
-From: Joe Perches <joe@perches.com>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
-References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
+	id S1757763Ab1DHT2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 15:28:37 -0400
+Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
+From: Mingming Cao <cmm@us.ibm.com>
+To: djwong@us.ibm.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110406224410.GB24354@tux1.beaverton.ibm.com>
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Apr 2011 12:28:01 -0700
-Message-ID: <1302290881.1664.7.camel@Joe-Laptop>
+Date: Fri, 08 Apr 2011 12:27:48 -0700
+Message-ID: <1302290868.4461.7.camel@mingming-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-08 at 21:45 +0200, Rafał Miłecki wrote:
-> diff --git a/include/linux/axi/axi.h b/include/linux/axi/axi.h
-[]
-> +#define axi_info	pr_info
-> +#ifdef CONFIG_AXI_DEBUG
-> +#define axi_debug	pr_debug
-> +#else
-> +#define axi_debug	do { } while (0)
-> +#endif
-> +#define axi_err		pr_err
+On Wed, 2011-04-06 at 15:44 -0700, Darrick J. Wong wrote:
+> Hi all,
+> 
+> I spent last week analyzing a client's corrupted ext3 image to see if I could
+> determine what had gone wrong and caused the filesystem to blow apart.  As best
+> as I could tell, a data block got miswritten into a different sector ... which
+> happened to be an indirect block.  Some time later the indirect block, which
+> now pointed at one of the inode tables (among other things that shouldn't ever
+> become file data) was loaded as part of a file write, which caused that inode
+> table to be blown to smithereens.  Just for fun I tried reading from one of
+> these busted-inode files and ... failed to encounter any errors.  Somehow, they
+> didn't find it funny that ext3 would read block numbers from a table with the
+> contents "ibm.com" with a straight face.  Fortunately there were backups. :)
+> 
+> The client at this point asked if ext4 would do a better job of sanity
+> checking, which got me to wonder why ext4 checksums block groups but not
+> inodes.  It's on Ted's todo list, but apparently nobody wrote any patch, so I
+> did.  The following two patches are a first draft of adding inode checksum
+> support to both the kernel driver and to the various e2fsprogs.
+> 
 
-I think redefining standard functionality like
-this doesn't gain anything and loses some basic
-grep capability.
+We had some discussion about this week at SF (at the ext4 bof at the
+linux colloboration summit). Beyond checksumming the inode itself, it
+would be more useful to checksum the extent indexing blocks, as the ext3
+corruption actually happen at the indirect block.  
+
+The idea is to reduce the eh_max (the max # of extents stored in this
+block) to save some space to store the checksums in the block, 
+
+/*
+ * Each block (leaves and indexes), even inode-stored has header.
+ */
+struct ext4_extent_header {
+        __le16  eh_magic;       /* probably will support different
+formats */
+        __le16  eh_entries;     /* number of valid entries */
+        __le16  eh_max;         /* capacity of store in entries */
+        __le16  eh_depth;       /* has tree real underlying blocks? */
+        __le32  eh_generation;  /* generation of the tree */
+};
+This would make us a RO feature to checksum the leaves and indexes
+blocks too.
+
+> If you have an existing ext* fs with 256-byte inodes, you ought to be able to
+> "tune2fs -O inode_csum /dev/XXX", fsck /dev/XXX, and mount the filesystem with
+> checksumming enabled.  It seems to work for me (i386/x86-64), but I'm looking
+> for comments for improvement and perhaps some more testing (ppc64 is still
+> building).  This inode checksum feature is not enabled by default.
+> 
+> --D
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
