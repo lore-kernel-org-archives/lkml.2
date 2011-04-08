@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab1DHRgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 13:36:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17148 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880Ab1DHRgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 13:36:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,324,1299484800"; 
-   d="scan'208";a="730906941"
-Date: Fri, 8 Apr 2011 10:36:46 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, johnstul@us.ibm.com, tglx@linutronix.de
-Subject: Re: [PATCHv2 0/2] Permit reuse of APB timers on other platforms
-Message-ID: <20110408103646.4f45d42f@jacob-laptop>
-In-Reply-To: <1302273218-7263-1-git-send-email-jamie@jamieiles.com>
-References: <1302273218-7263-1-git-send-email-jamie@jamieiles.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S1756900Ab1DHRl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 13:41:27 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:56050 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752899Ab1DHRlZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 13:41:25 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=lCOjdrBE7tVojz2oikNUeLDnrfwS9InVFoEgVR2fXeJ1A5N+uQ81DQPMiMsSlt/0n1KcXGDluqP4ioIu6vOSOUS0/iGU5E4jcjo/qU/0J8ioclbb4WZKVejDrMezw16D;
+Date: Fri, 8 Apr 2011 10:41:23 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3/8] kernel/signal.c: add kernel-doc notation to
+ syscalls
+Message-Id: <20110408104123.611e7a99.rdunlap@xenotime.net>
+In-Reply-To: <20110405093214.0dd7278d@mfleming-mobl1.ger.corp.intel.com>
+References: <20110404145803.8663081d.rdunlap@xenotime.net>
+	<20110404150026.46478a04.rdunlap@xenotime.net>
+	<20110405093214.0dd7278d@mfleming-mobl1.ger.corp.intel.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  8 Apr 2011 15:33:36 +0100
-Jamie Iles <jamie@jamieiles.com> wrote:
+On Tue, 5 Apr 2011 09:32:14 +0100 Matt Fleming wrote:
 
-> This patch series splits out the DesignWare APB timer handling into
-> clocksource and clockevent drivers then allows different platforms to
-> reuse them.  The Synopsys timers can be found in x86, ARM and
-> potentially other architectures.
+> On Mon, 4 Apr 2011 15:00:26 -0700
+> Randy Dunlap <rdunlap@xenotime.net> wrote:
 > 
-> Here's the updated patch series which Jacob has had running on his x86
-> platform and I have working on a currently out-of-tree ARM platform.
+> > @@ -2660,6 +2708,13 @@ out:
+> >  #endif /* __ARCH_WANT_SYS_SIGPROCMASK */
+> >  
+> >  #ifdef __ARCH_WANT_SYS_RT_SIGACTION
+> > +/**
+> > + *  sys_rt_sigaction - alter an action taken by a process
+> > + *  @sig: signal to be sent
+> > + *  @act: the thread group ID of the thread
+> > + *  @oact: the PID of the thread
+> > + *  @sigsetsize: size of sigset_t type
+> > + */
+> >  SYSCALL_DEFINE4(rt_sigaction, int, sig,
+> >  		const struct sigaction __user *, act,
+> >  		struct sigaction __user *, oact,
 > 
-> Many thanks to Jacob for the testing (and fixing) to get this running
-> on x86.
-> 
-> Jamie Iles (2):
->   x86, mrst: share APB timer code with other platforms
->   clocksource: platform driver for APB timers
-> 
->  arch/x86/Kconfig                            |    1 +
->  arch/x86/include/asm/apb_timer.h            |   22 +--
->  arch/x86/kernel/apb_timer.c                 |  421
-> +++++----------------------
-> drivers/Kconfig                             |    2 +
-> drivers/clocksource/Kconfig                 |   11 +
-> drivers/clocksource/Makefile                |    2 +
-> drivers/clocksource/dw_apb_timer.c          |  322
-> ++++++++++++++++++++ drivers/clocksource/dw_apb_timer_platform.c |
-> 173 +++++++++++ include/linux/dw_apb_timer.h                |  129
-> ++++++++ 9 files changed, 714 insertions(+), 369 deletions(-) create
-> mode 100644 drivers/clocksource/Kconfig create mode 100644
-> drivers/clocksource/dw_apb_timer.c create mode 100644
-> drivers/clocksource/dw_apb_timer_platform.c create mode 100644
-> include/linux/dw_apb_timer.h
-> 
+> This isn't right. @act and @oct are the new and old actions for @sig.
 
-Hi Jamie,
+Thanks.  I don't know how I did that.
+I'll send a correction for it.
 
-Which tree are your patches based on? I failed to apply them on
-both mainline and tip tree.
-There has been some recent changes in arch/x86/kernel/apb_timer.c
-I have resolved conflict and sending you updated patch separately.
-
-Please check,
-
--- 
-Thanks
-
-Jacob
-(from Linux laptop)
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
