@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab1DHI2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 04:28:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56152 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab1DHI2i (ORCPT
+	id S1752005Ab1DHImn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 04:42:43 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40924 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab1DHImm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 04:28:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=N/mTPPRDVhp9W82FSw6eVGJFrCYym6ALRR35zyaJPQ/7B4B31S7WyRl3JEeIAxY8yT
-         ScS03nhaz75qLOrQtzbzdmVBfWL8mQttwC5ALpZPlMbbmEN8ixEub015JbIEEfnI2wy4
-         enxjA3fqp3NN/649SLwrscwsQy8J/0tYjfAvQ=
-Date: Fri, 8 Apr 2011 10:28:27 +0200
-From: Martin Jansa <martin.jansa@gmail.com>
-To: Zaurus PDA developers list <zaurus-devel@www.linuxtogo.org>
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        thommycheck@gmail.com, Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
-        kernel list <linux-kernel@vger.kernel.org>, lenz@cs.wisc.edu,
-        rpurdie@rpsys.net, eric.y.miao@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Zaurus-devel] 2.6.39-rc2 on zaurus: does not build, does not
- boot
-Message-ID: <20110408082827.GD3180@jama.jama.net>
-References: <20110408062646.GA1472@ucw.cz>
- <201104080931.11202.marek.vasut@gmail.com>
+	Fri, 8 Apr 2011 04:42:42 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Subject: Re: [PATCH] mm: Check we have the right vma in __access_remote_vm()
+Cc: kosaki.motohiro@jp.fujitsu.com, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <hughd@google.com>, <walken@google.com>,
+        <aarcange@redhat.com>, <riel@redhat.com>,
+        Andrew Morton <akpm@osdl.org>, <linuxppc-dev@ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In-Reply-To: <10e5cbf67c850b6ae511979bdbad1761236ad9b0.1302247435.git.michael@ellerman.id.au>
+References: <10e5cbf67c850b6ae511979bdbad1761236ad9b0.1302247435.git.michael@ellerman.id.au>
+Message-Id: <20110408174244.9B6F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GyRA7555PLgSTuth"
-Content-Disposition: inline
-In-Reply-To: <201104080931.11202.marek.vasut@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Fri,  8 Apr 2011 17:42:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> In __access_remote_vm() we need to check that we have found the right
+> vma, not the following vma, before we try to access it. Otherwise we
+> might call the vma's access routine with an address which does not
+> fall inside the vma.
+> 
+> Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+> ---
+>  mm/memory.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 9da8cab..ce999ca 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3678,7 +3678,7 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
+>  			 */
+>  #ifdef CONFIG_HAVE_IOREMAP_PROT
+>  			vma = find_vma(mm, addr);
+> -			if (!vma)
+> +			if (!vma || vma->vm_start > addr)
+>  				break;
+>  			if (vma->vm_ops && vma->vm_ops->access)
+>  				ret = vma->vm_ops->access(vma, addr, buf,
 
---GyRA7555PLgSTuth
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks good to me.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-On Fri, Apr 08, 2011 at 09:31:10AM +0200, Marek Vasut wrote:
-> On Friday 08 April 2011 08:26:46 Pavel Machek wrote:
-> > Hi!
-> >=20
-> > Build fix is below. Maybe it is pending in the trees somewhere
-> > already...
->=20
-> Fix is already there, it was broken by a patch from someone recently. Tha=
-nks=20
-> though
-> >=20
-> > Boot stops just after mounting root filesystem; cursor stops
-> > flashing. (Any idea what goes on there?)
->=20
-> No idea, it works for me and doesn't hang ;-)
 
-it works here too with rev 6221f222c0ebf1acdf7abcf927178f40e1a65e2a
 
-Cheers,
-
---=20
-Martin 'JaMa' Jansa     jabber: Martin.Jansa@gmail.com
-
---GyRA7555PLgSTuth
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iEYEARECAAYFAk2exysACgkQN1Ujt2V2gBwqkQCfYfE6/P+jPgTSy3PPp52DEASZ
-tNgAoKqDX7Xva3oKwvWBKHqNg561Ylca
-=euWS
------END PGP SIGNATURE-----
-
---GyRA7555PLgSTuth--
