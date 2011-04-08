@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab1DHNU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 09:20:58 -0400
-Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:64108 "EHLO
-	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab1DHNU5 (ORCPT
+	id S1756776Ab1DHNXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 09:23:21 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41725 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab1DHNXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 09:20:57 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-To: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Nick Piggin <npiggin@suse.de>
-cc: linux-kernel@vger.kernel.org
-Subject: Q. locking order of dcache_lru_lock
-Date: Fri, 08 Apr 2011 22:20:31 +0900
-Message-ID: <9769.1302268831@jrobl>
+	Fri, 8 Apr 2011 09:23:20 -0400
+Subject: Re: [PATCH] print vmalloc() state after allocation failures
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110408001942.GC2874@cmpxchg.org>
+References: <20110407172302.3B7546DA@kernel>
+	 <20110408001942.GC2874@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 08 Apr 2011 06:23:08 -0700
+Message-ID: <1302268988.8184.6890.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-04-07 at 17:19 -0700, Johannes Weiner wrote:
+> On Thu, Apr 07, 2011 at 10:23:02AM -0700, Dave Hansen wrote:
+> > @@ -1579,6 +1579,18 @@ static void *__vmalloc_area_node(struct 
+> >  	return area->addr;
+> >  
+> >  fail:
+> > +	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
+> 
+> There is a comment above the declaration of printk_ratelimit:
+> 
+> /*
+>  * Please don't use printk_ratelimit(), because it shares ratelimiting state
+>  * with all other unrelated printk_ratelimit() callsites.  Instead use
+>  * printk_ratelimited() or plain old __ratelimit().
+>  */
+> 
+> I realize that the page allocator does it the same way, but I think it
+> should probably be fixed in there, rather than spread any further.
 
-Hello Al Viro, Christoph Hellwig and Nick Piggin,
+You're the second person to mention this.  I should have listened the
+first time. :)  I'll fix it up and repost.
 
-I have a question about the locking order of dcache_lru_lock.
+> > +		/*
+> > +		 * We probably did a show_mem() and a stack dump above
+> > +		 * inside of alloc_page*().  This is only so we can
+> > +		 * tell how big the vmalloc() really was.  This will
+> > +		 * also not be exactly the same as what was passed
+> > +		 * to vmalloc() due to alignment and the guard page.
+> > +		 */
+> > +		printk(KERN_WARNING "%s: vmalloc: allocation failure, "
+> > +			"allocated %ld of %ld bytes\n", current->comm,
+> > +			(area->nr_pages*PAGE_SIZE), area->size);
+> > +	}
+> 
+> To me, this does not look like something that should just be appended
+> to the whole pile spewed out by dump_stack() and show_mem().  What do
+> you think about doing the page allocation with __GFP_NOWARN and have
+> the full report come from this place, with the line you introduce as
+> leader?
 
-The comment in fs/dcache.c says
- * Ordering:
- * dentry->d_inode->i_lock
- *   dentry->d_lock
- *     dcache_lru_lock
-	:::
+That sounds fine to me.  
 
-d_lock should be before dcache_lru_lock.
-Actually dentry_lru_(add|del|move_tail) functions (and their callers) do
-it expectedly.
-But __shrink_dcache_sb() looks different.
+-- Dave
 
-__shrink_dcache_sb()
-{
-	:::
-relock:
-	spin_lock(&dcache_lru_lock);
-	while (!list_empty(&sb->s_dentry_lru)) {
-		::
-		if (!spin_trylock(&dentry->d_lock)) {
-			spin_unlock(&dcache_lru_lock);
-			cpu_relax();
-			goto relock;
-		}
-	:::
-}
-
-When spin_trylock(&dentry->d_lock) successfully acquired d_lock, does
-the violation of locking order happen (or a deadlock, in worse case)?
-
-By the way, the code is introduced by the commit
-	2304450 2011-01-07 fs: dcache scale lru
-by Nick Piggin.
-Is he allright? Does anyone know anything?
-We have not received from him for a long time.
-
-
-J. R. Okajima
