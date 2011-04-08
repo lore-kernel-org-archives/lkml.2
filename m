@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab1DHTag (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 15:30:36 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44375 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757774Ab1DHTaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 15:30:35 -0400
-Date: Fri, 8 Apr 2011 12:30:31 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Sunil Mushran <sunil.mushran@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ext4: Calculate and verify inode checksums
-Message-ID: <20110408193031.GF24354@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <20110406224547.GT32706@tux1.beaverton.ibm.com> <4D9D0ADB.9010005@oracle.com> <20110407164006.GC24354@tux1.beaverton.ibm.com> <4D9DF01C.6050506@oracle.com> <20110408185013.GB17677@noexit>
+	id S1757814Ab1DHTqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 15:46:21 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:58661 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757687Ab1DHTqU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 15:46:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oF9vjiSiiyF9pM+25WK2GAdPfrVzv6HcWPRC1sabhNdGJlpUE2fyacGCqhYxA/hyr7
+         5G0B6p5HVjLWpQQxGdZiJCT5ePdR4cOPappv4CuUClZFZo44euk79QoNslUDq/6kRMZf
+         ehIVeL0yua8S03S5TM2qiIQsSj+F2VZUa/zm4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110408185013.GB17677@noexit>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <1302290881.1664.7.camel@Joe-Laptop>
+References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
+	<1302290881.1664.7.camel@Joe-Laptop>
+Date: Fri, 8 Apr 2011 21:46:19 +0200
+Message-ID: <BANLkTi=QwBOxfxy13PxeX+LRuccV_p06zA@mail.gmail.com>
+Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        b43-dev@lists.infradead.org,
+        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 11:50:13AM -0700, Joel Becker wrote:
-> On Thu, Apr 07, 2011 at 10:10:52AM -0700, Sunil Mushran wrote:
-> > On 04/07/2011 09:40 AM, Darrick J. Wong wrote:
-> > >That said, I haven't really quantified the performance impact of this naive
-> > >approach yet, so I wonder -- did you see a similar scenario with ocfs2, and
-> > >what kind of performance increase did you get by adapting the code to use the
-> > >jbd2 trigger?  If there's potentially a large increase, it would be interesting
-> > >to apply the same conversion to the group descriptor checksumming code too.
-> > 
-> > Joel Becker may remember the overhead. He wrote the patch. That said we have few
-> > differences. ocfs2 has larger (blocksized) inodes. Also, it computes ECC. The code
-> > is in fs/ocfs2/blockcheck.c.
+2011/4/8 Joe Perches <joe@perches.com>:
+> On Fri, 2011-04-08 at 21:45 +0200, Rafał Miłecki wrote:
+>> diff --git a/include/linux/axi/axi.h b/include/linux/axi/axi.h
+> []
+>> +#define axi_info     pr_info
+>> +#ifdef CONFIG_AXI_DEBUG
+>> +#define axi_debug    pr_debug
+>> +#else
+>> +#define axi_debug    do { } while (0)
+>> +#endif
+>> +#define axi_err              pr_err
+>
+> I think redefining standard functionality like
+> this doesn't gain anything and loses some basic
+> grep capability.
 
-Heh, yes, ext4 uses a fairly simple crc16 and the inodes are (most likely) not
-block sized.
+But on the other hand using:
+pr_info, pr_err, BUT axi_debug
+can easily lead to mistakes.
 
-> 	ocfs2 does the journal access/journal dirty cycle a lot more
-> than extN.  I think you'd want to generate your own numbers.
+Or is this possible to re-define pr_debug locally?
 
-Ok, I ran both the mailserver ffsb profile and a quick-and-dumb test that tried
-to dirty inodes as fast as it could.  On both a regular disk, an SSD, and a
-loopmounted ext4 on a tmpfs I couldn't really see much of a performance
-difference at all.  I'll see about giving this a try once I get the field
-location and e2fsck behavior more firmly resolved, though I suspect I won't see
-much gain.
-
---D
+-- 
+Rafał
