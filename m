@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab1DHEie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Apr 2011 00:38:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46913 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482Ab1DHEid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Apr 2011 00:38:33 -0400
-Date: Fri, 8 Apr 2011 14:38:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: linux-next: manual merge of the sound tree with Linus' tree
-Message-Id: <20110408143825.e15b444a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__8_Apr_2011_14_38_25_+1000_Umb89KeEKh84u0DW"
+	id S1751699Ab1DHEnr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Apr 2011 00:43:47 -0400
+Received: from [77.233.226.4] ([77.233.226.4]:50369 "EHLO
+	mail.doredevelopment.dk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751296Ab1DHEnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Apr 2011 00:43:46 -0400
+From: Esben Haabendal <eha@dev.doredevelopment.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: eha@doredevelopment.dk, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH] leds: Support automatic start of blinking with ledtrig-timer
+References: <1300446199-3234-1-git-send-email-eha@doredevelopment.dk>
+	<20110407163415.0eb0f545.akpm@linux-foundation.org>
+Date: Fri, 08 Apr 2011 06:43:41 +0200
+In-Reply-To: <20110407163415.0eb0f545.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Thu, 7 Apr 2011 16:34:15 -0700")
+Message-ID: <87wrj5bbeq.fsf@eha.doredevelopment.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__8_Apr_2011_14_38_25_+1000_Umb89KeEKh84u0DW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-Hi Takashi,
+> On Fri, 18 Mar 2011 12:03:19 +0100
+> eha@doredevelopment.dk wrote:
+>
+>> From: Esben Haabendal <eha@doredevelopment.dk>
+>> 
+>> By setting initial values blink_delay_on and blink_delay_off in a
+>> led_classdev struct, this change starts the blinking when the led
+>> is initialized.
+>> 
+>> Signed-off-by: Esben Haabendal <eha@doredevelopment.dk>
+>> ---
+>>  drivers/leds/led-class.c     |    3 ++-
+>>  drivers/leds/ledtrig-timer.c |    3 +++
+>>  2 files changed, 5 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+>> index d5a4ade..d7bdef8 100644
+>> --- a/drivers/leds/led-class.c
+>> +++ b/drivers/leds/led-class.c
+>> @@ -131,7 +131,8 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
+>>  	if (!led_cdev->blink_brightness)
+>>  		led_cdev->blink_brightness = led_cdev->max_brightness;
+>>  
+>> -	if (delay_on == led_cdev->blink_delay_on &&
+>> +	if (led_cdev->trigger_data &&
+>> +	    delay_on == led_cdev->blink_delay_on &&
+>>  	    delay_off == led_cdev->blink_delay_off)
+>>  		return;
+>>  
+>> diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
+>> index b09bcbe..d87c9d0 100644
+>> --- a/drivers/leds/ledtrig-timer.c
+>> +++ b/drivers/leds/ledtrig-timer.c
+>> @@ -91,6 +91,9 @@ static void timer_trig_activate(struct led_classdev *led_cdev)
+>>  	if (rc)
+>>  		goto err_out_delayon;
+>>  
+>> +	led_blink_set(led_cdev, &led_cdev->blink_delay_on,
+>> +		      &led_cdev->blink_delay_off);
+>> +
+>>  	led_cdev->trigger_data = (void *)1;
+>>  
+>>  	return;
+>
+> It's unclear (to me) exactly what this patch does.  Could you please
+> send a more complete description of the user-visible change in
+> behaviour?
 
-Today's linux-next merge of the sound tree got a conflict in
-sound/soc/codecs/wm8994.c between commit 25985edcedea ("Fix common
-misspellings") from Linus' tree and commit f701a2e594e6 ("ASoC: Factor
-WM8958 DSP2 handling into separate file") from the sound tree.
+With this patch, you can initialize blink_delay_on and blink_delay_off
+in led_classdev with default_trigger set to "timer", and the led start
+up blinking.  The current ledtrig-timer implementation ignores any
+initial blink_delay_on/blink_delay_off settings, and requires setting
+blink_delay_on/blink_delay_off (typically from user-space) before the
+led blinks.
 
-The latter moved the code changed by the former into another file.  I did
-not bother fixing the spelling errors there.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__8_Apr_2011_14_38_25_+1000_Umb89KeEKh84u0DW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNnpFBAAoJEDMEi1NhKgbsjg0H/iUcJXCS7iZyawhThNGdUo3G
-lqO3oA8PuqhMvZDZ5bZvxeKpiF+YfokXRUy/WU95nZ85tBs+MTLXTYyoIWBln2E0
-yiTMTaAA1gw5cmhP1P/2IdOlYVrqMutxa5zDCIvqH1jgRHWMvRz2Rd6x/Bgo5q/U
-s29Dj+vzpN4Cj5XdTj6hWXiPqYcx+w50GuSwJQ5/V0C58JwwgtKbPA6Gqhfjzkkn
-3BxhxrMUVeAbasGWjRsdPF5Nj1gDEURpiS5kLsb5Wb2XFWVdniUbR6nzmDuxG0+l
-ig1CgGTYvp/d2NHPS5FJVQtcIk7ZERyRQapWdccg0YXWOKLzsX9rCMHaT5zHMYo=
-=sHac
------END PGP SIGNATURE-----
-
---Signature=_Fri__8_Apr_2011_14_38_25_+1000_Umb89KeEKh84u0DW--
+/Esben
