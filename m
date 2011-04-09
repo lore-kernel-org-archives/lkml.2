@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab1DIMli (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 08:41:38 -0400
+	id S1757357Ab1DIMlh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 08:41:37 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:62770 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757119Ab1DIMle (ORCPT
+	with ESMTP id S1757011Ab1DIMlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 08:41:34 -0400
+	Sat, 9 Apr 2011 08:41:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=XmytxeWBzQCPwXr2iMXKW519PAB5UOp7sdZXRu85jxFFZOJ0Uv3oOSQ56yQ64iaYWU
-         E3zMMA/VLkYTBa2qZxoSbBNsplOvI+XZyLxJJYVhFSjuYVjm8DRpT3rM2lmn6DJcMADh
-         sQZSzIB7lgXYDZZZyRffEvdGki8qN7Bfc73/A=
+        b=cnXVFcNF8ohH71l2GFA0P0i01ppmfEt53a2MzalEAJHaMED7IJ5nheF7TIaBBO/1M8
+         YQoGDOwArOn0iXMlpHbRvF5nTrWc74dYxw++Y/Dl+bYDCbziid9VBxou6/hUwtPIGobn
+         kiTzGDsXZ5LcdR0ULkAyIlX4k0cYZb+gweN2o=
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] char: genrtc: fix infoleak to userspace
-Date: Sat,  9 Apr 2011 16:41:30 +0400
-Message-Id: <1302352890-20892-1-git-send-email-segoon@openwall.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] char: briq_panel: fix TOCTOU bug
+Date: Sat,  9 Apr 2011 16:41:26 +0400
+Message-Id: <1302352886-20847-1-git-send-email-segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct pll is copied to userspace.  It is filled in "multiplexing" function
-get_rtc_pll().  At least one implementator, q40_get_rtc_pll(), doesn't
-fill .pll_ctrl field.  It's hard to understand whether either the caller
-or the callee must zero the unused struct fields, however, on another
-ioctl commands the caller already zeroes the structure.  So, let's the
-caller use memset().
+There is a TOCTOU bug in briq_panel_write() code:
+
+    if (vfd_cursor > 39)   <<<
+	    scroll_vfd();
+    vfd[vfd_cursor++] = c; <<<
+
+It's possible to write to arbitrary memory location in case of more than
+one process tries to call write() simultaneously.
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 ---
- drivers/char/genrtc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/char/briq_panel.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/genrtc.c b/drivers/char/genrtc.c
-index f773a9d..65cd683 100644
---- a/drivers/char/genrtc.c
-+++ b/drivers/char/genrtc.c
-@@ -273,6 +273,7 @@ static int gen_rtc_ioctl(struct file *file,
- 	switch (cmd) {
+diff --git a/drivers/char/briq_panel.c b/drivers/char/briq_panel.c
+index 095ab90..afad0a4 100644
+--- a/drivers/char/briq_panel.c
++++ b/drivers/char/briq_panel.c
+@@ -9,6 +9,7 @@
+ #include <linux/types.h>
+ #include <linux/errno.h>
+ #include <linux/tty.h>
++#include <linux/mutex.h>
+ #include <linux/timer.h>
+ #include <linux/kernel.h>
+ #include <linux/wait.h>
+@@ -34,6 +35,7 @@ static int		vfd_is_open;
+ static unsigned char	vfd[40];
+ static int		vfd_cursor;
+ static unsigned char	ledpb, led;
++static DEFINE_MUTEX(vfd_mutex);
  
- 	case RTC_PLL_GET:
-+	    memset(&pll, 0, sizeof(pll));
- 	    if (get_rtc_pll(&pll))
- 	 	    return -EINVAL;
- 	    else
+ static void update_vfd(void)
+ {
+@@ -140,12 +142,15 @@ static ssize_t briq_panel_write(struct file *file, const char __user *buf, size_
+ 	if (!vfd_is_open)
+ 		return -EBUSY;
+ 
++	mutex_lock(&vfd_mutex);
+ 	for (;;) {
+ 		char c;
+ 		if (!indx)
+ 			break;
+-		if (get_user(c, buf))
++		if (get_user(c, buf)) {
++			mutex_unlock(&vfd_mutex);
+ 			return -EFAULT;
++		}
+ 		if (esc) {
+ 			set_led(c);
+ 			esc = 0;
+@@ -175,6 +180,7 @@ static ssize_t briq_panel_write(struct file *file, const char __user *buf, size_
+ 		buf++;
+ 	}
+ 	update_vfd();
++	mutex_unlock(&vfd_mutex);
+ 
+ 	return len;
+ }
 -- 
 1.7.0.4
 
