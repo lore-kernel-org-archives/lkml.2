@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1DIJve (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 05:51:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63178 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab1DIJvc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 05:51:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=a6dX8/Yp0Hz+gxK87jLAGvxQ3Wnh40DfIbsUQglNKef9SidiE8tCCzpuBF4WtUsc8R
-         uKRsQOk2EyEWtZ0CQ0exaSjet0mSJYC3O4taUrkEtWv9ZRuJQUpVTO+rks0+dat92BZS
-         G1i3pB7V4YC+SAUUbZnnEvbNN5fQoWUr8X5jg=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: 2.6.39-rc2 on zaurus: does not build, does not boot
-Date: Sat, 9 Apr 2011 12:49:58 +0300
-User-Agent: KMail/1.13.6 (Linux/2.6.38-gentoo-anarsoul; KDE/4.6.2; i686; ; )
-Cc: Marek Vasut <marek.vasut@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, thommycheck@gmail.com,
-        dbaryshkov@gmail.com, Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
-        kernel list <linux-kernel@vger.kernel.org>, utx@penguin.cz,
-        lenz@cs.wisc.edu, rpurdie@rpsys.net, omegamoon@gmail.com,
-        eric.y.miao@gmail.com, zaurus-devel@www.linuxtogo.org
-References: <20110408062646.GA1472@ucw.cz> <201104080931.11202.marek.vasut@gmail.com>
-In-Reply-To: <201104080931.11202.marek.vasut@gmail.com>
+	id S1754089Ab1DIKHe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 06:07:34 -0400
+Received: from nm7.bullet.mail.bf1.yahoo.com ([98.139.212.166]:26565 "HELO
+	nm7.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753919Ab1DIKH1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Apr 2011 06:07:27 -0400
+X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Apr 2011 06:07:27 EDT
+X-Yahoo-Newman-Id: 235223.71667.bm@omp1044.mail.bf1.yahoo.com
+X-Yahoo-SMTP: m0Wc0LSswBAIxIi24pXrjAHPWq2cGO8WJa9EqB2G3g--
+X-YMail-OSG: tZBJXUMVM1mhw.jTjJ4dSVBQNhOLoqs79I0LlUb3Z_J4bLl
+ Q6jvBaQVXylzsXpfdkCAhPv273NVeYypFdnWXaJETs4iYjwaNhYjSN0C9N39
+ 3aexNJqpRJZ0We0GAnq.16FTM3EfXJk4QOor0xSRK92Qxp75p53ih.p_oE5L
+ EEdA6JyZ5CMwL7CzMTnH8JSOBKu7StycxGYgt616c8pykblkrwrhVpRtRGdV
+ 6BX6_pcx8ZxoZoOqD6tXAhCbQzCGt4BD02tl9YZzJ74wC_KfNlezCMOL0ubx
+ .t4Jn_Od2GfyicA_A2ipu8mGBinbx6_9v2F5qe3A56SEAUjkz
+X-Yahoo-Newman-Property: ymail-3
+From: "Raymond Dal" <raymonddal@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: raymonddal1@mail.mn
+Date: Sat, 09 Apr 2011 17:54:30 +0800
+Subject: Urgent Attention!!!!
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104091249.59159.anarsoul@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-ID: <USERPC5cd1d1b0d9894a5cabad24ea868e2f11@UserPC>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 April 2011 10:31:10 Marek Vasut wrote:
-> On Friday 08 April 2011 08:26:46 Pavel Machek wrote:
-> > Hi!
-> > 
-> > Build fix is below. Maybe it is pending in the trees somewhere
-> > already...
-> 
-> Fix is already there, it was broken by a patch from someone recently.
-> Thanks though
+good day,
 
-I broke it accidently, sorry :) you can enable CONFIG_FB_PXA_OVERLAY as 
-temporary workaround
+ 
+###   Warning!! Information on this email is strictly confidential and is not to be viewed by any Unauthorized personnel. kind regards Raymond ###
 
-Regards
-Vasily
+my name is Raymond Dal am a Singaporean citizen and a seasoned banker in Malaysia (BERHAD OFFICE), I occupy the position of an accountant in this branch office, it is with good spirit of heart I opened up this great opportunity to you; there is a client of mine who died as a result of heart failure; because of the entire family lost their lives in the tsunami disaster on the 26th Dec, 2004, and his account of us$19.761 million with us has been unclaimed due to unavailability of a next of kin/relatives to claim his estate.
+
+Since none of the family relative is alive to claim this fund after bank having waited until now for any relative next of kin to surface in our custody;  I decided to contact you fast; so that I can present you as the relative next of kin to my late client; so that bank will wire this fund direct to your bank account. You don't need to worry yourself in this transaction, it is not going to implicate you to any trouble in your country, and hence I will provide the legal papers in your name and favour.
+
+In view of this, I am seeking your cooperation and understanding to stand as the deceased next of kin to enable us claim the inheritance before the period given by the bank elapse. If you are interested and in agreement with me, get back to me quickly and I will send to you all our bank contacts and the information you may need to proceed without coming to Malaysia, and be rest assured that it is risks free project and the proceedings will be shared 35% for you 55% for me and 10% for any expenses we incurred during this process and will be balanced once the fund are transferred into your account in your country or any other country you might suggest" to open a new account; because of the increase tax rate in your country.
+
+Please reply immediately with your information including your full name, full address and telephone number for easy communication with you.
+
+ I await your prompt response immediately.[raymonddal1@mail.mn]
+
+remain blessed,
+
+
+Raymond Dal 
+
