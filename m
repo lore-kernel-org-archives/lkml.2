@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab1DILCD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 07:02:03 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1681 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754180Ab1DILCA convert rfc822-to-8bit (ORCPT
+	id S1754327Ab1DILJA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 07:09:00 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59381 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab1DILI7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 07:02:00 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-To: "George Kashperko" <george@znau.edu.ua>
-cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        =?utf-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Russell King" <rmk@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
-References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
- <op.vtisojsk3ri7v4@arend-laptop>
- <BANLkTin1yyow595tcYveB5fh8q3x+U_GOw@mail.gmail.com>
- <op.vtmqm7fw3ri7v4@arend-laptop>
- <1302333026.18361.8.camel@dev.znau.edu.ua>
-Date: Sat, 9 Apr 2011 13:01:39 +0200
-MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vtn3k12g3ri7v4@arend-laptop>
-In-Reply-To: <1302333026.18361.8.camel@dev.znau.edu.ua>
-User-Agent: Opera Mail/11.01 (Linux)
-X-WSS-ID: 61BEE2DB3CK13056110-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
+	Sat, 9 Apr 2011 07:08:59 -0400
+Subject: Re: [RFC] tracing: Adding cgroup aware tracing functionality
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Rubin <mrubin@google.com>, Ken Chen <kenchen@google.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <1302282130.21026.45.camel@frodo>
+References: <BANLkTik_jtjWTsOueUzfdQXRx17OcgyDgA@mail.gmail.com>
+	 <20110407013349.GH1867@nowhere>
+	 <BANLkTinKsYqkEEUu98t+Gn9ciPn_bmsMFQ@mail.gmail.com>
+	 <20110407120608.GB1798@nowhere>
+	 <BANLkTim70Ef0gy+W+4h76PABn32wDRvTtw@mail.gmail.com>
+	 <20110407213208.GE1798@nowhere>
+	 <BANLkTimOvWYgiRc6cviB6iiUt9MH-Au1qw@mail.gmail.com>
+	 <20110408002812.GG1798@nowhere>  <1302248268.21026.18.camel@frodo>
+	 <1302271670.9086.154.camel@twins>  <1302282130.21026.45.camel@frodo>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Sat, 09 Apr 2011 13:08:35 +0200
+Message-ID: <1302347315.9086.1246.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 09 Apr 2011 09:10:26 +0200, George Kashperko <george@znau.edu.ua>  
-wrote:
+On Fri, 2011-04-08 at 13:02 -0400, Steven Rostedt wrote:
+> On Fri, 2011-04-08 at 16:07 +0200, Peter Zijlstra wrote:
+> 
+> > > As you said perf has a lot of overhead due to data that it saves per
+> > > event. 
+> > 
+> > Someday you should actually read the perf code before you say something.
+> 
+> I have looked at the code although not as much recently, but I do plan
+> on looking at it again in much more detail. But you are correct that I
+> did not make this comment on the code itself, but on looking at the
+> data:
 
->
->> On Fri, 08 Apr 2011 18:56:13 +0200, Rafał Miłecki <zajec5@gmail.com>  
->> wrote:
->>
->> > 2011/4/6 Arend van Spriel <arend@broadcom.com>:
->> >> 3. Device identification
->> >>
->> >> The cores are identified by manufacturer, core id and revision in  
->> your
->> >> patch. I would not use the revision because 4 out of 5 times a  
->> revision
->> >> change does indicate a hardware change but no change in programming
->> >> interface. The enumeration data does contain a more selective field
->> >> indicating the core class (4 bits following the core identifier). I
->> >> suggest
->> >> to replace the revision field by this class field.
->> >
->> > Could you say something more about *class*, please? For my BCM43224 it
->> > seems to be 0x0. WIll check BCM4313 in a moment.
->> >
->>
->> In principal the manufacturer id is unique (defined/assigned by JEDEC
->> www.jedec.org) and the chip id and chip class are defined by the
->> manufacturer. So I can only indicate what classes Broadcom uses in
->> combination with the manufacturer id BRCM, ARM and MIPS.
->>
->> /* Component Classes */
->> #define	CC_SIM			0
->> #define	CC_EROM			1
->> #define	CC_CORESIGHT		9
->> #define	CC_VERIF		0xb
->> #define	CC_OPTIMO		0xd
->> #define	CC_GEN			0xe
->> #define	CC_PRIMECELL		0xf
->>
->> Looking at this it seems strange that you see a class value of 0x0. It  
->> may
->> be rarely used or for non-production chips only (for simulation, chip
->> bringup) which may require additional (debug) functions. So question is
->> whether you will need it, but it is specified by ARM and it is up to
->> manufacturers to use it. So I it is better to be safe than sorry and  
->> have
->> this in the device id.
->>
->> Gr. AvS
-> When parsing bcm4716 EROM I have
-> cia & CIA_CCL_MASK equal to 0 for all 9 cores
->
-> You mentioned ARM DMP (Device Management Plugin) several times in
-> earlier messages some time ago but I can't find anything relevant about
-> that at ARM infocenter. Any chance you can point more precise location
-> for any DMP reference?
+> 1051776/8766 = 119
 
-I believe this is part of the CoreLink AMBA Designer tool, which is used  
-to design/configure a SoC. The DMP is ARM system IP and so references are  
-under ARM copyright. You need a special account with ARM to get access to  
-these references.
+> 2957312/38268 = 77
+> 
+> As you stated, I need to look more into the perf code (which I plan on
+> doing), but it seems that perf adds 42 bytes more per event. Perhaps
+> this is something we can fix. 
 
-Gr. AvS
--- 
-"The world is indeed comic, but the joke is on mankind." — H.P. Lovecraft
+Aside from the 8 byte header everything else is configurable with
+PERF_SAMPLE_flags and probably has some overlap with stuff we also have
+in the tracepoint data we then get through PERF_SAMPLE_RAW
+
+> I'd love to make both perf and ftrace be
+> able to limit its header. There's no reason to record the pid for every
+> event if we don't need to. As well as the preempt count and interrupt
+> status. But these are legacy from the latency tracer code from -rt.
+
+Right.
+
+> I think there's a lot of work that we can do make tracing in perf more
+> compatible with the tracing features of ftrace. I did say the ugly word
+> "roadmap" but perhaps it's just direction that we need. I feel we are
+> all a bunch of cooks with their own taste, and we don't all like the
+> spices used by each other.
+
+Partly yeah, but there's also real functional differences, the last time
+I profiled perf with perf (yay for recursion) we spend a lot of time in
+conditionals. Due to the fact that perf is mainly sampling based (and
+tracing being samples with period==1) and all that output
+configurability there's a true forest of if statements to pass through
+and I'm fairly sure we totally trash the branch predictor on that.
+
 
