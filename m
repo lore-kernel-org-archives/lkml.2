@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab1DIO1Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 10:27:25 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:50821 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754217Ab1DIO1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 10:27:24 -0400
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Date: Sat, 09 Apr 2011 17:30:19 +0300
-Message-Id: <20110409143019.1210.78760.sendpatchset@localhost.localdomain>
-Subject: [GIT PULL] MTD fixes for 2.6.39
-X-Nokia-AV: Clean
+	id S1757183Ab1DIOjA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 10:39:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64567 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab1DIOi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Apr 2011 10:38:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=puWB4axmiOQguKoLU3E4fkhzyvCEXBXbdAN3g5qFIXPAqkTNEHVjlTIW4mMDIA9v5E
+         iY6M3CLg355I8Iwh038pvAEM2Ijv0cAjh31u2oPMeqknpWEZ9ScovXp2Fltjac5fwgrM
+         OdfUkNKpgxqhslab/TgCy4ALullGXGNKfglE4=
+Message-ID: <4DA06F7D.80200@gmail.com>
+Date: Sat, 09 Apr 2011 07:38:53 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5 V2]arch:common:Makefile Remove unused config in the
+ Makefile.
+References: <1302219529-8864-1-git-send-email-justinmattock@gmail.com> <20110408073153.GA18601@pengutronix.de> <4D9F2C0C.5090400@gmail.com> <20110408191257.GB5573@n2100.arm.linux.org.uk>
+In-Reply-To: <20110408191257.GB5573@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/08/2011 12:12 PM, Russell King - ARM Linux wrote:
+> On Fri, Apr 08, 2011 at 08:38:52AM -0700, Justin P. Mattock wrote:
+>> alright I read up and sent this to the address listed on that
+>> page(patches@arm.linux.org.uk) if it is incorrect let me know and I will
+>> resend so that I get things correct..
+>
+> It appears to have arrived properly and looks fine, so... thanks.
+> I'll be queuing up some stuff this weekend.
+>
 
-dwmw2 is still off duty, so I'm taiking care of MTD so far.
 
-Here are several bug-fixes which make Atmel NAND driver work again, plus
-one compilation warning fix for mtdswap. Please, pull.
+pretty cool patch system...
 
-The following changes since commit 0ce790e7d736cedc563e1fb4e998babf5a4dbc3d:
+cheers,
 
-  Linux 2.6.39-rc1 (2011-03-29 12:09:47 -0700)
-
-are available in the git repository at:
-  git://git.infradead.org/mtd-2.6.git master
-
-Hong Xu (2):
-      mtd: atmel_nand: fix support for CPUs that do not support DMA access
-      mtd: atmel_nand: use CPU I/O when buffer is in vmalloc(ed) region
-
-Nicolas Ferre (2):
-      mtd: atmel_nand: trivial: change DMA usage information trace
-      mtd: atmel_nand: modify test case for using DMA operations
-
-Randy Dunlap (1):
-      mtd: mtdswap: fix printk format warning
-
- drivers/mtd/mtdswap.c         |    2 +-
- drivers/mtd/nand/atmel_nand.c |   32 ++++++++++++--------------------
- 2 files changed, 13 insertions(+), 21 deletions(-)
-
---
-Artem.
+Justin P. Mattock
