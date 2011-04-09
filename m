@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab1DINiA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 09:38:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44143 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640Ab1DINh7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 09:37:59 -0400
-Subject: Re: [PATCH] perf: Don't schedule tracepoints when exclude_kernel
- is set
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-In-Reply-To: <20110409132709.GA1799@nowhere>
-References: <1302296275-26767-1-git-send-email-fweisbec@gmail.com>
-	 <1302354884.9086.1272.camel@twins>  <20110409132709.GA1799@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 09 Apr 2011 15:37:42 +0200
-Message-ID: <1302356262.9086.1280.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757334Ab1DINp6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 09:45:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753640Ab1DINp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Apr 2011 09:45:57 -0400
+Date: Sat, 9 Apr 2011 15:45:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Alexander Kaliadin <akaliadin@mvista.com>, oishi.y@sys.yzk.co.jp
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Likely race between sys_rt_sigtimedwait() and complete_signal()
+Message-ID: <20110409134520.GA19651@redhat.com>
+References: <20110407141215.46d0b930.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110407141215.46d0b930.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-09 at 15:27 +0200, Frederic Weisbecker wrote:
-> On Sat, Apr 09, 2011 at 03:14:44PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2011-04-08 at 22:57 +0200, Frederic Weisbecker wrote:
-> > > Instead of checking attr.exclude_kernel anytime a tracepoint
-> > > event triggers, simply don't schedule the tracepoint it that
-> > > attribute is set. This makes one test less in the tracing
-> > > path.
-> > 
-> > Meh, I'd much rather someone spend some time on finishing the below,
-> > which is a much bigger improvement for trace-events.
-> 
-> I secretely added that to my pile already :)
-> That's indeed something we really want.
-> 
-> The above is just a little thing I noticed yesterday and I wanted
-> to fix. Nothing more.
-> 
-> About that tracepoint collection, I'm not sure I like the idr though.
-> That thing seems to be O(log(n)), I which we can rather approach O(1)
-> when possible, using a hlist perhaps.
+Can't find the original email, replying to Andrew's fwd.
 
-We only do 2 idr lookups at most and don't get to muck about with hash
-table collisions etc. But if you can show that that is the bottleneck
-you can replace the task/cpu idrs with a hashtable.
+On 04/07, Andrew Morton wrote:
+>
+> Within project we are working on, we are facing a "rare" situation when
+> setitimer() / sigwait() - based periodic task execution hangs. "Rare"
+> means once per several hours for 1000 Hz timer.
+>
+> For hanged thread, cat /proc/pid/status shows
+>
+> ...
+> State:	S (sleeping)
+> ...
+> SigPnd:	0000000000000000
+> ShdPnd:	0000000000002000
+> SigBlk:	0000000000000000
+> ...
+>
+> and SysRq - T shows
+>
+> [<c015b1b0>] (__schedule+0x2fc/0x37c) from [<c015b7b8>]
+> (schedule+0x1c/0x30)
+> [<c015b7b8>] (schedule+0x1c/0x30) from [<c015b8c4>]
+> (schedule_timeout+0x18/0x1dc)
+> [<c015b8c4>] (schedule_timeout+0x18/0x1dc) from [<c004a084>]
+> (sys_rt_sigtimedwait+0x1b4/0x288)
+> [<c004a084>] (sys_rt_sigtimedwait+0x1b4/0x288) from [<c001cf00>]
+> (ret_fast_syscall+0x0/0x28)
 
-You will still need an IDR to deal with the traceevents (trace_type_idr)
-in order to get the dense ID space, and the per-event idr isn't used in
-the fast path at all.
+Is this thread the group leader?
 
+> All other threads have SIGALRM blocked as they should, looking
+> through /proc/X/status proves this.
+
+Do they ever had SIGALRM unlblocked ?
+
+> So for some reason, SIGALRM was successfully delivered by timer, bit was
+> set in ShdPnd [I guess at the bottom of __send_signal()], but that still
+> resulted somehow in thread going to schedule() and not waking.
+
+Thanks for the detailed report.
+
+There is an old, ancient problem which I constantly forget to fix.
+It _can_ perfectly explain the hang, at least in theory. I'll try
+to make the patch on Monday.
+
+
+
+In short: if a thread T runs with SIGALRM unblocked while another
+thread sleeps in sigtimedwait(), and then T blocks SIGALRM, the
+signal can be "lost" as above.
+
+Does your application do something like this? If not, then there
+is another problem.
+
+
+
+> This is on embedded system running vendor 2.6.31-based kernel, moving
+> forward is unfortunately impossible because of hardware support issues.
+
+If I make the patch for 2.6.31, any chance you can test it?
+
+> However I guess the race we faced still exists in the current upstream
+> kernel,
+
+Yes, this is possible. OTOH, the bug can be anywhere, not necessarily in
+signal.c, and it might be already fixed.
+
+Oleg.
 
