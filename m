@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab1DITXO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 15:23:14 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34440 "EHLO
+	id S1754933Ab1DITXU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 15:23:20 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34450 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab1DITWn (ORCPT
+	with ESMTP id S1755074Ab1DITWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 15:22:43 -0400
-Message-Id: <20110409192141.719340481@chello.nl>
+	Sat, 9 Apr 2011 15:22:44 -0400
+Message-Id: <20110409192141.665385503@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Sat, 09 Apr 2011 21:17:41 +0200
+Date: Sat, 09 Apr 2011 21:17:40 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Oleg Nesterov <oleg@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
         Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 2/9] perf: Clean up ctx reference counting
+Subject: [RFC][PATCH 1/9] perf: Optimize ctx_sched_out
 References: <20110409191739.813727025@chello.nl>
-Content-Disposition: inline; filename=perf-cleanup-ctx-ref.patch
+Content-Disposition: inline; filename=perf-cleanup-ctx_sched_out.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Small cleanup to how we refcount in find_get_context(), this also
-allows us to use put_ctx() to free things instead of using kfree().
+Oleg noted that ctx_sched_out() disables the PMU even though it might
+not actually do something, avoid needless PMU-disabling.
 
+Reported-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/perf_event.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ kernel/perf_event.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 Index: linux-2.6/kernel/perf_event.c
 ===================================================================
 --- linux-2.6.orig/kernel/perf_event.c
 +++ linux-2.6/kernel/perf_event.c
-@@ -2831,16 +2831,12 @@ find_get_context(struct pmu *pmu, struct
- 		unclone_ctx(ctx);
- 		++ctx->pin_count;
- 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
--	}
--
--	if (!ctx) {
-+	} else {
- 		ctx = alloc_perf_context(pmu, task);
- 		err = -ENOMEM;
- 		if (!ctx)
- 			goto errout;
+@@ -1767,7 +1767,6 @@ static void ctx_sched_out(struct perf_ev
+ 	struct perf_event *event;
  
--		get_ctx(ctx);
--
- 		err = 0;
- 		mutex_lock(&task->perf_event_mutex);
- 		/*
-@@ -2852,14 +2848,14 @@ find_get_context(struct pmu *pmu, struct
- 		else if (task->perf_event_ctxp[ctxn])
- 			err = -EAGAIN;
- 		else {
-+			get_ctx(ctx);
- 			++ctx->pin_count;
- 			rcu_assign_pointer(task->perf_event_ctxp[ctxn], ctx);
- 		}
- 		mutex_unlock(&task->perf_event_mutex);
+ 	raw_spin_lock(&ctx->lock);
+-	perf_pmu_disable(ctx->pmu);
+ 	ctx->is_active = 0;
+ 	if (likely(!ctx->nr_events))
+ 		goto out;
+@@ -1777,6 +1776,7 @@ static void ctx_sched_out(struct perf_ev
+ 	if (!ctx->nr_active)
+ 		goto out;
  
- 		if (unlikely(err)) {
--			put_task_struct(task);
--			kfree(ctx);
-+			put_ctx(ctx);
++	perf_pmu_disable(ctx->pmu);
+ 	if (event_type & EVENT_PINNED) {
+ 		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
+@@ -1786,8 +1786,8 @@ static void ctx_sched_out(struct perf_ev
+ 		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
+ 	}
+-out:
+ 	perf_pmu_enable(ctx->pmu);
++out:
+ 	raw_spin_unlock(&ctx->lock);
+ }
  
- 			if (err == -EAGAIN)
- 				goto retry;
 
 
