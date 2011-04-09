@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab1DITZb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 15:25:31 -0400
-Received: from mail-in-03.arcor-online.net ([151.189.21.43]:38436 "EHLO
-	mail-in-03.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754913Ab1DITZ2 (ORCPT
+	id S1755185Ab1DITaa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 15:30:30 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56361 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913Ab1DITa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 15:25:28 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-08.arcor-online.net 39B612052A9
-Date: Sat, 9 Apr 2011 21:25:25 +0200 (CEST)
-From: Bodo Eggert <7eggert@gmx.de>
-To: linux-kernel@vger.kernel.org, royale@zerezo.com
-Subject: BUG: zr364xx: VIDIOCGCAP returns wrong image sizes
-Message-ID: <alpine.DEB.2.00.1104092034010.5170@be10.lrz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Sat, 9 Apr 2011 15:30:29 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: pavan_savoy@ti.com
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org, pavan_savoy@sify.com
+Subject: Re: [PATCH 2/3] drivers:misc:ti-st: remove rfkill dependency
+In-Reply-To: Your message of "Fri, 08 Apr 2011 04:57:43 CDT."
+             <1302256664-23688-3-git-send-email-pavan_savoy@ti.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1302256664-23688-1-git-send-email-pavan_savoy@ti.com> <1302256664-23688-2-git-send-email-pavan_savoy@ti.com>
+            <1302256664-23688-3-git-send-email-pavan_savoy@ti.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1302377420_4802P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 09 Apr 2011 15:30:20 -0400
+Message-ID: <105494.1302377420@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4DA0B3D0.003C,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The zr364xx driver seems to return the wrong min/max image size 
-restrictions. I set the mode to 2 (=640x480), and it does give me
-an image of that size. But when it's asked what sizes it can produce, it 
-will tell it can only do 320x240.
+--==_Exmh_1302377420_4802P
+Content-Type: text/plain; charset=us-ascii
 
-The webcam program I'm using will ask if my desired resolution is in the 
-camera's possible range and abort if it's not, then request the driver to 
-set my values and overwrite them by reading the current settings of the 
-camera. Therefore I have to request 320x240 to get images sized 640x480.
+On Fri, 08 Apr 2011 04:57:43 CDT, pavan_savoy@ti.com said:
+> From: Pavan Savoy <pavan_savoy@ti.com>
+> 
+> rfkill is no longer used by Texas Instruments shared transport driver to
+> communicate with user-space.
 
+Color me confoozled.  What's it using instead to provide the rfkill functionality?
 
-$ cat /sys/module/zr364xx/parameters/mode
-2
+(I'm OK on the actual patch, just the changelog is a tad ambiguous for those
+of us tuning in late...)
 
-$ dmesg | editor
-[3020057.359464] usb 3-1: configuration #1 chosen from 1 choice
-[3020057.361343] zr364xx 3-1:1.0: Zoran 364xx compatible webcam plugged
-[3020057.361351] zr364xx 3-1:1.0: model 0d64:0108 detected
-[3020057.361361] usb 3-1: 640x480 mode selected
-[3020057.361554] usb 3-1: Zoran 364xx controlling video device 0
+--==_Exmh_1302377420_4802P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Here is the code snippet trying to set the resolution:
-(obviously with my debug code)
----
-   while (v4l1_ioctl(vconf->dev, VIDIOCGCAP, &vconf->vcap) < 0)
-     v_error(vconf, LOG_ERR, "Problem getting video capabilities");
-   if ( (vconf->vcap.maxwidth < vconf->win.width) ||
-        (vconf->vcap.minwidth > vconf->win.width) ||
-        (vconf->vcap.maxheight < vconf->win.height) ||
-        (vconf->vcap.minheight > vconf->win.height) ) {
-     v_error(vconf, LOG_NOTICE, "Device %d <= width <= %d, %d <= height <= "
-                                "%d, desired image size = %dx%d\n",
-         vconf->vcap.minwidth, vconf->vcap.maxwidth, vconf->vcap.minheight,
-         vconf->vcap.maxheight, vconf->win.width, vconf->win.height);
-     v_error(vconf, LOG_CRIT, "Device doesn't support width/height");
-   }
-   fprintf(stderr, "Device %d <= width <= %d, %d <= height <= %d, 
-desired image size = %dx%d\n",
-         vconf->vcap.minwidth, vconf->vcap.maxwidth, 
-vconf->vcap.minheight, vconf->vcap.maxheight, vconf->win.width, 
-vconf->win.height);
-   while (v4l1_ioctl(vconf->dev, VIDIOCGWIN, &twin))
-     v_error(vconf, LOG_ERR, "Problem getting window information");
-   vconf->win.flags=twin.flags;
-   vconf->win.x=twin.x;
-   vconf->win.y=twin.y;
-   vconf->win.chromakey=twin.chromakey;
-   if (vconf->windowsize)
-     while (v4l1_ioctl(vconf->dev, VIDIOCSWIN, &vconf->win) )
-       v_error(vconf, LOG_ERR, "Problem setting window size");
-   while (v4l1_ioctl(vconf->dev, VIDIOCGWIN, &vconf->win) <0)
-     v_error(vconf, LOG_ERR, "Problem getting window size");
-   fprintf(stderr, "Device %d <= width <= %d, %d <= height <= %d, 
-desired image size = %dx%d\n",
-         vconf->vcap.minwidth, vconf->vcap.maxwidth, 
-vconf->vcap.minheight, vconf->vcap.maxheight, vconf->win.width, 
-vconf->win.height);
----
+iD8DBQFNoLPMcC3lWbTT17ARApKrAJ910yAmUiy6DVP9ZUamVgXyKR8+gQCfYPrT
+zNBKKI+0dJxhBl38ki/Iaz0=
+=Vnb0
+-----END PGP SIGNATURE-----
 
-Here is the output of the program:
-$ ./vgrabbj -c /etc/vgrabbj.conf > baz
-Could not open configfile /usr/local/etc/vgrabbj.conf, ignoring
-Device 320 <= width <= 320, 240 <= height <= 240, desired image size = 
-320x240
-Device 320 <= width <= 320, 240 <= height <= 240, desired image size = 
-640x480
+--==_Exmh_1302377420_4802P--
+
