@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab1DIRp2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 13:45:28 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58455 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754654Ab1DIRp1 convert rfc822-to-8bit (ORCPT
+	id S1754953Ab1DISKs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 14:10:48 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60470 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab1DISKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 13:45:27 -0400
-Date: Sat, 9 Apr 2011 18:45:59 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Harald Welte <laforge@gnumonks.org>
-Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
-        linux-kernel@vger.kernel.org,
-        Aloisio Almeida <aloisio.almeida@openbossa.org>,
-        Arnd Bergmann <arnd@arndb.de>, Waldemar.Rymarkiewicz@tieto.com
-Subject: Re: [RFC] NFC subsystem prototype
-Message-ID: <20110409184559.41b947af@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110409130945.GC3248@prithivi.gnumonks.org>
-References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com>
-	<20110409130945.GC3248@prithivi.gnumonks.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 9 Apr 2011 14:10:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ifENle/cIQFmKgqS1uWrJ9ynul98KnBUUKa8ANwe5WXH3HUBPW/9SjGs7B6vnDYPgw
+         XnWltsSUkZSTlI1CyunLzAY/rqeL31u+nQuHgfzOIrM0IWtaEtV04q5J1WWols6HZPPe
+         Ci87aJHf408hXpOgmh7yUmC1Ye6G+WRltMUrI=
+From: wanlong.gao@gmail.com
+To: benh@kernel.crashing.org, paulus@samba.org, anton@samba.org,
+        grant.likely@secretlab.ca, galak@kernel.crashing.org,
+        sfr@canb.auug.org.au, jwboyer@linux.vnet.ibm.com,
+        david.woodhouse@intel.com, akpm@linux-foundation.org, mingo@elte.hu,
+        geoff@infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] powerpc:fix build warning of the defconfigs
+Date: Sun, 10 Apr 2011 02:09:46 +0800
+Message-Id: <1302372586-2637-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->    If you're worried about SPI-attached RFID/NFC ASICs, then I think the
->    propper approach is to have a generic support for exporting SPI devices to
->    userspace (similar to what we have with usb + libusb).
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-That bit in my experience doesn't work. Most i²c devices for example end
-up needing an actual kernel driver because you have to manage the
-transaction flow to stop users breaking things horribly.
+BT_L2CAP and BT_SCO have changed to bool .
+Value 'm' has invalid .
 
->    I simply do not see the advantage of having this in the kenrel.  There are
->    no latency/timing constraints, and the amount of data you are moving is so
->    small, that performance considerations also don't really play any role.
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ arch/powerpc/configs/c2k_defconfig    |    4 ++--
+ arch/powerpc/configs/pmac32_defconfig |    4 ++--
+ arch/powerpc/configs/ppc6xx_defconfig |    4 ++--
+ arch/powerpc/configs/ps3_defconfig    |    4 ++--
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
-The big one is security management - once you've got readers that are
-needing to report different stuff to different people you need at least
-the muxing in kernel. It also separates protocol stacks from apps which
-is rather important in more complex systems.
+diff --git a/arch/powerpc/configs/c2k_defconfig b/arch/powerpc/configs/c2k_defconfig
+index f9e6a3e..2a84fd7 100644
+--- a/arch/powerpc/configs/c2k_defconfig
++++ b/arch/powerpc/configs/c2k_defconfig
+@@ -132,8 +132,8 @@ CONFIG_NET_CLS_RSVP=m
+ CONFIG_NET_CLS_RSVP6=m
+ CONFIG_NET_CLS_IND=y
+ CONFIG_BT=m
+-CONFIG_BT_L2CAP=m
+-CONFIG_BT_SCO=m
++CONFIG_BT_L2CAP=y
++CONFIG_BT_SCO=y
+ CONFIG_BT_RFCOMM=m
+ CONFIG_BT_RFCOMM_TTY=y
+ CONFIG_BT_BNEP=m
+diff --git a/arch/powerpc/configs/pmac32_defconfig b/arch/powerpc/configs/pmac32_defconfig
+index ac4fc41..f8b394a 100644
+--- a/arch/powerpc/configs/pmac32_defconfig
++++ b/arch/powerpc/configs/pmac32_defconfig
+@@ -112,8 +112,8 @@ CONFIG_IRDA_CACHE_LAST_LSAP=y
+ CONFIG_IRDA_FAST_RR=y
+ CONFIG_IRTTY_SIR=m
+ CONFIG_BT=m
+-CONFIG_BT_L2CAP=m
+-CONFIG_BT_SCO=m
++CONFIG_BT_L2CAP=y
++CONFIG_BT_SCO=y
+ CONFIG_BT_RFCOMM=m
+ CONFIG_BT_RFCOMM_TTY=y
+ CONFIG_BT_BNEP=m
+diff --git a/arch/powerpc/configs/ppc6xx_defconfig b/arch/powerpc/configs/ppc6xx_defconfig
+index 0a10fb0..2142089 100644
+--- a/arch/powerpc/configs/ppc6xx_defconfig
++++ b/arch/powerpc/configs/ppc6xx_defconfig
+@@ -351,8 +351,8 @@ CONFIG_VLSI_FIR=m
+ CONFIG_VIA_FIR=m
+ CONFIG_MCS_FIR=m
+ CONFIG_BT=m
+-CONFIG_BT_L2CAP=m
+-CONFIG_BT_SCO=m
++CONFIG_BT_L2CAP=y
++CONFIG_BT_SCO=y
+ CONFIG_BT_RFCOMM=m
+ CONFIG_BT_RFCOMM_TTY=y
+ CONFIG_BT_BNEP=m
+diff --git a/arch/powerpc/configs/ps3_defconfig b/arch/powerpc/configs/ps3_defconfig
+index caba919..6472322 100644
+--- a/arch/powerpc/configs/ps3_defconfig
++++ b/arch/powerpc/configs/ps3_defconfig
+@@ -52,8 +52,8 @@ CONFIG_IP_PNP_DHCP=y
+ # CONFIG_INET_DIAG is not set
+ CONFIG_IPV6=y
+ CONFIG_BT=m
+-CONFIG_BT_L2CAP=m
+-CONFIG_BT_SCO=m
++CONFIG_BT_L2CAP=y
++CONFIG_BT_SCO=y
+ CONFIG_BT_RFCOMM=m
+ CONFIG_BT_RFCOMM_TTY=y
+ CONFIG_BT_BNEP=m
+-- 
+1.7.3
 
-> 2) even if you go for an in-kernel subsystem, what is your strategy for the
->    many existing CL-RC5xx / CL-RC6xx ASIC based RFID/NFC readers?  For them,
->    you typically need your own software implementation of the anti-collision
->    procedures of 14443-3 (a+b) and the T=CL (14443-4) code.  All of this has
->    been implemented in userspace e.g. librfid - but do you want to port or
->    re-implement it all in kernel-land, and then 'glue' it below your current
->    NFC subsystem approach?
-
-The obvious thing would be to plug it into the kernel at a higher level
-than the raw asic interface. We manage that sort of stuff with all sorts
-of network devices just fine, and in fact we'll need chunks of that
-anyway for virtualisation of rfid/nfc.
