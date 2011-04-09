@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab1DIHke (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 03:40:34 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46375 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753675Ab1DIHkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 03:40:33 -0400
-Date: Sat, 9 Apr 2011 09:40:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Pekka Enberg <penberg@kernel.org>,
-        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        mtosatti@redhat.com, kvm@vger.kernel.org, joro@8bytes.org,
-        penberg@cs.helsinki.fi, asias.hejun@gmail.com, gorcunov@gmail.com
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-Message-ID: <20110409074009.GA25729@elte.hu>
-References: <4D982E89.8070502@redhat.com>
- <BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com>
- <4D9847BC.9060906@redhat.com>
- <4D98716D.9040307@codemonkey.ws>
- <4D9873CD.3080207@redhat.com>
- <20110406093333.GB6465@elte.hu>
- <4D9E6F6E.9050709@codemonkey.ws>
- <BANLkTimEwAuL4PM9vBfogkrua-Z44AZQvg@mail.gmail.com>
- <4D9F150B.1030809@codemonkey.ws>
- <20110408192039.GJ29444@random.random>
+	id S1753877Ab1DIHyK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 03:54:10 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54314 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab1DIHyJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Apr 2011 03:54:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110408192039.GJ29444@random.random>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Originating-IP: [109.186.51.37]
+In-Reply-To: <1302294509-6595-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1302294509-6595-1-git-send-email-mathieu.poirier@linaro.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sat, 9 Apr 2011 10:53:48 +0300
+Message-ID: <BANLkTikMy7vpz8z479sCuROgjV8EK03FUQ@mail.gmail.com>
+Subject: Re: [PATCH] ux500: Adding support for u8500 Hsem functionality.
+To: mathieu.poirier@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, lee.jones@linaro.org,
+        patches@linaro.org, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mathieu,
 
-* Andrea Arcangeli <aarcange@redhat.com> wrote:
+On Fri, Apr 8, 2011 at 11:28 PM,  <mathieu.poirier@linaro.org> wrote:
+...
 
-> [...] I thought the whole point of a native kvm tool was to go all the 
-> paravirt way to provide max performance and maybe also depend on vhost as 
-> much as possible.
+> + * Author: Mathieu Poirier <mathieu.poirier@linaro.org>
+> + * Heavily borrowed from the work of :
+> + *   Simon Que <sque@ti.com>
+> + *   Hddari Kanigeri <h-kanigeri2@ti.com>
 
-To me it's more than that: today i can use it to minimally boot test various 
-native bzImages just by typing:
+s/Hddari/Hari/
 
-	kvm run ./bzImage
+> +       platform_set_drvdata(pdev, state);
+> +
+> +       /* no pm needed for HSem but required to comply
+> +        * with hwspilock core.
+> +        */
+> +       pm_runtime_enable(&pdev->dev);
 
-this will get me past most of the kernel init, up to the point where it would 
-try to mount user-space. ( That's rather powerful to me personally, as i 
-introduce most of my bugs to these stages of kernel bootup - and as a kernel 
-developer i'm not alone there ;-)
+You seem to have removed the calls to pm_runtime_disable() throughout
+the driver, is that on purpose ?
 
-I would be sad if i were forced to compile in some sort of paravirt support, 
-just to be able to boot-test random native kernel images.
+You should see an "Unbalanced pm_runtime_enable!" warning about this
+if you tried rmmod'ing and insmod'ing the driver again.
 
-Really, if you check the code, serial console and timer support is not a big 
-deal complexity-wise and it is rather useful:
-
-  git pull git://github.com/penberg/linux-kvm master
-
-So i think up to a point hardware emulation is both fun to implement (it's fun 
-to be on the receiving end of hw calls, for a change) and a no-brainer to have 
-from a usability POV. How far it wants to go we'll see! :-)
+And just a minor comment if you're submitting a v2: you have a bunch
+of trailing whitespaces; try checkpatch to spot them easily.
 
 Thanks,
-
-	Ingo
+Ohad.
