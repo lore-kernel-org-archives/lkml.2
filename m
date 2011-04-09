@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab1DIX20 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 19:28:26 -0400
-Received: from lauca.usach.cl ([158.170.64.28]:47746 "HELO
-	correoantiguo.usach.cl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1754588Ab1DIX2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 19:28:25 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Apr 2011 19:28:25 EDT
-From: "MAIL ADMINISTRATOR" <webacc85@live.com>
-Subject: EMAIL QUOTA EXCEEDED
-To: admin@admin.com
-X-Mailer: CommuniGate Pro WebUser v5.1.8
-Date: Sat, 09 Apr 2011 19:28:17 -0400
-Message-ID: <web-27045791@correoantiguo.usach.cl>
+	id S1755816Ab1DJAmG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 20:42:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:54454 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751380Ab1DJAmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Apr 2011 20:42:03 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
+In-Reply-To: <20110407174325.ED21C82B@kernel>
+References: <20110407174325.ED21C82B@kernel>
+User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Sun, 10 Apr 2011 08:18:22 +0930
+Message-ID: <87ei5bdosp.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="iso-8859-1";format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear User,
+On Thu, 07 Apr 2011 10:43:25 -0700, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+> 
+> The virtio balloon driver has a VIRTIO_BALLOON_F_MUST_TELL_HOST
+> feature bit.  Whenever the bit is set, we must always tell the
+> host before we free pages back to the allocator.  Without this
+> we might free a page (and have another user touch it) while the
+> hypervisor is unprepared for it.
+> 
+> But, if the bit is _not_ set, we are under no obligation to
+> reverse the order.  Furthermore, all modern qemus set this bit.
+> So, the "tell second" code is completely unused and untestable.
+> Quoting Anthony: "untested code is broken code".
+> 
+> This _also_ means that we don't have to preserve a pfn list
+> after the pages are freed, which should let us get rid of some
+> temporary storage (vb->pfns) eventually.
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 
+Thanks, applied!
 
-This is to inform you that you exceeded your email quota 
-limit and you need to increase
-Your E-mail quota limit, because in less than 96 hours to 
-your e-mail will be disabled.
-Increase your e-mail quota limit and continue to use your 
-Webmail account.
-
-
-To increase its email quota limit of 2.7GB, fill in your 
-details as below
-and send to e-mail quota Webmaster CLICKING REPLY:
-
-
-E-MAIL:
-USERNAME:
-PASSWORD:
-Confirm Password:
-DATE OF BIRTH:
-
-
-Thanks for your patience and corperation to help us give 
-you
-Best of the e-mail.
-
-
-
-Copyright © 2011 E-mail Webmaster Service Center
-
+Rusty.
