@@ -1,135 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab1DITu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 15:50:27 -0400
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:50503 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151Ab1DITuZ (ORCPT
+	id S1757358Ab1DIUMN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 16:12:13 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47857 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab1DIUMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 15:50:25 -0400
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Apr 2011 15:50:25 EDT
-X-Spam-ASN: 
-From: "Nikita V. Youshchenko" <nyoushchenko@mvista.com>
-To: Oleg Nesterov <oleg@redhat.com>,
-        Anders Ernevi <anders.ernevi@eis.semcon.com>
-Subject: Re: Likely race between sys_rt_sigtimedwait() and complete_signal()
-Date: Sat, 9 Apr 2011 23:44:11 +0400
-User-Agent: KMail/1.9.9
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Kaliadin <akaliadin@mvista.com>, oishi.y@sys.yzk.co.jp,
-        linux-kernel@vger.kernel.org
-References: <20110407141215.46d0b930.akpm@linux-foundation.org> <20110409134520.GA19651@redhat.com>
-In-Reply-To: <20110409134520.GA19651@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	Sat, 9 Apr 2011 16:12:12 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: linux-kernel@vger.kernel.org, lkml@osndok.com
+Subject: Re: A long overdue fork-bomb defense ?
+In-Reply-To: Your message of "Fri, 08 Apr 2011 15:47:13 CDT."
+             <E6EFCBFA-65D9-49D4-B042-EA6773F4D209@osndok.com>
+From: Valdis.Kletnieks@vt.edu
+References: <67B98EE7-9CD6-44E9-9B6E-C1CDF3115737@osndok.com>
+            <E6EFCBFA-65D9-49D4-B042-EA6773F4D209@osndok.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1302379928_4802P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201104092344.12470@blacky.localdomain>
-X-AV-Checked: ClamAV using ClamSMTP
+Date: Sat, 09 Apr 2011 16:12:08 -0400
+Message-ID: <106827.1302379928@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4DA0BD9B.0012,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Oleg and all.
-Thanks to looking into this.
+--==_Exmh_1302379928_4802P
+Content-Type: text/plain; charset=us-ascii
 
-Unfotunately I was never able to reproduce the hang in question myself. It 
-was only reproducible on customers side, and required hours of running to 
-happen.
+On Fri, 08 Apr 2011 15:47:13 CDT, Robert Hailey said:
 
-I can only ask Anders [CCed] to test your fix, if possible. But I'm not 
-sure it is possible now, when problem is long closed by switching to 
-timerfd-based periodic execution.
+> 		log("fork_count generation");
+> 		divide_all_process_fork_counts_by_two();
 
-Se others comments below ...
+This will involve painful locking on large systems with lots of procs running.
 
-> Can't find the original email, replying to Andrew's fwd.
->
-> On 04/07, Andrew Morton wrote:
-> > Within project we are working on, we are facing a "rare" situation
-> > when setitimer() / sigwait() - based periodic task execution hangs.
-> > "Rare" means once per several hours for 1000 Hz timer.
-> >
-> > For hanged thread, cat /proc/pid/status shows
-> >
-> > ...
-> > State:	S (sleeping)
-> > ...
-> > SigPnd:	0000000000000000
-> > ShdPnd:	0000000000002000
-> > SigBlk:	0000000000000000
-> > ...
-> >
-> > and SysRq - T shows
-> >
-> > [<c015b1b0>] (__schedule+0x2fc/0x37c) from [<c015b7b8>]
-> > (schedule+0x1c/0x30)
-> > [<c015b7b8>] (schedule+0x1c/0x30) from [<c015b8c4>]
-> > (schedule_timeout+0x18/0x1dc)
-> > [<c015b8c4>] (schedule_timeout+0x18/0x1dc) from [<c004a084>]
-> > (sys_rt_sigtimedwait+0x1b4/0x288)
-> > [<c004a084>] (sys_rt_sigtimedwait+0x1b4/0x288) from [<c001cf00>]
-> > (ret_fast_syscall+0x0/0x28)
->
-> Is this thread the group leader?
 
-I don't know.
-Anders, could you please answer?
-"Group leader" is the main thread, that entered application's main() 
-function on styartup.
+> 		for ( p : process_table) {
 
-> > All other threads have SIGALRM blocked as they should, looking
-> > through /proc/X/status proves this.
->
-> Do they ever had SIGALRM unlblocked ?
+Ditto.
 
-As far as I understand, all threads are created, and their signal masks 
-set, at application startup - and the hang happens when application is 
-already long running (and executed thousands, if not millions, of 
-iterations successfully).
+>	if (fork_alert_level) {
+>		if (fork_count >= fork_alert_level) {
+>			signal(KILL, proc) && log('killed ...');
+>			//don't: fork_alert_time=now();
+>			return/dispatch?;
+>		}
+>		if (now()-fork_alert_time>10 seconds?) {
+>			fork_alert_level=0; //Relax
+>		}
+>	}
 
-So, unless some libc or libGL routine plays hidden games with signal masks, 
-SIGALRM should not become unblocked.
+A smart attacker can probably use this to  game the fork rate to fly just under
+the wire, while still piling up lots of processes, *and* adding extra overhead
+as it goes. If the rate limit is 5000 forks every 10 seconds, it can do 4500
+every 10 seconds, and in a few minutes the poor scaling sections will eat your
+system alive.
 
-> > So for some reason, SIGALRM was successfully delivered by timer, bit
-> > was set in ShdPnd [I guess at the bottom of __send_signal()], but that
-> > still resulted somehow in thread going to schedule() and not waking.
->
-> Thanks for the detailed report.
->
-> There is an old, ancient problem which I constantly forget to fix.
-> It _can_ perfectly explain the hang, at least in theory. I'll try
-> to make the patch on Monday.
->
-> In short: if a thread T runs with SIGALRM unblocked while another
-> thread sleeps in sigtimedwait(), and then T blocks SIGALRM, the
-> signal can be "lost" as above.
->
-> Does your application do something like this? If not, then there
-> is another problem.
+(And don't say "but it can be detected and stopped in those few minutes" -
+because the *reality* in the security world is that people will say "We have
+this great anti-forkbomb patch in the kernel, and don't need to check anymore".
+Yes, they *will* do that.  Users that will blindly click on stuff because their AV
+will stop anything bad are one of the banes of my existence. ;)
 
-As I've written above, I don't think this is the case - although I can't be 
-100% sure.
 
-> > This is on embedded system running vendor 2.6.31-based kernel, moving
-> > forward is unfortunately impossible because of hardware support
-> > issues.
->
-> If I make the patch for 2.6.31, any chance you can test it?
+--==_Exmh_1302379928_4802P
+Content-Type: application/pgp-signature
 
-See above. I can't. Maybe Anders can.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-> > However I guess the race we faced still exists in the current upstream
-> > kernel,
->
-> Yes, this is possible. OTOH, the bug can be anywhere, not necessarily in
-> signal.c, and it might be already fixed.
+iD8DBQFNoL2YcC3lWbTT17ARAjsbAJ0TJegVu23ckJinqk3+sp+LrPzxCACfWLAv
+Fop3aHGnKp847bab1kUFRzo=
+=bT9U
+-----END PGP SIGNATURE-----
 
-Well, I wrote original report just because I thought results of my analysis 
-could be used by kernel developers to fix probably-still-existing issue 
-that is hard to reproduce.
+--==_Exmh_1302379928_4802P--
 
-Thanks for looking into this anyway.
-
-Nikita
