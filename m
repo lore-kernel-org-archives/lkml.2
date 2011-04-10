@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab1DJIF4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 04:05:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab1DJIFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 04:05:49 -0400
-Message-ID: <4DA164B2.5000504@redhat.com>
-Date: Sun, 10 Apr 2011 11:05:06 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1755576Ab1DJIFx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 04:05:53 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57412 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab1DJIFr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 04:05:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pI8qgO25PGLuV+Bk6rpDuyf8NCMEsU5bTk8hPEVspufwxDUBZgRZP0bjzMbtRCDCcH
+         uO9ChmGobW5TD9h+/8B2Js0Z9HOdYo+Yjzg5H06kGm8uOl4ehr0rBlx4fGr/d76hnI4X
+         EVD1I2zB87dQRJpCikUfo7QuyKAQxt5CkjrdM=
 MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        mtosatti@redhat.com, kvm@vger.kernel.org, joro@8bytes.org,
-        penberg@cs.helsinki.fi, asias.hejun@gmail.com, gorcunov@gmail.com
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-References: <1301592656.586.15.camel@jaguar> <4D982E89.8070502@redhat.com> <BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com> <4D9847BC.9060906@redhat.com> <4D98716D.9040307@codemonkey.ws> <4D9873CD.3080207@redhat.com> <20110406093333.GB6465@elte.hu> <4D9E6F6E.9050709@codemonkey.ws> <BANLkTimEwAuL4PM9vBfogkrua-Z44AZQvg@mail.gmail.com> <4D9F150B.1030809@codemonkey.ws> <20110408192039.GJ29444@random.random> <4D9F9359.20708@codemonkey.ws>
-In-Reply-To: <4D9F9359.20708@codemonkey.ws>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110410080159.GB2798@ucw.cz>
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+	<op.vtisojsk3ri7v4@arend-laptop>
+	<20110410080159.GB2798@ucw.cz>
+Date: Sun, 10 Apr 2011 10:05:46 +0200
+Message-ID: <BANLkTikL+GvaKN6nT-9WjpPjaJz0dR51KQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Michael B?sch" <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2011 01:59 AM, Anthony Liguori wrote:
+2011/4/10 Pavel Machek <pavel@ucw.cz>:
+> Hi!
 >
-> Yeah, if that's the goal, skip all the mini-BIOS junk and just rely on 
-> a PV kernel in the guest.
 >
-> I think a mini userspace that assumes that we can change the guest 
-> kernel and avoids having a ton of complexity to do things like CMOS 
-> emulation would be a really interesting thing to do.
+>> >@@ -0,0 +1,30 @@
+>> >+config BCMAI_POSSIBLE
+>> >+       bool
+>> >+       depends on HAS_IOMEM && HAS_DMA
+>> >+       default y
+>> >+
+>> >+menu "Broadcom's AI"
+>> >+       depends on BCMAI_POSSIBLE
+>> >+
+>> >+config BCMAI
+>> >+       tristate "AI support"
+>> >+       depends on BCMAI_POSSIBLE
+>> >+
+>> >+config BCMAI_HOST_PCI_POSSIBLE
+>> >+       bool
+>> >+       depends on BCMAI && PCI = y
+>> >+       default y
+>> >+
+>> >+config BCMAI_HOST_PCI
+>> >+       bool "Support for AI on PCI-host bus"
+>> >+       depends on BCMAI_HOST_PCI_POSSIBLE
+>> >+
+>> >+config BCMAI_DEBUG
+>> >+       bool "BCMAI debugging"
+>> >+       depends on BCMAI
+>> >+       help
+>> >+         This turns on additional debugging messages.
+>> >+
+>> >+         If unsure, say N
 >
+> Totally useless  :-(. It should really explain what AI means in this context.
 
-Changing the guest kernel is a lot more complicated than writing a full 
-BIOS or the legacy devices needed to support it.  See Xen for an example.
+Feel free to propose sth.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Rafał
