@@ -1,280 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab1DJOCy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 10:02:54 -0400
-Received: from mail-in-07.arcor-online.net ([151.189.21.47]:55308 "EHLO
-	mail-in-07.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750910Ab1DJOCv (ORCPT
+	id S1752898Ab1DJOLd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 10:11:33 -0400
+Received: from mail-iy0-f194.google.com ([209.85.210.194]:46887 "EHLO
+	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab1DJOLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 10:02:51 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-17.arcor-online.net CFD5FCC2D1
-Subject: [PATCH] HID: roccat: fixing actual/startup profile sysfs attribute
- in koneplus
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 10 Apr 2011 16:02:45 +0200
-Message-ID: <1302444165.12514.2.camel@neuromancer>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Apr 2011 10:11:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wJl0nOPjdRUFz82MTZZXDsMJCYiHyTalt+AlwAY/8/1gk0A4Qi2w/3C4XbuyibbS8/
+         0YtsGB3xdmQakMkCLzKGHG1tUgu5BbL0A5zbOkESJAtgy254lB5uPFCSUZI0WRTLUbgk
+         RqcZwSAVlbZAxlcsin5w1amMEWqvCiH0ubpjw=
+From: wanlong.gao@gmail.com
+To: broonie@opensource.wolfsonmicro.com, geert@linux-m68k.org,
+        starvik@axis.com, jesper.nilsson@axis.com, sameo@linux.intel.com,
+        ian@opensource.wolfsonmicro.com, dp@opensource.wolfsonmicro.com,
+        lrg@slimlogic.co.uk, James.Bottomley@suse.de, aelder@sgi.com
+Cc: linux-kernel@vger.kernel.org, Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH 1/5] cris:removed the unused variable
+Date: Sun, 10 Apr 2011 22:10:25 +0800
+Message-Id: <1302444629-17043-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-startup_profile and actual_profile didn't work as expected. Also
-as the actual profile is persistent, the distinction between the
-two was ambiguous. And the event is now propagated through chardev.
-The userland tool has been updated to support this change.
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+removed the unused variable "unsigned long tmp".
+
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
 ---
- .../ABI/testing/sysfs-driver-hid-roccat-koneplus   |   19 ++---
- drivers/hid/hid-roccat-koneplus.c                  |   81 ++++++++++----------
- drivers/hid/hid-roccat-koneplus.h                  |   11 +--
- 3 files changed, 53 insertions(+), 58 deletions(-)
+ arch/cris/arch-v32/kernel/ptrace.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus b/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-index 00efced..e5311a0 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-@@ -1,9 +1,12 @@
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/actual_profile
- Date:		October 2010
- Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
--Description:	When read, this file returns the number of the actual profile in
--		range 0-4.
--		This file is readonly.
-+Description:	The integer value of this attribute ranges from 0-4.
-+                When read, this attribute returns the number of the actual
-+                profile. This value is persistent, so its equivalent to the
-+                profile that's active when the mouse is powered on next time.
-+		When written, this file sets the number of the startup profile
-+		and the mouse activates this profile immediately.
- Users:		http://roccat.sourceforge.net
- 
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/firmware_version
-@@ -89,16 +92,6 @@ Description:	The mouse has a tracking- and a distance-control-unit. These
- 		This file is writeonly.
- Users:		http://roccat.sourceforge.net
- 
--What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/startup_profile
--Date:		October 2010
--Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
--Description:	The integer value of this attribute ranges from 0-4.
--                When read, this attribute returns the number of the profile
--                that's active when the mouse is powered on.
--		When written, this file sets the number of the startup profile
--		and the mouse activates this profile immediately.
--Users:		http://roccat.sourceforge.net
+diff --git a/arch/cris/arch-v32/kernel/ptrace.c b/arch/cris/arch-v32/kernel/ptrace.c
+index 511ece9..42ed6c7 100644
+--- a/arch/cris/arch-v32/kernel/ptrace.c
++++ b/arch/cris/arch-v32/kernel/ptrace.c
+@@ -115,8 +115,6 @@ void user_disable_single_step(struct task_struct *child)
+ void
+ ptrace_disable(struct task_struct *child)
+ {
+-	unsigned long tmp;
 -
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/tcu
- Date:		October 2010
- Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-diff --git a/drivers/hid/hid-roccat-koneplus.c b/drivers/hid/hid-roccat-koneplus.c
-index 33eec74..182c954 100644
---- a/drivers/hid/hid-roccat-koneplus.c
-+++ b/drivers/hid/hid-roccat-koneplus.c
-@@ -167,28 +167,28 @@ static int koneplus_set_profile_buttons(struct usb_device *usb_dev,
- }
- 
- /* retval is 0-4 on success, < 0 on error */
--static int koneplus_get_startup_profile(struct usb_device *usb_dev)
-+static int koneplus_get_actual_profile(struct usb_device *usb_dev)
- {
--	struct koneplus_startup_profile buf;
-+	struct koneplus_actual_profile buf;
- 	int retval;
- 
--	retval = roccat_common_receive(usb_dev, KONEPLUS_USB_COMMAND_STARTUP_PROFILE,
--			&buf, sizeof(struct koneplus_startup_profile));
-+	retval = roccat_common_receive(usb_dev, KONEPLUS_USB_COMMAND_ACTUAL_PROFILE,
-+			&buf, sizeof(struct koneplus_actual_profile));
- 
--	return retval ? retval : buf.startup_profile;
-+	return retval ? retval : buf.actual_profile;
- }
- 
--static int koneplus_set_startup_profile(struct usb_device *usb_dev,
--		int startup_profile)
-+static int koneplus_set_actual_profile(struct usb_device *usb_dev,
-+		int new_profile)
- {
--	struct koneplus_startup_profile buf;
-+	struct koneplus_actual_profile buf;
- 
--	buf.command = KONEPLUS_COMMAND_STARTUP_PROFILE;
--	buf.size = sizeof(struct koneplus_startup_profile);
--	buf.startup_profile = startup_profile;
-+	buf.command = KONEPLUS_COMMAND_ACTUAL_PROFILE;
-+	buf.size = sizeof(struct koneplus_actual_profile);
-+	buf.actual_profile = new_profile;
- 
--	return koneplus_send(usb_dev, KONEPLUS_USB_COMMAND_STARTUP_PROFILE,
--			&buf, sizeof(struct koneplus_profile_buttons));
-+	return koneplus_send(usb_dev, KONEPLUS_USB_COMMAND_ACTUAL_PROFILE,
-+			&buf, sizeof(struct koneplus_actual_profile));
- }
- 
- static ssize_t koneplus_sysfs_read(struct file *fp, struct kobject *kobj,
-@@ -398,21 +398,22 @@ static ssize_t koneplus_sysfs_write_profile_buttons(struct file *fp,
- 	return sizeof(struct koneplus_profile_buttons);
- }
- 
--static ssize_t koneplus_sysfs_show_startup_profile(struct device *dev,
-+static ssize_t koneplus_sysfs_show_actual_profile(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct koneplus_device *koneplus =
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
--	return snprintf(buf, PAGE_SIZE, "%d\n", koneplus->startup_profile);
-+	return snprintf(buf, PAGE_SIZE, "%d\n", koneplus->actual_profile);
- }
- 
--static ssize_t koneplus_sysfs_set_startup_profile(struct device *dev,
-+static ssize_t koneplus_sysfs_set_actual_profile(struct device *dev,
- 		struct device_attribute *attr, char const *buf, size_t size)
- {
- 	struct koneplus_device *koneplus;
- 	struct usb_device *usb_dev;
- 	unsigned long profile;
- 	int retval;
-+	struct koneplus_roccat_report roccat_report;
- 
- 	dev = dev->parent->parent;
- 	koneplus = hid_get_drvdata(dev_get_drvdata(dev));
-@@ -423,20 +424,25 @@ static ssize_t koneplus_sysfs_set_startup_profile(struct device *dev,
- 		return retval;
- 
- 	mutex_lock(&koneplus->koneplus_lock);
--	retval = koneplus_set_startup_profile(usb_dev, profile);
--	mutex_unlock(&koneplus->koneplus_lock);
--	if (retval)
-+
-+	retval = koneplus_set_actual_profile(usb_dev, profile);
-+	if (retval) {
-+		mutex_unlock(&koneplus->koneplus_lock);
- 		return retval;
-+	}
- 
--	return size;
--}
-+	koneplus->actual_profile = profile;
- 
--static ssize_t koneplus_sysfs_show_actual_profile(struct device *dev,
--		struct device_attribute *attr, char *buf)
--{
--	struct koneplus_device *koneplus =
--			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
--	return snprintf(buf, PAGE_SIZE, "%d\n", koneplus->actual_profile);
-+	roccat_report.type = KONEPLUS_MOUSE_REPORT_BUTTON_TYPE_PROFILE;
-+	roccat_report.data1 = profile + 1;
-+	roccat_report.data2 = 0;
-+	roccat_report.profile = profile + 1;
-+	roccat_report_event(koneplus->chrdev_minor,
-+			(uint8_t const *)&roccat_report);
-+
-+	mutex_unlock(&koneplus->koneplus_lock);
-+
-+	return size;
- }
- 
- static ssize_t koneplus_sysfs_show_firmware_version(struct device *dev,
-@@ -448,11 +454,9 @@ static ssize_t koneplus_sysfs_show_firmware_version(struct device *dev,
- }
- 
- static struct device_attribute koneplus_attributes[] = {
--	__ATTR(startup_profile, 0660,
--			koneplus_sysfs_show_startup_profile,
--			koneplus_sysfs_set_startup_profile),
--	__ATTR(actual_profile, 0440,
--			koneplus_sysfs_show_actual_profile, NULL),
-+	__ATTR(actual_profile, 0660,
-+			koneplus_sysfs_show_actual_profile,
-+			koneplus_sysfs_set_actual_profile),
- 	__ATTR(firmware_version, 0440,
- 			koneplus_sysfs_show_firmware_version, NULL),
- 	__ATTR_NULL
-@@ -557,15 +561,10 @@ static int koneplus_init_koneplus_device_struct(struct usb_device *usb_dev,
- 		struct koneplus_device *koneplus)
- {
- 	int retval, i;
--	static uint wait = 100; /* device will freeze with just 60 */
-+	static uint wait = 200;
- 
- 	mutex_init(&koneplus->koneplus_lock);
- 
--	koneplus->startup_profile = koneplus_get_startup_profile(usb_dev);
--	if (koneplus->startup_profile < 0)
--		return koneplus->startup_profile;
--
--	msleep(wait);
- 	retval = koneplus_get_info(usb_dev, &koneplus->info);
- 	if (retval)
- 		return retval;
-@@ -584,7 +583,11 @@ static int koneplus_init_koneplus_device_struct(struct usb_device *usb_dev,
- 			return retval;
- 	}
- 
--	koneplus_profile_activated(koneplus, koneplus->startup_profile);
-+	msleep(wait);
-+	retval = koneplus_get_actual_profile(usb_dev);
-+	if (retval < 0)
-+		return retval;
-+	koneplus_profile_activated(koneplus, retval);
- 
- 	return 0;
- }
-diff --git a/drivers/hid/hid-roccat-koneplus.h b/drivers/hid/hid-roccat-koneplus.h
-index 57a5c1a..c57a376 100644
---- a/drivers/hid/hid-roccat-koneplus.h
-+++ b/drivers/hid/hid-roccat-koneplus.h
-@@ -40,10 +40,10 @@ enum koneplus_control_values {
- 	KONEPLUS_CONTROL_REQUEST_STATUS_WAIT = 3,
- };
- 
--struct koneplus_startup_profile {
--	uint8_t command; /* KONEPLUS_COMMAND_STARTUP_PROFILE */
-+struct koneplus_actual_profile {
-+	uint8_t command; /* KONEPLUS_COMMAND_ACTUAL_PROFILE */
- 	uint8_t size; /* always 3 */
--	uint8_t startup_profile; /* Range 0-4! */
-+	uint8_t actual_profile; /* Range 0-4! */
- } __attribute__ ((__packed__));
- 
- struct koneplus_profile_settings {
-@@ -132,7 +132,7 @@ struct koneplus_tcu_image {
- 
- enum koneplus_commands {
- 	KONEPLUS_COMMAND_CONTROL = 0x4,
--	KONEPLUS_COMMAND_STARTUP_PROFILE = 0x5,
-+	KONEPLUS_COMMAND_ACTUAL_PROFILE = 0x5,
- 	KONEPLUS_COMMAND_PROFILE_SETTINGS = 0x6,
- 	KONEPLUS_COMMAND_PROFILE_BUTTONS = 0x7,
- 	KONEPLUS_COMMAND_MACRO = 0x8,
-@@ -145,7 +145,7 @@ enum koneplus_commands {
- 
- enum koneplus_usb_commands {
- 	KONEPLUS_USB_COMMAND_CONTROL = 0x304,
--	KONEPLUS_USB_COMMAND_STARTUP_PROFILE = 0x305,
-+	KONEPLUS_USB_COMMAND_ACTUAL_PROFILE = 0x305,
- 	KONEPLUS_USB_COMMAND_PROFILE_SETTINGS = 0x306,
- 	KONEPLUS_USB_COMMAND_PROFILE_BUTTONS = 0x307,
- 	KONEPLUS_USB_COMMAND_MACRO = 0x308,
-@@ -215,7 +215,6 @@ struct koneplus_device {
- 
- 	struct mutex koneplus_lock;
- 
--	int startup_profile;
- 	struct koneplus_info info;
- 	struct koneplus_profile_settings profile_settings[5];
- 	struct koneplus_profile_buttons profile_buttons[5];
+ 	/* Deconfigure SPC and S-bit. */
+ 	user_disable_single_step(child);
+ 	put_reg(child, PT_SPC, 0);
 -- 
-1.7.3.4
-
-
+1.7.3
 
