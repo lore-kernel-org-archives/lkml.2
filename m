@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab1DJPwc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 11:52:32 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40768 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889Ab1DJPw3 convert rfc822-to-8bit (ORCPT
+	id S1754708Ab1DJP4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 11:56:47 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10040 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab1DJP4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 11:52:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UR/7IS3+aR7MNZbvew+fNlRsor+mnnNLxmPt6eQj82udgpR75Zhp96Ye8vbsbOyST8
-         yD1xY/u9cGMH/HoOoZdzBYrnw6dchQFDvJ68aodEcBWgEBaJasT+HKiEagNBk8CUEim6
-         /u+HEx3mGmlbFCE6mQCBoa92/Ak4gF0GYgthY=
+	Sun, 10 Apr 2011 11:56:46 -0400
+Date: Sun, 10 Apr 2011 17:57:07 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] NFS: Remove dead code from nfs_fs_mount()
+Message-ID: <alpine.LNX.2.00.1104101750220.17454@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110408220157.GC26019@kroah.com>
-References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
-	<20110408220157.GC26019@kroah.com>
-Date: Sun, 10 Apr 2011 17:52:27 +0200
-Message-ID: <BANLkTinZbw=GvkThyjMHbeQQ5arRVf2FUg@mail.gmail.com>
-Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/9 Greg KH <greg@kroah.com>:
-> On Fri, Apr 08, 2011 at 09:45:00PM +0200, Rafał Miłecki wrote:
->> TODO:
->> - Interrupts
->> - Reloading driver
->
-> Please add to the TODO list:
->        - Documentation/ABI entries for new sysfs files
->        - proper Kconfig entry documentation for the different options
+In fs/nfs/super.c::nfs_fs_mount() we test for a NULL 'data':
 
-Could you tell me sth more about this? How am I expected to document this stuff?
+...
+ 		if (data == NULL || mntfh == NULL)
+ 			goto out_free_fh;
+...
 
-Should I create Documentation/ABI/testing/sysfs-bus-axi or what?
+and then further down in the function we test 'data' again:
 
-Of course you can just point me to some place where I can read about
-proper documenting.
+...
+ 			nfs_fscache_get_super_cookie(
+ 				s, data ? data->fscache_uniq : NULL, NULL);
+...
+
+this second check is just dead code since there is no way 'data' could 
+possibly be NULL here.
+We also rely on a non-NULL 'data' in more than one location between these 
+two tests, further proving the point that the second test is bogus.
+
+This patch removes the dead code.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ super.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 2b8e9a5..685a8a7 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2235,8 +2235,7 @@ static struct dentry *nfs_fs_mount(struct file_system_type *fs_type,
+ 	if (!s->s_root) {
+ 		/* initial superblock/root creation */
+ 		nfs_fill_super(s, data);
+-		nfs_fscache_get_super_cookie(
+-			s, data ? data->fscache_uniq : NULL, NULL);
++		nfs_fscache_get_super_cookie(s, data->fscache_uniq, NULL);
+ 	}
+ 
+ 	mntroot = nfs_get_root(s, mntfh, dev_name);
+
 
 -- 
-Rafał
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
