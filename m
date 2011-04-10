@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab1DJPKj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 11:10:39 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55230 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab1DJPKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 11:10:37 -0400
-Date: Sun, 10 Apr 2011 08:10:35 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rdunlap@xenotime.net
-Subject: Re: [PATCH V2 3/5]arch:m68k:asm Fix typo occcured.
-In-Reply-To: <1301507703-3364-1-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1104081958310.6392@deuxcents.site>
-References: <1301507703-3364-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754544Ab1DJPwc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 11:52:32 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40768 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab1DJPw3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 11:52:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UR/7IS3+aR7MNZbvew+fNlRsor+mnnNLxmPt6eQj82udgpR75Zhp96Ye8vbsbOyST8
+         yD1xY/u9cGMH/HoOoZdzBYrnw6dchQFDvJ68aodEcBWgEBaJasT+HKiEagNBk8CUEim6
+         /u+HEx3mGmlbFCE6mQCBoa92/Ak4gF0GYgthY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110408220157.GC26019@kroah.com>
+References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
+	<20110408220157.GC26019@kroah.com>
+Date: Sun, 10 Apr 2011 17:52:27 +0200
+Message-ID: <BANLkTinZbw=GvkThyjMHbeQQ5arRVf2FUg@mail.gmail.com>
+Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        b43-dev@lists.infradead.org,
+        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Mar 2011, Justin P. Mattock wrote:
+2011/4/9 Greg KH <greg@kroah.com>:
+> On Fri, Apr 08, 2011 at 09:45:00PM +0200, Rafał Miłecki wrote:
+>> TODO:
+>> - Interrupts
+>> - Reloading driver
+>
+> Please add to the TODO list:
+>        - Documentation/ABI entries for new sysfs files
+>        - proper Kconfig entry documentation for the different options
 
-> The patch below changes a typo occcured to occurred in two comments.
->  
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  arch/m68k/include/asm/MC68EZ328.h |    2 +-
->  arch/m68k/include/asm/MC68VZ328.h |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/m68k/include/asm/MC68EZ328.h b/arch/m68k/include/asm/MC68EZ328.h
-> index 69b7f91..d1bde58 100644
-> --- a/arch/m68k/include/asm/MC68EZ328.h
-> +++ b/arch/m68k/include/asm/MC68EZ328.h
-> @@ -1047,7 +1047,7 @@ typedef volatile struct {
->  
->  #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
->  #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
-> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
-> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occurred */
->  #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
->  #define WATCHDOG_CNT_SHIFT 8
->  
-> diff --git a/arch/m68k/include/asm/MC68VZ328.h b/arch/m68k/include/asm/MC68VZ328.h
-> index 2b9bf62..6bd1bf1 100644
-> --- a/arch/m68k/include/asm/MC68VZ328.h
-> +++ b/arch/m68k/include/asm/MC68VZ328.h
-> @@ -1143,7 +1143,7 @@ typedef struct {
->  
->  #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
->  #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
-> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
-> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occurred */
->  #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
->  #define WATCHDOG_CNT_SHIFT 8
+Could you tell me sth more about this? How am I expected to document this stuff?
 
-Applied.
+Should I create Documentation/ABI/testing/sysfs-bus-axi or what?
+
+Of course you can just point me to some place where I can read about
+proper documenting.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
-
+Rafał
