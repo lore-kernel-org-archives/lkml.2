@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab1DJTZH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 15:25:07 -0400
-Received: from logistix.cr ([201.201.66.140]:14194 "EHLO mail.alsa.co.cr"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754091Ab1DJTZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 15:25:05 -0400
-Reply-To: <googleservice@terra.es>
-From: "GET BACK TO ME IMMEDIATELY" <googleservice@terra.es>
-Subject: GET BACK TO ME IMMEDIATELY
-Date: Fri, 29 Apr 2011 05:51:58 +0200
+	id S1755037Ab1DJT3m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 15:29:42 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:39759 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab1DJT3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 15:29:41 -0400
+Message-ID: <4DA20522.9080703@ahsoftware.de>
+Date: Sun, 10 Apr 2011 21:29:38 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alexander Clouter <alex@digriz.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on	the
+ basis of the memory size.
+References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de>	 <1302122121-3652-2-git-send-email-holler@ahsoftware.de>	 <alpine.LFD.2.00.1104061739100.28032@xanadu.home>	 <4D9CED15.2010806@ahsoftware.de>	 <alpine.LFD.2.00.1104061850410.28032@xanadu.home>	 <4D9CF5B3.9020007@ahsoftware.de> <toa078-0do.ln1@chipmunk.wormnet.eu>	 <4D9E2D1C.7070102@ahsoftware.de>	 <20110407220855.GD17049@n2100.arm.linux.org.uk>	 <4D9E42E1.1060902@ahsoftware.de> <1302337753.30783.24.camel@thorin> <4DA1F381.4080003@ahsoftware.de>
+In-Reply-To: <4DA1F381.4080003@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110410152334.1BFB92A35B2A@mail.alsa.co.cr>
-To: undisclosed-recipients:;
-X-Antivirus: Scanned by F-Prot Antivirus (http://www.f-prot.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello 
+On 10.04.2011 20:14, Alexander Holler wrote:
+> Hello,
+>
+> On 09.04.2011 10:29, Bernd Petrovitsch wrote:
+>
+> Thanks for your helpfull tipps, but I'm writing software since about
+> 30a, and I get paid for that since about 25a.
 
-I wish to ask for your consent for a partnership project that I would want both of us to execute mutually which is beneficial. However my name is Mr. Rodney Smith. Kindly get back to me to confirm the receipt of this massage so that I will give you full details of the project.
+And I'm usingLinux only since I've switched to it from FreeBSD 2.2.
 
-Send your reply to my private email at rodney_smith@ibibo.com 
+So if anyone else thinks he must send me helpfull insights about free, 
+open and maintained software, sorry, I've got enough hints in last days 
+and I will need at least some month to learn to follow them. So please 
+don't send me more of them. I promise too that I will not send any more 
+patches until I've learned to follow all the good sugestions.
 
-I am waiting for your permission.
+Thanks to all,
 
-Warm regards
-Mr. Rodney Smith
-Email:smithrodney@ibibo.com
+Alexander
