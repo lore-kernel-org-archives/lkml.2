@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab1DJOPm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 10:15:42 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62864 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab1DJOPj (ORCPT
+	id S1753192Ab1DJO2q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 10:28:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37258 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab1DJO2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 10:15:39 -0400
+	Sun, 10 Apr 2011 10:28:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=cxUvzG5Enl8llpcjPytwpTP5CeXL7Cyt6ryT5abqymldfsUSooW/GrKle/rRhqrCSO
-         T/vTB2BJaVzho3WYB5xf3ysEINTDlI3ICkUpTCFwMPtr5nnISteE4UKEMu3RCYvjUjOe
-         ay+Pukc+39xdqapXHDKfWj4v6CUIHvBoKqfZM=
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=DJee4doWSaGuSRyW+J0N/vDY8Yc1vSDo3kqeBaGSGoOotZXLFe+BvJNxB0MDzn5UvP
+         yJ5QTcDuk0OJlvQtjvON1cHKFKoteeReOgM6SAih2pczSJHtF9yyaXigcjaMo97908IW
+         rFbcfTcMj1AoGRhpiXs5hqxvLyDYbn8CgHLa4=
 MIME-Version: 1.0
-In-Reply-To: <20110410133736.GB1046@sirena.org.uk>
-References: <1302368117-32350-1-git-send-email-wanlong.gao@gmail.com>
-	<20110410133736.GB1046@sirena.org.uk>
-Date: Sun, 10 Apr 2011 22:15:39 +0800
-Message-ID: <BANLkTi=Mnu=78qA5J+ePgKv+O+56TFHkjA@mail.gmail.com>
-Subject: Re: [PATCH] 2.6.39-rc2:Removed the unused variable for build warnings
-From: Wanlong Gao <gaowanlong@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: wanlong.gao@gmail.com, geert@linux-m68k.org, starvik@axis.com,
-        jesper.nilsson@axis.com, sameo@linux.intel.com,
-        ian@opensource.wolfsonmicro.com, dp@opensource.wolfsonmicro.com,
-        lrg@slimlogic.co.uk, James.Bottomley@suse.de, aelder@sgi.com,
-        linux-kernel@vger.kernel.org
+Date: Sun, 10 Apr 2011 11:28:44 -0300
+Message-ID: <BANLkTinpQdbyTRY0m+UL7EKF3jAOv=aU1A@mail.gmail.com>
+Subject: Kprobe
+From: Artur Baruchi <mail.baruchi@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/10/11, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> On Sun, Apr 10, 2011 at 12:55:17AM +0800, wanlong.gao@gmail.com wrote:
->
->>  drivers/regulator/wm831x-dcdc.c    |    2 --
->
-> This one is fixed already.  In general you should send separate patches
-> for individual subsystems for things like this in order to avoid merge
-> issues with overlapping fixes or changes.
-> --
- I had resend the patches .
-Thanks .
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Hi Guys.
+
+Im using kprobe to probe a kernel function (find_get_page) and I would
+like to know more details, like which function is calling it, but I
+couldnt figure out a way to do that. Is it possible to use kprobe or
+other kind of probe to detect which function is calling find_get_page
+?
+
+Thanks in advance.
+
+Att.
+Artur Baruchi
