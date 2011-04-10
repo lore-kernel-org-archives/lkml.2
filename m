@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab1DJUUj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 16:20:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45173
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753678Ab1DJUUi (ORCPT
+	id S1755010Ab1DJUY1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 16:24:27 -0400
+Received: from fw.wantstofly.org ([80.101.37.227]:64606 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab1DJUYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 16:20:38 -0400
-Date: Sun, 10 Apr 2011 13:20:02 -0700 (PDT)
-Message-Id: <20110410.132002.193717670.davem@davemloft.net>
-To: buytenh@wantstofly.org
+	Sun, 10 Apr 2011 16:24:24 -0400
+Date: Sun, 10 Apr 2011 22:27:16 +0200
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: David Miller <davem@davemloft.net>
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] Remove non-MAINTAINERS email address references for
  Lennert Buytenhek.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110410134504.GG22881@wantstofly.org>
+Message-ID: <20110410202716.GK22881@wantstofly.org>
 References: <20110410134504.GG22881@wantstofly.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+ <20110410.132002.193717670.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110410.132002.193717670.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-Date: Sun, 10 Apr 2011 15:45:04 +0200
+On Sun, Apr 10, 2011 at 01:20:02PM -0700, David Miller wrote:
 
-> This gets rid of all (obsolete as well as still valid) email addresses
-> for Lennert Buytenhek across the tree -- MAINTAINERS should be used for
-> obtaining a valid email address.
+> > This gets rid of all (obsolete as well as still valid) email addresses
+> > for Lennert Buytenhek across the tree -- MAINTAINERS should be used for
+> > obtaining a valid email address.
+> > 
+> > Signed-off-by: Lennert Buytenhek <buytenh@wantstofly.org>
 > 
-> Signed-off-by: Lennert Buytenhek <buytenh@wantstofly.org>
+> Lennert, this is silly.
+> 
+> That email address acts as part of the identification of who you
+> are, and is part of the copyright.
 
-Lennert, this is silly.
+The problem is that half of them are out of date.  I at first sent a
+patch to change them all over to buytenh@wantstofly.org, but then got:
 
-That email address acts as part of the identification of who you
-are, and is part of the copyright.
+	http://marc.info/?l=linux-kernel&m=129858453409012&w=2
+
+which seemed sensible. :-/
