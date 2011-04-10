@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab1DJT3m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 15:29:42 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:39759 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263Ab1DJT3l (ORCPT
+	id S1757986Ab1DJTry (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 15:47:54 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58126 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab1DJTru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 15:29:41 -0400
-Message-ID: <4DA20522.9080703@ahsoftware.de>
-Date: Sun, 10 Apr 2011 21:29:38 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Sun, 10 Apr 2011 15:47:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=XqhhPHR0aA9y/mRMfswnUj3IosomsBq64ySQAWFg+O2eT9eptnGccvrltX/cH/ZT2X
+         iM/Nw16Gw4wzozziWPfH9l0BnN9ZLdN1axEffEQwWO3pImBFoMD1IixffPRZ0uumw/pp
+         DiGuJdMAIQUac3vQ6E/cqD1NtWCrGZ7xzeY9M=
+Message-ID: <4DA20964.6050806@gmail.com>
+Date: Sun, 10 Apr 2011 21:47:48 +0200
+From: roel <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alexander Clouter <alex@digriz.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on	the
- basis of the memory size.
-References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de>	 <1302122121-3652-2-git-send-email-holler@ahsoftware.de>	 <alpine.LFD.2.00.1104061739100.28032@xanadu.home>	 <4D9CED15.2010806@ahsoftware.de>	 <alpine.LFD.2.00.1104061850410.28032@xanadu.home>	 <4D9CF5B3.9020007@ahsoftware.de> <toa078-0do.ln1@chipmunk.wormnet.eu>	 <4D9E2D1C.7070102@ahsoftware.de>	 <20110407220855.GD17049@n2100.arm.linux.org.uk>	 <4D9E42E1.1060902@ahsoftware.de> <1302337753.30783.24.camel@thorin> <4DA1F381.4080003@ahsoftware.de>
-In-Reply-To: <4DA1F381.4080003@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] RDMA/cxgb4: missing parentheses
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.04.2011 20:14, Alexander Holler wrote:
-> Hello,
->
-> On 09.04.2011 10:29, Bernd Petrovitsch wrote:
->
-> Thanks for your helpfull tipps, but I'm writing software since about
-> 30a, and I get paid for that since about 25a.
+Parens are missing: '|' has a higher presedence than '?'.
 
-And I'm usingLinux only since I've switched to it from FreeBSD 2.2.
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ drivers/infiniband/hw/cxgb4/qp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-So if anyone else thinks he must send me helpfull insights about free, 
-open and maintained software, sorry, I've got enough hints in last days 
-and I will need at least some month to learn to follow them. So please 
-don't send me more of them. I promise too that I will not send any more 
-patches until I've learned to follow all the good sugestions.
-
-Thanks to all,
-
-Alexander
+diff --git a/drivers/infiniband/hw/cxgb4/qp.c b/drivers/infiniband/hw/cxgb4/qp.c
+index 70a5a3c..80cab20 100644
+--- a/drivers/infiniband/hw/cxgb4/qp.c
++++ b/drivers/infiniband/hw/cxgb4/qp.c
+@@ -214,7 +214,7 @@ static int create_qp(struct c4iw_rdev *rdev, struct t4_wq *wq,
+ 		V_FW_RI_RES_WR_HOSTFCMODE(0) |	/* no host cidx updates */
+ 		V_FW_RI_RES_WR_CPRIO(0) |	/* don't keep in chip cache */
+ 		V_FW_RI_RES_WR_PCIECHN(0) |	/* set by uP at ri_init time */
+-		t4_sq_onchip(&wq->sq) ? F_FW_RI_RES_WR_ONCHIP : 0 |
++		(t4_sq_onchip(&wq->sq) ? F_FW_RI_RES_WR_ONCHIP : 0) |
+ 		V_FW_RI_RES_WR_IQID(scq->cqid));
+ 	res->u.sqrq.dcaen_to_eqsize = cpu_to_be32(
+ 		V_FW_RI_RES_WR_DCAEN(0) |
