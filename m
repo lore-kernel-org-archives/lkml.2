@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab1DJJeQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 05:34:16 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2114 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755164Ab1DJJeO convert rfc822-to-8bit (ORCPT
+	id S1756023Ab1DJJzU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 05:55:20 -0400
+Received: from [213.175.202.166] ([213.175.202.166]:39755 "EHLO
+	vps17819.eukhost.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755905Ab1DJJzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 05:34:14 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-To: "Pavel Machek" <pavel@ucw.cz>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Michael B?sch" <mb@bu3sch.de>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "George Kashperko" <george@znau.edu.ua>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Russell King" <rmk@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
-References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
- <op.vtisojsk3ri7v4@arend-laptop> <20110410080159.GB2798@ucw.cz>
- <BANLkTikL+GvaKN6nT-9WjpPjaJz0dR51KQ@mail.gmail.com>
- <20110410082420.GA1460@localhost.ucw.cz>
- <BANLkTim9JTpZGib+_C_vTFFhP5azbGwMjg@mail.gmail.com>
-Date: Sun, 10 Apr 2011 11:33:57 +0200
+	Sun, 10 Apr 2011 05:55:18 -0400
+X-Greylist: delayed 20045 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Apr 2011 05:55:18 EDT
+Message-ID: <8137b72080fb94c6441db4f0bc7e3578.squirrel@webmail.lapo-nigeria.org>
+Date: Sun, 10 Apr 2011 04:11:53 -0000
+Subject: Re Your Urgent Transaction Details
+From: "Richard Edwin Loader" <addw101@yahoo.com.hk>
+Reply-To: ma.da20022002@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vtpt6v173ri7v4@arend-laptop>
-In-Reply-To: <BANLkTim9JTpZGib+_C_vTFFhP5azbGwMjg@mail.gmail.com>
-User-Agent: Opera Mail/11.01 (Linux)
-X-WSS-ID: 61BFA5C33GO351058-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - vps17819.eukhost.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - yahoo.com.hk
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Apr 2011 10:30:53 +0200, Rafał Miłecki <zajec5@gmail.com> wrote:
+Attention,
 
-> 2011/4/10 Pavel Machek <pavel@ucw.cz>:
->>> >> >+config BCMAI_HOST_PCI_POSSIBLE
->>> >> >+       bool
->>> >> >+       depends on BCMAI && PCI = y
->>> >> >+       default y
->>> >> >+
->>> >> >+config BCMAI_HOST_PCI
->>> >> >+       bool "Support for AI on PCI-host bus"
->>> >> >+       depends on BCMAI_HOST_PCI_POSSIBLE
->>> >> >+
+I am Mr. Richard Edwin Loader the Secretary, Rathbone investment
+Management Ltd United Kingdom.
 
-Hi Rafał,
+Please I will need you to assist me to remove GBP�28,000,000.00
+Twenty-Eight Million Pounds Sterling's deposited in my bank by my late
+client. As soon as I receive your response, I will furnish you with more
+details of this transaction. I do not mind drawing a business Agreement
+with you immediately we finalize this transaction with you. Please, get
+back to me as soon as possible.
 
-Could use term AMBA AXI instead which gives enough hits on Google to hint  
-interested people to more in depth information.
+Best Regards,
+Mr. Richard Edwin Loader.
 
-FYI: AXI = Advanced eXtensible Interface
-	High-speed interconnect for chip cores ( provides higher bursts/transfers  
-than predecessor AHB = Advanced High-performance Bus (AHB)).
 
-Gr. AvS
--- 
-"The world is indeed comic, but the joke is on mankind." — H.P. Lovecraft
+
+
 
