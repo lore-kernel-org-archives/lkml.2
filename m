@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab1DJRy1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 13:54:27 -0400
-Received: from muni-edif.netvision.com.py ([200.1.200.230]:38046 "EHLO
-	webserver.mca.gov.py" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab1DJRy1 (ORCPT
+	id S1754570Ab1DJSNt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 14:13:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58421 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754186Ab1DJSNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 13:54:27 -0400
-X-Greylist: delayed 7205 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Apr 2011 13:54:26 EDT
-Message-ID: <20110410114852.17943uyeymt6fxi8@webmail.netvision.com.py>
-Date: Sun, 10 Apr 2011 11:48:52 -0400
-From: System Administrator <helpdeskz@tu-freiberg.de>
-Reply-to: techndeskz@aim.com
-To: undisclosed-recipients:;
-Subject: Webmail Quote The Set-Limit =?iso-8859-1?b?/GJlcnNjaHJpdHRlbg==?=
+	Sun, 10 Apr 2011 14:13:48 -0400
+Date: Sun, 10 Apr 2011 20:12:38 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: wanlong.gao@gmail.com
+Cc: linux@arm.linux.org.uk, hans-christian.egtvedt@atmel.com,
+        ralf@linux-mips.org, benh@kernel.crashing.org, paulus@samba.org,
+        david.woodhouse@intel.com, akpm@linux-foundation.org, mingo@elte.hu,
+        rientjes@google.com, nicolas.ferre@atmel.com, eric@eukrea.com,
+        tony@atomide.com, santosh.shilimkar@ti.com,
+        khilman@deeprootsystems.com, ben-linux@fluff.org, sam@ravnborg.org,
+        manuel.lauss@googlemail.com, galak@kernel.crashing.org,
+        anton@samba.org, grant.likely@secretlab.ca, sfr@canb.auug.org.au,
+        jwboyer@linux.vnet.ibm.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] fix build warnings on defconfigs
+Message-ID: <20110410181238.GE18601@pengutronix.de>
+References: <1302375858-11253-1-git-send-email-wanlong.gao@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
-X-Anti-Virus: Kaspersky Anti-Virus for Sendmail with Milter API 5.6.20,
-	 bases: 20100805 #4144846, check: 20110410 clean
+In-Reply-To: <1302375858-11253-1-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 10, 2011 at 03:04:18AM +0800, wanlong.gao@gmail.com wrote:
+> From: Wanlong Gao <wanlong.gao@gmail.com>
+> 
+> Change the BT_L2CAP and BT_SCO defconfigs from 'm' to 'y',
+> since BT_L2CAP and BT_SCO had changed to bool configs.
+Pointing out the commit that changed these two in the commit log would
+be nice. Something like:
 
+	The BT_L2CAP and BT_SCO configs are bool since
 
-Ihr Postfach hat die Lagerung Grenze, die 1GB ist als vom  
-Administrator festgelegt, Sie sind derzeit auf 3.9GB, können Sie nicht  
-in der Lage zu senden oder zu empfangen, bis Sie neue E-Mail erneut  
-validieren Ihr Postfach überschritten. Zur erneuten Überprüfung Ihrer  
-Mailbox bitte hier klicken:
+		6427451 (Bluetooth: Merge L2CAP and SCO modules into bluetooth.ko)
 
-http://95.211.18.138/~dolcevita/iss/account.html
+	. So change all defconfigs from =m to =y.
 
-Dank
-System-Administrator
+Other than that
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
