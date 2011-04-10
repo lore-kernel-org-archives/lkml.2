@@ -1,32 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1DJHno (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 03:43:44 -0400
-Received: from vm-emlprdomr-03.its.yale.edu ([130.132.50.144]:47838 "EHLO
-	vm-emlprdomr-03.its.yale.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752140Ab1DJHnk (ORCPT
+	id S1755067Ab1DJICQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 04:02:16 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:33236 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752510Ab1DJICM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 03:43:40 -0400
-Message-ID: <20110410033548.dneav71w0csooscs@www.mail.yale.edu>
-Date: Sun, 10 Apr 2011 03:35:48 -0400
-From: youwon@yale.edu
-Reply-to: opecaward@gala.net
-To: undisclosed-recipients:;
-Subject: Opec 2011 Promo Award =?iso-8859-1?b?KKM3NTAsMDAw?= UK Pounds)
+	Sun, 10 Apr 2011 04:02:12 -0400
+Date: Sun, 10 Apr 2011 10:01:59 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Michael B?sch <mb@bu3sch.de>, Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Rafa? Mi?ecki <zajec5@gmail.com>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+Message-ID: <20110410080159.GB2798@ucw.cz>
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+ <op.vtisojsk3ri7v4@arend-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.0.3)
-X-Originating-IP: 130.132.50.65
-X-Forwarded-For: 175.144.136.53
-X-Remote-Browser: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US)
-	AppleWebKit/534.16 (KHTML, like Gecko) Chrome/10.0.648.204 Safari/534.16
+In-Reply-To: <op.vtisojsk3ri7v4@arend-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-Congratulations, you are a winner of the Opec Oil Promotion 750,000 (GBP) send
-your name and address for more details
+
+> >@@ -0,0 +1,30 @@
+> >+config BCMAI_POSSIBLE
+> >+       bool
+> >+       depends on HAS_IOMEM && HAS_DMA
+> >+       default y
+> >+
+> >+menu "Broadcom's AI"
+> >+       depends on BCMAI_POSSIBLE
+> >+
+> >+config BCMAI
+> >+       tristate "AI support"
+> >+       depends on BCMAI_POSSIBLE
+> >+
+> >+config BCMAI_HOST_PCI_POSSIBLE
+> >+       bool
+> >+       depends on BCMAI && PCI = y
+> >+       default y
+> >+
+> >+config BCMAI_HOST_PCI
+> >+       bool "Support for AI on PCI-host bus"
+> >+       depends on BCMAI_HOST_PCI_POSSIBLE
+> >+
+> >+config BCMAI_DEBUG
+> >+       bool "BCMAI debugging"
+> >+       depends on BCMAI
+> >+       help
+> >+         This turns on additional debugging messages.
+> >+
+> >+         If unsure, say N
+
+Totally useless  :-(. It should really explain what AI means in this context.
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
