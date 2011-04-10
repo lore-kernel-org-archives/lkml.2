@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1DJRBd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 13:01:33 -0400
-Received: from vomta2.inidiatimes.com ([223.165.24.79]:63172 "HELO
-	vomta2.indiatimes.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with SMTP id S1754720Ab1DJRBb (ORCPT
+	id S1756092Ab1DJRF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 13:05:57 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10326 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab1DJRFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 13:01:31 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Apr 2011 13:01:30 EDT
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=private; d=indiatimes.com;
-  b=Q4DuVJrH3PB/lXXzd3wh5orMX/h92D4TaGDWwzFgVBucSFgOv2xIBgn1uVW6iSlE  ;
-X-Spam-Report: SA TESTS
-  0.0 FREEMAIL_FROM          Sender email is freemail
-                             (gracesaigbe[at]indiatimes.com)
-  1.0 FREEMAIL_REPLYTO_END_DIGIT Reply-To freemail username ends in digit
-                             (gracesaigbe <gracesaigbe2011[at]yahoo.com>
- )
-  0.1 RDNS_NONE              Delivered to internal network by a host with no rDNS
-  0.0 HELO_NO_DOMAIN         Relay reports its domain incorrectly
-  2.8 FREEMAIL_REPLYTO       Reply-To/From or Reply-To/body contain different
-                             freemails
-  0.0 T_TO_NO_BRKTS_FREEMAIL T_TO_NO_BRKTS_FREEMAIL
-  0.1 TO_NO_BRKTS_DIRECT     To: misformatted and direct-to-MX
-  0.0 TO_NO_BRKTS_NOTLIST    To: misformatted and not a mailing list
-X-Indiatimes-Scanner-Mail-From: gracesaigbe@indiatimes.com via vomta2.indiatimes.com
-X-Indiatimes-Scanner: 1.25st (Clear:RC:1(192.168.24.53):SA:0(4.0/4.9):. Processed in 0.252464 secs Process 28504)
-Date: Sun, 10 Apr 2011 22:24:55 +0530 (IST)
-From: grace saigbe <gracesaigbe@indiatimes.com>
-Reply-To: gracesaigbe <gracesaigbe2011@yahoo.com>
-Message-ID: <820007680.242021302454495000.JavaMail.root@tilmb13.indiatimes.com>
-Subject: HELLO,
+	Sun, 10 Apr 2011 13:05:55 -0400
+Date: Sun, 10 Apr 2011 19:06:16 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Kconfig.debug: Remove unused CONFIG_DEBUG_ERRORS
+In-Reply-To: <1302300518-7523-1-git-send-email-sboyd@codeaurora.org>
+Message-ID: <alpine.LNX.2.00.1104101904000.17706@swampdragon.chaosbits.net>
+References: <1302300518-7523-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.208.169.152]
-X-Mailer: Zimbra 5.0.6_GA_2313.RHEL4_64 (zclient/5.0.6_GA_2313.RHEL4_64)
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 8 Apr 2011, Stephen Boyd wrote:
 
-HELLO,
-    My name is Miss grace saigbe,i  got your contact through my internet search today and i became intrested to know you more,i will also like to know more about you,and i want you to send an email to my email address so i can give you my picture for you to know whom i am.this is my email address(gracesaigbe2011@yahoo.com) I believe we can move from here I am waiting.
-(Remember the distance or colour does not matter but love matters alot in life)
-    Thanks
-grace
-             
+> This config option isn't actually used anywhere and can be safely
+> removed. The last user was traps.c before commit 082f47a ([ARM]
+> always allow dump_stack() to produce a backtrace, 2007-07-05).
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-                gracesaigbe2011@yahoo.com
+Ok, this patch looks sane, so feel free to add :
+  Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+
+But, I see a lot of *_defconfig files in my copy of the tree that 
+reference the option :
+
+./arch/arm/configs/realview_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/ixp2000_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/netx_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/em_x270_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/tct_hammer_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/integrator_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/s3c6400_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/s5p6442_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/jornada720_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/imote2_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/mmp2_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/hackkit_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/lpd270_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/u8500_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/s5pc100_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/cerfcube_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/cm_x2xx_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/exynos4_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/simpad_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/colibri_pxa270_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/kirkwood_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/realview-smp_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/magician_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/mv78xx0_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/s5pv210_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/ns9xxx_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/corgi_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/ixp4xx_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/vexpress_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/pxa168_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/orion5x_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/pxa910_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/omap1_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/spitz_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/viper_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/pxa255-idp_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/colibri_pxa300_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/neponset_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/lubbock_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/collie_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/dove_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/rpc_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/mainstone_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/badge4_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/raumfeld_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/s5p64x0_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/ixp23xx_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/versatile_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/ezx_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/davinci_all_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/da8xx_omapl_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/zeus_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/s3c2410_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/am200epdkit_defconfig:CONFIG_DEBUG_ERRORS=y
+./arch/arm/configs/ep93xx_defconfig:CONFIG_DEBUG_ERRORS=y
+
+shouldn't those lines be removed as well?
+
+I can submit a patch, but I thought you'd rather do it yourself..
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
