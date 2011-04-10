@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1DJSOg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 14:14:36 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:60772 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab1DJSOf (ORCPT
+	id S1754935Ab1DJS3J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 14:29:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39143 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753606Ab1DJS3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 14:14:35 -0400
-Message-ID: <4DA1F381.4080003@ahsoftware.de>
-Date: Sun, 10 Apr 2011 20:14:25 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Sun, 10 Apr 2011 14:29:07 -0400
+Date: Sun, 10 Apr 2011 11:29:16 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: linux-next: manual merge of the sound tree with Linus' tree
+Message-ID: <20110410182916.GB10486@opensource.wolfsonmicro.com>
+References: <20110408143825.e15b444a.sfr@canb.auug.org.au>
+ <20110408061630.GB21700@opensource.wolfsonmicro.com>
+ <s5hoc4ee88p.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Alexander Clouter <alex@digriz.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: Differentiate SheevaPlugs and DockStars on	the
- basis of the memory size.
-References: <1302122121-3652-1-git-send-email-holler@ahsoftware.de>	 <1302122121-3652-2-git-send-email-holler@ahsoftware.de>	 <alpine.LFD.2.00.1104061739100.28032@xanadu.home>	 <4D9CED15.2010806@ahsoftware.de>	 <alpine.LFD.2.00.1104061850410.28032@xanadu.home>	 <4D9CF5B3.9020007@ahsoftware.de> <toa078-0do.ln1@chipmunk.wormnet.eu>	 <4D9E2D1C.7070102@ahsoftware.de>	 <20110407220855.GD17049@n2100.arm.linux.org.uk>	 <4D9E42E1.1060902@ahsoftware.de> <1302337753.30783.24.camel@thorin>
-In-Reply-To: <1302337753.30783.24.camel@thorin>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hoc4ee88p.wl%tiwai@suse.de>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Apr 10, 2011 at 12:00:38PM +0200, Takashi Iwai wrote:
 
-On 09.04.2011 10:29, Bernd Petrovitsch wrote:
+> It'd be helpful if you can resolve in your tree.
 
-Thanks for your helpfull tipps, but I'm writing software since about 
-30a, and I get paid for that since about 25a.
+I'll do so whenever the next -rc comes out - I know Linus isn't fond of
+people pulling random untagged commits.
 
-How long to you that?
+> I've been sick and can't work much since days ago.
 
-If anyone else wants to enter this discussion, sorry, but I will not 
-answer any more emails here.
-
-Alexander
+Oh dear, get well soon :(
