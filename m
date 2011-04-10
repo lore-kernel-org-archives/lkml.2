@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab1DJJ7a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 05:59:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49225 "EHLO mx1.suse.de"
+	id S1756060Ab1DJKAl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 06:00:41 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49261 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548Ab1DJJ71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 05:59:27 -0400
-Date: Sun, 10 Apr 2011 11:59:24 +0200
-Message-ID: <s5hpqoue8ar.wl%tiwai@suse.de>
+	id S1752548Ab1DJKAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 06:00:40 -0400
+Date: Sun, 10 Apr 2011 12:00:38 +0200
+Message-ID: <s5hoc4ee88p.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sound fixes for 2.6.39-rc3
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: linux-next: manual merge of the sound tree with Linus' tree
+In-Reply-To: <20110408061630.GB21700@opensource.wolfsonmicro.com>
+References: <20110408143825.e15b444a.sfr@canb.auug.org.au>
+	<20110408061630.GB21700@opensource.wolfsonmicro.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,304 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+At Fri, 8 Apr 2011 07:16:30 +0100,
+Mark Brown wrote:
+> 
+> On Fri, Apr 08, 2011 at 02:38:25PM +1000, Stephen Rothwell wrote:
+> 
+> > Today's linux-next merge of the sound tree got a conflict in
+> > sound/soc/codecs/wm8994.c between commit 25985edcedea ("Fix common
+> > misspellings") from Linus' tree and commit f701a2e594e6 ("ASoC: Factor
+> > WM8958 DSP2 handling into separate file") from the sound tree.
+> 
+> > The latter moved the code changed by the former into another file.  I did
+> > not bother fixing the spelling errors there.
+> 
+> I guess I'll fix this by merging up next time there's a -rc.  Not sure
+> why such patches aren't getting done against -next, though.
 
-please pull ALSA updates for v2.6.39-rc3 from:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git for-linus
-
-All small fixes as belw.
+It'd be helpful if you can resolve in your tree.
+I've been sick and can't work much since days ago.
 
 
-Thanks!
+thanks,
 
 Takashi
-
-===
-
-Aaron Plattner (1):
-      ALSA: hda - HDMI: Fix MCP7x audio infoframe checksums
-
-Antonio Ospite (1):
-      ASoC: zylonite: set .codec_dai_name in initializer
-
-David Henningsson (2):
-      ALSA: HDA: Fix dock mic for Lenovo X220-tablet
-      ALSA: HDA: Fix single internal mic on ALC275 (Sony Vaio VPCSB1C5E)
-
-Stephen Warren (1):
-      ASoC: format_register_str: Don't clip register values
-
-Takashi Iwai (1):
-      ALSA: hda - Don't query connections for widgets have no connections
-
-Tarek Soliman (1):
-      ALSA: usb-audio: define another USB ID for a buggy USB MIDI cable
-
-Vasily Khoruzhick (1):
-      ASoC: PXA: Fix oops in __pxa2xx_pcm_prepare
-
----
- sound/arm/pxa2xx-pcm-lib.c     |    3 ++
- sound/pci/hda/patch_conexant.c |    1 +
- sound/pci/hda/patch_hdmi.c     |   70 +++++++++++++++++++++++++---------------
- sound/pci/hda/patch_realtek.c  |    2 +-
- sound/pci/hda/patch_sigmatel.c |    3 ++
- sound/soc/pxa/pxa2xx-pcm.c     |    1 +
- sound/soc/pxa/zylonite.c       |    6 ++--
- sound/soc/soc-core.c           |    8 ++--
- sound/usb/midi.c               |    1 +
- 9 files changed, 61 insertions(+), 34 deletions(-)
-
-diff --git a/sound/arm/pxa2xx-pcm-lib.c b/sound/arm/pxa2xx-pcm-lib.c
-index 8808b82..76e0d56 100644
---- a/sound/arm/pxa2xx-pcm-lib.c
-+++ b/sound/arm/pxa2xx-pcm-lib.c
-@@ -140,6 +140,9 @@ int __pxa2xx_pcm_prepare(struct snd_pcm_substream *substream)
- 	if (!prtd || !prtd->params)
- 		return 0;
- 
-+	if (prtd->dma_ch == -1)
-+		return -EINVAL;
-+
- 	DCSR(prtd->dma_ch) &= ~DCSR_RUN;
- 	DCSR(prtd->dma_ch) = 0;
- 	DCMD(prtd->dma_ch) = 0;
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 69e3386..ad97d93 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3035,6 +3035,7 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x21c6, "Thinkpad Edge 13", CXT5066_ASUS),
-  	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21da, "Lenovo X220", CXT5066_THINKPAD),
-+	SND_PCI_QUIRK(0x17aa, 0x21db, "Lenovo X220-tablet", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo G560", CXT5066_ASUS),
- 	SND_PCI_QUIRK_VENDOR(0x17aa, "Lenovo", CXT5066_IDEAPAD), /* Fallback for Lenovos without dock mic */
- 	{}
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 251773e..715615a 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1280,6 +1280,39 @@ static int simple_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
- 					     stream_tag, format, substream);
- }
- 
-+static void nvhdmi_8ch_7x_set_info_frame_parameters(struct hda_codec *codec,
-+						    int channels)
-+{
-+	unsigned int chanmask;
-+	int chan = channels ? (channels - 1) : 1;
-+
-+	switch (channels) {
-+	default:
-+	case 0:
-+	case 2:
-+		chanmask = 0x00;
-+		break;
-+	case 4:
-+		chanmask = 0x08;
-+		break;
-+	case 6:
-+		chanmask = 0x0b;
-+		break;
-+	case 8:
-+		chanmask = 0x13;
-+		break;
-+	}
-+
-+	/* Set the audio infoframe channel allocation and checksum fields.  The
-+	 * channel count is computed implicitly by the hardware. */
-+	snd_hda_codec_write(codec, 0x1, 0,
-+			Nv_VERB_SET_Channel_Allocation, chanmask);
-+
-+	snd_hda_codec_write(codec, 0x1, 0,
-+			Nv_VERB_SET_Info_Frame_Checksum,
-+			(0x71 - chan - chanmask));
-+}
-+
- static int nvhdmi_8ch_7x_pcm_close(struct hda_pcm_stream *hinfo,
- 				   struct hda_codec *codec,
- 				   struct snd_pcm_substream *substream)
-@@ -1298,6 +1331,10 @@ static int nvhdmi_8ch_7x_pcm_close(struct hda_pcm_stream *hinfo,
- 				AC_VERB_SET_STREAM_FORMAT, 0);
- 	}
- 
-+	/* The audio hardware sends a channel count of 0x7 (8ch) when all the
-+	 * streams are disabled. */
-+	nvhdmi_8ch_7x_set_info_frame_parameters(codec, 8);
-+
- 	return snd_hda_multi_out_dig_close(codec, &spec->multiout);
- }
- 
-@@ -1308,37 +1345,16 @@ static int nvhdmi_8ch_7x_pcm_prepare(struct hda_pcm_stream *hinfo,
- 				     struct snd_pcm_substream *substream)
- {
- 	int chs;
--	unsigned int dataDCC1, dataDCC2, chan, chanmask, channel_id;
-+	unsigned int dataDCC1, dataDCC2, channel_id;
- 	int i;
- 
- 	mutex_lock(&codec->spdif_mutex);
- 
- 	chs = substream->runtime->channels;
--	chan = chs ? (chs - 1) : 1;
- 
--	switch (chs) {
--	default:
--	case 0:
--	case 2:
--		chanmask = 0x00;
--		break;
--	case 4:
--		chanmask = 0x08;
--		break;
--	case 6:
--		chanmask = 0x0b;
--		break;
--	case 8:
--		chanmask = 0x13;
--		break;
--	}
- 	dataDCC1 = AC_DIG1_ENABLE | AC_DIG1_COPYRIGHT;
- 	dataDCC2 = 0x2;
- 
--	/* set the Audio InforFrame Channel Allocation */
--	snd_hda_codec_write(codec, 0x1, 0,
--			Nv_VERB_SET_Channel_Allocation, chanmask);
--
- 	/* turn off SPDIF once; otherwise the IEC958 bits won't be updated */
- 	if (codec->spdif_status_reset && (codec->spdif_ctls & AC_DIG1_ENABLE))
- 		snd_hda_codec_write(codec,
-@@ -1413,10 +1429,7 @@ static int nvhdmi_8ch_7x_pcm_prepare(struct hda_pcm_stream *hinfo,
- 		}
- 	}
- 
--	/* set the Audio Info Frame Checksum */
--	snd_hda_codec_write(codec, 0x1, 0,
--			Nv_VERB_SET_Info_Frame_Checksum,
--			(0x71 - chan - chanmask));
-+	nvhdmi_8ch_7x_set_info_frame_parameters(codec, chs);
- 
- 	mutex_unlock(&codec->spdif_mutex);
- 	return 0;
-@@ -1512,6 +1525,11 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
- 	spec->multiout.max_channels = 8;
- 	spec->pcm_playback = &nvhdmi_pcm_playback_8ch_7x;
- 	codec->patch_ops = nvhdmi_patch_ops_8ch_7x;
-+
-+	/* Initialize the audio infoframe channel mask and checksum to something
-+	 * valid */
-+	nvhdmi_8ch_7x_set_info_frame_parameters(codec, 8);
-+
- 	return 0;
- }
- 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 7e28a64..52928d9 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -14124,7 +14124,7 @@ static hda_nid_t alc269vb_capsrc_nids[1] = {
- };
- 
- static hda_nid_t alc269_adc_candidates[] = {
--	0x08, 0x09, 0x07,
-+	0x08, 0x09, 0x07, 0x11,
- };
- 
- #define alc269_modes		alc260_modes
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 1395991..94d19c0 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -3408,6 +3408,9 @@ static int get_connection_index(struct hda_codec *codec, hda_nid_t mux,
- 	hda_nid_t conn[HDA_MAX_NUM_INPUTS];
- 	int i, nums;
- 
-+	if (!(get_wcaps(codec, mux) & AC_WCAP_CONN_LIST))
-+		return -1;
-+
- 	nums = snd_hda_get_connections(codec, mux, conn, ARRAY_SIZE(conn));
- 	for (i = 0; i < nums; i++)
- 		if (conn[i] == nid)
-diff --git a/sound/soc/pxa/pxa2xx-pcm.c b/sound/soc/pxa/pxa2xx-pcm.c
-index 02fb664..2ce0b2d 100644
---- a/sound/soc/pxa/pxa2xx-pcm.c
-+++ b/sound/soc/pxa/pxa2xx-pcm.c
-@@ -65,6 +65,7 @@ static int pxa2xx_pcm_hw_free(struct snd_pcm_substream *substream)
- 	if (prtd->dma_ch >= 0) {
- 		pxa_free_dma(prtd->dma_ch);
- 		prtd->dma_ch = -1;
-+		prtd->params = NULL;
- 	}
- 
- 	return 0;
-diff --git a/sound/soc/pxa/zylonite.c b/sound/soc/pxa/zylonite.c
-index ac57726..b644575 100644
---- a/sound/soc/pxa/zylonite.c
-+++ b/sound/soc/pxa/zylonite.c
-@@ -167,7 +167,7 @@ static struct snd_soc_dai_link zylonite_dai[] = {
- 	.codec_name = "wm9713-codec",
- 	.platform_name = "pxa-pcm-audio",
- 	.cpu_dai_name = "pxa2xx-ac97",
--	.codec_name = "wm9713-hifi",
-+	.codec_dai_name = "wm9713-hifi",
- 	.init = zylonite_wm9713_init,
- },
- {
-@@ -176,7 +176,7 @@ static struct snd_soc_dai_link zylonite_dai[] = {
- 	.codec_name = "wm9713-codec",
- 	.platform_name = "pxa-pcm-audio",
- 	.cpu_dai_name = "pxa2xx-ac97-aux",
--	.codec_name = "wm9713-aux",
-+	.codec_dai_name = "wm9713-aux",
- },
- {
- 	.name = "WM9713 Voice",
-@@ -184,7 +184,7 @@ static struct snd_soc_dai_link zylonite_dai[] = {
- 	.codec_name = "wm9713-codec",
- 	.platform_name = "pxa-pcm-audio",
- 	.cpu_dai_name = "pxa-ssp-dai.2",
--	.codec_name = "wm9713-voice",
-+	.codec_dai_name = "wm9713-voice",
- 	.ops = &zylonite_voice_ops,
- },
- };
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index 4dda589..b76b74d 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -92,8 +92,8 @@ static int min_bytes_needed(unsigned long val)
- static int format_register_str(struct snd_soc_codec *codec,
- 			       unsigned int reg, char *buf, size_t len)
- {
--	int wordsize = codec->driver->reg_word_size * 2;
--	int regsize = min_bytes_needed(codec->driver->reg_cache_size) * 2;
-+	int wordsize = min_bytes_needed(codec->driver->reg_cache_size) * 2;
-+	int regsize = codec->driver->reg_word_size * 2;
- 	int ret;
- 	char tmpbuf[len + 1];
- 	char regbuf[regsize + 1];
-@@ -132,8 +132,8 @@ static ssize_t soc_codec_reg_show(struct snd_soc_codec *codec, char *buf,
- 	size_t total = 0;
- 	loff_t p = 0;
- 
--	wordsize = codec->driver->reg_word_size * 2;
--	regsize = min_bytes_needed(codec->driver->reg_cache_size) * 2;
-+	wordsize = min_bytes_needed(codec->driver->reg_cache_size) * 2;
-+	regsize = codec->driver->reg_word_size * 2;
- 
- 	len = wordsize + regsize + 2 + 1;
- 
-diff --git a/sound/usb/midi.c b/sound/usb/midi.c
-index b4b39c0..f928910 100644
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -1301,6 +1301,7 @@ static int snd_usbmidi_out_endpoint_create(struct snd_usb_midi* umidi,
- 	case USB_ID(0x15ca, 0x0101): /* Textech USB Midi Cable */
- 	case USB_ID(0x15ca, 0x1806): /* Textech USB Midi Cable */
- 	case USB_ID(0x1a86, 0x752d): /* QinHeng CH345 "USB2.0-MIDI" */
-+	case USB_ID(0xfc08, 0x0101): /* Unknown vendor Cable */
- 		ep->max_transfer = 4;
- 		break;
- 		/*
