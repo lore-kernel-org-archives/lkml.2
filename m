@@ -1,199 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab1DJJCZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 05:02:25 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:57735 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab1DJJCJ (ORCPT
+	id S1755967Ab1DJJeQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 05:34:16 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2114 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755164Ab1DJJeO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 05:02:09 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-doc@vger.kernel.org
-Subject: [PATCH/RFC 3/3] genirq: Update DocBook comments
-Date: Sun, 10 Apr 2011 11:01:53 +0200
-Message-Id: <1302426113-13808-3-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1302426113-13808-1-git-send-email-geert@linux-m68k.org>
-References: <1302426113-13808-1-git-send-email-geert@linux-m68k.org>
+	Sun, 10 Apr 2011 05:34:14 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+To: "Pavel Machek" <pavel@ucw.cz>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Michael B?sch" <mb@bu3sch.de>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "George Kashperko" <george@znau.edu.ua>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Russell King" <rmk@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] bcmai: introduce AI driver
+References: <1302033463-1846-1-git-send-email-zajec5@gmail.com>
+ <op.vtisojsk3ri7v4@arend-laptop> <20110410080159.GB2798@ucw.cz>
+ <BANLkTikL+GvaKN6nT-9WjpPjaJz0dR51KQ@mail.gmail.com>
+ <20110410082420.GA1460@localhost.ucw.cz>
+ <BANLkTim9JTpZGib+_C_vTFFhP5azbGwMjg@mail.gmail.com>
+Date: Sun, 10 Apr 2011 11:33:57 +0200
+MIME-Version: 1.0
+From: "Arend van Spriel" <arend@broadcom.com>
+Organization: Broadcom
+Message-ID: <op.vtpt6v173ri7v4@arend-laptop>
+In-Reply-To: <BANLkTim9JTpZGib+_C_vTFFhP5azbGwMjg@mail.gmail.com>
+User-Agent: Opera Mail/11.01 (Linux)
+X-WSS-ID: 61BFA5C33GO351058-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed;
+ delsp=yes
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix some parts to match the actual code.
+On Sun, 10 Apr 2011 10:30:53 +0200, Rafał Miłecki <zajec5@gmail.com> wrote:
 
-I also marked some parts with FIXME where documentation is missing or
-incorrect.
+> 2011/4/10 Pavel Machek <pavel@ucw.cz>:
+>>> >> >+config BCMAI_HOST_PCI_POSSIBLE
+>>> >> >+       bool
+>>> >> >+       depends on BCMAI && PCI = y
+>>> >> >+       default y
+>>> >> >+
+>>> >> >+config BCMAI_HOST_PCI
+>>> >> >+       bool "Support for AI on PCI-host bus"
+>>> >> >+       depends on BCMAI_HOST_PCI_POSSIBLE
+>>> >> >+
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-doc@vger.kernel.org
----
- Documentation/DocBook/genericirq.tmpl |   57 ++++++++++++++++++--------------
- 1 files changed, 32 insertions(+), 25 deletions(-)
+Hi Rafał,
 
-diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
-index fb10fd0..7ea70a1 100644
---- a/Documentation/DocBook/genericirq.tmpl
-+++ b/Documentation/DocBook/genericirq.tmpl
-@@ -191,8 +191,8 @@
- 	<para>
- 	Whenever an interrupt triggers, the lowlevel arch code calls into
- 	the generic interrupt code by calling desc->handle_irq().
--	This highlevel IRQ handling function only uses desc->chip primitives
--	referenced by the assigned chip descriptor structure.
-+	This highlevel IRQ handling function only uses desc->irq_data.chip
-+	primitives referenced by the assigned chip descriptor structure.
- 	</para>
-     </sect1>
-     <sect1 id="Highlevel_Driver_API">
-@@ -206,11 +206,11 @@
- 	  <listitem><para>enable_irq()</para></listitem>
- 	  <listitem><para>disable_irq_nosync() (SMP only)</para></listitem>
- 	  <listitem><para>synchronize_irq() (SMP only)</para></listitem>
--	  <listitem><para>set_irq_type()</para></listitem>
--	  <listitem><para>set_irq_wake()</para></listitem>
--	  <listitem><para>set_irq_data()</para></listitem>
--	  <listitem><para>set_irq_chip()</para></listitem>
--	  <listitem><para>set_irq_chip_data()</para></listitem>
-+	  <listitem><para>irq_set_irq_type()</para></listitem>
-+	  <listitem><para>irq_set_irq_wake()</para></listitem>
-+	  <listitem><para>irq_set_handler_data()</para></listitem>
-+	  <listitem><para>irq_set_chip()</para></listitem>
-+	  <listitem><para>irq_set_chip_data()</para></listitem>
-           </itemizedlist>
- 	  See the autogenerated function documentation for details.
- 	</para>
-@@ -225,6 +225,9 @@
- 	  <listitem><para>handle_fasteoi_irq</para></listitem>
- 	  <listitem><para>handle_simple_irq</para></listitem>
- 	  <listitem><para>handle_percpu_irq</para></listitem>
-+	  <listitem><para>FIXME handle_edge_eoi_irq</para></listitem>
-+	  <listitem><para>FIXME handle_bad_irq</para></listitem>
-+	  <listitem><para>FIXME handle_nested_irq</para></listitem>
- 	  </itemizedlist>
- 	  The interrupt flow handlers (either predefined or architecture
- 	  specific) are assigned to specific interrupts by the architecture
-@@ -241,13 +244,13 @@
- 		<programlisting>
- default_enable(struct irq_data *data)
- {
--	desc->chip->irq_unmask(data);
-+	desc->irq_data.chip->irq_unmask(data);
- }
- 
- default_disable(struct irq_data *data)
- {
- 	if (!delay_disable(data))
--		desc->chip->irq_mask(data);
-+		desc->irq_data.chip->irq_mask(data);
- }
- 
- default_ack(struct irq_data *data)
-@@ -284,9 +287,9 @@ noop(struct irq_data *data))
- 		<para>
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
--desc->chip->irq_mask();
--handle_IRQ_event(desc->action);
--desc->chip->irq_unmask();
-+desc->irq_data.chip->irq_mask_ack();
-+handle_irq_event(desc->action);
-+desc->irq_data.chip->irq_unmask();
- 		</programlisting>
- 		</para>
- 	    </sect3>
-@@ -300,8 +303,8 @@ desc->chip->irq_unmask();
- 		<para>
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
--handle_IRQ_event(desc->action);
--desc->chip->irq_eoi();
-+handle_irq_event(desc->action);
-+desc->irq_data.chip->irq_eoi();
- 		</programlisting>
- 		</para>
- 	    </sect3>
-@@ -315,17 +318,17 @@ desc->chip->irq_eoi();
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
- if (desc->status &amp; running) {
--	desc->chip->irq_mask();
-+	desc->irq_data.chip->irq_mask_ack();
- 	desc->status |= pending | masked;
- 	return;
- }
--desc->chip->irq_ack();
-+desc->irq_data.chip->irq_ack();
- desc->status |= running;
- do {
- 	if (desc->status &amp; masked)
--		desc->chip->irq_unmask();
-+		desc->irq_data.chip->irq_unmask();
- 	desc->status &amp;= ~pending;
--	handle_IRQ_event(desc->action);
-+	handle_irq_event(desc->action);
- } while (status &amp; pending);
- desc->status &amp;= ~running;
- 		</programlisting>
-@@ -344,7 +347,7 @@ desc->status &amp;= ~running;
- 		<para>
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
--handle_IRQ_event(desc->action);
-+handle_irq_event(desc->action);
- 		</programlisting>
- 		</para>
-    	    </sect3>
-@@ -362,9 +365,11 @@ handle_IRQ_event(desc->action);
- 		<para>
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
--handle_IRQ_event(desc->action);
--if (desc->chip->irq_eoi)
--        desc->chip->irq_eoi();
-+if (desc->irq_data.chip->irq_ack)
-+	desc->irq_data.chip->irq_ack();
-+handle_irq_event(desc->action);
-+if (desc->irq_data.chip->irq_eoi)
-+        desc->irq_data.chip->irq_eoi();
- 		</programlisting>
- 		</para>
-    	    </sect3>
-@@ -410,6 +415,7 @@ if (desc->chip->irq_eoi)
- 	  <listitem><para>irq_mask_ack() - Optional, recommended for performance</para></listitem>
- 	  <listitem><para>irq_mask()</para></listitem>
- 	  <listitem><para>irq_unmask()</para></listitem>
-+	  <listitem><para>FIXME irq_eoi()</para></listitem>
- 	  <listitem><para>irq_retrigger() - Optional</para></listitem>
- 	  <listitem><para>irq_set_type() - Optional</para></listitem>
- 	  <listitem><para>irq_set_wake() - Optional</para></listitem>
-@@ -424,13 +430,13 @@ if (desc->chip->irq_eoi)
-   <chapter id="doirq">
-      <title>__do_IRQ entry point</title>
-      <para>
-- 	The original implementation __do_IRQ() is an alternative entry
-+	The original implementation __do_IRQ() was an alternative entry
- 	point for all types of interrupts.
-      </para>
-      <para>
- 	This handler turned out to be not suitable for all
- 	interrupt hardware and was therefore reimplemented with split
--	functionality for egde/level/simple/percpu interrupts. This is not
-+	functionality for edge/level/simple/percpu interrupts. This is not
- 	only a functional optimization. It also shortens code paths for
- 	interrupts.
-       </para>
-@@ -447,7 +453,8 @@ if (desc->chip->irq_eoi)
-      <title>Locking on SMP</title>
-      <para>
- 	The locking of chip registers is up to the architecture that
--	defines the chip primitives. There is a chip->lock field that can be used
-+	defines the chip primitives. There is a chip->lock field (FIXME does
-+	not exist) that can be used
- 	for serialization, but the generic layer does not touch it. The per-irq
- 	structure is protected via desc->lock, by the generic layer.
-      </para>
+Could use term AMBA AXI instead which gives enough hits on Google to hint  
+interested people to more in depth information.
+
+FYI: AXI = Advanced eXtensible Interface
+	High-speed interconnect for chip cores ( provides higher bursts/transfers  
+than predecessor AHB = Advanced High-performance Bus (AHB)).
+
+Gr. AvS
 -- 
-1.7.0.4
+"The world is indeed comic, but the joke is on mankind." — H.P. Lovecraft
 
