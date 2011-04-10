@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab1DJCzI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Apr 2011 22:55:08 -0400
-Received: from orca.ele.uri.edu ([131.128.51.63]:51701 "EHLO orca.ele.uri.edu"
+	id S1754832Ab1DJDDB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Apr 2011 23:03:01 -0400
+Received: from orca.ele.uri.edu ([131.128.51.63]:49461 "EHLO orca.ele.uri.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369Ab1DJCzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Apr 2011 22:55:04 -0400
+	id S1751564Ab1DJDDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Apr 2011 23:03:00 -0400
 From: "Will Simoneau" <simoneau@ele.uri.edu>
-Date: Sat, 9 Apr 2011 22:55:02 -0400
+Date: Sat, 9 Apr 2011 23:02:58 -0400
 To: linux-kernel@vger.kernel.org
-Subject: lockdep splat: nfsroot on 2.6.39-rc2
-Message-ID: <20110410025502.GA15112@ele.uri.edu>
+Cc: linux-nfs@vger.kernel.org
+Subject: lockdep splat: 2.6.39-rc2 + nfsroot
+Message-ID: <20110410030258.GB15112@ele.uri.edu>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
+	protocol="application/pgp-signature"; boundary="yNb1oOkm5a9FJOVX"
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 [Linux 2.6.34 x86_64]
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,9 +22,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---8t9RHnE3ZwKMSgU+
+--yNb1oOkm5a9FJOVX
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+
+[should have CCed linux-nfs, sorry for the dupe]
 
 Hi,
 
@@ -141,15 +144,15 @@ _commit+0xb0/0x200
 
 Thanks for looking.
 
---8t9RHnE3ZwKMSgU+
+--yNb1oOkm5a9FJOVX
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.16 (GNU/Linux)
 
-iEYEARECAAYFAk2hHAYACgkQLYBaX8VDLLXYBgCfQ3kdWZ+LlBJGbUp99uhztE+M
-BhIAn1X86okfoe9eZ/uFcRSsSa0apZs1
-=q1W2
+iEYEARECAAYFAk2hHeIACgkQLYBaX8VDLLUwgwCgmRYEfyf1sbk7f0hFr41gvni/
+KiIAnRMothPTXoJ94bcbXYx8VUr2wcx9
+=aHqL
 -----END PGP SIGNATURE-----
 
---8t9RHnE3ZwKMSgU+--
+--yNb1oOkm5a9FJOVX--
