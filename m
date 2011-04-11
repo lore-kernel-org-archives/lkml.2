@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1DKPkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 11:40:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44671 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995Ab1DKPka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 11:40:30 -0400
-Date: Mon, 11 Apr 2011 15:40:12 GMT
-From: tip-bot for Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Message-ID: <tip-30d746c68025ee69ac17219aacc9b1614d951f01@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        benh@kernel.crashing.org, bigeasy@linutronix.de, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, tglx@linutronix.de, bigeasy@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20110407121315.GA9204@linutronix.de>
-References: <20110407121315.GA9204@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/ce4100: Add reg property to bridges
-Git-Commit-ID: 30d746c68025ee69ac17219aacc9b1614d951f01
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752496Ab1DKPtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 11:49:32 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56529 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751673Ab1DKPtb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 11:49:31 -0400
+Date: Mon, 11 Apr 2011 11:49:30 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+cc: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] USB host: Fix lockdep warning in AMD PLL quirk
+In-Reply-To: <20110411065957.GI23633@amd.com>
+Message-ID: <Pine.LNX.4.44L0.1104111144540.1975-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Apr 2011 15:40:12 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  30d746c68025ee69ac17219aacc9b1614d951f01
-Gitweb:     http://git.kernel.org/tip/30d746c68025ee69ac17219aacc9b1614d951f01
-Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-AuthorDate: Thu, 7 Apr 2011 14:13:15 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 11 Apr 2011 17:37:02 +0200
+On Mon, 11 Apr 2011, Roedel, Joerg wrote:
 
-x86/ce4100: Add reg property to bridges
+> On Mon, Apr 11, 2011 at 02:26:00AM -0400, Borislav Petkov wrote:
+> > You mean 2.6.39-rc2 right? I'm asking because I hit the same warning
+> > with 39-rc2 now too but it didn't appear with .38 - so it has to have
+> > snuck in after the merge window. If so, you don't need the stable tag.
+> 
+> You were right, just tested plain 2.6.38 and it doesn't happen. So I
+> removed the stable tag. Here is the updated patch.
 
-without the reg property Ben's new code won't find the PCI & ISA
-bridge and the devices won't get the DT-node attached.
+...
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: davem@davemloft.net
-Cc: monstr@monstr.eu
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Link: http://lkml.kernel.org/r/20110407121315.GA9204@linutronix.de
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/platform/ce4100/falconfalls.dts |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> --- a/drivers/usb/host/pci-quirks.c
+> +++ b/drivers/usb/host/pci-quirks.c
+> @@ -84,65 +84,92 @@ int usb_amd_find_chipset_info(void)
+>  {
 
-diff --git a/arch/x86/platform/ce4100/falconfalls.dts b/arch/x86/platform/ce4100/falconfalls.dts
-index dc701ea..2d6d226 100644
---- a/arch/x86/platform/ce4100/falconfalls.dts
-+++ b/arch/x86/platform/ce4100/falconfalls.dts
-@@ -74,6 +74,7 @@
- 				compatible = "intel,ce4100-pci", "pci";
- 				device_type = "pci";
- 				bus-range = <1 1>;
-+				reg = <0x0800 0x0 0x0 0x0 0x0>;
- 				ranges = <0x2000000 0 0xdffe0000 0x2000000 0 0xdffe0000 0 0x1000>;
- 
- 				interrupt-parent = <&ioapic2>;
-@@ -412,6 +413,7 @@
- 				#address-cells = <2>;
- 				#size-cells = <1>;
- 				compatible = "isa";
-+				reg = <0xf800 0x0 0x0 0x0 0x0>;
- 				ranges = <1 0 0 0 0 0x100>;
- 
- 				rtc@70 {
+...
+
+> +commit:
+> +
+> +	spin_lock_irqsave(&amd_lock, flags);
+> +	if (amd_chipset.probe_count > 0) {
+> +		/* race - someone else was faster - drop devices */
+> +
+> +		/* Mark that we where here */
+> +		amd_chipset.probe_count++;
+
+This line should be moved above the "if" statement, since you always 
+want to increment the count.
+
+> +		ret = amd_chipset.probe_result;
+> +
+> +		spin_unlock_irqrestore(&amd_lock, flags);
+> +
+> +		if (info.nb_dev)
+> +			pci_dev_put(info.nb_dev);
+> +		if (info.smbus_dev)
+> +			pci_dev_put(info.smbus_dev);
+> +
+> +	} else {
+> +		/* no race - commit the result */
+> +		info.probe_count++;
+
+This isn't right, because info.probe_count was initialized to 0.  Maybe 
+amd_chipset.probe_count should be made into a separate variable, not a 
+part of the structure, like amd_lock.
+
+> +		amd_chipset = info;
+> +		spin_unlock_irqrestore(&amd_lock, flags);
+> +	}
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(usb_amd_find_chipset_info);
+
+Alan Stern
+
