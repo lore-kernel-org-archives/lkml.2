@@ -1,173 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab1DKK7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 06:59:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58845 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab1DKK7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 06:59:39 -0400
-Date: Mon, 11 Apr 2011 20:59:28 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110411205928.13915719@notabene.brown>
-In-Reply-To: <4DA2C7BE.6060804@fusionio.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
-	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
-	<20110303221353.GA10366@redhat.com>
-	<4D761E0D.8050200@fusionio.com>
-	<20110308202100.GA31744@redhat.com>
-	<4D76912C.9040705@fusionio.com>
-	<20110308220526.GA393@redhat.com>
-	<20110310005810.GA17911@redhat.com>
-	<20110405130541.6c2b5f86@notabene.brown>
-	<20110411145022.710c30e9@notabene.brown>
-	<4DA2C7BE.6060804@fusionio.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1755285Ab1DKLBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 07:01:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33187 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab1DKLBH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 07:01:07 -0400
+Subject: Re: [tip:sched/urgent] sched: Fix sched-domain avg_load calculation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kenchen@google.com, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-b0432d8f162c7d5d9537b4cb749d44076b76a783@git.kernel.org>
+References: <20110408002322.3A0D812217F@elm.corp.google.com>
+	 <tip-b0432d8f162c7d5d9537b4cb749d44076b76a783@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 11 Apr 2011 13:00:48 +0200
+Message-ID: <1302519648.2388.19.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011 11:19:58 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
-
-> On 2011-04-11 06:50, NeilBrown wrote:
-
-> > The only explanation I can come up with is that very occasionally schedule on
-> > 2 separate cpus calls blk_flush_plug for the same task.  I don't understand
-> > the scheduler nearly well enough to know if or how that can happen.
-> > However with this patch in place I can write to a RAID1 constantly for half
-> > an hour, and without it, the write rarely lasts for 3 minutes.
+On Mon, 2011-04-11 at 10:46 +0000, tip-bot for Ken Chen wrote:
+> Commit-ID:  b0432d8f162c7d5d9537b4cb749d44076b76a783
+> Gitweb:     http://git.kernel.org/tip/b0432d8f162c7d5d9537b4cb749d44076b76a783
+> Author:     Ken Chen <kenchen@google.com>
+> AuthorDate: Thu, 7 Apr 2011 17:23:22 -0700
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Mon, 11 Apr 2011 11:08:54 +0200
 > 
-> Or perhaps if the request_fn blocks, that would be problematic. So the
-> patch is likely a good idea even for that case.
+> sched: Fix sched-domain avg_load calculation
 > 
-> I'll merge it, changing it to list_splice_init() as I think that would
-> be more clear.
-
-OK - though I'm not 100% the patch fixes the problem - just that it hides the
-symptom for me.
-I might try instrumenting the code a bit more and see if I can find exactly
-where it is re-entering flush_plug_list - as that seems to be what is
-happening.
-
-And yeah - list_split_init is probably better.  I just never remember exactly
-what list_split means and have to look it up every time, where as
-list_add/list_del are very clear to me.
-
-
+> In function find_busiest_group(), the sched-domain avg_load isn't
+> calculated at all if there is a group imbalance within the domain. This
+> will cause erroneous imbalance calculation.
 > 
-> > From 687b189c02276887dd7d5b87a817da9f67ed3c2c Mon Sep 17 00:00:00 2001
-> > From: NeilBrown <neilb@suse.de>
-> > Date: Thu, 7 Apr 2011 13:16:59 +1000
-> > Subject: [PATCH] Enhance new plugging support to support general callbacks.
-> > 
-> > md/raid requires an unplug callback, but as it does not uses
-> > requests the current code cannot provide one.
-> > 
-> > So allow arbitrary callbacks to be attached to the blk_plug.
-> > 
-> > Cc: Jens Axboe <jaxboe@fusionio.com>
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> > ---
-> >  block/blk-core.c       |   13 +++++++++++++
-> >  include/linux/blkdev.h |    7 ++++++-
-> >  2 files changed, 19 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/block/blk-core.c b/block/blk-core.c
-> > index 725091d..273d60b 100644
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -2644,6 +2644,7 @@ void blk_start_plug(struct blk_plug *plug)
-> >  
-> >  	plug->magic = PLUG_MAGIC;
-> >  	INIT_LIST_HEAD(&plug->list);
-> > +	INIT_LIST_HEAD(&plug->cb_list);
-> >  	plug->should_sort = 0;
-> >  
-> >  	/*
-> > @@ -2717,9 +2718,21 @@ static void flush_plug_list(struct blk_plug *plug)
-> >  	local_irq_restore(flags);
-> >  }
-> >  
-> > +static void flush_plug_callbacks(struct blk_plug *plug)
-> > +{
-> > +	while (!list_empty(&plug->cb_list)) {
-> > +		struct blk_plug_cb *cb = list_first_entry(&plug->cb_list,
-> > +							  struct blk_plug_cb,
-> > +							  list);
-> > +		list_del(&cb->list);
-> > +		cb->callback(cb);
-> > +	}
-> > +}
-> > +
-> >  static void __blk_finish_plug(struct task_struct *tsk, struct blk_plug *plug)
-> >  {
-> >  	flush_plug_list(plug);
-> > +	flush_plug_callbacks(plug);
-> >  
-> >  	if (plug == tsk->plug)
-> >  		tsk->plug = NULL;
-> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> > index 32176cc..3e5e604 100644
-> > --- a/include/linux/blkdev.h
-> > +++ b/include/linux/blkdev.h
-> > @@ -857,8 +857,13 @@ extern void blk_put_queue(struct request_queue *);
-> >  struct blk_plug {
-> >  	unsigned long magic;
-> >  	struct list_head list;
-> > +	struct list_head cb_list;
-> >  	unsigned int should_sort;
-> >  };
-> > +struct blk_plug_cb {
-> > +	struct list_head list;
-> > +	void (*callback)(struct blk_plug_cb *);
-> > +};
-> >  
-> >  extern void blk_start_plug(struct blk_plug *);
-> >  extern void blk_finish_plug(struct blk_plug *);
-> > @@ -876,7 +881,7 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
-> >  {
-> >  	struct blk_plug *plug = tsk->plug;
-> >  
-> > -	return plug && !list_empty(&plug->list);
-> > +	return plug && (!list_empty(&plug->list) || !list_empty(&plug->cb_list));
-> >  }
-> >  
-> >  /*
+> The reason is that calculate_imbalance() sees sds->avg_load = 0 and it
+> will dump entire sds->max_load into imbalance variable, which is used
+> later on to migrate entire load from busiest CPU to the puller CPU.
 > 
-> Maybe I'm missing something, but why do you need those callbacks? If
-> it's to use plugging yourself, perhaps we can just ensure that those
-> don't get assigned in the task - so it would be have to used with care.
+> This has two really bad effect:
 > 
-> It's not that I disagree to these callbacks, I just want to ensure I
-> understand why you need them.
+> 1. stampede of task migration, and they won't be able to break out
+>    of the bad state because of positive feedback loop: large load
+>    delta -> heavier load migration -> larger imbalance and the cycle
+>    goes on.
 > 
+> 2. severe imbalance in CPU queue depth.  This causes really long
+>    scheduling latency blip which affects badly on application that
+>    has tight latency requirement.
+> 
+> The fix is to have kernel calculate domain avg_load in both cases. This
+> will ensure that imbalance calculation is always sensible and the target
+> is usually half way between busiest and puller CPU.
+> 
+> Signed-off-by: Ken Chen <kenchen@google.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: <stable@kernel.org>
+> Link: http://lkml.kernel.org/r/20110408002322.3A0D812217F@elm.corp.google.com
+> Signed-off-by: Ingo Molnar <mingo@elte.hu> 
 
-I'm sure one of us is missing something (probably both) but I'm not sure what.
-
-The callback is central.
-
-It is simply to use plugging in md.
-Just like blk-core, md will notice that a blk_plug is active and will put
-requests aside.  I then need something to call in to md when blk_finish_plug
-is called so that put-aside requests can be released.
-As md can be built as a module, that call must be a call-back of some sort.
-blk-core doesn't need to register blk_plug_flush because that is never in a
-module, so it can be called directly.  But the md equivalent could be in a
-module, so I need to be able to register a call back.
-
-Does that help? 
-
-Thanks,
-NeilBrown
-
-
+This was caused by 866ab43ef (sched: Fix the group_imb logic) which is
+only in .39-rc.
