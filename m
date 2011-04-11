@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab1DKVTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:19:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47507 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab1DKVTl (ORCPT
+	id S1756078Ab1DKVTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:19:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41667 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab1DKVTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:19:41 -0400
+	Mon, 11 Apr 2011 17:19:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=rrJEdnOk/jMGDhHTv1TsWMKDpZgMIGI9kY3qffycWNyj7j2o7q7m671EZh/jAmSxYd
-         yPpAr4vPXbbExUAFcy9pcHswgP7MmL0uwFsgWeEX3zovEWtHeB5J9D8yt/Z3kOPwzKfS
-         SA59fp0vZemdcqbpdwyq1O0bPYSSvPrW5hMeQ=
-Message-ID: <4DA37068.6000905@suse.cz>
-Date: Mon, 11 Apr 2011 23:19:36 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rouCnet8txk+/L8ao1T8mbAdQWXs3mfDVqaviDMiuNrLIbqDDE9a9mqKsq+do3PHep
+         ZGKHGiGzLPrYbI87jACrW0e6C7izgOFMccrfZ8/n/8fCAiUVDrsxjfZ1Cl/v08eoMMWf
+         KA1gRqiJqrcouPQ0TvJ0OwrsVQHn789oDv7Dk=
+Date: Tue, 12 Apr 2011 00:20:06 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: rndis: dhcp discover stopped working
+Message-ID: <20110411212006.GC4227@swordfish>
+References: <20110411205440.GA4227@swordfish>
+ <20110411210247.GB15419@kroah.com>
 MIME-Version: 1.0
-To: Bryan Schumaker <bjschuma@netapp.com>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: nfs client doesn't work [was: mmotm 2011-03-31-14-48 uploaded]
-References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org> <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org> <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz> <4DA36B19.8080200@netapp.com>
-In-Reply-To: <4DA36B19.8080200@netapp.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
+Content-Disposition: inline
+In-Reply-To: <20110411210247.GB15419@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 10:56 PM, Bryan Schumaker wrote:
-> On 04/11/2011 04:40 PM, Jiri Slaby wrote:
->> On 04/07/2011 08:42 AM, Jiri Slaby wrote:
->>> On 04/06/2011 10:44 PM, Myklebust, Trond wrote:
->>>> On Sat, 2011-04-02 at 10:56 +0200, Jiri Slaby wrote:
->>>>> On 03/31/2011 11:48 PM, akpm@linux-foundation.org wrote:
->>>>>> The mm-of-the-moment snapshot 2011-03-31-14-48 has been uploaded to
->>>>>
->>>>> Hi, nfs client is defunct in this kernel. Tcpdump says:
->>>>> 10:51:55.489717 IP 10.20.11.33.759945860 > 10.20.3.2.2049: 132 getattr
->>>>> fh 0,0/24
->>>>> 10:51:55.515927 IP 10.20.3.2.2049 > 10.20.11.33.759945860: reply ok 44
->>>>> getattr ERROR: Operation not permitted
->>>>> 10:51:55.515949 IP 10.20.11.33.921 > 10.20.3.2.2049: Flags [.], ack
->>>>> 3569361440, win 115, options [nop,nop,TS val 599750 ecr 255058541],
->>>> length 0
->>>>> 10:52:04.130310 IP 10.20.11.33.793500292 > 10.20.3.2.2049: 76 getattr fh
->>>>> 0,0/24
->>>>> 10:52:04.152178 IP 10.20.3.2.2049 > 10.20.11.33.793500292: reply ok 44
->>>>> getattr ERROR: Operation not permitted
->>>>>
->>>>> If I run the same mount command (mount -oro,intr host:dir mountpoint)
->>>>> from within a virtual machine with 2.6.38.2 there, everything mounts OK.
->>>>
->>>> Does the attached patch help?
->>>
->>> No, still the operation not permitted in the tcpdump output and no mount.
-> 
-> Does this patch help?
-> 
-> - Bryan
-> 
-> When attempting an initial mount, we should only attempt other
-> authflavors if AUTH_UNIX receives a NFS4ERR_WRONGSEC error.
-> This allows other errors to be passed back to userspace programs.
-> 
-> Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-> ---
-> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-> index dfd1e6d..9bf41ea 100644
-> --- a/fs/nfs/nfs4proc.c
-> +++ b/fs/nfs/nfs4proc.c
-> @@ -2204,8 +2204,6 @@ static int nfs4_lookup_root_sec(struct nfs_server *server, struct nfs_fh *fhandl
->  		goto out;
->  	}
->  	ret = nfs4_lookup_root(server, fhandle, info);
-> -	if (ret < 0)
-> -		ret = -EAGAIN;
->  out:
->  	return ret;
->  }
-> @@ -2226,7 +2224,7 @@ static int nfs4_proc_get_root(struct nfs_server *server, struct nfs_fh *fhandle,
->  
->  	for (i = 0; i < len; i++) {
 
-No, the patch fixes a problem I have after I add the following test here:
-                if (flav_array[i] > 100)
-                        continue;
+--ncSAzJYg3Aa9+CRW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Without this test it still loops inside gss auth create function with:
-RPC: AUTH_GSS upcall timed out.
+On (04/11/11 14:02), Greg KH wrote:
+[..]
+> >=20
+> >=20
+> > kernel: .39-rc2-*
+>=20
+> Known bug, a patch was posted that fixed this already...
+>=20
 
->  		status = nfs4_lookup_root_sec(server, fhandle, info, flav_array[i]);
-> -		if (status == 0)
-> +		if (status != -EPERM)
->  			break;
->  	}
->  	if (status == 0)
+Good to hear it! Sorry for the noise.
 
-thanks,
--- 
-js
-suse labs
+
+Thanks,
+	Sergey
+
+--ncSAzJYg3Aa9+CRW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk2jcIYACgkQfKHnntdSXjSi1QP/c0SVA7inAMPCF6JfjRdTMZmP
+CT8kSxuN9qjZDdGc/KqXDvxQo9E2uBum1b4WCbHBi1fr9kV9fN8kCamMqRXmYyzD
+bOtSv+DyK3v8h3wyCdseLiWDH9UzQ4TLuqWrUvT0giRsWyWPnQedQgAUsSTYuChQ
+TNApBGV++jUtopODJjI=
+=v3Tb
+-----END PGP SIGNATURE-----
+
+--ncSAzJYg3Aa9+CRW--
