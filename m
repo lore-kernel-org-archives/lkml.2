@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab1DKUso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 16:48:44 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:47597 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755751Ab1DKUsm (ORCPT
+	id S1755714Ab1DKUy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 16:54:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48209 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab1DKUy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 16:48:42 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-References: <20110411093214.GA18215@rainbow><4DA3350E.2060400@gmail.com> <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com>
+	Mon, 11 Apr 2011 16:54:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=mXNnEdn2redyVFAPe18k8JIig6a1Fac+8axL36UZJ78SBX3Lhi2000S27BwbLNtCfh
+         RgrHIsZUHdA94CBVayj7RIes1P6au5iCthUdNZ69EByetkVaJfhfSllGHrGVxv/ZRgGm
+         xaVBvzl9eJtl0XmLquEqQ25Ceu3Epq0JXykpI=
+Date: Mon, 11 Apr 2011 23:54:40 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: rndis: dhcp discover stopped working
+Message-ID: <20110411205440.GA4227@swordfish>
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
-Thread-Index: Acv4hNyQz7y6yqSaQemxzafGeJjcpAABJ4tg
-Date: Tue, 12 Apr 2011 02:18:28 +0530
-Message-ID: <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com>
-Subject: RE: [Regression?] Removed regulator support in ehci-omap
-To: Steve Sakoman <sakoman@gmail.com>, Steve Calfee <stevecalfee@gmail.com>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Steve Sakoman [mailto:sakoman@gmail.com]
-> Sent: Tuesday, April 12, 2011 1:43 AM
-> To: Steve Calfee
-> Cc: Dmitry Artamonow; Keshava Munegowda; Felipe Balbi;
-linux-usb@vger.kernel.org; linux-
-> omap@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [Regression?] Removed regulator support in ehci-omap
->
-> On Mon, Apr 11, 2011 at 10:06 AM, Steve Calfee <stevecalfee@gmail.com>
-wrote:
-> > On 04/11/11 02:32, Dmitry Artamonow wrote:
-> >> Hi, guys!
-> >>
-> >> Can anyone explain why regulator support has been removed from
-ehci-omap
-> >> driver in commit 19403165 ("usb: host: omap: ehci and ohci
-simplification")[1]?
-> >> In 2.6.37/2.6.38 it was enough to apply simple patch[2] adding
-regulators
-> >> description to board file to make USB work on omap3evm board (because
-USB PHY
-> >> is powered via regulator). But now it won't work anymore in
-2.6.39-rc2.
-> >> BTW, I suspect that this commit also broke USB on omap3pandora board,
-as it
-> >> defines "hsusb0" regulator supply in its board file:
-> >>
-> > Yes, And Beagleboard xm (and I suspect other beagleboard versions) has
-> > been broken in 2.6.39rc1+.
->
-> FWIW, EHCI is also broken on Overo in both rc1 and rc2.
->
-> Steve
 
-Sorry guys! I will work on it coming week; currently I am in travel.
+--a8Wt8u1KmwUX3Y2C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Well, regulator is not removed, its moved to usbhs core driver in
-/driver/mfd/omap xx usb xxx host.c
+Hello,
+Seems like dhcp discover stopped working with my HTC in "USB-tethering" mode:
 
-Regards
-Keshava Munegowda
+kernel: [   60.670379] usb 2-1.3: new high speed USB device number 4 using ehci_hcd
+kernel: [   60.766779] usb 2-1.3: New USB device found, idVendor=0bb4, idProduct=0c87
+kernel: [   60.766787] usb 2-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+kernel: [   60.766792] usb 2-1.3: Product: Android Phone
+kernel: [   60.766796] usb 2-1.3: Manufacturer: HTC
+kernel: [   60.766800] usb 2-1.3: SerialNumber: HT082PL07557
+kernel: [   60.861976] Initializing USB Mass Storage driver...
+kernel: [   60.862395] scsi4 : usb-storage 2-1.3:1.0
+kernel: [   60.862965] usbcore: registered new interface driver usb-storage
+kernel: [   60.862972] USB Mass Storage support registered.
+kernel: [   61.865117] scsi 4:0:0:0: Direct-Access     HTC      Android Phone    0100 PQ: 0 ANSI: 2
+kernel: [   61.874518] sd 4:0:0:0: [sdb] Attached SCSI removable disk
+kernel: [   72.129190] usb 2-1.3: USB disconnect, device number 4
+kernel: [   72.454846] usb 2-1.3: new high speed USB device number 5 using ehci_hcd
+kernel: [   72.551186] usb 2-1.3: New USB device found, idVendor=0bb4, idProduct=0ffe
+kernel: [   72.551195] usb 2-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+kernel: [   72.551200] usb 2-1.3: Product: Android Phone
+kernel: [   72.551205] usb 2-1.3: Manufacturer: HTC
+kernel: [   72.551242] usb 2-1.3: SerialNumber: HT082PL07557
+kernel: [   72.572416] rndis_host 2-1.3:1.0: usb0: register 'rndis_host' at usb-0000:00:1d.0-1.3, RNDIS device, e6:99:59:e3:8c:98
+kernel: [   87.281911] NET: Registered protocol family 10
+kernel: [   87.284969] ADDRCONF(NETDEV_UP): eth0: link is not ready
+dhclient: can't create /var/db/dhclient.leases: No such file or directory
+dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 8
+kernel: [   98.003895] usb0: no IPv6 routers present
+dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 8
+dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 11
+dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 15
+dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 19
+dhclient: No DHCPOFFERS received.
+dhclient: No working leases in persistent database - sleeping.
+
+
+kernel: .39-rc2-*
+
+
+	Sergey
+
+--a8Wt8u1KmwUX3Y2C
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk2japAACgkQfKHnntdSXjS/wgQAuzgVSIqmrlVuLQzvOsETq6DQ
+URgq5tdj3oj4Br6/b9CokD1KXBflEq9dBGO/7BbPHGRUj7EnTHcsP9/GgS8IXSUi
+Ws2m9VzbzeqUhjcsDuaVGT+KmPBjf+t/A6x8P0q6RWmYxdAmfybQdsTwiCelhnLv
+rTHeunf2aJZComfMkIQ=
+=Hp6g
+-----END PGP SIGNATURE-----
+
+--a8Wt8u1KmwUX3Y2C--
