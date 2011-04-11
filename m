@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab1DKVUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:20:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48717 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754947Ab1DKVT5 (ORCPT
+	id S1755878Ab1DKVZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:25:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60392 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab1DKVZG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:19:57 -0400
-Date: Mon, 11 Apr 2011 14:19:50 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
-Message-Id: <20110411141950.46d3d6da.akpm@linux-foundation.org>
-In-Reply-To: <20110411172004.0361.A69D9226@jp.fujitsu.com>
-References: <20110411172004.0361.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 11 Apr 2011 17:25:06 -0400
+Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
+        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20110411210223.GB2226@linux.vnet.ibm.com>
+References: <4D9CDACB.9050705@linux.intel.com>
+	 <20110407003041.GD2265@linux.vnet.ibm.com>
+	 <4D9D507F.2040006@cn.fujitsu.com>
+	 <20110407154737.GF2262@linux.vnet.ibm.com>
+	 <20110407162600.GA24227@linux.vnet.ibm.com>
+	 <4D9E6438.5030206@cn.fujitsu.com>
+	 <20110408051359.GA2318@linux.vnet.ibm.com> <4DA2709E.50902@cn.fujitsu.com>
+	 <20110411051241.GB18415@linux.vnet.ibm.com>
+	 <4DA2BC4E.4010000@cn.fujitsu.com>
+	 <20110411210223.GB2226@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 11 Apr 2011 23:24:34 +0200
+Message-ID: <1302557074.2388.108.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011 17:19:31 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On Mon, 2011-04-11 at 14:02 -0700, Paul E. McKenney wrote:
+> On Mon, Apr 11, 2011 at 04:31:10PM +0800, Lai Jiangshan wrote:
+> > On 04/11/2011 01:12 PM, Paul E. McKenney wrote:
+> > 
+> > > -static inline struct task_struct *next_thread(const struct task_struct *p)
+> > > -{
+> > > -	return list_entry_rcu(p->thread_group.next,
+> > > -			      struct task_struct, thread_group);
+> > > -}
+> > > +/* Avoid #include hell for inlining rcu_read_lock(). */
+> > > +#define next_thread(p) \
+> > > +	list_entry_rcu((p)->thread_group.next, struct task_struct, thread_group)
+> > >  
 
-> Recently, Robert Mueller reported zone_reclaim_mode doesn't work
-
-It's time for some nagging.  
-
-I'm trying to work out what the user-visible effect of this problem
-was, but it isn't described in the changelog and there is no link to
-any report and not even a Reported-by: or a Cc: and a search for Robert
-in linux-mm and linux-kernel turned up blank.
-
-> properly on his new NUMA server (Dual Xeon E5520 + Intel S5520UR MB).
-> He is using Cyrus IMAPd and it's built on a very traditional
-> single-process model.
+> > I admit the work will become very much simpler if this pattern is allowed.
 > 
->   * a master process which reads config files and manages the other
->     process
->   * multiple imapd processes, one per connection
->   * multiple pop3d processes, one per connection
->   * multiple lmtpd processes, one per connection
->   * periodical "cleanup" processes.
-> 
-> Then, there are thousands of independent processes. The problem is,
-> recent Intel motherboard turn on zone_reclaim_mode by default and
-> traditional prefork model software don't work fine on it.
-> Unfortunatelly, Such model is still typical one even though 21th
-> century. We can't ignore them.
-> 
-> This patch raise zone_reclaim_mode threshold to 30. 30 don't have
-> specific meaning. but 20 mean one-hop QPI/Hypertransport and such
-> relatively cheap 2-4 socket machine are often used for tradiotional
-> server as above. The intention is, their machine don't use
-> zone_reclaim_mode.
-> 
-> Note: ia64 and Power have arch specific RECLAIM_DISTANCE definition.
-> then this patch doesn't change such high-end NUMA machine behavior.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/topology.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/topology.h b/include/linux/topology.h
-> index b91a40e..fc839bf 100644
-> --- a/include/linux/topology.h
-> +++ b/include/linux/topology.h
-> @@ -60,7 +60,7 @@ int arch_update_cpu_topology(void);
->   * (in whatever arch specific measurement units returned by node_distance())
->   * then switch on zone reclaim on boot.
->   */
-> -#define RECLAIM_DISTANCE 20
-> +#define RECLAIM_DISTANCE 30
+> The guy who maintains much of sched.h suggested it.  ;-)
 
-Any time we tweak a magic number to improve one platform, we risk
-causing deterioration on another.  Do we know that this risk is low
-with this patch?
+While its not the nicest thing its something that's on more than one
+occasion there's an existing site in sched.h and there's on in key.h and
+iirc there's another one that's relevant.
 
-Also, what are we doing setting
+A nice solution would be to move a lot of things out of sched.h into
+something like process.h, a header that deals with task groups and
+processes.
 
-	zone_relaim_mode = 1;
-
-when we have nice enumerated constants for this?  It should be
-
-	zone_relaim_mode = RECLAIM_ZONE;
-
-or, pedantically but clearer:
-
-	zone_relaim_mode = RECLAIM_ZONE & !RECLAIM_WRITE & !RECLAIM_SWAP;
-
-
-
-Finally, we shouldn't be playing these guessing games in the kernel at
-all - we'll always get it wrong for some platforms and for some
-workloads.  zone_reclaim_mdoe is tunable at runtime and we should be
-encouraging administrators, integrators and distros to *use* this
-ability.  That might mean having to write some tools to empirically
-determine the optimum setting for a particular machine.
-
+But until that time, I see no problem with using this.
