@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab1DKCFi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 22:05:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47868 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab1DKCFh (ORCPT
+	id S1752919Ab1DKClf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 22:41:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47278 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab1DKCle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 22:05:37 -0400
-Message-ID: <4DA261DA.2050404@oracle.com>
-Date: Sun, 10 Apr 2011 19:05:14 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 10 Apr 2011 22:41:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=ONI1igVMo/oFWKRkXXnB3LkQvLyeMj2mDOCDk0pOXDmmbVFcoYgfegcSLTBCel1KGv
+         ghRHmoVW3b+VNppwEJbC/mPYnfmks1z5ATWS9oAkCIC6OPIxtdVOzMxkbxg8MbotKFYe
+         Fhgqu6cHPFtp2QdX1lKeM3vAdwUNse4lPWRgo=
+From: =?UTF-8?q?Weiping=20Pan=28=E6=BD=98=E5=8D=AB=E5=B9=B3=29?= 
+	<panweiping3@gmail.com>
+To: swhiteho@redhat.com
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Weiping=20Pan (=E6=BD=98=E5=8D=AB=E5=B9=B3) ?= 
+	<panweiping3@gmail.com>
+Subject: [PATCH 1/2] gfs:remove a warning in gfs2_lookup_by_inum()
+Date: Mon, 11 Apr 2011 10:42:50 +0800
+Message-Id: <1302489770-31552-1-git-send-email-panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4
 MIME-Version: 1.0
-To: Jiri Pinkava <jiri.pinkava@vscht.cz>
-CC: ben-linux@fluff.org, kgene.kim@samsung.com, dwmw2@infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nand: Fix S3C NAND clock stop
-References: <1302485262-8401-1-git-send-email-jiri.pinkava@vscht.cz>
-In-Reply-To: <1302485262-8401-1-git-send-email-jiri.pinkava@vscht.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DA261D7.0018:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/10/2011 6:27 PM, Jiri Pinkava wrote:
-> Current implementation of s3c2410_nand_select_chip call
-> clk_disable every time when chip = -1 (de-select). This happend
-> multiple times even if chip was already de-selected. This causes
-> disabling clock even if they are already disabled and due to
-> nature of clock subsytem implementation this causes nand clock
-> to be disabled and newer enabled again.
->
-> Signed-off-by: Jiri Pinkava<jiri.pinkava@vscht.cz>
-> ---
->   drivers/mtd/nand/s3c2410.c |   57 +++++++++++++++++++++++++++++++------------
->   1 files changed, 41 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
-> index 33d832d..79e18a3 100644
-> --- a/drivers/mtd/nand/s3c2410.c
-> +++ b/drivers/mtd/nand/s3c2410.c
+/home/pwp/mysvn/linux/linux-2.6/fs/gfs2/inode.c: In function
+‘gfs2_lookup_by_inum’: /home/pwp/mysvn/linux/linux-2.6/fs/gfs2/inode.c:188:16:
+warning: ‘inode’ may be used uninitialized in this function
 
-> @@ -159,11 +165,33 @@ static struct s3c2410_platform_nand *to_nand_plat(struct platform_device *dev)
->   	return dev->dev.platform_data;
->   }
->
-> -static inline int allow_clk_stop(struct s3c2410_nand_info *info)
-> +static inline int allow_clk_suspend(struct s3c2410_nand_info *info)
->   {
->   	return clock_stop;
->   }
->
-> +/**
-> + * s3c2410_nand_clk_set_state - Enable, disable or suspend NAND clock.
-> + * @info: The controller instance.
-> + * @state: State to which clock should be set.
+Signed-off-by: Weiping Pan(潘卫平) <panweiping3@gmail.com>
+---
+ fs/gfs2/inode.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-       @new_state:
-
-> + */
-> +static void s3c2410_nand_clk_set_state(struct s3c2410_nand_info *info,
-> +		int new_state)
-> +{
-> +	if (!allow_clk_suspend(info)&&  new_state == CLOCK_SUSPEND)
-> +		return;
-> +
-> +	if (clock_state == CLOCK_ENABLE) {
-> +		if (new_state != CLOCK_ENABLE)
-> +			clk_disable(info->clk);
-> +	} else {
-> +		if (new_state == CLOCK_ENABLE)
-> +			clk_enable(info->clk);
-> +	}
-> +
-> +	clock_state = new_state;
-> +}
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index 97d54a2..5b937c6 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -185,7 +185,7 @@ struct inode *gfs2_lookup_by_inum(struct gfs2_sbd *sdp, u64 no_addr,
+ {
+ 	struct super_block *sb = sdp->sd_vfs;
+ 	struct gfs2_holder i_gh;
+-	struct inode *inode;
++	struct inode *inode = NULL;
+ 	int error;
+ 
+ 	error = gfs2_glock_nq_num(sdp, no_addr, &gfs2_inode_glops,
+-- 
+1.7.4
 
