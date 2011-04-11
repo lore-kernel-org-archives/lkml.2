@@ -1,207 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab1DKIbR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 04:31:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54354 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755047Ab1DKIbQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 04:31:16 -0400
-Message-ID: <4DA2BCD6.6050106@cn.fujitsu.com>
-Date: Mon, 11 Apr 2011 16:33:26 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1755057Ab1DKIfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 04:35:48 -0400
+Received: from ftp.sofha.de ([82.144.60.99]:42830 "EHLO ftp.sofha.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754720Ab1DKIfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 04:35:46 -0400
+Message-ID: <4DA2BD60.5050706@snafu.de>
+Date: Mon, 11 Apr 2011 10:35:44 +0200
+From: Oncaphillis <oncaphillis@snafu.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 4/5] RCU: Add TASK_RCU_OFFSET
-References: <20110406201350.GA9378@linux.vnet.ibm.com> <1302123970.2207.4.camel@laptop> <4D9CDACB.9050705@linux.intel.com> <20110407003041.GD2265@linux.vnet.ibm.com> <4D9D507F.2040006@cn.fujitsu.com> <20110407154737.GF2262@linux.vnet.ibm.com> <20110407162600.GA24227@linux.vnet.ibm.com> <4D9E6438.5030206@cn.fujitsu.com> <20110408051359.GA2318@linux.vnet.ibm.com> <4DA2709E.50902@cn.fujitsu.com> <20110411051241.GB18415@linux.vnet.ibm.com>
-In-Reply-To: <20110411051241.GB18415@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-11 16:31:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-11 16:31:54
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: oncaphillis@snafu.de
+CC: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel BUG in 2.6.38.2 slub.c when communicating via usb
+References: <4D9F7D90.4040302@snafu.de>
+In-Reply-To: <4D9F7D90.4040302@snafu.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 01:12 PM, Paul E. McKenney wrote:
-> On Mon, Apr 11, 2011 at 11:08:14AM +0800, Lai Jiangshan wrote:
->> On 04/08/2011 01:13 PM, Paul E. McKenney wrote:
->>> On Fri, Apr 08, 2011 at 09:26:16AM +0800, Lai Jiangshan wrote:
->>>> On 04/08/2011 12:26 AM, Paul E. McKenney wrote:
->>>>> On Thu, Apr 07, 2011 at 08:47:37AM -0700, Paul E. McKenney wrote:
->>>>>> On Thu, Apr 07, 2011 at 01:49:51PM +0800, Lai Jiangshan wrote:
->>>>>>> On 04/07/2011 08:30 AM, Paul E. McKenney wrote:
->>>>>>>> On Wed, Apr 06, 2011 at 02:27:39PM -0700, H. Peter Anvin wrote:
->>>>>>>>> On 04/06/2011 02:06 PM, Peter Zijlstra wrote:
->>>>>>>>>> On Wed, 2011-04-06 at 13:13 -0700, Paul E. McKenney wrote:
->>>>>>>>>>> And the following patch builds correctly for defconfig x86 builds,
->>>>>>>>>>> while allowing rcupdate.h to see the sched.h definitions as needed
->>>>>>>>>>> to inline rcu_read_lock() and rcu_read_unlock().
->>>>>>>>>>>
->>>>>>>>>> Looks like an entirely reasonable patch to me ;-)
->>>>>>>>>>
->>>>>>>>>
->>>>>>>>> Quite... a lot better than the original proposal!
->>>>>>>>
->>>>>>>> Glad you both like it!
->>>>>>>>
->>>>>>>> When I do an allyesconfig build, I do get errors during the "CHECK"
->>>>>>>> phase, when it is putting things into the usr/include in the build tree.
->>>>>>>> I believe that this is because I am exposing different header files to
->>>>>>>> the library-export scripts.  The following patch silences some of them,
->>>>>>>> but I am really out of my depth here.
->>>>>>>>
->>>>>>>> Sam, Jan, Michal, help?
->>>>>>>>
->>>>>>>> 							Thanx, Paul
->>>>>>>>
->>>>>>>> ------------------------------------------------------------------------
->>>>>>>>
->>>>>>>
->>>>>>> Easy to split rcupdate.h, hard to resolve the dependence problem.
->>>>>>>
->>>>>>> You can apply the next additional patch when you test:
->>>>>>
->>>>>> I am sure that you are quite correct.  ;-)
->>>>>>
->>>>>> I am moving _rcu_read_lock() and _rcu_read_unlock() into
->>>>>> include/linux/rcutree.h and include/linux/rcutiny.h, and I am sure that
->>>>>> more pain will ensue.
->>>>>>
->>>>>> One thing I don't understand...  How does is it helping to group the
->>>>>> task_struct RCU-related fields into a structure?  Is that generating
->>>>>> better code on your platform due to smaller offsets or something?
->>>>
->>>> You don't like task_rcu_struct patch? I think it can make code clearer,
->>>> and it can also check the code even when CONFIG_PREEMPT_RCU=n.
->>>>
->>>> For rcu_read_[un]lock(), it generates the same code, no better, no worse.
->>>>
->>>> It is just a cleanup patch, it is helpless for making rcu_read_[un]lock() inline,
->>>> if you don't like it, I will give up it.
->>>
->>> I don't know that I feel strongly either way about it.  It was necessary
->>> with the integer-offset approach, but optional now.
->>>
->>>>>> Also, does your patchset address the CHECK warnings?
->>>>>
->>>>> I take it back...  I applied the following patch on top of my earlier
->>>>> one, and a defconfig x86 build completed without error.  (Though I have
->>>>> not tested the results of the build.)
->>>>>
->>>>> One possible difference -- I did this work on top of a recent Linus
->>>>> git commit (b2a8b4b81966) rather than on top of my -rcu tree.  Also,
->>>>> I have not yet tried an allyesconfig build, which will no doubt locate
->>>>> some more problems.
->>>>>
->>>>> 							Thanx, Paul
->>>>>
->>>>
->>>> when defconfig or allyesconfig, CONFIG_PREEMPT=n and CONFIG_TREE_PREEMPT_RCU=n
->>>> when you make them "y":
->>>>
->>>> In file included from include/linux/rcupdate.h:764:0,
->>>>                  from include/linux/tracepoint.h:19,
->>>>                  from include/linux/module.h:18,
->>>>                  from include/linux/crypto.h:21,
->>>>                  from arch/x86/kernel/asm-offsets.c:8:
->>>> include/linux/rcutree.h:50:20: error: static declaration of ‘__rcu_read_lock’ follows non-static declaration
->>>> include/linux/rcupdate.h:76:13: note: previous declaration of ‘__rcu_read_lock’ was here
->>>> include/linux/rcutree.h:63:20: error: static declaration of ‘__rcu_read_unlock’ follows non-static declaration
->>>> include/linux/rcupdate.h:77:13: note: previous declaration of ‘__rcu_read_unlock’ was here
->>>> make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
->>>> make: *** [prepare0] Error 2
->>>
->>> Yep.  I need to move the rcu_read_lock() APIs to follow the inclusion
->>> of rcutree.h and rcutiny.h.  Also add include of sched.h to rcutiny.h.
->>> The code movement does bloat the patch a bit.  But rcu_assign_pointer()
->>> must precede the inclusion of rcutree.h and rcutiny.h, so it is not
->>> possible to simply move the inclusions.  See below.
->>>
->>> 							Thanx, Paul
->>>
->>
->> sched.h still contains rcupdate.h after applied this patch.
-> 
-> Then we are not in sync -- sched.h does not include rcupdate.h in my tree.
-> It instead gets the struct rcu_head definition from include/linux/types.h.
-> See below for a consolidated patch.
-> 
-> 							Thanx, Paul
-> 
->> See my [PATCH 2/4] for more info.
->>
->>
->> # make lib/is_single_threaded.o
->>   CHK     include/linux/version.h
->>   CHK     include/generated/utsrelease.h
->>   CALL    scripts/checksyscalls.sh
->>   CC      lib/is_single_threaded.o
->> In file included from include/linux/rcupdate.h:639:0,
->>                  from include/linux/rculist.h:10,
->>                  from include/linux/sched.h:82,
->>                  from lib/is_single_threaded.c:13:
->> include/linux/rcutree.h: In function ‘__rcu_read_lock’:
->> include/linux/rcutree.h:52:15: error: dereferencing pointer to incomplete type
->> In file included from include/linux/rcupdate.h:639:0,
->>                  from include/linux/rculist.h:10,
->>                  from include/linux/sched.h:82,
->>                  from lib/is_single_threaded.c:13:
->> include/linux/rcutree.h: In function ‘__rcu_read_unlock’:
->> include/linux/rcutree.h:68:5: error: dereferencing pointer to incomplete type
->> include/linux/rcutree.h:70:7: error: dereferencing pointer to incomplete type
->> include/linux/rcutree.h:71:46: error: dereferencing pointer to incomplete type
->> include/linux/rcutree.h:71:78: error: dereferencing pointer to incomplete type
->> include/linux/rcutree.h:71:6: warning: type defaults to ‘int’ in type name
->> make[1]: *** [lib/is_single_threaded.o] Error 1
->> make: *** [lib/is_single_threaded.o] Error 2
-> 
->  drivers/scsi/scsi_sysctl.c |    1 +
->  fs/proc/proc_sysctl.c      |    1 +
->  include/linux/kernel.h     |    3 +++
->  include/linux/pid.h        |    2 +-
->  include/linux/rcupdate.h   |   29 +++++++++--------------------
->  include/linux/rcutiny.h    |   35 +++++++++++++++++++++++++++++++++++
->  include/linux/rcutree.h    |   37 +++++++++++++++++++++++++++++++++++++
->  include/linux/sched.h      |   10 ++++------
->  include/linux/sem.h        |    2 +-
->  include/linux/soundcard.h  |    2 ++
->  include/linux/sysctl.h     |    5 +++--
->  include/linux/types.h      |   10 ++++++++++
->  kernel/pid_namespace.c     |    2 ++
->  kernel/rcutiny_plugin.h    |   38 ++------------------------------------
->  kernel/rcutree_plugin.h    |   38 ++------------------------------------
->  kernel/sysctl_binary.c     |    1 +
->  kernel/sysctl_check.c      |    1 +
->  net/core/sysctl_net_core.c |    1 +
->  net/dccp/sysctl.c          |    1 +
->  net/ipv6/sysctl_net_ipv6.c |    1 +
->  net/irda/irsysctl.c        |    1 +
->  net/phonet/sysctl.c        |    1 +
->  net/rds/ib_sysctl.c        |    1 +
->  net/rds/iw_sysctl.c        |    1 +
->  net/rds/sysctl.c           |    1 +
->  net/sctp/sysctl.c          |    1 +
->  net/sunrpc/sysctl.c        |    1 +
->  net/unix/sysctl_net_unix.c |    1 +
->  net/xfrm/xfrm_sysctl.c     |    1 +
->  29 files changed, 127 insertions(+), 102 deletions(-)
-> 
+  I've goggled some more and it seems to be the same behaviour as described
+in
 
-sched.h still contains rcupdate.h after applied this patch.
-so it still fails.
+http://kerneltrap.org/mailarchive/linux-usb/2010/12/14/6267887
 
-Is other part of patch(or patch 2/2) not sent?
+O.
+
+On 04/08/2011 11:26 PM, Oncaphillis wrote:
+>  We are experiencing sporadic kernel bug messages and total
+> kernel freezes during usb communication via libusb-1.0.8
+>
+> The communication should work as follows:
+>
+>   - Send a 2 byte sequence to endpoint #4
+>     selecting the register to which the command should be send
+>
+>   - The device should answer with the same two byte sequence
+>     on Endpoint #8
+>
+>   - Send a 2 byte command sequence to endpoint #4
+>
+>   - The device should acknowledge the command by returning
+>     the same two bytes on endpoint #8
+>
+>   - The device may also initiate inbound data transfer on endpoint #8
+>     to inform about status changes.
+>
+> We send the register selection and command data via
+>
+>  libusb_bulk_transfer() with a time out of 10000 ms
+>
+>  and read the reply via libusb_interrupt_transfer
+>  with a time out of 100  ms as specified for our device
+>  We also periodically read on endpoint #8 to get the
+>  status changes.
+>  Sometimes we run into the following situation.
+>
+>  - We send the 2 byte register selection sequence via
+>    libusb_bulk_transfer
+>  - We try to read the response via libusb_interrupt_transfer but run
+>    into a time out or read junk (seems to be zero)
+>  - If we look at the USB communication via USB analyser we actually
+>    see the inbound transfer of the correct two bytes and the ACK by the
+>    kernel, but this data never ends up as a valid result of
+>    libusb_interrupt_transfer. Sometimes we get a timeout, sometimes we
+>    read junk.
+>  - Since we got a time out or junk data we retry the read up to 30
+>    times. Within  this polling we see the following kernel bug
+>    message in dmesg. Sometimes the kernel freezes completely
+>
+> This BUG message is actually from a 2.6.30.10 kernel, but the
+> message is almost the same referring to a different line in slug.c
+> wher e it seems to complain that someone tries to free  memory
+> that has never been allocated.
+> The stack trace varies even for the same kernel versions.
+>
+> The whole issue seems to vanish if the libusb has been compiled
+> with --enable-timerfd
+>
+> The chipset on the host side is an Intel 82801I. The device Is A Sparta
+> Xilinx FPGA which seems to talk nicely to windows
+>
+> A detailed screen shot of a USB analyzation can be found under
+>
+>  http://www.oncaphillis.net/usb.pdf
+>
+>
+> <snip>
+>    ------------[ cut here ]------------
+> kernel BUG at mm/slub.c:2808!
+> invalid opcode: 0000 [#1] SMP
+> last sysfs file: 
+> /sys/devices/pci0000:00/0000:00:1d.7/usb2/2-3/bConfigurationValue
+> CPU 3
+> Modules linked in:
+> Pid: 4314, comm: rrdupdate Not tainted 2.6.30.10 #2 To Be Filled By 
+> O.E.M.
+> RIP: 0010:[<ffffffff8028d2f8>]  [<ffffffff8028d2f8>] kfree+0x7c/0xdb
+> RSP: 0000:ffff880077de1d38  EFLAGS: 00010246
+> RAX: 4000000000000000 RBX: ffff88007a07a772 RCX: ffff88007acea7e0
+> RDX: ffffe20000000000 RSI: ffffe20001ab1ab0 RDI: ffff88007a07a772
+> RBP: ffff880077de1d58 R08: 0000000000000000 R09: 0000000000000008
+> R10: 00000000f7f5e000 R11: 00000000f7f5d5b8 R12: ffff88007c081c80
+> R13: ffffffff802c9cd8 R14: 00000000f7f5e000 R15: ffff880077de1f58
+> FS:  0000000000000000(0000) GS:ffff88000105b000(0000) 
+> knlGS:0000000000000000
+> CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> CR2: 00000000f7f5d5b8 CR3: 0000000079940000 CR4: 00000000000406e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process rrdupdate (pid: 4314, threadinfo ffff880077de0000, task 
+> ffff8800790d8b40)
+> Stack:
+>  00000000f7f5e000 0000000000000000 ffff88007c081c80 ffff880077d77800
+>  ffff880077de1e48 ffffffff802c9cd8 0000000000000080 ffff880077d77800
+>  0000000000000001 00000000f7f3d000 ffff880077df2000 ffff880077df2000
+> Call Trace:
+>  [<ffffffff802c9cd8>] load_elf_binary+0xfda/0x1862
+>  [<ffffffff802c0b6f>] ? compat_copy_strings+0x1b8/0x1ca
+>  [<ffffffff802958fe>] search_binary_handler+0xb0/0x23f
+>  [<ffffffff802c0dc7>] compat_do_execve+0x246/0x36f
+>  [<ffffffff8022593b>] sys32_execve+0x3e/0x5c
+>  [<ffffffff80225765>] ia32_ptregs_common+0x25/0x4c
+> Code: ba 00 00 00 00 00 e2 ff ff 48 c1 e8 0c 48 6b f0 38 48 01 d6 66 
+> 83 3e 00 79 04 48 8b 76 10 48 8b 06 84 c0 78 14 66 a9 00 c0 75 04 <0f> 
+> 0b eb fe 48 89 f7 e8 35 13 fe ff eb 48 48 8b 4d 08 48 8b 7e
+> RIP  [<ffffffff8028d2f8>] kfree+0x7c/0xdb
+>  RSP <ffff880077de1d38>
+> ---[ end trace ba800619f794f281 ]---
+>
+> </snip>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
