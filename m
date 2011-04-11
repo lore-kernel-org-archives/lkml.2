@@ -1,284 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1DKQ4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:56:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5587 "EHLO mx1.redhat.com"
+	id S1753847Ab1DKQ7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:59:20 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1157 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753817Ab1DKQ4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:56:00 -0400
-Date: Mon, 11 Apr 2011 19:55:25 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, lguest@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: [RFC][PATCH] virtio: 64 bit features
-Message-ID: <20110411165525.GA1395@redhat.com>
+	id S1751841Ab1DKQ7S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 12:59:18 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+cc: "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        =?utf-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "George Kashperko" <george@znau.edu.ua>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Russell King" <rmk@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
+Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
+To: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Date: Mon, 11 Apr 2011 18:59:02 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "Arend van Spriel" <arend@broadcom.com>
+Organization: Broadcom
+Message-ID: <op.vtr9glg23ri7v4@arend-laptop>
+In-Reply-To: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
+User-Agent: Opera Mail/11.01 (Linux)
+X-WSS-ID: 61BDEB803I89722236-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed;
+ delsp=yes
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend features to 64 bit so we can use more
-transport bits.
+On Fri, 08 Apr 2011 21:45:00 +0200, Rafał Miłecki <zajec5@gmail.com> wrote:
 
-Future patches add two new feature bits which would
-exhaust the supply of transport feature bits,
-so let's add bit 31 to tell the guest that
-there are now 64 worth of features.
+> Cc: Michael Büsch <mb@bu3sch.de>
+> Cc: Larry Finger <Larry.Finger@lwfinger.net>
+> Cc: George Kashperko <george@znau.edu.ua>
+> Cc: Arend van Spriel <arend@broadcom.com>
+> Cc: linux-arm-kernel@lists.infradead.org  
+> <linux-arm-kernel@lists.infradead.org>
+> Cc: Russell King <rmk@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: linuxdriverproject <devel@linuxdriverproject.org>
+> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
+> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+> ---
+> This is second try for introducing new bus driver.
+> V2: Rename to axi
+>     Use DEFINE_PCI_DEVICE_TABLE in bridge
+>     Make use of pr_fmt and pr_*
+>     Store core class
+>     Rename bridge to not b43 specific
+>     Replace magic 0x1000 with BCMAI_CORE_SIZE
+>     Remove some old "ssb" names and defines
+>     Move BCMAI_ADDR_BASE def
+>     Add drvdata field
+> TODO:
+> - Interrupts
+> - Reloading driver
+> ---
+>  drivers/Kconfig                           |    2 +
+>  drivers/Makefile                          |    1 +
+>  include/linux/mod_devicetable.h           |   17 ++
+>  scripts/mod/file2alias.c                  |   21 ++
 
-For PCI this also changes the config layout.
+Hi Rafał,
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/lguest/lguest_device.c |    8 ++++----
- drivers/s390/kvm/kvm_virtio.c  |    6 +++---
- drivers/virtio/virtio.c        |    8 ++++----
- drivers/virtio/virtio_pci.c    |   33 +++++++++++++++++++++++++++------
- include/linux/virtio.h         |    2 +-
- include/linux/virtio_config.h  |   15 +++++++++------
- include/linux/virtio_pci.h     |    9 ++++++++-
- 7 files changed, 56 insertions(+), 25 deletions(-)
+I tried to apply this patch, but it failed as well. I did the 4 files
+above manually and applied partial patch for the new files.
 
-diff --git a/drivers/lguest/lguest_device.c b/drivers/lguest/lguest_device.c
-index 69c84a1..d2d6953 100644
---- a/drivers/lguest/lguest_device.c
-+++ b/drivers/lguest/lguest_device.c
-@@ -93,17 +93,17 @@ static unsigned desc_size(const struct lguest_device_desc *desc)
- }
- 
- /* This gets the device's feature bits. */
--static u32 lg_get_features(struct virtio_device *vdev)
-+static u64 lg_get_features(struct virtio_device *vdev)
- {
- 	unsigned int i;
--	u32 features = 0;
-+	u64 features = 0;
- 	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
- 	u8 *in_features = lg_features(desc);
- 
- 	/* We do this the slow but generic way. */
--	for (i = 0; i < min(desc->feature_len * 8, 32); i++)
-+	for (i = 0; i < min(desc->feature_len * 8, 64); i++)
- 		if (in_features[i / 8] & (1 << (i % 8)))
--			features |= (1 << i);
-+			features |= (1ull << i);
- 
- 	return features;
- }
-diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-index 414427d..8c976d0 100644
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -82,13 +82,13 @@ static unsigned desc_size(const struct kvm_device_desc *desc)
- static u32 kvm_get_features(struct virtio_device *vdev)
- {
- 	unsigned int i;
--	u32 features = 0;
-+	u64 features = 0;
- 	struct kvm_device_desc *desc = to_kvmdev(vdev)->desc;
- 	u8 *in_features = kvm_vq_features(desc);
- 
--	for (i = 0; i < min(desc->feature_len * 8, 32); i++)
-+	for (i = 0; i < min(desc->feature_len * 8, 64); i++)
- 		if (in_features[i / 8] & (1 << (i % 8)))
--			features |= (1 << i);
-+			features |= (1ull << i);
- 	return features;
- }
- 
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index efb35aa..52b24d7 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -112,7 +112,7 @@ static int virtio_dev_probe(struct device *_d)
- 	struct virtio_device *dev = container_of(_d,struct virtio_device,dev);
- 	struct virtio_driver *drv = container_of(dev->dev.driver,
- 						 struct virtio_driver, driver);
--	u32 device_features;
-+	u64 device_features;
- 
- 	/* We have a driver! */
- 	add_status(dev, VIRTIO_CONFIG_S_DRIVER);
-@@ -124,14 +124,14 @@ static int virtio_dev_probe(struct device *_d)
- 	memset(dev->features, 0, sizeof(dev->features));
- 	for (i = 0; i < drv->feature_table_size; i++) {
- 		unsigned int f = drv->feature_table[i];
--		BUG_ON(f >= 32);
--		if (device_features & (1 << f))
-+		BUG_ON(f >= 64);
-+		if (device_features & (1ull << f))
- 			set_bit(f, dev->features);
- 	}
- 
- 	/* Transport features always preserved to pass to finalize_features. */
- 	for (i = VIRTIO_TRANSPORT_F_START; i < VIRTIO_TRANSPORT_F_END; i++)
--		if (device_features & (1 << i))
-+		if (device_features & (1ull << i))
- 			set_bit(i, dev->features);
- 
- 	dev->config->finalize_features(dev);
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 4fb5b2b..2a2ee72 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -44,6 +44,8 @@ struct virtio_pci_device
- 	spinlock_t lock;
- 	struct list_head virtqueues;
- 
-+	/* 64 bit features */
-+	int features_hi;
- 	/* MSI-X support */
- 	int msix_enabled;
- 	int intx_enabled;
-@@ -103,26 +105,45 @@ static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
- }
- 
- /* virtio config->get_features() implementation */
--static u32 vp_get_features(struct virtio_device *vdev)
-+static u64 vp_get_features(struct virtio_device *vdev)
- {
- 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
-+	u32 flo, fhi;
- 
--	/* When someone needs more than 32 feature bits, we'll need to
-+	/* When someone needs more than 32 feature bits, we need to
- 	 * steal a bit to indicate that the rest are somewhere else. */
--	return ioread32(vp_dev->ioaddr + VIRTIO_PCI_HOST_FEATURES);
-+	flo = ioread32(vp_dev->ioaddr + VIRTIO_PCI_HOST_FEATURES);
-+	if (flo & (0x1 << VIRTIO_F_FEATURES_HI)) {
-+		vp_dev->features_hi = 1;
-+		iowrite32(0x1 << VIRTIO_F_FEATURES_HI,
-+			  vp_dev->ioaddr + VIRTIO_PCI_GUEST_FEATURES_HI);
-+	} else {
-+		vp_dev->features_hi = 0;
-+	}
-+	fhi = ioread32(vp_dev->ioaddr + VIRTIO_PCI_HOST_FEATURES_HI);
-+	return ((u64)fhi << 32) | flo;
- }
- 
- /* virtio config->finalize_features() implementation */
- static void vp_finalize_features(struct virtio_device *vdev)
- {
- 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
-+	u32 flo, fhi;
- 
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
- 
--	/* We only support 32 feature bits. */
--	BUILD_BUG_ON(ARRAY_SIZE(vdev->features) != 1);
--	iowrite32(vdev->features[0], vp_dev->ioaddr+VIRTIO_PCI_GUEST_FEATURES);
-+	/* We only support 64 feature bits. */
-+	BUILD_BUG_ON(ARRAY_SIZE(vdev->features) != 64 / BITS_PER_LONG);
-+	flo = vdev->features[0];
-+	fhi = vdev->features[64 / BITS_PER_LONG - 1] >> (64 - BITS_PER_LONG);
-+	iowrite32(flo, vp_dev->ioaddr + VIRTIO_PCI_GUEST_FEATURES);
-+	if (flo & (0x1 << VIRTIO_F_FEATURES_HI)) {
-+		vp_dev->features_hi = 1;
-+		iowrite32(fhi, vp_dev->ioaddr + VIRTIO_PCI_GUEST_FEATURES_HI);
-+	} else {
-+		vp_dev->features_hi = 0;
-+	}
- }
- 
- /* virtio config->get() implementation */
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index aff5b4f..718336b 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -105,7 +105,7 @@ struct virtio_device {
- 	struct virtio_config_ops *config;
- 	struct list_head vqs;
- 	/* Note that this is a Linux set_bit-style bitmap. */
--	unsigned long features[1];
-+	unsigned long features[64 / BITS_PER_LONG];
- 	void *priv;
- };
- 
-diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-index 800617b..b1a1981 100644
---- a/include/linux/virtio_config.h
-+++ b/include/linux/virtio_config.h
-@@ -18,16 +18,19 @@
- /* We've given up on this device. */
- #define VIRTIO_CONFIG_S_FAILED		0x80
- 
--/* Some virtio feature bits (currently bits 28 through 31) are reserved for the
-+/* Some virtio feature bits (currently bits 28 through 39) are reserved for the
-  * transport being used (eg. virtio_ring), the rest are per-device feature
-  * bits. */
- #define VIRTIO_TRANSPORT_F_START	28
--#define VIRTIO_TRANSPORT_F_END		32
-+#define VIRTIO_TRANSPORT_F_END		40
- 
- /* Do we get callbacks when the ring is completely used, even if we've
-  * suppressed them? */
- #define VIRTIO_F_NOTIFY_ON_EMPTY	24
- 
-+/* Enables feature bits 32 to 63 (only really required for virtio_pci). */
-+#define VIRTIO_F_FEATURES_HI		31
-+
- #ifdef __KERNEL__
- #include <linux/err.h>
- #include <linux/virtio.h>
-@@ -72,7 +75,7 @@
-  * @del_vqs: free virtqueues found by find_vqs().
-  * @get_features: get the array of feature bits for this device.
-  *	vdev: the virtio_device
-- *	Returns the first 32 feature bits (all we currently need).
-+ *	Returns the first 64 feature bits (all we currently need).
-  * @finalize_features: confirm what device features we'll be using.
-  *	vdev: the virtio_device
-  *	This gives the final feature bits for the device: it can change
-@@ -92,7 +95,7 @@ struct virtio_config_ops {
- 			vq_callback_t *callbacks[],
- 			const char *names[]);
- 	void (*del_vqs)(struct virtio_device *);
--	u32 (*get_features)(struct virtio_device *vdev);
-+	u64 (*get_features)(struct virtio_device *vdev);
- 	void (*finalize_features)(struct virtio_device *vdev);
- };
- 
-@@ -110,9 +113,9 @@ static inline bool virtio_has_feature(const struct virtio_device *vdev,
- {
- 	/* Did you forget to fix assumptions on max features? */
- 	if (__builtin_constant_p(fbit))
--		BUILD_BUG_ON(fbit >= 32);
-+		BUILD_BUG_ON(fbit >= 64);
- 	else
--		BUG_ON(fbit >= 32);
-+		BUG_ON(fbit >= 64);
- 
- 	if (fbit < VIRTIO_TRANSPORT_F_START)
- 		virtio_check_driver_offered_feature(vdev, fbit);
-diff --git a/include/linux/virtio_pci.h b/include/linux/virtio_pci.h
-index 9a3d7c4..035b10e 100644
---- a/include/linux/virtio_pci.h
-+++ b/include/linux/virtio_pci.h
-@@ -55,9 +55,16 @@
- /* Vector value used to disable MSI for queue */
- #define VIRTIO_MSI_NO_VECTOR            0xffff
- 
-+/* An extended 32-bit r/o bitmask of the features supported by the host */
-+#define VIRTIO_PCI_HOST_FEATURES_HI	0
-+
-+/* An extended 32-bit r/w bitmask of features activated by the guest */
-+#define VIRTIO_PCI_GUEST_FEATURES_HI	4
-+
- /* The remaining space is defined by each driver as the per-driver
-  * configuration space */
--#define VIRTIO_PCI_CONFIG(dev)		((dev)->msix_enabled ? 24 : 20)
-+#define VIRTIO_PCI_CONFIG(dev)		((dev)->features_hi ? 32 : \
-+						(dev)->msix_enabled ? 24 : 20)
- 
- /* Virtio ABI version, this must match exactly */
- #define VIRTIO_PCI_ABI_VERSION		0
+When I load the module it seems to have succeeded once, but every insmod
+attempt I do now fails with following trace:
+
+Apr 11 16:43:43 arend-laptop kernel: [   61.249239] axi-pci-bridge
+0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+Apr 11 16:43:43 arend-laptop kernel: [   61.249312] Core 0 found:
+ChipCommon (manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
+Apr 11 16:43:43 arend-laptop kernel: [   61.249339] Core 1 found: IEEE
+802.11 (manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
+Apr 11 16:43:43 arend-laptop kernel: [   61.249400] Core 2 found: PCIe
+(manuf 0x4BF, id 0x820, rev 0x0F, class 0x0)
+Apr 11 16:43:43 arend-laptop kernel: [   61.279913] Modules linked in:
+axi(+) binfmt_misc nouveau ttm drm_kms_helper drm i2c_algo_bit
+snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec
+snd_seq_midi snd_hwdep ppdev snd_rawmidi snd_pcm snd_seq_midi_event
+parport_pc snd_seq snd_timer snd_seq_device lp pcmcia snd uvcvideo
+soundcore snd_page_alloc dell_laptop videodev dell_wmi dcdbas
+sparse_keymap intel_ips yenta_socket video pcmcia_rsrc pcmcia_core parport
+intel_agp intel_gtt agpgart psmouse btusb bluetooth joydev serio_raw
+usbhid hid mmc_block ahci sdhci_pci firewire_ohci sdhci e1000e
+firewire_core mmc_core libahci crc_itu_t
+Apr 11 16:43:43 arend-laptop kernel: [   61.280052]
+Apr 11 16:43:43 arend-laptop kernel: [   61.280366] Pid: 2008, comm:
+insmod Not tainted 2.6.39-rc1-staging-next-09270-gb905e26 #1 Dell Inc.
+Latitude E6410/07XJP9
+Apr 11 16:43:43 arend-laptop kernel: [   61.281090] EIP: 0060:[<c0213d3d>]
+EFLAGS: 00010246 CPU: 1
+Apr 11 16:43:43 arend-laptop kernel: [   61.281812] EIP is at
+kfree+0x10d/0x120
+Apr 11 16:43:43 arend-laptop kernel: [   61.282523] EAX: 40000000 EBX:
+f726bc40 ECX: f2ea6910 EDX: 0000002f
+Apr 11 16:43:43 arend-laptop kernel: [   61.283234] ESI: f57d2d60 EDI:
+00000000 EBP: f726bd70 ESP: f726bd4c
+Apr 11 16:43:43 arend-laptop kernel: [   61.283947]  DS: 007b ES: 007b FS:
+00d8 GS: 00e0 SS: 0068
+Apr 11 16:43:43 arend-laptop kernel: [   61.286071]  f726bd98 f848be2a
+f726bd70 c036dea3 f726bda0 00000007 f3aae18c f726bc40
+Apr 11 16:43:43 arend-laptop kernel: [   61.286797]  f3aae000 f726bd80
+c03642c4 f3aae16c 00000001 f726bd88 c0410639 f726bdb4
+Apr 11 16:43:43 arend-laptop kernel: [   61.287522]  f848a326 f3aae184
+f848be2a 00000000 00000000 f3aae184 00000000 f39eb800
+Apr 11 16:43:43 arend-laptop kernel: [   61.288957]  [<c036dea3>] ?
+kvasprintf+0x43/0x60
+Apr 11 16:43:43 arend-laptop kernel: [   61.289660]  [<c03642c4>]
+kobject_set_name_vargs+0x64/0x70
+Apr 11 16:43:43 arend-laptop kernel: [   61.290357]  [<c0410639>]
+dev_set_name+0x19/0x20
+Apr 11 16:43:43 arend-laptop kernel: [   61.291050]  [<f848a326>]
+axi_bus_register+0x106/0x220 [axi]
+Apr 11 16:43:43 arend-laptop kernel: [   61.291738]  [<f848bd1a>]
+axi_host_pci_probe+0xfa/0x168 [axi]
+Apr 11 16:43:43 arend-laptop kernel: [   61.292419]  [<c0381497>]
+local_pci_probe+0x47/0xb0
+Apr 11 16:43:43 arend-laptop kernel: [   61.293091]  [<c0382388>]
+pci_device_probe+0x68/0x90
+Apr 11 16:43:43 arend-laptop kernel: [   61.293755]  [<c04138af>]
+driver_probe_device+0x7f/0x190
+Apr 11 16:43:43 arend-laptop kernel: [   61.294417]  [<c0413a41>]
+__driver_attach+0x81/0x90
+Apr 11 16:43:43 arend-laptop kernel: [   61.295070]  [<c0412ec3>]
+bus_for_each_dev+0x53/0x80
+Apr 11 16:43:43 arend-laptop kernel: [   61.295720]  [<c041372e>]
+driver_attach+0x1e/0x20
+Apr 11 16:43:43 arend-laptop kernel: [   61.296371]  [<c04139c0>] ?
+driver_probe_device+0x190/0x190
+Apr 11 16:43:43 arend-laptop kernel: [   61.297015]  [<c0413140>]
+bus_add_driver+0xc0/0x240
+Apr 11 16:43:43 arend-laptop kernel: [   61.297661]  [<c0382200>] ?
+pci_dev_put+0x20/0x20
+Apr 11 16:43:43 arend-laptop kernel: [   61.298308]  [<c041406a>]
+driver_register+0x6a/0x130
+Apr 11 16:43:43 arend-laptop kernel: [   61.298958]  [<c0412897>] ?
+bus_put+0x17/0x20
+Apr 11 16:43:43 arend-laptop kernel: [   61.299608]  [<c041306e>] ?
+bus_create_file+0x3e/0x50
+Apr 11 16:43:43 arend-laptop kernel: [   61.300259]  [<c03825c5>]
+__pci_register_driver+0x45/0xb0
+Apr 11 16:43:43 arend-laptop kernel: [   61.300900]  [<f848bbb5>]
+axi_host_pci_register+0x25/0x30 [axi]
+Apr 11 16:43:43 arend-laptop kernel: [   61.301539]  [<f83bb03f>]
+axi_pci_bridge_init+0xd/0xf [axi]
+Apr 11 16:43:43 arend-laptop kernel: [   61.302172]  [<f83bb01c>]
+axi_modinit+0x1c/0x32 [axi]
+Apr 11 16:43:43 arend-laptop kernel: [   61.302810]  [<c0101125>]
+do_one_initcall+0x35/0x170
+Apr 11 16:43:43 arend-laptop kernel: [   61.303445]  [<f83bb000>] ?
+0xf83bafff
+Apr 11 16:43:43 arend-laptop kernel: [   61.304078]  [<c0181e46>]
+sys_init_module+0x116/0x1090
+Apr 11 16:43:43 arend-laptop kernel: [   61.304716]  [<c05e3e5f>]
+sysenter_do_call+0x12/0x28
+Apr 11 16:43:43 arend-laptop kernel: [   61.307475] ---[ end trace
+9219745721068e61 ]---
+
+Is this what you indicate with reloading driver in the TODO remark? I
+rebooted the system and power-cycled it but I still get this failure. I
+did not futher look into this so hopefully you can enlighten me on this.
+
+Gr. AvS
 -- 
-1.7.5.rc1.1.gc22ff
+"The world is indeed comic, but the joke is on mankind." — H.P. Lovecraft
+
