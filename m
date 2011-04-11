@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab1DKRFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:05:45 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42337 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751673Ab1DKRFo (ORCPT
+	id S1753260Ab1DKRG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:06:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58397 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab1DKRG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:05:44 -0400
-Date: Mon, 11 Apr 2011 13:05:41 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-cc: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] USB host: Fix lockdep warning in AMD PLL quirk
-In-Reply-To: <20110411163711.GA20607@amd.com>
-Message-ID: <Pine.LNX.4.44L0.1104111304080.1975-100000@iolanthe.rowland.org>
+	Mon, 11 Apr 2011 13:06:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=VcGgncH7KEkrs2hJUz2PxOW7KY8dSfqbd8BvITIaYgNC4Q5gbPJAAkdkSeKNLAa/wX
+         0u79yekWEj/6aMV4pLYylKCZehAzQhkvF4P17eqFeFsfA0K7QMC+M/GS+GTBPW3gSHt0
+         lLh78rcg9vG0XmCRxFwYYDb9STsSJhwIQLq8U=
+Message-ID: <4DA3350E.2060400@gmail.com>
+Date: Mon, 11 Apr 2011 10:06:22 -0700
+From: Steve Calfee <stevecalfee@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Regression?] Removed regulator support in ehci-omap
+References: <20110411093214.GA18215@rainbow>
+In-Reply-To: <20110411093214.GA18215@rainbow>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011, Roedel, Joerg wrote:
-
-> > > > > +		ret = amd_chipset.probe_result;
-> > > > > +
-> > > > > +		spin_unlock_irqrestore(&amd_lock, flags);
-> > > > > +
-> > > > > +		if (info.nb_dev)
-> > > > > +			pci_dev_put(info.nb_dev);
-> > > > > +		if (info.smbus_dev)
-> > > > > +			pci_dev_put(info.smbus_dev);
-> > > > > +
-> > > > > +	} else {
-> > > > > +		/* no race - commit the result */
-> > > > > +		info.probe_count++;
-> > > > 
-> > > > This isn't right, because info.probe_count was initialized to 0.  Maybe 
-> > > > amd_chipset.probe_count should be made into a separate variable, not a 
-> > > > part of the structure, like amd_lock.
-> > > 
-> > > The purpose of the struct is structuring of data. In theory all of its
-> > > members could be turned into global variables. The amd_lock is different
-> > > because it does not only protect the struct but also access to the
-> > > hardware while the quirk is applied/unapplied.
-> > 
-> > Do it however you prefer.  But as it stands now, the patch is wrong.
+On 04/11/11 02:32, Dmitry Artamonow wrote:
+> Hi, guys!
 > 
-> Hmm, I see how it can be done differently, but no real bug.
+> Can anyone explain why regulator support has been removed from ehci-omap
+> driver in commit 19403165 ("usb: host: omap: ehci and ohci simplification")[1]?
+> In 2.6.37/2.6.38 it was enough to apply simple patch[2] adding regulators
+> description to board file to make USB work on omap3evm board (because USB PHY
+> is powered via regulator). But now it won't work anymore in 2.6.39-rc2.
+> BTW, I suspect that this commit also broke USB on omap3pandora board, as it
+> defines "hsusb0" regulator supply in its board file:
+> 
+Yes, And Beagleboard xm (and I suspect other beagleboard versions) has
+been broken in 2.6.39rc1+.
 
-Never mind, you're right.  In the no-race case, the initial count is 
-always going to be 0, and so incrementing info.probe_count is the right 
-thing to do.
-
-Alan Stern
-
+Regards, Steve
