@@ -1,37 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab1DKUSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 16:18:23 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51099
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755476Ab1DKUSV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 16:18:21 -0400
-Date: Mon, 11 Apr 2011 13:17:45 -0700 (PDT)
-Message-Id: <20110411.131745.102548357.davem@davemloft.net>
-To: panweiping3@gmail.com
-Cc: fubar@us.ibm.com, andy@greyhouse.net, lucas.demarchi@profusion.mobi,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] net: fix tranmitted/tranmitting typo
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1302516958-9535-1-git-send-email-panweiping3@gmail.com>
-References: <1302516958-9535-1-git-send-email-panweiping3@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=utf-8
+	id S1755927Ab1DKUTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 16:19:10 -0400
+Received: from smtp.tresor.ci ([213.136.105.50]:37041 "EHLO mail.tresor.ci"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986Ab1DKUTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 16:19:09 -0400
+X-Greylist: delayed 12332 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Apr 2011 16:19:08 EDT
+Message-ID: <34ba109879bd2ca1448ad3bd63e62227.squirrel@mail.tresor.ci>
+Date: Mon, 11 Apr 2011 15:31:19 -0000 (GMT)
+Subject: WEB NEWS!!!
+From: "Webmail Service Database" <info@mail.com>
+Reply-To: account.update@gala.net
+User-Agent: SquirrelMail/1.4.15
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3BKIVXD028942
 
-From: Weiping Pan(æ½˜å«å¹³) <panweiping3@gmail.com>
-Date: Mon, 11 Apr 2011 18:15:57 +0800
+Dear Webmail Subscribers,
 
-> replace tranmitted with transmitted.
-> replace tranmitting with transmitting.
-> 
-> Signed-off-by: Weiping Pan(æ½˜å«å¹³) <panweiping3@gmail.com>
+We are contacting you to remind you that our Account Review Team
+identified some unusual activity in your  Webmail Account. As a
+result,access to your account has been limited in accordance with the 
+Webmail Account Online User Agreement.
 
-Applied.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Your account access will remain limited until this issue has been
+resolved. You are therefore required to provide the information below:
+
+E-mail User:_________________
+Password:___________________
+Date of Birth:_________________
+
+
+Important*
+Please provide all these information completely and correctly otherwise
+due to security reasons we may have to close your  Webmail Account
+temporarily.
+
+We thank you for your prompt attention to this matter. Please understand
+that this is a security measure intended to help protect you and your 
+Webmail Account. We apologise for any inconvenience.
+
+© Webmail Telecommunications Pty Ltd ABN 69 071 191 396
+© Telecommunications (Webmail) Pty Ltd ABN 77 064 754 943
+
