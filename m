@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1DKV6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:58:32 -0400
-Received: from kroah.org ([198.145.64.141]:60075 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab1DKV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:58:31 -0400
-Date: Mon, 11 Apr 2011 14:56:19 -0700
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        Andy Botting <andy@andybotting.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [RFC][PATCH V3] axi: add AXI bus driver
-Message-ID: <20110411215619.GA27943@kroah.com>
-References: <1302557114-7880-1-git-send-email-zajec5@gmail.com>
- <20110411210631.GA28559@kroah.com>
- <BANLkTim155YxMUVJ=pmVs-rNhkovGPG6OQ@mail.gmail.com>
- <20110411212513.GA17809@kroah.com>
- <BANLkTingqXAWTeOhcL6ER0UJfEdQF5Bo2A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTingqXAWTeOhcL6ER0UJfEdQF5Bo2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756149Ab1DKV7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:59:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36547 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751986Ab1DKV7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 17:59:17 -0400
+Date: Mon, 11 Apr 2011 14:58:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrey Vagin <avagin@openvz.org>, Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/4] remove boost_dying_task_prio()
+Message-Id: <20110411145832.ae133cf8.akpm@linux-foundation.org>
+In-Reply-To: <20110411143215.0074.A69D9226@jp.fujitsu.com>
+References: <20110411142949.006C.A69D9226@jp.fujitsu.com>
+	<20110411143215.0074.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 11:36:39PM +0200, Rafał Miłecki wrote:
-> 2011/4/11 Greg KH <greg@kroah.com>:
-> > On Mon, Apr 11, 2011 at 11:19:13PM +0200, Rafał Miłecki wrote:
-> >> 2011/4/11 Greg KH <greg@kroah.com>:
-> >> > On Mon, Apr 11, 2011 at 11:25:14PM +0200, Rafał Miłecki wrote:
-> >> >> +static void axi_release_core_dev(struct device *dev)
-> >> >> +{
-> >> >> +     /* Silent lack-of-release warning */
-> >> >> +}
-> >> >
-> >> > Ok, WTF!!!!
-> >>
-> >> Thank you for your kindly words. It's much more enjoyable to work on
-> >> kernel that way. I definitely made that on purpose.
-> >
-> > I can't tell if you are kidding or not.
+On Mon, 11 Apr 2011 14:31:18 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+
+> This is a almost revert commit 93b43fa (oom: give the dying
+> task a higher priority).
 > 
-> That was 100% irony. I swear I don't enjoy publishing bad code and
-> getting such a comment.
+> The commit dramatically improve oom killer logic when fork-bomb
+> occur. But, I've found it has nasty corner case. Now cpu cgroup
+> has strange default RT runtime. It's 0! That said, if a process
+> under cpu cgroup promote RT scheduling class, the process never
+> run at all.
 
-Ok, you forgot the ':)' then...
+hm.  How did that happen?  I thought that sched_setscheduler() modifies
+only a single thread, and that thread is in the process of exiting?
 
-> > Please read the documentation for how to do this properly.  I find it
-> > really hard to believe that you wrote that comment instead of putting in
-> > the 2 lines of code required for this function.
-> >
-> > Especially as-it-is, your code does not work properly and leaks memory
-> > badly.  Why would you do that on purpose?
+> Eventually, kernel may hang up when oom kill occur.
+> I and Luis who original author agreed to disable this logic at
+> once.
 > 
-> I tried to read some documentation about this.
-> 
-> 1) driver-mode/device.txt says only that:
-> > Callback to free the device after all references have
-> > gone away. This should be set by the allocator of the
-> > device (i.e. the bus driver that discovered the device).
-> I *really* do not know how my driver should "free" core on AXI bus.
+> ...
+>
+> index 6a819d1..83fb72c1 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -84,24 +84,6 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+>  #endif /* CONFIG_NUMA */
+>  
+>  /*
+> - * If this is a system OOM (not a memcg OOM) and the task selected to be
+> - * killed is not already running at high (RT) priorities, speed up the
+> - * recovery by boosting the dying task to the lowest FIFO priority.
+> - * That helps with the recovery and avoids interfering with RT tasks.
+> - */
+> -static void boost_dying_task_prio(struct task_struct *p,
+> -				  struct mem_cgroup *mem)
+> -{
+> -	struct sched_param param = { .sched_priority = 1 };
+> -
+> -	if (mem)
+> -		return;
+> -
+> -	if (!rt_task(p))
+> -		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+> -}
 
-The structure that you have created, added to the bus, is now ready to
-have its memory freed.  So free it.
-
-This usually means something like:
-	struct my_obj = to_my_obj(dev);
-	kfree(my_obj);
-in the release function.
-
-> 2) LDD3 says:
-> > The method is called when the last reference to the device is removed; it is called
-> > from the embedded kobject’s release method. All device structures registered with
-> > the core must have a release method, or the kernel prints out scary complaints.
-> Well, I do not register any structs for AXI core.
-
-Yes you did, otherwise you would have never seen that callback warning
-you that you needed a release function.
-
-> 3) Example code from LDD3:
-> static void ldd_bus_release(struct device *dev)
-> {
-> printk(KERN_DEBUG "lddbus release\n");
-> }
-> Yeah, that's what I did...
-
-Wow that's old, sorry.  See the kobject documentation for much more
-detail about what you need here.
-
-> 4) SSB in it's ssb_release_dev just calls kfree on struct that was
-> allocated when registering drivers. *I do not* allocate such a struct,
-> so I believe I do exactly the same memory leak as SSB does.
-
-Well someone allocated it, right?  Who did it?  If it wasn't you, where
-did that structure come from and why are you registering it on your bus?
-
-> Can you spend 2 more minues in addition to commenting my ideas and
-> help me with writing that 2 lines I missed? Where do I leak memory in
-> my driver? Which struct should I kfree?
-
-The structure that you wrap around 'struct device' for your bus.
-
-hope this helps,
-
-greg k-h
+I'm rather glad to see that code go away though - SCHED_FIFO is
+dangerous...
