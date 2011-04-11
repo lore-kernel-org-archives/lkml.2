@@ -1,54 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003Ab1DKADN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 20:03:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9893 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab1DKADL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 20:03:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,335,1299484800"; 
-   d="scan'208";a="677386514"
-From: Mark Allyn <mark.a.allyn@intel.com>
-To: linux-kernel@vger.kernel.org, greg@kroah.com, mark.a.allyn@intel.com,
-        alan@linux.intel.com
-Subject: [PATCH 1/1] staging: sep: resolve issue with false zero length of page
-Date: Sun, 10 Apr 2011 17:03:28 -0700
-Message-Id: <1302480208-20247-1-git-send-email-mark.a.allyn@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755672Ab1DKA3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 20:29:43 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:55756 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab1DKA3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 20:29:41 -0400
+Date: Sun, 10 Apr 2011 20:29:16 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: yinghai@kernel.org, stefano.stabellini@eu.citrix.com, hpa@zytor.com
+Message-ID: <1187863713.4249.1302481756474.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <638226361.789131.1302158410535.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+Subject: Re: hibernate/resume regression
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
----
- drivers/staging/sep/sep_driver.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+OK, reverted the following patch fixed the problem.
 
-diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index 890eede..52342c1 100644
---- a/drivers/staging/sep/sep_driver.c
-+++ b/drivers/staging/sep/sep_driver.c
-@@ -1095,13 +1095,16 @@ static int sep_lock_user_pages(struct sep_device *sep,
- 	if (num_pages > 1) {
- 		lli_array[num_pages - 1].block_size =
- 			(app_virt_addr + data_size) & (~PAGE_MASK);
-+		if (lli_array[num_pages - 1].block_size == 0)
-+			lli_array[num_pages - 1].block_size = PAGE_SIZE;
- 
- 		dev_warn(&sep->pdev->dev,
--			"lli_array[%x].bus_address is %08lx, lli_array[%x].block_size is %x\n",
-+			"lli_array[%x].bus_address is "
-+			"%08lx, lli_array[%x].block_size is %x\n",
- 			num_pages - 1,
--			(unsigned long)lli_array[count].bus_address,
-+			(unsigned long)lli_array[num_pages -1].bus_address,
- 			num_pages - 1,
--			lli_array[count].block_size);
-+			lli_array[num_pages -1].block_size);
- 	}
- 
- 	/* Set output params according to the in_out flag */
--- 
-1.7.0.4
+CAI Qian
 
+commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Fri Feb 18 11:30:30 2011 +0000
+
+    x86: Cleanup highmap after brk is concluded
+    
+    Now cleanup_highmap actually is in two steps: one is early in head64.c
+    and only clears above _end; a second one is in init_memory_mapping() and
+    tries to clean from _brk_end to _end.
+    It should check if those boundaries are PMD_SIZE aligned but currently
+    does not.
+    Also init_memory_mapping() is called several times for numa or memory
+    hotplug, so we really should not handle initial kernel mappings there.
+    
+    This patch moves cleanup_highmap() down after _brk_end is settled so
+    we can do everything in one step.
+    Also we honor max_pfn_mapped in the implementation of cleanup_highmap.
+    
+    Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+    Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+    LKML-Reference: <alpine.DEB.2.00.1103171739050.3382@kaball-desktop>
+    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 2d2673c..5655c22 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -77,9 +77,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+        /* Make NULL pointers segfault */
+        zap_identity_mappings();
+ 
+-       /* Cleanup the over mapped high alias */
+-       cleanup_highmap();
+-
+        max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+ 
+        for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index b176f2b..4a52a5f 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -294,30 +294,11 @@ static void __init init_gbpages(void)
+        else
+                direct_gbpages = 0;
+ }
+-
+-static void __init cleanup_highmap_brk_end(void)
+-{
+-       pud_t *pud;
+-       pmd_t *pmd;
+-
+-       mmu_cr4_features = read_cr4();
+-
+-       /*
+-        * _brk_end cannot change anymore, but it and _end may be
+-        * located on different 2M pages. cleanup_highmap(), however,
+-        * can only consider _end when it runs, so destroy any
+-        * mappings beyond _brk_end here.
+-        */
+-       pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+-       pmd = pmd_offset(pud, _brk_end - 1);
+-       while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+-               pmd_clear(pmd);
+-}
+ #else
+ static inline void init_gbpages(void)
+ {
+ }
+-static inline void cleanup_highmap_brk_end(void)
++static void __init cleanup_highmap(void)
+ {
+ }
+ #endif
+@@ -330,8 +311,6 @@ static void __init reserve_brk(void)
+        /* Mark brk area as locked down and no longer taking any
+           new allocations */
+        _brk_start = 0;
+-
+-       cleanup_highmap_brk_end();
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+@@ -950,6 +929,8 @@ void __init setup_arch(char **cmdline_p)
+         */
+        reserve_brk();
+ 
++       cleanup_highmap();
++
+        memblock.current_limit = get_max_mapped();
+        memblock_x86_fill();
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index a08a62c..7026505 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -51,6 +51,7 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
++#include <asm/setup.h>
+ 
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+@@ -293,18 +294,18 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+  * to the compile time generated pmds. This results in invalid pmds up
+  * to the point where we hit the physaddr 0 mapping.
+  *
+- * We limit the mappings to the region from _text to _end.  _end is
+- * rounded up to the 2MB boundary. This catches the invalid pmds as
++ * We limit the mappings to the region from _text to _brk_end.  _brk_end
++ * is rounded up to the 2MB boundary. This catches the invalid pmds as
+  * well, as they are located before _text:
+  */
+ void __init cleanup_highmap(void)
+ {
+        unsigned long vaddr = __START_KERNEL_map;
+-       unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
++       unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
++       unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
+        pmd_t *pmd = level2_kernel_pgt;
+-       pmd_t *last_pmd = pmd + PTRS_PER_PMD;
+ 
+-       for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
++       for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
+                if (pmd_none(*pmd))
+                        continue;
+                if (vaddr < (unsigned long) _text || vaddr > end)
+
+----- Original Message -----
+> The latest Linus tree had a regression that prevent hibernate/resume
+> from working.
+> 
+> It is now failing to resume every time tried after hibernate.
+> 
+> PM: Starting manual resume from disk
+> Freezing user space processes ...
+> EXT4-fs (dm-0): INFO: recovery required on readonly filesystem
+> EXT4-fs (dm-0): write access will be enabled during recovery
+> EXT4-fs (dm-0): recovery complete
+> EXT4-fs (dm-0): mounted filesystem with ordered data mode. Opts:
+> (null)
+> (elapsed 0.18 seconds) done.
+> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> PM: Loading and decompressing image data (301765 pages) ... done
+> PM: Read 1207060 kbytes in 6.47 seconds (186.56 MB/s)
+> serial 00:08: disabled
+> 
+> I have not had a chance to track down the offensive patch(es) yet.
+> 
+> CAI Qian
