@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab1DKLWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 07:22:06 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41908 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab1DKLWE (ORCPT
+	id S1755992Ab1DKLWN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 07:22:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52956 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab1DKLWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 07:22:04 -0400
+	Mon, 11 Apr 2011 07:22:06 -0400
 From: Jamie Iles <jamie@jamieiles.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux@arm.linux.org.uk, tglx@linutronix.de, cbouatmailru@gmail.com,
         grant.likely@secretlab.ca, arnd@arndb.de, nico@fluxnic.net,
         Jamie Iles <jamie@jamieiles.com>
-Subject: [PATCHv3 3/7] basic_mmio_gpio: allow overriding number of gpio
-Date: Mon, 11 Apr 2011 12:21:50 +0100
-Message-Id: <1302520914-22816-4-git-send-email-jamie@jamieiles.com>
+Subject: [PATCHv3 4/7] basic_mmio_gpio: request register regions
+Date: Mon, 11 Apr 2011 12:21:51 +0100
+Message-Id: <1302520914-22816-5-git-send-email-jamie@jamieiles.com>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
 References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
@@ -22,85 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms may have a number of GPIO that is less than the register
-width of the peripheral.
+Make sure that we get the register regions with request_mem_region()
+before ioremap() to make sure we have exclusive access.
 
 Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
 Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/gpio/basic_mmio_gpio.c  |   18 ++++++++++++------
- include/linux/basic_mmio_gpio.h |    1 +
- 2 files changed, 13 insertions(+), 6 deletions(-)
+ drivers/gpio/basic_mmio_gpio.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-index 5db5de4..2b2d384 100644
+index 2b2d384..90f7f89 100644
 --- a/drivers/gpio/basic_mmio_gpio.c
 +++ b/drivers/gpio/basic_mmio_gpio.c
-@@ -239,6 +239,7 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 	resource_size_t dat_sz;
- 	int bits;
- 	int ret;
-+	int ngpio;
+@@ -192,6 +192,16 @@ static int bgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+ 	return 0;
+ }
  
- 	res_dat = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dat");
- 	if (!res_dat)
-@@ -249,6 +250,7 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 
- 	bits = dat_sz * 8;
-+	ngpio = bits;
- 	if (bits > BITS_PER_LONG)
- 		return -EINVAL;
- 
-@@ -277,13 +279,22 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 
- 	spin_lock_init(&bgc->lock);
- 
-+	if (pdata) {
-+		bgc->gc.base = pdata->base;
-+		if (pdata->ngpio > 0)
-+			ngpio = pdata->ngpio;
-+	} else {
-+		bgc->gc.base = -1;
-+	}
++static void __iomem *bgpio_request_and_map(struct device *dev,
++					   struct resource *res)
++{
++	if (!devm_request_mem_region(dev, res->start, resource_size(res),
++				     res->name ?: "mmio_gpio"))
++		return NULL;
 +
- 	bgc->bits = bits;
- 	ret = bgpio_setup_accessors(pdev, bgc);
- 	if (ret)
- 		return ret;
- 
- 	bgc->data = bgc->read_reg(bgc->reg_dat);
--	bgc->gc.ngpio = bits;
++	return devm_ioremap(dev, res->start, resource_size(res));
++}
 +
-+	bgc->gc.ngpio = ngpio;
- 	bgc->gc.direction_input = bgpio_dir_in;
- 	bgc->gc.direction_output = bgpio_dir_out;
- 	bgc->gc.get = bgpio_get;
-@@ -291,11 +302,6 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
- 	bgc->gc.dev = dev;
- 	bgc->gc.label = dev_name(dev);
+ static int bgpio_setup_accessors(struct platform_device *pdev,
+ 				 struct bgpio_chip *bgc)
+ {
+@@ -258,7 +268,7 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
+ 	if (!bgc)
+ 		return -ENOMEM;
  
--	if (pdata)
--		bgc->gc.base = pdata->base;
--	else
--		bgc->gc.base = -1;
--
- 	platform_set_drvdata(pdev, bgc);
+-	bgc->reg_dat = devm_ioremap(dev, res_dat->start, dat_sz);
++	bgc->reg_dat = bgpio_request_and_map(dev, res_dat);
+ 	if (!bgc->reg_dat)
+ 		return -ENOMEM;
  
- 	ret = gpiochip_add(&bgc->gc);
-diff --git a/include/linux/basic_mmio_gpio.h b/include/linux/basic_mmio_gpio.h
-index 198087a..f23ec73 100644
---- a/include/linux/basic_mmio_gpio.h
-+++ b/include/linux/basic_mmio_gpio.h
-@@ -15,6 +15,7 @@
+@@ -269,8 +279,8 @@ static int __devinit bgpio_probe(struct platform_device *pdev)
+ 				resource_size(res_set) != dat_sz)
+ 			return -EINVAL;
  
- struct bgpio_pdata {
- 	int base;
-+	int ngpio;
- };
- 
- #endif /* __BASIC_MMIO_GPIO_H */
+-		bgc->reg_set = devm_ioremap(dev, res_set->start, dat_sz);
+-		bgc->reg_clr = devm_ioremap(dev, res_clr->start, dat_sz);
++		bgc->reg_set = bgpio_request_and_map(dev, res_set);
++		bgc->reg_clr = bgpio_request_and_map(dev, res_clr);
+ 		if (!bgc->reg_set || !bgc->reg_clr)
+ 			return -ENOMEM;
+ 	} else if (res_set || res_clr) {
 -- 
 1.7.4.2
 
