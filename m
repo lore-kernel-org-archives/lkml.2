@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab1DKSF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:05:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44055 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300Ab1DKSF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:05:58 -0400
-Date: Mon, 11 Apr 2011 10:56:28 -0700
-From: Greg KH <gregkh@suse.de>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: sysfs: cannot create duplicate filename
-Message-ID: <20110411175628.GA24301@suse.de>
-References: <alpine.LFD.2.02.1104111556280.1938@c4eb>
- <20110411141309.GA8924@suse.de>
- <alpine.LFD.2.02.1104111622490.1938@c4eb>
- <20110411144956.GA16610@suse.de>
- <alpine.LFD.2.02.1104111658560.1770@c4eb>
- <20110411151947.GA17913@suse.de>
- <alpine.LFD.2.02.1104111943590.2036@c4eb>
+	id S1755255Ab1DKSNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:13:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53594 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754236Ab1DKSNM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 14:13:12 -0400
+Date: Mon, 11 Apr 2011 19:13:03 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Ivo Van Doorn <ivdoorn@gmail.com>
+Cc: Xose Vazquez Perez <xose.vazquez@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>, dwmw2@infradead.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        users@rt2x00.serialmonkey.com
+Subject: Re: [rt2x00-users] [PATCH] rt2800pci: rt2800usb: Firmware update
+Message-ID: <20110411181303.GD2268@decadent.org.uk>
+References: <1302532043-22934-1-git-send-email-Larry.Finger@lwfinger.net>
+ <4DA33F3A.6090707@gmail.com>
+ <BANLkTimJCNpTqn-uQjRLHTyGjHxd+BpJ4Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1104111943590.2036@c4eb>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimJCNpTqn-uQjRLHTyGjHxd+BpJ4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.i.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 07:50:34PM +0200, Sebastian Ott wrote:
+On Mon, Apr 11, 2011 at 07:57:15PM +0200, Ivo Van Doorn wrote:
+> >> From: Shiang Tu<shiang_tu@ralinktech.com>
+> >>
+> >> Update firmware for rt2800pci to Version 34 and firmware for rt2800usb to
+> >> Version 29.
+> >>
+> >> Signed-off-by: Shiang Tu<shiang_tu@ralinktech.com>
+> >> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
+> >> ---
+> >>  WHENCE     |    8 ++++----
+> >>  rt2860.bin |  Bin 8192 ->  8192 bytes
+> >>  rt2870.bin |  Bin 4096 ->  8192 bytes
+> >>  3 files changed, 4 insertions(+), 4 deletions(-)
+> >
+> > links to rt3070.bin rt3071.bin rt3090.bin ???
 > 
-> 
-> On Mon, 11 Apr 2011, Greg KH wrote:
-> 
-> > On Mon, Apr 11, 2011 at 05:05:08PM +0200, Sebastian Ott wrote:
-> > > 
-> > > 
-> > > On Mon, 11 Apr 2011, Greg KH wrote:
-> > > 
-> > > > On Mon, Apr 11, 2011 at 04:33:03PM +0200, Sebastian Ott wrote:
-> > > > > On Mon, 11 Apr 2011, Greg KH wrote:
-> > > > > 
-> > > > > > On Mon, Apr 11, 2011 at 04:04:08PM +0200, Sebastian Ott wrote:
-> > > > > > > Hi,
-> > > > > > > 
-> > > > > > > i've seen this warning which looks to be caused by a race between device_add
-> > > > > > > and driver_register
-> > > > > > > 
-> > > > > > > [   80.893594] sysfs: cannot create duplicate filename '/bus/ccw/drivers/qeth/0.0.b57d'
-> > > > > > 
-> > > > > > Isn't the problem here the fact that you are creating 2 directories of
-> > > > > > the same name?
-> > > > > I'm sure this isn't the case here. The bus code just calls device_add and
-> > > > > at the same time on a different thread a module is loaded which registers
-> > > > > a driver at the bus.
-> > > > > 
-> > > > > I was able to reproduce this with a module which creates a dummy bus
-> > > > > and registers drivers and devices on this bus on 2 different workqueues.
-> > > > 
-> > > > That makes sense, as no bus should be doing this on multiple "threads".
-> > > > What real-life bus does this today?
-> > > A bus that will recognize and register a lot of devices, after the first
-> > > uevent is presented to userspace, a module will be loaded registering a
-> > > driver from a different thread. I don't think thats uncommon.
-> > 
-> > But again, what kernel code today does this?  I think they all have
-> > locks to keep this from happening, right?
-> I couldn't find a bus who protects device_register against driver_register
-> and I don't think this is something which should be handled by every
-> individual bus but from within the driver core.
+> What do you mean? Those files should be deleted from the linux-firmware
+> package. There is no need to keep them around, as with the removal of
+> the staging drivers, the last users of those files are gone.
+ 
+Stop repeating this nonsense, Ivo.  If the firmware has been bundled in
+the Linux tree, that would be correct.  For linux-firmware the policy is
+different.
 
-How did you cause the oops in this original message?  What type of bus
-was it on?  And did your patch solve the issue?
+Ben.
 
-thanks,
-
-greg k-h
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
