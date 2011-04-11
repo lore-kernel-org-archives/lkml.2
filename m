@@ -1,348 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab1DKPYi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 11:24:38 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57824 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687Ab1DKPYh (ORCPT
+	id S1754858Ab1DKPZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 11:25:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53006 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab1DKPZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 11:24:37 -0400
-From: mathieu.poirier@linaro.org
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: ohad@wizery.com, mathieu.poirier@linaro.org, lee.jones@linaro.org,
-        patches@linaro.org, linus.walleij@stericsson.com
-Subject: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality V2
-Date: Mon, 11 Apr 2011 09:24:24 -0600
-Message-Id: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.7.1
+	Mon, 11 Apr 2011 11:25:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+Subject: Re: about __BITS_PER_LONG
+Date: Mon, 11 Apr 2011 17:24:57 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <003f01cbf81a$f48cfdf0$dda6f9d0$@mprc.pku.edu.cn>
+In-Reply-To: <003f01cbf81a$f48cfdf0$dda6f9d0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104111724.57607.arnd@arndb.de>
+X-Provags-ID: V02:K0:NFu7uL5uKcNJCyCdVDwHIkI1jjc37bGKbeiitTaEMOo
+ tMG5b6dYoj8MPf2m45rSZyMJa8lveDVGSRnPoFXhbhy7Fykg3E
+ s+TJZm4iaaA6ysCKWRfLTd6IspSuiG5fcb5tOTLvppxvvgoqbw
+ bxNSbl1mbltjIwdomdrPvMewhNSxiN0X9XGmqEcbUFIEnEpGHF
+ XOuNTnj6FEGDNIABWBVMQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu J. Poirier <mathieu.poirier@linaro.org>
+On Monday 11 April 2011, Guan Xuetao wrote:
+> --- a/include/asm-generic/bitsperlong.h
+> +++ b/include/asm-generic/bitsperlong.h
+> @@ -9,7 +9,11 @@
+>   * to decide it, but rather check a compiler provided macro.
+>   */
+>  #ifndef __BITS_PER_LONG
+> -#define __BITS_PER_LONG 32
+> +#   ifdef CONFIG_64BIT
+> +#      define __BITS_PER_LONG 64
+> +#   else
+> +#      define __BITS_PER_LONG 32
+> +#   endif /* CONFIG_64BIT */
+>  #endif
+>  
 
-This is the second spin on STE's Hsem driver that is implemented
-through the hwspinlock scheme.  More specifically:
+Unfortunately, this does not work, because the __BITS_PER_LONG definition is meant
+for user space. You have to make this depend on a preprocessor macro that
+is provided by the compiler based on the command line switches (e.g. -m64) that
+a use could pass to the compiler.
 
- More comments have been added in the code.
- Cleanup of included header files.
- One of the original contributor's name corrected.
- Calls to 'pm_runtime_disable'restored.
+In user space, the CONFIG_* symbols are meaningless.
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- drivers/hwspinlock/Kconfig      |   23 +++-
- drivers/hwspinlock/Makefile     |    1 +
- drivers/hwspinlock/u8500_hsem.c |  246 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 266 insertions(+), 4 deletions(-)
- create mode 100644 drivers/hwspinlock/u8500_hsem.c
-
-diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
-index 1f29bab..9b4f135 100644
---- a/drivers/hwspinlock/Kconfig
-+++ b/drivers/hwspinlock/Kconfig
-@@ -2,10 +2,11 @@
- # Generic HWSPINLOCK framework
- #
- 
--config HWSPINLOCK
--	tristate "Generic Hardware Spinlock framework"
--	depends on ARCH_OMAP4
--	help
-+menuconfig HWSPINLOCK
-+	bool "Generic Hardware Spinlock framework"
-+	depends on ARCH_OMAP4 || ARCH_U8500
-+	default n
-+	---help---
- 	  Say y here to support the generic hardware spinlock framework.
- 	  You only need to enable this if you have hardware spinlock module
- 	  on your system (usually only relevant if your system has remote slave
-@@ -13,6 +14,8 @@ config HWSPINLOCK
- 
- 	  If unsure, say N.
- 
-+if HWSPINLOCK
-+
- config HWSPINLOCK_OMAP
- 	tristate "OMAP Hardware Spinlock device"
- 	depends on HWSPINLOCK && ARCH_OMAP4
-@@ -21,3 +24,15 @@ config HWSPINLOCK_OMAP
- 	  introduced in OMAP4).
- 
- 	  If unsure, say N.
-+
-+config HSEM_U8500
-+	tristate "STE Hardware Semaphore functionality"
-+	depends on HWSPINLOCK && ARCH_U8500
-+	help
-+	  Say y here to support the STE Hardware Semaphore functionality.  They
-+	  provide a synchronisation mechanism for the various processor on the
-+	  SoC.
-+
-+	  If unsure, say N.
-+
-+endif # HWSPINLOCK
-diff --git a/drivers/hwspinlock/Makefile b/drivers/hwspinlock/Makefile
-index 5729a3f..93eb64b 100644
---- a/drivers/hwspinlock/Makefile
-+++ b/drivers/hwspinlock/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_HWSPINLOCK)		+= hwspinlock_core.o
- obj-$(CONFIG_HWSPINLOCK_OMAP)		+= omap_hwspinlock.o
-+obj-$(CONFIG_HSEM_U8500)		+= u8500_hsem.o
-diff --git a/drivers/hwspinlock/u8500_hsem.c b/drivers/hwspinlock/u8500_hsem.c
-new file mode 100644
-index 0000000..d5bedd3
---- /dev/null
-+++ b/drivers/hwspinlock/u8500_hsem.c
-@@ -0,0 +1,246 @@
-+/*
-+ * u8500 HWSEM driver
-+ *
-+ * Copyright (C) 2010-2011 ST-Ericsson
-+ *
-+ * Implements u8500 semaphore handling for protocol 1, no interrupts.
-+ *
-+ * Author: Mathieu Poirier <mathieu.poirier@linaro.org>
-+ * Heavily borrowed from the work of :
-+ *   Simon Que <sque@ti.com>
-+ *   Hari Kanigeri <h-kanigeri2@ti.com>
-+ *   Ohad Ben-Cohen <ohad@wizery.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/hwspinlock.h>
-+#include <linux/platform_device.h>
-+
-+#include "hwspinlock_internal.h"
-+
-+/*
-+ * Implementation of STE's HSem protocol 1 without interrutps.
-+ * The only masterID we allow is '0x01' to force people to use
-+ * HSems for synchronisation between processors rather than processes
-+ * on the ARM core.
-+ */
-+
-+#define U8500_MAX_SEMAPHORE		32	/* a total of 32 semaphore */
-+#define RESET_SEMAPHORE			(0)	/* free */
-+
-+/* CPU ID for master running u8500 kernel.
-+ * Hswpinlocks should only be used to synchonise operations
-+ * between the Cortex A9 core and the other CPUs.  Hence
-+ * forcing the masterID to a preset value.
-+ */
-+#define HSEM_MASTER_ID			0x01
-+
-+#define HSEM_REGISTER_OFFSET		0x08
-+
-+#define HSEM_CTRL_REG			0x00
-+#define HSEM_ICRALL			0x90
-+#define HSEM_PROTOCOL_1			0x01
-+
-+#define to_u8500_hsem(lock)	\
-+	container_of(lock, struct u8500_hsem, lock)
-+
-+struct u8500_hsem {
-+	struct hwspinlock lock;
-+	void __iomem *addr;
-+};
-+
-+struct u8500_hsem_state {
-+	void __iomem *io_base;		/* Mapped base address */
-+};
-+
-+static int u8500_hsem_trylock(struct hwspinlock *lock)
-+{
-+	struct u8500_hsem *u8500_lock = to_u8500_hsem(lock);
-+
-+	writel(HSEM_MASTER_ID, u8500_lock->addr);
-+
-+	/* get only first 4 bit and compare to masterID.
-+	 * if equal, we have the semaphore, otherwise
-+	 * someone else has it.
-+	 */
-+	return (HSEM_MASTER_ID == (0x0F & readl(u8500_lock->addr)));
-+}
-+
-+static void u8500_hsem_unlock(struct hwspinlock *lock)
-+{
-+	struct u8500_hsem *u8500_lock = to_u8500_hsem(lock);
-+
-+	/* release the lock by writing 0 to it */
-+	writel(RESET_SEMAPHORE, u8500_lock->addr);
-+}
-+
-+/*
-+ * u8500: what value is recommended here ?
-+ */
-+static void u8500_hsem_relax(struct hwspinlock *lock)
-+{
-+	ndelay(50);
-+}
-+
-+static const struct hwspinlock_ops u8500_hwspinlock_ops = {
-+	.trylock	= u8500_hsem_trylock,
-+	.unlock		= u8500_hsem_unlock,
-+	.relax		= u8500_hsem_relax,
-+};
-+
-+static int __devinit u8500_hsem_probe(struct platform_device *pdev)
-+{
-+
-+	struct u8500_hsem *u8500_lock;
-+	struct u8500_hsem_state *state;
-+	struct hwspinlock *lock;
-+	struct resource *res;
-+	void __iomem *io_base;
-+	int i, ret;
-+	ulong offset, val;
-+
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENODEV;
-+
-+	state = kzalloc(sizeof(*state), GFP_KERNEL);
-+	if (!state)
-+		return -ENOMEM;
-+
-+	io_base = ioremap(res->start, resource_size(res));
-+	if (!io_base) {
-+		ret = -ENOMEM;
-+		goto free_state;
-+	}
-+
-+	/* make sure protocol 1 is selected */
-+	val = readl(io_base + HSEM_CTRL_REG);
-+	writel((val & ~HSEM_PROTOCOL_1), io_base + HSEM_CTRL_REG);
-+
-+	/* clear all interrupts */
-+	writel(0xFFFF, io_base + HSEM_ICRALL);
-+
-+	state->io_base = io_base;
-+
-+	platform_set_drvdata(pdev, state);
-+
-+	/*
-+	 * no pm needed for HSem but required to comply
-+	 * with hwspilock core.
-+	 */
-+	pm_runtime_enable(&pdev->dev);
-+
-+	offset = HSEM_REGISTER_OFFSET;
-+
-+	for (i = 0; i < U8500_MAX_SEMAPHORE; i++) {
-+		u8500_lock = kzalloc(sizeof(*u8500_lock), GFP_KERNEL);
-+		if (!u8500_lock) {
-+			ret = -ENOMEM;
-+			goto free_locks;
-+		}
-+
-+		u8500_lock->lock.dev = &pdev->dev;
-+		u8500_lock->lock.owner = THIS_MODULE;
-+		u8500_lock->lock.id = i;
-+		u8500_lock->lock.ops = &u8500_hwspinlock_ops;
-+		u8500_lock->addr = io_base + offset + sizeof(u32) * i;
-+
-+		ret = hwspin_lock_register(&u8500_lock->lock);
-+		if (ret) {
-+			kfree(u8500_lock);
-+			goto free_locks;
-+		}
-+	}
-+
-+	return 0;
-+
-+free_locks:
-+	while (--i >= 0) {
-+		lock = hwspin_lock_unregister(i);
-+		/* this should't happen, but let's give our best effort */
-+		if (!lock) {
-+			dev_err(&pdev->dev, "%s: cleanups failed\n", __func__);
-+			continue;
-+		}
-+		u8500_lock = to_u8500_hsem(lock);
-+		kfree(u8500_lock);
-+	}
-+
-+	pm_runtime_disable(&pdev->dev);
-+	iounmap(io_base);
-+free_state:
-+	kfree(state);
-+	return ret;
-+}
-+
-+static int u8500_hsem_remove(struct platform_device *pdev)
-+{
-+	struct u8500_hsem_state *state = platform_get_drvdata(pdev);
-+	struct hwspinlock *lock;
-+	struct u8500_hsem *u8500_lock;
-+	void __iomem *io_base;
-+	int i;
-+
-+	io_base = state->io_base;
-+
-+	/* clear all interrupts */
-+	writel(0xFFFF, io_base + HSEM_ICRALL);
-+
-+	for (i = 0; i < U8500_MAX_SEMAPHORE; i++) {
-+		lock = hwspin_lock_unregister(i);
-+		/* this shouldn't happen at this point. if it does, at least
-+		 * don't continue with the remove */
-+		if (!lock) {
-+			dev_err(&pdev->dev, "%s: failed on %d\n", __func__, i);
-+			return -EBUSY;
-+		}
-+
-+		u8500_lock = to_u8500_hsem(lock);
-+		kfree(u8500_lock);
-+	}
-+
-+	pm_runtime_disable(&pdev->dev);
-+	iounmap(io_base);
-+	kfree(state);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver u8500_hsem_driver = {
-+	.probe		= u8500_hsem_probe,
-+	.remove		= u8500_hsem_remove,
-+	.driver		= {
-+		.name	= "u8500_hsem",
-+	},
-+};
-+
-+static int __init u8500_hsem_init(void)
-+{
-+	return platform_driver_register(&u8500_hsem_driver);
-+}
-+/* board init code might need to reserve hwspinlocks for predefined purposes */
-+postcore_initcall(u8500_hsem_init);
-+
-+static void __exit u8500_hsem_exit(void)
-+{
-+	platform_driver_unregister(&u8500_hsem_driver);
-+}
-+module_exit(u8500_hsem_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Hardware Semaphore driver for u8500");
-+MODULE_AUTHOR("Mathieu Poirier <mathieu.poirier@linaro.org");
--- 
-1.7.1
-
+	Arnd
