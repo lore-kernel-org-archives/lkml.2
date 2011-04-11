@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab1DKPLu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 11:11:50 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:43770 "EHLO mail.sf-mail.de"
+	id S1754660Ab1DKPMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 11:12:19 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:39041 "EHLO mail.sf-mail.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab1DKPLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 11:11:49 -0400
-Message-ID: <4bd170057af715738bbc818219dffc04.squirrel@webmail.sf-mail.de>
-In-Reply-To: <1302514324-14717-2-git-send-email-joerg.roedel@amd.com>
-References: <1302514324-14717-1-git-send-email-joerg.roedel@amd.com>
-    <1302514324-14717-2-git-send-email-joerg.roedel@amd.com>
-Date: Mon, 11 Apr 2011 15:11:44 -0000
-Subject: Re: [PATCH 1/2] x86/amd-iommu: Add extended feature detection
+	id S1754302Ab1DKPMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 11:12:17 -0400
+Message-ID: <da7a8b1fa75c0968a4586a591713d5db.squirrel@webmail.sf-mail.de>
+In-Reply-To: <1302495170-973-4-git-send-email-benh@kernel.crashing.org>
+References: <1302495170-973-1-git-send-email-benh@kernel.crashing.org>
+    <1302495170-973-4-git-send-email-benh@kernel.crashing.org>
+Date: Mon, 11 Apr 2011 15:12:15 -0000
+Subject: Re: [PATCH 3/6] microblaze/pci: Move the remains of pci_32.c to
+ pci-common.c
 From: "Rolf Eike Beer" <eike-kernel@sf-tec.de>
-To: "Joerg Roedel" <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, "Joerg Roedel" <joerg.roedel@amd.com>
+To: "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, bheglaas@google.com,
+        monstr@monstr.eu, tglx@linutronix.de, bigeasy@linutronix.de,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,31 +29,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch adds detection of the extended features of an
-> AMD IOMMU. The available features are printed to dmesg on
-> boot.
+> There's no point in keeping this separate. Even if microblaze grows
+> a 64-bit variant, it will probably be able to re-use that code as-is
 
-> diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-> index bcf58ea..d609610 100644
-> --- a/arch/x86/kernel/amd_iommu.c
-> +++ b/arch/x86/kernel/amd_iommu.c
-> @@ -29,8 +29,8 @@
->  #include <asm/proto.h>
->  #include <asm/iommu.h>
->  #include <asm/gart.h>
-> -#include <asm/amd_iommu_proto.h>
->  #include <asm/amd_iommu_types.h>
-> +#include <asm/amd_iommu_proto.h>
->  #include <asm/amd_iommu.h>
+> diff --git a/arch/microblaze/pci/pci-common.c
+> b/arch/microblaze/pci/pci-common.c
+> index 5359906..041b1d8 100644
+> --- a/arch/microblaze/pci/pci-common.c
+> +++ b/arch/microblaze/pci/pci-common.c
+> @@ -50,6 +50,11 @@ unsigned int pci_flags;
+>
+>  static struct dma_map_ops *pci_dma_ops = &dma_direct_ops;
+>
+> +unsigned long isa_io_base;
+> +unsigned long pci_dram_offset;
+> +static int pci_bus_count;
+> +
+> +
 
-That one (and the second place where this happens later) look suspicious.
-Do you need that change? Usually those includes tend to be alphabetically
-sorted (which you destroy here).
-
-When you _need_ that change that means that you probably use some things
-from amd_iommu_types.h in amd_iommu_proto.h without including that header
-there (which is a bug in amd_iommu_proto.h and must be fixed there).
-Otherwise this change is just noise. So either way this change should not
-happen IMHO.
+Extra newline.
 
 Eike
