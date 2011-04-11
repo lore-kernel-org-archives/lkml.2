@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab1DKRpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:45:20 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58050 "EHLO mx2.parallels.com"
+	id S1754837Ab1DKRro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:47:44 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:48338 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab1DKRpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:45:18 -0400
-Message-ID: <4DA33E1E.701@parallels.com>
-Date: Mon, 11 Apr 2011 12:45:02 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: "Serge E. Hallyn" <serge@hallyn.com>, <linux-kernel@vger.kernel.org>,
-        <linux-nfs@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 3/3] Compare namespaces when comparing addresses in auth_unix
- cache.
-References: <4D9431B3.2070305@parallels.com>	<20110405034641.GC6764@hallyn.com>	<4D9F24F2.9020603@parallels.com>	<4DA30222.5040902@parallels.com>	<20110411133602.GA5321@hallyn.com> <BANLkTi=sh1CB+e1EhU-c-Bs3BCszWEBTMA@mail.gmail.com>
-In-Reply-To: <BANLkTi=sh1CB+e1EhU-c-Bs3BCszWEBTMA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754720Ab1DKRrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 13:47:43 -0400
+Date: Mon, 11 Apr 2011 19:47:37 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] Remove non-MAINTAINERS email address references for
+ Lennert Buytenhek.
+Message-ID: <20110411194737.1d75e053@schatten.dmk.lab>
+In-Reply-To: <20110410202716.GK22881@wantstofly.org>
+References: <20110410134504.GG22881@wantstofly.org>
+	<20110410.132002.193717670.davem@davemloft.net>
+	<20110410202716.GK22881@wantstofly.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [24.27.26.60]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 08:57 AM, Alexey Dobriyan wrote:
-> On Mon, Apr 11, 2011 at 4:36 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+On Sun, 10 Apr 2011 22:27:16 +0200
+Lennert Buytenhek <buytenh@wantstofly.org> wrote:
+
+> On Sun, Apr 10, 2011 at 01:20:02PM -0700, David Miller wrote:
 > 
->> Besides use-after-free, the other concern is an invalid net_eq()
->> result due to the * being re-used for a new netns.
+> > > This gets rid of all (obsolete as well as still valid) email addresses
+> > > for Lennert Buytenhek across the tree -- MAINTAINERS should be used for
+> > > obtaining a valid email address.
+> > > 
+> > > Signed-off-by: Lennert Buytenhek <buytenh@wantstofly.org>
+> > 
+> > Lennert, this is silly.
+> > 
+> > That email address acts as part of the identification of who you
+> > are, and is part of the copyright.
 > 
-> Exactly.
+> The problem is that half of them are out of date.  I at first sent a
+> patch to change them all over to buytenh@wantstofly.org, but then got:
 > 
-> "struct net" dies last, no exceptions, anything different is a disaster.
+> 	http://marc.info/?l=linux-kernel&m=129858453409012&w=2
+> 
+> which seemed sensible. :-/
 
-Actually the patch turns out to be irrelevant because Pavel made the
-whole thing into a pernet subsystem, so it was already fixed in a
-different way.  (Commit 2f72c9b7.  My bad, I initially started working
-against an NFS tree with an older kernel version, this fix was to a
-different source file so my patch still applied, and I just regression
-tested that it worked, not that it still failed without it.  Just caught
-it now.)
+What about the .mailmap file in the kernel source tree? ( man
+git-shortlog )
 
-I actually did talk about addressing potential reuse of the net * in my
-email with Stanislav (point of the patch was to allow one cache to
-maintain two different contexts at the same time; a situation that
-changed the meaning of an existing cache entry by requiring the old
-context to go away didn't introduce any new problems that a single
-context didn't already have due to DNAT, servers moving, administrators
-changing credentials on the server).  But sort of a moot point now.
+That is honoured at least by git and scripts/get_maintainers.pl ...
 
-I believe the third patch can be dropped entirely.
+You'll want to add lines of the form:
+Lennert Buytenhek <buytenh@wantstofly.org> Lennert Buytenhek <old address>
 
-Rob
+I guess...
+
+Regards,
+Flo
