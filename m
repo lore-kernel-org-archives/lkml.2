@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab1DKG1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 02:27:11 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:65495 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751944Ab1DKG1J (ORCPT
+	id S1754098Ab1DKGgz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 02:36:55 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62688 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab1DKGgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 02:27:09 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArwDAIScok15LHHJgWdsb2JhbACmGBUBARYmJcA1DoVgBJN7
-Date: Mon, 11 Apr 2011 16:27:03 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Q. locking order of dcache_lru_lock
-Message-ID: <20110411062703.GC21395@dastard>
-References: <9769.1302268831@jrobl>
- <1302369133.2388.1.camel@twins>
- <29946.1302498571@jrobl>
+	Mon, 11 Apr 2011 02:36:52 -0400
+Date: Sun, 10 Apr 2011 23:36:48 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH] fsldma: fix build warning caused by of_platform_device
+ changes
+Message-ID: <20110411063648.GB4439@angua.secretlab.ca>
+References: <1302197583-31771-1-git-send-email-iws@ovro.caltech.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <29946.1302498571@jrobl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1302197583-31771-1-git-send-email-iws@ovro.caltech.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 02:09:31PM +0900, J. R. Okajima wrote:
+On Thu, Apr 07, 2011 at 10:33:03AM -0700, Ira W. Snyder wrote:
+> Commit 000061245a6797d542854106463b6b20fbdcb12e forgot to convert the
+> type of structure passed into platform_device_register() when it was
+> converted from of_platform_device_register. Fix it.
 > 
-> Peter Zijlstra:
-> > On Fri, 2011-04-08 at 22:20 +0900, J. R. Okajima wrote:
-> > >=20
-> > > When spin_trylock(&dentry->d_lock) successfully acquired d_lock, does
-> > > the violation of locking order happen (or a deadlock, in worse case)?=20
-> >
-> > No, since a trylock never actually blocks a deadlock cannot occur.
+> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+
+Applied thanks.
+
+One comment however; when quoting sha1 commit id's, please also quote
+the title of the patch.  Very few people I know can remember off the
+top of their head the commit names that goes with a sha1 id.  :-)
+
+g.
+
+> ---
+>  drivers/dma/fsldma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Ah, exactly. I had to be sleeping when I wrote about deadlock.
-> How about the locking order? Do you think d_lock after dcache_lru_lock
-> is a problem?
-
->From fs/dcache.c:
-
- * Ordering:
- * dentry->d_inode->i_lock
- *   dentry->d_lock
- *     dcache_lru_lock
- *     dcache_hash_bucket lock
- *     s_anon lock
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index 6b39675..8a78154 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -1448,7 +1448,7 @@ static const struct of_device_id fsldma_of_ids[] = {
+>  	{}
+>  };
+>  
+> -static struct of_platform_driver fsldma_of_driver = {
+> +static struct platform_driver fsldma_of_driver = {
+>  	.driver = {
+>  		.name = "fsl-elo-dma",
+>  		.owner = THIS_MODULE,
+> -- 
+> 1.7.3.4
+> 
