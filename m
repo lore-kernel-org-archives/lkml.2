@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab1DKUPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 16:15:45 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57750 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946Ab1DKUPn convert rfc822-to-8bit (ORCPT
+	id S1756019Ab1DKUQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 16:16:59 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51061
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755894Ab1DKUQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 16:15:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110405163855.GC4183@core.coreip.homeip.net>
-References: <1301727259-5185-1-git-send-email-jeffbrown@android.com>
- <1301727259-5185-4-git-send-email-jeffbrown@android.com> <20110404213659.GC984@core.coreip.homeip.net>
- <BANLkTi=0q6DbXki5RhE8eakermnVixN67g@mail.gmail.com> <20110404224611.GA2783@core.coreip.homeip.net>
- <BANLkTinLcXsZpHm3_uzRUEdrJQsbozgghA@mail.gmail.com> <20110405163855.GC4183@core.coreip.homeip.net>
-From: Jeffrey Brown <jeffbrown@android.com>
-Date: Mon, 11 Apr 2011 13:15:03 -0700
-Message-ID: <BANLkTinw6poJOkFWaJp6paL6rDpwBG-9zA@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] input: evdev: Make device readable only when it
- contains a complete packet.
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: rydberg@euromail.se, djkurtz@google.com, linux-input@vger.kernel.org,
+	Mon, 11 Apr 2011 16:16:58 -0400
+Date: Mon, 11 Apr 2011 13:16:22 -0700 (PDT)
+Message-Id: <20110411.131622.39194423.davem@davemloft.net>
+To: fubar@us.ibm.com
+Cc: panweiping3@gmail.com, andy@greyhouse.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] bonding:set save_load to 0 when initializing
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <30474.1302548207@death>
+References: <1302270019-11698-1-git-send-email-panweiping3@gmail.com>
+	<30474.1302548207@death>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3BKH5e8028891
 
-Hi Dmitry,
+From: Jay Vosburgh <fubar@us.ibm.com>
+Date: Mon, 11 Apr 2011 11:56:47 -0700
 
-On Tue, Apr 5, 2011 at 9:38 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
->> Heh, I faced this very same dilemma.  I tried 'last_sync',
->> 'readable_tail', 'read_end', and others before settling on 'end' and a
->> descriptive comment.
->
-> 'packet_head' maybe? Similar to the head but for whole event packet?
+> 
+>>It is unnecessary to set save_load to 1 here,
+>>as the tx_hashtbl is just kzalloced.
+>>
+>>Signed-off-by: Weiping Pan(æ½˜å«å¹³) <panweiping3@gmail.com>
+> 
+> 	I don't think this will cause any behavioral change, but I'll
+> grant is more correct in intent (there's no load information to save at
+> this point).
+> 
+> Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
 
-That sounds good.  It marks the position one past the end of the most
-recent packet, or equivalently the beginning of the next packet (if
-there is one).  :-)
-
-> Before we started changing tail to advance to SYN_DROPPED position we
-> could probably drop the buffer lock and sprinkle memory barriers (to
-> ensure, for example, that buffer is written before advancing head).
->
-> Now we do need to protect buffer and head/tail but the new field can be
-> updated outside the lock.
-
-That sounds kind of complicated.  Memory barriers and volatile
-reads/writers aren't free.  Acquiring / releasing the lock already
-performs the necessary memory barriers and keeps the code simple since
-we can rely on mutual exclusion guarantees to preserve our invariants.
- I doubt the buffer lock is highly contended so although we could
-probably do without it, I'm not sure it's worth the necessary
-contortions.  *shrug*
-
-Any further progress on this patch?
-
-Thanks,
-Jeff.
+Applied.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
