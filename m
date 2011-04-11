@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab1DKRro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:47:44 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:48338 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720Ab1DKRrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:47:43 -0400
-Date: Mon, 11 Apr 2011 19:47:37 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] Remove non-MAINTAINERS email address references for
- Lennert Buytenhek.
-Message-ID: <20110411194737.1d75e053@schatten.dmk.lab>
-In-Reply-To: <20110410202716.GK22881@wantstofly.org>
-References: <20110410134504.GG22881@wantstofly.org>
-	<20110410.132002.193717670.davem@davemloft.net>
-	<20110410202716.GK22881@wantstofly.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754902Ab1DKRs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:48:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58097 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754720Ab1DKRs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 13:48:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=R_D9ujCFeKv_o_U83GAR35X3TOQ@mail.gmail.com>
+References: <BANLkTi=n+ckDXVk6rN=Mgh+BApbrPqPfmg@mail.gmail.com> <BANLkTi=R_D9ujCFeKv_o_U83GAR35X3TOQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 11 Apr 2011 10:48:08 -0700
+Message-ID: <BANLkTimfpRwsBUWcoNA1uDb8QfQP6USKEA@mail.gmail.com>
+Subject: Re: Crash with kfree(null) on MacBook? kobject_set_name_vargs
+To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Botting <andy@andybotting.com>
+Content-Type: multipart/mixed; boundary=0022154012faddd82104a0a82ecb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Apr 2011 22:27:16 +0200
-Lennert Buytenhek <buytenh@wantstofly.org> wrote:
+--0022154012faddd82104a0a82ecb
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Sun, Apr 10, 2011 at 01:20:02PM -0700, David Miller wrote:
-> 
-> > > This gets rid of all (obsolete as well as still valid) email addresses
-> > > for Lennert Buytenhek across the tree -- MAINTAINERS should be used for
-> > > obtaining a valid email address.
-> > > 
-> > > Signed-off-by: Lennert Buytenhek <buytenh@wantstofly.org>
-> > 
-> > Lennert, this is silly.
-> > 
-> > That email address acts as part of the identification of who you
-> > are, and is part of the copyright.
-> 
-> The problem is that half of them are out of date.  I at first sent a
-> patch to change them all over to buytenh@wantstofly.org, but then got:
-> 
-> 	http://marc.info/?l=linux-kernel&m=129858453409012&w=2
-> 
-> which seemed sensible. :-/
+2011/4/11 Linus Torvalds <torvalds@linux-foundation.org>:
+>
+> prints out NULL is because the string printout code does this:
+>
+> =A0 =A0 =A0 =A0if ((unsigned long)s < PAGE_SIZE)
+> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0s =3D "(null)";
+>
+> which admittedly is not very helpful in this case (but it's usually
+> nicer than just oopsing).
 
-What about the .mailmap file in the kernel source tree? ( man
-git-shortlog )
+You could try this (UNTESTED!) patch to avoid this particular issue.
+It will (well, unless I screwed up) print non-NULL pointers as the hex
+value they have. So you should see "0x202" instead of "(null)" in that
+case.
 
-That is honoured at least by git and scripts/get_maintainers.pl ...
+Of course, it sounds like _you_ don't actually see the bug at all,
+because for you it probably really _is_ NULL. The people who see the
+bug have some random non-null value, probably because of the field
+just not being initialized properly, and containing some crud.
 
-You'll want to add lines of the form:
-Lennert Buytenhek <buytenh@wantstofly.org> Lennert Buytenhek <old address>
+                                       Linus
 
-I guess...
+--0022154012faddd82104a0a82ecb
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gmdp3x0v0
 
-Regards,
-Flo
+IGxpYi92c3ByaW50Zi5jIHwgICAgOCArKysrKysrLQogMSBmaWxlcyBjaGFuZ2VkLCA3IGluc2Vy
+dGlvbnMoKyksIDEgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbGliL3ZzcHJpbnRmLmMgYi9s
+aWIvdnNwcmludGYuYwppbmRleCBiYzBhYzZiMzMzZGMuLmRhYmMzMTA2ODRiZiAxMDA2NDQKLS0t
+IGEvbGliL3ZzcHJpbnRmLmMKKysrIGIvbGliL3ZzcHJpbnRmLmMKQEAgLTQwMCw4ICs0MDAsMTQg
+QEAgY2hhciAqc3RyaW5nKGNoYXIgKmJ1ZiwgY2hhciAqZW5kLCBjb25zdCBjaGFyICpzLCBzdHJ1
+Y3QgcHJpbnRmX3NwZWMgc3BlYykKIHsKIAlpbnQgbGVuLCBpOwogCi0JaWYgKCh1bnNpZ25lZCBs
+b25nKXMgPCBQQUdFX1NJWkUpCisJaWYgKCh1bnNpZ25lZCBsb25nKXMgPCBQQUdFX1NJWkUpIHsK
+KwkJaWYgKHMpIHsKKwkJCXNwZWMuYmFzZSA9IDE2OworCQkJc3BlYy5mbGFncyB8PSBTUEVDSUFM
+OworCQkJcmV0dXJuIG51bWJlcihidWYsIGVuZCwgKHVuc2lnbmVkIGxvbmcpcywgc3BlYyk7CisJ
+CX0KIAkJcyA9ICIobnVsbCkiOworCX0KIAogCWxlbiA9IHN0cm5sZW4ocywgc3BlYy5wcmVjaXNp
+b24pOwogCg==
+--0022154012faddd82104a0a82ecb--
