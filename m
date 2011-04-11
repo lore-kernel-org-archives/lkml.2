@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab1DKQZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:25:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46536 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752483Ab1DKQZI (ORCPT
+	id S1753476Ab1DKQ0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:26:38 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44156 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab1DKQ0h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:25:08 -0400
-Date: Mon, 11 Apr 2011 12:25:07 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-cc: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] USB host: Fix lockdep warning in AMD PLL quirk
-In-Reply-To: <20110411161647.GK23633@amd.com>
-Message-ID: <Pine.LNX.4.44L0.1104111221000.1975-100000@iolanthe.rowland.org>
+	Mon, 11 Apr 2011 12:26:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DjSk4zH5eee8rj4eRvF7ottaxwsz2oYbBcsfpy6uLBvmVwS0hEmfvTtAK5rH/ttiFK
+         0gVk9NbY5CL2D+QtocJ8enO4k+ZTXFAw+2RrcRKkPbs4rcF5nnK5GxXIbwqAEtOsR1Ne
+         lBlz631bdxS79Yfh1nkqwDI1xPaTPVwVUXJAI=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.LFD.2.00.1104111806021.4501@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1104111723020.4501@localhost6.localdomain6>
+	<497D1168CB2F407F9005845B39FEF144@e1705>
+	<alpine.LFD.2.00.1104111806021.4501@localhost6.localdomain6>
+Date: Tue, 12 Apr 2011 00:19:41 +0800
+Message-ID: <BANLkTi=6UnfiOwwdwgJvW0kZyJ7OoE0dpg@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 2.6.33.9-rt31
+From: Oon-Ee Ng <ngoonee.talk@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Madovsky <infos@madovsky.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011, Roedel, Joerg wrote:
+On Tue, Apr 12, 2011 at 12:06 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 11 Apr 2011, Madovsky wrote:
+>
+>> Hi Thomas,
+>>
+>> the links below don't show any new kernels or
+>> not found pages
+>
+> Mirroring from the master machine to the public ones is taking some
+> time, but it's there now.
+>
+> Thanks,
+>
+>        tglx
 
-> > > +commit:
-> > > +
-> > > +	spin_lock_irqsave(&amd_lock, flags);
-> > > +	if (amd_chipset.probe_count > 0) {
-> > > +		/* race - someone else was faster - drop devices */
-> > > +
-> > > +		/* Mark that we where here */
-> > > +		amd_chipset.probe_count++;
-> > 
-> > This line should be moved above the "if" statement, since you always 
-> > want to increment the count.
-> 
-> No, probe_count can't be incremented here because the probe is not
-> finished yet.
+I think he was referring to this link, which is still empty for me:-
 
-I don't follow you.  Sure it is finished; this is the "commit" part of 
-the probe.
+http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.33.9.tar.bz2
 
->  If another thread jumps in after the lock is released and
-> detects probe_count > 0 while the probe hasn't happened the quirk will
-> fail. So we need to make sure that amd_chipset.probe_count does not
-> become > 0 before the probe is finished.
-
-I meant the increment should be done before the "if" statement but
-after the spin_lock_irqsave().  That way nobody else can jump in at the
-wrong time.
-
-> > > +		ret = amd_chipset.probe_result;
-> > > +
-> > > +		spin_unlock_irqrestore(&amd_lock, flags);
-> > > +
-> > > +		if (info.nb_dev)
-> > > +			pci_dev_put(info.nb_dev);
-> > > +		if (info.smbus_dev)
-> > > +			pci_dev_put(info.smbus_dev);
-> > > +
-> > > +	} else {
-> > > +		/* no race - commit the result */
-> > > +		info.probe_count++;
-> > 
-> > This isn't right, because info.probe_count was initialized to 0.  Maybe 
-> > amd_chipset.probe_count should be made into a separate variable, not a 
-> > part of the structure, like amd_lock.
-> 
-> The purpose of the struct is structuring of data. In theory all of its
-> members could be turned into global variables. The amd_lock is different
-> because it does not only protect the struct but also access to the
-> hardware while the quirk is applied/unapplied.
-
-Do it however you prefer.  But as it stands now, the patch is wrong.
-
-Alan Stern
-
+Will check again in a couple of hours, but was 2.6.33.8 just skipped
+entirely? Cos that's not there either.
