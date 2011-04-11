@@ -1,183 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab1DKUgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 16:36:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34804 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab1DKUgO (ORCPT
+	id S1755663Ab1DKUkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 16:40:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55151 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756Ab1DKUkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 16:36:14 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3] leds: provide helper to register "leds-gpio" devices
-Date: Mon, 11 Apr 2011 22:35:57 +0200
-Message-Id: <1302554157-24145-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1302097097.22904.41.camel@rex>
-References: <1302097097.22904.41.camel@rex>
+	Mon, 11 Apr 2011 16:40:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=kDdzQ3cU5dwlsXh1EtANvoiUOa6bZEj2/ndiuj5lvLTYZoFkDyqXz0wQDbTQ5pubkU
+         s1UbOhxGzgZDlILBeFXWRqnb5Hzfm9O21f9A/shv3Nd4tOv8BX8HPHFt/JKxgffAcoHM
+         t9/GOiLPDTYtmcpSNf7i9mWooMe2fsj7Nyi8I=
+Message-ID: <4DA36722.2020402@suse.cz>
+Date: Mon, 11 Apr 2011 22:40:02 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: nfs client doesn't work [was: mmotm 2011-03-31-14-48 uploaded]
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org> <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org> <4D9D5CC9.2040002@suse.cz>
+In-Reply-To: <4D9D5CC9.2040002@suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function makes a deep copy of the platform data to allow it to live
-in init memory.
-The definition cannot go into leds-gpio.c because it needs to be builtin
-to be usable by platforms.
-
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-Hello,
-
-changes since v2:
- - define gpio_led_register_device in a new file (led-register.c)
- - new parameter id for gpio_led_register_device
- - change drivers/Makefile to unconditionally include
-   drivers/leds/Makefile
-
-On Wed, Apr 06, 2011 at 06:38:17AM -0700, Richard Purdie wrote:
-> It should only be built-in on platforms that both use leds-gpio and want
-> to use this function at boot time. This is not the description of
-> leds-core.c.
+On 04/07/2011 08:42 AM, Jiri Slaby wrote:
+> On 04/06/2011 10:44 PM, Myklebust, Trond wrote:
+>> On Sat, 2011-04-02 at 10:56 +0200, Jiri Slaby wrote:
+>>> On 03/31/2011 11:48 PM, akpm@linux-foundation.org wrote:
+>>>> The mm-of-the-moment snapshot 2011-03-31-14-48 has been uploaded to
+>>>
+>>> Hi, nfs client is defunct in this kernel. Tcpdump says:
+>>> 10:51:55.489717 IP 10.20.11.33.759945860 > 10.20.3.2.2049: 132 getattr
+>>> fh 0,0/24
+>>> 10:51:55.515927 IP 10.20.3.2.2049 > 10.20.11.33.759945860: reply ok 44
+>>> getattr ERROR: Operation not permitted
+>>> 10:51:55.515949 IP 10.20.11.33.921 > 10.20.3.2.2049: Flags [.], ack
+>>> 3569361440, win 115, options [nop,nop,TS val 599750 ecr 255058541],
+>> length 0
+>>> 10:52:04.130310 IP 10.20.11.33.793500292 > 10.20.3.2.2049: 76 getattr fh
+>>> 0,0/24
+>>> 10:52:04.152178 IP 10.20.3.2.2049 > 10.20.11.33.793500292: reply ok 44
+>>> getattr ERROR: Operation not permitted
+>>>
+>>> If I run the same mount command (mount -oro,intr host:dir mountpoint)
+>>> from within a virtual machine with 2.6.38.2 there, everything mounts OK.
+>>
+>> Does the attached patch help?
 > 
-> I understand the issue and the desire to move it into common code, I
-> think that is good but I don't think you've found the most appropriate
-> place yet.
-> 
-> I'm tempted to suggest making the function a static inline in leds.h (or
-> create an leds-gpio.h and move the struct definition there too).
-I don't like your static inline suggestion but prefer a "select
-SOMETHING" to make the function available. So what about this patch?
+> No, still the operation not permitted in the tcpdump output and no mount.
 
-I choosed a generic name led-register.c, maybe in the future some more
-leds want a similar function.
+The next tree from 20110411 still doesn't work. The topmost commit in
+fs/nfs/namespace.c is:
+commit 418875900e3de4831c84f86ae4756690dac5be77
+Author: Bryan Schumaker <bjschuma@netapp.com>
+Date:   Wed Apr 6 14:33:28 2011 -0400
 
-Best regards
-Uwe
+    NFS: Fix a signed vs. unsigned secinfo bug
 
- drivers/Makefile            |    2 +-
- drivers/leds/Kconfig        |    5 +++++
- drivers/leds/Makefile       |    1 +
- drivers/leds/led-register.c |   33 +++++++++++++++++++++++++++++++++
- include/linux/leds.h        |   12 ++++++++++++
- 5 files changed, 52 insertions(+), 1 deletions(-)
- create mode 100644 drivers/leds/led-register.c
 
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 3f135b6..4a4f425 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -95,7 +95,7 @@ obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
- obj-$(CONFIG_DMA_ENGINE)	+= dma/
- obj-$(CONFIG_MMC)		+= mmc/
- obj-$(CONFIG_MEMSTICK)		+= memstick/
--obj-$(CONFIG_NEW_LEDS)		+= leds/
-+obj-y				+= leds/
- obj-$(CONFIG_INFINIBAND)	+= infiniband/
- obj-$(CONFIG_SGI_SN)		+= sn/
- obj-y				+= firmware/
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 9bec869..e8e101e 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -14,6 +14,11 @@ config LEDS_CLASS
- 	  This option enables the led sysfs class in /sys/class/leds.  You'll
- 	  need this to do anything useful with LEDs.  If unsure, say N.
- 
-+config LED_REGISTER_GPIO
-+	bool
-+	help
-+	  This option provides the function gpio_led_register_device.
-+
- if NEW_LEDS
- 
- comment "LED drivers"
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 39c80fc..ca428bd 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -3,6 +3,7 @@
- obj-$(CONFIG_NEW_LEDS)			+= led-core.o
- obj-$(CONFIG_LEDS_CLASS)		+= led-class.o
- obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o
-+obj-y					+= led-register.o
- 
- # LED Platform Drivers
- obj-$(CONFIG_LEDS_88PM860X)		+= leds-88pm860x.o
-diff --git a/drivers/leds/led-register.c b/drivers/leds/led-register.c
-new file mode 100644
-index 0000000..d3731ea
---- /dev/null
-+++ b/drivers/leds/led-register.c
-@@ -0,0 +1,33 @@
-+/*
-+ * Copyright (C) 2011 Pengutronix
-+ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
-+ */
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/leds.h>
-+
-+#if defined(CONFIG_LED_REGISTER_GPIO)
-+struct platform_device *__init gpio_led_register_device(
-+		int id, const struct gpio_led_platform_data *pdata)
-+{
-+	struct platform_device *ret;
-+	struct gpio_led_platform_data _pdata = *pdata;
-+
-+	_pdata.leds = kmemdup(pdata->leds,
-+			pdata->num_leds * sizeof(*pdata->leds), GFP_KERNEL);
-+	if (!_pdata.leds)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ret = platform_device_register_resndata(NULL, "leds-gpio", id,
-+			NULL, 0, &_pdata, sizeof(_pdata));
-+	if (IS_ERR(ret))
-+		kfree(_pdata.leds);
-+
-+	return ret;
-+}
-+#endif
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 61e0340..b20474d 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -207,5 +207,17 @@ struct gpio_led_platform_data {
- 					unsigned long *delay_off);
- };
- 
-+/**
-+ * gpio_led_register_device - register a gpio-led device
-+ * @pdata: the platform data used for the new device
-+ *
-+ * Use this function instead of platform_device_add()ing a static struct
-+ * platform_device.
-+ *
-+ * Note: as pdata and pdata->leds is copied these usually can and should be
-+ * __initdata.
-+ */
-+struct platform_device *gpio_led_register_device(
-+		int id, const struct gpio_led_platform_data *pdata);
- 
- #endif		/* __LINUX_LEDS_H_INCLUDED */
+I bisected it to (in vanilla already):
+
+8f70e95f9f4159184f557a1db60c909d7c1bd2e3 is the first bad commit
+commit 8f70e95f9f4159184f557a1db60c909d7c1bd2e3
+Author: Bryan Schumaker <bjschuma@netapp.com>
+Date:   Thu Mar 24 17:12:31 2011 +0000
+
+    NFS: Determine initial mount security
+
+    When sec=<something> is not presented as a mount option,
+    we should attempt to determine what security flavor the
+    server is using.
+
+    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+:040000 040000 8e5a640b37e00f0df21e1d9cd9aff160df2d5938
+0152daa67bc8d12e32cda5f4a036807d2e380392 M      fs
+:040000 040000 f74aa33f8597cb82cd0fd7d90d84e0660b7f5804
+527bc0ca6975cedc7e684b45dc9961f8aaf1207a M      include
+:040000 040000 87559d2f211ea905343a86c8551b6610dd239891
+7e4ee0e5eddf12474b6de9e7fdb6218b6165bdb2 M      net
+
+thanks,
 -- 
-1.7.2.3
-
+js
+suse labs
