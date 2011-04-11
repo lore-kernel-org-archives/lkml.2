@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab1DKSSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:18:30 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61559 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775Ab1DKSS2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:18:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:mime-version:to:cc:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=T3J+hT7rD7+IU9XVzyA4Pa85tYDJc8r657XxnK8lE7nMGXgU0dvf/bCaqs3r2LT887
-         L11YkKnOIhSHbezwKIUZQqoXil9mInbU6TU4urS0TB7HDljEPAWV/s7if7DWm9SgsqM3
-         oiH3eherLFUDDuSIe7k/CqE/wMJllz/apL3MQ=
-Message-ID: <4DA345EF.6050408@gmail.com>
-Date: Mon, 11 Apr 2011 20:18:23 +0200
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
+	id S1755239Ab1DKSVN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:21:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51308 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851Ab1DKSVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 14:21:12 -0400
+Message-ID: <4DA34619.6010708@zytor.com>
+Date: Mon, 11 Apr 2011 11:19:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Luis Correia <luis.f.correia@gmail.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, gwingerde@gmail.com, ben@decadent.org.uk,
-        users@rt2x00.serialmonkey.com, linux-wireless@vger.kernel.org,
-        Shiang Tu <shiang_tu@ralinktech.com>
-Subject: Re: [PATCH] rt2800pci: rt2800usb: Firmware update
-References: <1302532043-22934-1-git-send-email-Larry.Finger@lwfinger.net> <4DA33F3A.6090707@gmail.com> <BANLkTinKuQ7i20FxmDCT1cRMPvOxM0aygQ@mail.gmail.com>
-In-Reply-To: <BANLkTinKuQ7i20FxmDCT1cRMPvOxM0aygQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Pavel Machek <pavel@ucw.cz>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        x86@kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] x86 APM: delete Linux kernel APM support
+References: <alpine.LFD.2.02.1103232321070.3848@x980> <alpine.LFD.2.02.1103241929450.16085@x980> <20110325113048.GC29521@elte.hu> <201103252333.23880.rjw@sisk.pl> <20110408062506.GB1596@ucw.cz> <4D9F7630.1090503@zytor.com> <20110411130505.GA3301@ucw.cz>
+In-Reply-To: <20110411130505.GA3301@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 07:55 PM, Luis Correia wrote:
+On 04/11/2011 06:05 AM, Pavel Machek wrote:
+> Hi!
+> 
+>>>> Well, it kind of does but not really. :-)
+>>>>
+>>>> The main problem with APM is that nobody really works on it and I'm not sure
+>>>> if there are any active users.  At least no one reports any problems with it,
+>>>> which is kind of surprising, given the number of chages we've made in the PM
+>>>> core for the last couple of years.  So quite likely it's just become
+>>>> non-functional over time anyway, but we have no confirmation.
+>>>
+>>> It was working ok last time I tried -- cca 6/2010.
+>>
+>> What aspects of it did you test, and on what platform?
+> 
+> thinkpad 560X.
+> 
+> I tested basic boot, IIRC it did turn backlight off properly in
+> screensaver and even suspend worked.
+> 									Pavel
 
-> the rt2870.bin should support all USB rt2800 based chipsets with
-> several firmware blocks concatenated inside the file.
-> same goes for rt2860, which support all PCI rt2800 based chipsets with
-> several firmware blocks concatenated inside the file.
->
-> we know that this is confusing, we've had to live with it for a loooong time.
+OK, but I presume runtime power management wasn't on the list at least
+on what matters.
 
-They are used by staging drivers.
+	-hpa
 
-Even if staging drivers are deleted, there are still a lot of old
-kernels running out there with staging drivers. And those kernels
-need these files (rt3070.bin rt3071.bin rt3090.bin)
-
-A link is a easy way to maintain retrocompatibility without disturb
-the guys running old kernels.
