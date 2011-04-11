@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab1DKKPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 06:15:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50537 "EHLO
+	id S1755715Ab1DKKUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 06:20:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43462 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab1DKKPK (ORCPT
+	with ESMTP id S1752912Ab1DKKUx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 06:15:10 -0400
+	Mon, 11 Apr 2011 06:20:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=ojPqUQtoep8K3tgmVFvRvvYwvxRHMMngjGZMKX/vQfqTIQCtZpgLpsVVLmV/Qh9kaw
-         51ArnMFPIFOfwShRXQ9CBXQBYSfjRaaKkKZkSl8RJv+pUpPp9qX7BNoroahbl3zSgj9G
-         dNnY0piq3wVsq3Mb5w4Fcq1RuCUmszaAzDdKU=
-From: =?UTF-8?q?Weiping=20Pan=28=E6=BD=98=E5=8D=AB=E5=B9=B3=29?= 
-	<panweiping3@gmail.com>
-Cc: =?UTF-8?q?Weiping=20Pan (=E6=BD=98=E5=8D=AB=E5=B9=B3) ?= 
-	<panweiping3@gmail.com>,
-        Jay Vosburgh <fubar@us.ibm.com> (supporter:BONDING DRIVER),
-        Andy Gospodarek <andy@greyhouse.net> (supporter:BONDING DRIVER),
-        netdev@vger.kernel.org (open list:BONDING DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 4/4] bonding:fix two typos
-Date: Mon, 11 Apr 2011 18:16:32 +0800
-Message-Id: <1302516993-9612-1-git-send-email-panweiping3@gmail.com>
-X-Mailer: git-send-email 1.7.4
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=H0ylrGsDT5hCSB68bdFQnj1HwznaCsb9e2/7VN+lhkBe++8gV6mGoZvSomWGi6eHz8
+         Um1wfYIzirZtQ40i1Nndum/AqWaqfoM4Lic3XiJaU+NziktJHD8TDltzB32n+lQzuX3z
+         aQVQy1p8xlP8UPgPEQExk6IBsGxreNlUzXr7s=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <mnazarewicz@gmail.com>,
+        "Dave Hansen" <dave@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, "Johannes Weiner" <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+References: <20110408202253.6D6D231C@kernel>
+ <BANLkTi=OnDX53nOZcaaMmqXRBcWicam0xg@mail.gmail.com>
+ <1302296522.7286.1197.camel@nimitz>
+Date: Mon, 11 Apr 2011 12:20:49 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vtrq0zac3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1302296522.7286.1197.camel@nimitz>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace relpy with reply.
-replace premanent with permanent.
+>> On Apr 8, 2011 10:23 PM, "Dave Hansen" <dave@linux.vnet.ibm.com> wrote:
+>>> +       if (fmt) {
+>>> +               printk(KERN_WARNING);
+>>> +               va_start(args, fmt);
+>>> +               r = vprintk(fmt, args);
+>>> +               va_end(args);
+>>> +       }
 
-Signed-off-by: Weiping Pan(潘卫平) <panweiping3@gmail.com>
----
- drivers/net/bonding/bond_alb.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> On Fri, 2011-04-08 at 22:54 +0200, Michał Nazarewicz wrote:
+>> Could we make the "printk(KERN_WARNING);" go away and require caller
+>> to specify level?
 
-diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
-index 9bc5de3..6e176d6 100644
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -701,7 +701,7 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
- 		 */
- 		rlb_choose_channel(skb, bond);
- 
--		/* The ARP relpy packets must be delayed so that
-+		/* The ARP reply packets must be delayed so that
- 		 * they can cancel out the influence of the ARP request.
- 		 */
- 		bond->alb_info.rlb_update_delay_counter = RLB_UPDATE_DELAY;
-@@ -1042,7 +1042,7 @@ static void alb_change_hw_addr_on_detach(struct bonding *bond, struct slave *sla
-  *
-  * If the permanent hw address of @slave is @bond's hw address, we need to
-  * find a different hw address to give @slave, that isn't in use by any other
-- * slave in the bond. This address must be, of course, one of the premanent
-+ * slave in the bond. This address must be, of course, one of the permanent
-  * addresses of the other slaves.
-  *
-  * We go over the slave list, and for each slave there we compare its
+On Fri, 08 Apr 2011 23:02:02 +0200, Dave Hansen wrote:
+> The core problem is this: I want two lines of output: one for the
+> order/mode gunk, and one for the user-specified message.
+>
+> If we have the user pass in a string for the printk() level, we're stuck
+> doing what I have here.  If we have them _prepend_ it to the "fmt"
+> string, then it's harder to figure out below.  I guess we could fish in
+> the string for it.
+
+This is a bit unfortunate, but that's what I was worried anyway.  I guess
+creating a macro which automatically prepends format  with KERN_WARNING
+would solve the issue but that's probably not the most elegant solution.
+
 -- 
-1.7.4
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
