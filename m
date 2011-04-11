@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1DKRG2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:06:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58397 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab1DKRG0 (ORCPT
+	id S1753188Ab1DKRP0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:15:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2170 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab1DKRPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:06:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=VcGgncH7KEkrs2hJUz2PxOW7KY8dSfqbd8BvITIaYgNC4Q5gbPJAAkdkSeKNLAa/wX
-         0u79yekWEj/6aMV4pLYylKCZehAzQhkvF4P17eqFeFsfA0K7QMC+M/GS+GTBPW3gSHt0
-         lLh78rcg9vG0XmCRxFwYYDb9STsSJhwIQLq8U=
-Message-ID: <4DA3350E.2060400@gmail.com>
-Date: Mon, 11 Apr 2011 10:06:22 -0700
-From: Steve Calfee <stevecalfee@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Mon, 11 Apr 2011 13:15:25 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6313"; a="85155484"
+Message-ID: <4DA33720.5020206@codeaurora.org>
+Date: Mon, 11 Apr 2011 10:15:12 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Regression?] Removed regulator support in ehci-omap
-References: <20110411093214.GA18215@rainbow>
-In-Reply-To: <20110411093214.GA18215@rainbow>
+To: Jesper Juhl <jj@chaosbits.net>
+CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Kconfig.debug: Remove unused CONFIG_DEBUG_ERRORS
+References: <1302300518-7523-1-git-send-email-sboyd@codeaurora.org> <alpine.LNX.2.00.1104101904000.17706@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1104101904000.17706@swampdragon.chaosbits.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/11 02:32, Dmitry Artamonow wrote:
-> Hi, guys!
-> 
-> Can anyone explain why regulator support has been removed from ehci-omap
-> driver in commit 19403165 ("usb: host: omap: ehci and ohci simplification")[1]?
-> In 2.6.37/2.6.38 it was enough to apply simple patch[2] adding regulators
-> description to board file to make USB work on omap3evm board (because USB PHY
-> is powered via regulator). But now it won't work anymore in 2.6.39-rc2.
-> BTW, I suspect that this commit also broke USB on omap3pandora board, as it
-> defines "hsusb0" regulator supply in its board file:
-> 
-Yes, And Beagleboard xm (and I suspect other beagleboard versions) has
-been broken in 2.6.39rc1+.
+> But, I see a lot of *_defconfig files in my copy of the tree that 
+> reference the option :
+>
+[snip]
+> shouldn't those lines be removed as well?
+>
+> I can submit a patch, but I thought you'd rather do it yourself..
+>
 
-Regards, Steve
+I was concerned that it would be more churn in the defconfigs. I can
+make a patch for that too though. Or we could just wait for the
+defconfigs to be regenerated and then the symbols would be dropped?
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
