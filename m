@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab1DKRmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:42:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56585 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751990Ab1DKRmG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:42:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=n+ckDXVk6rN=Mgh+BApbrPqPfmg@mail.gmail.com>
-References: <BANLkTi=n+ckDXVk6rN=Mgh+BApbrPqPfmg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 11 Apr 2011 10:41:44 -0700
-Message-ID: <BANLkTi=R_D9ujCFeKv_o_U83GAR35X3TOQ@mail.gmail.com>
-Subject: Re: Crash with kfree(null) on MacBook? kobject_set_name_vargs
-To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Botting <andy@andybotting.com>
+	id S1754787Ab1DKRnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:43:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31179 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab1DKRnR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 13:43:17 -0400
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+From: Chris Mason <chris.mason@oracle.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: djwong <djwong@us.ibm.com>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
+In-reply-to: <20110411124229.47bc28f6@corrin.poochiereds.net>
+References: <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <20110321140451.GA7153@quack.suse.cz> <1300716666-sup-2087@think> <20110321164305.GC7153@quack.suse.cz> <20110406232938.GF1110@tux1.beaverton.ibm.com> <20110407165700.GB7363@quack.suse.cz> <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net>
+Date: Mon, 11 Apr 2011 13:41:16 -0400
+Message-Id: <1302543595-sup-4352@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4DA33D94.014A:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/10 Rafał Miłecki <zajec5@gmail.com>:
-> I'm writing new axi bus driver and one of the early testers reported
-> it crashing for him. Andy is using MacBook and backtrace+debugging
-> pretty clearly point to kfree being called on null string.
->
-> The most interesting part of code is:
-> axi_info("[axi_register_cores][%d] current name: %s\n", i, core->dev.kobj.name);
-> axi_info("[axi_register_cores][%d] calling dev_set_name with %d, %d
-> for 0x%03X\n", i, 0/*bus->busnumber*/, dev_id, core->id.id);
-> err = dev_set_name(&core->dev, "axi%d:%d", 0/*bus->busnumber*/, dev_id);
-> axi_info("[axi_register_cores][%d] dev_set_name result: %d\n", i, err);
->
-> The result is:
-> [axi_register_cores][1] current name: (null)
-> [axi_register_cores][1] calling dev_set_name with 0, 0 for 0x812
-> BUG: unable to handle kernel paging request at ffffeba400000000
-> IP: [<ffffffff8108c4d4>] kfree+0x2a/0x8a
->
-> Whole code: http://pastie.org/1779473
-> Whole result: http://pastie.org/1779416
->
-> Can you help me with this issue, please? On my machine everything goes fine:
-> [axi_register_cores][1] current name: (null)
-> [axi_register_cores][1] calling dev_set_name with 0, 0 for 0x812
-> [axi_register_cores][1] dev_set_name result: 0
-> [axi_register_cores][1] Register dev for core 0x812
->
-> bcopeland on #linux-wireless suggested turning on SLAB or SLUB. Is
-> this going to provide some interesting info?
+Excerpts from Jeff Layton's message of 2011-04-11 12:42:29 -0400:
+> > @@ -5839,6 +5844,15 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >      if (ret < 0)
+> >          goto out_unlock;
+> >      ret = 0;
+> > +
+> > +    /*
+> > +     * write_begin/end might have created a dirty page and someone
+> > +     * could wander in and start the IO.  Make sure that hasn't
+> > +     * happened.
+> > +     */
+> > +    lock_page(page);
+> > +    wait_on_page_writeback(page);
+> > +    unlock_page(page);
+> 
+> nit:
+> 
+> The callers of page_mkwrite always lock the page afterward if you
+> return from page_mkwrite with it unlocked. If you plan to take page
+> lock anyway, it's probably slightly more efficient not to unlock it and
+> instead return VM_FAULT_LOCKED.
+> 
 
-The disassembly of the oopsing code (kfree()) is:
+Actually this isn't a nit.  Keeping the page locked closes an important
+hole where it can become writeback again.  It might fix the last
+remaining problem.
 
-   0:	41 54                	push   %r12
-   2:	48 83 ff 10          	cmp    $0x10,%rdi
-   6:	55                   	push   %rbp
-   7:	53                   	push   %rbx
-   8:	48 89 fb             	mov    %rdi,%rbx
-   b:	76 78                	jbe    0x85
-   d:	9c                   	pushfq
-   e:	5d                   	pop    %rbp
-   f:	fa                   	cli
-  10:	e8 85 21 f9 ff       	callq  0xfffffffffff9219a
-  15:	48 ba 00 00 00 00 00 	movabs $0xffffea0000000000,%rdx
-  1c:	ea ff ff
-  1f:	48 c1 e8 0c          	shr    $0xc,%rax
-  23:	48 6b c0 38          	imul   $0x38,%rax,%rax
-  27:	48 01 d0             	add    %rdx,%rax
-  2a:*	48 8b 10             	mov    (%rax),%rdx     <-- trapping instruction
-  2d:	66 85 d2             	test   %dx,%dx
-  30:	79 04                	jns    0x36
-
-and from that you can see that the parameter that was passed in to
-kfree (which was originally in %rdi) is now in %rbx.
-
-That, in turn, is 0x202.
-
-So it's not NULL. The fact that
-
-  axi_info("[axi_register_cores][%d] current name: %s\n", i,
-core->dev.kobj.name);
-
-prints out NULL is because the string printout code does this:
-
-        if ((unsigned long)s < PAGE_SIZE)
-                s = "(null)";
-
-
-which admittedly is not very helpful in this case (but it's usually
-nicer than just oopsing).
-
-So code->dev.kobj.name is corrupt even before.
-
-Where that corruption comes from, I have no idea, but there is no
-point in blaming kfree() or dev_set_name().
-
-                           Linus
+-chris
