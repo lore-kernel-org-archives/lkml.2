@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab1DKR2h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:28:37 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:62978 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab1DKR2g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:28:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XDVo8BfrtnKYXSt/gNTjtpczDDddRBJVA88fqayppFkNj85t9z73lMz+SSxHvrcpLd
-         nffyIK4pCFfnadHyQBsB57zrMTFbmeaLQfDIn/kk0/Wq9Q1l8hNVYuUBaLPbtlqgi6EJ
-         RjXFqkcoj2B3djvQYPtDynCS5gVw9i0aR6v8k=
+	id S1754531Ab1DKR3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:29:18 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:53047 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754131Ab1DKR3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 13:29:16 -0400
+Message-ID: <4DA33A68.7040707@fusionio.com>
+Date: Mon, 11 Apr 2011 19:29:12 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikLBv1bzohbG7e+M47xJ_fDuES=9Q@mail.gmail.com>
-References: <BANLkTi=n+ckDXVk6rN=Mgh+BApbrPqPfmg@mail.gmail.com>
-	<BANLkTikLBv1bzohbG7e+M47xJ_fDuES=9Q@mail.gmail.com>
-Date: Mon, 11 Apr 2011 19:28:34 +0200
-Message-ID: <BANLkTimBVzC2jz2MtqZFk4P5i5JyZKa3ng@mail.gmail.com>
-Subject: Re: Crash with kfree(null) on MacBook? kobject_set_name_vargs
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Bob Copeland <me@bobcopeland.com>, Andy Botting <andy@andybotting.com>,
-        Arend van Spriel <arend@broadcom.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: Steven Whitehouse <swhiteho@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: Strange block/scsi/workqueue issue
+References: <1302533763.2596.23.camel@dolmen> <20110411171803.GG9673@mtj.dyndns.org>
+In-Reply-To: <20110411171803.GG9673@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just got report from Arend that he's hitting the same issue. I've no
-idea what's wrong with my dev_set_name call. Should I pre-init struct
-dev somehow? Before calling dev_set_name on it?
+On 2011-04-11 19:18, Tejun Heo wrote:
+> Hello,
+> 
+> (cc'ing James.  The original message is http://lkml.org/lkml/2011/4/11/175 )
+> 
+> Please read from the bottom up.
+> 
+> On Mon, Apr 11, 2011 at 03:56:03PM +0100, Steven Whitehouse wrote:
+>>  [<ffffffff8167b8e5>] schedule_timeout+0x295/0x310
+>>  [<ffffffff8167a650>] wait_for_common+0x120/0x170
+>>  [<ffffffff8167a748>] wait_for_completion+0x18/0x20
+>>  [<ffffffff810aba4c>] wait_on_cpu_work+0xec/0x100
+>>  [<ffffffff810abb3b>] wait_on_work+0xdb/0x150
+>>  [<ffffffff810abc33>] __cancel_work_timer+0x83/0x130
+>>  [<ffffffff810abced>] cancel_delayed_work_sync+0xd/0x10
+> 
+> 4. which in turn tries to sync cancel q->delay_work.  Oops, deadlock.
+> 
+>>  [<ffffffff813b24b4>] blk_sync_queue+0x24/0x50
+> 
+> 3. and calls into blk_sync_queue()
+> 
+>>  [<ffffffff813b24ef>] blk_cleanup_queue+0xf/0x60
+>>  [<ffffffff81479a89>] scsi_free_queue+0x9/0x10
+>>  [<ffffffff8147d30b>] scsi_device_dev_release_usercontext+0xeb/0x140
+>>  [<ffffffff810ac826>] execute_in_process_context+0x86/0xa0
+> 
+> 2. It triggers SCSI device release
+> 
+>>  [<ffffffff8147d1f7>] scsi_device_dev_release+0x17/0x20
+>>  [<ffffffff814609f2>] device_release+0x22/0x90
+>>  [<ffffffff813c8165>] kobject_release+0x45/0x90
+>>  [<ffffffff813c9767>] kref_put+0x37/0x70
+>>  [<ffffffff813c8027>] kobject_put+0x27/0x60
+>>  [<ffffffff81460822>] put_device+0x12/0x20
+>>  [<ffffffff81478bd9>] scsi_request_fn+0xb9/0x4a0
+>>  [<ffffffff813aff2a>] __blk_run_queue+0x6a/0x110
+>>  [<ffffffff813b1f66>] blk_delay_work+0x26/0x40
+> 
+> 1. Workqueue starting execution of q->delay_work and scsi_request_fn()
+>    is run from there.
+> 
+>>  [<ffffffff810aa9c7>] process_one_work+0x197/0x520
+>>  [<ffffffff810acfec>] worker_thread+0x15c/0x330
+>>  [<ffffffff810b1f16>] kthread+0xa6/0xb0
+>>  [<ffffffff81687064>] kernel_thread_helper+0x4/0x10
+> 
+> So, q->delay_work ends up waiting for itself.  I'd like to blame SCSI
+> (as it also fits my agenda to kill execute_in_process_context ;-) for
+> diving all the way into blk_cleanup_queue() directly from request_fn.
+> 
+> Does the following patch fix the problem?
 
-W dniu 10 kwietnia 2011 23:28 użytkownik Bob Copeland
-<me@bobcopeland.com> napisał:
-> 2011/4/10 Rafał Miłecki <zajec5@gmail.com>:
->> I'm writing new axi bus driver and one of the early testers reported
->> it crashing for him. Andy is using MacBook and backtrace+debugging
->> pretty clearly point to kfree being called on null string.
->
->> bcopeland on #linux-wireless suggested turning on SLAB or SLUB. Is
->> this going to provide some interesting info?
->
-> To be precise, I said slab or slub _debugging_.  The reason I said
-> this is that often a crash on kfree() is due to memory corruption.
-> Many places in the kernel rely on kfree(NULL) being a safe operation,
-> so it's likely something more than that.  SL?B debugging adds
-> poisoning and corresponding checks that detect several kinds of
-> corruption like buffer overruns, use-after-free, etc.
->
-> The other thing you can do is get the disassembly of the Code portion
-> for your oops and match it up with specific C code, look at the
-> register file in the oops and match that up with variable names, and
-> work backwards to figure out which pointers are broken.  Sometimes
-> this can be enlightening, like if a pointer has ascii values, or is a
-> small number (0 + some struct offset).
-
-Andy, Arend: I'm not sure if someone will have straight idea whats
-wrong with my code. Could you try this SL?B debugging maybe?
+Thanks, that looks a lot saner. This is/was a time bomb waiting to blow
+up.
 
 -- 
-Rafał
+Jens Axboe
+
