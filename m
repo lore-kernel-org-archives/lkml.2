@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab1DKSZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:25:55 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50182 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755258Ab1DKSZx (ORCPT
+	id S1755331Ab1DKSaS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:30:18 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57642 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab1DKSaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:25:53 -0400
-Date: Mon, 11 Apr 2011 14:25:41 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Jeff Layton <jlayton@redhat.com>, djwong <djwong@us.ibm.com>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation
- problem
-Message-ID: <20110411182541.GA29511@infradead.org>
-References: <20110308045626.GD1956@dastard>
- <20110319000755.GD1110@tux1.beaverton.ibm.com>
- <20110321140451.GA7153@quack.suse.cz>
- <1300716666-sup-2087@think>
- <20110321164305.GC7153@quack.suse.cz>
- <20110406232938.GF1110@tux1.beaverton.ibm.com>
- <20110407165700.GB7363@quack.suse.cz>
- <20110408203135.GH1110@tux1.beaverton.ibm.com>
- <20110411124229.47bc28f6@corrin.poochiereds.net>
- <1302543595-sup-4352@think>
+	Mon, 11 Apr 2011 14:30:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:mime-version:to:cc:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=Gtnspbklj4TS82h5PktH0uA0wlkmeMEYCHgt3deU9Pahog299vVf8mFMTV3SMPx+Sh
+         +f/0ZOfYuZTShAoQOkyLVIE4UODZbAU0YzeR1n/7cbJ1amQm4vWmVNZaLrjTlK8AoMr0
+         twYYh0HsDQ6HRmQEco0I9607jHPVZinrtE1EE=
+Message-ID: <4DA348B3.2010708@gmail.com>
+Date: Mon, 11 Apr 2011 20:30:11 +0200
+From: Xose Vazquez Perez <xose.vazquez@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302543595-sup-4352@think>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Ivo Van Doorn <ivdoorn@gmail.com>
+CC: Larry Finger <Larry.Finger@lwfinger.net>, dwmw2@infradead.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, ben@decadent.org.uk
+Subject: Re: [rt2x00-users] [PATCH] rt2800pci: rt2800usb: Firmware update
+References: <1302532043-22934-1-git-send-email-Larry.Finger@lwfinger.net>	<4DA33F3A.6090707@gmail.com> <BANLkTimJCNpTqn-uQjRLHTyGjHxd+BpJ4Q@mail.gmail.com>
+In-Reply-To: <BANLkTimJCNpTqn-uQjRLHTyGjHxd+BpJ4Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 01:41:16PM -0400, Chris Mason wrote:
-> Actually this isn't a nit.  Keeping the page locked closes an important
-> hole where it can become writeback again.  It might fix the last
-> remaining problem.
+On 04/11/2011 07:57 PM, Ivo Van Doorn wrote:
 
-Note that the generic block_page_mkwrite atually does that.  But only
-xfs and nilfs2 actually make use of it.
+>> links to rt3070.bin rt3071.bin rt3090.bin ???
+>
+> What do you mean? Those files should be deleted from the linux-firmware
+> package. There is no need to keep them around, as with the removal of
+> the staging drivers, the last users of those files are gone.
 
+I've changed my mind. I would like to kill them, but people running old
+kernels with staging drivers still needs them.
