@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab1DKPMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 11:12:19 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:39041 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab1DKPMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 11:12:17 -0400
-Message-ID: <da7a8b1fa75c0968a4586a591713d5db.squirrel@webmail.sf-mail.de>
-In-Reply-To: <1302495170-973-4-git-send-email-benh@kernel.crashing.org>
-References: <1302495170-973-1-git-send-email-benh@kernel.crashing.org>
-    <1302495170-973-4-git-send-email-benh@kernel.crashing.org>
-Date: Mon, 11 Apr 2011 15:12:15 -0000
-Subject: Re: [PATCH 3/6] microblaze/pci: Move the remains of pci_32.c to
- pci-common.c
-From: "Rolf Eike Beer" <eike-kernel@sf-tec.de>
-To: "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, bheglaas@google.com,
-        monstr@monstr.eu, tglx@linutronix.de, bigeasy@linutronix.de,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
-User-Agent: SquirrelMail/1.4.21
+	id S1754559Ab1DKPQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 11:16:04 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44467 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab1DKPQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 11:16:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=gKVHvW+QJUSaAglcaHqFpdXpolvpNhUdQUyLrkxvWuH8MRnZUET1FlAHVB/zfBw3WD
+         UPdWiz6qI1lLybowmeo5eAnL6rvhEKKPgDKqwFUPi4X4azn+S1T/b44cdrQcMl1ffTqE
+         8feEegpGWHQVjejB08K1Pz5rQqEOISQO6chwg=
+Message-ID: <4DA31B20.1010205@gmail.com>
+Date: Mon, 11 Apr 2011 08:15:44 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: linux-next: manual merge of the trivial tree with the wireless
+ tree
+References: <20110411132844.fa651c08.sfr@canb.auug.org.au>
+In-Reply-To: <20110411132844.fa651c08.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There's no point in keeping this separate. Even if microblaze grows
-> a 64-bit variant, it will probably be able to re-use that code as-is
-
-> diff --git a/arch/microblaze/pci/pci-common.c
-> b/arch/microblaze/pci/pci-common.c
-> index 5359906..041b1d8 100644
-> --- a/arch/microblaze/pci/pci-common.c
-> +++ b/arch/microblaze/pci/pci-common.c
-> @@ -50,6 +50,11 @@ unsigned int pci_flags;
+On 04/10/2011 08:28 PM, Stephen Rothwell wrote:
+> Hi Jiri,
 >
->  static struct dma_map_ops *pci_dma_ops = &dma_direct_ops;
+> Today's linux-next merge of the trivial tree got a conflict in
+> drivers/net/wireless/ath/ath9k/phy.h between commit a9b6b2569cf1
+> ("ath9k_hw: turn a few big macros into functions") from the wireless tree
+> and commit 6eab04a87677 ("treewide: remove extra semicolons") from the
+> trivial tree.
 >
-> +unsigned long isa_io_base;
-> +unsigned long pci_dram_offset;
-> +static int pci_bus_count;
-> +
-> +
+> The former commit removed the code that the latter changed, so I did that.
 
-Extra newline.
+yikes... I dont like seeing that.. what can I do to help with this?
 
-Eike
+Justin P. Mattock
