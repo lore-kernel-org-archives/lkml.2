@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab1DKSha (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:37:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56201 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab1DKSh3 (ORCPT
+	id S1755455Ab1DKSif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:38:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:57027 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755393Ab1DKSid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:37:29 -0400
-Message-ID: <4DA34A52.6020409@vlnb.net>
-Date: Mon, 11 Apr 2011 22:37:06 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101208 Mnenhy/0.8.3 Thunderbird/3.1.7
+	Mon, 11 Apr 2011 14:38:33 -0400
+Date: Mon, 11 Apr 2011 14:38:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+cc: USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-bluetooth@vger.kernel.org>
+Subject: Re: Endless print of uhci_result_common: failed with status 440000
+In-Reply-To: <BANLkTikNb7FEDMbX3wSMti2e3muiaLZh-g@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1104111437440.1975-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Madhu Iyengar <madhu.iyengar@qlogic.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Ruediger Oertel <ro@suse.de>, Andy Grover <agrover@redhat.com>
-Subject: Re: [RFC-v3 2/3] qla2xxx: Enable 2xxx series LLD target mode support
-References: <1301980307-14778-1-git-send-email-nab@linux-iscsi.org> <1301980307-14778-3-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1301980307-14778-3-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:L+vTuai18vo1G+FcN/7NLazqQQOUCqMMrQSOo3ejuKr
- vhi1UGFyrM2iFKkH0Vz+bTC0baEEERcynYAqJdM9xLQxlLYPXm
- VlJVDfcT6NMyePRcDx5InNi1gPR37NSi6nG/ZNv6sSSlUBJWSc
- 2KmGgoFCp3zypIW010ddZiPdkR+nCLpy6EqIb+Fl8pfT2FQZ+8
- gzbLd7p2olGj4YufT8UnQ==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas A. Bellinger, on 04/05/2011 09:11 AM wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch enables target mode support with the qla2xxx SCSI LLD using
-> qla_target.c logic introduced in commit f86d9fc734.  This includes:
-> 
-> *) Addition of target mode specific members to existing data
-> structures in qla_def.h and struct qla_hw_data->qla2x_tmpl using
-> qla_target.h:struct qla_target_template.
-> 
-> *) Addition of struct qla_target_template and direct calls into
-> qla_target.c logic w/ qla_tgt_* prefixed functions.
-> 
-> *) Addition of qla_iocb:qla2x00_req_pkt() for ring processing, and
-> qla2x00_issue_marker() for handling request/response queue processing
-> for target mode operation
-> 
-> *) Addition of various qla_tgt_mode_enabled() logic checks in
-> qla24xx_nvram_config(), qla2x00_initialize_adapter(), qla2x00_rff_id(),
-> qla2x00_abort_isp(), qla24xx_modify_vp_config(), and qla2x00_vp_abort_isp().
-> 
-> For the specific checks for qla_hw_data->qla2x_tmpl this includes:
-> 
-> *) control plane:
-> 
-> qla_init.c:qla2x00_rport_del() -> qla_tgt_fc_port_deleted()
-> qla_init.c:qla2x00_reg_remote_port() -> qla_tgt_fc_port_added()
-> qla_init.c:qla2x00_device_resync() -> qla2x00_mark_device_lost()
-> 
-> *) I/O path:
-> 
-> qla_isr.c:qla2x00_async_event() -> qla_tgt_async_event()
-> qla_isr.c:qla2x00_process_response_queue() -> qla_tgt_response_pkt_all_vps()
-> qla_isr.c:qla24xx_process_response_queue() -> qla_tgt_response_pkt_all_vps()
+On Mon, 11 Apr 2011, Zdenek Kabelac wrote:
 
-Most of this code was written by me and other SCST developers. How about
-to give proper credits to the original authors?
+> > I've created:
+> >
+> > https://bugzilla.kernel.org/show_bug.cgi?id=33062
+> >
+> > and I'm cc-ing linux-bluetooth.
+> >
+> 
+> In fact this Ooops might be related to:
+> 
+> http://marc.info/?l=linux-kernel&m=130207593728273&w=2
 
-Vlad
+It might be.  Did you try reverting the patch mentioned in that email?
+
+Alan Stern
+
