@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab1DKPY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 11:24:28 -0400
-Received: from nm16-vm0.bullet.mail.bf1.yahoo.com ([98.139.212.253]:46994 "HELO
-	nm16-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752165Ab1DKPY1 (ORCPT
+	id S1754685Ab1DKPYe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 11:24:34 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:55880 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab1DKPYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 11:24:27 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Apr 2011 11:24:27 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 868144.28146.bm@omp1008.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=PpzQhod5cArOy6hEZ1av/JOvK1QDNjPcybeL4gsY3Bs94ptnbsiEs1CDCDiY0neiVM6rUnFQ3jIw37kEICVt32FmdVwk4g5focYjOB6Dblv3hEnxCOKmkG+ki4zdjT01CGUp4ROCmDfnEjas+mV0qdv+/Q+qI8m8pvFhLXMipRg=;
-Message-ID: <779506.13049.qm@web161604.mail.bf1.yahoo.com>
-X-YMail-OSG: NIWnV0AVM1lAX3fs.kSk2.fAy8phogZ9anEsSg2yjLNM0kA
- c9LKEADNJNAkFJ0mrpWdX3o1bbd.EMA8HZ6BrgtwaG0xTTVxmJHoV4ap5jjp
- e_owc4VQ0psv22VqTgTEWc432g6gQ0B2uk3f0z7YeTUlr6Cxy0SBX8TqlBUS
- 45VAL6EhZiwFLGLu1gYGJJGzq.oDmcwKBq19WHT2AiQJdzA_XuYlE.55AzRc
- zg3rvbXMJlTEnSWpVKoVTjr.Q2dv5MKnvHdTkL3UKK6eGZ2qxoZ73nP_uX_t
- DgraRYhqqedOugv0RlkF6DNPU7227WCZA4q2Y0ECQTSUPZhHCaO0vw4xM8m4
- qkVKUHOoG.l7wtdo9E0XuXmfVfi31xvySpOwmQSzZe5pueBkuWI1zyUrK
-X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.109.295617
-Date: Mon, 11 Apr 2011 08:18:41 -0700 (PDT)
-From: Walter Goldens <goldenstranger@yahoo.com>
-Subject: Re: [PATCH] rt2800pci: rt2800usb: Firmware update
-To: dwmw2@infradead.org, Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-kernel@vger.kernel.org, gwingerde@gmail.com, xose.vazquez@gmail.com,
-        ben@decadent.org.uk, users@rt2x00.serialmonkey.com,
-        linux-wireless@vger.kernel.org, Shiang Tu <shiang_tu@ralinktech.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <1302532043-22934-1-git-send-email-Larry.Finger@lwfinger.net>
+	Mon, 11 Apr 2011 11:24:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=L1XsRdI6TLFBnDcLpYe7eulTiJ5bScNtbpdMuvrnK5NkjxOaO6W0JjnjPJp1du3mSz
+         7Qo/rvFwMeZbs9jOxg25KUPvWrelIrmCKDd02bjDAugD1GUIO+oVC/Dm964FUNbaaA/R
+         kAvWRT56IOT+drsBaxgCMnPEr9mObiu530074=
+Message-ID: <4DA31D28.20906@gmail.com>
+Date: Mon, 11 Apr 2011 08:24:24 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: linux-next: manual merge of the trivial tree with the wireless
+ tree
+References: <20110411132844.fa651c08.sfr@canb.auug.org.au> <4DA31B20.1010205@gmail.com> <alpine.LNX.2.00.1104111716590.12035@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1104111716590.12035@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Update firmware for rt2800pci to Version 34 and firmware
-> for rt2800usb to
-> Version 29.
+On 04/11/2011 08:17 AM, Jiri Kosina wrote:
+> On Mon, 11 Apr 2011, Justin P. Mattock wrote:
+>
+>>> Today's linux-next merge of the trivial tree got a conflict in
+>>> drivers/net/wireless/ath/ath9k/phy.h between commit a9b6b2569cf1
+>>> ("ath9k_hw: turn a few big macros into functions") from the wireless tree
+>>> and commit 6eab04a87677 ("treewide: remove extra semicolons") from the
+>>> trivial tree.
+>>>
+>>> The former commit removed the code that the latter changed, so I did that.
+>>
+>> yikes... I dont like seeing that.. what can I do to help with this?
+>
+> No need for you to do anything. I'll resolve the conflict.
+>
 
-Are there any changelogs for these firmware files? Do they only offer support for newer chips, or are there any actual improvements and bug fixes implemented? Users should know whether updating the firmware will be of any use to them.
+o.k.!
 
-Walter 
+Justin P. Mattock
