@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab1DKVTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:19:16 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52181 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab1DKVTP convert rfc822-to-8bit (ORCPT
+	id S1756024Ab1DKVTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:19:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47507 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab1DKVTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:19:15 -0400
+	Mon, 11 Apr 2011 17:19:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CeBelk4IXHbC7B/vJZtibL+SuqnVk3FP3apG/d981ZQH2AEqYRK+oIsGvLt2gq2+M0
-         n4V7Ps0SsEj4Wbk7FTDaf1p4ljknRDEROjajRmapleMrcGs95r4JbhH/BFh9VSCjgAtf
-         L5iUu/6cJrkyxmI9jsjuRUbOdtJJTYXc8lBAI=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=rrJEdnOk/jMGDhHTv1TsWMKDpZgMIGI9kY3qffycWNyj7j2o7q7m671EZh/jAmSxYd
+         yPpAr4vPXbbExUAFcy9pcHswgP7MmL0uwFsgWeEX3zovEWtHeB5J9D8yt/Z3kOPwzKfS
+         SA59fp0vZemdcqbpdwyq1O0bPYSSvPrW5hMeQ=
+Message-ID: <4DA37068.6000905@suse.cz>
+Date: Mon, 11 Apr 2011 23:19:36 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <20110411210631.GA28559@kroah.com>
-References: <1302557114-7880-1-git-send-email-zajec5@gmail.com>
-	<20110411210631.GA28559@kroah.com>
-Date: Mon, 11 Apr 2011 23:19:13 +0200
-Message-ID: <BANLkTim155YxMUVJ=pmVs-rNhkovGPG6OQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH V3] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        Andy Botting <andy@andybotting.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Bryan Schumaker <bjschuma@netapp.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: nfs client doesn't work [was: mmotm 2011-03-31-14-48 uploaded]
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org> <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org> <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz> <4DA36B19.8080200@netapp.com>
+In-Reply-To: <4DA36B19.8080200@netapp.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/11 Greg KH <greg@kroah.com>:
-> On Mon, Apr 11, 2011 at 11:25:14PM +0200, Rafał Miłecki wrote:
->> +static void axi_release_core_dev(struct device *dev)
->> +{
->> +     /* Silent lack-of-release warning */
->> +}
->
-> Ok, WTF!!!!
+On 04/11/2011 10:56 PM, Bryan Schumaker wrote:
+> On 04/11/2011 04:40 PM, Jiri Slaby wrote:
+>> On 04/07/2011 08:42 AM, Jiri Slaby wrote:
+>>> On 04/06/2011 10:44 PM, Myklebust, Trond wrote:
+>>>> On Sat, 2011-04-02 at 10:56 +0200, Jiri Slaby wrote:
+>>>>> On 03/31/2011 11:48 PM, akpm@linux-foundation.org wrote:
+>>>>>> The mm-of-the-moment snapshot 2011-03-31-14-48 has been uploaded to
+>>>>>
+>>>>> Hi, nfs client is defunct in this kernel. Tcpdump says:
+>>>>> 10:51:55.489717 IP 10.20.11.33.759945860 > 10.20.3.2.2049: 132 getattr
+>>>>> fh 0,0/24
+>>>>> 10:51:55.515927 IP 10.20.3.2.2049 > 10.20.11.33.759945860: reply ok 44
+>>>>> getattr ERROR: Operation not permitted
+>>>>> 10:51:55.515949 IP 10.20.11.33.921 > 10.20.3.2.2049: Flags [.], ack
+>>>>> 3569361440, win 115, options [nop,nop,TS val 599750 ecr 255058541],
+>>>> length 0
+>>>>> 10:52:04.130310 IP 10.20.11.33.793500292 > 10.20.3.2.2049: 76 getattr fh
+>>>>> 0,0/24
+>>>>> 10:52:04.152178 IP 10.20.3.2.2049 > 10.20.11.33.793500292: reply ok 44
+>>>>> getattr ERROR: Operation not permitted
+>>>>>
+>>>>> If I run the same mount command (mount -oro,intr host:dir mountpoint)
+>>>>> from within a virtual machine with 2.6.38.2 there, everything mounts OK.
+>>>>
+>>>> Does the attached patch help?
+>>>
+>>> No, still the operation not permitted in the tcpdump output and no mount.
+> 
+> Does this patch help?
+> 
+> - Bryan
+> 
+> When attempting an initial mount, we should only attempt other
+> authflavors if AUTH_UNIX receives a NFS4ERR_WRONGSEC error.
+> This allows other errors to be passed back to userspace programs.
+> 
+> Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+> ---
+> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+> index dfd1e6d..9bf41ea 100644
+> --- a/fs/nfs/nfs4proc.c
+> +++ b/fs/nfs/nfs4proc.c
+> @@ -2204,8 +2204,6 @@ static int nfs4_lookup_root_sec(struct nfs_server *server, struct nfs_fh *fhandl
+>  		goto out;
+>  	}
+>  	ret = nfs4_lookup_root(server, fhandle, info);
+> -	if (ret < 0)
+> -		ret = -EAGAIN;
+>  out:
+>  	return ret;
+>  }
+> @@ -2226,7 +2224,7 @@ static int nfs4_proc_get_root(struct nfs_server *server, struct nfs_fh *fhandle,
+>  
+>  	for (i = 0; i < len; i++) {
 
-Thank you for your kindly words. It's much more enjoyable to work on
-kernel that way. I definitely made that on purpose.
+No, the patch fixes a problem I have after I add the following test here:
+                if (flav_array[i] > 100)
+                        continue;
 
+Without this test it still loops inside gss auth create function with:
+RPC: AUTH_GSS upcall timed out.
+
+>  		status = nfs4_lookup_root_sec(server, fhandle, info, flav_array[i]);
+> -		if (status == 0)
+> +		if (status != -EPERM)
+>  			break;
+>  	}
+>  	if (status == 0)
+
+thanks,
 -- 
-Rafał
+js
+suse labs
