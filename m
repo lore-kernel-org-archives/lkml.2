@@ -1,58 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab1DKXWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 19:22:40 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41625 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab1DKXWi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 19:22:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Z5n5kh5BeLVabvw7J5MLwkfBt2Zkp2o1AK542ioBt5WR2G5PgPxrfbz8l+/FPVWhQJ
-         wMD2fH30T/oQ9B2eUnu5vO4P2MqcQBEXEbCOnI8jV8e44+gaMoMuj6nC10vayNVSUNEt
-         cIhWGdqh27WpDFv+q4RLP3sRlE+vpnvPOTIek=
+	id S1756385Ab1DKX2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 19:28:33 -0400
+Received: from mail.tpi.com ([70.99.223.143]:4978 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753510Ab1DKX2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 19:28:32 -0400
+Message-ID: <4DA38E90.4020101@canonical.com>
+Date: Mon, 11 Apr 2011 16:28:16 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110411 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
-References: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
-Date: Tue, 12 Apr 2011 01:22:37 +0200
-Message-ID: <BANLkTimgeKJZ+pyF8wOpxMtt2KSiD6=eCA@mail.gmail.com>
-Subject: Re: [RFC][PATCH] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: b43-dev@lists.infradead.org,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Harry Wei <jiaweiwei.xiyou@gmail.com>, petr@vandrovec.name,
+        viro@zeniv.linux.org.uk, arnd@arndb.de, npiggin@kernel.dk,
+        jens.axboe@oracle.com, greg@kroah.com, joe@perches.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]initialize the array of fs/ncpfs/inode.c
+References: <20110410100816.GB4953@gmail.com> <20110411161838.dabbc3f3.akpm@linux-foundation.org>
+In-Reply-To: <20110411161838.dabbc3f3.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/12 Rafał Miłecki <zajec5@gmail.com>:
-> V3.1: Include forgotten changes (pr_* and include related)
->    Explain why we dare to implement empty release function
+On 04/11/2011 04:18 PM, Andrew Morton wrote:
+> On Sun, 10 Apr 2011 18:08:18 +0800
+> Harry Wei<jiaweiwei.xiyou@gmail.com>  wrote:
+>
+>> Hi us,
+>> 	When i compile the linux-2.6.38.2, some warnings happened
+>> to me. One of them is like following.
+>>
+>> fs/ncpfs/inode.c: In function 'ncp_fill_super':
+>> fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[1u]' may be used
+>> uninitialized in this function
+>> ...
+>> See details by the URL:
+>> http://s1202.photobucket.com/albums/bb364/harrywei/Kernel/?action=view&current=patched.png
+>
+> Yup.  The compiler is "wrong" because it doesn't know that the
+> uninitialised bytes will never be read, because they fall after the
+> '\0' in a null-terminated string.
+>
+>> @@ -461,6 +462,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
+>>   #endif
+>>   	struct ncp_entry_info finfo;
+>>
+>> +	data.mounted_vol[NCP_VOLNAME_LEN + 1] = {0};
+>>   	data.wdog_pid = NULL;
+>>   	server = kzalloc(sizeof(struct ncp_server), GFP_KERNEL);
+>>   	if (!server)
+>
+> hm.  I'm not sure that this fixed data.mounted_vol[2u],
+> data.mounted_vol[3u], etc.
+>
+> How about we use the big hammer?
+>
+>
+>
+> From: Andrew Morton<akpm@linux-foundation.org>
+>
+> fs/ncpfs/inode.c: In function 'ncp_fill_super':
+> fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[1u]' may be used uninitialized in this function
+> fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[2u]' may be used uninitialized in this function
+> fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[3u]' may be used uninitialized in this function
+> ...
+>
+> It's notabug, but we can easily fix it with a memset().
+>
+> Reported-by: Harry Wei<jiaweiwei.xiyou@gmail.com>
+> Cc: Petr Vandrovec<petr@vandrovec.name>
+> Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
+> ---
+>
+>   fs/ncpfs/inode.c |    4 +---
+>   1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> diff -puN fs/ncpfs/inode.c~fs-ncpfs-inodec-suppress-used-uninitialised-warning fs/ncpfs/inode.c
+> --- a/fs/ncpfs/inode.c~fs-ncpfs-inodec-suppress-used-uninitialised-warning
+> +++ a/fs/ncpfs/inode.c
+> @@ -461,7 +461,7 @@ static int ncp_fill_super(struct super_b
+>   #endif
+>   	struct ncp_entry_info finfo;
+>
+> -	data.wdog_pid = NULL;
+> +	memset(data, 0, sizeof(data));
 
-I forgot to include TODO in commit message. This is still not ready
-for mainline.
+Needs '&' ?
 
-TODO:
-- Documentation/ABI/README entry for new sysfs files
+	memset(&data, 0, sizeof(data));
 
-(Greg: earlier in V3 I put this part of TODO in file, sorry for confusing).
+>   	server = kzalloc(sizeof(struct ncp_server), GFP_KERNEL);
+>   	if (!server)
+>   		return -ENOMEM;
+> @@ -496,7 +496,6 @@ static int ncp_fill_super(struct super_b
+>   				struct ncp_mount_data_v4* md = (struct ncp_mount_data_v4*)raw_data;
+>
+>   				data.flags = md->flags;
+> -				data.int_flags = 0;
+>   				data.mounted_uid = md->mounted_uid;
+>   				data.wdog_pid = find_get_pid(md->wdog_pid);
+>   				data.ncp_fd = md->ncp_fd;
+> @@ -507,7 +506,6 @@ static int ncp_fill_super(struct super_b
+>   				data.file_mode = md->file_mode;
+>   				data.dir_mode = md->dir_mode;
+>   				data.info_fd = -1;
+> -				data.mounted_vol[0] = 0;
+>   			}
+>   			break;
+>   		default:
+> _
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I hope rest of tasks from *file* TODO can be done after getting this mainline.
 
 -- 
-Rafał
+Tim Gardner tim.gardner@canonical.com
