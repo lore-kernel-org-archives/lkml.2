@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab1DKQMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:12:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52144 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab1DKQM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:12:29 -0400
-Date: Mon, 11 Apr 2011 18:12:22 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
-cc: Keith Packard <keithp@keithp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
- b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
-In-Reply-To: <20110409000857.GB25581@piper>
-Message-ID: <alpine.LFD.2.00.1104111807480.4501@localhost6.localdomain6>
-References: <yun1v1fj024.fsf@aiko.keithp.com> <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6> <alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6> <yunaag0tjzb.fsf@aiko.keithp.com> <20110409000857.GB25581@piper>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752955Ab1DKQMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:12:51 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:50837 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752258Ab1DKQMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 12:12:49 -0400
+Date: Mon, 11 Apr 2011 18:12:40 +0200
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: [PATCHv2] fix regression caused by
+	e48672fa25e879f7ae21785c7efd187738139593
+Message-ID: <20110411161240.GA2332@nik-comp.lan>
+References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz> <4D77F149.8020906@redhat.com> <20110309223651.GC1762@pcnci.linuxbox.cz> <4D8C503D.6000607@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D8C503D.6000607@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 4956848 records (last update: 20110411)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Apr 2011, Vinicius Costa Gomes wrote:
+Hello Zachary,
+what is the current status, are You going to post this patch to Avi?
+I'd like to see one (or both) in stable eventually, I think it's good candidate..
+BR
+nik
 
-> Hi Keith,
-> 
-> On 16:13 Fri 08 Apr, Keith Packard wrote:
-> > On Fri, 8 Apr 2011 23:44:51 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> > 
-> > > Can the bluetooth folks please have a look at that ASAP? The obvious
-> > > fast fix for Linus tree is to revert the second hunk for now, but this
-> > > needs to be fixed proper.
-> > 
-> > Who will submit this patch? I'd rather have your name on it so that
-> > people come complain at you...
-> 
-> I took a shot at it and just sent a patch (also attached for convenience) 
-> that should solve the problem.
 
-Aaarg. No. That patch reverts both hunks.
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
 
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -586,9 +586,6 @@ static int hci_dev_do_close(struct hci_dev *hdev)
- 	hci_req_cancel(hdev, ENODEV);
- 	hci_req_lock(hdev);
- 
--	/* Stop timer, it might be running */
--	del_timer_sync(&hdev->cmd_timer);
--
- 	if (!test_and_clear_bit(HCI_UP, &hdev->flags)) {
- 		hci_req_unlock(hdev);
- 		return 0;
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
 
-As I said before you need that first hunk to stay for the case where
-there is no device up and you return via the !HCI_UP check. You just
-moved back to the state before as the stupid timer is active for
-whatever reason even when HCI_UP is not set.
+www.linuxbox.cz
 
-@@ -618,6 +615,9 @@ static int hci_dev_do_close(struct hci_dev *hdev)
- 		clear_bit(HCI_INIT, &hdev->flags);
- 	}
- 
-+	/* Stop timer, it might be running */
-+	del_timer_sync(&hdev->cmd_timer);
-+
- 	/* Kill cmd task */
- 	tasklet_kill(&hdev->cmd_task);
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
