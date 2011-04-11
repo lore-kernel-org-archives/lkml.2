@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab1DKHBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 03:01:19 -0400
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:54258
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753050Ab1DKHBS (ORCPT
+	id S1754299Ab1DKHKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 03:10:19 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:58694 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab1DKHKR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 03:01:18 -0400
-X-Greylist: delayed 2913 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Apr 2011 03:01:18 EDT
-Message-ID: <4DA29B75.4090401@compulab.co.il>
-Date: Mon, 11 Apr 2011 09:11:01 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.13) Gecko/20101211 Lightning/1.0b2 Thunderbird/3.1.7
+	Mon, 11 Apr 2011 03:10:17 -0400
+X-Greylist: delayed 968 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Apr 2011 03:10:17 EDT
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Linux Kernel'" <linux-kernel@vger.kernel.org>
+CC: "'Nicolas Ferre'" <nicolas.ferre@atmel.com>
+Date: Mon, 11 Apr 2011 08:53:59 +0200
+Subject: [PATCH] drivers/spi/atmel_spi.c: prevent premature irqs
+Thread-Topic: [PATCH] drivers/spi/atmel_spi.c: prevent premature irqs
+Thread-Index: Acv4FTvHRZpzDbxUT3eSOlVby4qKqA==
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D086F931361@wm021.weinmann.com>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: wanlong.gao@gmail.com
-CC: linux@arm.linux.org.uk, hans-christian.egtvedt@atmel.com,
-        ralf@linux-mips.org, benh@kernel.crashing.org, paulus@samba.org,
-        david.woodhouse@intel.com, akpm@linux-foundation.org,
-        u.kleine-koenig@pengutronix.de, mingo@elte.hu, rientjes@google.com,
-        nicolas.ferre@atmel.com, eric@eukrea.com, tony@atomide.com,
-        santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
-        ben-linux@fluff.org, sam@ravnborg.org, manuel.lauss@googlemail.com,
-        galak@kernel.crashing.org, anton@samba.org, grant.likely@secretlab.ca,
-        sfr@canb.auug.org.au, jwboyer@linux.vnet.ibm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] fix build warnings on defconfigs
-References: <1302375858-11253-1-git-send-email-wanlong.gao@gmail.com>
-In-Reply-To: <1302375858-11253-1-git-send-email-wanlong.gao@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/11 22:04, wanlong.gao@gmail.com wrote:
+When restarting a kernel using kexec, filled rx buffers on SPI master
+interface reliably crash the kernel. This patch disables rx interrupts
+on startup to avoid this. Interrupts will be regulary enabled at start
+of a new SPI master transfer.
 
-> From: Wanlong Gao <wanlong.gao@gmail.com>
->
-> Change the BT_L2CAP and BT_SCO defconfigs from 'm' to 'y',
-> since BT_L2CAP and BT_SCO had changed to bool configs.
->
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> ---
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ drivers/spi/atmel_spi.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-For:
-
->  arch/arm/configs/cm_x2xx_defconfig         |    4 ++--
->  arch/arm/configs/cm_x300_defconfig         |    4 ++--
->  arch/arm/configs/em_x270_defconfig         |    4 ++--
-
-Acked-by: Igor Grinberg <grinberg@compulab.co.il>
-
+diff --git a/drivers/spi/atmel_spi.c b/drivers/spi/atmel_spi.c
+index 1a478bf..d17f14c 100644
+--- a/drivers/spi/atmel_spi.c
++++ b/drivers/spi/atmel_spi.c
+@@ -811,6 +811,9 @@ static int __init atmel_spi_probe(struct platform_device *pdev)
+ 	as->irq = irq;
+ 	as->clk = clk;
+ 
++	/* disable rx interrupts to avoid premature irq triggering */
++	spi_writel(as, IDR, SPI_BIT(RXBUFF) | SPI_BIT(ENDRX) | SPI_BIT(OVRES));
++
+ 	ret = request_irq(irq, atmel_spi_interrupt, 0,
+ 			dev_name(&pdev->dev), master);
+ 	if (ret)
 -- 
-Regards,
-Igor.
+1.5.4.3
 
