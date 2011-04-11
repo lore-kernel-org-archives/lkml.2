@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab1DKRnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:43:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31179 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab1DKRnR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:43:17 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: djwong <djwong@us.ibm.com>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
-In-reply-to: <20110411124229.47bc28f6@corrin.poochiereds.net>
-References: <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <20110321140451.GA7153@quack.suse.cz> <1300716666-sup-2087@think> <20110321164305.GC7153@quack.suse.cz> <20110406232938.GF1110@tux1.beaverton.ibm.com> <20110407165700.GB7363@quack.suse.cz> <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net>
-Date: Mon, 11 Apr 2011 13:41:16 -0400
-Message-Id: <1302543595-sup-4352@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4DA33D94.014A:SCFSTAT5015188,ss=1,fgs=0
+	id S1754811Ab1DKRpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:45:20 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:58050 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752318Ab1DKRpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 13:45:18 -0400
+Message-ID: <4DA33E1E.701@parallels.com>
+Date: Mon, 11 Apr 2011 12:45:02 -0500
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: "Serge E. Hallyn" <serge@hallyn.com>, <linux-kernel@vger.kernel.org>,
+        <linux-nfs@vger.kernel.org>, <containers@lists.linux-foundation.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH 3/3] Compare namespaces when comparing addresses in auth_unix
+ cache.
+References: <4D9431B3.2070305@parallels.com>	<20110405034641.GC6764@hallyn.com>	<4D9F24F2.9020603@parallels.com>	<4DA30222.5040902@parallels.com>	<20110411133602.GA5321@hallyn.com> <BANLkTi=sh1CB+e1EhU-c-Bs3BCszWEBTMA@mail.gmail.com>
+In-Reply-To: <BANLkTi=sh1CB+e1EhU-c-Bs3BCszWEBTMA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [24.27.26.60]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Jeff Layton's message of 2011-04-11 12:42:29 -0400:
-> > @@ -5839,6 +5844,15 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >      if (ret < 0)
-> >          goto out_unlock;
-> >      ret = 0;
-> > +
-> > +    /*
-> > +     * write_begin/end might have created a dirty page and someone
-> > +     * could wander in and start the IO.  Make sure that hasn't
-> > +     * happened.
-> > +     */
-> > +    lock_page(page);
-> > +    wait_on_page_writeback(page);
-> > +    unlock_page(page);
+On 04/11/2011 08:57 AM, Alexey Dobriyan wrote:
+> On Mon, Apr 11, 2011 at 4:36 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
 > 
-> nit:
+>> Besides use-after-free, the other concern is an invalid net_eq()
+>> result due to the * being re-used for a new netns.
 > 
-> The callers of page_mkwrite always lock the page afterward if you
-> return from page_mkwrite with it unlocked. If you plan to take page
-> lock anyway, it's probably slightly more efficient not to unlock it and
-> instead return VM_FAULT_LOCKED.
+> Exactly.
 > 
+> "struct net" dies last, no exceptions, anything different is a disaster.
 
-Actually this isn't a nit.  Keeping the page locked closes an important
-hole where it can become writeback again.  It might fix the last
-remaining problem.
+Actually the patch turns out to be irrelevant because Pavel made the
+whole thing into a pernet subsystem, so it was already fixed in a
+different way.  (Commit 2f72c9b7.  My bad, I initially started working
+against an NFS tree with an older kernel version, this fix was to a
+different source file so my patch still applied, and I just regression
+tested that it worked, not that it still failed without it.  Just caught
+it now.)
 
--chris
+I actually did talk about addressing potential reuse of the net * in my
+email with Stanislav (point of the patch was to allow one cache to
+maintain two different contexts at the same time; a situation that
+changed the meaning of an existing cache entry by requiring the old
+context to go away didn't introduce any new problems that a single
+context didn't already have due to DNAT, servers moving, administrators
+changing credentials on the server).  But sort of a moot point now.
+
+I believe the third patch can be dropped entirely.
+
+Rob
