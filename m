@@ -1,161 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab1DKIRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 04:17:34 -0400
-Received: from fieldses.org ([174.143.236.118]:41929 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754738Ab1DKIRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 04:17:32 -0400
-Date: Mon, 11 Apr 2011 04:17:26 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Wolfgang Walter <wolfgang.walter@stwm.de>, linux-kernel@vger.kernel.org,
-        Rick Koshi <nfs-bug-report@more-right-rudder.com>,
-        Ivo =?utf-8?Q?P=C5=99ikryl?= <prikryl@eurosat.cz>
-Subject: Re: 2.6.38.2: regression from 2.6.38: kernel BUG at
- fs/nfsd/nfs4state.c:380!
-Message-ID: <20110411081726.GB31311@fieldses.org>
-References: <201103282223.06191.wolfgang.walter@stwm.de>
- <20110328203207.GA17493@suse.de>
- <201103282300.57903.wolfgang.walter@stwm.de>
- <20110328214122.GA19854@suse.de>
- <20110329031347.GC2695@fieldses.org>
- <20110329031725.GA3665@suse.de>
+	id S1755176Ab1DKITg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 04:19:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48596 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738Ab1DKITf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 04:19:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20110411172004.0361.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110329031725.GA3665@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon, 11 Apr 2011 17:19:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 28, 2011 at 08:17:25PM -0700, Greg KH wrote:
-> On Mon, Mar 28, 2011 at 11:13:47PM -0400, J. Bruce Fields wrote:
-> > Bah, apologies about this, I don't know how it got through my own
-> > testing.
-> > 
-> > On Mon, Mar 28, 2011 at 02:41:22PM -0700, Greg KH wrote:
-> > > On Mon, Mar 28, 2011 at 11:00:57PM +0200, Wolfgang Walter wrote:
-> > > > I just searched linux-nfs and found this:
-> > > > 
-> > > > http://marc.info/?l=linux-nfs&m=130129644016061&w=4
-> > > > 
-> > > > He even seems to have a real fix though I don't want to test it
-> > > > without blessing.
-> > > 
-> > > Well, you aren't going to get that from me, Bruce?
-> > 
-> > Good analysis from Mi Jinlong, but I'm not convinced by the patch....
-> > 
-> > I'll look closer.
-> > 
-> > (Disclaimer: between the sleep deprivation and the UM hospital's dubious
-> > guest wifi (hey, how's a new dad supposed to keep up with his kernel
-> > hacking if they block git?), I may be a little slow.)
-> 
-> Hey, no rush, you have more important things to deal with, I can always
-> revert the patch for now :)
+Recently, Robert Mueller reported zone_reclaim_mode doesn't work
+properly on his new NUMA server (Dual Xeon E5520 + Intel S5520UR MB).
+He is using Cyrus IMAPd and it's built on a very traditional
+single-process model.
 
-Argh, I forgot to stick the "Cc: stable" on this one.  Anyway, should be
-in Linus's tree soon:
+  * a master process which reads config files and manages the other
+    process
+  * multiple imapd processes, one per connection
+  * multiple pop3d processes, one per connection
+  * multiple lmtpd processes, one per connection
+  * periodical "cleanup" processes.
 
---b.
+Then, there are thousands of independent processes. The problem is,
+recent Intel motherboard turn on zone_reclaim_mode by default and
+traditional prefork model software don't work fine on it.
+Unfortunatelly, Such model is still typical one even though 21th
+century. We can't ignore them.
 
-commit 23fcf2ec93fb8573a653408316af599939ff9a8e
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Mon Mar 28 15:15:09 2011 +0800
+This patch raise zone_reclaim_mode threshold to 30. 30 don't have
+specific meaning. but 20 mean one-hop QPI/Hypertransport and such
+relatively cheap 2-4 socket machine are often used for tradiotional
+server as above. The intention is, their machine don't use
+zone_reclaim_mode.
 
-    nfsd4: fix oops on lock failure
-    
-    Lock stateid's can have access_bmap 0 if they were only partially
-    initialized (due to a failed lock request); handle that case in
-    free_generic_stateid.
-    
-    ------------[ cut here ]------------
-    kernel BUG at fs/nfsd/nfs4state.c:380!
-    invalid opcode: 0000 [#1] SMP
-    last sysfs file: /sys/kernel/mm/ksm/run
-    Modules linked in: nfs fscache md4 nls_utf8 cifs ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat bridge stp llc nfsd lockd nfs_acl auth_rpcgss sunrpc ipv6 ppdev parport_pc parport pcnet32 mii pcspkr microcode i2c_piix4 BusLogic floppy [last unloaded: mperf]
-    
-    Pid: 1468, comm: nfsd Not tainted 2.6.38+ #120 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-    EIP: 0060:[<e24f180d>] EFLAGS: 00010297 CPU: 0
-    EIP is at nfs4_access_to_omode+0x1c/0x29 [nfsd]
-    EAX: ffffffff EBX: dd758120 ECX: 00000000 EDX: 00000004
-    ESI: dd758120 EDI: ddfe657c EBP: dd54dde0 ESP: dd54dde0
-     DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-    Process nfsd (pid: 1468, ti=dd54c000 task=ddc92580 task.ti=dd54c000)
-    Stack:
-     dd54ddf0 e24f19ca 00000000 ddfe6560 dd54de08 e24f1a5d dd758130 deee3a20
-     ddfe6560 31270000 dd54df1c e24f52fd 0000000f dd758090 e2505dd0 0be304cf
-     dbb51d68 0000000e ddfe657c ddcd8020 dd758130 dd758128 dd7580d8 dd54de68
-    Call Trace:
-     [<e24f19ca>] free_generic_stateid+0x1c/0x3e [nfsd]
-     [<e24f1a5d>] release_lockowner+0x71/0x8a [nfsd]
-     [<e24f52fd>] nfsd4_lock+0x617/0x66c [nfsd]
-     [<e24e57b6>] ? nfsd_setuser+0x199/0x1bb [nfsd]
-     [<e24e056c>] ? nfsd_setuser_and_check_port+0x65/0x81 [nfsd]
-     [<c07a0052>] ? _cond_resched+0x8/0x1c
-     [<c04ca61f>] ? slab_pre_alloc_hook.clone.33+0x23/0x27
-     [<c04cac01>] ? kmem_cache_alloc+0x1a/0xd2
-     [<c04835a0>] ? __call_rcu+0xd7/0xdd
-     [<e24e0dfb>] ? fh_verify+0x401/0x452 [nfsd]
-     [<e24f0b61>] ? nfsd4_encode_operation+0x52/0x117 [nfsd]
-     [<e24ea0d7>] ? nfsd4_putfh+0x33/0x3b [nfsd]
-     [<e24f4ce6>] ? nfsd4_delegreturn+0xd4/0xd4 [nfsd]
-     [<e24ea2c9>] nfsd4_proc_compound+0x1ea/0x33e [nfsd]
-     [<e24de6ee>] nfsd_dispatch+0xd1/0x1a5 [nfsd]
-     [<e1d6e1c7>] svc_process_common+0x282/0x46f [sunrpc]
-     [<e1d6e578>] svc_process+0xdc/0xfa [sunrpc]
-     [<e24de0fa>] nfsd+0xd6/0x115 [nfsd]
-     [<e24de024>] ? nfsd_shutdown+0x24/0x24 [nfsd]
-     [<c0454322>] kthread+0x62/0x67
-     [<c04542c0>] ? kthread_worker_fn+0x114/0x114
-     [<c07a6ebe>] kernel_thread_helper+0x6/0x10
-    Code: eb 05 b8 00 00 27 4f 8d 65 f4 5b 5e 5f 5d c3 83 e0 03 55 83 f8 02 89 e5 74 17 83 f8 03 74 05 48 75 09 eb 09 b8 02 00 00 00 eb 0b <0f> 0b 31 c0 eb 05 b8 01 00 00 00 5d c3 55 89 e5 57 56 89 d6 8d
-    EIP: [<e24f180d>] nfs4_access_to_omode+0x1c/0x29 [nfsd] SS:ESP 0068:dd54dde0
-    ---[ end trace 2b0bf6c6557cb284 ]---
-    
-    The trace route is:
-    
-     -> nfsd4_lock()
-       -> if (lock->lk_is_new) {
-         -> alloc_init_lock_stateid()
-    
-            3739: stp->st_access_bmap = 0;
-    
-       ->if (status && lock->lk_is_new && lock_sop)
-         -> release_lockowner()
-          -> free_generic_stateid()
-           -> nfs4_access_bmap_to_omode()
-              -> nfs4_access_to_omode()
-    
-            380: BUG();   *****
-    
-    This problem was introduced by 0997b173609b9229ece28941c118a2a9b278796e.
-    
-    Reported-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-    Tested-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Note: ia64 and Power have arch specific RECLAIM_DISTANCE definition.
+then this patch doesn't change such high-end NUMA machine behavior.
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index fbde6f7..8e3c407 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -397,10 +397,13 @@ static void unhash_generic_stateid(struct nfs4_stateid *stp)
- 
- static void free_generic_stateid(struct nfs4_stateid *stp)
- {
--	int oflag = nfs4_access_bmap_to_omode(stp);
-+	int oflag;
- 
--	nfs4_file_put_access(stp->st_file, oflag);
--	put_nfs4_file(stp->st_file);
-+	if (stp->st_access_bmap) {
-+		oflag = nfs4_access_bmap_to_omode(stp);
-+		nfs4_file_put_access(stp->st_file, oflag);
-+		put_nfs4_file(stp->st_file);
-+	}
- 	kmem_cache_free(stateid_slab, stp);
- }
- 
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/topology.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index b91a40e..fc839bf 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -60,7 +60,7 @@ int arch_update_cpu_topology(void);
+  * (in whatever arch specific measurement units returned by node_distance())
+  * then switch on zone reclaim on boot.
+  */
+-#define RECLAIM_DISTANCE 20
++#define RECLAIM_DISTANCE 30
+ #endif
+ #ifndef PENALTY_FOR_NODE_WITH_CPUS
+ #define PENALTY_FOR_NODE_WITH_CPUS	(1)
+-- 
+1.7.3.1
+
+
+
