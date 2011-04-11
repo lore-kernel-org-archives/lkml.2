@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab1DKQMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:12:51 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:50837 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab1DKQMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:12:49 -0400
-Date: Mon, 11 Apr 2011 18:12:40 +0200
-From: Nikola Ciprich <extmaillist@linuxbox.cz>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>
-Subject: Re: [PATCHv2] fix regression caused by
-	e48672fa25e879f7ae21785c7efd187738139593
-Message-ID: <20110411161240.GA2332@nik-comp.lan>
-References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz> <4D77F149.8020906@redhat.com> <20110309223651.GC1762@pcnci.linuxbox.cz> <4D8C503D.6000607@redhat.com>
+	id S1753356Ab1DKQNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:13:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52155 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab1DKQNR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 12:13:17 -0400
+Date: Mon, 11 Apr 2011 18:13:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+cc: Keith Packard <keithp@keithp.com>,
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
+ b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
+In-Reply-To: <20110411155826.GA2195@joana>
+Message-ID: <alpine.LFD.2.00.1104111812310.4501@localhost6.localdomain6>
+References: <yun1v1fj024.fsf@aiko.keithp.com> <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6> <alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6> <yunaag0tjzb.fsf@aiko.keithp.com> <20110409000857.GB25581@piper> <yunipuouqoi.fsf@aiko.keithp.com>
+ <20110411155826.GA2195@joana>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D8C503D.6000607@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 4956848 records (last update: 20110411)
-X-Spam-Score: N/A (trusted relay)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Zachary,
-what is the current status, are You going to post this patch to Avi?
-I'd like to see one (or both) in stable eventually, I think it's good candidate..
-BR
-nik
+On Mon, 11 Apr 2011, Gustavo F. Padovan wrote:
 
+> * Keith Packard <keithp@keithp.com> [2011-04-08 19:03:25 -0700]:
+> 
+> > On Fri, 8 Apr 2011 21:08:57 -0300, Vinicius Costa Gomes <vinicius.gomes@openbossa.org> wrote:
+> > 
+> > > I took a shot at it and just sent a patch (also attached for convenience) 
+> > > that should solve the problem.
+> > 
+> > Thanks much! I applied this to -rc2 and it appears to work fine in some
+> > brief testing (a dozen suspend/resume cycles)
+> > 
+> > > Reported-by: Keith Packard <keithp@keithp.com>
+> > > Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+> > 
+> > Tested-by: Keith Packard <keithp@keithp.com>
+> 
+> I applied the patch to bluetooth-2.6. Thank you all.
 
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
-
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+Sigh. Is actually anyone trying to read what I wrote ?
