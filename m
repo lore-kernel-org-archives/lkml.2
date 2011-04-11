@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1DKSaS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:30:18 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57642 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab1DKSaR (ORCPT
+	id S1755418Ab1DKSgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:36:43 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:39582 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab1DKSgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:30:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:mime-version:to:cc:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=Gtnspbklj4TS82h5PktH0uA0wlkmeMEYCHgt3deU9Pahog299vVf8mFMTV3SMPx+Sh
-         +f/0ZOfYuZTShAoQOkyLVIE4UODZbAU0YzeR1n/7cbJ1amQm4vWmVNZaLrjTlK8AoMr0
-         twYYh0HsDQ6HRmQEco0I9607jHPVZinrtE1EE=
-Message-ID: <4DA348B3.2010708@gmail.com>
-Date: Mon, 11 Apr 2011 20:30:11 +0200
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
+	Mon, 11 Apr 2011 14:36:42 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DA34AA5.3020700@cam.ac.uk>
+Date: Mon, 11 Apr 2011 19:38:29 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Ivo Van Doorn <ivdoorn@gmail.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>, dwmw2@infradead.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, ben@decadent.org.uk
-Subject: Re: [rt2x00-users] [PATCH] rt2800pci: rt2800usb: Firmware update
-References: <1302532043-22934-1-git-send-email-Larry.Finger@lwfinger.net>	<4DA33F3A.6090707@gmail.com> <BANLkTimJCNpTqn-uQjRLHTyGjHxd+BpJ4Q@mail.gmail.com>
-In-Reply-To: <BANLkTimJCNpTqn-uQjRLHTyGjHxd+BpJ4Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        tglx@linutronix.de
+Subject: Re: [RFC PATCH 00/21] IIO: Channel registration rework, buffer chardev
+ combining and rewrite of triggers as 'virtual' irq_chips.
+References: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 07:57 PM, Ivo Van Doorn wrote:
 
->> links to rt3070.bin rt3071.bin rt3090.bin ???
->
-> What do you mean? Those files should be deleted from the linux-firmware
-> package. There is no need to keep them around, as with the removal of
-> the staging drivers, the last users of those files are gone.
+Just a quick heads up.  I am not intending to repost this series
+to lkml.  Given with carrying drivers through past 
+"staging:iio: Remove legacy event handling" has resulted
+in over 50 patches that are mostly very much driver specific,
+it seems silly to bombard the general list.
 
-I've changed my mind. I would like to kill them, but people running old
-kernels with staging drivers still needs them.
+I will be posting that set on linux-iio if anyone is interested
+(after a little more cleaning up).
+
+I will cherry pick a few bits such as the additional
+exports from genirq to post to lkml.
+
+Seems rude to drop a huge patch set on everyone when
+only a few corners will be of general interest.
+
+Jonathan
+
