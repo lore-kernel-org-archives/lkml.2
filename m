@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab1DKKsh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 06:48:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63337 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751487Ab1DKKsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 06:48:36 -0400
-Subject: Re: [PATCH 1/5] ptrace: Prepare to fix racy accesses on task
- breakpoints
-From: Will Deacon <will.deacon@arm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prasad <prasad@linux.vnet.ibm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "v2.6.33.." <stable@kernel.org>
-In-Reply-To: <1302284067-7860-2-git-send-email-fweisbec@gmail.com>
-References: <1302284067-7860-1-git-send-email-fweisbec@gmail.com>
-	 <1302284067-7860-2-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Apr 2011 11:47:57 +0100
-Message-ID: <1302518877.24286.34.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754941Ab1DKKtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 06:49:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48305 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752816Ab1DKKtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 06:49:14 -0400
+Date: Mon, 11 Apr 2011 10:48:55 GMT
+From: tip-bot for Shaohua Li <shaohua.li@intel.com>
+Message-ID: <tip-f4ad9bd208c98f32a6f9136618e0b8bebe3fb370@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, shaohua.li@intel.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+        shaohua.li@intel.com, mingo@elte.hu
+In-Reply-To: <1302238389.3981.92.camel@sli10-conroe>
+References: <1302238389.3981.92.camel@sli10-conroe>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Eliminate dead code from wakeup_gran()
+Git-Commit-ID: f4ad9bd208c98f32a6f9136618e0b8bebe3fb370
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Apr 2011 10:48:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+Commit-ID:  f4ad9bd208c98f32a6f9136618e0b8bebe3fb370
+Gitweb:     http://git.kernel.org/tip/f4ad9bd208c98f32a6f9136618e0b8bebe3fb370
+Author:     Shaohua Li <shaohua.li@intel.com>
+AuthorDate: Fri, 8 Apr 2011 12:53:09 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 11 Apr 2011 11:08:55 +0200
 
-On Fri, 2011-04-08 at 18:34 +0100, Frederic Weisbecker wrote:
-> When a task is traced and is in a stopped state, the tracer
-> may execute a ptrace request to examine the tracee state and
-> get its task struct. Right after, the tracee can be killed
-> and thus its breakpoints released.
-> This can happen concurrently when the tracer is in the middle
-> of reading or modifying these breakpoints, leading to dereferencing
-> a freed pointer.
+sched: Eliminate dead code from wakeup_gran()
 
-Oo, that's nasty. Would an alternative solution be to free the
-breakpoints only when the task_struct usage count is zero?
+calc_delta_fair() checks NICE_0_LOAD already, delete duplicate check.
 
-> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-> index 0fc1eed..dc7ab65 100644
-> --- a/kernel/ptrace.c
-> +++ b/kernel/ptrace.c
-> @@ -22,6 +22,7 @@
->  #include <linux/syscalls.h>
->  #include <linux/uaccess.h>
->  #include <linux/regset.h>
-> +#include <linux/hw_breakpoint.h>
-> 
-> 
->  /*
-> @@ -879,3 +880,19 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
->         return ret;
->  }
->  #endif /* CONFIG_COMPAT */
-> +
-> +#ifdef CONFIG_HAVE_HW_BREAKPOINT
-> +int ptrace_get_breakpoints(struct task_struct *tsk)
-> +{
-> +       if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
-> +               return 0;
-> +
-> +       return -1;
-> +}
+Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Link: http://lkml.kernel.org/r/1302238389.3981.92.camel@sli10-conroe
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_fair.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-
-Would it be better to return -ESRCH here instead?
-
-Will
-
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 6fa833a..4ee50f0 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1789,10 +1789,7 @@ wakeup_gran(struct sched_entity *curr, struct sched_entity *se)
+ 	 * This is especially important for buddies when the leftmost
+ 	 * task is higher priority than the buddy.
+ 	 */
+-	if (unlikely(se->load.weight != NICE_0_LOAD))
+-		gran = calc_delta_fair(gran, se);
+-
+-	return gran;
++	return calc_delta_fair(gran, se);
+ }
+ 
+ /*
