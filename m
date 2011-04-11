@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab1DKKqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 06:46:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48168 "EHLO hera.kernel.org"
+	id S1754444Ab1DKKqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 06:46:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48192 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab1DKKqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 06:46:23 -0400
-Date: Mon, 11 Apr 2011 10:45:57 GMT
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-e566b76ed30768140df8f0023904aed5a41244f7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+	id S1753806Ab1DKKqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 06:46:37 -0400
+Date: Mon, 11 Apr 2011 10:46:23 GMT
+From: tip-bot for Ken Chen <kenchen@google.com>
+Message-ID: <tip-b0432d8f162c7d5d9537b4cb749d44076b76a783@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, stable@kernel.org, kenchen@google.com,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110406005454.GA1062@quad>
-References: <20110406005454.GA1062@quad>
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, kenchen@google.com, stable@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110408002322.3A0D812217F@elm.corp.google.com>
+References: <20110408002322.3A0D812217F@elm.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf_event: Fix cgrp event scheduling bug in perf_enable_on_exec()
-Git-Commit-ID: e566b76ed30768140df8f0023904aed5a41244f7
+Subject: [tip:sched/urgent] sched: Fix sched-domain avg_load calculation
+Git-Commit-ID: b0432d8f162c7d5d9537b4cb749d44076b76a783
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Apr 2011 10:46:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Apr 2011 10:46:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e566b76ed30768140df8f0023904aed5a41244f7
-Gitweb:     http://git.kernel.org/tip/e566b76ed30768140df8f0023904aed5a41244f7
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Wed, 6 Apr 2011 02:54:54 +0200
+Commit-ID:  b0432d8f162c7d5d9537b4cb749d44076b76a783
+Gitweb:     http://git.kernel.org/tip/b0432d8f162c7d5d9537b4cb749d44076b76a783
+Author:     Ken Chen <kenchen@google.com>
+AuthorDate: Thu, 7 Apr 2011 17:23:22 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 11 Apr 2011 11:07:55 +0200
+CommitDate: Mon, 11 Apr 2011 11:08:54 +0200
 
-perf_event: Fix cgrp event scheduling bug in perf_enable_on_exec()
+sched: Fix sched-domain avg_load calculation
 
-There is a bug in perf_event_enable_on_exec() when cgroup events are
-active on a CPU: the cgroup events may be scheduled twice causing event
-state corruptions which eventually may lead to kernel panics.
+In function find_busiest_group(), the sched-domain avg_load isn't
+calculated at all if there is a group imbalance within the domain. This
+will cause erroneous imbalance calculation.
 
-The reason is that the function needs to first schedule out the cgroup
-events, just like for the per-thread events. The cgroup event are
-scheduled back in automatically from the perf_event_context_sched_in()
-function.
+The reason is that calculate_imbalance() sees sds->avg_load = 0 and it
+will dump entire sds->max_load into imbalance variable, which is used
+later on to migrate entire load from busiest CPU to the puller CPU.
 
-The patch also adds a WARN_ON_ONCE() is perf_cgroup_switch() to catch any
-bogus state.
+This has two really bad effect:
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+1. stampede of task migration, and they won't be able to break out
+   of the bad state because of positive feedback loop: large load
+   delta -> heavier load migration -> larger imbalance and the cycle
+   goes on.
+
+2. severe imbalance in CPU queue depth.  This causes really long
+   scheduling latency blip which affects badly on application that
+   has tight latency requirement.
+
+The fix is to have kernel calculate domain avg_load in both cases. This
+will ensure that imbalance calculation is always sensible and the target
+is usually half way between busiest and puller CPU.
+
+Signed-off-by: Ken Chen <kenchen@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110406005454.GA1062@quad
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/20110408002322.3A0D812217F@elm.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/perf_event.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ kernel/sched_fair.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 27960f1..8e81a98 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -364,6 +364,7 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
- 			}
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 7f00772..60f9d40 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3127,6 +3127,8 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
+ 	if (!sds.busiest || sds.busiest_nr_running == 0)
+ 		goto out_balanced;
  
- 			if (mode & PERF_CGROUP_SWIN) {
-+				WARN_ON_ONCE(cpuctx->cgrp);
- 				/* set cgrp before ctxsw in to
- 				 * allow event_filter_match() to not
- 				 * have to pass task around
-@@ -2423,6 +2424,14 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
- 	if (!ctx || !ctx->nr_events)
- 		goto out;
++	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
++
+ 	/*
+ 	 * If the busiest group is imbalanced the below checks don't
+ 	 * work because they assumes all things are equal, which typically
+@@ -3151,7 +3153,6 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
+ 	 * Don't pull any tasks if this group is already above the domain
+ 	 * average load.
+ 	 */
+-	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
+ 	if (sds.this_load >= sds.avg_load)
+ 		goto out_balanced;
  
-+	/*
-+	 * We must ctxsw out cgroup events to avoid conflict
-+	 * when invoking perf_task_event_sched_in() later on
-+	 * in this function. Otherwise we end up trying to
-+	 * ctxswin cgroup events which are already scheduled
-+	 * in.
-+	 */
-+	perf_cgroup_sched_out(current);
- 	task_ctx_sched_out(ctx, EVENT_ALL);
- 
- 	raw_spin_lock(&ctx->lock);
-@@ -2447,6 +2456,9 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
- 
- 	raw_spin_unlock(&ctx->lock);
- 
-+	/*
-+	 * Also calls ctxswin for cgroup events, if any:
-+	 */
- 	perf_event_context_sched_in(ctx, ctx->task);
- out:
- 	local_irq_restore(flags);
