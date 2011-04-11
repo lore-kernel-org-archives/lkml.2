@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1DKQXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:23:38 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50642 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab1DKQXh (ORCPT
+	id S1753232Ab1DKQZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:25:11 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:46536 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752483Ab1DKQZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:23:37 -0400
-From: Jamie Iles <jamie@jamieiles.com>
-To: linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, Jamie Iles <jamie@jamieiles.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] basic_mmio_gpio: convert to non-__raw* accessors
-Date: Mon, 11 Apr 2011 17:11:26 +0100
-Message-Id: <1302538286-3547-1-git-send-email-jamie@jamieiles.com>
-X-Mailer: git-send-email 1.7.4.2
+	Mon, 11 Apr 2011 12:25:08 -0400
+Date: Mon, 11 Apr 2011 12:25:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+cc: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] USB host: Fix lockdep warning in AMD PLL quirk
+In-Reply-To: <20110411161647.GK23633@amd.com>
+Message-ID: <Pine.LNX.4.44L0.1104111221000.1975-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __raw_* accessors don't include memory barriers and can cause
-problems when writes get stuck in write buffers.
+On Mon, 11 Apr 2011, Roedel, Joerg wrote:
 
-Suggested-by: Linus Walleij <linus.walleij@linaro.org>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
----
+> > > +commit:
+> > > +
+> > > +	spin_lock_irqsave(&amd_lock, flags);
+> > > +	if (amd_chipset.probe_count > 0) {
+> > > +		/* race - someone else was faster - drop devices */
+> > > +
+> > > +		/* Mark that we where here */
+> > > +		amd_chipset.probe_count++;
+> > 
+> > This line should be moved above the "if" statement, since you always 
+> > want to increment the count.
+> 
+> No, probe_count can't be incremented here because the probe is not
+> finished yet.
 
-Note: This patch is based on top of my other series to extend
-basic_mmio_gpio.
+I don't follow you.  Sure it is finished; this is the "commit" part of 
+the probe.
 
- drivers/gpio/basic_mmio_gpio.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+>  If another thread jumps in after the lock is released and
+> detects probe_count > 0 while the probe hasn't happened the quirk will
+> fail. So we need to make sure that amd_chipset.probe_count does not
+> become > 0 before the probe is finished.
 
-diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-index f4afd96..b2ec45f 100644
---- a/drivers/gpio/basic_mmio_gpio.c
-+++ b/drivers/gpio/basic_mmio_gpio.c
-@@ -101,43 +101,43 @@ static struct bgpio_chip *to_bgpio_chip(struct gpio_chip *gc)
- 
- static void bgpio_write8(void __iomem *reg, unsigned long data)
- {
--	__raw_writeb(data, reg);
-+	writeb(data, reg);
- }
- 
- static unsigned long bgpio_read8(void __iomem *reg)
- {
--	return __raw_readb(reg);
-+	return readb(reg);
- }
- 
- static void bgpio_write16(void __iomem *reg, unsigned long data)
- {
--	__raw_writew(data, reg);
-+	writew(data, reg);
- }
- 
- static unsigned long bgpio_read16(void __iomem *reg)
- {
--	return __raw_readw(reg);
-+	return readw(reg);
- }
- 
- static void bgpio_write32(void __iomem *reg, unsigned long data)
- {
--	__raw_writel(data, reg);
-+	writel(data, reg);
- }
- 
- static unsigned long bgpio_read32(void __iomem *reg)
- {
--	return __raw_readl(reg);
-+	return readl(reg);
- }
- 
- #if BITS_PER_LONG >= 64
- static void bgpio_write64(void __iomem *reg, unsigned long data)
- {
--	__raw_writeq(data, reg);
-+	writeq(data, reg);
- }
- 
- static unsigned long bgpio_read64(void __iomem *reg)
- {
--	return __raw_readq(reg);
-+	return readq(reg);
- }
- #endif /* BITS_PER_LONG >= 64 */
- 
--- 
-1.7.4.2
+I meant the increment should be done before the "if" statement but
+after the spin_lock_irqsave().  That way nobody else can jump in at the
+wrong time.
+
+> > > +		ret = amd_chipset.probe_result;
+> > > +
+> > > +		spin_unlock_irqrestore(&amd_lock, flags);
+> > > +
+> > > +		if (info.nb_dev)
+> > > +			pci_dev_put(info.nb_dev);
+> > > +		if (info.smbus_dev)
+> > > +			pci_dev_put(info.smbus_dev);
+> > > +
+> > > +	} else {
+> > > +		/* no race - commit the result */
+> > > +		info.probe_count++;
+> > 
+> > This isn't right, because info.probe_count was initialized to 0.  Maybe 
+> > amd_chipset.probe_count should be made into a separate variable, not a 
+> > part of the structure, like amd_lock.
+> 
+> The purpose of the struct is structuring of data. In theory all of its
+> members could be turned into global variables. The amd_lock is different
+> because it does not only protect the struct but also access to the
+> hardware while the quirk is applied/unapplied.
+
+Do it however you prefer.  But as it stands now, the patch is wrong.
+
+Alan Stern
 
