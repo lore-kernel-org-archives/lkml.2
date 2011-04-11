@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab1DKSnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:43:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:32798 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1DKSnK (ORCPT
+	id S1755510Ab1DKSqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:46:08 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48440 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab1DKSqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:43:10 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Viresh Kumar <viresh.kumar@st.com>,
-        linux-arm-kernel@lists.infradead.org, shiraz.hashim@st.com,
-        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirqus@gmail.com>
-Subject: [PATCH v2] driver core: let dev_set_drvdata return int instead of void as it can fail
-Date: Mon, 11 Apr 2011 20:42:58 +0200
-Message-Id: <1302547378-14639-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <BANLkTi=MjDqawZx=+fKjaAs5SPfGQDEgVQ@mail.gmail.com>
-References: <BANLkTi=MjDqawZx=+fKjaAs5SPfGQDEgVQ@mail.gmail.com>
+	Mon, 11 Apr 2011 14:46:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=hEO5fSFgRvSz3GiU6MXDJ0mat4dUVUDFUUmOV7MiyyAHA6+goOBcCfjDNMeUbeDZPR
+         MLrTHF0+w6xDH2faaGqbgFRAp07IzyhULeg1vM9+Rlxl5iiQ68NtPJ5Dp95AN3KD13iL
+         SyJZ/5AUnFF8SctB+FxySRWqTUHwbGFgIRI0c=
+Message-ID: <4DA34C69.1050508@lwfinger.net>
+Date: Mon, 11 Apr 2011 13:46:01 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Gertjan van Wingerde <gwingerde@gmail.com>
+CC: Ben Hutchings <ben@decadent.org.uk>, Ivo Van Doorn <ivdoorn@gmail.com>,
+        Xose Vazquez Perez <xose.vazquez@gmail.com>, dwmw2@infradead.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        users@rt2x00.serialmonkey.com
+Subject: Re: [rt2x00-users] [PATCH] rt2800pci: rt2800usb: Firmware update
+References: <1302532043-22934-1-git-send-email-Larry.Finger@lwfinger.net> <4DA33F3A.6090707@gmail.com> <BANLkTimJCNpTqn-uQjRLHTyGjHxd+BpJ4Q@mail.gmail.com> <20110411181303.GD2268@decadent.org.uk> <4DA3477F.8080709@gmail.com>
+In-Reply-To: <4DA3477F.8080709@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit
+On 04/11/2011 01:25 PM, Gertjan van Wingerde wrote:
+> On 04/11/11 20:13, Ben Hutchings wrote:
+>> On Mon, Apr 11, 2011 at 07:57:15PM +0200, Ivo Van Doorn wrote:
+>>>>> From: Shiang Tu<shiang_tu@ralinktech.com>
+>>>>>
+>>>>> Update firmware for rt2800pci to Version 34 and firmware for rt2800usb to
+>>>>> Version 29.
+>>>>>
+>>>>> Signed-off-by: Shiang Tu<shiang_tu@ralinktech.com>
+>>>>> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
+>>>>> ---
+>>>>>   WHENCE     |    8 ++++----
+>>>>>   rt2860.bin |  Bin 8192 ->   8192 bytes
+>>>>>   rt2870.bin |  Bin 4096 ->   8192 bytes
+>>>>>   3 files changed, 4 insertions(+), 4 deletions(-)
+>>>>
+>>>> links to rt3070.bin rt3071.bin rt3090.bin ???
+>>>
+>>> What do you mean? Those files should be deleted from the linux-firmware
+>>> package. There is no need to keep them around, as with the removal of
+>>> the staging drivers, the last users of those files are gone.
+>>
+>> Stop repeating this nonsense, Ivo.  If the firmware has been bundled in
+>> the Linux tree, that would be correct.  For linux-firmware the policy is
+>> different.
+>
+> It's unbelievable how much fuzz a set of binary firmware files can create.
+>
+> To be honest, I do not care whether they stay or go, as long as it is very
+> clear that rt2x00 does not need, and will never need those files. If they
+> stay, I would recommend simply not touching them at all, and leave them as
+> they are, so that nothing changes for the people running the staging driver
+> (at least with respect to these 3 firmware files).
+>
+> Larry, it might be best to update your changes to the WHENCE file to clearly
+> state that these 3 files are only needed for the staging rt2860sta driver,
+> up to kernel 2.6.39 (assuming that that staging driver will be removed in 2.6.40).
 
-	b402843 (Driver core: move dev_get/set_drvdata to drivers/base/dd.c)
+Agreed. I'll add that as soon as I get the requested info about what changed 
+from Ralink.
 
-calling dev_set_drvdata with dev=NULL was an unchecked error. After some
-discussion about what to return in this case removing the check (and so
-producing a null pointer exception) seems fine.
+I can test if linking rt3090.bin to rt2860.bin works for the PCI device, but I 
+have no USB stick for testing. As a result, I'm inclined to leave those files 
+intact for the foreseeable future.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-Hello,
+Off-Topic: What are some makes/models of USB sticks? If there are some 
+inexpensive models on E-bay, I could add to my collection.
 
-@Viresh: as I didn't choose to return -EINVAL I didn't add your Reviewed-by:
-
-Best regards
-Uwe
- drivers/base/dd.c      |    7 +++----
- include/linux/device.h |    2 +-
- 2 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index da57ee9..f9d69d7 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -408,17 +408,16 @@ void *dev_get_drvdata(const struct device *dev)
- }
- EXPORT_SYMBOL(dev_get_drvdata);
- 
--void dev_set_drvdata(struct device *dev, void *data)
-+int dev_set_drvdata(struct device *dev, void *data)
- {
- 	int error;
- 
--	if (!dev)
--		return;
- 	if (!dev->p) {
- 		error = device_private_init(dev);
- 		if (error)
--			return;
-+			return error;
- 	}
- 	dev->p->driver_data = data;
-+	return 0;
- }
- EXPORT_SYMBOL(dev_set_drvdata);
-diff --git a/include/linux/device.h b/include/linux/device.h
-index ab8dfc0..e5e07eb 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -557,7 +557,7 @@ extern int device_move(struct device *dev, struct device *new_parent,
- extern const char *device_get_devnode(struct device *dev,
- 				      mode_t *mode, const char **tmp);
- extern void *dev_get_drvdata(const struct device *dev);
--extern void dev_set_drvdata(struct device *dev, void *data);
-+extern int dev_set_drvdata(struct device *dev, void *data);
- 
- /*
-  * Root device objects for grouping under /sys/devices
--- 
-1.7.2.3
-
+Larry
