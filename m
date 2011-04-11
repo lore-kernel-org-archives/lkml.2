@@ -1,121 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab1DKVIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:08:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47831 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab1DKVIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:08:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=beMDy92f3H/qd/yZ7MtNMcelWd7ZUGjTrwZWp6e8W4M/cV9PxlBC2yojRsJfMHQcB+
-         AmYp6WEecPdznBQCAcvYOYVtDTbHYqxiuIV1qGgt7AOr/02E/HwWMYLgr7bv6x5TXz3J
-         hNDgVBaNfPVHRj0679E8vBKSu3loX3Kgzk7L0=
-Message-ID: <4DA36DB6.8060108@suse.cz>
-Date: Mon, 11 Apr 2011 23:08:06 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: bjschuma@netapp.com
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: nfs client doesn't work [was: mmotm 2011-03-31-14-48 uploaded]
-References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org> <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org> <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz> <4DA36758.4070203@suse.cz>
-In-Reply-To: <4DA36758.4070203@suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755482Ab1DKVOj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:14:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54640 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986Ab1DKVOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 17:14:38 -0400
+Date: Tue, 12 Apr 2011 07:14:28 +1000
+From: NeilBrown <neilb@suse.de>
+To: "hch@infradead.org" <hch@infradead.org>
+Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dm-devel@redhat.com, linux-raid@vger.kernel.org
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110412071428.4aa92c6e@notabene.brown>
+In-Reply-To: <20110411165923.GA15442@infradead.org>
+References: <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
+	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
+	<20110303221353.GA10366@redhat.com>
+	<4D761E0D.8050200@fusionio.com>
+	<20110308202100.GA31744@redhat.com>
+	<4D76912C.9040705@fusionio.com>
+	<20110308220526.GA393@redhat.com>
+	<20110310005810.GA17911@redhat.com>
+	<20110405130541.6c2b5f86@notabene.brown>
+	<20110411145022.710c30e9@notabene.brown>
+	<20110411165923.GA15442@infradead.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 10:40 PM, Jiri Slaby wrote:
-> Ccing Bryan
+On Mon, 11 Apr 2011 12:59:23 -0400 "hch@infradead.org" <hch@infradead.org>
+wrote:
+
+> On Mon, Apr 11, 2011 at 02:50:22PM +1000, NeilBrown wrote:
+> > diff --git a/block/blk-core.c b/block/blk-core.c
+> > index 273d60b..903ce8d 100644
+> > --- a/block/blk-core.c
+> > +++ b/block/blk-core.c
+> > @@ -2674,19 +2674,23 @@ static void flush_plug_list(struct blk_plug *plug)
+> >  	struct request_queue *q;
+> >  	unsigned long flags;
+> >  	struct request *rq;
+> > +	struct list_head head;
+> >  
+> >  	BUG_ON(plug->magic != PLUG_MAGIC);
+> >  
+> >  	if (list_empty(&plug->list))
+> >  		return;
+> > +	list_add(&head, &plug->list);
+> > +	list_del_init(&plug->list);
+> >  
+> >  	if (plug->should_sort)
+> > -		list_sort(NULL, &plug->list, plug_rq_cmp);
+> > +		list_sort(NULL, &head, plug_rq_cmp);
+> > +	plug->should_sort = 0;
 > 
-> On 04/11/2011 10:40 PM, Jiri Slaby wrote:
->> On 04/07/2011 08:42 AM, Jiri Slaby wrote:
->>> On 04/06/2011 10:44 PM, Myklebust, Trond wrote:
->>>> On Sat, 2011-04-02 at 10:56 +0200, Jiri Slaby wrote:
->>>>> On 03/31/2011 11:48 PM, akpm@linux-foundation.org wrote:
->>>>>> The mm-of-the-moment snapshot 2011-03-31-14-48 has been uploaded to
->>>>>
->>>>> Hi, nfs client is defunct in this kernel. Tcpdump says:
->>>>> 10:51:55.489717 IP 10.20.11.33.759945860 > 10.20.3.2.2049: 132 getattr
->>>>> fh 0,0/24
->>>>> 10:51:55.515927 IP 10.20.3.2.2049 > 10.20.11.33.759945860: reply ok 44
->>>>> getattr ERROR: Operation not permitted
->>>>> 10:51:55.515949 IP 10.20.11.33.921 > 10.20.3.2.2049: Flags [.], ack
->>>>> 3569361440, win 115, options [nop,nop,TS val 599750 ecr 255058541],
->>>> length 0
->>>>> 10:52:04.130310 IP 10.20.11.33.793500292 > 10.20.3.2.2049: 76 getattr fh
->>>>> 0,0/24
->>>>> 10:52:04.152178 IP 10.20.3.2.2049 > 10.20.11.33.793500292: reply ok 44
->>>>> getattr ERROR: Operation not permitted
->>>>>
->>>>> If I run the same mount command (mount -oro,intr host:dir mountpoint)
->>>>> from within a virtual machine with 2.6.38.2 there, everything mounts OK.
->>>>
->>>> Does the attached patch help?
->>>
->>> No, still the operation not permitted in the tcpdump output and no mount.
->>
->> The next tree from 20110411 still doesn't work. The topmost commit in
->> fs/nfs/namespace.c is:
->> commit 418875900e3de4831c84f86ae4756690dac5be77
->> Author: Bryan Schumaker <bjschuma@netapp.com>
->> Date:   Wed Apr 6 14:33:28 2011 -0400
->>
->>     NFS: Fix a signed vs. unsigned secinfo bug
->>
->>
->> I bisected it to (in vanilla already):
->>
->> 8f70e95f9f4159184f557a1db60c909d7c1bd2e3 is the first bad commit
->> commit 8f70e95f9f4159184f557a1db60c909d7c1bd2e3
->> Author: Bryan Schumaker <bjschuma@netapp.com>
->> Date:   Thu Mar 24 17:12:31 2011 +0000
->>
->>     NFS: Determine initial mount security
->>
->>     When sec=<something> is not presented as a mount option,
->>     we should attempt to determine what security flavor the
->>     server is using.
->>
->>     Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
->>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->>
->> :040000 040000 8e5a640b37e00f0df21e1d9cd9aff160df2d5938
->> 0152daa67bc8d12e32cda5f4a036807d2e380392 M      fs
->> :040000 040000 f74aa33f8597cb82cd0fd7d90d84e0660b7f5804
->> 527bc0ca6975cedc7e684b45dc9961f8aaf1207a M      include
->> :040000 040000 87559d2f211ea905343a86c8551b6610dd239891
->> 7e4ee0e5eddf12474b6de9e7fdb6218b6165bdb2 M      net
+> As Jens mentioned this should be list_splice_init.  But looking over
+> flush_plug_list the code there seems strange to me.
+> 
+> What does the local_irq_save in flush_plug_list protect?  Why don't
+> we need it over the list_sort?  And do we still need it when first
+> splicing the list to a local one?
+> 
+> It's one of these cases where I'd really like to see more comments
+> explaining why the code is doing what it's doing.
 
-Sorry for an extra message. I've just found out that there appears
-messages in dmesg:
-[   58.656048] RPC: AUTH_GSS upcall timed out.
-[   58.656050] Please check user daemon is running.
-[   88.656065] RPC: AUTH_GSS upcall timed out.
-[   88.656068] Please check user daemon is running.
-[  118.656077] RPC: AUTH_GSS upcall timed out.
-[  118.656080] Please check user daemon is running.
-[  148.656049] RPC: AUTH_GSS upcall timed out.
-[  148.656052] Please check user daemon is running.
-[  178.656046] RPC: AUTH_GSS upcall timed out.
-[  178.656049] Please check user daemon is running.
+My understanding of that was that the calling requirement of
+__elv_add_request is that the queue spinlock is held and that interrupts are
+disabled.
+So rather than possible enabling and disabling interrupts several times as
+different queue are handled, the code just disabled interrupts once, and
+then just take the spinlock once for each different queue.
+
+The whole point of the change to plugging was to take locks less often.
+Disabling interrupts less often is presumably an analogous goal.
+
+Though I agree that a comment would help.
+
+	q = NULL;
++	/* Disable interrupts just once rather than using spin_lock_irq/sin_unlock_irq
+	 * variants
+	 */
+	local_irq_save(flags);
 
 
-I instrumented the code and it's stuck with trying RPC_AUTH_GSS_KRB5.
+assuming my analysis is correct.
 
-I don't use GSS at all.
+NeilBrown
 
-regards,
--- 
-js
-suse labs
