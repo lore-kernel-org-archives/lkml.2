@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab1DKN3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 09:29:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:39773 "EHLO mx2.parallels.com"
+	id S1752054Ab1DKNbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 09:31:45 -0400
+Received: from gra-lx1.iram.es ([150.214.224.41]:41912 "EHLO gra-lx1.iram.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab1DKN3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 09:29:52 -0400
-Message-ID: <4DA30222.5040902@parallels.com>
-Date: Mon, 11 Apr 2011 08:29:06 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1751673Ab1DKNbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 09:31:44 -0400
+Date: Mon, 11 Apr 2011 15:31:28 +0200
+From: Gabriel Paubert <paubert@iram.es>
+To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Dave Airlie <airlied@gmail.com>, Greg KH <greg@kroah.com>,
+        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+Message-ID: <20110411133128.GA24344@iram.es>
+References: <20110404235259.GA30132@iram.es> <20110406084101.GB13963@pengutronix.de> <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com> <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local>
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 3/3] Compare namespaces when comparing addresses in auth_unix
- cache.
-References: <4D9431B3.2070305@parallels.com> <20110405034641.GC6764@hallyn.com> <4D9F24F2.9020603@parallels.com>
-In-Reply-To: <4D9F24F2.9020603@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.54.86.200]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1302185075.24704.143.camel@thor.local>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2011 10:08 AM, Rob Landley wrote:
-> On 04/04/2011 10:46 PM, Serge E. Hallyn wrote:
->> Does this need to take a reference?  Or is there no way for an
->> entry to outlive its netns?  It sort of looks like
->> svcauth_unix_info_release will ensure that doesn't happen, but
->> I'm not convinced because other parts of the kernel can get
->> to ip_map_init through the struct cache_detail.
+On Thu, Apr 07, 2011 at 04:04:35PM +0200, Michel Dänzer wrote:
+> On Mit, 2011-04-06 at 22:43 +0200, Gabriel Paubert wrote: 
+> > 
+> > The probem is that, at least on one of my machines, the new driver
+> > does not work: the system hangs (apparently solid, but it's before
+> > networking starts up and I've not yet hooked up a serial console), 
+> > after the "radeon: ib pool ready" message.
 > 
-> When I wrote this I thought the transport's get_net() and put_net()
-> would pin it, but after re-reading, the sunrpc code is disgustingly
-> convoluted enough that I can't easily reconstruct my earlier reasoning.
->  I'll add a get_net() and put_net() just to not have to worry about it.
+> Does radeon.agpmode=-1 radeon.no_wb=1 help?
+> 
+> You might be able to get more information via netconsole if you prevent
+> the radeon module from loading automatically (or load it with
+> radeon.modeset=0 first) and then load it e.g. via ssh with modeset=1.
 
-Ah-ha!
+Loading the module with modeset=1 results in insmod blocked in
+kernel state (not consuming CPU cycles either). The last kernel 
+message is always the same (ib pool ready). This seems to be 
+independent of agpmode and no_wb. The kernel messages when
+loading the driver are:
 
-Stanislav Kinsbursky helped me reconstruct some of the reasoning: we
-don't need to take a reference because we never actually dereference the
-struct net *, all we do is feed them to net_eq() which just compares the
-pointers for equality.  (The inline function exists so it can compile to
-a constant "return 1" when configured out.)
+kernel: [drm] radeon kernel modesetting enabled.
+kernel: checking generic (c0000000 140000) vs hw (c0000000 10000000)
+kernel: fb: conflicting fb hw usage radeondrmfb vs OFfb vga,Displa - removing generic driver
+kernel: [drm] initializing kernel modesetting (RV530 0x1002:0x71C7).
+kernel: radeon 0000:f1:00.0: Using 64-bit DMA iommu bypass
+kernel: [drm] register mmio base: 0xE8000000
+kernel: [drm] register mmio size: 65536
+kernel: radeon 0000:f1:00.0: Invalid ROM contents
+kernel: ATOM BIOS: X1650PRO
+kernel: [drm] Generation 2 PCI interface, using max accessible memory
+kernel: radeon 0000:f1:00.0: VRAM: 512M 0x0000000000000000 - 0x000000001FFFFFFF (512M used)
+kernel: radeon 0000:f1:00.0: GTT: 512M 0x0000000020000000 - 0x000000003FFFFFFF
+kernel: [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+kernel: [drm] Driver supports precise vblank timestamp query.
+kernel: irq: irq 9 on host /mpic mapped to virtual irq 24
+kernel: u3msi: allocated virq 0x18 (hw 0x9) addr 0xf8004090
+kernel: radeon 0000:f1:00.0: radeon: using MSI.
+kernel: [drm] radeon: irq initialized.
+kernel: [drm] Detected VRAM RAM=512M, BAR=256M
+kernel: [drm] RAM width 128bits DDR
+kernel: [TTM] Zone  kernel: Available graphics memory: 1002914 kiB.
+kernel: [TTM] Initializing pool allocator.
+kernel: [drm] radeon: 512M of VRAM memory ready
+kernel: [drm] radeon: 512M of GTT memory ready.
+kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
+kernel: [drm] radeon: 1 quad pipes, 2 z pipes initialized.
+kernel: [drm] PCIE GART of 512M enabled (table at 0x00040000).
+kernel: radeon 0000:f1:00.0: WB enabled
+kernel: [drm] Loading R500 Microcode
+kernel: [drm] radeon: ring at 0x0000000020001000
+kernel: [drm] ring test succeeded in 6 usecs
+kernel: [drm] radeon: ib pool ready.
 
-So if the network context did go away (which still shouldn't happen
-between the rpc_xprt and the struct nfs_client having references to it)
-we still wouldn't have a use-after-free problem because we're not
-looking at the memory, just the pointer.
 
-So I shouldn't need to add get_net() and put_net() to the cache.  Sound
-about right?
+For now, with modeset=0, agpmode=-1 and no_wb=1, the driver
+seems to work. But it sometimes took hours to fail, so some
+more wait is needed.
 
-Rob
+	Regards,
+	Gabriel
