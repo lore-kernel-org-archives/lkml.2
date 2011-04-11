@@ -1,223 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1DKEuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 00:50:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46844 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab1DKEue convert rfc822-to-8bit (ORCPT
+	id S1752626Ab1DKEyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 00:54:32 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43684 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab1DKEyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 00:50:34 -0400
-Date: Mon, 11 Apr 2011 14:50:22 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110411145022.710c30e9@notabene.brown>
-In-Reply-To: <20110405130541.6c2b5f86@notabene.brown>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
-	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
-	<20110303221353.GA10366@redhat.com>
-	<4D761E0D.8050200@fusionio.com>
-	<20110308202100.GA31744@redhat.com>
-	<4D76912C.9040705@fusionio.com>
-	<20110308220526.GA393@redhat.com>
-	<20110310005810.GA17911@redhat.com>
-	<20110405130541.6c2b5f86@notabene.brown>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Apr 2011 00:54:31 -0400
+X-AuditID: b753bd60-9e1fcba000000f4e-9d-4da28984a7cc
+X-AuditID: b753bd60-9e1fcba000000f4e-9d-4da28984a7cc
+Message-ID: <4DA2897B.3030404@hitachi.com>
+Date: Mon, 11 Apr 2011 13:54:19 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        pp-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip v3 3/6] perf branch trace: print pid and command
+References: <20110324113137.20235.42265.stgit@localhost6.localdomain6> <20110324113209.20235.61900.stgit@localhost6.localdomain6> <4D8B79E6.2050603@gmail.com> <4D8C6B1B.70409@hitachi.com> <4D8CAE74.9080805@gmail.com> <4D906450.1040809@hitachi.com> <4D909BBB.5020500@gmail.com> <20110401151313.GC2335@nowhere> <4D9996C8.4020703@hitachi.com> <20110406125226.GB1867@nowhere>
+In-Reply-To: <20110406125226.GB1867@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Apr 2011 13:05:41 +1000 NeilBrown <neilb@suse.de> wrote:
+(2011/04/06 21:52), Frederic Weisbecker wrote:
+> On Mon, Apr 04, 2011 at 07:00:40PM +0900, Akihiro Nagai wrote:
+>> (2011/04/02 0:13), Frederic Weisbecker wrote:
+>>> On Mon, Mar 28, 2011 at 08:31:23AM -0600, David Ahern wrote:
+>>>> On 03/28/11 04:34, Akihiro Nagai wrote:
+>>>>> >from is sample->ip? to is sample->addr? In the above example
+>>>>>> 0x39d3015260 is the value from sample->addr, 1526f is sample->ip which
+>>>>>> resolves to _dl_next_ld_env_entry from /lib64/ld-2.13.so.
+>>>>> Yes.
+>>>>> In this example, resolved address is only sample->ip (branch from).
+>>>>> We need the resolved address of sample->addr (branch to) too, because
+>>>>> both of them are addresses of execution code.
+>>>>
+>>>> Ok, now I understand. In that case add conversion of sample->addr to
+>>>> symbols to perf-script.
+>>>
+>>> I agree that we should rather use perf script for branch dumps.
+>>> Sorry Akihiro, I think we suggested you to create this dedicated
+>>> perf branch by the past. But then perf script became the vanilla dump
+>>> tool in the middle and it seems more suitable today.
+>>>
+>>> We can still create a perf branch later in order to produce some more
+>>> advanced post-processing tools. But for sample dumps perf script (which starts
+>>> to show itself as a misnomer BTW) seems to be the right place.
+>> Finally, I would like to create coverage test tools using BTS on perf.
+>> I'm working on the project "Btrax" that is a coverage test tool using BTS.
+>> The URL is: http://sourceforge.net/projects/btrax/
+>
+> Cool, what is this tool doing? How is it different from perf branch?
+Btrax provides following functions by analyzing BTS logs.
+  1. Show executed/unexecuted codes with colors in HTML.
+  2. Calculate the ratio of executed codes and all codes of tracee programs.
 
-> On Wed, 9 Mar 2011 19:58:10 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
-> 
-> > Also, in your MD changes, you removed all calls to md_unplug() but
-> > didn't remove md_unplug().  Seems it should be removed along with the
-> > 'plug' member of 'struct mddev_t'?  Neil?
-> 
-> I've been distracted by other things and only just managed to have a look at
-> this.
-> 
-> The new plugging code seems to completely ignore the needs of stacked devices
-> - or at least my needs in md.
-> 
-> For RAID1 with a write-intent-bitmap, I queue all write requests and then on
-> an unplug I update the write-intent-bitmap to mark all the relevant blocks
-> and then release the writes.
-> 
-> With the new code there is no way for an unplug event to wake up the raid1d
-> thread to start the writeout - I haven't tested it but I suspect it will just
-> hang.
-> 
-> Similarly for RAID5 I gather write bios (long before they become 'struct
-> request' which is what the plugging code understands) and on an unplug event
-> I release the writes - hopefully with enough bios per stripe so that we don't
-> need to pre-read.
-> 
-> Possibly the simplest fix would be to have a second list_head in 'struct
-> blk_plug' which contained callbacks (a function pointer a list_head in a
-> struct which is passed as an arg to the function!).
-> blk_finish_plug could then walk the list and call the call-backs.
-> It would be quite easy to hook into that.
+Finally, I would like to add similar functions to Btrax to perf branch.
+Because,
+  1. I think the combination of BTS and other perf functions realizes
+     cool stuff.
+  2. Currently, Btrax is out of tree. So, some people cannot use it
+     because of unsupported kernel versions. I want many people to use it.
 
-I've implemented this and it seems to work.
-Jens:  could you please review and hopefully ack the patch below, and let
-me know if you will submit it or should I?
+>
+>>
+>> And, I would like to implement other functions on perf-branch too.
+>> For example, call graph, source code browser like perf-annotate which
+>> can show executed codes.
+>> So, I wolud like to continue to develop perf-branch.
+>
+> And you're very welcome to do so. Such features have a nice potential
+> I think.
+Thank you. I believe it too.
 
-My testing of this combined with some other patches which cause various md
-personalities to use it shows up a bug somewhere.
-
-The symptoms are crashes in various places in blk-core and sometimes
-elevator.c
-list_sort occurs fairly often included in the stack but not always.
-
-This patch
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 273d60b..903ce8d 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2674,19 +2674,23 @@ static void flush_plug_list(struct blk_plug *plug)
- 	struct request_queue *q;
- 	unsigned long flags;
- 	struct request *rq;
-+	struct list_head head;
- 
- 	BUG_ON(plug->magic != PLUG_MAGIC);
- 
- 	if (list_empty(&plug->list))
- 		return;
-+	list_add(&head, &plug->list);
-+	list_del_init(&plug->list);
- 
- 	if (plug->should_sort)
--		list_sort(NULL, &plug->list, plug_rq_cmp);
-+		list_sort(NULL, &head, plug_rq_cmp);
-+	plug->should_sort = 0;
- 
- 	q = NULL;
- 	local_irq_save(flags);
--	while (!list_empty(&plug->list)) {
--		rq = list_entry_rq(plug->list.next);
-+	while (!list_empty(&head)) {
-+		rq = list_entry_rq(head.next);
- 		list_del_init(&rq->queuelist);
- 		BUG_ON(!(rq->cmd_flags & REQ_ON_PLUG));
- 		BUG_ON(!rq->q);
-
-
-makes the symptom go away.  It simply moves the plug list onto a separate
-list head before sorting and processing it.
-My test was simply writing to a RAID1 with dd:
-  while true; do dd if=/dev/zero of=/dev/md0 size=4k; done
-
-Obviously all writes go to two devices so the plug list will always need
-sorting.
-
-The only explanation I can come up with is that very occasionally schedule on
-2 separate cpus calls blk_flush_plug for the same task.  I don't understand
-the scheduler nearly well enough to know if or how that can happen.
-However with this patch in place I can write to a RAID1 constantly for half
-an hour, and without it, the write rarely lasts for 3 minutes.
-
-If you want to reproduce my experiment, you can pull from
-  git://neil.brown.name/md plug-test
-to get my patches for plugging in md (which are quite ready for submission
-but seem to work), create a RAID1 using e.g.
-   mdadm -C /dev/md0 --level=1 --raid-disks=2 /dev/device1 /dev/device2
-   while true; do dd if=/dev/zero of=/dev/md0 bs=4K ; done
-
-
-Thanks,
-NeilBrown
-
-
-
->From 687b189c02276887dd7d5b87a817da9f67ed3c2c Mon Sep 17 00:00:00 2001
-From: NeilBrown <neilb@suse.de>
-Date: Thu, 7 Apr 2011 13:16:59 +1000
-Subject: [PATCH] Enhance new plugging support to support general callbacks.
-
-md/raid requires an unplug callback, but as it does not uses
-requests the current code cannot provide one.
-
-So allow arbitrary callbacks to be attached to the blk_plug.
-
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- block/blk-core.c       |   13 +++++++++++++
- include/linux/blkdev.h |    7 ++++++-
- 2 files changed, 19 insertions(+), 1 deletions(-)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 725091d..273d60b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2644,6 +2644,7 @@ void blk_start_plug(struct blk_plug *plug)
- 
- 	plug->magic = PLUG_MAGIC;
- 	INIT_LIST_HEAD(&plug->list);
-+	INIT_LIST_HEAD(&plug->cb_list);
- 	plug->should_sort = 0;
- 
- 	/*
-@@ -2717,9 +2718,21 @@ static void flush_plug_list(struct blk_plug *plug)
- 	local_irq_restore(flags);
- }
- 
-+static void flush_plug_callbacks(struct blk_plug *plug)
-+{
-+	while (!list_empty(&plug->cb_list)) {
-+		struct blk_plug_cb *cb = list_first_entry(&plug->cb_list,
-+							  struct blk_plug_cb,
-+							  list);
-+		list_del(&cb->list);
-+		cb->callback(cb);
-+	}
-+}
-+
- static void __blk_finish_plug(struct task_struct *tsk, struct blk_plug *plug)
- {
- 	flush_plug_list(plug);
-+	flush_plug_callbacks(plug);
- 
- 	if (plug == tsk->plug)
- 		tsk->plug = NULL;
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 32176cc..3e5e604 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -857,8 +857,13 @@ extern void blk_put_queue(struct request_queue *);
- struct blk_plug {
- 	unsigned long magic;
- 	struct list_head list;
-+	struct list_head cb_list;
- 	unsigned int should_sort;
- };
-+struct blk_plug_cb {
-+	struct list_head list;
-+	void (*callback)(struct blk_plug_cb *);
-+};
- 
- extern void blk_start_plug(struct blk_plug *);
- extern void blk_finish_plug(struct blk_plug *);
-@@ -876,7 +881,7 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
- {
- 	struct blk_plug *plug = tsk->plug;
- 
--	return plug && !list_empty(&plug->list);
-+	return plug && (!list_empty(&plug->list) || !list_empty(&plug->cb_list));
- }
- 
- /*
--- 
-1.7.3.4
+>
+> Thanks.
 
