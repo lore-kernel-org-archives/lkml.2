@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab1DKSuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:50:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38866 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1DKSuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:50:40 -0400
-Date: Mon, 11 Apr 2011 20:50:35 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Viresh Kumar <viresh.kumar@st.com>,
-        linux-arm-kernel@lists.infradead.org, shiraz.hashim@st.com
-Subject: Re: [PATCH 1/5] driver core/platform_device_add_data: set
- platform_data to NULL if !data
-Message-ID: <20110411185035.GA7771@pengutronix.de>
-References: <20110301153438.GB15633@suse.de>
- <1302081865-2962-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1755541Ab1DKSuz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:50:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26984 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755518Ab1DKSux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 14:50:53 -0400
+Date: Mon, 11 Apr 2011 20:50:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [RFC][PATCH 1/5] signals: Always place SIGCONT and SIGSTOP on
+	'shared_pending'
+Message-ID: <20110411185005.GA4240@redhat.com>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-2-git-send-email-matt@console-pimps.org> <20110405201958.GA1404@redhat.com> <20110405215003.636e950b@mfleming-mobl1.ger.corp.intel.com> <20110406125757.GA12099@redhat.com> <20110406141548.1e0736ce@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302081865-2962-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110406141548.1e0736ce@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 04/06, Matt Fleming wrote:
+>
+> Yeah, good point. This patch definitely needs dropping from the series.
 
-do you care for the Reviewed-by: tag from Viresh or should I resend?
+Yes.
 
-Best regards
-Uwe
+Sorry for delay again. I'll try to read the rest of this series tomorrow,
+I can no longer look at signal.c to today.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Oh, these changes do not look trivial. I must admit, I am a bit sceptical,
+but this is only my first impression based on amount on changes and more
+complex locking.
+
+Oleg.
+
