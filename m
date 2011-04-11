@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab1DKIBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 04:01:14 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49086 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab1DKIBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 04:01:13 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 3/3] mm, mem-hotplug: update pcp->stat_threshold when memory hotplug occur
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
-In-Reply-To: <20110411165957.0352.A69D9226@jp.fujitsu.com>
-References: <20110411165957.0352.A69D9226@jp.fujitsu.com>
-Message-Id: <20110411170134.035E.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1754844Ab1DKIMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 04:12:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3811 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754115Ab1DKIMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 04:12:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,338,1299484800"; 
+   d="scan'208";a="907922249"
+Subject: Re: [RFC][PATCH 5/9] perf: Simplify and fix
+ __perf_install_in_context
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Oleg Nesterov <oleg@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <20110409192141.870894224@chello.nl>
+References: <20110409191739.813727025@chello.nl>
+	 <20110409192141.870894224@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Apr 2011 16:12:31 +0800
+Message-ID: <1302509551.29423.7.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 11 Apr 2011 17:01:08 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cpu hotplug updates pcp->stat_threashold, but memory
-hotplug doesn't. there is no reason.
+On Sat, 2011-04-09 at 21:17 +0200, Peter Zijlstra wrote:
+> plain text document attachment (perf_install_in_context.patch)
+> Currently __perf_install_in_context() will try and schedule in the
+> event irrespective of our event scheduling rules, that is, we try to
+> schedule CPU-pinned, TASK-pinned, CPU-flexible, TASK-flexible, but
+> when creating a new event we simply try and schedule it on top of
+> whatever is already on the PMU, this can lead to errors for pinned
+> events.
+> 
+> Therefore, simplify things and simply schedule everything out, add the
+> event to the corresponding context and schedule everything back in.
+> 
+> This also nicely handles the case where with
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW the IPI can come right in the middle
+> of schedule, before we managed to call perf_event_task_sched_in().
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  kernel/perf_event.c |   80 ++++++++++++++++++++++------------------------------
+>  1 file changed, 35 insertions(+), 45 deletions(-)
+> 
+> Index: linux-2.6/kernel/perf_event.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/perf_event.c
+> +++ linux-2.6/kernel/perf_event.c
+> @@ -1476,8 +1476,12 @@ static void add_event_to_ctx(struct perf
+>  	event->tstamp_stopped = tstamp;
+>  }
+>  
+> -static void perf_event_context_sched_in(struct perf_event_context *ctx,
+> -					struct task_struct *tsk);
+> +static void task_ctx_sched_out(struct perf_event_context *ctx);
+> +static void
+> +ctx_sched_in(struct perf_event_context *ctx,
+> +	     struct perf_cpu_context *cpuctx,
+> +	     enum event_type_t event_type,
+> +	     struct task_struct *task);
+>  
+>  /*
+>   * Cross CPU call to install and enable a performance event
+> @@ -1488,20 +1492,31 @@ static int  __perf_install_in_context(vo
+>  {
+>  	struct perf_event *event = info;
+>  	struct perf_event_context *ctx = event->ctx;
+> -	struct perf_event *leader = event->group_leader;
+>  	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+> -	int err;
+> +	struct perf_event_context *task_ctx = cpuctx->task_ctx;
+> +	struct task_struct *task = current;
+> +
+> +	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Christoph Lameter <cl@linux.com>
----
- include/linux/vmstat.h |    1 +
- mm/page_alloc.c        |    2 ++
- mm/vmstat.c            |    3 +--
- 3 files changed, 4 insertions(+), 2 deletions(-)
+perf_ctx_lock(cpuctx, task_ctx)
 
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index 04fa5df..5f72954 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -201,6 +201,7 @@ extern void dec_zone_state(struct zone *, enum zone_stat_item);
- extern void __dec_zone_state(struct zone *, enum zone_stat_item);
- 
- void refresh_cpu_vm_stats(int);
-+void refresh_zone_stat_thresholds(void);
- 
- int calculate_pressure_threshold(struct zone *zone);
- int calculate_normal_threshold(struct zone *zone);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ef90a87..10b5816 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -54,6 +54,7 @@
- #include <trace/events/kmem.h>
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
-+#include <linux/vmstat.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -5130,6 +5131,7 @@ int __meminit init_per_zone_wmark_min(void)
- 	if (min_free_kbytes > 65536)
- 		min_free_kbytes = 65536;
- 	setup_per_zone_wmarks();
-+	refresh_zone_stat_thresholds();
- 	setup_per_zone_lowmem_reserve();
- 	setup_per_zone_inactive_ratio();
- 	return 0;
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 897ea9e..b23b1f5 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -157,7 +157,7 @@ int calculate_normal_threshold(struct zone *zone)
- /*
-  * Refresh the thresholds for each zone.
-  */
--static void refresh_zone_stat_thresholds(void)
-+void refresh_zone_stat_thresholds(void)
- {
- 	struct zone *zone;
- 	int cpu;
-@@ -1198,7 +1198,6 @@ static int __init setup_vmstat(void)
- #ifdef CONFIG_SMP
- 	int cpu;
- 
--	refresh_zone_stat_thresholds();
- 	register_cpu_notifier(&vmstat_notifier);
- 
- 	for_each_online_cpu(cpu)
--- 
-1.7.3.1
+since task_ctx is assigned with cpuctx->task_ctx.
 
-
+Lin Ming
 
