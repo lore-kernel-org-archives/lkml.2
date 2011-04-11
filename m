@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab1DKV0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:26:09 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57110 "EHLO gate.crashing.org"
+	id S1755689Ab1DKVaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:30:09 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:60432 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab1DKV0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:26:07 -0400
-Subject: Re: [PATCH 3/6] microblaze/pci: Move the remains of pci_32.c to
- pci-common.c
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, bheglaas@google.com,
-        monstr@monstr.eu, tglx@linutronix.de, bigeasy@linutronix.de
-In-Reply-To: <da7a8b1fa75c0968a4586a591713d5db.squirrel@webmail.sf-mail.de>
-References: <1302495170-973-1-git-send-email-benh@kernel.crashing.org>
-	 <1302495170-973-4-git-send-email-benh@kernel.crashing.org>
-	 <da7a8b1fa75c0968a4586a591713d5db.squirrel@webmail.sf-mail.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 07:25:33 +1000
-Message-ID: <1302557133.28876.13.camel@pasglop>
+	id S1755170Ab1DKVaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 17:30:08 -0400
+Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Chris McDermott <lcm@linux.vnet.ibm.com>
+In-Reply-To: <20110411172004.0361.A69D9226@jp.fujitsu.com>
+References: <20110411172004.0361.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 11 Apr 2011 14:29:31 -0700
+Message-ID: <1302557371.7286.16607.camel@nimitz>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-11 at 15:12 +0000, Rolf Eike Beer wrote:
-> > There's no point in keeping this separate. Even if microblaze grows
-> > a 64-bit variant, it will probably be able to re-use that code as-is
-> 
-> > diff --git a/arch/microblaze/pci/pci-common.c
-> > b/arch/microblaze/pci/pci-common.c
-> > index 5359906..041b1d8 100644
-> > --- a/arch/microblaze/pci/pci-common.c
-> > +++ b/arch/microblaze/pci/pci-common.c
-> > @@ -50,6 +50,11 @@ unsigned int pci_flags;
-> >
-> >  static struct dma_map_ops *pci_dma_ops = &dma_direct_ops;
-> >
-> > +unsigned long isa_io_base;
-> > +unsigned long pci_dram_offset;
-> > +static int pci_bus_count;
-> > +
-> > +
-> 
-> Extra newline.
+On Mon, 2011-04-11 at 17:19 +0900, KOSAKI Motohiro wrote:
+> This patch raise zone_reclaim_mode threshold to 30. 30 don't have
+> specific meaning. but 20 mean one-hop QPI/Hypertransport and such
+> relatively cheap 2-4 socket machine are often used for tradiotional
+> server as above. The intention is, their machine don't use
+> zone_reclaim_mode.
 
-Can people with no useful content abstain from commenting please.
+I know specifically of pieces of x86 hardware that set the information
+in the BIOS to '21' *specifically* so they'll get the zone_reclaim_mode
+behavior which that implies.
 
-Cheers,
-Ben.
+They've done performance testing and run very large and scary benchmarks
+to make sure that they _want_ this turned on.  What this means for them
+is that they'll probably be de-optimized, at least on newer versions of
+the kernel.
 
+If you want to do this for particular systems, maybe _that_'s what we
+should do.  Have a list of specific configurations that need the
+defaults overridden either because they're buggy, or they have an
+unusual hardware configuration not really reflected in the distance
+table.
+
+-- Dave
 
