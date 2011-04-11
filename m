@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab1DKS44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:56:56 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:40856 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1DKS4y convert rfc822-to-8bit (ORCPT
+	id S1755596Ab1DKS47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:56:59 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:52774 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755572Ab1DKS44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:56:54 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: =?UTF-8?q?Weiping=20Pan=28=E6=BD=98=E5=8D=AB=E5=B9=B3=29?= 
-	<panweiping3@gmail.com>
-cc: andy@greyhouse.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bonding:set save_load to 0 when initializing
-In-reply-to: <1302270019-11698-1-git-send-email-panweiping3@gmail.com>
-References: <1302270019-11698-1-git-send-email-panweiping3@gmail.com>
-Comments: In-reply-to =?UTF-8?q?Weiping=20Pan=28=E6=BD=98=E5=8D=AB=E5=B9=B3=29?= <panweiping3@gmail.com>
-   message dated "Fri, 08 Apr 2011 21:40:19 +0800."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 11 Apr 2011 11:56:47 -0700
-Message-ID: <30474.1302548207@death>
+	Mon, 11 Apr 2011 14:56:56 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=cLQqoGtoXkdf1KdT1lIDyWsIg4XraZX9AtfFJo0vBALm1m4UUf1hC762fqv4CFu2gY4ElKlU2J78zw4PgOfTTAazPn1HENsUkUrn86skUuFCBLH9MhqBzrwbxl1Nwg2V;
+Date: Mon, 11 Apr 2011 11:56:54 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC]Documentation:accounting:getdelays.c Fix: warning:
+ variable =?UTF-8?B?4oCYaeKAmQ==?= set but not used
+Message-Id: <20110411115654.9ff67799.rdunlap@xenotime.net>
+In-Reply-To: <1302019370-7101-1-git-send-email-justinmattock@gmail.com>
+References: <1302019370-7101-1-git-send-email-justinmattock@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue,  5 Apr 2011 09:02:50 -0700 Justin P. Mattock wrote:
 
->It is unnecessary to set save_load to 1 here,
->as the tx_hashtbl is just kzalloced.
->
->Signed-off-by: Weiping Pan(潘卫平) <panweiping3@gmail.com>
+> The below patch takes care of the warning, but keep in mind am unsure if this is a correct way
+> to resolve this issue.
+> Documentation/accounting/getdelays.c: In function ‘main’:
+> Documentation/accounting/getdelays.c:436:7: warning: variable ‘i’ set but not used [-Wunused-but-set-variable]
+> 
+> Keep in mind there is another warning with this file, but need am unsure what might be the best solution:
+> Documentation/accounting/getdelays.c: In function ‘get_family_id’:
+> Documentation/accounting/getdelays.c:172:14: warning: variable ‘rc’ set but not used [-Wunused-but-set-variable]
 
-	I don't think this will cause any behavioral change, but I'll
-grant is more correct in intent (there's no load information to save at
-this point).
+Hi,
+Does -Wunused-but-set-variable require gcc 4.6.0?
 
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
 
->---
-> drivers/net/bonding/bond_alb.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
->diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
->index 9bc5de3..ab69e5a 100644
->--- a/drivers/net/bonding/bond_alb.c
->+++ b/drivers/net/bonding/bond_alb.c
->@@ -176,7 +176,7 @@ static int tlb_initialize(struct bonding *bond)
-> 	bond_info->tx_hashtbl = new_hashtbl;
->
-> 	for (i = 0; i < TLB_HASH_TABLE_SIZE; i++) {
->-		tlb_init_table_entry(&bond_info->tx_hashtbl[i], 1);
->+		tlb_init_table_entry(&bond_info->tx_hashtbl[i], 0);
-> 	}
->
-> 	_unlock_tx_hashtbl(bond);
->-- 
->1.7.4
->
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  Documentation/accounting/getdelays.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/accounting/getdelays.c b/Documentation/accounting/getdelays.c
+> index e9c7778..16e16d5 100644
+> --- a/Documentation/accounting/getdelays.c
+> +++ b/Documentation/accounting/getdelays.c
+> @@ -433,8 +433,6 @@ int main(int argc, char *argv[])
+>  	}
+>  
+>  	do {
+> -		int i;
+> -
+>  		rep_len = recv(nl_sd, &msg, sizeof(msg), 0);
+>  		PRINTF("received %d bytes\n", rep_len);
+>  
+> @@ -459,7 +457,6 @@ int main(int argc, char *argv[])
+>  
+>  		na = (struct nlattr *) GENLMSG_DATA(&msg);
+>  		len = 0;
+> -		i = 0;
+>  		while (len < rep_len) {
+>  			len += NLA_ALIGN(na->nla_len);
+>  			switch (na->nla_type) {
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
