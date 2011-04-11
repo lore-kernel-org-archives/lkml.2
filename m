@@ -1,102 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab1DKLCB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 07:02:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32376 "EHLO mx1.redhat.com"
+	id S1755472Ab1DKLEa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 07:04:30 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:59223 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754233Ab1DKLCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 07:02:00 -0400
-Date: Mon, 11 Apr 2011 14:01:31 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
-Message-ID: <20110411110131.GA23123@redhat.com>
-References: <20110407174325.ED21C82B@kernel>
+	id S1754811Ab1DKLE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 07:04:29 -0400
+X-ASG-Debug-ID: 1302519868-03d6a5652c87a70001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DA2E03A.2080607@fusionio.com>
+Date: Mon, 11 Apr 2011 13:04:26 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110407174325.ED21C82B@kernel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: NeilBrown <neilb@suse.de>
+CC: Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>	<20110303221353.GA10366@redhat.com>	<4D761E0D.8050200@fusionio.com>	<20110308202100.GA31744@redhat.com>	<4D76912C.9040705@fusionio.com>	<20110308220526.GA393@redhat.com>	<20110310005810.GA17911@redhat.com>	<20110405130541.6c2b5f86@notabene.brown>	<20110411145022.710c30e9@notabene.brown>	<4DA2C7BE.6060804@fusionio.com> <20110411205928.13915719@notabene.brown>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <20110411205928.13915719@notabene.brown>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1302519868
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60536
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 10:43:25AM -0700, Dave Hansen wrote:
+On 2011-04-11 12:59, NeilBrown wrote:
+> On Mon, 11 Apr 2011 11:19:58 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
 > 
-> The virtio balloon driver has a VIRTIO_BALLOON_F_MUST_TELL_HOST
-> feature bit.  Whenever the bit is set, we must always tell the
-> host before we free pages back to the allocator.  Without this
-> we might free a page (and have another user touch it) while the
-> hypervisor is unprepared for it.
+>> On 2011-04-11 06:50, NeilBrown wrote:
 > 
-> But, if the bit is _not_ set, we are under no obligation to
-> reverse the order.  Furthermore, all modern qemus set this bit.
+>>> The only explanation I can come up with is that very occasionally schedule on
+>>> 2 separate cpus calls blk_flush_plug for the same task.  I don't understand
+>>> the scheduler nearly well enough to know if or how that can happen.
+>>> However with this patch in place I can write to a RAID1 constantly for half
+>>> an hour, and without it, the write rarely lasts for 3 minutes.
+>>
+>> Or perhaps if the request_fn blocks, that would be problematic. So the
+>> patch is likely a good idea even for that case.
+>>
+>> I'll merge it, changing it to list_splice_init() as I think that would
+>> be more clear.
+> 
+> OK - though I'm not 100% the patch fixes the problem - just that it hides the
+> symptom for me.
+> I might try instrumenting the code a bit more and see if I can find exactly
+> where it is re-entering flush_plug_list - as that seems to be what is
+> happening.
 
-Which qemus do this, specifically?  Amit Shah just pointed out to me
-that upstream qemu.git and qemu-kvm.git don't seem to do this.
+It's definitely a good thing to add, to avoid the list fudging on
+schedule. Whether it's your exact problem, I can't tell.
 
-Which qemu did you test this with?
+> And yeah - list_split_init is probably better.  I just never remember exactly
+> what list_split means and have to look it up every time, where as
+> list_add/list_del are very clear to me.
 
-> So, the "tell second" code is completely unused and untestable.
-> Quoting Anthony: "untested code is broken code".
+splice, no split :-)
+
+>>> From 687b189c02276887dd7d5b87a817da9f67ed3c2c Mon Sep 17 00:00:00 2001
+>>> From: NeilBrown <neilb@suse.de>
+>>> Date: Thu, 7 Apr 2011 13:16:59 +1000
+>>> Subject: [PATCH] Enhance new plugging support to support general callbacks.
+>>>
+>>> md/raid requires an unplug callback, but as it does not uses
+>>> requests the current code cannot provide one.
+>>>
+>>> So allow arbitrary callbacks to be attached to the blk_plug.
+>>>
+>>> Cc: Jens Axboe <jaxboe@fusionio.com>
+>>> Signed-off-by: NeilBrown <neilb@suse.de>
+>>> ---
+>>>  block/blk-core.c       |   13 +++++++++++++
+>>>  include/linux/blkdev.h |    7 ++++++-
+>>>  2 files changed, 19 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/block/blk-core.c b/block/blk-core.c
+>>> index 725091d..273d60b 100644
+>>> --- a/block/blk-core.c
+>>> +++ b/block/blk-core.c
+>>> @@ -2644,6 +2644,7 @@ void blk_start_plug(struct blk_plug *plug)
+>>>  
+>>>  	plug->magic = PLUG_MAGIC;
+>>>  	INIT_LIST_HEAD(&plug->list);
+>>> +	INIT_LIST_HEAD(&plug->cb_list);
+>>>  	plug->should_sort = 0;
+>>>  
+>>>  	/*
+>>> @@ -2717,9 +2718,21 @@ static void flush_plug_list(struct blk_plug *plug)
+>>>  	local_irq_restore(flags);
+>>>  }
+>>>  
+>>> +static void flush_plug_callbacks(struct blk_plug *plug)
+>>> +{
+>>> +	while (!list_empty(&plug->cb_list)) {
+>>> +		struct blk_plug_cb *cb = list_first_entry(&plug->cb_list,
+>>> +							  struct blk_plug_cb,
+>>> +							  list);
+>>> +		list_del(&cb->list);
+>>> +		cb->callback(cb);
+>>> +	}
+>>> +}
+>>> +
+>>>  static void __blk_finish_plug(struct task_struct *tsk, struct blk_plug *plug)
+>>>  {
+>>>  	flush_plug_list(plug);
+>>> +	flush_plug_callbacks(plug);
+>>>  
+>>>  	if (plug == tsk->plug)
+>>>  		tsk->plug = NULL;
+>>> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+>>> index 32176cc..3e5e604 100644
+>>> --- a/include/linux/blkdev.h
+>>> +++ b/include/linux/blkdev.h
+>>> @@ -857,8 +857,13 @@ extern void blk_put_queue(struct request_queue *);
+>>>  struct blk_plug {
+>>>  	unsigned long magic;
+>>>  	struct list_head list;
+>>> +	struct list_head cb_list;
+>>>  	unsigned int should_sort;
+>>>  };
+>>> +struct blk_plug_cb {
+>>> +	struct list_head list;
+>>> +	void (*callback)(struct blk_plug_cb *);
+>>> +};
+>>>  
+>>>  extern void blk_start_plug(struct blk_plug *);
+>>>  extern void blk_finish_plug(struct blk_plug *);
+>>> @@ -876,7 +881,7 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
+>>>  {
+>>>  	struct blk_plug *plug = tsk->plug;
+>>>  
+>>> -	return plug && !list_empty(&plug->list);
+>>> +	return plug && (!list_empty(&plug->list) || !list_empty(&plug->cb_list));
+>>>  }
+>>>  
+>>>  /*
+>>
+>> Maybe I'm missing something, but why do you need those callbacks? If
+>> it's to use plugging yourself, perhaps we can just ensure that those
+>> don't get assigned in the task - so it would be have to used with care.
+>>
+>> It's not that I disagree to these callbacks, I just want to ensure I
+>> understand why you need them.
+>>
 > 
-> This _also_ means that we don't have to preserve a pfn list
-> after the pages are freed, which should let us get rid of some
-> temporary storage (vb->pfns) eventually.
+> I'm sure one of us is missing something (probably both) but I'm not
+> sure what.
 > 
+> The callback is central.
 > 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> ---
+> It is simply to use plugging in md.
+> Just like blk-core, md will notice that a blk_plug is active and will put
+> requests aside.  I then need something to call in to md when blk_finish_plug
+
+But this is done in __make_request(), so md devices should not be
+affected at all. This is the part of your explanation that I do not
+connect with the code.
+
+If md itself is putting things on the plug list, why is it doing that?
+
+> is called so that put-aside requests can be released.
+> As md can be built as a module, that call must be a call-back of some sort.
+> blk-core doesn't need to register blk_plug_flush because that is never in a
+> module, so it can be called directly.  But the md equivalent could be in a
+> module, so I need to be able to register a call back.
 > 
->  linux-2.6.git-dave/drivers/virtio/virtio_balloon.c |   21 ++++++++-------------
->  1 file changed, 8 insertions(+), 13 deletions(-)
-> 
-> diff -puN drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic drivers/virtio/virtio_balloon.c
-> --- linux-2.6.git/drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic	2011-04-07 10:23:12.016343374 -0700
-> +++ linux-2.6.git-dave/drivers/virtio/virtio_balloon.c	2011-04-07 10:23:12.024343370 -0700
-> @@ -40,9 +40,6 @@ struct virtio_balloon
->  	/* Waiting for host to ack the pages we released. */
->  	struct completion acked;
->  
-> -	/* Do we have to tell Host *before* we reuse pages? */
-> -	bool tell_host_first;
-> -
->  	/* The pages we've told the Host we're not using. */
->  	unsigned int num_pages;
->  	struct list_head pages;
-> @@ -151,13 +148,14 @@ static void leak_balloon(struct virtio_b
->  		vb->num_pages--;
->  	}
->  
-> -	if (vb->tell_host_first) {
-> -		tell_host(vb, vb->deflate_vq);
-> -		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> -	} else {
-> -		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> -		tell_host(vb, vb->deflate_vq);
-> -	}
-> +
-> +	/*
-> +	 * Note that if
-> +	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
-> +	 * is true, we *have* to do it in this order
-> +	 */
-> +	tell_host(vb, vb->deflate_vq);
-> +	release_pages_by_pfn(vb->pfns, vb->num_pfns);
->  }
->  
->  static inline void update_stat(struct virtio_balloon *vb, int idx,
-> @@ -325,9 +323,6 @@ static int virtballoon_probe(struct virt
->  		goto out_del_vqs;
->  	}
->  
-> -	vb->tell_host_first
-> -		= virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
-> -
->  	return 0;
->  
->  out_del_vqs:
-> _
+> Does that help? 
+
+Not really. Is the problem that _you_ would like to stash things aside,
+not the fact that __make_request() puts things on a task plug list?
+
+-- 
+Jens Axboe
+
