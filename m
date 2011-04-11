@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab1DKQQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:16:55 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:33493 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab1DKQQx (ORCPT
+	id S1752831Ab1DKQUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:20:16 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60775 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751703Ab1DKQUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:16:53 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zzbb2cK1432N98dKzz1202hzz15d4Rz32i637h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJHX81-01-AX7-02
-X-M-MSG: 
-Date: Mon, 11 Apr 2011 18:16:47 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] USB host: Fix lockdep warning in AMD PLL quirk
-Message-ID: <20110411161647.GK23633@amd.com>
-References: <20110411065957.GI23633@amd.com>
- <Pine.LNX.4.44L0.1104111144540.1975-100000@iolanthe.rowland.org>
+	Mon, 11 Apr 2011 12:20:15 -0400
+Date: Mon, 11 Apr 2011 12:20:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+cc: USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Endless print of uhci_result_common: failed with status 440000
+In-Reply-To: <BANLkTin3Qg1dHqAVXfZR1g_AK2JuSKLmdg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1104111217560.1975-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104111144540.1975-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 11:49:30AM -0400, Alan Stern wrote:
-> On Mon, 11 Apr 2011, Roedel, Joerg wrote:
-> 
-> > On Mon, Apr 11, 2011 at 02:26:00AM -0400, Borislav Petkov wrote:
-> > > You mean 2.6.39-rc2 right? I'm asking because I hit the same warning
-> > > with 39-rc2 now too but it didn't appear with .38 - so it has to have
-> > > snuck in after the merge window. If so, you don't need the stable tag.
-> > 
-> > You were right, just tested plain 2.6.38 and it doesn't happen. So I
-> > removed the stable tag. Here is the updated patch.
-> 
-> ...
-> 
-> > --- a/drivers/usb/host/pci-quirks.c
-> > +++ b/drivers/usb/host/pci-quirks.c
-> > @@ -84,65 +84,92 @@ int usb_amd_find_chipset_info(void)
-> >  {
-> 
-> ...
-> 
-> > +commit:
-> > +
-> > +	spin_lock_irqsave(&amd_lock, flags);
-> > +	if (amd_chipset.probe_count > 0) {
-> > +		/* race - someone else was faster - drop devices */
-> > +
-> > +		/* Mark that we where here */
-> > +		amd_chipset.probe_count++;
-> 
-> This line should be moved above the "if" statement, since you always 
-> want to increment the count.
+On Mon, 11 Apr 2011, Zdenek Kabelac wrote:
 
-No, probe_count can't be incremented here because the probe is not
-finished yet. If another thread jumps in after the lock is released and
-detects probe_count > 0 while the probe hasn't happened the quirk will
-fail. So we need to make sure that amd_chipset.probe_count does not
-become > 0 before the probe is finished.
-
+> Ok - add some more memory debug:
 > 
-> > +		ret = amd_chipset.probe_result;
-> > +
-> > +		spin_unlock_irqrestore(&amd_lock, flags);
-> > +
-> > +		if (info.nb_dev)
-> > +			pci_dev_put(info.nb_dev);
-> > +		if (info.smbus_dev)
-> > +			pci_dev_put(info.smbus_dev);
-> > +
-> > +	} else {
-> > +		/* no race - commit the result */
-> > +		info.probe_count++;
+> [   13.347268] usb 1-1: USB disconnect, device number 3
+> [   13.348113] btusb_bulk_complete: hci0 urb ffff8801367f6528 failed
+> to resubmit (19)
+> [   13.349111] btusb_intr_complete: hci0 urb ffff8801367f6840 failed
+> to resubmit (19)
+> [   13.349143] btusb_bulk_complete: hci0 urb ffff8801367fa630 failed
+> to resubmit (19)
+> [   13.409856] general protection fault: 0000 [#1] PREEMPT SMP
+> [   13.413340] last sysfs file:
+> /sys/devices/pci0000:00/0000:00:19.0/net/eth0/uevent
+> [   13.413340] CPU 0
+> [   13.413340] Modules linked in: ipt_REJECT xt_physdev xt_state
+> iptable_filter ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4
+> nf_conntrack nf_defrag_ipv4 ip_tables x_tables dm_mirror
+> dm_region_hash dm_log dm_mod snd_hda_codec_analog btusb bluetooth
+> virtio_net kvm_intel kvm arc4 ecb crypto_blkcipher cryptomgr aead
+> crypto_algapi iwl3945 iwl_legacy snd_hda_intel snd_hda_codec usbhid
+> snd_seq snd_seq_device mac80211 hid iTCO_wdt iTCO_vendor_support
+> snd_pcm psmouse i2c_i801 serio_raw cfg80211 thinkpad_acpi snd_timer
+> snd e1000e soundcore snd_page_alloc nvram wmi evdev i915
+> drm_kms_helper drm i2c_algo_bit i2c_core uinput autofs4 pcmcia
+> uhci_hcd ehci_hcd sdhci_pci sdhci sr_mod mmc_core yenta_socket cdrom
+> usbcore video backlight [last unloaded: scsi_wait_scan]
+> [   13.413340]
+> [   13.413340] Pid: 815, comm: bluetoothd Not tainted
+> 2.6.39-rc2-00144-gca71856 #121 LENOVO 6464CTO/6464CTO
+> [   13.413340] RIP: 0010:[<ffffffff8109ae43>]  [<ffffffff8109ae43>]
+> module_put+0x33/0x1b0
+> [   13.413340] RSP: 0018:ffff8801389e1d68  EFLAGS: 00010296
+> [   13.413340] RAX: ffffffffa04a32a6 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000000
+> [   13.413340] RDX: 0000000000000000 RSI: ffffffffa04a32a6 RDI: ffffffff8109ae43
+> [   13.413340] RBP: ffff8801389e1d98 R08: 0000000000000000 R09: 0000000000000000
+> [   13.413340] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88013b028590
+> [   13.413340] R13: 00000000ffffffed R14: ffff8801390ac7b0 R15: 000000000000000a
+> [   13.413340] FS:  00007fe99d67d720(0000) GS:ffff88013ba00000(0000)
+> knlGS:0000000000000000
+> [   13.413340] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [   13.413340] CR2: 00007fe99d4902b0 CR3: 0000000134dea000 CR4: 00000000000006f0
+> [   13.413340] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   13.413340] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   13.413340] Process bluetoothd (pid: 815, threadinfo
+> ffff8801389e0000, task ffff8801387d23a0)
+> [   13.413340] Stack:
+> [   13.413340]  ffff88013b028000 ffff88013b028000 ffff88013b028590
+> 00000000ffffffed
+> [   13.413340]  ffff8801390ac7b0 000000000000000a ffff8801389e1de8
+> ffffffffa04a32a6
+> [   13.413340]  ffff8801389e1db8 ffffffff8124f11a ffff8801389e1dd8
+> 00000000400448c9
+> [   13.413340] Call Trace:
+> [   13.413340]  [<ffffffffa04a32a6>] hci_dev_open+0x96/0x3f0 [bluetooth]
+> [   13.413340]  [<ffffffff8124f11a>] ? security_capable+0x2a/0x30
+> [   13.413340]  [<ffffffffa04b0172>] hci_sock_ioctl+0x1e2/0x4b0 [bluetooth]
+
+> So - it looks like disabling BT in runtime is not enough  to avoid problems ;)
 > 
-> This isn't right, because info.probe_count was initialized to 0.  Maybe 
-> amd_chipset.probe_count should be made into a separate variable, not a 
-> part of the structure, like amd_lock.
+> So I've blacklisted  bluetooth & btusb -  and made quite several
+> suspend/resume cycles  -
+> and without  a single problem.
+> 
+> So I'll keep an eye on this - but so far complete deactivation of BT
+> either in BIOS or modules blacklisting solves the problem of weird
+> USB deadlocking.
 
-The purpose of the struct is structuring of data. In theory all of its
-members could be turned into global variables. The amd_lock is different
-because it does not only protect the struct but also access to the
-hardware while the quirk is applied/unapplied.
+Clearly there's something going wrong in the Bluetooth drivers.  You 
+should try posting some of this on the linux-bluetooth mailing list.
 
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Alan Stern
 
