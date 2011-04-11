@@ -1,48 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab1DKIxn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 04:53:43 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:58514 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab1DKIxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 04:53:43 -0400
-Message-ID: <4DA2C197.1060402@kernel.dk>
-Date: Mon, 11 Apr 2011 10:53:43 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1757574Ab1DKI4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 04:56:30 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50298 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab1DKI43 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 04:56:29 -0400
+Date: Mon, 11 Apr 2011 09:56:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: viresh kumar <viresh.kumar@st.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        Amit GOEL <amit.goel@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: dmaengine: Can we schedule new transfer from dma callback
+	routine??
+Message-ID: <20110411085603.GA13041@n2100.arm.linux.org.uk>
+References: <4DA2B3D8.6060707@st.com>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: block: ioc->refcount accessed twice in put_io_context()?
-References: <1302442907.5366.15.camel@t41.thuisdomein>	 <BANLkTi=ma7WDo9=kKwZGwuhi=qUEB8EW5g@mail.gmail.com>	 <4DA2B0FB.8020302@kernel.dk> <1302511553.29915.12.camel@t41.thuisdomein>
-In-Reply-To: <1302511553.29915.12.camel@t41.thuisdomein>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA2B3D8.6060707@st.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-11 10:45, Paul Bolle wrote:
-> On Mon, 2011-04-11 at 09:42 +0200, Jens Axboe wrote:
->> Indeed, there is nothing wrong with having the BUG_ON() there first and
->> doing the decrement later.
+On Mon, Apr 11, 2011 at 01:25:04PM +0530, viresh kumar wrote:
 > 
-> But what makes sure then that refcount doesn't get decremented by
-> something else just before the atomic_long_dec_and_test() call. Eg:
+> Hello,
 > 
-> Thread 1			Thread 2
-> ========                        ========
-> BUG_ON()
-> 				BUG_ON()
-> atomic_long_dec_and_test()
-> 				atomic_long_dec_and_test()
-> 				/* refcount drops to -1 here */
+> In dw_dmac.c driver, dwc_descriptor_complete() routine, following is
+> mentioned before calling callback:
 > 
-> Or is this not possible?
+> 	/*
+> 	 * The API requires that no submissions are done from a
+> 	 * callback, so we don't need to drop the lock here
+> 	 */
+> 	if (callback)
+> 		callback(param);
+> 
+> Does this hold true for dmaengine??
 
-It's not possible, if it was then that would be the bug - someone
-releasing a reference to the ioc that they do not hold. And that is what
-the BUG_ON() is there to catch, not a race between two threads.
+Not for slave devices - see Dan's reply:
 
--- 
-Jens Axboe
+http://lists.arm.linux.org.uk/lurker/message/20101223.005313.a38d7bf0.en.html
 
+As the slave API hasn't been well documented, there's a lot of
+inconsistency of behaviour between DMA engine slave implementations.
+I'd suggest at least fixing slave DMA engine drivers to ensure that:
+
+(a) the callback is always called in tasklet context
+(b) the callback can submit new slave transactions (iow, the spinlock
+    which prep_slave_sg takes must not be held during the callback.)
+
+The way that others solve this is to move the completed txd structures
+to a local 'completed' list, and then walk this list after the spinlocks
+have been dropped.
+
+IOW, something like this:
+
+my_tasklet()
+{
+	INIT_LIST_HEAD(completed);
+
+	spin_lock_irqsave(my_chan->lock);
+	for_each_txd(my_txd, my_chan) {
+		if (has_completed(my_txd))
+			list_add_tail(my_txd->node, &completed);
+	}
+	spin_unlock_irqrestore(my_chan->lock);
+
+	list_for_each_entry_safe(my_txd, next, &completed, node) {
+		void *callback_param = my_txd->txd.callback_param;
+		void (*fn)(void *) = my_txd->txd.callback;
+
+		my_txd_free(my_chan, my_txd);
+
+		fn(callback_param);
+	}	
+}
