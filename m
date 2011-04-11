@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab1DKNiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 09:38:06 -0400
-Received: from diomedes.noc.ntua.gr ([147.102.222.220]:52396 "EHLO
-	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab1DKNiF (ORCPT
+	id S1751914Ab1DKN5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 09:57:12 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:42695 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751096Ab1DKN5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 09:38:05 -0400
-X-Greylist: delayed 921 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Apr 2011 09:38:04 EDT
-Message-ID: <4DA30096.1070404@ece.ntua.gr>
-Date: Mon, 11 Apr 2011 16:22:30 +0300
-From: Stratos Psomadakis <psomas@ece.ntua.gr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110407 Lightning/1.0b3pre Lanikai/3.1.9
+	Mon, 11 Apr 2011 09:57:11 -0400
+X-Sasl-enc: FZ2Xy6ggQAfP0s0whGn1WYpIhpGMVLzOSmz9NqIWpVaO 1302530230
+Date: Mon, 11 Apr 2011 10:57:08 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86/amd-iommu: Add support for invalidate_all
+ command
+Message-ID: <20110411135708.GB28056@khazad-dum.debian.net>
+References: <1302514324-14717-1-git-send-email-joerg.roedel@amd.com>
+ <1302514324-14717-3-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-To: nouveau@lists.freedesktop.org
-CC: linux-kernel@vger.kernel.org
-Subject: nouveau_pm.c: Build error
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig316FE0E93B62F7E76B40C37B"
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (diomedes.noc.ntua.gr [147.102.222.220]); Mon, 11 Apr 2011 16:22:37 +0300 (EEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302514324-14717-3-git-send-email-joerg.roedel@amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig316FE0E93B62F7E76B40C37B
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, 11 Apr 2011, Joerg Roedel wrote:
+> This patch adds support for the invalidate_all command
+> present in new versions of the AMD IOMMU.
 
-In nouveau_pm.c, in the function nouveau_pm_acpi_event(), there's no
-check for CONFIG_POWER_SUPPLY.
+...
 
-If CONFIG_POWER_SUPPLY is set to either n or m, the
-power_supply_is_system_supplied() is 'missing' and there's a build error.=
+>  #define CMD_COMPL_WAIT          0x01
+>  #define CMD_INV_DEV_ENTRY       0x02
+>  #define CMD_INV_IOMMU_PAGES     0x03
+> +#define CMD_INV_ALL		0x08
 
+...
 
-One solution is to add an #ifdef CONFIG_POWER_SUPPLY along with the
-#ifdef CONFIG_ACPI before the function.
+> @@ -463,6 +463,12 @@ static void build_inv_iommu_pages(struct iommu_cmd *cmd, u64 address,
+>  		cmd->data[2] |= CMD_INV_IOMMU_PAGES_PDE_MASK;
+>  }
+>  
+> +static void build_inv_all(struct iommu_cmd *cmd)
+> +{
+> +	memset(cmd, 0, sizeof(*cmd));
+> +	CMD_SET_TYPE(cmd, CMD_INV_DEV_ENTRY);
 
---=20
-Stratos Psomadakis
-<psomas@ece.ntua.gr>
+Huh?
 
-
-
---------------enig316FE0E93B62F7E76B40C37B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk2jAJkACgkQid1lVeNDMmBxawCeMImAAaWmMbe9x3/oVjKZzChY
-ex4An3XXFBOjMXh0YFmcMMoVMv0KAeOT
-=S07X
------END PGP SIGNATURE-----
-
---------------enig316FE0E93B62F7E76B40C37B--
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
