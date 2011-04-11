@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab1DKGGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 02:06:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15153 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751315Ab1DKGGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 02:06:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,338,1299484800"; 
-   d="scan'208";a="416918908"
-Subject: Re: [RFC][PATCH 2/9] perf: Clean up ctx reference counting
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Oleg Nesterov <oleg@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
+	id S1753922Ab1DKGUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 02:20:51 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:10597
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753079Ab1DKGUs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 02:20:48 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJH5M7-01-0NG-02
+X-M-MSG: 
+Date: Mon, 11 Apr 2011 08:20:29 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Rolf Eike Beer <eike@sf-mail.de>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-In-Reply-To: <20110409192141.719340481@chello.nl>
-References: <20110409191739.813727025@chello.nl>
-	 <20110409192141.719340481@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Apr 2011 14:05:48 +0800
-Message-ID: <1302501948.29423.4.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 1/5] PCI: Move ATS declarations in seperate header file
+Message-ID: <20110411062029.GG23633@amd.com>
+References: <1302250630-8183-1-git-send-email-joerg.roedel@amd.com>
+ <1302250630-8183-2-git-send-email-joerg.roedel@amd.com>
+ <4435339.aQcLV4iHRH@donald.sf-tec.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4435339.aQcLV4iHRH@donald.sf-tec.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-04-10 at 03:17 +0800, Peter Zijlstra wrote:
-> Small cleanup to how we refcount in find_get_context(), this also
-> allows us to use put_ctx() to free things instead of using kfree().
+On Fri, Apr 08, 2011 at 02:33:04PM -0400, Rolf Eike Beer wrote:
+> Am Freitag, 8. April 2011, 10:17:06 schrieb Joerg Roedel:
+> > This patch moves the relevant declarations from the local
+> > header file in drivers/pci to a more accessible locations so
+> > that it can be used by the AMD IOMMU driver too.
+> > The file is named pci-ats-pri.h because support for the PCI
+>                     ^^^^^^^^^^^^^
 > 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/perf_event.c |   10 +++-------
->  1 file changed, 3 insertions(+), 7 deletions(-)
+> >  include/linux/pci-ats.h   |   52
+>                  ^^^^^^^^^
 > 
-> Index: linux-2.6/kernel/perf_event.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/perf_event.c
-> +++ linux-2.6/kernel/perf_event.c
-> @@ -2831,16 +2831,12 @@ find_get_context(struct pmu *pmu, struct
->  		unclone_ctx(ctx);
->  		++ctx->pin_count;
->  		raw_spin_unlock_irqrestore(&ctx->lock, flags);
-> -	}
-> -
-> -	if (!ctx) {
-> +	} else {
->  		ctx = alloc_perf_context(pmu, task);
->  		err = -ENOMEM;
->  		if (!ctx)
->  			goto errout;
->  
-> -		get_ctx(ctx);
-> -
->  		err = 0;
->  		mutex_lock(&task->perf_event_mutex);
->  		/*
-> @@ -2852,14 +2848,14 @@ find_get_context(struct pmu *pmu, struct
->  		else if (task->perf_event_ctxp[ctxn])
->  			err = -EAGAIN;
->  		else {
-> +			get_ctx(ctx);
->  			++ctx->pin_count;
->  			rcu_assign_pointer(task->perf_event_ctxp[ctxn], ctx);
->  		}
->  		mutex_unlock(&task->perf_event_mutex);
->  
->  		if (unlikely(err)) {
-> -			put_task_struct(task);
-> -			kfree(ctx);
-> +			put_ctx(ctx);
+> Ehm, no, it is not ;)
 
-You moved the get_ctx(), so it seems that this put_ctx is missing its
-relevant get_ctx.
+Right, I renamed the file at some point and forgot to change it in the
+commit-msg too. I'll fix that on the next rebase :)
 
-Lin Ming
+	Joerg
 
->  
->  			if (err == -EAGAIN)
->  				goto retry;
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+AMD Operating System Research Center
 
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
