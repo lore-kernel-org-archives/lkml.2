@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab1DKOj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 10:39:26 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:55910 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751395Ab1DKOjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 10:39:25 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201104111439.p3BEdGTc005062@stout.americas.sgi.com>
-Date: Mon, 11 Apr 2011 09:39:16 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS 2nd update for 2.6.39-rc1
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S1753852Ab1DKOjh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 10:39:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58285 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750Ab1DKOjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 10:39:35 -0400
+Date: Mon, 11 Apr 2011 16:39:30 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Tanya Brokhman <tlinder@codeaurora.org>, gregkh@suse.de,
+        linux-arm-msm@vger.kernel.org, ablay@codeaurora.org,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5 v6] usb: Add usb_endpoint_descriptor to be part of
+ the struct usb_ep
+Message-ID: <20110411143930.GD4018@linutronix.de>
+References: <1300867420-20864-1-git-send-email-tlinder@codeaurora.org>
+ <20110325134248.GN2609@legolas.emea.dhcp.ti.com>
+ <000301cbec7a$3ff5cdf0$bfe169d0$@org>
+ <20110328084624.GI2251@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110328084624.GI2251@legolas.emea.dhcp.ti.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the following XFS changes for 2.6.39-rc3.
+* Felipe Balbi | 2011-03-28 11:46:25 [+0300]:
 
-They fall into these categories:
-- switching XFS daemons over to use workqueues, taking advantage of
-  the recent global workqueue improvements
-- improving how the new per-process device plugging is used in XFS
-- alleviating some OOM issues reported by Chris Mason
-- reducing memory use in some log code (where it could needlessly
-  allocate much more than required)
-- checking for and reporting bad extents when they are found during
-  free (instead of using ASSERT())
-- eliminating warnings (some of which have begun to show up with
-  newer gcc)
+>> Could you please share you concerns? Even if they are not strong arguments
+>> :).
+>> Our pros for this change were that it seems more accurate that the EP
+>> descriptor will be handled by the composite layer and not the FDs. Thus we
+>> tried to spare the FD from saving the chosen EP descriptor and passing it to
+>> different functions.
+>> This change is needed for our algorithm of SS implementation in the later
+>> patches in this series. 
+>
+>Yes, I understood that much, but it's useful for UDCs to access the EP
+>descriptor (ok, we can still access it by dereferencing ep) since we can
+>(actually we need to) use that to let the HW know about max packet
+>sizes, endpoint types, etc etc.
+>
+>Also, I'm not sure composite.c should know the details about the
+>endpoint. That's just a thin layer implementing the more generic part
+>(standard usb requests, handling, helpers for finding endpoints, etc),
+>but the one who should look into endpoint descriptors is the underlying
+>controller code for the reasons I listed above.
+>
+>That's my feeling...
 
-Thank you.
+If I look at the diffstat between patch 2 and 4 I see 
+| 30 files changed, 299 insertions(+), 393 deletions(-)
 
-					-Alex
+So she got rid of almost 100 lines. While looking at the code it seems
+that every gadget driver does the same thing which is now done in one
+place. I like that so far :)
 
-The following changes since commit 4263a2f1dad8c8e7ce2352a0cbc882c2b0c044a9:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-04-10 09:56:10 -0700)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Christoph Hellwig (3):
-      xfs: fix variable set but not used warnings
-      xfs: fix xfs_debug warnings
-      xfs: use proper interfaces for on-stack plugging
-
-Dave Chinner (10):
-      xfs: fix unreferenced var error in xfs_buf.c
-      xfs: fix extent format buffer allocation size
-      xfs: introduce a xfssyncd workqueue
-      xfs: convert ENOSPC inode flushing to use new syncd workqueue
-      xfs: introduce background inode reclaim work
-      xfs: convert the xfsaild threads to a workqueue
-      xfs: clean up code layout in xfs_trans_ail.c
-      xfs: push the AIL from memory reclaim and periodic sync
-      xfs: catch bad block numbers freeing extents.
-      xfs: convert log tail checking to a warning
-
- fs/xfs/linux-2.6/xfs_buf.c     |   24 +--
- fs/xfs/linux-2.6/xfs_message.c |   27 +--
- fs/xfs/linux-2.6/xfs_message.h |   24 ++-
- fs/xfs/linux-2.6/xfs_super.c   |  129 +++++--------
- fs/xfs/linux-2.6/xfs_sync.c    |  228 +++++++++++-----------
- fs/xfs/linux-2.6/xfs_sync.h    |    2 +
- fs/xfs/quota/xfs_qm.c          |    7 -
- fs/xfs/quota/xfs_qm.h          |    5 -
- fs/xfs/quota/xfs_qm_syscalls.c |    2 -
- fs/xfs/xfs_alloc.c             |   30 +++-
- fs/xfs/xfs_inode_item.c        |   67 ++++---
- fs/xfs/xfs_itable.c            |    2 -
- fs/xfs/xfs_log.c               |   38 +++-
- fs/xfs/xfs_log_priv.h          |    1 +
- fs/xfs/xfs_mount.h             |    9 +-
- fs/xfs/xfs_trans_ail.c         |  421 ++++++++++++++++++++++------------------
- fs/xfs/xfs_trans_priv.h        |   22 ++-
- 17 files changed, 531 insertions(+), 507 deletions(-)
+Sebastian
