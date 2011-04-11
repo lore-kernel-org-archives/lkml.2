@@ -1,30 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab1DKBRd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 21:17:33 -0400
-Received: from mail.comu.edu.tr ([193.255.97.15]:49392 "EHLO mail.comu.edu.tr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466Ab1DKBRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 21:17:31 -0400
-X-Greylist: delayed 4309 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Apr 2011 21:17:30 EDT
-X-Antivirus-COMU-Mail-From: gyee@w.cn via mail.comu.edu.tr
-X-Antivirus-COMU: 1.25-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.024647 secs Process 9362)
-Message-ID: <35457694828329c123b0f86fe94b50df.squirrel@webmail.comu.edu.tr>
-Date: Sun, 10 Apr 2011 21:03:03 +0300
-Subject: Response Needed
-From: "Grace Yee" <gyee@w.cn>
-Reply-To: graceyee01@w.cn
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+	id S1752690Ab1DKBrk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 21:47:40 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58347
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752194Ab1DKBrj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 21:47:39 -0400
+Date: Sun, 10 Apr 2011 18:47:00 -0700 (PDT)
+Message-Id: <20110410.184700.104066211.davem@davemloft.net>
+To: simon@mungewell.org
+Cc: gregkh@suse.de, sshtylyov@mvista.com, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PatchV3 1/3] usb: plusb: Whitespace
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1302162015-22504-1-git-send-email-simon@mungewell.org>
+References: <1301456667-1648-1-git-send-email-simon@mungewell.org>
+	<1302162015-22504-1-git-send-email-simon@mungewell.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Deal worth US45,275,000.00. Interested?
+From: Simon Wood <simon@mungewell.org>
+Date: Thu,  7 Apr 2011 00:40:13 -0700
 
+> From: simon <simon@ubuntu.(none)>
+> 
+> This patch cleans up a couple of instances of incorrect whitespace
+> 
+> Signed-off-by: Simon Wood <simon@mungewell.org>
 
+Applied.
