@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab1DKRWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:22:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16828 "EHLO mx1.redhat.com"
+	id S1754590Ab1DKRXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:23:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8637 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab1DKRWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:22:44 -0400
-Date: Mon, 11 Apr 2011 19:22:01 +0200
+	id S1753128Ab1DKRXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 13:23:08 -0400
+Date: Mon, 11 Apr 2011 19:22:29 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
         Matt Fleming <matt@console-pimps.org>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] x86: signal: handle_signal() should use sigprocmask()
-Message-ID: <20110411172201.GF32469@redhat.com>
+Subject: [PATCH 6/6] x86: signal: sys_rt_sigreturn() should use
+	sigprocmask()
+Message-ID: <20110411172229.GG32469@redhat.com>
 References: <20110411171957.GA32469@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,44 +26,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is ugly, but if sigprocmask() needs retarget_shared_pending() then
-handle signal should follow this logic. In theory it is newer correct to
-add the new signals to current->blocked, the signal handler can sleep/etc
-so we should notify other threads in case we block the pending signal and
-nobody else has TIF_SIGPENDING.
+Normally sys_rt_sigreturn() restores the old current->blocked which was
+changed by handle_signal(), and unblocking is always fine.
 
-Of course, this change doesn't make signals faster :/
+But the debugger or application itself can change frame->uc_sigmask and
+thus we need sigprocmask()->retarget_shared_pending().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
 
- arch/x86/kernel/signal.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ arch/x86/kernel/signal.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- sigprocmask/arch/x86/kernel/signal.c~5_handle_signal	2011-04-06 21:33:43.000000000 +0200
-+++ sigprocmask/arch/x86/kernel/signal.c	2011-04-11 18:33:17.000000000 +0200
-@@ -682,6 +682,7 @@ static int
- handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 	      sigset_t *oldset, struct pt_regs *regs)
- {
-+	sigset_t blocked;
- 	int ret;
+--- sigprocmask/arch/x86/kernel/signal.c~6_sigreturn	2011-04-11 18:33:17.000000000 +0200
++++ sigprocmask/arch/x86/kernel/signal.c	2011-04-11 18:57:27.000000000 +0200
+@@ -601,10 +601,7 @@ long sys_rt_sigreturn(struct pt_regs *re
+ 		goto badframe;
  
- 	/* Are we from a system call? */
-@@ -741,12 +742,10 @@ handle_signal(unsigned long sig, siginfo
- 	 */
- 	regs->flags &= ~X86_EFLAGS_TF;
- 
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
 -	spin_lock_irq(&current->sighand->siglock);
--	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
-+	blocked = ka->sa.sa_mask;
- 	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&current->blocked, sig);
+-	current->blocked = set;
 -	recalc_sigpending();
 -	spin_unlock_irq(&current->sighand->siglock);
-+		sigaddset(&blocked, sig);
-+	sigprocmask(SIG_BLOCK, &blocked, NULL);
++	sigprocmask(SIG_SETMASK, &set, NULL);
  
- 	tracehook_signal_handler(sig, info, ka, regs,
- 				 test_thread_flag(TIF_SINGLESTEP));
+ 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext, &ax))
+ 		goto badframe;
 
