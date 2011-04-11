@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab1DKWHD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 18:07:03 -0400
-Received: from netgear.net.ru ([195.178.208.66]:41693 "EHLO tservice.net.ru"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755356Ab1DKWHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 18:07:01 -0400
-Date: Tue, 12 Apr 2011 02:06:57 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: Patrick McHardy <kaber@trash.net>, David Miller <davem@davemloft.net>,
-        dave@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, gregkh@suse.de,
-        ksrinivasan@novell.com, NetDev <netdev@vger.kernel.org>
-Subject: Re: 2.6.39-rc2 boot crash
-Message-ID: <20110411220657.GB5783@ioremap.net>
-References: <20110406184753.GA7691@mgebm.net>
- <1302115953.8094.217.camel@nimitz>
- <20110406212041.GA2596@mgebm.net>
- <20110406.142157.68145422.davem@davemloft.net>
- <20110406220512.GA2460@mgebm.net>
- <4D9D9AA4.6060304@trash.net>
- <20110411210746.GA2453@mgebm.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110411210746.GA2453@mgebm.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756235Ab1DKWIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 18:08:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21807 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756112Ab1DKWIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 18:08:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=DId9+k/kXiMxW5SWYOp/tr+RkgoJVuiJnmLn+23Qs7VjmbH3/JlD99f1Af57iI303
+	KQ1lnmUlyOmQqlzV+/XLg==
+From: Nat Gurumoorthy <natg@google.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Cc: Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Nat Gurumoorthy <natg@google.com>
+Subject: [PATCH v3 2/2] Use "request_muxed_region" in it87 hwmon drivers
+Date: Mon, 11 Apr 2011 15:07:31 -0700
+Message-Id: <1302559651-18990-1-git-send-email-natg@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <[PATCH v3 0/2] Make all it87 drivers SMP safe>
+References: <[PATCH v3 0/2] Make all it87 drivers SMP safe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+02 - Chages to hwmon it87 driver to use "request_muxed_region"
+Serialize access to the hardware by using "request_muxed_region" macro defined
+by Alan Cox. Call to this macro will hold off the requestor if the resource is
+currently busy.
 
-On Mon, Apr 11, 2011 at 05:07:47PM -0400, Eric B Munson (emunson@mgebm.net) wrote:
-> > I can't figure this out, the only thing that should have changed is the
-> > time the initial PROC_CN_MCAST_LISTEN message is received. Apparently
-> > at that point connector is not fully initialized yet. Please post your
-> > config and the full boot log. Thanks.
-> > 
-> 
-> I am still seeing this on Linus' tree, is there anything more I can do to help
-> track the problem?
+Signed-off-by: Nat Gurumoorthy <natg@google.com>
+---
 
-Patrick, do you need my assist on this bug?
-
+diff --git a/drivers/hwmon/it87.c b/drivers/hwmon/it87.c
+index 316b648..37c8acd 100644
+--- a/drivers/hwmon/it87.c
++++ b/drivers/hwmon/it87.c
+@@ -111,6 +111,9 @@ superio_select(int ldn)
+ static inline void
+ superio_enter(void)
+ {
++	while (!request_muxed_region(REG, 2, DRVNAME)) {
++		continue;
++	}
+ 	outb(0x87, REG);
+ 	outb(0x01, REG);
+ 	outb(0x55, REG);
+@@ -122,6 +125,7 @@ superio_exit(void)
+ {
+ 	outb(0x02, REG);
+ 	outb(0x02, VAL);
++	release_region(REG, 2);
+ }
+ 
+ /* Logical device 4 registers */
 -- 
-	Evgeniy Polyakov
+1.7.3.1
+
