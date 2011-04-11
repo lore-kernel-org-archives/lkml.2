@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab1DKWD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 18:03:59 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34704 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab1DKWD5 (ORCPT
+	id S1756190Ab1DKWGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 18:06:10 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:28449 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab1DKWGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 18:03:57 -0400
-Subject: [PATCH 3/3] reuse __free_pages_exact() in __alloc_pages_exact()
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Timur Tabi <timur@freescale.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 11 Apr 2011 15:03:48 -0700
-References: <20110411220345.9B95067C@kernel>
-In-Reply-To: <20110411220345.9B95067C@kernel>
-Message-Id: <20110411220348.D0280E4D@kernel>
+	Mon, 11 Apr 2011 18:06:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=m4fBblOHD7JGw+ZLxilTPUEEMn8N066ueK7NfqYSLPsxStNeR/Y47yBfRH1ghXdSs
+	F9Y/T5Hxl3JfpoBYLnZcw==
+From: Nat Gurumoorthy <natg@google.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Cc: Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Nat Gurumoorthy <natg@google.com>
+Subject: [PATCH v3 0/2] Make all it87 drivers SMP safe
+Date: Mon, 11 Apr 2011 15:05:22 -0700
+Message-Id: <1302559522-18899-1-git-send-email-natg@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are 3 different drivers that touch the it87 hardware registers.
+The 3 drivers have been written independently and access the it87 hardware
+registers assuming they are the only driver accessing it. This change
+attempts to serialize access to the hardware by using
+"request_muxed_region" macro defined by Alan Cox. Call to this macro
+will hold off the requestor if the resource is currently busy.
+The use of the above macro makes it possible to get rid of
+spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
+This also greatly simplifies the implementation of it87_wdt.c driver.
 
-Michal Nazarewicz noticed that __alloc_pages_exact()'s
-__free_page() loop was really close to something he was
-using in one of his patches.   That made me realize that
-it was actually very similar to __free_pages_exact().
+01 - Changes to it87 watchdog driver to use "request_muxed_region"
+ drivers/watchdog/it8712f_wdt.c
+ drivers/watchdog/it87_wdt.c
 
-This uses __free_pages_exact() in place of the loop
-that we had in __alloc_pages_exact().  Since we had to
-change the temporary variables around anyway, I gave
-them some better names to hopefully address some other
-review comments.
+02 - Chages to hwmon it87 driver to use "request_muxed_region"
+ drivers/hwmon/it87.c
 
----
+ drivers/hwmon/it87.c           |    4 ++++
+ drivers/watchdog/it8712f_wdt.c |    9 ++++-----
+ drivers/watchdog/it87_wdt.c    |   39 ++++-----------------------------------
+ 3 files changed, 12 insertions(+), 40 deletions(-)
 
- linux-2.6.git-dave/mm/page_alloc.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+Signed-off-by: Nat Gurumoorthy <natg@google.com>
 
-diff -puN mm/page_alloc.c~reuse-free-exact mm/page_alloc.c
---- linux-2.6.git/mm/page_alloc.c~reuse-free-exact	2011-04-11 15:01:17.701822598 -0700
-+++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-11 15:01:17.713822594 -0700
-@@ -2338,14 +2338,11 @@ struct page *__alloc_pages_exact(gfp_t g
- 
- 	page = alloc_pages(gfp_mask, order);
- 	if (page) {
--		struct page *alloc_end = page + (1 << order);
--		struct page *used = page + nr_pages;
-+		struct page *unused_start = page + nr_pages;
-+		int nr_unused = (1 << order) - nr_pages;
- 
- 		split_page(page, order);
--		while (used < alloc_end) {
--			__free_page(used);
--			used++;
--		}
-+		__free_pages_exact(unused_start, nr_unused);
- 	}
- 
- 	return page;
-_
+Patch History:
+v3:
+- Totally abandon the spinlock based approach and use "request_muxed_region" to
+  hold off requestors if the resource is busy.
+
+v2:
+- More verbose patch headers. Add In-Reply-To: field.
+
