@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1DKQfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:35:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61061 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab1DKQfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:35:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jIe5fW9VvyrISslyQjkCHHdtx89pzYXIVeFF53WYVtyVaPo31XnXyhQUrsOWlq1ttp
-         qwCuFiTTFKjPe0qd+axAsJirZN9dF27ijTQfDfF8vypSQXkP/eh1doWVg400wydMHO4p
-         fOsIfp5HARvSJOxL/GBKGn4hOz00IigeQGduE=
-Date: Mon, 11 Apr 2011 20:35:10 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] basic_mmio_gpio: convert to non-__raw* accessors
-Message-ID: <20110411163510.GA11365@oksana.dev.rtsoft.ru>
-References: <1302538286-3547-1-git-send-email-jamie@jamieiles.com>
+	id S1753764Ab1DKQh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:37:27 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:42648 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275Ab1DKQhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 12:37:25 -0400
+Message-ID: <4DA32E16.8090807@osadl.org>
+Date: Mon, 11 Apr 2011 18:36:38 +0200
+From: Carsten Emde <C.Emde@osadl.org>
+Organization: Open Source Automation Development Lab (OSADL)
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1302538286-3547-1-git-send-email-jamie@jamieiles.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Oon-Ee Ng <ngoonee.talk@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Madovsky <infos@madovsky.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 2.6.33.9-rt31
+References: <alpine.LFD.2.00.1104111723020.4501@localhost6.localdomain6>	<497D1168CB2F407F9005845B39FEF144@e1705>	<alpine.LFD.2.00.1104111806021.4501@localhost6.localdomain6> <BANLkTi=6UnfiOwwdwgJvW0kZyJ7OoE0dpg@mail.gmail.com>
+In-Reply-To: <BANLkTi=6UnfiOwwdwgJvW0kZyJ7OoE0dpg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 05:11:26PM +0100, Jamie Iles wrote:
-> The __raw_* accessors don't include memory barriers and can cause
-> problems when writes get stuck in write buffers.
-> 
-> Suggested-by: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> ---
+On 04/11/2011 06:19 PM, Oon-Ee Ng wrote:
+> On Tue, Apr 12, 2011 at 12:06 AM, Thomas Gleixner<tglx@linutronix.de>  wrote:
+>> On Mon, 11 Apr 2011, Madovsky wrote:
+>>> the links below don't show any new kernels or
+>>> not found pages
+>> Mirroring from the master machine to the public ones is taking some
+>> time, but it's there now.
+> I think he was referring to this link, which is still empty for me:-
+> http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.33.9.tar.bz2
+> Will check again in a couple of hours, but was 2.6.33.8 just skipped
+> entirely? Cos that's not there either.
+Longterm Linux files are sitting in 
+http://www.kernel.org/pub/linux/kernel/v2.6/longterm, e.g.
 
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+http://www.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.33/linux-2.6.33.9.tar.bz2
 
-Thanks!
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+	-Carsten.
