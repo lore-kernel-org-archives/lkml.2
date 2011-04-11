@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab1DKLBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 07:01:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33187 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab1DKLBH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 07:01:07 -0400
-Subject: Re: [tip:sched/urgent] sched: Fix sched-domain avg_load calculation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kenchen@google.com, stable@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-b0432d8f162c7d5d9537b4cb749d44076b76a783@git.kernel.org>
-References: <20110408002322.3A0D812217F@elm.corp.google.com>
-	 <tip-b0432d8f162c7d5d9537b4cb749d44076b76a783@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 11 Apr 2011 13:00:48 +0200
-Message-ID: <1302519648.2388.19.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755435Ab1DKLCB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 07:02:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754233Ab1DKLCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 07:02:00 -0400
+Date: Mon, 11 Apr 2011 14:01:31 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
+Message-ID: <20110411110131.GA23123@redhat.com>
+References: <20110407174325.ED21C82B@kernel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110407174325.ED21C82B@kernel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-11 at 10:46 +0000, tip-bot for Ken Chen wrote:
-> Commit-ID:  b0432d8f162c7d5d9537b4cb749d44076b76a783
-> Gitweb:     http://git.kernel.org/tip/b0432d8f162c7d5d9537b4cb749d44076b76a783
-> Author:     Ken Chen <kenchen@google.com>
-> AuthorDate: Thu, 7 Apr 2011 17:23:22 -0700
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 11 Apr 2011 11:08:54 +0200
+On Thu, Apr 07, 2011 at 10:43:25AM -0700, Dave Hansen wrote:
 > 
-> sched: Fix sched-domain avg_load calculation
+> The virtio balloon driver has a VIRTIO_BALLOON_F_MUST_TELL_HOST
+> feature bit.  Whenever the bit is set, we must always tell the
+> host before we free pages back to the allocator.  Without this
+> we might free a page (and have another user touch it) while the
+> hypervisor is unprepared for it.
 > 
-> In function find_busiest_group(), the sched-domain avg_load isn't
-> calculated at all if there is a group imbalance within the domain. This
-> will cause erroneous imbalance calculation.
-> 
-> The reason is that calculate_imbalance() sees sds->avg_load = 0 and it
-> will dump entire sds->max_load into imbalance variable, which is used
-> later on to migrate entire load from busiest CPU to the puller CPU.
-> 
-> This has two really bad effect:
-> 
-> 1. stampede of task migration, and they won't be able to break out
->    of the bad state because of positive feedback loop: large load
->    delta -> heavier load migration -> larger imbalance and the cycle
->    goes on.
-> 
-> 2. severe imbalance in CPU queue depth.  This causes really long
->    scheduling latency blip which affects badly on application that
->    has tight latency requirement.
-> 
-> The fix is to have kernel calculate domain avg_load in both cases. This
-> will ensure that imbalance calculation is always sensible and the target
-> is usually half way between busiest and puller CPU.
-> 
-> Signed-off-by: Ken Chen <kenchen@google.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: <stable@kernel.org>
-> Link: http://lkml.kernel.org/r/20110408002322.3A0D812217F@elm.corp.google.com
-> Signed-off-by: Ingo Molnar <mingo@elte.hu> 
+> But, if the bit is _not_ set, we are under no obligation to
+> reverse the order.  Furthermore, all modern qemus set this bit.
 
-This was caused by 866ab43ef (sched: Fix the group_imb logic) which is
-only in .39-rc.
+Which qemus do this, specifically?  Amit Shah just pointed out to me
+that upstream qemu.git and qemu-kvm.git don't seem to do this.
+
+Which qemu did you test this with?
+
+> So, the "tell second" code is completely unused and untestable.
+> Quoting Anthony: "untested code is broken code".
+> 
+> This _also_ means that we don't have to preserve a pfn list
+> after the pages are freed, which should let us get rid of some
+> temporary storage (vb->pfns) eventually.
+> 
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> ---
+> 
+>  linux-2.6.git-dave/drivers/virtio/virtio_balloon.c |   21 ++++++++-------------
+>  1 file changed, 8 insertions(+), 13 deletions(-)
+> 
+> diff -puN drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic drivers/virtio/virtio_balloon.c
+> --- linux-2.6.git/drivers/virtio/virtio_balloon.c~kill-tell-host-first-logic	2011-04-07 10:23:12.016343374 -0700
+> +++ linux-2.6.git-dave/drivers/virtio/virtio_balloon.c	2011-04-07 10:23:12.024343370 -0700
+> @@ -40,9 +40,6 @@ struct virtio_balloon
+>  	/* Waiting for host to ack the pages we released. */
+>  	struct completion acked;
+>  
+> -	/* Do we have to tell Host *before* we reuse pages? */
+> -	bool tell_host_first;
+> -
+>  	/* The pages we've told the Host we're not using. */
+>  	unsigned int num_pages;
+>  	struct list_head pages;
+> @@ -151,13 +148,14 @@ static void leak_balloon(struct virtio_b
+>  		vb->num_pages--;
+>  	}
+>  
+> -	if (vb->tell_host_first) {
+> -		tell_host(vb, vb->deflate_vq);
+> -		release_pages_by_pfn(vb->pfns, vb->num_pfns);
+> -	} else {
+> -		release_pages_by_pfn(vb->pfns, vb->num_pfns);
+> -		tell_host(vb, vb->deflate_vq);
+> -	}
+> +
+> +	/*
+> +	 * Note that if
+> +	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+> +	 * is true, we *have* to do it in this order
+> +	 */
+> +	tell_host(vb, vb->deflate_vq);
+> +	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+>  }
+>  
+>  static inline void update_stat(struct virtio_balloon *vb, int idx,
+> @@ -325,9 +323,6 @@ static int virtballoon_probe(struct virt
+>  		goto out_del_vqs;
+>  	}
+>  
+> -	vb->tell_host_first
+> -		= virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+> -
+>  	return 0;
+>  
+>  out_del_vqs:
+> _
