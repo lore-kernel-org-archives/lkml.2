@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab1DKVZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:25:18 -0400
-Received: from kroah.org ([198.145.64.141]:42052 "EHLO coco.kroah.org"
+	id S1755966Ab1DKV0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:26:09 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57110 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754258Ab1DKVZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:25:16 -0400
-Date: Mon, 11 Apr 2011 14:25:13 -0700
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        Andy Botting <andy@andybotting.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [RFC][PATCH V3] axi: add AXI bus driver
-Message-ID: <20110411212513.GA17809@kroah.com>
-References: <1302557114-7880-1-git-send-email-zajec5@gmail.com>
- <20110411210631.GA28559@kroah.com>
- <BANLkTim155YxMUVJ=pmVs-rNhkovGPG6OQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTim155YxMUVJ=pmVs-rNhkovGPG6OQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754004Ab1DKV0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 17:26:07 -0400
+Subject: Re: [PATCH 3/6] microblaze/pci: Move the remains of pci_32.c to
+ pci-common.c
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, bheglaas@google.com,
+        monstr@monstr.eu, tglx@linutronix.de, bigeasy@linutronix.de
+In-Reply-To: <da7a8b1fa75c0968a4586a591713d5db.squirrel@webmail.sf-mail.de>
+References: <1302495170-973-1-git-send-email-benh@kernel.crashing.org>
+	 <1302495170-973-4-git-send-email-benh@kernel.crashing.org>
+	 <da7a8b1fa75c0968a4586a591713d5db.squirrel@webmail.sf-mail.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 07:25:33 +1000
+Message-ID: <1302557133.28876.13.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 11:19:13PM +0200, Rafał Miłecki wrote:
-> 2011/4/11 Greg KH <greg@kroah.com>:
-> > On Mon, Apr 11, 2011 at 11:25:14PM +0200, Rafał Miłecki wrote:
-> >> +static void axi_release_core_dev(struct device *dev)
-> >> +{
-> >> +     /* Silent lack-of-release warning */
-> >> +}
-> >
-> > Ok, WTF!!!!
+On Mon, 2011-04-11 at 15:12 +0000, Rolf Eike Beer wrote:
+> > There's no point in keeping this separate. Even if microblaze grows
+> > a 64-bit variant, it will probably be able to re-use that code as-is
 > 
-> Thank you for your kindly words. It's much more enjoyable to work on
-> kernel that way. I definitely made that on purpose.
+> > diff --git a/arch/microblaze/pci/pci-common.c
+> > b/arch/microblaze/pci/pci-common.c
+> > index 5359906..041b1d8 100644
+> > --- a/arch/microblaze/pci/pci-common.c
+> > +++ b/arch/microblaze/pci/pci-common.c
+> > @@ -50,6 +50,11 @@ unsigned int pci_flags;
+> >
+> >  static struct dma_map_ops *pci_dma_ops = &dma_direct_ops;
+> >
+> > +unsigned long isa_io_base;
+> > +unsigned long pci_dram_offset;
+> > +static int pci_bus_count;
+> > +
+> > +
+> 
+> Extra newline.
 
-I can't tell if you are kidding or not.
+Can people with no useful content abstain from commenting please.
 
-Please read the documentation for how to do this properly.  I find it
-really hard to believe that you wrote that comment instead of putting in
-the 2 lines of code required for this function.
+Cheers,
+Ben.
 
-Especially as-it-is, your code does not work properly and leaks memory
-badly.  Why would you do that on purpose?
 
-thanks,
-
-greg k-h
