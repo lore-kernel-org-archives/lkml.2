@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab1DKN5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 09:57:12 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:42695 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751096Ab1DKN5L (ORCPT
+	id S1752078Ab1DKN5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 09:57:40 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44770 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab1DKN5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 09:57:11 -0400
-X-Sasl-enc: FZ2Xy6ggQAfP0s0whGn1WYpIhpGMVLzOSmz9NqIWpVaO 1302530230
-Date: Mon, 11 Apr 2011 10:57:08 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86/amd-iommu: Add support for invalidate_all
- command
-Message-ID: <20110411135708.GB28056@khazad-dum.debian.net>
-References: <1302514324-14717-1-git-send-email-joerg.roedel@amd.com>
- <1302514324-14717-3-git-send-email-joerg.roedel@amd.com>
+	Mon, 11 Apr 2011 09:57:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wgV7BwT33ddlvbojY54OSOJGCLFXXM2nvu2KLmDLLzOkrNrNKp5eWf3WRBa1mC1XLz
+         Ld1eAqLUtWP6SBuaHRg0socO1qjttL4MtrhZndHJxTgC1RN8y7sLfG0Nsw2rN0VH549K
+         +w8IoVmrdahuC77xfLBtGtepL09p8mc2dlcnc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302514324-14717-3-git-send-email-joerg.roedel@amd.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110411133602.GA5321@hallyn.com>
+References: <4D9431B3.2070305@parallels.com>
+	<20110405034641.GC6764@hallyn.com>
+	<4D9F24F2.9020603@parallels.com>
+	<4DA30222.5040902@parallels.com>
+	<20110411133602.GA5321@hallyn.com>
+Date: Mon, 11 Apr 2011 16:57:37 +0300
+Message-ID: <BANLkTi=sh1CB+e1EhU-c-Bs3BCszWEBTMA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] Compare namespaces when comparing addresses in
+ auth_unix cache.
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Rob Landley <rlandley@parallels.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, containers@lists.linux-foundation.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Tim Spriggs <tims@uahirise.org>, Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011, Joerg Roedel wrote:
-> This patch adds support for the invalidate_all command
-> present in new versions of the AMD IOMMU.
+On Mon, Apr 11, 2011 at 4:36 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
 
-...
+> Besides use-after-free, the other concern is an invalid net_eq()
+> result due to the * being re-used for a new netns.
 
->  #define CMD_COMPL_WAIT          0x01
->  #define CMD_INV_DEV_ENTRY       0x02
->  #define CMD_INV_IOMMU_PAGES     0x03
-> +#define CMD_INV_ALL		0x08
+Exactly.
 
-...
-
-> @@ -463,6 +463,12 @@ static void build_inv_iommu_pages(struct iommu_cmd *cmd, u64 address,
->  		cmd->data[2] |= CMD_INV_IOMMU_PAGES_PDE_MASK;
->  }
->  
-> +static void build_inv_all(struct iommu_cmd *cmd)
-> +{
-> +	memset(cmd, 0, sizeof(*cmd));
-> +	CMD_SET_TYPE(cmd, CMD_INV_DEV_ENTRY);
-
-Huh?
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+"struct net" dies last, no exceptions, anything different is a disaster.
