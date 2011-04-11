@@ -1,117 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab1DKWYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 18:24:45 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:63669 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab1DKWYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 18:24:43 -0400
-Date: Mon, 11 Apr 2011 19:25:04 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
-        Keith Packard <keithp@keithp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
- b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
-Message-ID: <20110411222504.GE2195@joana>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
-	Keith Packard <keithp@keithp.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-bluetooth@vger.kernel.org
-References: <yun1v1fj024.fsf@aiko.keithp.com>
- <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6>
- <alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6>
- <yunaag0tjzb.fsf@aiko.keithp.com>
- <20110409000857.GB25581@piper>
- <alpine.LFD.2.00.1104111807480.4501@localhost6.localdomain6>
- <1302558033.2572.219.camel@aeonflux>
- <alpine.LFD.2.00.1104120014130.2702@localhost6.localdomain6>
- <alpine.LFD.2.00.1104120016490.2702@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1104120016490.2702@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756305Ab1DKWgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 18:36:12 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:42644 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755356Ab1DKWgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 18:36:10 -0400
+Subject: Re: [PATCH 2/3] make new alloc_pages_exact()
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Timur Tabi <timur@freescale.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Michal Nazarewicz <mina86@mina86.com>,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <20110411152223.3fb91a62.akpm@linux-foundation.org>
+References: <20110411220345.9B95067C@kernel>
+	 <20110411220346.2FED5787@kernel>
+	 <20110411152223.3fb91a62.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 11 Apr 2011 15:36:00 -0700
+Message-ID: <1302561360.7286.16848.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner <tglx@linutronix.de> [2011-04-12 00:19:32 +0200]:
+On Mon, 2011-04-11 at 15:22 -0700, Andrew Morton wrote:
+> > +/* 'struct page' version */
+> > +struct page *__alloc_pages_exact(gfp_t gfp_mask, size_t size);
+> > +void __free_pages_exact(struct page *page, size_t size);
+> 
+> The declarations use "size", but the definitions use "nr_pages". 
+> "nr_pages" is way better.
 
-> On Tue, 12 Apr 2011, Thomas Gleixner wrote:
-> > On Mon, 11 Apr 2011, Marcel Holtmann wrote:
-> > 
-> > > Hi Thomas,
-> > > 
-> > > > > > > Can the bluetooth folks please have a look at that ASAP? The obvious
-> > > > > > > fast fix for Linus tree is to revert the second hunk for now, but this
-> > > > > > > needs to be fixed proper.
-> > > > > > 
-> > > > > > Who will submit this patch? I'd rather have your name on it so that
-> > > > > > people come complain at you...
-> > > > > 
-> > > > > I took a shot at it and just sent a patch (also attached for convenience) 
-> > > > > that should solve the problem.
-> > > > 
-> > > > Aaarg. No. That patch reverts both hunks.
-> > > > 
-> > > > --- a/net/bluetooth/hci_core.c
-> > > > +++ b/net/bluetooth/hci_core.c
-> > > > @@ -586,9 +586,6 @@ static int hci_dev_do_close(struct hci_dev *hdev)
-> > > >  	hci_req_cancel(hdev, ENODEV);
-> > > >  	hci_req_lock(hdev);
-> > > >  
-> > > > -	/* Stop timer, it might be running */
-> > > > -	del_timer_sync(&hdev->cmd_timer);
-> > > > -
-> > > >  	if (!test_and_clear_bit(HCI_UP, &hdev->flags)) {
-> > > >  		hci_req_unlock(hdev);
-> > > >  		return 0;
-> > > > 
-> > > > As I said before you need that first hunk to stay for the case where
-> > > > there is no device up and you return via the !HCI_UP check. You just
-> > > > moved back to the state before as the stupid timer is active for
-> > > > whatever reason even when HCI_UP is not set.
-> > > 
-> > > if I read this right then we have the case that we arm this timer for no
-> > > real reason. A device in !HCI_UP should have nothing running. Certainly
-> > > not the cmd_timer since it will never process any commands.
-> > > 
-> > > According to Gustavo, the problem is really in the hci_reset logic were
-> > > we arm the timer even when shutting down the device.
-> > 
-> > The reason why the original patch was sent is, that the timer was
-> > running when the thing went out via the !HCI_UP path, which caused the
-> > whole thing to explode in the first place. I had no time to figure out
-> > why, but moving the del_timer_sync above the
-> > if (!test_and_clear_bit(HCI_UP, &hdev->flags)) solved it.
-> 
-> Oops. Hit send too fast.
-> 
-> Then it broke the resume on Keith machine and reverting just the hunk
-> which disarms the timer in the 
-> 
->         if (hdev->sent_cmd) {
-> 
-> path made both scenarios working. So there are two problems:
-> 
->      1) Why do we need the del_timer_sync() above the !HCI_UP check
+I'll fix that.
 
-That is still a mysterious to me, the real bug the hiding here. I'm trying to
-track this down but no luck yet.
+> Should it really be size_t?  size_t's units are "bytes", usually.
 
+Yeah, the nr_pages one should probably be an unsigned long.
+
+> > -void *get_free_pages_exact(gfp_t gfp_mask, size_t size)
+> > +struct page *__alloc_pages_exact(gfp_t gfp_mask, size_t nr_pages)
 > 
->      2) Why gets the timer rearmed after that
+> Most allocation functions are of the form foo(size, gfp_t), but this
+> one has the args reversed.  Was there a reason for that?
 
-It is armed at each HCI command we send. In the close path we send out an HCI
-RESET command that rearms it.
+I'm trying to make this a clone of alloc_pages(), which does:
 
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+	#define alloc_pages(gfp_mask, order)
+
+It needs a note in the changelog on why I did it.
+
+> >  {
+> > -	unsigned int order = get_order(size);
+> > -	unsigned long addr;
+> > +	unsigned int order = get_order(nr_pages * PAGE_SIZE);
+> > +	struct page *page;
+> >  
+> > -	addr = __get_free_pages(gfp_mask, order);
+> > -	if (addr) {
+> > -		unsigned long alloc_end = addr + (PAGE_SIZE << order);
+> > -		unsigned long used = addr + PAGE_ALIGN(size);
+> > +	page = alloc_pages(gfp_mask, order);
+> > +	if (page) {
+> > +		struct page *alloc_end = page + (1 << order);
+> > +		struct page *used = page + nr_pages;
+> >  
+> > -		split_page(virt_to_page((void *)addr), order);
+> > +		split_page(page, order);
+> >  		while (used < alloc_end) {
+> > -			free_page(used);
+> > -			used += PAGE_SIZE;
+> > +			__free_page(used);
+> > +			used++;
+> >  		}
+> >  	}
+> >  
+> > -	return (void *)addr;
+> > +	return page;
+> > +}
+> > +EXPORT_SYMBOL(__alloc_pages_exact);
+> > +
+> > +/**
+> > + * __free_pages_exact - release memory allocated via __alloc_pages_exact()
+> > + * @virt: the value returned by get_free_pages_exact.
+> > + * @nr_pages: size in pages, same value as passed to __alloc_pages_exact().
+> > + *
+> > + * Release the memory allocated by a previous call to __alloc_pages_exact().
+> > + */
+> > +void __free_pages_exact(struct page *page, size_t nr_pages)
+> > +{
+> > +	struct page *end = page + nr_pages;
+> > +
+> > +	while (page < end) {
+> 
+> Hand-optimised.  Old school.  Doesn't trust the compiler :)
+
+Hey, ask the dude who put free_pages_exact() in there! :)
+
+> > +		__free_page(page);
+> > +		page++;
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL(__free_pages_exact);
+> 
+> Really, this function duplicates release_pages().  release_pages() is
+> big and fat and complex and is a crime against uniprocessor but it does
+> make some effort to reduce the spinlocking frequency and in many
+> situations, release_pages() will cause vastly less locked bus traffic
+> than your __free_pages_exact().  And who knows, smart use of
+> release_pages()'s "cold" hint may provide some benefits.
+
+Seems like a decent enough thing to try.  I'll give it a shot and make
+sure it's OK to use.
+
+-- Dave
+
