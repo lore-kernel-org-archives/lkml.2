@@ -1,161 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1DKOoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 10:44:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50450 "EHLO hera.kernel.org"
+	id S1752686Ab1DKOsp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 10:48:45 -0400
+Received: from ns.vscht.cz ([147.33.15.5]:57475 "EHLO ns.vscht.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995Ab1DKOoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 10:44:05 -0400
-Date: Mon, 11 Apr 2011 14:43:17 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-60495e7760d8ee364695006af37309b0755e0e17@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20110407122942.969433965@chello.nl>
-References: <20110407122942.969433965@chello.nl>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/domains] sched: Dynamic sched_domain::level
-Git-Commit-ID: 60495e7760d8ee364695006af37309b0755e0e17
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751995Ab1DKOso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 10:48:44 -0400
+From: Jiri Pinkava <jiri.pinkava@vscht.cz>
+To: <dedekind1@gmail.com>
+CC: <ben-linux@fluff.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, Jiri Pinkava <jiri.pinkava@vscht.cz>
+Subject: [PATCH] nand: Fix S3C NAND clock stop
+Date: Mon, 11 Apr 2011 16:48:24 +0200
+Message-ID: <1302533304-6795-1-git-send-email-jiri.pinkava@vscht.cz>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <4DA27245.6@vscht.cz>
+References: <4DA27245.6@vscht.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Apr 2011 14:43:18 +0000 (UTC)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60495e7760d8ee364695006af37309b0755e0e17
-Gitweb:     http://git.kernel.org/tip/60495e7760d8ee364695006af37309b0755e0e17
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 7 Apr 2011 14:10:04 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 11 Apr 2011 14:09:32 +0200
+Current implementation of s3c2410_nand_select_chip call
+clk_disable every time when chip = -1 (de-select). This happend
+multiple times even if chip was already de-selected. This causes
+disabling clock even if they are already disabled and due to
+nature of clock subsytem implementation this causes nand clock
+to be disabled and newer enabled again.
 
-sched: Dynamic sched_domain::level
-
-Remove the SD_LV_ enum and use dynamic level assignments.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20110407122942.969433965@chello.nl
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Jiri Pinkava <jiri.pinkava@vscht.cz>
 ---
- include/linux/sched.h |   23 +++--------------------
- kernel/cpuset.c       |    2 +-
- kernel/sched.c        |    9 ++++++---
- 3 files changed, 10 insertions(+), 24 deletions(-)
+ drivers/mtd/nand/s3c2410.c |   59 ++++++++++++++++++++++++++++++++------------
+ 1 files changed, 43 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 09d9e02..e43e5b0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -892,25 +892,6 @@ static inline struct cpumask *sched_group_cpus(struct sched_group *sg)
- 	return to_cpumask(sg->cpumask);
- }
+diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
+index 33d832d..cea775a 100644
+--- a/drivers/mtd/nand/s3c2410.c
++++ b/drivers/mtd/nand/s3c2410.c
+@@ -55,7 +55,7 @@ static int hardware_ecc = 0;
+ #endif
  
--enum sched_domain_level {
--	SD_LV_NONE = 0,
--#ifdef CONFIG_SCHED_SMT
--	SD_LV_SIBLING,
--#endif
--#ifdef CONFIG_SCHED_MC
--	SD_LV_MC,
--#endif
--#ifdef CONFIG_SCHED_BOOK
--	SD_LV_BOOK,
--#endif
--	SD_LV_CPU,
--#ifdef CONFIG_NUMA
--	SD_LV_NODE,
--	SD_LV_ALLNODES,
--#endif
--	SD_LV_MAX
--};
--
- struct sched_domain_attr {
- 	int relax_domain_level;
+ #ifdef CONFIG_MTD_NAND_S3C2410_CLKSTOP
+-static int clock_stop = 1;
++static const int clock_stop = 1;
+ #else
+ static const int clock_stop = 0;
+ #endif
+@@ -96,6 +96,12 @@ enum s3c_cpu_type {
+ 	TYPE_S3C2440,
  };
-@@ -919,6 +900,8 @@ struct sched_domain_attr {
- 	.relax_domain_level = -1,			\
+ 
++enum s3c_nand_clk_state {
++	CLOCK_DISABLE	= 0,
++	CLOCK_ENABLE,
++	CLOCK_SUSPEND,
++};
++
+ /* overview of the s3c2410 nand state */
+ 
+ /**
+@@ -111,6 +117,7 @@ enum s3c_cpu_type {
+  * @mtd_count: The number of MTDs created from this controller.
+  * @save_sel: The contents of @sel_reg to be saved over suspend.
+  * @clk_rate: The clock rate from @clk.
++ * @clk_state: The current clock state.
+  * @cpu_type: The exact type of this controller.
+  */
+ struct s3c2410_nand_info {
+@@ -129,6 +136,7 @@ struct s3c2410_nand_info {
+ 	int				mtd_count;
+ 	unsigned long			save_sel;
+ 	unsigned long			clk_rate;
++	enum s3c_nand_clk_state		clk_state;
+ 
+ 	enum s3c_cpu_type		cpu_type;
+ 
+@@ -159,11 +167,33 @@ static struct s3c2410_platform_nand *to_nand_plat(struct platform_device *dev)
+ 	return dev->dev.platform_data;
  }
  
-+extern int sched_domain_level_max;
+-static inline int allow_clk_stop(struct s3c2410_nand_info *info)
++static inline int allow_clk_suspend(struct s3c2410_nand_info *info)
+ {
+ 	return clock_stop;
+ }
+ 
++/**
++ * s3c2410_nand_clk_set_state - Enable, disable or suspend NAND clock.
++ * @info: The controller instance.
++ * @new_state: State to which clock should be set.
++ */
++static void s3c2410_nand_clk_set_state(struct s3c2410_nand_info *info,
++		enum s3c_nand_clk_state new_state)
++{
++	if (!allow_clk_suspend(info) && new_state == CLOCK_SUSPEND)
++		return;
 +
- struct sched_domain {
- 	/* These fields must be setup */
- 	struct sched_domain *parent;	/* top domain must be null terminated */
-@@ -936,7 +919,7 @@ struct sched_domain {
- 	unsigned int forkexec_idx;
- 	unsigned int smt_gain;
- 	int flags;			/* See SD_* */
--	enum sched_domain_level level;
-+	int level;
- 
- 	/* Runtime fields. */
- 	unsigned long last_balance;	/* init to jiffies. units in jiffies */
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 33eee16..2bb8c2e 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1159,7 +1159,7 @@ int current_cpuset_is_being_rebound(void)
- static int update_relax_domain_level(struct cpuset *cs, s64 val)
- {
- #ifdef CONFIG_SMP
--	if (val < -1 || val >= SD_LV_MAX)
-+	if (val < -1 || val >= sched_domain_level_max)
- 		return -EINVAL;
- #endif
- 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3231e19..506cb81 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -6966,7 +6966,6 @@ sd_init_##type(struct sched_domain_topology_level *tl, int cpu) 	\
- {									\
- 	struct sched_domain *sd = *per_cpu_ptr(tl->data.sd, cpu);	\
- 	*sd = SD_##type##_INIT;						\
--	sd->level = SD_LV_##type;					\
- 	SD_INIT_NAME(sd, type);						\
- 	sd->private = &tl->data;					\
- 	return sd;							\
-@@ -6988,13 +6987,14 @@ SD_INIT_FUNC(CPU)
- #endif
- 
- static int default_relax_domain_level = -1;
-+int sched_domain_level_max;
- 
- static int __init setup_relax_domain_level(char *str)
- {
- 	unsigned long val;
- 
- 	val = simple_strtoul(str, NULL, 0);
--	if (val < SD_LV_MAX)
-+	if (val < sched_domain_level_max)
- 		default_relax_domain_level = val;
- 
- 	return 1;
-@@ -7173,8 +7173,11 @@ struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
- 
- 	set_domain_attribute(sd, attr);
- 	cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
--	if (child)
-+	if (child) {
-+		sd->level = child->level + 1;
-+		sched_domain_level_max = max(sched_domain_level_max, sd->level);
- 		child->parent = sd;
++	if (info->clk_state == CLOCK_ENABLE) {
++		if (new_state != CLOCK_ENABLE)
++			clk_disable(info->clk);
++	} else {
++		if (new_state == CLOCK_ENABLE)
++			clk_enable(info->clk);
 +	}
- 	sd->child = child;
++
++	info->clk_state = new_state;
++}
++
+ /* timing calculations */
  
- 	return sd;
+ #define NS_IN_KHZ 1000000
+@@ -333,8 +363,8 @@ static void s3c2410_nand_select_chip(struct mtd_info *mtd, int chip)
+ 	nmtd = this->priv;
+ 	info = nmtd->info;
+ 
+-	if (chip != -1 && allow_clk_stop(info))
+-		clk_enable(info->clk);
++	if (chip != -1)
++		s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
+ 
+ 	cur = readl(info->sel_reg);
+ 
+@@ -356,8 +386,8 @@ static void s3c2410_nand_select_chip(struct mtd_info *mtd, int chip)
+ 
+ 	writel(cur, info->sel_reg);
+ 
+-	if (chip == -1 && allow_clk_stop(info))
+-		clk_disable(info->clk);
++	if (chip == -1)
++		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
+ }
+ 
+ /* s3c2410_nand_hwcontrol
+@@ -694,8 +724,7 @@ static int s3c24xx_nand_remove(struct platform_device *pdev)
+ 	/* free the common resources */
+ 
+ 	if (info->clk != NULL && !IS_ERR(info->clk)) {
+-		if (!allow_clk_stop(info))
+-			clk_disable(info->clk);
++		s3c2410_nand_clk_set_state(info, CLOCK_DISABLE);
+ 		clk_put(info->clk);
+ 	}
+ 
+@@ -947,7 +976,7 @@ static int s3c24xx_nand_probe(struct platform_device *pdev)
+ 		goto exit_error;
+ 	}
+ 
+-	clk_enable(info->clk);
++	s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
+ 
+ 	/* allocate and map the resource */
+ 
+@@ -1026,9 +1055,9 @@ static int s3c24xx_nand_probe(struct platform_device *pdev)
+ 		goto exit_error;
+ 	}
+ 
+-	if (allow_clk_stop(info)) {
++	if (allow_clk_suspend(info)) {
+ 		dev_info(&pdev->dev, "clock idle support enabled\n");
+-		clk_disable(info->clk);
++		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
+ 	}
+ 
+ 	pr_debug("initialised ok\n");
+@@ -1059,8 +1088,7 @@ static int s3c24xx_nand_suspend(struct platform_device *dev, pm_message_t pm)
+ 
+ 		writel(info->save_sel | info->sel_bit, info->sel_reg);
+ 
+-		if (!allow_clk_stop(info))
+-			clk_disable(info->clk);
++		s3c2410_nand_clk_set_state(info, CLOCK_DISABLE);
+ 	}
+ 
+ 	return 0;
+@@ -1072,7 +1100,7 @@ static int s3c24xx_nand_resume(struct platform_device *dev)
+ 	unsigned long sel;
+ 
+ 	if (info) {
+-		clk_enable(info->clk);
++		s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
+ 		s3c2410_nand_inithw(info);
+ 
+ 		/* Restore the state of the nFCE line. */
+@@ -1082,8 +1110,7 @@ static int s3c24xx_nand_resume(struct platform_device *dev)
+ 		sel |= info->save_sel & info->sel_bit;
+ 		writel(sel, info->sel_reg);
+ 
+-		if (allow_clk_stop(info))
+-			clk_disable(info->clk);
++		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.4.4
+
