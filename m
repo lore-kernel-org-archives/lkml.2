@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab1DKPft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 11:35:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44188 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab1DKPfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 11:35:48 -0400
-Date: Mon, 11 Apr 2011 17:35:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 2.6.33.9-rt31
-Message-ID: <alpine.LFD.2.00.1104111723020.4501@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752766Ab1DKPkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 11:40:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44671 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995Ab1DKPka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 11:40:30 -0400
+Date: Mon, 11 Apr 2011 15:40:12 GMT
+From: tip-bot for Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Message-ID: <tip-30d746c68025ee69ac17219aacc9b1614d951f01@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        benh@kernel.crashing.org, bigeasy@linutronix.de, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, tglx@linutronix.de, bigeasy@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110407121315.GA9204@linutronix.de>
+References: <20110407121315.GA9204@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/ce4100: Add reg property to bridges
+Git-Commit-ID: 30d746c68025ee69ac17219aacc9b1614d951f01
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Apr 2011 15:40:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are pleased to announce the next update to our new preempt-rt
-series which is mostly a forward to 2.6.33.9. Thanks Greg !
+Commit-ID:  30d746c68025ee69ac17219aacc9b1614d951f01
+Gitweb:     http://git.kernel.org/tip/30d746c68025ee69ac17219aacc9b1614d951f01
+Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+AuthorDate: Thu, 7 Apr 2011 14:13:15 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 11 Apr 2011 17:37:02 +0200
 
-RT specific patches since 2.6.33.7.2-rt30
+x86/ce4100: Add reg property to bridges
 
-8a97f01: arm: mxc: Add sched_clock to mxc-platform
-a5a2b75: arm: mxc: Add add dummy_get_cycles()
-c1d6834: trace: Add timestamp to maxlatproc data
-cfe9ed2: trace: Add current task to maxlatproc data
-70fdd17: trace: Add timeroffset to maxlatproc data
-db2aacd: trace: timer offsets histogram consider smp same prio
-3115eb2: x86, hotplug: Revert 74a6e0fd8 (x86, hotplug: Use mwait to ...)
-250bf15: ARM: sched_clock: make minsec argument to clocks_calc_mult_shift() zero
-c04f3a8: ARM: sched_clock: allow init_sched_clock() to be called early
-4d79f92: ARM: sched_clock: provide common infrastructure for sched_clock()
-7443ac2: asm-generic/percpu: fixup RT mismerge
-7e1c4f9: rtmutex: Ensure only the top waiter or higher priority task can take the lock
-47b3309: rtmutex: Fix comment about why new_owner can be NULL in wake_futex_pi()
-2ce1161: rtmutex: Revert Optimize rt lock wakeup
-9704792: rtmutex: Try to take lock early in rt_spin_lock_slowlock()
-5995a44: rtmutex: Only save lock depth once in spin_slowlock
+without the reg property Ben's new code won't find the PCI & ISA
+bridge and the devices won't get the DT-node attached.
 
-Download locations:
-   
-    http://www.kernel.org/pub/linux/kernel/projects/rt/
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: davem@davemloft.net
+Cc: monstr@monstr.eu
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Link: http://lkml.kernel.org/r/20110407121315.GA9204@linutronix.de
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/platform/ce4100/falconfalls.dts |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Git release branch:
-    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git rt/2.6.33
-  
-Gitweb:
-    http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=shortlog;h=rt/2.6.33
-  
-Information on the RT patch can be found at:
-
-    http://rt.wiki.kernel.org/index.php/Main_Page
-
-to build the 2.6.33.9-rt31 tree, the following patches should be
-applied:
-
-    http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.33.9.tar.bz2
-    http://www.kernel.org/pub/linux/kernel/projects/rt/patch-2.6.33.9-rt31.bz2
-
-Enjoy !
-
-      tglx
+diff --git a/arch/x86/platform/ce4100/falconfalls.dts b/arch/x86/platform/ce4100/falconfalls.dts
+index dc701ea..2d6d226 100644
+--- a/arch/x86/platform/ce4100/falconfalls.dts
++++ b/arch/x86/platform/ce4100/falconfalls.dts
+@@ -74,6 +74,7 @@
+ 				compatible = "intel,ce4100-pci", "pci";
+ 				device_type = "pci";
+ 				bus-range = <1 1>;
++				reg = <0x0800 0x0 0x0 0x0 0x0>;
+ 				ranges = <0x2000000 0 0xdffe0000 0x2000000 0 0xdffe0000 0 0x1000>;
+ 
+ 				interrupt-parent = <&ioapic2>;
+@@ -412,6 +413,7 @@
+ 				#address-cells = <2>;
+ 				#size-cells = <1>;
+ 				compatible = "isa";
++				reg = <0xf800 0x0 0x0 0x0 0x0>;
+ 				ranges = <1 0 0 0 0 0x100>;
+ 
+ 				rtc@70 {
