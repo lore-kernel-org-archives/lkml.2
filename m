@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab1DKQ7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:59:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56713 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab1DKQ71 (ORCPT
+	id S1752493Ab1DKRFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:05:45 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42337 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751673Ab1DKRFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:59:27 -0400
-Date: Mon, 11 Apr 2011 12:59:23 -0400
-From: "hch@infradead.org" <hch@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110411165923.GA15442@infradead.org>
-References: <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
- <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
- <20110303221353.GA10366@redhat.com>
- <4D761E0D.8050200@fusionio.com>
- <20110308202100.GA31744@redhat.com>
- <4D76912C.9040705@fusionio.com>
- <20110308220526.GA393@redhat.com>
- <20110310005810.GA17911@redhat.com>
- <20110405130541.6c2b5f86@notabene.brown>
- <20110411145022.710c30e9@notabene.brown>
+	Mon, 11 Apr 2011 13:05:44 -0400
+Date: Mon, 11 Apr 2011 13:05:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+cc: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] USB host: Fix lockdep warning in AMD PLL quirk
+In-Reply-To: <20110411163711.GA20607@amd.com>
+Message-ID: <Pine.LNX.4.44L0.1104111304080.1975-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110411145022.710c30e9@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 02:50:22PM +1000, NeilBrown wrote:
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 273d60b..903ce8d 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -2674,19 +2674,23 @@ static void flush_plug_list(struct blk_plug *plug)
->  	struct request_queue *q;
->  	unsigned long flags;
->  	struct request *rq;
-> +	struct list_head head;
->  
->  	BUG_ON(plug->magic != PLUG_MAGIC);
->  
->  	if (list_empty(&plug->list))
->  		return;
-> +	list_add(&head, &plug->list);
-> +	list_del_init(&plug->list);
->  
->  	if (plug->should_sort)
-> -		list_sort(NULL, &plug->list, plug_rq_cmp);
-> +		list_sort(NULL, &head, plug_rq_cmp);
-> +	plug->should_sort = 0;
+On Mon, 11 Apr 2011, Roedel, Joerg wrote:
 
-As Jens mentioned this should be list_splice_init.  But looking over
-flush_plug_list the code there seems strange to me.
+> > > > > +		ret = amd_chipset.probe_result;
+> > > > > +
+> > > > > +		spin_unlock_irqrestore(&amd_lock, flags);
+> > > > > +
+> > > > > +		if (info.nb_dev)
+> > > > > +			pci_dev_put(info.nb_dev);
+> > > > > +		if (info.smbus_dev)
+> > > > > +			pci_dev_put(info.smbus_dev);
+> > > > > +
+> > > > > +	} else {
+> > > > > +		/* no race - commit the result */
+> > > > > +		info.probe_count++;
+> > > > 
+> > > > This isn't right, because info.probe_count was initialized to 0.  Maybe 
+> > > > amd_chipset.probe_count should be made into a separate variable, not a 
+> > > > part of the structure, like amd_lock.
+> > > 
+> > > The purpose of the struct is structuring of data. In theory all of its
+> > > members could be turned into global variables. The amd_lock is different
+> > > because it does not only protect the struct but also access to the
+> > > hardware while the quirk is applied/unapplied.
+> > 
+> > Do it however you prefer.  But as it stands now, the patch is wrong.
+> 
+> Hmm, I see how it can be done differently, but no real bug.
 
-What does the local_irq_save in flush_plug_list protect?  Why don't
-we need it over the list_sort?  And do we still need it when first
-splicing the list to a local one?
+Never mind, you're right.  In the no-race case, the initial count is 
+always going to be 0, and so incrementing info.probe_count is the right 
+thing to do.
 
-It's one of these cases where I'd really like to see more comments
-explaining why the code is doing what it's doing.
+Alan Stern
 
