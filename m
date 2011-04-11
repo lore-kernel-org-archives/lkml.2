@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1DKSVN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:21:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51308 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754851Ab1DKSVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:21:12 -0400
-Message-ID: <4DA34619.6010708@zytor.com>
-Date: Mon, 11 Apr 2011 11:19:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1755360Ab1DKSZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:25:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50182 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755258Ab1DKSZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 14:25:53 -0400
+Date: Mon, 11 Apr 2011 14:25:41 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Jeff Layton <jlayton@redhat.com>, djwong <djwong@us.ibm.com>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation
+ problem
+Message-ID: <20110411182541.GA29511@infradead.org>
+References: <20110308045626.GD1956@dastard>
+ <20110319000755.GD1110@tux1.beaverton.ibm.com>
+ <20110321140451.GA7153@quack.suse.cz>
+ <1300716666-sup-2087@think>
+ <20110321164305.GC7153@quack.suse.cz>
+ <20110406232938.GF1110@tux1.beaverton.ibm.com>
+ <20110407165700.GB7363@quack.suse.cz>
+ <20110408203135.GH1110@tux1.beaverton.ibm.com>
+ <20110411124229.47bc28f6@corrin.poochiereds.net>
+ <1302543595-sup-4352@think>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        x86@kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] x86 APM: delete Linux kernel APM support
-References: <alpine.LFD.2.02.1103232321070.3848@x980> <alpine.LFD.2.02.1103241929450.16085@x980> <20110325113048.GC29521@elte.hu> <201103252333.23880.rjw@sisk.pl> <20110408062506.GB1596@ucw.cz> <4D9F7630.1090503@zytor.com> <20110411130505.GA3301@ucw.cz>
-In-Reply-To: <20110411130505.GA3301@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302543595-sup-4352@think>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 06:05 AM, Pavel Machek wrote:
-> Hi!
-> 
->>>> Well, it kind of does but not really. :-)
->>>>
->>>> The main problem with APM is that nobody really works on it and I'm not sure
->>>> if there are any active users.  At least no one reports any problems with it,
->>>> which is kind of surprising, given the number of chages we've made in the PM
->>>> core for the last couple of years.  So quite likely it's just become
->>>> non-functional over time anyway, but we have no confirmation.
->>>
->>> It was working ok last time I tried -- cca 6/2010.
->>
->> What aspects of it did you test, and on what platform?
-> 
-> thinkpad 560X.
-> 
-> I tested basic boot, IIRC it did turn backlight off properly in
-> screensaver and even suspend worked.
-> 									Pavel
+On Mon, Apr 11, 2011 at 01:41:16PM -0400, Chris Mason wrote:
+> Actually this isn't a nit.  Keeping the page locked closes an important
+> hole where it can become writeback again.  It might fix the last
+> remaining problem.
 
-OK, but I presume runtime power management wasn't on the list at least
-on what matters.
-
-	-hpa
+Note that the generic block_page_mkwrite atually does that.  But only
+xfs and nilfs2 actually make use of it.
 
