@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab1DKVHN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:07:13 -0400
-Received: from kroah.org ([198.145.64.141]:47249 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026Ab1DKVHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756009Ab1DKVHL (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 11 Apr 2011 17:07:11 -0400
-Date: Mon, 11 Apr 2011 14:07:03 -0700
+Received: from kroah.org ([198.145.64.141]:47231 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507Ab1DKVHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 17:07:09 -0400
+Date: Mon, 11 Apr 2011 14:02:47 -0700
 From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        Andy Botting <andy@andybotting.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [RFC][PATCH V3] axi: add AXI bus driver
-Message-ID: <20110411210703.GB28559@kroah.com>
-References: <1302557114-7880-1-git-send-email-zajec5@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: rndis: dhcp discover stopped working
+Message-ID: <20110411210247.GB15419@kroah.com>
+References: <20110411205440.GA4227@swordfish>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302557114-7880-1-git-send-email-zajec5@gmail.com>
+In-Reply-To: <20110411205440.GA4227@swordfish>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 11:25:14PM +0200, Rafał Miłecki wrote:
-> Cc: Michael Büsch <mb@bu3sch.de>
-> Cc: Larry Finger <Larry.Finger@lwfinger.net>
-> Cc: George Kashperko <george@znau.edu.ua>
-> Cc: Arend van Spriel <arend@broadcom.com>
-> Cc: linux-arm-kernel@lists.infradead.org <linux-arm-kernel@lists.infradead.org>
-> Cc: Russell King <rmk@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Andy Botting <andy@andybotting.com>
-> Cc: linuxdriverproject <devel@linuxdriverproject.org>
-> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
-> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-> ---
-> V2: Rename to axi
->     Use DEFINE_PCI_DEVICE_TABLE in bridge
->     Make use of pr_fmt and pr_*
->     Store core class
->     Rename bridge to not b43 specific
->     Replace magic 0x1000 with BCMAI_CORE_SIZE
->     Remove some old "ssb" names and defines
->     Move BCMAI_ADDR_BASE def
->     Add drvdata field
-> V3: Fix reloading (kfree issue)
->     Add 14e4:4331
->     Fix non-initialized struct issue
->     Drop useless inline functions wrappers for pci core drv
->     Proper pr_* usage
->     Helps in Kconfig
-> ---
->  drivers/Kconfig                           |    2 +
->  drivers/Makefile                          |    1 +
->  drivers/axi/Kconfig                       |   33 +++
->  drivers/axi/Makefile                      |    7 +
->  drivers/axi/TODO                          |    3 +
->  drivers/axi/axi_pci_bridge.c              |   34 +++
->  drivers/axi/axi_private.h                 |   45 ++++
->  drivers/axi/core.c                        |   52 ++++
->  drivers/axi/driver_chipcommon.c           |   87 +++++++
->  drivers/axi/driver_chipcommon_pmu.c       |  134 ++++++++++
->  drivers/axi/driver_pci.c                  |  167 ++++++++++++
->  drivers/axi/host_pci.c                    |  177 +++++++++++++
->  drivers/axi/main.c                        |  256 +++++++++++++++++++
->  drivers/axi/scan.c                        |  393 +++++++++++++++++++++++++++++
->  drivers/axi/scan.h                        |   56 ++++
->  include/linux/axi/axi.h                   |  221 ++++++++++++++++
->  include/linux/axi/axi_driver_chipcommon.h |  308 ++++++++++++++++++++++
->  include/linux/axi/axi_driver_pci.h        |   89 +++++++
->  include/linux/axi/axi_regs.h              |   34 +++
->  include/linux/mod_devicetable.h           |   17 ++
->  scripts/mod/file2alias.c                  |   21 ++
+On Mon, Apr 11, 2011 at 11:54:40PM +0300, Sergey Senozhatsky wrote:
+> Hello,
+> Seems like dhcp discover stopped working with my HTC in "USB-tethering" mode:
+> 
+> kernel: [   60.670379] usb 2-1.3: new high speed USB device number 4 using ehci_hcd
+> kernel: [   60.766779] usb 2-1.3: New USB device found, idVendor=0bb4, idProduct=0c87
+> kernel: [   60.766787] usb 2-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+> kernel: [   60.766792] usb 2-1.3: Product: Android Phone
+> kernel: [   60.766796] usb 2-1.3: Manufacturer: HTC
+> kernel: [   60.766800] usb 2-1.3: SerialNumber: HT082PL07557
+> kernel: [   60.861976] Initializing USB Mass Storage driver...
+> kernel: [   60.862395] scsi4 : usb-storage 2-1.3:1.0
+> kernel: [   60.862965] usbcore: registered new interface driver usb-storage
+> kernel: [   60.862972] USB Mass Storage support registered.
+> kernel: [   61.865117] scsi 4:0:0:0: Direct-Access     HTC      Android Phone    0100 PQ: 0 ANSI: 2
+> kernel: [   61.874518] sd 4:0:0:0: [sdb] Attached SCSI removable disk
+> kernel: [   72.129190] usb 2-1.3: USB disconnect, device number 4
+> kernel: [   72.454846] usb 2-1.3: new high speed USB device number 5 using ehci_hcd
+> kernel: [   72.551186] usb 2-1.3: New USB device found, idVendor=0bb4, idProduct=0ffe
+> kernel: [   72.551195] usb 2-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+> kernel: [   72.551200] usb 2-1.3: Product: Android Phone
+> kernel: [   72.551205] usb 2-1.3: Manufacturer: HTC
+> kernel: [   72.551242] usb 2-1.3: SerialNumber: HT082PL07557
+> kernel: [   72.572416] rndis_host 2-1.3:1.0: usb0: register 'rndis_host' at usb-0000:00:1d.0-1.3, RNDIS device, e6:99:59:e3:8c:98
+> kernel: [   87.281911] NET: Registered protocol family 10
+> kernel: [   87.284969] ADDRCONF(NETDEV_UP): eth0: link is not ready
+> dhclient: can't create /var/db/dhclient.leases: No such file or directory
+> dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 8
+> kernel: [   98.003895] usb0: no IPv6 routers present
+> dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 8
+> dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 11
+> dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 15
+> dhclient: DHCPDISCOVER on usb0 to 255.255.255.255 port 67 interval 19
+> dhclient: No DHCPOFFERS received.
+> dhclient: No working leases in persistent database - sleeping.
+> 
+> 
+> kernel: .39-rc2-*
 
-Where is the documentation files for the new sysfs files you just
-created?
+Known bug, a patch was posted that fixed this already...
 
 thanks,
 
