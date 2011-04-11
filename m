@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab1DKQiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 12:38:06 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:41389
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753311Ab1DKQiE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 12:38:04 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(zz1432N98dK179dNzz1202hzz15d4Rz32i637h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJHY60-01-CIA-02
-X-M-MSG: 
-Date: Mon, 11 Apr 2011 18:37:11 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] USB host: Fix lockdep warning in AMD PLL quirk
-Message-ID: <20110411163711.GA20607@amd.com>
-References: <20110411161647.GK23633@amd.com>
- <Pine.LNX.4.44L0.1104111221000.1975-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104111221000.1975-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	id S1753895Ab1DKQns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 12:43:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53530 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751524Ab1DKQnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 12:43:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,339,1299484800"; 
+   d="scan'208";a="626810954"
+Date: Mon, 11 Apr 2011 09:43:30 -0700
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH v2] x86/mrst: correct pin to irq mapping
+Message-ID: <20110411094330.69c86910@jacob-laptop>
+In-Reply-To: <20110410060154.GA24684@elte.hu>
+References: <1302286980-21139-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<20110410060154.GA24684@elte.hu>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 12:25:07PM -0400, Alan Stern wrote:
-> On Mon, 11 Apr 2011, Roedel, Joerg wrote:
+On Sun, 10 Apr 2011 08:01:54 +0200
+Ingo Molnar <mingo@elte.hu> wrote:
+
 > 
-> > > > +commit:
-> > > > +
-> > > > +	spin_lock_irqsave(&amd_lock, flags);
-> > > > +	if (amd_chipset.probe_count > 0) {
-> > > > +		/* race - someone else was faster - drop devices */
-> > > > +
-> > > > +		/* Mark that we where here */
-> > > > +		amd_chipset.probe_count++;
-> > > 
-> > > This line should be moved above the "if" statement, since you always 
-> > > want to increment the count.
+> * Jacob Pan <jacob.jun.pan@linux.intel.com> wrote:
+> 
+> > As a result, apbt timer and RTC interrupts on Moorestown are within
+> > legacy IRQ range.
 > > 
-> > No, probe_count can't be incremented here because the probe is not
-> > finished yet.
+> > sh-3.2# cat /proc/interrupts
+> >            CPU0       CPU1
+> >   0:      11249          0   IO-APIC-edge      apbt0
+> >   1:          0      12271   IO-APIC-edge      apbt1
+> >   8:        887          0   IO-APIC-fasteoi   dw_spi
+> >  13:          0          0   IO-APIC-fasteoi   INTEL_MID_DMAC2
+> >  14:          0          0   IO-APIC-fasteoi   rtc0
 > 
-> I don't follow you.  Sure it is finished; this is the "commit" part of 
-> the probe.
-
-Nevermind, I thought you were refering to the spin-locked part at the
-beginning of the function.
-
-> >  If another thread jumps in after the lock is released and
-> > detects probe_count > 0 while the probe hasn't happened the quirk will
-> > fail. So we need to make sure that amd_chipset.probe_count does not
-> > become > 0 before the probe is finished.
+> Is there a 'before the patch' /proc/interrupts output as well?
+> Supposedly it's different and seeing that different output is *way*
+> more descriptive to the casual commit log reader than a textual
+> explanation only.
 > 
-> I meant the increment should be done before the "if" statement but
-> after the spin_lock_irqsave().  That way nobody else can jump in at the
-> wrong time.
+If v1 patch is used, /proc/interrupts look like below on Moorestown.
+Notice that apbt1 interrupts is moved to gsi_top + 1 = 39.
 
-In the real commit case the 
+bash-3.2# cat /proc/interrupts 
+           CPU0       CPU1       
+  0:     793303          0   IO-APIC-edge      apbt0
+  8:      84124          0   IO-APIC-fasteoi   dw_spi
+ 13:          0          0   IO-APIC-fasteoi   INTEL_MID_DMAC2
+ 15:    1851630          0   IO-APIC-fasteoi   mrstouch
+ 27:         83          0   IO-APIC-fasteoi   mmc0l_scu_ipc
+ 28:          0          0   IO-APIC-fasteoi   mmc1
+ 30:          0          0   IO-APIC-fasteoi   INTEL_MID_DMAC1
+ 33:         23          0   IO-APIC-fasteoi   ehci_hcd:usb1
+ 34:         52          0   IO-APIC-fasteoi   mmc2
+ 39:          0     812273   IO-APIC-edge      apbt1
 
-	amd_chipset = info;
 
-line will overwrite the increment if the probe is done before the
-if-statement. So incrementing amd_chipset.probe_count directly only
-matters for the case where we detected a race.
 
-> > > > +		ret = amd_chipset.probe_result;
-> > > > +
-> > > > +		spin_unlock_irqrestore(&amd_lock, flags);
-> > > > +
-> > > > +		if (info.nb_dev)
-> > > > +			pci_dev_put(info.nb_dev);
-> > > > +		if (info.smbus_dev)
-> > > > +			pci_dev_put(info.smbus_dev);
-> > > > +
-> > > > +	} else {
-> > > > +		/* no race - commit the result */
-> > > > +		info.probe_count++;
-> > > 
-> > > This isn't right, because info.probe_count was initialized to 0.  Maybe 
-> > > amd_chipset.probe_count should be made into a separate variable, not a 
-> > > part of the structure, like amd_lock.
-> > 
-> > The purpose of the struct is structuring of data. In theory all of its
-> > members could be turned into global variables. The amd_lock is different
-> > because it does not only protect the struct but also access to the
-> > hardware while the quirk is applied/unapplied.
-> 
-> Do it however you prefer.  But as it stands now, the patch is wrong.
+> Also, i guess this would be .40 material, right?
+Without the patch, kernel will crash during boot on Moorestown since
+the secondary CPU clockevent (apbt1) will fail to request irq#1, which
+does not have ioapic chip in its irq_desc[] entry. So, I would think
+this is an urgent bug fix for 39.
 
-Hmm, I see how it can be done differently, but no real bug.
-
-	Joerg
 
 -- 
-AMD Operating System Research Center
+Thanks
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Jacob
+(from Linux laptop)
