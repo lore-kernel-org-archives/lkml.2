@@ -1,364 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab1DKDP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 23:15:56 -0400
-Received: from ns.vscht.cz ([147.33.15.5]:59600 "EHLO ns.vscht.cz"
+	id S1753493Ab1DKD2z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 23:28:55 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56586 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752270Ab1DKDPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 23:15:54 -0400
-Message-ID: <4DA27245.6@vscht.cz>
-Date: Mon, 11 Apr 2011 05:15:17 +0200
-From: =?UTF-8?B?SmnFmcOtIFBpbmthdmE=?= <Jiri.Pinkava@vscht.cz>
-Organization: =?UTF-8?B?VsWgQ0hU?=
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Lanikai/3.1.9
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nand: Fix S3C NAND clock stop
-References: <1302485262-8401-1-git-send-email-jiri.pinkava@vscht.cz> <4DA261DA.2050404@oracle.com>
-In-Reply-To: <4DA261DA.2050404@oracle.com>
-Content-Type: multipart/mixed;
-	boundary="------------040301050000000004070907"
+	id S1752270Ab1DKD2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Apr 2011 23:28:54 -0400
+Date: Mon, 11 Apr 2011 13:28:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: linux-next: manual merge of the trivial tree with the wireless tree
+Message-Id: <20110411132844.fa651c08.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__11_Apr_2011_13_28_44_+1000_PtOqsB98cWLRl+_L"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------040301050000000004070907
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+--Signature=_Mon__11_Apr_2011_13_28_44_+1000_PtOqsB98cWLRl+_L
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Current implementation of s3c2410_nand_select_chip call
-clk_disable every time when chip = -1 (de-select). This happend
-multiple times even if chip was already de-selected. This causes
-disabling clock even if they are already disabled and due to
-nature of clock subsytem implementation this causes nand clock
-to be disabled and newer enabled again.
+Hi Jiri,
 
-Signed-off-by: Jiri Pinkava <jiri.pinkava@vscht.cz>
----
-  drivers/mtd/nand/s3c2410.c |   57 
-+++++++++++++++++++++++++++++++------------
-  1 files changed, 41 insertions(+), 16 deletions(-)
+Today's linux-next merge of the trivial tree got a conflict in
+drivers/net/wireless/ath/ath9k/phy.h between commit a9b6b2569cf1
+("ath9k_hw: turn a few big macros into functions") from the wireless tree
+and commit 6eab04a87677 ("treewide: remove extra semicolons") from the
+trivial tree.
 
-diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
-index 33d832d..fbc37dc 100644
---- a/drivers/mtd/nand/s3c2410.c
-+++ b/drivers/mtd/nand/s3c2410.c
-@@ -54,8 +54,14 @@ static int hardware_ecc = 1;
-  static int hardware_ecc = 0;
-  #endif
+The former commit removed the code that the latter changed, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-+#define CLOCK_DISABLE	0
-+#define CLOCK_ENABLE	1
-+#define CLOCK_SUSPEND	2
-+
-+static int clock_state = CLOCK_DISABLE;
-+
-  #ifdef CONFIG_MTD_NAND_S3C2410_CLKSTOP
--static int clock_stop = 1;
-+static const int clock_stop = 1;
-  #else
-  static const int clock_stop = 0;
-  #endif
-@@ -159,11 +165,33 @@ static struct s3c2410_platform_nand 
-*to_nand_plat(struct platform_device *dev)
-  	return dev->dev.platform_data;
-  }
+--Signature=_Mon__11_Apr_2011_13_28_44_+1000_PtOqsB98cWLRl+_L
+Content-Type: application/pgp-signature
 
--static inline int allow_clk_stop(struct s3c2410_nand_info *info)
-+static inline int allow_clk_suspend(struct s3c2410_nand_info *info)
-  {
-  	return clock_stop;
-  }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-+/**
-+ * s3c2410_nand_clk_set_state - Enable, disable or suspend NAND clock.
-+ * @info: The controller instance.
-+ * @new_state: State to which clock should be set.
-+ */
-+static void s3c2410_nand_clk_set_state(struct s3c2410_nand_info *info,
-+		int new_state)
-+{
-+	if (!allow_clk_suspend(info) && new_state == CLOCK_SUSPEND)
-+		return;
-+
-+	if (clock_state == CLOCK_ENABLE) {
-+		if (new_state != CLOCK_ENABLE)
-+			clk_disable(info->clk);
-+	} else {
-+		if (new_state == CLOCK_ENABLE)
-+			clk_enable(info->clk);
-+	}
-+
-+	clock_state = new_state;
-+}
-+
-  /* timing calculations */
+iQEcBAEBAgAGBQJNonVsAAoJEDMEi1NhKgbsy0oH/2AN/lJsLYU+0/q1BYe6Mjei
+zl3FrT33okrsu/XsdoPhsnNgAnZWQVs4cVd6FALYoBw54EQBrd3bAOr3Mr+EHhdO
+qgvLxGvN2UFrWnGnY6KRFOOaVSuq44zf/N3Tyyzs1YAmxGpxT7iZKj+OqjaUzA0v
+JC8PdiwR5g4EKdl42urYFCBogHuzOJjb5D/TP/oe/ovIsZQxD5f0BFN1a/V8sGP1
+kS+CKl79xAOiunf1uzQDTs0/z51vDHlWPZM9D5puTZeaBRB0ArLBei0ZAqJwdzWQ
+gWkGwfhB9JdxEUz5DMo3h8YLFMH1TG1nh62Scbojx4X/mLn5Uy3s97vqkDlkrJ4=
+=b2BD
+-----END PGP SIGNATURE-----
 
-  #define NS_IN_KHZ 1000000
-@@ -333,8 +361,8 @@ static void s3c2410_nand_select_chip(struct mtd_info 
-*mtd, int chip)
-  	nmtd = this->priv;
-  	info = nmtd->info;
-
--	if (chip != -1 && allow_clk_stop(info))
--		clk_enable(info->clk);
-+	if (chip != -1)
-+		s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
-
-  	cur = readl(info->sel_reg);
-
-@@ -356,8 +384,8 @@ static void s3c2410_nand_select_chip(struct mtd_info 
-*mtd, int chip)
-
-  	writel(cur, info->sel_reg);
-
--	if (chip == -1 && allow_clk_stop(info))
--		clk_disable(info->clk);
-+	if (chip == -1)
-+		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
-  }
-
-  /* s3c2410_nand_hwcontrol
-@@ -694,8 +722,7 @@ static int s3c24xx_nand_remove(struct 
-platform_device *pdev)
-  	/* free the common resources */
-
-  	if (info->clk != NULL && !IS_ERR(info->clk)) {
--		if (!allow_clk_stop(info))
--			clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_DISABLE);
-  		clk_put(info->clk);
-  	}
-
-@@ -947,7 +974,7 @@ static int s3c24xx_nand_probe(struct platform_device 
-*pdev)
-  		goto exit_error;
-  	}
-
--	clk_enable(info->clk);
-+	s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
-
-  	/* allocate and map the resource */
-
-@@ -1026,9 +1053,9 @@ static int s3c24xx_nand_probe(struct 
-platform_device *pdev)
-  		goto exit_error;
-  	}
-
--	if (allow_clk_stop(info)) {
-+	if (allow_clk_suspend(info)) {
-  		dev_info(&pdev->dev, "clock idle support enabled\n");
--		clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
-  	}
-
-  	pr_debug("initialised ok\n");
-@@ -1059,8 +1086,7 @@ static int s3c24xx_nand_suspend(struct 
-platform_device *dev, pm_message_t pm)
-
-  		writel(info->save_sel | info->sel_bit, info->sel_reg);
-
--		if (!allow_clk_stop(info))
--			clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_DISABLE);
-  	}
-
-  	return 0;
-@@ -1072,7 +1098,7 @@ static int s3c24xx_nand_resume(struct 
-platform_device *dev)
-  	unsigned long sel;
-
-  	if (info) {
--		clk_enable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
-  		s3c2410_nand_inithw(info);
-
-  		/* Restore the state of the nFCE line. */
-@@ -1082,8 +1108,7 @@ static int s3c24xx_nand_resume(struct 
-platform_device *dev)
-  		sel |= info->save_sel & info->sel_bit;
-  		writel(sel, info->sel_reg);
-
--		if (allow_clk_stop(info))
--			clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
-  	}
-
-  	return 0;
--- 
-1.7.4.4
-
-
-
---------------040301050000000004070907
-Content-Type: text/x-patch; name="0001-nand-Fix-S3C-NAND-clock-stop.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="0001-nand-Fix-S3C-NAND-clock-stop.patch"
-
->From 4fd7086f28d6452f1edafa903e7becd5a0f017c6 Mon Sep 17 00:00:00 2001
-From: Jiri Pinkava <jiri.pinkava@vscht.cz>
-Date: Mon, 11 Apr 2011 03:20:33 +0200
-Subject: [PATCH] nand: Fix S3C NAND clock stop
-
-Current implementation of s3c2410_nand_select_chip call
-clk_disable every time when chip = -1 (de-select). This happend
-multiple times even if chip was already de-selected. This causes
-disabling clock even if they are already disabled and due to
-nature of clock subsytem implementation this causes nand clock
-to be disabled and newer enabled again.
-
-Signed-off-by: Jiri Pinkava <jiri.pinkava@vscht.cz>
----
- drivers/mtd/nand/s3c2410.c |   57 +++++++++++++++++++++++++++++++------------
- 1 files changed, 41 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
-index 33d832d..fbc37dc 100644
---- a/drivers/mtd/nand/s3c2410.c
-+++ b/drivers/mtd/nand/s3c2410.c
-@@ -54,8 +54,14 @@ static int hardware_ecc = 1;
- static int hardware_ecc = 0;
- #endif
- 
-+#define CLOCK_DISABLE	0
-+#define CLOCK_ENABLE	1
-+#define CLOCK_SUSPEND	2
-+
-+static int clock_state = CLOCK_DISABLE;
-+
- #ifdef CONFIG_MTD_NAND_S3C2410_CLKSTOP
--static int clock_stop = 1;
-+static const int clock_stop = 1;
- #else
- static const int clock_stop = 0;
- #endif
-@@ -159,11 +165,33 @@ static struct s3c2410_platform_nand *to_nand_plat(struct platform_device *dev)
- 	return dev->dev.platform_data;
- }
- 
--static inline int allow_clk_stop(struct s3c2410_nand_info *info)
-+static inline int allow_clk_suspend(struct s3c2410_nand_info *info)
- {
- 	return clock_stop;
- }
- 
-+/**
-+ * s3c2410_nand_clk_set_state - Enable, disable or suspend NAND clock.
-+ * @info: The controller instance.
-+ * @new_state: State to which clock should be set.
-+ */
-+static void s3c2410_nand_clk_set_state(struct s3c2410_nand_info *info,
-+		int new_state)
-+{
-+	if (!allow_clk_suspend(info) && new_state == CLOCK_SUSPEND)
-+		return;
-+
-+	if (clock_state == CLOCK_ENABLE) {
-+		if (new_state != CLOCK_ENABLE)
-+			clk_disable(info->clk);
-+	} else {
-+		if (new_state == CLOCK_ENABLE)
-+			clk_enable(info->clk);
-+	}
-+
-+	clock_state = new_state;
-+}
-+
- /* timing calculations */
- 
- #define NS_IN_KHZ 1000000
-@@ -333,8 +361,8 @@ static void s3c2410_nand_select_chip(struct mtd_info *mtd, int chip)
- 	nmtd = this->priv;
- 	info = nmtd->info;
- 
--	if (chip != -1 && allow_clk_stop(info))
--		clk_enable(info->clk);
-+	if (chip != -1)
-+		s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
- 
- 	cur = readl(info->sel_reg);
- 
-@@ -356,8 +384,8 @@ static void s3c2410_nand_select_chip(struct mtd_info *mtd, int chip)
- 
- 	writel(cur, info->sel_reg);
- 
--	if (chip == -1 && allow_clk_stop(info))
--		clk_disable(info->clk);
-+	if (chip == -1)
-+		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
- }
- 
- /* s3c2410_nand_hwcontrol
-@@ -694,8 +722,7 @@ static int s3c24xx_nand_remove(struct platform_device *pdev)
- 	/* free the common resources */
- 
- 	if (info->clk != NULL && !IS_ERR(info->clk)) {
--		if (!allow_clk_stop(info))
--			clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_DISABLE);
- 		clk_put(info->clk);
- 	}
- 
-@@ -947,7 +974,7 @@ static int s3c24xx_nand_probe(struct platform_device *pdev)
- 		goto exit_error;
- 	}
- 
--	clk_enable(info->clk);
-+	s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
- 
- 	/* allocate and map the resource */
- 
-@@ -1026,9 +1053,9 @@ static int s3c24xx_nand_probe(struct platform_device *pdev)
- 		goto exit_error;
- 	}
- 
--	if (allow_clk_stop(info)) {
-+	if (allow_clk_suspend(info)) {
- 		dev_info(&pdev->dev, "clock idle support enabled\n");
--		clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
- 	}
- 
- 	pr_debug("initialised ok\n");
-@@ -1059,8 +1086,7 @@ static int s3c24xx_nand_suspend(struct platform_device *dev, pm_message_t pm)
- 
- 		writel(info->save_sel | info->sel_bit, info->sel_reg);
- 
--		if (!allow_clk_stop(info))
--			clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_DISABLE);
- 	}
- 
- 	return 0;
-@@ -1072,7 +1098,7 @@ static int s3c24xx_nand_resume(struct platform_device *dev)
- 	unsigned long sel;
- 
- 	if (info) {
--		clk_enable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_ENABLE);
- 		s3c2410_nand_inithw(info);
- 
- 		/* Restore the state of the nFCE line. */
-@@ -1082,8 +1108,7 @@ static int s3c24xx_nand_resume(struct platform_device *dev)
- 		sel |= info->save_sel & info->sel_bit;
- 		writel(sel, info->sel_reg);
- 
--		if (allow_clk_stop(info))
--			clk_disable(info->clk);
-+		s3c2410_nand_clk_set_state(info, CLOCK_SUSPEND);
- 	}
- 
- 	return 0;
--- 
-1.7.4.4
-
-
---------------040301050000000004070907--
+--Signature=_Mon__11_Apr_2011_13_28_44_+1000_PtOqsB98cWLRl+_L--
