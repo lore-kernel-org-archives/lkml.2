@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab1DKKUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 06:20:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43462 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912Ab1DKKUx convert rfc822-to-8bit (ORCPT
+	id S1755097Ab1DKKkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 06:40:20 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:55812 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751856Ab1DKKkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 06:20:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=H0ylrGsDT5hCSB68bdFQnj1HwznaCsb9e2/7VN+lhkBe++8gV6mGoZvSomWGi6eHz8
-         Um1wfYIzirZtQ40i1Nndum/AqWaqfoM4Lic3XiJaU+NziktJHD8TDltzB32n+lQzuX3z
-         aQVQy1p8xlP8UPgPEQExk6IBsGxreNlUzXr7s=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <mnazarewicz@gmail.com>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, "Johannes Weiner" <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-References: <20110408202253.6D6D231C@kernel>
- <BANLkTi=OnDX53nOZcaaMmqXRBcWicam0xg@mail.gmail.com>
- <1302296522.7286.1197.camel@nimitz>
-Date: Mon, 11 Apr 2011 12:20:49 +0200
+	Mon, 11 Apr 2011 06:40:19 -0400
+Message-ID: <4DA2DA6A.6000202@st.com>
+Date: Mon, 11 Apr 2011 16:09:38 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vtrq0zac3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1302296522.7286.1197.camel@nimitz>
-User-Agent: Opera Mail/11.01 (Linux)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        amitgoel <amit.goel@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: dmaengine: Can we schedule new transfer from dma callback	routine??
+References: <4DA2B3D8.6060707@st.com> <20110411085603.GA13041@n2100.arm.linux.org.uk>
+In-Reply-To: <20110411085603.GA13041@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On Apr 8, 2011 10:23 PM, "Dave Hansen" <dave@linux.vnet.ibm.com> wrote:
->>> +       if (fmt) {
->>> +               printk(KERN_WARNING);
->>> +               va_start(args, fmt);
->>> +               r = vprintk(fmt, args);
->>> +               va_end(args);
->>> +       }
+On 04/11/2011 02:26 PM, Russell King - ARM Linux wrote:
+> On Mon, Apr 11, 2011 at 01:25:04PM +0530, viresh kumar wrote:
+>>
+>> Hello,
+>>
+>> In dw_dmac.c driver, dwc_descriptor_complete() routine, following is
+>> mentioned before calling callback:
+>>
+>> 	/*
+>> 	 * The API requires that no submissions are done from a
+>> 	 * callback, so we don't need to drop the lock here
+>> 	 */
+>> 	if (callback)
+>> 		callback(param);
+>>
+>> Does this hold true for dmaengine??
+> 
+> Not for slave devices - see Dan's reply:
+> 
+> http://lists.arm.linux.org.uk/lurker/message/20101223.005313.a38d7bf0.en.html
+> 
+> As the slave API hasn't been well documented, there's a lot of
+> inconsistency of behaviour between DMA engine slave implementations.
+> I'd suggest at least fixing slave DMA engine drivers to ensure that:
+> 
+> (a) the callback is always called in tasklet context
+> (b) the callback can submit new slave transactions (iow, the spinlock
+>     which prep_slave_sg takes must not be held during the callback.)
+> 
+> The way that others solve this is to move the completed txd structures
+> to a local 'completed' list, and then walk this list after the spinlocks
+> have been dropped.
+> 
+> IOW, something like this:
+> 
+> my_tasklet()
+> {
+> 	INIT_LIST_HEAD(completed);
+> 
+> 	spin_lock_irqsave(my_chan->lock);
+> 	for_each_txd(my_txd, my_chan) {
+> 		if (has_completed(my_txd))
+> 			list_add_tail(my_txd->node, &completed);
+> 	}
+> 	spin_unlock_irqrestore(my_chan->lock);
+> 
+> 	list_for_each_entry_safe(my_txd, next, &completed, node) {
+> 		void *callback_param = my_txd->txd.callback_param;
+> 		void (*fn)(void *) = my_txd->txd.callback;
+> 
+> 		my_txd_free(my_chan, my_txd);
+> 
+> 		fn(callback_param);
+> 	}	
+> }
 
-> On Fri, 2011-04-08 at 22:54 +0200, Michał Nazarewicz wrote:
->> Could we make the "printk(KERN_WARNING);" go away and require caller
->> to specify level?
-
-On Fri, 08 Apr 2011 23:02:02 +0200, Dave Hansen wrote:
-> The core problem is this: I want two lines of output: one for the
-> order/mode gunk, and one for the user-specified message.
->
-> If we have the user pass in a string for the printk() level, we're stuck
-> doing what I have here.  If we have them _prepend_ it to the "fmt"
-> string, then it's harder to figure out below.  I guess we could fish in
-> the string for it.
-
-This is a bit unfortunate, but that's what I was worried anyway.  I guess
-creating a macro which automatically prepends format  with KERN_WARNING
-would solve the issue but that's probably not the most elegant solution.
+Got it. Thanx.
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+viresh
