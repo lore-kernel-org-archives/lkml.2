@@ -1,120 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab1DKRfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:35:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30542 "EHLO mga02.intel.com"
+	id S1754768Ab1DKRgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:36:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50047 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab1DKRfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:35:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,340,1299484800"; 
-   d="scan'208";a="731880367"
-Date: Mon, 11 Apr 2011 10:35:36 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, johnstul@us.ibm.com, tglx@linutronix.de,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCHv2 1/2] x86, mrst: share APB timer code with other
- platforms
-Message-ID: <20110411103536.218c59ec@jacob-laptop>
-In-Reply-To: <20110408225530.GJ2933@pulham.picochip.com>
-References: <1302273218-7263-1-git-send-email-jamie@jamieiles.com>
-	<1302273218-7263-2-git-send-email-jamie@jamieiles.com>
-	<20110408150303.67ac8d80@jacob-laptop>
-	<20110408225530.GJ2933@pulham.picochip.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754632Ab1DKRf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 13:35:59 -0400
+Date: Mon, 11 Apr 2011 14:35:36 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, tzanussi@gmail.com, efault@gmx.de,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf evsel: Fix inverted test for fixing up
+	attr.inherit flag
+Message-ID: <20110411173536.GA29895@ghostprotocols.net>
+References: <new-submission> <tip-e603dc15072c7fec0ae263597e6dabc3bb4c5c5b@git.kernel.org> <1302357942.9086.1281.camel@twins>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="AqsLC8rIMeq19msA"
+Content-Disposition: inline
+In-Reply-To: <1302357942.9086.1281.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Apr 2011 23:55:30 +0100
-Jamie Iles <jamie@jamieiles.com> wrote:
 
-> Hi Jacob,
-> 
-> On Fri, Apr 08, 2011 at 03:03:03PM -0700, jacob pan wrote:
-> > On Fri,  8 Apr 2011 15:33:37 +0100
-> > Jamie Iles <jamie@jamieiles.com> wrote:
-> > 
-> > > The APB timers are an IP block from Synopsys (DesignWare APB
-> > > timers) and are also found in other systems including ARM SoC's.
-> > > This patch adds functions for creating clock_event_devices and
-> > > clocksources from APB timers but does not do the resource
-> > > allocation.  This is handled in a higher layer to allow the
-> > > timers to be created from multiple methods such as
-> > > platform_devices.
-> > > 
-> > > Changes since v1:
-> > > 	- Use the correct timer for clocksource on x86
-> > > 	- Select the correct timer rating for x86
-> > > 	- Restore freerunning timer behaviour for oneshot event
-> > > devices
-> > > 	- Reenable event irq correctly for hotplug
-> > > 
-> > > Cc: John Stultz <johnstul@us.ibm.com>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: Ingo Molnar <mingo@redhat.com>
-> > > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > > Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> > > ---
-> > >  arch/x86/Kconfig                   |    1 +
-> > >  arch/x86/include/asm/apb_timer.h   |   22 +--
-> > >  arch/x86/kernel/apb_timer.c        |  421
-> > > ++++++------------------------------
-> > > drivers/Kconfig                    |    2 +
-> > > drivers/clocksource/Kconfig        |    6 +
-> > > drivers/clocksource/Makefile       |    1 +
-> > > drivers/clocksource/dw_apb_timer.c |  322
-> > > +++++++++++++++++++++++++++ include/linux/dw_apb_timer.h       |
-> > > 129 +++++++++++ 8 files changed, 535 insertions(+), 369
-> > > deletions(-) create mode 100644 drivers/clocksource/Kconfig
-> > > create mode 100644 drivers/clocksource/dw_apb_timer.c create mode
-> > > 100644 include/linux/dw_apb_timer.h
-> > > 
-> > 
-> > > +static void apbt_eoi(struct dw_apb_timer *timer)
-> > > +{
-> > > +	apbt_readl(timer, APBTMR_N_EOI);
-> > > +}
-> > > +
-> > > +static irqreturn_t dw_apb_clockevent_irq(int irq, void *data)
-> > > +{
-> > > +	struct clock_event_device *evt = data;
-> > > +	struct dw_apb_clock_event_device *dw_ced =
-> > > ced_to_dw_apb_ced(evt); +
-> > > +	if (!evt->event_handler) {
-> > > +		pr_info("Spurious APBT timer interrupt %d", irq);
-> > > +		return IRQ_NONE;
-> > > +	}
-> > > +
-> > > +	dw_ced->eoi(&dw_ced->timer);
-> > I know I proposed this to deal with the fact that X86_MRST does not
-> > need eoi. I was hoping gcc to generate nops but it doesn't,
-> > especially with FRAME_POINTER turned on in our build.
-> >
-> > Since this is in the performance critical path and across ARM and
-> > X86 architectures, can we use #define to skip eoi() for
-> > CONFIG_X86_MRST?
-> 
-> How about testing if dw_apb_timer::eoi is defined first before
-> calling and not defining it for x86?  It's not zero overhead but it's
-> less than what there is now.  The call would still be there for ARM
-> but I don't have a good feel for how much this overhead is in
-> relation to the rest of the IRQ and clock events handling.  I would
-> guess that it isn't too significant.
-sounds good to me, I agree the check costs less than a function call. My
-original concern for check was that since they are in timer interrupt
-so the branch prediction may not work well (no history). But a failed
-branch prediction should not cost too much for either ATOM or ARM since
-both should have shorter pipeline. It would cost a lot more on P4 :).
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+Em Sat, Apr 09, 2011 at 04:05:42PM +0200, Peter Zijlstra escreveu:
+> On Tue, 2011-02-22 at 09:10 +0000, tip-bot for Arnaldo Carvalho de Melo
+> wrote:
+> > Commit-ID:  e603dc15072c7fec0ae263597e6dabc3bb4c5c5b
+> > Gitweb:     http://git.kernel.org/tip/e603dc15072c7fec0ae263597e6dabc3bb4c5c5b
+> > Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+> > AuthorDate: Mon, 21 Feb 2011 16:05:50 -0300
+> > Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+> > CommitDate: Mon, 21 Feb 2011 22:27:59 -0300
+> > 
+> > perf evsel: Fix inverted test for fixing up attr.inherit flag
+> > 
+> > The kernel refuses mmapping an event with the inherit flag set for
+> > something that is systemwide (cpu == -1), and the evsel layer got this
+> > reversed at some point, fix it.
+> > 
+> > +		 * Proper fix is not to pass 'inherit' to perf_evsel__open*,
+> > +		 * but a 'flags' parameter, with 'group' folded there as well,
+> > +		 * then introduce a PERF_O_{MMAP,GROUP,INHERIT} enum, and if
+> > +		 * O_MMAP is set, emit a warning if cpu < 0 and O_INHERIT is
+> > +		 * set. Lets go for the minimal fix first tho.
+> > +		 */
+> > +		evsel->attr.inherit = (cpus->map[cpu] >= 0) && inherit;
+ 
+> This wrecked perf-stat, perf-stat doesn't mmap and its perfectly fine
+> for it to use task-bound counters with inheritance.
+
+Can you check if the patch below fixes this? An acked-by or tested-by
+tag would be mucho appreciated.
+
+- Arnaldo
+
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-perf-evsel-Fix-use-of-inherit-in-non-mmap-case.patch"
+
+>From 6bb91a9b3ca76ad0311d72989655a2b31ef2ef4b Mon Sep 17 00:00:00 2001
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Mon, 11 Apr 2011 09:33:59 -0300
+Subject: [PATCH 1/1] perf evsel: Fix use of inherit in non mmap case
+
+perf stat doesn't mmap and its perfectly fine for it to use task-bound
+counters with inheritance.
+
+So don't do any change in the perf_evsel__open parameters, leaving the
+syscall itself to validate this.
+
+When the mmap fails perf_evlist__mmap will just emit a warning if this
+is the failure reason.
+
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Link: http://lkml.kernel.org/n/tip-zkjs8vstfnq9yq9r2jkh8kz0@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |    3 +++
+ tools/perf/util/evlist.c    |   14 ++++++++++----
+ tools/perf/util/evsel.c     |   15 ++-------------
+ 3 files changed, 15 insertions(+), 17 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 17d1dcb..426f4f4 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -251,6 +251,9 @@ static void open_counters(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *pos;
+ 
++	if (evlist->cpus->map[0] < 0)
++		no_inherit = true;
++
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &pos->attr;
+ 		/*
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index d852cef..45da8d1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -12,6 +12,7 @@
+ #include "evlist.h"
+ #include "evsel.h"
+ #include "util.h"
++#include "debug.h"
+ 
+ #include <sys/mman.h>
+ 
+@@ -250,15 +251,19 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+ 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+ }
+ 
+-static int __perf_evlist__mmap(struct perf_evlist *evlist, int cpu, int prot,
+-			       int mask, int fd)
++static int __perf_evlist__mmap(struct perf_evlist *evlist, struct perf_evsel *evsel,
++			       int cpu, int prot, int mask, int fd)
+ {
+ 	evlist->mmap[cpu].prev = 0;
+ 	evlist->mmap[cpu].mask = mask;
+ 	evlist->mmap[cpu].base = mmap(NULL, evlist->mmap_len, prot,
+ 				      MAP_SHARED, fd, 0);
+-	if (evlist->mmap[cpu].base == MAP_FAILED)
++	if (evlist->mmap[cpu].base == MAP_FAILED) {
++		if (evlist->cpus->map[cpu] == -1 && evsel->attr.inherit)
++			ui__warning("Inherit is not allowed on per-task "
++				    "events using mmap.\n");
+ 		return -1;
++	}
+ 
+ 	perf_evlist__add_pollfd(evlist, fd);
+ 	return 0;
+@@ -312,7 +317,8 @@ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite)
+ 					if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT,
+ 						  FD(first_evsel, cpu, 0)) != 0)
+ 						goto out_unmap;
+-				} else if (__perf_evlist__mmap(evlist, cpu, prot, mask, fd) < 0)
++				} else if (__perf_evlist__mmap(evlist, evsel, cpu,
++							       prot, mask, fd) < 0)
+ 					goto out_unmap;
+ 
+ 				if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 662596a..0feffc9 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -190,21 +190,10 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 		pid = evsel->cgrp->fd;
+ 	}
+ 
++	evsel->attr.inherit = inherit;
++
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 		int group_fd = -1;
+-		/*
+-		 * Don't allow mmap() of inherited per-task counters. This
+-		 * would create a performance issue due to all children writing
+-		 * to the same buffer.
+-		 *
+-		 * FIXME:
+-		 * Proper fix is not to pass 'inherit' to perf_evsel__open*,
+-		 * but a 'flags' parameter, with 'group' folded there as well,
+-		 * then introduce a PERF_O_{MMAP,GROUP,INHERIT} enum, and if
+-		 * O_MMAP is set, emit a warning if cpu < 0 and O_INHERIT is
+-		 * set. Lets go for the minimal fix first tho.
+-		 */
+-		evsel->attr.inherit = (cpus->map[cpu] >= 0) && inherit;
+ 
+ 		for (thread = 0; thread < threads->nr; thread++) {
+ 
 -- 
-Thanks
+1.6.2.5
 
-Jacob
-(from Linux laptop)
+
+--AqsLC8rIMeq19msA--
