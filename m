@@ -1,223 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab1DKEb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 00:31:58 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50903
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750721Ab1DKEby (ORCPT
+	id S1752397Ab1DKEuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 00:50:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46844 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969Ab1DKEue convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 00:31:54 -0400
-Date: Sun, 10 Apr 2011 21:31:17 -0700 (PDT)
-Message-Id: <20110410.213117.35049775.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 11 Apr 2011 00:50:34 -0400
+Date: Mon, 11 Apr 2011 14:50:22 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>, dm-devel@redhat.com,
+        linux-raid@vger.kernel.org
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110411145022.710c30e9@notabene.brown>
+In-Reply-To: <20110405130541.6c2b5f86@notabene.brown>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
+	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
+	<20110303221353.GA10366@redhat.com>
+	<4D761E0D.8050200@fusionio.com>
+	<20110308202100.GA31744@redhat.com>
+	<4D76912C.9040705@fusionio.com>
+	<20110308220526.GA393@redhat.com>
+	<20110310005810.GA17911@redhat.com>
+	<20110405130541.6c2b5f86@notabene.brown>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 5 Apr 2011 13:05:41 +1000 NeilBrown <neilb@suse.de> wrote:
 
-There is going to be a merge conflict to resolve, due to the tree
-wide spelling fixes that went in last week, but it's trivial to
-resolve.
+> On Wed, 9 Mar 2011 19:58:10 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
+> 
+> > Also, in your MD changes, you removed all calls to md_unplug() but
+> > didn't remove md_unplug().  Seems it should be removed along with the
+> > 'plug' member of 'struct mddev_t'?  Neil?
+> 
+> I've been distracted by other things and only just managed to have a look at
+> this.
+> 
+> The new plugging code seems to completely ignore the needs of stacked devices
+> - or at least my needs in md.
+> 
+> For RAID1 with a write-intent-bitmap, I queue all write requests and then on
+> an unplug I update the write-intent-bitmap to mark all the relevant blocks
+> and then release the writes.
+> 
+> With the new code there is no way for an unplug event to wake up the raid1d
+> thread to start the writeout - I haven't tested it but I suspect it will just
+> hang.
+> 
+> Similarly for RAID5 I gather write bios (long before they become 'struct
+> request' which is what the plugging code understands) and on an unplug event
+> I release the writes - hopefully with enough bios per stripe so that we don't
+> need to pre-read.
+> 
+> Possibly the simplest fix would be to have a second list_head in 'struct
+> blk_plug' which contained callbacks (a function pointer a list_head in a
+> struct which is passed as an arg to the function!).
+> blk_finish_plug could then walk the list and call the call-backs.
+> It would be quite easy to hook into that.
 
-1) ipset bug fixes from Jozsef Kadlecsik.
+I've implemented this and it seems to work.
+Jens:  could you please review and hopefully ack the patch below, and let
+me know if you will submit it or should I?
 
-2) Fix regression in rt_iif management in ipv4 routes, reported
-   and fixed by OGAWA Hirofumi.
+My testing of this combined with some other patches which cause various md
+personalities to use it shows up a bug somewhere.
 
-3) Link sensing and RX ring buffer corruption fixes in mlx4 driver,
-   from Yevgeny Petrilin.
+The symptoms are crashes in various places in blk-core and sometimes
+elevator.c
+list_sort occurs fairly often included in the stack but not always.
 
-4) Add some IDs to smsc95xx driver, from Steve Glendinning.
+This patch
 
-5) Add some IDs to mv88e6131 driver, from Peter Korsgaard.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 273d60b..903ce8d 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2674,19 +2674,23 @@ static void flush_plug_list(struct blk_plug *plug)
+ 	struct request_queue *q;
+ 	unsigned long flags;
+ 	struct request *rq;
++	struct list_head head;
+ 
+ 	BUG_ON(plug->magic != PLUG_MAGIC);
+ 
+ 	if (list_empty(&plug->list))
+ 		return;
++	list_add(&head, &plug->list);
++	list_del_init(&plug->list);
+ 
+ 	if (plug->should_sort)
+-		list_sort(NULL, &plug->list, plug_rq_cmp);
++		list_sort(NULL, &head, plug_rq_cmp);
++	plug->should_sort = 0;
+ 
+ 	q = NULL;
+ 	local_irq_save(flags);
+-	while (!list_empty(&plug->list)) {
+-		rq = list_entry_rq(plug->list.next);
++	while (!list_empty(&head)) {
++		rq = list_entry_rq(head.next);
+ 		list_del_init(&rq->queuelist);
+ 		BUG_ON(!(rq->cmd_flags & REQ_ON_PLUG));
+ 		BUG_ON(!rq->q);
 
-6) Fix dead loop in pppoe driver, from Ulrich Weber.
 
-7) Fix suspend/resume in be2net driver, from Padmanabh Ratnakar and
-   Sarveswara Rao Mygapula.
+makes the symptom go away.  It simply moves the plug list onto a separate
+list head before sorting and processing it.
+My test was simply writing to a RAID1 with dd:
+  while true; do dd if=/dev/zero of=/dev/md0 size=4k; done
 
-8) B43 wireless doesn't allocate large enough RX buffers, from John
-   W. Linville.
+Obviously all writes go to two devices so the plug list will always need
+sorting.
 
-9) Array missing entry for 9485 revisions in ath9k driver, fix from
-   Senthil Balasubramanian.
+The only explanation I can come up with is that very occasionally schedule on
+2 separate cpus calls blk_flush_plug for the same task.  I don't understand
+the scheduler nearly well enough to know if or how that can happen.
+However with this patch in place I can write to a RAID1 constantly for half
+an hour, and without it, the write rarely lasts for 3 minutes.
 
-10) Fix duplicate wireless frames on cooked monitor, from Helmut
-    Schaa.
+If you want to reproduce my experiment, you can pull from
+  git://neil.brown.name/md plug-test
+to get my patches for plugging in md (which are quite ready for submission
+but seem to work), create a RAID1 using e.g.
+   mdadm -C /dev/md0 --level=1 --raid-disks=2 /dev/device1 /dev/device2
+   while true; do dd if=/dev/zero of=/dev/md0 bs=4K ; done
 
-11) Validate NVS file struct descriptor length given by the user,
-    fix from Luciano Coelho.
 
-12) Add IDs to p54usb driver, from Christian Lamparter.
+Thanks,
+NeilBrown
 
-13) Don't try to cancel work that never was created in rt2x00 driver,
-    from Stanislaw Gruszka.
 
-14) Fix mac_lock handling in smsc911x driver, from Enric Balletbo i Serra.
 
-15) Handle firmware heartbeat failure properly in bnx driver, from
-    Rasesh Mody and Debashis Dutt.
+>From 687b189c02276887dd7d5b87a817da9f67ed3c2c Mon Sep 17 00:00:00 2001
+From: NeilBrown <neilb@suse.de>
+Date: Thu, 7 Apr 2011 13:16:59 +1000
+Subject: [PATCH] Enhance new plugging support to support general callbacks.
 
-16) Fix shutdown crash in be2net driver, from Ajit Khaparde.
+md/raid requires an unplug callback, but as it does not uses
+requests the current code cannot provide one.
 
-17) Missed setting rxhash of socket in ipv6 code, from Neil Horman.
+So allow arbitrary callbacks to be attached to the blk_plug.
 
-Please pull, thanks a lot!
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+---
+ block/blk-core.c       |   13 +++++++++++++
+ include/linux/blkdev.h |    7 ++++++-
+ 2 files changed, 19 insertions(+), 1 deletions(-)
 
-The following changes since commit 4263a2f1dad8c8e7ce2352a0cbc882c2b0c044a9:
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 725091d..273d60b 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2644,6 +2644,7 @@ void blk_start_plug(struct blk_plug *plug)
+ 
+ 	plug->magic = PLUG_MAGIC;
+ 	INIT_LIST_HEAD(&plug->list);
++	INIT_LIST_HEAD(&plug->cb_list);
+ 	plug->should_sort = 0;
+ 
+ 	/*
+@@ -2717,9 +2718,21 @@ static void flush_plug_list(struct blk_plug *plug)
+ 	local_irq_restore(flags);
+ }
+ 
++static void flush_plug_callbacks(struct blk_plug *plug)
++{
++	while (!list_empty(&plug->cb_list)) {
++		struct blk_plug_cb *cb = list_first_entry(&plug->cb_list,
++							  struct blk_plug_cb,
++							  list);
++		list_del(&cb->list);
++		cb->callback(cb);
++	}
++}
++
+ static void __blk_finish_plug(struct task_struct *tsk, struct blk_plug *plug)
+ {
+ 	flush_plug_list(plug);
++	flush_plug_callbacks(plug);
+ 
+ 	if (plug == tsk->plug)
+ 		tsk->plug = NULL;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 32176cc..3e5e604 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -857,8 +857,13 @@ extern void blk_put_queue(struct request_queue *);
+ struct blk_plug {
+ 	unsigned long magic;
+ 	struct list_head list;
++	struct list_head cb_list;
+ 	unsigned int should_sort;
+ };
++struct blk_plug_cb {
++	struct list_head list;
++	void (*callback)(struct blk_plug_cb *);
++};
+ 
+ extern void blk_start_plug(struct blk_plug *);
+ extern void blk_finish_plug(struct blk_plug *);
+@@ -876,7 +881,7 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
+ {
+ 	struct blk_plug *plug = tsk->plug;
+ 
+-	return plug && !list_empty(&plug->list);
++	return plug && (!list_empty(&plug->list) || !list_empty(&plug->cb_list));
+ }
+ 
+ /*
+-- 
+1.7.3.4
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-04-10 09:56:10 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Ajit Khaparde (1):
-      be2net: Fix a potential crash during shutdown.
-
-Christian Lamparter (1):
-      p54usb: IDs for two new devices
-
-David S. Miller (2):
-      Merge branch 'master' of git://git.kernel.org/.../kaber/nf-2.6
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-
-David Sterba (1):
-      netfilter: h323: bug in parsing of ASN1 SEQOF field
-
-Enric Balletbo i Serra (2):
-      smsc911x: fix mac_lock acquision before calling smsc911x_mac_read
-      can: mcp251x: Allow pass IRQ flags through platform data.
-
-Florian Westphal (4):
-      netfilter: af_info: add network namespace parameter to route hook
-      netfilter: af_info: add 'strict' parameter to limit lookup to .oif
-      netfilter: xt_addrtype: replace rt6_lookup with nf_afinfo->route
-      netfilter: xt_conntrack: fix inverted conntrack direction test
-
-Hans Schillstrom (1):
-      IPVS: fix NULL ptr dereference in ip_vs_ctl.c ip_vs_genl_dump_daemons()
-
-Helmut Schaa (1):
-      mac80211: Fix duplicate frames on cooked monitor
-
-Ian Campbell (1):
-      MAINTAINERS: add entry for Xen network backend
-
-Johannes Berg (1):
-      mac80211: fix comment regarding aggregation buf_size
-
-John W. Linville (2):
-      b43: allocate receive buffers big enough for max frame len + offset
-      iwlwifi: accept EEPROM version 0x423 for iwl6000
-
-Jozsef Kadlecsik (2):
-      netfilter: ipset: list:set timeout variant fixes
-      netfilter: ipset: references are protected by rwlock instead of mutex
-
-Jussi Kivilinna (2):
-      zd1211rw: remove URB_SHORT_NOT_OK flag in zd_usb_iowrite16v_async()
-      zd1211rw: reset rx idle timer from tasklet
-
-Larry Finger (1):
-      rtlwifi: Fix some warnings/bugs
-
-Luciano Coelho (2):
-      wl12xx: fix module author's email address in the spi and sdio modules
-      wl12xx: fix potential buffer overflow in testmode nvs push
-
-Neil Horman (1):
-      ipv6: Enable RFS sk_rxhash tracking for ipv6 sockets (v2)
-
-OGAWA Hirofumi (1):
-      ipv4: Fix "Set rt->rt_iif more sanely on output routes."
-
-Padmanabh Ratnakar (2):
-      be2net: Rename some struct members for clarity
-      be2net: Fix suspend/resume operation
-
-Peter Korsgaard (1):
-      dsa/mv88e6131: add support for mv88e6085 switch
-
-Rasesh Mody (1):
-      bna: Fix for handling firmware heartbeat failure
-
-Senthil Balasubramanian (1):
-      ath9k: Fix phy info print message with AR9485 chipset.
-
-Stanislaw Gruszka (1):
-      rt2x00: fix cancelling uninitialized work
-
-Steve Glendinning (1):
-      net: Add support for SMSC LAN9530, LAN9730 and LAN89530
-
-Ulrich Weber (1):
-      pppoe: drop PPPOX_ZOMBIEs in pppoe_flush_dev
-
-Yevgeny Petrilin (2):
-      mlx4: Sensing link type at device initialization
-      mlx4_en: Restoring RX buffer pointer in case of failure
-
- MAINTAINERS                                       |    7 ++
- drivers/net/benet/be.h                            |    4 +-
- drivers/net/benet/be_main.c                       |   19 ++--
- drivers/net/bna/bfa_ioc.c                         |   10 +--
- drivers/net/can/mcp251x.c                         |    3 +-
- drivers/net/mlx4/en_rx.c                          |    4 +
- drivers/net/mlx4/main.c                           |    5 +
- drivers/net/mlx4/mlx4.h                           |    2 +
- drivers/net/mlx4/sense.c                          |    4 +-
- drivers/net/pppoe.c                               |    2 +-
- drivers/net/smsc911x.c                            |    8 +-
- drivers/net/usb/smsc95xx.c                        |   15 +++
- drivers/net/wireless/ath/ath9k/hw.c               |    1 +
- drivers/net/wireless/b43/dma.c                    |    2 +-
- drivers/net/wireless/b43/dma.h                    |    2 +-
- drivers/net/wireless/iwlwifi/iwl-eeprom.h         |    2 +-
- drivers/net/wireless/p54/p54usb.c                 |    2 +
- drivers/net/wireless/rt2x00/rt2x00dev.c           |    6 +-
- drivers/net/wireless/rtlwifi/efuse.c              |    2 +-
- drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c |    2 +-
- drivers/net/wireless/rtlwifi/usb.c                |    2 +-
- drivers/net/wireless/wl12xx/sdio.c                |    2 +-
- drivers/net/wireless/wl12xx/spi.c                 |    2 +-
- drivers/net/wireless/wl12xx/testmode.c            |    5 +-
- drivers/net/wireless/zd1211rw/zd_usb.c            |   20 ++++-
- drivers/net/wireless/zd1211rw/zd_usb.h            |    1 +
- include/linux/can/platform/mcp251x.h              |    2 +
- include/linux/netfilter.h                         |    3 +-
- include/linux/netfilter/ipset/ip_set.h            |    2 +-
- include/linux/netfilter/ipset/ip_set_ahash.h      |    3 +-
- include/net/ip_vs.h                               |    2 +-
- include/net/mac80211.h                            |   15 +++-
- include/net/route.h                               |    5 +-
- net/dsa/mv88e6131.c                               |   23 ++++-
- net/dsa/mv88e6xxx.h                               |    2 +
- net/ipv4/netfilter.c                              |    5 +-
- net/ipv4/route.c                                  |    8 +-
- net/ipv4/xfrm4_policy.c                           |    1 +
- net/ipv6/netfilter.c                              |   13 ++-
- net/ipv6/tcp_ipv6.c                               |    4 +-
- net/ipv6/udp.c                                    |    3 +
- net/mac80211/rx.c                                 |    2 +-
- net/netfilter/Kconfig                             |    1 -
- net/netfilter/ipset/ip_set_bitmap_ip.c            |    3 +-
- net/netfilter/ipset/ip_set_bitmap_ipmac.c         |    3 +-
- net/netfilter/ipset/ip_set_bitmap_port.c          |    3 +-
- net/netfilter/ipset/ip_set_core.c                 |  109 +++++++++++++--------
- net/netfilter/ipset/ip_set_list_set.c             |   53 +++++------
- net/netfilter/ipvs/ip_vs_ctl.c                    |    2 +-
- net/netfilter/nf_conntrack_h323_asn1.c            |    2 +-
- net/netfilter/nf_conntrack_h323_main.c            |   16 ++--
- net/netfilter/xt_TCPMSS.c                         |    2 +-
- net/netfilter/xt_addrtype.c                       |   42 ++++++---
- net/netfilter/xt_conntrack.c                      |    2 +-
- 54 files changed, 301 insertions(+), 164 deletions(-)
