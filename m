@@ -1,128 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab1DKRYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 13:24:13 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37512 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab1DKRYL convert rfc822-to-8bit (ORCPT
+	id S1754625Ab1DKRYc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 13:24:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46950 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab1DKRYa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 13:24:11 -0400
+	Mon, 11 Apr 2011 13:24:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=OF6C3LiJZLD1rSLYiF7mbN1PsO7802j+G8LdL21P74Tz74RWU6lcx5pehJeUdz+9Al
-         WCK1kowehVLvkJumIjItVx7HkAJRgYaomytVA8L7e/kKB5dNp0mc1bsD5d5wVkwPzEUE
-         B/I1HM//Z9zFxl/5aSXMukvHwJwuzbfCWp6Wk=
+        b=LTTs09HJguUIE+lNI15H/uGZtAy5zQ3ZQpkABXvuilElD4VQMEdgF6zqm9wnF9kFu6
+         N6HC0VmozE00HNzwHL/FmJnmh/98wFUBzCyKbOByVlpxrxDpDgfSVLUTXue31yh1Vw48
+         clkeNHBTPbF+eLUxLUgfbLp+FO/STKcmt6swg=
 MIME-Version: 1.0
-In-Reply-To: <op.vtr9glg23ri7v4@arend-laptop>
-References: <1302291900-1902-1-git-send-email-zajec5@gmail.com>
-	<op.vtr9glg23ri7v4@arend-laptop>
-Date: Mon, 11 Apr 2011 19:24:09 +0200
-Message-ID: <BANLkTimG7JOCCe2ozJkKOdtPfZka5jZSNQ@mail.gmail.com>
-Subject: Re: [RFC][WAS:bcmai][PATCH V2] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <Pine.LNX.4.44L0.1104111217560.1975-100000@iolanthe.rowland.org>
+References: <BANLkTin3Qg1dHqAVXfZR1g_AK2JuSKLmdg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1104111217560.1975-100000@iolanthe.rowland.org>
+Date: Mon, 11 Apr 2011 19:24:27 +0200
+Message-ID: <BANLkTinfr5_9hw=296TXPu6_HZ=QEOVcig@mail.gmail.com>
+Subject: Re: Endless print of uhci_result_common: failed with status 440000
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-bluetooth@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/11 Arend van Spriel <arend@broadcom.com>:
-> On Fri, 08 Apr 2011 21:45:00 +0200, Rafa≈Ç Mi≈Çecki <zajec5@gmail.com> wrote:
+2011/4/11 Alan Stern <stern@rowland.harvard.edu>:
+> On Mon, 11 Apr 2011, Zdenek Kabelac wrote:
 >
->> Cc: Michael B√ºsch <mb@bu3sch.de>
->> Cc: Larry Finger <Larry.Finger@lwfinger.net>
->> Cc: George Kashperko <george@znau.edu.ua>
->> Cc: Arend van Spriel <arend@broadcom.com>
->> Cc: linux-arm-kernel@lists.infradead.org
->> <linux-arm-kernel@lists.infradead.org>
->> Cc: Russell King <rmk@arm.linux.org.uk>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: linuxdriverproject <devel@linuxdriverproject.org>
->> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
->> Signed-off-by: Rafa≈Ç Mi≈Çecki <zajec5@gmail.com>
->> ---
->> This is second try for introducing new bus driver.
->> V2: Rename to axi
->> ¬† ¬†Use DEFINE_PCI_DEVICE_TABLE in bridge
->> ¬† ¬†Make use of pr_fmt and pr_*
->> ¬† ¬†Store core class
->> ¬† ¬†Rename bridge to not b43 specific
->> ¬† ¬†Replace magic 0x1000 with BCMAI_CORE_SIZE
->> ¬† ¬†Remove some old "ssb" names and defines
->> ¬† ¬†Move BCMAI_ADDR_BASE def
->> ¬† ¬†Add drvdata field
->> TODO:
->> - Interrupts
->> - Reloading driver
->> ---
->> ¬†drivers/Kconfig ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† | ¬† ¬†2 +
->> ¬†drivers/Makefile ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†| ¬† ¬†1 +
->> ¬†include/linux/mod_devicetable.h ¬† ¬† ¬† ¬† ¬† | ¬† 17 ++
->> ¬†scripts/mod/file2alias.c ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†| ¬† 21 ++
+>> Ok - add some more memory debug:
+>>
+>> [ † 13.347268] usb 1-1: USB disconnect, device number 3
+>> [ † 13.348113] btusb_bulk_complete: hci0 urb ffff8801367f6528 failed
+>> to resubmit (19)
+>> [ † 13.349111] btusb_intr_complete: hci0 urb ffff8801367f6840 failed
+>> to resubmit (19)
+>> [ † 13.349143] btusb_bulk_complete: hci0 urb ffff8801367fa630 failed
+>> to resubmit (19)
+>> [ † 13.409856] general protection fault: 0000 [#1] PREEMPT SMP
+>> [ † 13.413340] last sysfs file:
+>> /sys/devices/pci0000:00/0000:00:19.0/net/eth0/uevent
+>> [ † 13.413340] CPU 0
+>> [ † 13.413340] Modules linked in: ipt_REJECT xt_physdev xt_state
+>> iptable_filter ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4
+>> nf_conntrack nf_defrag_ipv4 ip_tables x_tables dm_mirror
+>> dm_region_hash dm_log dm_mod snd_hda_codec_analog btusb bluetooth
+>> virtio_net kvm_intel kvm arc4 ecb crypto_blkcipher cryptomgr aead
+>> crypto_algapi iwl3945 iwl_legacy snd_hda_intel snd_hda_codec usbhid
+>> snd_seq snd_seq_device mac80211 hid iTCO_wdt iTCO_vendor_support
+>> snd_pcm psmouse i2c_i801 serio_raw cfg80211 thinkpad_acpi snd_timer
+>> snd e1000e soundcore snd_page_alloc nvram wmi evdev i915
+>> drm_kms_helper drm i2c_algo_bit i2c_core uinput autofs4 pcmcia
+>> uhci_hcd ehci_hcd sdhci_pci sdhci sr_mod mmc_core yenta_socket cdrom
+>> usbcore video backlight [last unloaded: scsi_wait_scan]
+>> [ † 13.413340]
+>> [ † 13.413340] Pid: 815, comm: bluetoothd Not tainted
+>> 2.6.39-rc2-00144-gca71856 #121 LENOVO 6464CTO/6464CTO
+>> [ † 13.413340] RIP: 0010:[<ffffffff8109ae43>] †[<ffffffff8109ae43>]
+>> module_put+0x33/0x1b0
+>> [ † 13.413340] RSP: 0018:ffff8801389e1d68 †EFLAGS: 00010296
+>> [ † 13.413340] RAX: ffffffffa04a32a6 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000000
+>> [ † 13.413340] RDX: 0000000000000000 RSI: ffffffffa04a32a6 RDI: ffffffff8109ae43
+>> [ † 13.413340] RBP: ffff8801389e1d98 R08: 0000000000000000 R09: 0000000000000000
+>> [ † 13.413340] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88013b028590
+>> [ † 13.413340] R13: 00000000ffffffed R14: ffff8801390ac7b0 R15: 000000000000000a
+>> [ † 13.413340] FS: †00007fe99d67d720(0000) GS:ffff88013ba00000(0000)
+>> knlGS:0000000000000000
+>> [ † 13.413340] CS: †0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [ † 13.413340] CR2: 00007fe99d4902b0 CR3: 0000000134dea000 CR4: 00000000000006f0
+>> [ † 13.413340] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [ † 13.413340] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [ † 13.413340] Process bluetoothd (pid: 815, threadinfo
+>> ffff8801389e0000, task ffff8801387d23a0)
+>> [ † 13.413340] Stack:
+>> [ † 13.413340] †ffff88013b028000 ffff88013b028000 ffff88013b028590
+>> 00000000ffffffed
+>> [ † 13.413340] †ffff8801390ac7b0 000000000000000a ffff8801389e1de8
+>> ffffffffa04a32a6
+>> [ † 13.413340] †ffff8801389e1db8 ffffffff8124f11a ffff8801389e1dd8
+>> 00000000400448c9
+>> [ † 13.413340] Call Trace:
+>> [ † 13.413340] †[<ffffffffa04a32a6>] hci_dev_open+0x96/0x3f0 [bluetooth]
+>> [ † 13.413340] †[<ffffffff8124f11a>] ? security_capable+0x2a/0x30
+>> [ † 13.413340] †[<ffffffffa04b0172>] hci_sock_ioctl+0x1e2/0x4b0 [bluetooth]
 >
-> Hi Rafa≈Ç,
+>> So - it looks like disabling BT in runtime is not enough †to avoid problems ;)
+>>
+>> So I've blacklisted †bluetooth & btusb - †and made quite several
+>> suspend/resume cycles †-
+>> and without †a single problem.
+>>
+>> So I'll keep an eye on this - but so far complete deactivation of BT
+>> either in BIOS or modules blacklisting solves the problem of weird
+>> USB deadlocking.
 >
-> I tried to apply this patch, but it failed as well. I did the 4 files
-> above manually and applied partial patch for the new files.
->
-> When I load the module it seems to have succeeded once, but every insmod
-> attempt I do now fails with following trace:
->
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.249239] axi-pci-bridge
-> 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.249312] Core 0 found:
-> ChipCommon (manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.249339] Core 1 found: IEEE
-> 802.11 (manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.249400] Core 2 found: PCIe
-> (manuf 0x4BF, id 0x820, rev 0x0F, class 0x0)
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.279913] Modules linked in:
-> axi(+) binfmt_misc nouveau ttm drm_kms_helper drm i2c_algo_bit
-> snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec
-> snd_seq_midi snd_hwdep ppdev snd_rawmidi snd_pcm snd_seq_midi_event
-> parport_pc snd_seq snd_timer snd_seq_device lp pcmcia snd uvcvideo
-> soundcore snd_page_alloc dell_laptop videodev dell_wmi dcdbas
-> sparse_keymap intel_ips yenta_socket video pcmcia_rsrc pcmcia_core parport
-> intel_agp intel_gtt agpgart psmouse btusb bluetooth joydev serio_raw
-> usbhid hid mmc_block ahci sdhci_pci firewire_ohci sdhci e1000e
-> firewire_core mmc_core libahci crc_itu_t
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.280052]
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.280366] Pid: 2008, comm:
-> insmod Not tainted 2.6.39-rc1-staging-next-09270-gb905e26 #1 Dell Inc.
-> Latitude E6410/07XJP9
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.281090] EIP: 0060:[<c0213d3d>]
-> EFLAGS: 00010246 CPU: 1
-> Apr 11 16:43:43 arend-laptop kernel: [ ¬† 61.281812] EIP is at
-> kfree+0x10d/0x120
+> Clearly there's something going wrong in the Bluetooth drivers. †You
+> should try posting some of this on the linux-bluetooth mailing list.
 
-Thank you Arend for testing.
+I've created:
 
-What you see is some issue with kfree I do not understand. Please take
-a look at:
-"Crash with kfree(null) on MacBook? kobject_set_name_vargs"
-https://lkml.org/lkml/2011/4/10/71
+https://bugzilla.kernel.org/show_bug.cgi?id=33062
 
-When I call dev_set_name result with new name for device, internal
-implementation performs "kfree" on *old name*. Of course there was not
-old name, so kfree is being called on * char pointing to NULL. On my
-device it does not crash, but on yours and on Andy's it does.
+and I'm cc-ing linux-bluetooth.
 
-We got suggestion to enable SLUB/SLAB debugging. Andy didn't try it
-yet. Could you spend a moment trying to debug this?
-
--- 
-Rafa≈Ç
+Zdenek
