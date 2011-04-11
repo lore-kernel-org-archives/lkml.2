@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab1DKSCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:02:53 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62774 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab1DKSCv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:02:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cZvampN+zigyt1bPWCWOBDIxgxlkDUth/I50Z06dz08jpbgOOw0iqKSb9RtkYZGmyt
-         RquAgjMCk0/9rdSbR9iBaiyeOZji5VsbkFj11k5+SPtfUEwKymotFTiHEeaBYieJuirY
-         i4i+Wr/WVllGtMHwY9PGsC2GXyU9WahKCgh8Y=
+	id S1755361Ab1DKSF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:05:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44055 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754300Ab1DKSF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 14:05:58 -0400
+Date: Mon, 11 Apr 2011 10:56:28 -0700
+From: Greg KH <gregkh@suse.de>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: sysfs: cannot create duplicate filename
+Message-ID: <20110411175628.GA24301@suse.de>
+References: <alpine.LFD.2.02.1104111556280.1938@c4eb>
+ <20110411141309.GA8924@suse.de>
+ <alpine.LFD.2.02.1104111622490.1938@c4eb>
+ <20110411144956.GA16610@suse.de>
+ <alpine.LFD.2.02.1104111658560.1770@c4eb>
+ <20110411151947.GA17913@suse.de>
+ <alpine.LFD.2.02.1104111943590.2036@c4eb>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinKYvA6+xcBtDyg5hpHst2rxwW7tA@mail.gmail.com>
-References: <1302532043-22934-1-git-send-email-Larry.Finger@lwfinger.net>
- <4DA33F3A.6090707@gmail.com> <BANLkTinKuQ7i20FxmDCT1cRMPvOxM0aygQ@mail.gmail.com>
- <BANLkTinKYvA6+xcBtDyg5hpHst2rxwW7tA@mail.gmail.com>
-From: Luis Correia <luis.f.correia@gmail.com>
-Date: Mon, 11 Apr 2011 19:02:11 +0100
-Message-ID: <BANLkTikxTH-Nve=ixp=noipAnETxN9RFrg@mail.gmail.com>
-Subject: Re: [rt2x00-users] [PATCH] rt2800pci: rt2800usb: Firmware update
-To: Ivo Van Doorn <ivdoorn@gmail.com>
-Cc: Xose Vazquez Perez <xose.vazquez@gmail.com>, dwmw2@infradead.org,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        linux-kernel@vger.kernel.org, ben@decadent.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1104111943590.2036@c4eb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivo
+On Mon, Apr 11, 2011 at 07:50:34PM +0200, Sebastian Ott wrote:
+> 
+> 
+> On Mon, 11 Apr 2011, Greg KH wrote:
+> 
+> > On Mon, Apr 11, 2011 at 05:05:08PM +0200, Sebastian Ott wrote:
+> > > 
+> > > 
+> > > On Mon, 11 Apr 2011, Greg KH wrote:
+> > > 
+> > > > On Mon, Apr 11, 2011 at 04:33:03PM +0200, Sebastian Ott wrote:
+> > > > > On Mon, 11 Apr 2011, Greg KH wrote:
+> > > > > 
+> > > > > > On Mon, Apr 11, 2011 at 04:04:08PM +0200, Sebastian Ott wrote:
+> > > > > > > Hi,
+> > > > > > > 
+> > > > > > > i've seen this warning which looks to be caused by a race between device_add
+> > > > > > > and driver_register
+> > > > > > > 
+> > > > > > > [   80.893594] sysfs: cannot create duplicate filename '/bus/ccw/drivers/qeth/0.0.b57d'
+> > > > > > 
+> > > > > > Isn't the problem here the fact that you are creating 2 directories of
+> > > > > > the same name?
+> > > > > I'm sure this isn't the case here. The bus code just calls device_add and
+> > > > > at the same time on a different thread a module is loaded which registers
+> > > > > a driver at the bus.
+> > > > > 
+> > > > > I was able to reproduce this with a module which creates a dummy bus
+> > > > > and registers drivers and devices on this bus on 2 different workqueues.
+> > > > 
+> > > > That makes sense, as no bus should be doing this on multiple "threads".
+> > > > What real-life bus does this today?
+> > > A bus that will recognize and register a lot of devices, after the first
+> > > uevent is presented to userspace, a module will be loaded registering a
+> > > driver from a different thread. I don't think thats uncommon.
+> > 
+> > But again, what kernel code today does this?  I think they all have
+> > locks to keep this from happening, right?
+> I couldn't find a bus who protects device_register against driver_register
+> and I don't think this is something which should be handled by every
+> individual bus but from within the driver core.
 
-On Mon, Apr 11, 2011 at 18:59, Ivo Van Doorn <ivdoorn@gmail.com> wrote:
-> Hi,
->
->> On Mon, Apr 11, 2011 at 18:49, Xose Vazquez Perez
->> <xose.vazquez@gmail.com> wrote:
->>> On 04/11/2011 04:27 PM, Larry Finger wrote:
->>>
->>>> From: Shiang Tu<shiang_tu@ralinktech.com>
->>>>
->>>> Update firmware for rt2800pci to Version 34 and firmware for rt2800usb to
->>>> Version 29.
->>>>
->>>> Signed-off-by: Shiang Tu<shiang_tu@ralinktech.com>
->>>> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
->>>> ---
->>>>  WHENCE     |    8 ++++----
->>>>  rt2860.bin |  Bin 8192 ->  8192 bytes
->>>>  rt2870.bin |  Bin 4096 ->  8192 bytes
->>>>  3 files changed, 4 insertions(+), 4 deletions(-)
->>>
->>> links to rt3070.bin rt3071.bin rt3090.bin ???
->>
->> there are no such files in current rt2x00 drivers.
->>
->> the rt2870.bin should support all USB rt2800 based chipsets with
->> several firmware blocks concatenated inside the file.
->> same goes for rt2860, which support all PCI rt2800 based chipsets with
->> several firmware blocks concatenated inside the file.
->
-> Only USB uses concatenation to support multiple chipsets, for PCI
-> we have a single file that is written into the device.
->
-> Ivo
->
+How did you cause the oops in this original message?  What type of bus
+was it on?  And did your patch solve the issue?
 
-I stand corrected!
+thanks,
 
-Luis Correia
+greg k-h
