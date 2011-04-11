@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1DKGgz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 02:36:55 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62688 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab1DKGgw (ORCPT
+	id S1754186Ab1DKGnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 02:43:35 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:45666
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753707Ab1DKGne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 02:36:52 -0400
-Date: Sun, 10 Apr 2011 23:36:48 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH] fsldma: fix build warning caused by of_platform_device
- changes
-Message-ID: <20110411063648.GB4439@angua.secretlab.ca>
-References: <1302197583-31771-1-git-send-email-iws@ovro.caltech.edu>
+	Mon, 11 Apr 2011 02:43:34 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2cK1432N98dKzz1202hzzz32i637h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJH6OA-02-B9E-02
+X-M-MSG: 
+Date: Mon, 11 Apr 2011 08:43:20 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Borislav Petkov <bp@alien8.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Alan Stern <stern@rowland.harvard.edu>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <stable@kernel.org>
+Subject: Re: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+Message-ID: <20110411064320.GH23633@amd.com>
+References: <2DEEA3AB13739D45A22ADDB5086AEA0B013084C4@sshaexmb1.amd.com>
+ <1302182044-3940-1-git-send-email-joerg.roedel@amd.com>
+ <20110411062559.GA25536@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1302197583-31771-1-git-send-email-iws@ovro.caltech.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110411062559.GA25536@liondog.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 07, 2011 at 10:33:03AM -0700, Ira W. Snyder wrote:
-> Commit 000061245a6797d542854106463b6b20fbdcb12e forgot to convert the
-> type of structure passed into platform_device_register() when it was
-> converted from of_platform_device_register. Fix it.
+On Mon, Apr 11, 2011 at 02:26:00AM -0400, Borislav Petkov wrote:
+> On Thu, Apr 07, 2011 at 03:14:04PM +0200, Joerg Roedel wrote:
+> > Booting 2.6.38 on my test machine produces a lockdep warning
 > 
-> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-
-Applied thanks.
-
-One comment however; when quoting sha1 commit id's, please also quote
-the title of the patch.  Very few people I know can remember off the
-top of their head the commit names that goes with a sha1 id.  :-)
-
-g.
-
-> ---
->  drivers/dma/fsldma.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> You mean 2.6.39-rc2 right? I'm asking because I hit the same warning
+> with 39-rc2 now too but it didn't appear with .38 - so it has to have
+> snuck in after the merge window. If so, you don't need the stable tag.
 > 
-> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-> index 6b39675..8a78154 100644
-> --- a/drivers/dma/fsldma.c
-> +++ b/drivers/dma/fsldma.c
-> @@ -1448,7 +1448,7 @@ static const struct of_device_id fsldma_of_ids[] = {
->  	{}
->  };
->  
-> -static struct of_platform_driver fsldma_of_driver = {
-> +static struct platform_driver fsldma_of_driver = {
->  	.driver = {
->  		.name = "fsl-elo-dma",
->  		.owner = THIS_MODULE,
-> -- 
-> 1.7.3.4
-> 
+> Also, is this the final version wrt code design so that I can test too?
+
+I hit this in the KVM branch and git-describe told me it is 2.6.38
+based. So I guess this happens on 2.6.38 too, but I havn't tested plain
+2.6.38. I do this and sent out a new version shortly which you can use
+then. The new version addresses Alan Stern's latest comments.
+
+	Joerg
+
+
