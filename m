@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab1DKCne (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Apr 2011 22:43:34 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:35830 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab1DKCnc (ORCPT
+	id S1753112Ab1DKC5Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Apr 2011 22:57:25 -0400
+Received: from 30.mail-out.ovh.net ([213.186.62.213]:39585 "HELO
+	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752138Ab1DKC5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Apr 2011 22:43:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=GPoUjygYtRrlvQiDNEngh/HOysnvtimEsWbpIfimcAok1QLZnsFj4IL5F8DSzEnVfF
-         A8BaPG5HI6bm4iFern+f3c03BLQM+AZRDzTON1CimOlFNwHcTZ5Or6lGsRbSAbpdm8z2
-         7hbxzpze7IbRuLm9dm0nMMZ9Vix9B8whe8DH4=
-From: =?UTF-8?q?Weiping=20Pan=28=E6=BD=98=E5=8D=AB=E5=B9=B3=29?= 
-	<panweiping3@gmail.com>
-To: aelder@sgi.com, xfs-masters@oss.sgi.com, dchinner@redhat.com, hch@lst.de,
-        jaxboe@fusionio.com, tj@kernel.org, xfs@oss.sgi.com
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Weiping=20Pan (=E6=BD=98=E5=8D=AB=E5=B9=B3) ?= 
-	<panweiping3@gmail.com>
-Subject: [PATCH 2/2] xfs:remove a warning in xfs_buf_readahead()
-Date: Mon, 11 Apr 2011 10:44:53 +0800
-Message-Id: <1302489893-31676-1-git-send-email-panweiping3@gmail.com>
-X-Mailer: git-send-email 1.7.4
+	Sun, 10 Apr 2011 22:57:24 -0400
+Date: Mon, 11 Apr 2011 04:45:59 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: wanlong.gao@gmail.com
+Cc: linux@arm.linux.org.uk, hans-christian.egtvedt@atmel.com,
+        ralf@linux-mips.org, benh@kernel.crashing.org, paulus@samba.org,
+        david.woodhouse@intel.com, akpm@linux-foundation.org,
+        u.kleine-koenig@pengutronix.de, mingo@elte.hu, rientjes@google.com,
+        nicolas.ferre@atmel.com, eric@eukrea.com, tony@atomide.com,
+        santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
+        ben-linux@fluff.org, sam@ravnborg.org, manuel.lauss@googlemail.com,
+        galak@kernel.crashing.org, anton@samba.org, grant.likely@secretlab.ca,
+        sfr@canb.auug.org.au, jwboyer@linux.vnet.ibm.com,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] fix build warnings on defconfigs
+Message-ID: <20110411024559.GB18925@game.jcrosoft.org>
+References: <1302375858-11253-1-git-send-email-wanlong.gao@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302375858-11253-1-git-send-email-wanlong.gao@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 7876232800264039283
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/home/pwp/mysvn/linux/linux-2.6/fs/xfs/linux-2.6/xfs_buf.c: In function
-‘xfs_buf_readahead’:
-/home/pwp/mysvn/linux/linux-2.6/fs/xfs/linux-2.6/xfs_buf.c:660:27: warning:
-unused variable ‘bdi’
+On 03:04 Sun 10 Apr     , wanlong.gao@gmail.com wrote:
+> From: Wanlong Gao <wanlong.gao@gmail.com>
+> 
+> Change the BT_L2CAP and BT_SCO defconfigs from 'm' to 'y',
+> since BT_L2CAP and BT_SCO had changed to bool configs.
+> 
+> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+> ---
+for at91
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Signed-off-by: Weiping Pan(潘卫平) <panweiping3@gmail.com>
----
- fs/xfs/linux-2.6/xfs_buf.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
-index 5ea4020..a125b32 100644
---- a/fs/xfs/linux-2.6/xfs_buf.c
-+++ b/fs/xfs/linux-2.6/xfs_buf.c
-@@ -657,8 +657,6 @@ xfs_buf_readahead(
- 	xfs_off_t		ioff,
- 	size_t			isize)
- {
--	struct backing_dev_info *bdi;
--
- 	if (bdi_read_congested(target->bt_bdi))
- 		return;
- 
--- 
-1.7.4
-
+Best Regards,
+J.
