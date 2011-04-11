@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab1DKVyN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:54:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38078 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751986Ab1DKVyM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:54:12 -0400
-Date: Mon, 11 Apr 2011 14:53:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrey Vagin <avagin@openvz.org>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/4] vmscan: all_unreclaimable() use
- zone->all_unreclaimable as a name
-Message-Id: <20110411145324.ca790260.akpm@linux-foundation.org>
-In-Reply-To: <20110411143128.0070.A69D9226@jp.fujitsu.com>
-References: <20110411142949.006C.A69D9226@jp.fujitsu.com>
-	<20110411143128.0070.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756146Ab1DKV6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 17:58:32 -0400
+Received: from kroah.org ([198.145.64.141]:60075 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986Ab1DKV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 17:58:31 -0400
+Date: Mon, 11 Apr 2011 14:56:19 -0700
+From: Greg KH <greg@kroah.com>
+To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        b43-dev@lists.infradead.org,
+        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        Andy Botting <andy@andybotting.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [RFC][PATCH V3] axi: add AXI bus driver
+Message-ID: <20110411215619.GA27943@kroah.com>
+References: <1302557114-7880-1-git-send-email-zajec5@gmail.com>
+ <20110411210631.GA28559@kroah.com>
+ <BANLkTim155YxMUVJ=pmVs-rNhkovGPG6OQ@mail.gmail.com>
+ <20110411212513.GA17809@kroah.com>
+ <BANLkTingqXAWTeOhcL6ER0UJfEdQF5Bo2A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTingqXAWTeOhcL6ER0UJfEdQF5Bo2A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011 14:30:31 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On Mon, Apr 11, 2011 at 11:36:39PM +0200, Rafał Miłecki wrote:
+> 2011/4/11 Greg KH <greg@kroah.com>:
+> > On Mon, Apr 11, 2011 at 11:19:13PM +0200, Rafał Miłecki wrote:
+> >> 2011/4/11 Greg KH <greg@kroah.com>:
+> >> > On Mon, Apr 11, 2011 at 11:25:14PM +0200, Rafał Miłecki wrote:
+> >> >> +static void axi_release_core_dev(struct device *dev)
+> >> >> +{
+> >> >> +     /* Silent lack-of-release warning */
+> >> >> +}
+> >> >
+> >> > Ok, WTF!!!!
+> >>
+> >> Thank you for your kindly words. It's much more enjoyable to work on
+> >> kernel that way. I definitely made that on purpose.
+> >
+> > I can't tell if you are kidding or not.
+> 
+> That was 100% irony. I swear I don't enjoy publishing bad code and
+> getting such a comment.
 
-> all_unreclaimable check in direct reclaim has been introduced at 2.6.19
-> by following commit.
-> 
-> 	2006 Sep 25; commit 408d8544; oom: use unreclaimable info
-> 
-> And it went through strange history. firstly, following commit broke
-> the logic unintentionally.
-> 
-> 	2008 Apr 29; commit a41f24ea; page allocator: smarter retry of
-> 				      costly-order allocations
-> 
-> Two years later, I've found obvious meaningless code fragment and
-> restored original intention by following commit.
-> 
-> 	2010 Jun 04; commit bb21c7ce; vmscan: fix do_try_to_free_pages()
-> 				      return value when priority==0
-> 
-> But, the logic didn't works when 32bit highmem system goes hibernation
-> and Minchan slightly changed the algorithm and fixed it .
-> 
-> 	2010 Sep 22: commit d1908362: vmscan: check all_unreclaimable
-> 				      in direct reclaim path
-> 
-> But, recently, Andrey Vagin found the new corner case. Look,
-> 
-> 	struct zone {
-> 	  ..
-> 	        int                     all_unreclaimable;
-> 	  ..
-> 	        unsigned long           pages_scanned;
-> 	  ..
-> 	}
-> 
-> zone->all_unreclaimable and zone->pages_scanned are neigher atomic
-> variables nor protected by lock. Therefore zones can become a state
-> of zone->page_scanned=0 and zone->all_unreclaimable=1. In this case,
-> current all_unreclaimable() return false even though
-> zone->all_unreclaimabe=1.
-> 
-> Is this ignorable minor issue? No. Unfortunatelly, x86 has very
-> small dma zone and it become zone->all_unreclamble=1 easily. and
-> if it become all_unreclaimable=1, it never restore all_unreclaimable=0.
-> Why? if all_unreclaimable=1, vmscan only try DEF_PRIORITY reclaim and
-> a-few-lru-pages>>DEF_PRIORITY always makes 0. that mean no page scan
-> at all!
-> 
-> Eventually, oom-killer never works on such systems. That said, we
-> can't use zone->pages_scanned for this purpose. This patch restore
-> all_unreclaimable() use zone->all_unreclaimable as old. and in addition,
-> to add oom_killer_disabled check to avoid reintroduce the issue of
-> commit d1908362.
+Ok, you forgot the ':)' then...
 
-The above is a nice analysis of the bug and how it came to be
-introduced.  But we don't actually have a bug description!  What was
-the observeable problem which got fixed?
+> > Please read the documentation for how to do this properly.  I find it
+> > really hard to believe that you wrote that comment instead of putting in
+> > the 2 lines of code required for this function.
+> >
+> > Especially as-it-is, your code does not work properly and leaks memory
+> > badly.  Why would you do that on purpose?
+> 
+> I tried to read some documentation about this.
+> 
+> 1) driver-mode/device.txt says only that:
+> > Callback to free the device after all references have
+> > gone away. This should be set by the allocator of the
+> > device (i.e. the bus driver that discovered the device).
+> I *really* do not know how my driver should "free" core on AXI bus.
 
-Such a description will help people understand the importance of the
-patch and will help people (eg, distros) who are looking at a user's
-bug report and wondering whether your patch will fix it.
+The structure that you have created, added to the bus, is now ready to
+have its memory freed.  So free it.
 
+This usually means something like:
+	struct my_obj = to_my_obj(dev);
+	kfree(my_obj);
+in the release function.
+
+> 2) LDD3 says:
+> > The method is called when the last reference to the device is removed; it is called
+> > from the embedded kobject’s release method. All device structures registered with
+> > the core must have a release method, or the kernel prints out scary complaints.
+> Well, I do not register any structs for AXI core.
+
+Yes you did, otherwise you would have never seen that callback warning
+you that you needed a release function.
+
+> 3) Example code from LDD3:
+> static void ldd_bus_release(struct device *dev)
+> {
+> printk(KERN_DEBUG "lddbus release\n");
+> }
+> Yeah, that's what I did...
+
+Wow that's old, sorry.  See the kobject documentation for much more
+detail about what you need here.
+
+> 4) SSB in it's ssb_release_dev just calls kfree on struct that was
+> allocated when registering drivers. *I do not* allocate such a struct,
+> so I believe I do exactly the same memory leak as SSB does.
+
+Well someone allocated it, right?  Who did it?  If it wasn't you, where
+did that structure come from and why are you registering it on your bus?
+
+> Can you spend 2 more minues in addition to commenting my ideas and
+> help me with writing that 2 lines I missed? Where do I leak memory in
+> my driver? Which struct should I kfree?
+
+The structure that you wrap around 'struct device' for your bus.
+
+hope this helps,
+
+greg k-h
