@@ -1,78 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab1DKV7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 17:59:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36547 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751986Ab1DKV7R (ORCPT
+	id S1756196Ab1DKWD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 18:03:59 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40098 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab1DKWD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 17:59:17 -0400
-Date: Mon, 11 Apr 2011 14:58:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrey Vagin <avagin@openvz.org>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/4] remove boost_dying_task_prio()
-Message-Id: <20110411145832.ae133cf8.akpm@linux-foundation.org>
-In-Reply-To: <20110411143215.0074.A69D9226@jp.fujitsu.com>
-References: <20110411142949.006C.A69D9226@jp.fujitsu.com>
-	<20110411143215.0074.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Apr 2011 18:03:58 -0400
+Subject: [PATCH 1/3] rename alloc_pages_exact()
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Timur Tabi <timur@freescale.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Mon, 11 Apr 2011 15:03:45 -0700
+Message-Id: <20110411220345.9B95067C@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011 14:31:18 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-> This is a almost revert commit 93b43fa (oom: give the dying
-> task a higher priority).
-> 
-> The commit dramatically improve oom killer logic when fork-bomb
-> occur. But, I've found it has nasty corner case. Now cpu cgroup
-> has strange default RT runtime. It's 0! That said, if a process
-> under cpu cgroup promote RT scheduling class, the process never
-> run at all.
+alloc_pages_exact() returns a virtual address.  But, alloc_pages() returns
+a 'struct page *'.  That makes for very confused kernel hackers.
 
-hm.  How did that happen?  I thought that sched_setscheduler() modifies
-only a single thread, and that thread is in the process of exiting?
+__get_free_pages(), on the other hand, returns virtual addresses.  That
+makes alloc_pages_exact() a much closer match to __get_free_pages(), so
+rename it to get_free_pages_exact().  Also change the arguments to have
+flags first, just like __get_free_pages().
 
-> Eventually, kernel may hang up when oom kill occur.
-> I and Luis who original author agreed to disable this logic at
-> once.
-> 
-> ...
->
-> index 6a819d1..83fb72c1 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -84,24 +84,6 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
->  #endif /* CONFIG_NUMA */
->  
->  /*
-> - * If this is a system OOM (not a memcg OOM) and the task selected to be
-> - * killed is not already running at high (RT) priorities, speed up the
-> - * recovery by boosting the dying task to the lowest FIFO priority.
-> - * That helps with the recovery and avoids interfering with RT tasks.
-> - */
-> -static void boost_dying_task_prio(struct task_struct *p,
-> -				  struct mem_cgroup *mem)
-> -{
-> -	struct sched_param param = { .sched_priority = 1 };
-> -
-> -	if (mem)
-> -		return;
-> -
-> -	if (!rt_task(p))
-> -		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
-> -}
+Note that alloc_pages_exact()'s partner, free_pages_exact() already
+matches free_pages(), so we do not have to touch the free side of things.
 
-I'm rather glad to see that code go away though - SCHED_FIFO is
-dangerous...
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+
+ linux-2.6.git-dave/drivers/video/fsl-diu-fb.c  |    2 +-
+ linux-2.6.git-dave/drivers/video/mxsfb.c       |    2 +-
+ linux-2.6.git-dave/drivers/video/pxafb.c       |    6 +++---
+ linux-2.6.git-dave/drivers/virtio/virtio_pci.c |    2 +-
+ linux-2.6.git-dave/include/linux/gfp.h         |    2 +-
+ linux-2.6.git-dave/kernel/profile.c            |    4 ++--
+ linux-2.6.git-dave/mm/page_alloc.c             |   18 +++++++++---------
+ linux-2.6.git-dave/mm/page_cgroup.c            |    2 +-
+ 8 files changed, 19 insertions(+), 19 deletions(-)
+
+diff -puN drivers/video/fsl-diu-fb.c~change-alloc_pages_exact-name drivers/video/fsl-diu-fb.c
+--- linux-2.6.git/drivers/video/fsl-diu-fb.c~change-alloc_pages_exact-name	2011-04-11 15:01:16.453823153 -0700
++++ linux-2.6.git-dave/drivers/video/fsl-diu-fb.c	2011-04-11 15:01:16.489823137 -0700
+@@ -294,7 +294,7 @@ static void *fsl_diu_alloc(size_t size, 
+ 
+ 	pr_debug("size=%zu\n", size);
+ 
+-	virt = alloc_pages_exact(size, GFP_DMA | __GFP_ZERO);
++	virt = get_free_pages_exact(GFP_DMA | __GFP_ZERO, size);
+ 	if (virt) {
+ 		*phys = virt_to_phys(virt);
+ 		pr_debug("virt=%p phys=%llx\n", virt,
+diff -puN drivers/video/mxsfb.c~change-alloc_pages_exact-name drivers/video/mxsfb.c
+--- linux-2.6.git/drivers/video/mxsfb.c~change-alloc_pages_exact-name	2011-04-11 15:01:16.457823151 -0700
++++ linux-2.6.git-dave/drivers/video/mxsfb.c	2011-04-11 15:01:16.489823137 -0700
+@@ -718,7 +718,7 @@ static int __devinit mxsfb_init_fbinfo(s
+ 	} else {
+ 		if (!fb_size)
+ 			fb_size = SZ_2M; /* default */
+-		fb_virt = alloc_pages_exact(fb_size, GFP_DMA);
++		fb_virt = get_free_pages_exact(GFP_DMA, fb_size);
+ 		if (!fb_virt)
+ 			return -ENOMEM;
+ 
+diff -puN drivers/video/pxafb.c~change-alloc_pages_exact-name drivers/video/pxafb.c
+--- linux-2.6.git/drivers/video/pxafb.c~change-alloc_pages_exact-name	2011-04-11 15:01:16.461823149 -0700
++++ linux-2.6.git-dave/drivers/video/pxafb.c	2011-04-11 15:01:16.493823135 -0700
+@@ -905,8 +905,8 @@ static int __devinit pxafb_overlay_map_v
+ 	/* We assume that user will use at most video_mem_size for overlay fb,
+ 	 * anyway, it's useless to use 16bpp main plane and 24bpp overlay
+ 	 */
+-	ofb->video_mem = alloc_pages_exact(PAGE_ALIGN(pxafb->video_mem_size),
+-		GFP_KERNEL | __GFP_ZERO);
++	ofb->video_mem = get_free_pages_exact(GFP_KERNEL | __GFP_ZERO,
++		PAGE_ALIGN(pxafb->video_mem_size));
+ 	if (ofb->video_mem == NULL)
+ 		return -ENOMEM;
+ 
+@@ -1714,7 +1714,7 @@ static int __devinit pxafb_init_video_me
+ {
+ 	int size = PAGE_ALIGN(fbi->video_mem_size);
+ 
+-	fbi->video_mem = alloc_pages_exact(size, GFP_KERNEL | __GFP_ZERO);
++	fbi->video_mem = get_free_pages_exact(GFP_KERNEL | __GFP_ZERO, size);
+ 	if (fbi->video_mem == NULL)
+ 		return -ENOMEM;
+ 
+diff -puN drivers/virtio/virtio_pci.c~change-alloc_pages_exact-name drivers/virtio/virtio_pci.c
+--- linux-2.6.git/drivers/virtio/virtio_pci.c~change-alloc_pages_exact-name	2011-04-11 15:01:16.465823147 -0700
++++ linux-2.6.git-dave/drivers/virtio/virtio_pci.c	2011-04-11 15:01:16.493823135 -0700
+@@ -385,7 +385,7 @@ static struct virtqueue *setup_vq(struct
+ 	info->msix_vector = msix_vec;
+ 
+ 	size = PAGE_ALIGN(vring_size(num, VIRTIO_PCI_VRING_ALIGN));
+-	info->queue = alloc_pages_exact(size, GFP_KERNEL|__GFP_ZERO);
++	info->queue = get_free_pages_exact(GFP_KERNEL|__GFP_ZERO, size);
+ 	if (info->queue == NULL) {
+ 		err = -ENOMEM;
+ 		goto out_info;
+diff -puN include/linux/gfp.h~change-alloc_pages_exact-name include/linux/gfp.h
+--- linux-2.6.git/include/linux/gfp.h~change-alloc_pages_exact-name	2011-04-11 15:01:16.469823145 -0700
++++ linux-2.6.git-dave/include/linux/gfp.h	2011-04-11 15:01:16.493823135 -0700
+@@ -351,7 +351,7 @@ extern struct page *alloc_pages_vma(gfp_
+ extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
+ extern unsigned long get_zeroed_page(gfp_t gfp_mask);
+ 
+-void *alloc_pages_exact(size_t size, gfp_t gfp_mask);
++void *get_free_pages_exact(gfp_t gfp_mask, size_t size);
+ void free_pages_exact(void *virt, size_t size);
+ 
+ #define __get_free_page(gfp_mask) \
+diff -puN kernel/profile.c~change-alloc_pages_exact-name kernel/profile.c
+--- linux-2.6.git/kernel/profile.c~change-alloc_pages_exact-name	2011-04-11 15:01:16.473823143 -0700
++++ linux-2.6.git-dave/kernel/profile.c	2011-04-11 15:01:16.497823133 -0700
+@@ -121,8 +121,8 @@ int __ref profile_init(void)
+ 	if (prof_buffer)
+ 		return 0;
+ 
+-	prof_buffer = alloc_pages_exact(buffer_bytes,
+-					GFP_KERNEL|__GFP_ZERO|__GFP_NOWARN);
++	prof_buffer = get_free_pages_exact(GFP_KERNEL|__GFP_ZERO|__GFP_NOWARN,
++					buffer_bytes);
+ 	if (prof_buffer)
+ 		return 0;
+ 
+diff -puN mm/page_alloc.c~change-alloc_pages_exact-name mm/page_alloc.c
+--- linux-2.6.git/mm/page_alloc.c~change-alloc_pages_exact-name	2011-04-11 15:01:16.477823141 -0700
++++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-11 15:01:16.501823131 -0700
+@@ -2318,7 +2318,7 @@ void free_pages(unsigned long addr, unsi
+ EXPORT_SYMBOL(free_pages);
+ 
+ /**
+- * alloc_pages_exact - allocate an exact number physically-contiguous pages.
++ * get_free_pages_exact - allocate an exact number physically-contiguous pages.
+  * @size: the number of bytes to allocate
+  * @gfp_mask: GFP flags for the allocation
+  *
+@@ -2330,7 +2330,7 @@ EXPORT_SYMBOL(free_pages);
+  *
+  * Memory allocated by this function must be released by free_pages_exact().
+  */
+-void *alloc_pages_exact(size_t size, gfp_t gfp_mask)
++void *get_free_pages_exact(gfp_t gfp_mask, size_t size)
+ {
+ 	unsigned int order = get_order(size);
+ 	unsigned long addr;
+@@ -2349,14 +2349,14 @@ void *alloc_pages_exact(size_t size, gfp
+ 
+ 	return (void *)addr;
+ }
+-EXPORT_SYMBOL(alloc_pages_exact);
++EXPORT_SYMBOL(get_free_pages_exact);
+ 
+ /**
+- * free_pages_exact - release memory allocated via alloc_pages_exact()
+- * @virt: the value returned by alloc_pages_exact.
+- * @size: size of allocation, same value as passed to alloc_pages_exact().
++ * free_pages_exact - release memory allocated via get_free_pages_exact()
++ * @virt: the value returned by get_free_pages_exact.
++ * @size: size of allocation, same value as passed to get_free_pages_exact().
+  *
+- * Release the memory allocated by a previous call to alloc_pages_exact.
++ * Release the memory allocated by a previous call to get_free_pages_exact().
+  */
+ void free_pages_exact(void *virt, size_t size)
+ {
+@@ -5308,10 +5308,10 @@ void *__init alloc_large_system_hash(con
+ 			/*
+ 			 * If bucketsize is not a power-of-two, we may free
+ 			 * some pages at the end of hash table which
+-			 * alloc_pages_exact() automatically does
++			 * get_free_pages_exact() automatically does
+ 			 */
+ 			if (get_order(size) < MAX_ORDER) {
+-				table = alloc_pages_exact(size, GFP_ATOMIC);
++				table = get_free_pages_exact(size, GFP_ATOMIC);
+ 				kmemleak_alloc(table, size, 1, GFP_ATOMIC);
+ 			}
+ 		}
+diff -puN mm/page_cgroup.c~change-alloc_pages_exact-name mm/page_cgroup.c
+--- linux-2.6.git/mm/page_cgroup.c~change-alloc_pages_exact-name	2011-04-11 15:01:16.481823139 -0700
++++ linux-2.6.git-dave/mm/page_cgroup.c	2011-04-11 15:01:16.501823131 -0700
+@@ -134,7 +134,7 @@ static void *__init_refok alloc_page_cgr
+ {
+ 	void *addr = NULL;
+ 
+-	addr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
++	addr = get_free_pages_exact(GFP_KERNEL | __GFP_NOWARN, size);
+ 	if (addr)
+ 		return addr;
+ 
+_
