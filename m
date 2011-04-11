@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab1DKEFv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 00:05:51 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:56233 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750696Ab1DKEFv (ORCPT
+	id S1751930Ab1DKELR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 00:11:17 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49631 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab1DKELO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 00:05:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtQGAOp8ok15LHHJgWdsb2JhbACZAI0YFQEBFiYlwHUOhWAElQA
-Date: Mon, 11 Apr 2011 14:05:44 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: wanlong.gao@gmail.com
-Cc: broonie@opensource.wolfsonmicro.com, geert@linux-m68k.org,
-        starvik@axis.com, jesper.nilsson@axis.com, sameo@linux.intel.com,
-        ian@opensource.wolfsonmicro.com, dp@opensource.wolfsonmicro.com,
-        lrg@slimlogic.co.uk, James.Bottomley@suse.de, aelder@sgi.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] xfs:removed the unused variable
-Message-ID: <20110411040544.GB21395@dastard>
-References: <1302444629-17043-1-git-send-email-wanlong.gao@gmail.com>
- <1302444629-17043-5-git-send-email-wanlong.gao@gmail.com>
+	Mon, 11 Apr 2011 00:11:14 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: mmotm 2011-03-31-14-48 uploaded
+Cc: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110403181147.AE42.A69D9226@jp.fujitsu.com>
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org> <20110403181147.AE42.A69D9226@jp.fujitsu.com>
+Message-Id: <20110411131152.0069.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302444629-17043-5-git-send-email-wanlong.gao@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon, 11 Apr 2011 13:11:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 10, 2011 at 10:10:29PM +0800, wanlong.gao@gmail.com wrote:
-> From: Wanlong Gao <wanlong.gao@gmail.com>
+> > The mm-of-the-moment snapshot 2011-03-31-14-48 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > and will soon be available at
+> > 
+> >    git://zen-kernel.org/kernel/mmotm.git
+> > 
 > 
-> removed the unused variable "bdi" of xfs_buf.c .
+> This doesn't boot.
 > 
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> ---
->  fs/xfs/linux-2.6/xfs_buf.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
-> index 5ea4020..a125b32 100644
-> --- a/fs/xfs/linux-2.6/xfs_buf.c
-> +++ b/fs/xfs/linux-2.6/xfs_buf.c
-> @@ -657,8 +657,6 @@ xfs_buf_readahead(
->  	xfs_off_t		ioff,
->  	size_t			isize)
->  {
-> -	struct backing_dev_info *bdi;
-> -
->  	if (bdi_read_congested(target->bt_bdi))
->  		return;
+> =======================================================================
+> [    0.169037] divide error: 0000 [#1] SMP
+> [    0.169982] last sysfs file:
+> [    0.169982] CPU 0
+> [    0.169982] Modules linked in:
+> [    0.169982]
+> [    0.169982] Pid: 1, comm: swapper Not tainted 2.6.39-rc1-mm1+ #2 FUJITSU-SV      PRIMERGY                      /D2559-A1
+> [    0.169982] RIP: 0010:[<ffffffff8104ad4c>]  [<ffffffff8104ad4c>] find_busiest_group+0x38c/0xd30
 
-<sigh>
+Please don't worry. This is not -mm problem. The breakage is in linus-tree.
+Now fake numa feature doesn't work correctly and I and Tejun are discussing 
+about a fix.
 
-Doesn't anyone look anymore to see if a problem has already been
-reported before or fixed in the maintainers tree?
 
-FYI, you're about the 5th person to send this same patch....
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
