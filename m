@@ -1,54 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab1DKXSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 19:18:54 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61546 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab1DKXSw (ORCPT
+	id S1756294Ab1DKXSz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 19:18:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53319 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755944Ab1DKXSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 19:18:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Jr3Cz+qtlEQkaWeE5HvOqzAKXhBTU+qapiyN5AUQgwZv4x7m/UTm/Q3+IZdc818Bya
-         GcS3JqIIWDZj0sNtzp6Tfa1hC/sjMnByjypHOCOD3ObF2HvFVBl+mEXrA3zC4t8cgSkV
-         oHEwK1+4SAHw6kCTL8r9K/yo4id3KZC3Gt48A=
-Date: Tue, 12 Apr 2011 01:18:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-Cc: Jeff Mahoney <jeffm@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Reiserfs deadlock in 2.6.36
-Message-ID: <20110411231843.GB2061@nowhere>
-References: <201011181650.00152.roucaries.bastien@gmail.com>
- <AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
- <AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>
- <201103311704.40372.roucaries.bastien@gmail.com>
- <BANLkTikmtyyMes84rED5wpMxuN8kL91jEw@mail.gmail.com>
- <4D9B3C10.9060704@suse.com>
- <BANLkTi=XDzOcZsP+aKS_WQSRxT+N8XHBRQ@mail.gmail.com>
- <BANLkTi=yTfMiLvVtZTqQvxVhy7aFPdwSXQ@mail.gmail.com>
- <BANLkTi=KUMNWJZZBQSHK+WViy6BYv8+4dQ@mail.gmail.com>
- <BANLkTi=LHx-cwQ8dAY7ogLN0B5xtJApVWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=LHx-cwQ8dAY7ogLN0B5xtJApVWg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 11 Apr 2011 19:18:54 -0400
+Date: Mon, 11 Apr 2011 16:18:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: petr@vandrovec.name, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        npiggin@kernel.dk, jens.axboe@oracle.com, greg@kroah.com,
+        joe@perches.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]initialize the array of fs/ncpfs/inode.c
+Message-Id: <20110411161838.dabbc3f3.akpm@linux-foundation.org>
+In-Reply-To: <20110410100816.GB4953@gmail.com>
+References: <20110410100816.GB4953@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 10:40:18AM +0200, Bastien ROUCARIES wrote:
-> Any news ? Can I test some patch ?
+On Sun, 10 Apr 2011 18:08:18 +0800
+Harry Wei <jiaweiwei.xiyou@gmail.com> wrote:
+
+> Hi us,
+> 	When i compile the linux-2.6.38.2, some warnings happened
+> to me. One of them is like following.
 > 
-> Bastien
+> fs/ncpfs/inode.c: In function 'ncp_fill_super':
+> fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[1u]' may be used 
+> uninitialized in this function
+> ...
+> See details by the URL: 
+> http://s1202.photobucket.com/albums/bb364/harrywei/Kernel/?action=view&current=patched.png
 
-I have a box currently running two parallel loops of git pull.
-It has run for two hours now and nothing happened, I'm going to
-let that wheel run the whole night and see tomorrow.
+Yup.  The compiler is "wrong" because it doesn't know that the
+uninitialised bytes will never be read, because they fall after the
+'\0' in a null-terminated string.
 
-In the meantime I'm preparing another box with more CPUs to run
-more parallel git pull. Hopefully I could stress it enough to
-reproduce.
+> @@ -461,6 +462,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
+>  #endif
+>  	struct ncp_entry_info finfo;
+>  
+> +	data.mounted_vol[NCP_VOLNAME_LEN + 1] = {0};
+>  	data.wdog_pid = NULL;
+>  	server = kzalloc(sizeof(struct ncp_server), GFP_KERNEL);
+>  	if (!server)
+
+hm.  I'm not sure that this fixed data.mounted_vol[2u],
+data.mounted_vol[3u], etc.
+
+How about we use the big hammer?
+
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+
+fs/ncpfs/inode.c: In function 'ncp_fill_super':
+fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[1u]' may be used uninitialized in this function
+fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[2u]' may be used uninitialized in this function
+fs/ncpfs/inode.c:451: warning: 'data.mounted_vol[3u]' may be used uninitialized in this function
+...
+
+It's notabug, but we can easily fix it with a memset().
+
+Reported-by: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: Petr Vandrovec <petr@vandrovec.name>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/ncpfs/inode.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff -puN fs/ncpfs/inode.c~fs-ncpfs-inodec-suppress-used-uninitialised-warning fs/ncpfs/inode.c
+--- a/fs/ncpfs/inode.c~fs-ncpfs-inodec-suppress-used-uninitialised-warning
++++ a/fs/ncpfs/inode.c
+@@ -461,7 +461,7 @@ static int ncp_fill_super(struct super_b
+ #endif
+ 	struct ncp_entry_info finfo;
+ 
+-	data.wdog_pid = NULL;
++	memset(data, 0, sizeof(data));
+ 	server = kzalloc(sizeof(struct ncp_server), GFP_KERNEL);
+ 	if (!server)
+ 		return -ENOMEM;
+@@ -496,7 +496,6 @@ static int ncp_fill_super(struct super_b
+ 				struct ncp_mount_data_v4* md = (struct ncp_mount_data_v4*)raw_data;
+ 
+ 				data.flags = md->flags;
+-				data.int_flags = 0;
+ 				data.mounted_uid = md->mounted_uid;
+ 				data.wdog_pid = find_get_pid(md->wdog_pid);
+ 				data.ncp_fd = md->ncp_fd;
+@@ -507,7 +506,6 @@ static int ncp_fill_super(struct super_b
+ 				data.file_mode = md->file_mode;
+ 				data.dir_mode = md->dir_mode;
+ 				data.info_fd = -1;
+-				data.mounted_vol[0] = 0;
+ 			}
+ 			break;
+ 		default:
+_
+
