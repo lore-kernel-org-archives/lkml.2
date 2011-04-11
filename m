@@ -1,67 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab1DKNDP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 09:03:15 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33872 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab1DKNDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 09:03:14 -0400
-Date: Mon, 11 Apr 2011 09:03:09 -0400
-Message-Id: <E1Q9Glp-0000bw-N4@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 fixes for 2.6.39-rc3
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1751923Ab1DKNFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 09:05:23 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:40524 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab1DKNFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 09:05:21 -0400
+Date: Mon, 11 Apr 2011 16:00:27 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrew Worsley <amworsley@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Fix for critical bogoMIPS intermittent calculation failure
+Message-ID: <20110411130027.GA2974@esdhcp04044.research.nokia.com>
+References: <AANLkTikTjBAZGBF2BirRpayiL6PX=ewmh+ZEnZkZBr=s@mail.gmail.com> <20110407151745.d2e682c6.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110407151745.d2e682c6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 07/04/11 15:17 -0700, ext Andrew Morton wrote:
+> On Thu, 10 Mar 2011 17:03:51 +1100
+> Andrew Worsley <amworsley@gmail.com> wrote:
+> 
+> > Please find attach a fix to the TSC  (Time Stamp Counter) based
+> > bogoMIPS calculation used on secondary CPUs which has two faults:
+> 
+> Phil, you've had your nose in init/calibrate.c recently.  Would you
+> have time to review Andrew's changes?  Thanks.
 
-Please pull from:
+No problem. Nokia's trained me to be a bit pedantic, so I noticed a few
+style issues or niggles.
+ 
+> Andrew, the patch was mssing a signed-off-by:.  Please review the
+> description of this in Docuemntations/SubmuittingPatches and then, if
+> agreeable, send one along?
+> 
+> 
+> 
+> From: Andrew Worsley <amworsley@gmail.com>
+> 
+> A fix to the TSC (Time Stamp Counter) based bogoMIPS calculation used on
+> secondary CPUs which has two faults:
+> 
+> 1: Not handling wrapping of the lower 32 bits of the TSC counter on
+>    32bit kernel - perhaps TSC is not reset by a warm reset?
+> 
+> 2: TSC and Jiffies are no incrementing together properly.  Either
+>    jiffies increment too quickly or Time Stamp Counter isn't incremented
+>    in during an SMI but the real time clock is and jiffies are
+>    incremented.
+> 
+> Case 1 can result in a factor of 16 too large a value which makes udelay()
+> values too small and can cause mysterious driver errors.  Case 2 appears
+> to give smaller 10-15% errors after averaging but enough to cause
+> occasional failures on my own board
+> 
+> I have tested this code on my own branch and attach patch suitable for
+> current kernel code.  See below for examples of the failures and how the
+> fix handles these situations now.
+> 
+> I reported this issue earlier here:
+>      Intermittent problem with BogoMIPs calculation on Intel AP CPUs -
+> http://marc.info/?l=linux-kernel&m=129947246316875&w=4
+> 
+> I suspect this issue has been seen by others but as it is intermittent and
+> bogoMIPS for secondary CPUs are no longer printed out it might have been
+> difficult to identify this as the cause.  Perhaps these unresolved issues,
+> although quite old, might be relevant as possibly this fault has been
+> around for a while.  In particular Case 1 may only be relevant to 32bit
+> kernels on newer HW (most people run 64bit kernels?).  Case 2 is less
+> dramatic since the earlier fix in this area and also intermittent.
+> 
+>    Re: bogomips discrepancy on Intel Core2 Quad CPU -
+> http://marc.info/?l=linux-kernel&m=118929277524298&w=4
+>    slow system and bogus bogomips  -
+> http://marc.info/?l=linux-kernel&m=116791286716107&w=4
+>    Re: Re: [RFC-PATCH] clocksource: update lpj if clocksource has -
+> http://marc.info/?l=linux-kernel&m=128952775819467&w=4
+> 
+> This issue is masked a little by commit feae3203d711db0a ("timers, init:
+> Limit the number of per cpu calibration bootup messages") which only
+> prints out the first bogoMIPS value making it much harder to notice other
+> values differing.  Perhaps it should be changed to only suppress them when
+> they are similar values?
+> 
+> Here are some outputs showing faults occurring and the new code handling
+> them properly.  See my earlier message for examples of the original
+> failure.
+> 
+>     Case 1:   A Time Stamp Counter wrap:
+> ...
+> Calibrating delay loop (skipped), value calculated using timer
+> frequency.. 6332.70 BogoMIPS (lpj=31663540)
+> ....
+> calibrate_delay_direct() timer_rate_max=31666493
+> timer_rate_min=31666151 pre_start=4170369255 pre_end=4202035539
+> calibrate_delay_direct() timer_rate_max=2425955274
+> timer_rate_min=2425954941 pre_start=4265368533 pre_end=2396356387
+> calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap
+> around start=4265368581 >=post_end=2396356511
+> calibrate_delay_direct() timer_rate_max=31666274
+> timer_rate_min=31665942 pre_start=2440373374 pre_end=2472039515
+> calibrate_delay_direct() timer_rate_max=31666492
+> timer_rate_min=31666160 pre_start=2535372139 pre_end=2567038422
+> calibrate_delay_direct() timer_rate_max=31666455
+> timer_rate_min=31666207 pre_start=2630371084 pre_end=2662037415
+> Calibrating delay using timer specific routine.. 6333.28 BogoMIPS (lpj=31666428)
+> Total of 2 processors activated (12665.99 BogoMIPS).
+> ....
+> 
+>     Case 2:  Some thing (presumably the SMM interrupt?) causing the
+> very low increase in TSC counter for the DELAY_CALIBRATION_TICKS
+> increase in jiffies
+> ...
+> Calibrating delay loop (skipped), value calculated using timer
+> frequency.. 6333.25 BogoMIPS (lpj=31666270)
+> ...
+> calibrate_delay_direct() timer_rate_max=31666483
+> timer_rate_min=31666074 pre_start=4199536526 pre_end=4231202809
+> calibrate_delay_direct() timer_rate_max=864348 timer_rate_min=864016
+> pre_start=2405343672 pre_end=2406207897
+> calibrate_delay_direct() timer_rate_max=31666483
+> timer_rate_min=31666179 pre_start=2469540464 pre_end=2501206823
+> calibrate_delay_direct() timer_rate_max=31666511
+> timer_rate_min=31666122 pre_start=2564539400 pre_end=2596205712
+> calibrate_delay_direct() timer_rate_max=31666084
+> timer_rate_min=31665685 pre_start=2659538782 pre_end=2691204657
+> calibrate_delay_direct() dropping min bogoMips estimate 1 = 864348
+> Calibrating delay using timer specific routine.. 6333.27 BogoMIPS (lpj=31666390)
+> Total of 2 processors activated (12666.53 BogoMIPS).
+> ...
+> 
+> After 70 boots I saw 2 variations <1% slip through
+> 
+> Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  init/calibrate.c |   70 +++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 65 insertions(+), 5 deletions(-)
+> 
+> diff -puN init/calibrate.c~init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure init/calibrate.c
+> --- a/init/calibrate.c~init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure
+> +++ a/init/calibrate.c
+> @@ -38,6 +38,9 @@ static unsigned long __cpuinit calibrate
+>  	unsigned long timer_rate_min, timer_rate_max;
+>  	unsigned long good_timer_sum = 0;
+>  	unsigned long good_timer_count = 0;
+> +	unsigned long measured_times[MAX_DIRECT_CALIBRATION_RETRIES];
+> +	int max = -1; /* index of measured_times with max/min values or not set */
+> +	int min = -1;
+>  	int i;
+>  
+>  	if (read_current_timer(&pre_start) < 0 )
+> @@ -90,17 +93,74 @@ static unsigned long __cpuinit calibrate
+>  		 * If the upper limit and lower limit of the timer_rate is
+>  		 * >= 12.5% apart, redo calibration.
+>  		 */
+> -		if (pre_start != 0 && pre_end != 0 &&
+> +		printk(KERN_DEBUG
+> +"calibrate_delay_direct() timer_rate_max=%lu timer_rate_min=%lu pre_start=%lu pre_end=%lu\n",
+> +			  timer_rate_max, timer_rate_min, pre_start, pre_end);
+> +		if (start >= post_end)
+> +			printk(KERN_NOTICE
+> +				"calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
+> +				start, post_end);
+> +		if (start < post_end && pre_start != 0 && pre_end != 0 &&
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+This could be split off into a separate patch, as it is independent of the rest of the patch.
 
-to get the following ext4 bug/regression fixes for the 2.6.39.
+>  		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
+>  			good_timer_count++;
+>  			good_timer_sum += timer_rate_max;
+> -		}
+> +			measured_times[i] = timer_rate_max;
+> +			if (max < 0 || timer_rate_max > measured_times[max])
+> +				max = i;
+> +			if (min < 0 || timer_rate_max < measured_times[min])
+> +				min = i;
+> +		} else
+> +			measured_times[i] = 0;
 
-Thanks!!
+Inconsistent use of {}.
 
-                                        - Ted
+> +
+>  	}
+>  
+> -	if (good_timer_count)
+> -		return (good_timer_sum/good_timer_count);
+> +	/*
+> +	 * Find the maximum & minimum - if they differ too much throw out the one with
+> +	 * the largest difference from the mean and try again...
+> +	 */
+> +	while (good_timer_count > 1) {
+> +		unsigned long estimate;
+> +		unsigned long maxdiff;
+> +
+> +		/* compute the estimate */
+> +		estimate = (good_timer_sum/good_timer_count);
 
-Curt Wohlgemuth (1):
-      ext4: sync the directory inode in ext4_sync_parent()
+Unnecessary (), no spaces around / operator.
 
-Jan Kara (1):
-      ext4: remove unnecessary [cm]time update of quota file
+> +		maxdiff = estimate >> 3;
+> +
+> +		/* if range is within 12% let's take it */
+> +		if ((measured_times[max] - measured_times[min]) < maxdiff)
+> +			return (estimate);
 
-Kazuya Mio (1):
-      ext4: Allow indirect-block file to grow the file size to max file size
+Unnecessary ().
 
-Tao Ma (2):
-      ext4: fix a double free in ext4_register_li_request
-      ext4: init timer earlier to avoid a kernel panic in __save_error_info
+> +
+> +		/* ok - drop the worse value and try again... */
+> +		good_timer_sum = 0;
+> +		good_timer_count = 0;
+> +		if ((measured_times[max] - estimate) < (estimate - measured_times[min])) {
+> +			printk(KERN_NOTICE
+> +	"calibrate_delay_direct() dropping min bogoMips estimate %d = %lu\n",
+> +				min, measured_times[min]);
+> +			measured_times[min] = 0;
+> +			min = max;
+> +		} else {
+> +			printk(KERN_NOTICE
+> +	"calibrate_delay_direct() dropping max bogoMips estimate %d = %lu\n",
 
-Theodore Ts'o (1):
-      ext4: fix data corruption regression by reverting commit 6de9843dab3f
+You could squash those two strings into one with a %s, and trust the compiler to 
+do the right thing. However, apart from those, there are no functional problems.
+I currently do not have a system upon which I can test the patch, alas.
 
-Yongqiang Yang (2):
-      ext4: fix credits computing for indirect mapped files
-      ext4: allow an active handle to be started when freezing
+Reviewed-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 
-Zhang Huan (1):
-      jbd2: fix potential memory leak on transaction commit
+Phil
 
-Zhu Yanhai (1):
-      jbd2: move bdget out of critical section
-
- fs/ext4/ext4_jbd2.h |    4 +-
- fs/ext4/fsync.c     |   17 +++++++++--
- fs/ext4/inode.c     |   35 ++++++++++++++++--------
- fs/ext4/super.c     |   74 ++++++++++++++++++++++++++++++++++++++++-----------
- fs/jbd2/commit.c    |    4 ++-
- fs/jbd2/journal.c   |    3 +-
- 6 files changed, 102 insertions(+), 35 deletions(-)
+> +				max, measured_times[max]);
+> +			measured_times[max] = 0;
+> +			max = min;
+> +		}
+> +
+> +		for (i = 0; i < MAX_DIRECT_CALIBRATION_RETRIES; i++) {
+> +			if (measured_times[i] == 0)
+> +				continue;
+> +			good_timer_count++;
+> +			good_timer_sum += measured_times[i];
+> +			if (measured_times[i] < measured_times[min])
+> +				min = i;
+> +			if (measured_times[i] > measured_times[max])
+> +				max = i;
+> +		}
+> +
+> +	}
+>  
+> -	printk(KERN_WARNING "calibrate_delay_direct() failed to get a good "
+> +	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
+>  	       "estimate for loops_per_jiffy.\nProbably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
+>  	return 0;
+>  }
+> _
