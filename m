@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab1DKSgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 14:36:43 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:39582 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab1DKSgm (ORCPT
+	id S1755433Ab1DKSha (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 14:37:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56201 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab1DKSh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 14:36:42 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DA34AA5.3020700@cam.ac.uk>
-Date: Mon, 11 Apr 2011 19:38:29 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Mon, 11 Apr 2011 14:37:29 -0400
+Message-ID: <4DA34A52.6020409@vlnb.net>
+Date: Mon, 11 Apr 2011 22:37:06 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101208 Mnenhy/0.8.3 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        tglx@linutronix.de
-Subject: Re: [RFC PATCH 00/21] IIO: Channel registration rework, buffer chardev
- combining and rewrite of triggers as 'virtual' irq_chips.
-References: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1301583255-28468-1-git-send-email-jic23@cam.ac.uk>
-X-Enigmail-Version: 1.1.2
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Madhu Iyengar <madhu.iyengar@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Ruediger Oertel <ro@suse.de>, Andy Grover <agrover@redhat.com>
+Subject: Re: [RFC-v3 2/3] qla2xxx: Enable 2xxx series LLD target mode support
+References: <1301980307-14778-1-git-send-email-nab@linux-iscsi.org> <1301980307-14778-3-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <1301980307-14778-3-git-send-email-nab@linux-iscsi.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:L+vTuai18vo1G+FcN/7NLazqQQOUCqMMrQSOo3ejuKr
+ vhi1UGFyrM2iFKkH0Vz+bTC0baEEERcynYAqJdM9xLQxlLYPXm
+ VlJVDfcT6NMyePRcDx5InNi1gPR37NSi6nG/ZNv6sSSlUBJWSc
+ 2KmGgoFCp3zypIW010ddZiPdkR+nCLpy6EqIb+Fl8pfT2FQZ+8
+ gzbLd7p2olGj4YufT8UnQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nicholas A. Bellinger, on 04/05/2011 09:11 AM wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> This patch enables target mode support with the qla2xxx SCSI LLD using
+> qla_target.c logic introduced in commit f86d9fc734.  This includes:
+> 
+> *) Addition of target mode specific members to existing data
+> structures in qla_def.h and struct qla_hw_data->qla2x_tmpl using
+> qla_target.h:struct qla_target_template.
+> 
+> *) Addition of struct qla_target_template and direct calls into
+> qla_target.c logic w/ qla_tgt_* prefixed functions.
+> 
+> *) Addition of qla_iocb:qla2x00_req_pkt() for ring processing, and
+> qla2x00_issue_marker() for handling request/response queue processing
+> for target mode operation
+> 
+> *) Addition of various qla_tgt_mode_enabled() logic checks in
+> qla24xx_nvram_config(), qla2x00_initialize_adapter(), qla2x00_rff_id(),
+> qla2x00_abort_isp(), qla24xx_modify_vp_config(), and qla2x00_vp_abort_isp().
+> 
+> For the specific checks for qla_hw_data->qla2x_tmpl this includes:
+> 
+> *) control plane:
+> 
+> qla_init.c:qla2x00_rport_del() -> qla_tgt_fc_port_deleted()
+> qla_init.c:qla2x00_reg_remote_port() -> qla_tgt_fc_port_added()
+> qla_init.c:qla2x00_device_resync() -> qla2x00_mark_device_lost()
+> 
+> *) I/O path:
+> 
+> qla_isr.c:qla2x00_async_event() -> qla_tgt_async_event()
+> qla_isr.c:qla2x00_process_response_queue() -> qla_tgt_response_pkt_all_vps()
+> qla_isr.c:qla24xx_process_response_queue() -> qla_tgt_response_pkt_all_vps()
 
-Just a quick heads up.  I am not intending to repost this series
-to lkml.  Given with carrying drivers through past 
-"staging:iio: Remove legacy event handling" has resulted
-in over 50 patches that are mostly very much driver specific,
-it seems silly to bombard the general list.
+Most of this code was written by me and other SCST developers. How about
+to give proper credits to the original authors?
 
-I will be posting that set on linux-iio if anyone is interested
-(after a little more cleaning up).
-
-I will cherry pick a few bits such as the additional
-exports from genirq to post to lkml.
-
-Seems rude to drop a huge patch set on everyone when
-only a few corners will be of general interest.
-
-Jonathan
-
+Vlad
