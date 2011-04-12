@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab1DLSfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 14:35:46 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:52930 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758322Ab1DLSfp (ORCPT
+	id S932353Ab1DLSiq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 14:38:46 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:20510 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754793Ab1DLSip convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 14:35:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=Ld+GHVVcx4Ra8bBs4XtUgk/2PeXsakoIjVuXhQKaBJlhiTLmxj8ivQS9txqwumKo+N
-         QsLHLRw/cWIqv6xO0WlHFRn/xMkMJGbPW8p7pYH1nmo0kwKw9L++ikPeMri2d9F4LHEt
-         nZeLn5dDbAX1Y+5Gzm9l47iNBMiBb7eGH0oZE=
-Date: Tue, 12 Apr 2011 15:35:36 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: adding trace-cmd's plugins to perf
-Message-ID: <20110412183536.GA20452@ghostprotocols.net>
-References: <4DA12905.2020806@gmail.com>
- <20110412162245.GB2240@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412162245.GB2240@nowhere>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Apr 2011 14:38:45 -0400
+X-IronPort-AV: E=Sophos;i="4.64,198,1301900400"; 
+   d="scan'208";a="540882502"
+Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Bryan Schumaker <bjschuma@netapp.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+In-Reply-To: <4DA49B49.1020005@suse.cz>
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>
+	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>
+	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>
+	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>
+	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz>
+	 <1302633088.4801.48.camel@lade.trondhjem.org>  <4DA49B49.1020005@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Tue, 12 Apr 2011 14:38:42 -0400
+Message-ID: <1302633522.4801.49.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 12 Apr 2011 18:38:44.0160 (UTC) FILETIME=[DA0B7C00:01CBF940]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Apr 12, 2011 at 06:22:47PM +0200, Frederic Weisbecker escreveu:
-> On Sat, Apr 09, 2011 at 09:50:29PM -0600, David Ahern wrote:
-> > Right now perf script cannot process kvm tracepoints:
+On Tue, 2011-04-12 at 20:34 +0200, Jiri Slaby wrote:
+> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
+> >> Yes, it fixes the problem. But it waits 15s before it times out. This is
+> >> inacceptable for automounted NFS dirs.
 > > 
-> > perf record -e kvm:* -p 6446 -- sleep 5
+> > I'm still confused as to why you are hitting it at all. In the normal
+> > autonegotiation case, the client should be trying to use AUTH_SYS first
+> > and then trying rpcsec_gss if and only if that fails.
 > > 
-> > perf script
-> >   Warning: Error: expected type 4 but read 7
-
-> > are about merging common code between the two commands. Also, trace-cmd and perf
-> > are in separate repositories so a shared lib is going to inconvenience
-> > one of the two.
+> > Are you really exporting a filesystem using AUTH_NULL as the only
+> > supported flavour?
 > 
-> So, we copied the tools/perf/util/trace-event-* files from trace-cmd to perf
-> a while go. Then both files took their own path, both pulling fixes/enhancement
-> from each others (probably more in the trace-cmd -> perf direction).
-> 
-> And perf is indeed a bit backward wrt parsing, because it lacks those plugins
-> for example. So now it would be nice to unify that in a common lib so that it
-> works well in both.
-> 
-> Steve proposed a shared tools/trace.so, that perf and trace-cmd could plug
-> into, I really would like to see that happening too.
-> 
-> I think Ingo had some reserves about this, due to potential versioning
-> and compatibility that such a dynamic lib would involve.
+> I don't know, I connect to a nfs server which is not maintained by me.
+> It looks like that. How can I find out?
 
-So we don't commit to an ABI for a while, just linking with it, changing
-users when changing the ABI.
+A wireshark trace of a successful mount would help.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-I encourage David to go and add the bits of trace-cmd he needs for
-support the plugins he wants used in perf on tools/lib/ and make perf
-use it.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-That way we again reduce the differences between the codebases, or at least
-reduce the feature gap.
-
-- Arnaldo
