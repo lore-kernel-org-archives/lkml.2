@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab1DLOjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:39:08 -0400
-Received: from kroah.org ([198.145.64.141]:57901 "EHLO coco.kroah.org"
+	id S932522Ab1DLOkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:40:33 -0400
+Received: from kroah.org ([198.145.64.141]:57917 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932480Ab1DLOjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:39:01 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:58 2011
-Message-Id: <20110412143558.883841857@clark.kroah.org>
+	id S932481Ab1DLOjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:39:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:59 2011
+Message-Id: <20110412143559.086361787@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:31 -0700
+Date: Tue, 12 Apr 2011 07:35:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tao Ma <boyu.mt@taobao.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [102/105] ext4: fix a double free in ext4_register_li_request
+        Neil Brown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [104/105] nfsd: fix auth_domain reference leak on nlm operations
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tao Ma <boyu.mt@taobao.com>
+From: J. Bruce Fields <bfields@redhat.com>
 
-commit 46e4690bbd9a4f8d9e7c4f34e34b48f703ad47e0 upstream.
+commit 954032d2527f2fce7355ba70709b5e143d6b686f upstream.
 
-In ext4_register_li_request, we malloc a ext4_li_request and
-inserts it into ext4_li_info->li_request_list. In case of any
-error later, we free it in the end.  But if we have some error
-in ext4_run_lazyinit_thread, the whole li_request_list will be
-dropped and freed in it. So we will double free this ext4_li_request.
+This was noticed by users who performed more than 2^32 lock operations
+and hence made this counter overflow (eventually leading to
+use-after-free's).  Setting rq_client to NULL here means that it won't
+later get auth_domain_put() when it should be.
 
-This patch just sets elr to NULL after it is inserted to the list
-so that the latter kfree won't double free it.
+Appears to have been introduced in 2.5.42 by "[PATCH] kNFSd: Move auth
+domain lookup into svcauth" which moved most of the rq_client handling
+to common svcauth code, but left behind this one line.
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Neil Brown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/super.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/nfsd/lockd.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2978,6 +2978,12 @@ static int ext4_register_li_request(stru
- 	mutex_unlock(&ext4_li_info->li_list_mtx);
- 
- 	sbi->s_li_request = elr;
-+	/*
-+	 * set elr to NULL here since it has been inserted to
-+	 * the request_list and the removal and free of it is
-+	 * handled by ext4_clear_request_list from now on.
-+	 */
-+	elr = NULL;
- 
- 	if (!(ext4_li_info->li_state & EXT4_LAZYINIT_RUNNING)) {
- 		ret = ext4_run_lazyinit_thread();
+--- a/fs/nfsd/lockd.c
++++ b/fs/nfsd/lockd.c
+@@ -38,7 +38,6 @@ nlm_fopen(struct svc_rqst *rqstp, struct
+ 	exp_readlock();
+ 	nfserr = nfsd_open(rqstp, &fh, S_IFREG, NFSD_MAY_LOCK, filp);
+ 	fh_put(&fh);
+-	rqstp->rq_client = NULL;
+ 	exp_readunlock();
+  	/* We return nlm error codes as nlm doesn't know
+ 	 * about nfsd, but nfsd does know about nlm..
 
 
