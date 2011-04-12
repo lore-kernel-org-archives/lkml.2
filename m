@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab1DLOyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:54:46 -0400
-Received: from kroah.org ([198.145.64.141]:57499 "EHLO coco.kroah.org"
+	id S932199Ab1DLOzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:55:08 -0400
+Received: from kroah.org ([198.145.64.141]:57482 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757163Ab1DLOhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:54 -0400
+	id S932093Ab1DLOhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:51 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:51 2011
-Message-Id: <20110412143551.251652319@clark.kroah.org>
+Message-Id: <20110412143550.930494030@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:20 -0700
+Date: Tue, 12 Apr 2011 07:34:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [031/105] powerpc: Fix accounting of softirq time when idle
+        Yinghai Lu <yinghai@kernel.org>, Mike Waychison <mikew@google.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [028/105] watchdog: sp5100_tco.c: Check if firmware has set correct value in tcobase.
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit ad5d1c888e556bc00c4e86f452cad4a3a87d22c1 upstream.
+commit 90d241edd13bdeef70f264b569f7e150bf23621e upstream.
 
-commit cf9efce0ce31 (powerpc: Account time using timebase rather
-than PURR) used in_irq() to detect if the time was spent in
-interrupt processing. This only catches hardirq context so if we
-are in softirq context and in the idle loop we end up accounting it
-as idle time. If we instead use in_interrupt() we catch both softirq
-and hardirq time.
+Stefano found SP5100 TCO watchdog driver using wrong address.
 
-The issue was found when running a network intensive workload. top
-showed the following:
+[    9.148536] SP5100 TCO timer: SP5100 TCO WatchDog Timer Driver v0.01
+[    9.148628] DEBUG __ioremap_caller WARNING address=b8fe00 size=8 valid=1 reserved=1
 
-0.0%us,  1.1%sy,  0.0%ni, 85.7%id,  0.0%wa,  9.9%hi,  3.3%si,  0.0%st
+and e820 said that range is RAM.
 
-85.7% idle. But this was wildly different to the perf events data.
-To confirm the suspicion I ran something to keep the core busy:
+We should check if we can use that reading out. BIOS could just program wrong address there.
 
-# yes > /dev/null &
-
-8.2%us,  0.0%sy,  0.0%ni,  0.0%id,  0.0%wa, 10.3%hi, 81.4%si,  0.0%st
-
-We only got 8.2% of the CPU for the userspace task and softirq has
-shot up to 81.4%.
-
-With the patch below top shows the correct stats:
-
-0.0%us,  0.0%sy,  0.0%ni,  5.3%id,  0.0%wa, 13.3%hi, 81.3%si,  0.0%st
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by:Yinghai Lu <yinghai@kernel.org>
+Acked-by: Mike Waychison <mikew@google.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/time.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/watchdog/sp5100_tco.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -356,7 +356,7 @@ void account_system_vtime(struct task_st
- 	}
- 	get_paca()->user_time_scaled += user_scaled;
+--- a/drivers/watchdog/sp5100_tco.c
++++ b/drivers/watchdog/sp5100_tco.c
+@@ -42,6 +42,7 @@
+ #define PFX TCO_MODULE_NAME ": "
  
--	if (in_irq() || idle_task(smp_processor_id()) != tsk) {
-+	if (in_interrupt() || idle_task(smp_processor_id()) != tsk) {
- 		account_system_time(tsk, 0, delta, sys_scaled);
- 		if (stolen)
- 			account_steal_time(stolen);
+ /* internal variables */
++static u32 tcobase_phys;
+ static void __iomem *tcobase;
+ static unsigned int pm_iobase;
+ static DEFINE_SPINLOCK(tco_lock);	/* Guards the hardware */
+@@ -305,10 +306,18 @@ static unsigned char __devinit sp5100_tc
+ 	/* Low three bits of BASE0 are reserved. */
+ 	val = val << 8 | (inb(SP5100_IO_PM_DATA_REG) & 0xf8);
+ 
++	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
++								"SP5100 TCO")) {
++		printk(KERN_ERR PFX "mmio address 0x%04x already in use\n",
++			val);
++		goto unreg_region;
++	}
++	tcobase_phys = val;
++
+ 	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
+ 	if (tcobase == 0) {
+ 		printk(KERN_ERR PFX "failed to get tcobase address\n");
+-		goto unreg_region;
++		goto unreg_mem_region;
+ 	}
+ 
+ 	/* Enable watchdog decode bit */
+@@ -346,7 +355,8 @@ static unsigned char __devinit sp5100_tc
+ 	/* Done */
+ 	return 1;
+ 
+-	iounmap(tcobase);
++unreg_mem_region:
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+ unreg_region:
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ exit:
+@@ -401,6 +411,7 @@ static int __devinit sp5100_tco_init(str
+ 
+ exit:
+ 	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ 	return ret;
+ }
+@@ -414,6 +425,7 @@ static void __devexit sp5100_tco_cleanup
+ 	/* Deregister */
+ 	misc_deregister(&sp5100_tco_miscdev);
+ 	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ }
+ 
 
 
