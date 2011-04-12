@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab1DLJCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 05:02:12 -0400
-Received: from 8bytes.org ([88.198.83.132]:50148 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756830Ab1DLJCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 05:02:09 -0400
-Date: Tue, 12 Apr 2011 11:02:07 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alex Deucher <alexdeucher@gmail.com>, dri-devel@lists.freedesktop.org
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110412090207.GE19819@8bytes.org>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756830Ab1DLJEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 05:04:00 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38014 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab1DLJD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 05:03:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=dpUptHX7Ulk6jFYl5QLCkvwA8+ne5bwbjT64wynVRSeyo0Dks65bTqDa5dz3q/qGaI
+         Ji+xyJ1tNXzCNt+1VAu5zGk9A+ctALB10wpWz5akSNYyYGaK/eD1dKnKZNdCr0l7MZ1x
+         uLrycR+ZdQt3dR80v4Ps5tKevblxdOvp5lgPg=
+Subject: Re: [PATCH 3/4]percpu_counter: fix code for 32bit systems
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, cl@linux.com, tj@kernel.org
+In-Reply-To: <1302595444.3981.129.camel@sli10-conroe>
+References: <1302595444.3981.129.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 11:03:55 +0200
+Message-ID: <1302599035.3233.27.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 05:40:11PM -0700, Linus Torvalds wrote:
-> Let's hope the release cycle continues like this. I _like_ it when
-> people really seem to follow the whole "big changes during the merge
-> window" rules.
+Le mardi 12 avril 2011 à 16:04 +0800, Shaohua Li a écrit :
+> percpu_counter.counter is a 's64'. Accessing it in 32-bit system is racing.
+> we need some locking to protect it otherwise some very wrong value could be
+> accessed.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> ---
+>  include/linux/percpu_counter.h |   43 +++++++++++++++++++++++++++++++----------
+>  1 file changed, 33 insertions(+), 10 deletions(-)
+> 
+> Index: linux/include/linux/percpu_counter.h
+> ===================================================================
+> --- linux.orig/include/linux/percpu_counter.h	2011-04-12 15:48:44.000000000 +0800
+> +++ linux/include/linux/percpu_counter.h	2011-04-12 15:48:54.000000000 +0800
+> @@ -54,7 +54,15 @@ static inline s64 percpu_counter_sum(str
+>  
+>  static inline s64 percpu_counter_read(struct percpu_counter *fbc)
+>  {
+> +#if BITS_PER_LONG == 32
+> +	s64 count;
+> +	spin_lock(&fbc->lock);
+> +	count = fbc->count;
+> +	spin_unlock(&fbc->lock);
+> +	return count;
+> +#else
+>  	return fbc->count;
+> +#endif
+>  }
+>  
 
-Sorry for disturbing the silence, but radeon seems to have issues. I
-tested -rc3 (and after that -rc1 which also has the issue) on my Laptop
-and it just reboots after (or while?) GFX initialization. The last lines
-of dmesg are:
+Hmm... did you test this with LOCKDEP on ?
 
- Freeing unused kernel memory: 624k freed
- Write protecting the kernel read-only data: 8192k
- Freeing unused kernel memory: 1456k freed
- Freeing unused kernel memory: 16k freed
- udev: starting version 151
- udevd (62): /proc/62/oom_adj is deprecated, please use /proc/62/oom_score_adj instead.
- [drm] Initialized drm 1.1.0 20060810
- [drm] radeon defaulting to kernel modesetting.
- [drm] radeon kernel modesetting enabled.
- radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
- [drm] initializing kernel modesetting (RS880 0x1002:0x9712).
- [drm] register mmio base: 0xD6400000
- [drm] register mmio size: 65536
- ATOM BIOS: HP_TAG
- radeon 0000:01:05.0: VRAM: 320M 0x00000000C0000000 - 0x00000000D3FFFFFF (320M used)
- radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
- [drm] Detected VRAM RAM=320M, BAR=256M
- [drm] RAM width 32bits DDR
- [TTM] Zone  kernel: Available graphics memory: 1896512 kiB.
- usb 7-2: new full speed USB device number 2 using ohci_hcd
- [TTM] Initializing pool allocator.
- [drm] radeon: 320M of VRAM memory ready
- [drm] radeon: 512M of GTT memory ready.
- [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
- [drm] Driver supports precise vblank timestamp query.
- [drm] radeon: irq initialized.
- [drm] GART: num cpu pages 131072, num gpu pages 131072
- [drm] Loading RS780 Microcode
- radeon 0000:01:05.0: WB enabled
- [drm] ring test succeeded in 1 usecs
- [drm] radeon: ib pool ready.
+You add a possible deadlock here.
 
-The card is a Radeon Mobility 4200:
+Hint : Some percpu_counter are used from irq context.
 
-01:05.0 VGA compatible controller: ATI Technologies Inc M880G [Mobility Radeon HD 4200]
-        Subsystem: Hewlett-Packard Company Device 307e
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0, Cache Line Size: 64 bytes
-        Interrupt: pin A routed to IRQ 18
-        Region 0: Memory at c0000000 (32-bit, prefetchable) [size=256M]
-        Region 1: I/O ports at 6000 [size=256]
-        Region 2: Memory at d6400000 (32-bit, non-prefetchable) [size=64K]
-        Region 5: Memory at d6300000 (32-bit, non-prefetchable) [size=1M]
-        Capabilities: [50] Power Management version 3
-                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-                Status: D0 PME-Enable- DSel=0 DScale=0 PME-
-        Capabilities: [a0] Message Signalled Interrupts: Mask- 64bit+ Queue=0/0 Enable-
-                Address: 0000000000000000  Data: 0000
-        Kernel driver in use: radeon
-        Kernel modules: radeon
+This interface assumes caller take the appropriate locking.
 
-The problem does not happen with 2.6.38. I try to bisect this further down to a
-commit. Alex, please let me know if you need any further information.
 
-	Joerg
 
