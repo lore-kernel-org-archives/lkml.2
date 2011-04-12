@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab1DLOnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:43:23 -0400
-Received: from kroah.org ([198.145.64.141]:57786 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932414Ab1DLOir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:47 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:57 2011
-Message-Id: <20110412143557.258763486@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [087/105] mfd: ab3100: world-writable debugfs *_priv files
-In-Reply-To: <20110412143613.GA19478@kroah.com>
+	id S932543Ab1DLOne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:43:34 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49699 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932455Ab1DLOnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:43:32 -0400
+Date: Tue, 12 Apr 2011 16:43:30 +0200
+From: Cyril Hrubis <metan@ucw.cz>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, utx@penguin.cz,
+        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>,
+        Kexec Mailing List <kexec@lists.infradead.org>
+Subject: Re: reboot/kexec in 2.6.38
+Message-ID: <20110412144330.GB20815@atrey.karlin.mff.cuni.cz>
+References: <20110317064523.GA1995@ucw.cz> <AANLkTik1CdT4k8SJop7b-MjR27RzF7a=i7WuodNKJi+J@mail.gmail.com> <20110322133034.GA15475@atrey.karlin.mff.cuni.cz> <m1bp0zylgg.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1bp0zylgg.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+Hi!
+> >> I think it's config issue. Never heard of this.
+> >
+> > I've just compiled and booted 2.6.38. The kernel boots without problems when
+> > flashed in. But I've had no success with kexec, the last lines I see are:
+> >
+> > Starting new kernel
+> 
+> Enable early_printk to a serial port if you can.
+> 
+> There is definitely an issue in 2.6.38 where kdump doesn't work, that
+> right now looks like a memblock issue.
 
-------------------
+Finaly got time to solder serial adapter...
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+And now, after I configured kernel to print to both ttyS0 serial console and
+tty0 the kexec started to work.
 
-commit f8a0697722d12a201588225999cfc8bfcbc82781 upstream.
-
-Don't allow everybody to change device hardware registers.
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/mfd/ab3100-core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -613,7 +613,7 @@ static void ab3100_setup_debugfs(struct
- 	ab3100_get_priv.ab3100 = ab3100;
- 	ab3100_get_priv.mode = false;
- 	ab3100_get_reg_file = debugfs_create_file("get_reg",
--				S_IWUGO, ab3100_dir, &ab3100_get_priv,
-+				S_IWUSR, ab3100_dir, &ab3100_get_priv,
- 				&ab3100_get_set_reg_fops);
- 	if (!ab3100_get_reg_file) {
- 		err = -ENOMEM;
-@@ -623,7 +623,7 @@ static void ab3100_setup_debugfs(struct
- 	ab3100_set_priv.ab3100 = ab3100;
- 	ab3100_set_priv.mode = true;
- 	ab3100_set_reg_file = debugfs_create_file("set_reg",
--				S_IWUGO, ab3100_dir, &ab3100_set_priv,
-+				S_IWUSR, ab3100_dir, &ab3100_set_priv,
- 				&ab3100_get_set_reg_fops);
- 	if (!ab3100_set_reg_file) {
- 		err = -ENOMEM;
-
-
+-- 
+metan
