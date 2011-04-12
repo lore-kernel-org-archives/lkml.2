@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab1DLOyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:54:33 -0400
-Received: from kroah.org ([198.145.64.141]:57504 "EHLO coco.kroah.org"
+	id S1757269Ab1DLOyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:54:46 -0400
+Received: from kroah.org ([198.145.64.141]:57499 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757222Ab1DLOhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:55 -0400
+	id S1757163Ab1DLOhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:54 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:51 2011
-Message-Id: <20110412143551.352398715@clark.kroah.org>
+Message-Id: <20110412143551.251652319@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:21 -0700
+Date: Tue, 12 Apr 2011 07:34:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [032/105] nilfs2: fix data loss in mmap page write for hole blocks
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [031/105] powerpc: Fix accounting of softirq time when idle
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Anton Blanchard <anton@samba.org>
 
-commit 34094537943113467faee98fe67c8a3d3f9a0a8b upstream.
+commit ad5d1c888e556bc00c4e86f452cad4a3a87d22c1 upstream.
 
->From the result of a function test of mmap, mmap write to shared pages
-turned out to be broken for hole blocks.  It doesn't write out filled
-blocks and the data will be lost after umount.  This is due to a bug
-that the target file is not queued for log writer when filling hole
-blocks.
+commit cf9efce0ce31 (powerpc: Account time using timebase rather
+than PURR) used in_irq() to detect if the time was spent in
+interrupt processing. This only catches hardirq context so if we
+are in softirq context and in the idle loop we end up accounting it
+as idle time. If we instead use in_interrupt() we catch both softirq
+and hardirq time.
 
-Also, nilfs_page_mkwrite function exits normal code path even after
-successfully filled hole blocks due to a change of block_page_mkwrite
-function; just after nilfs was merged into the mainline,
-block_page_mkwrite() started to return VM_FAULT_LOCKED instead of zero
-by the patch "mm: close page_mkwrite races" (commit:
-b827e496c893de0c).  The current nilfs_page_mkwrite() is not handling
-this value properly.
+The issue was found when running a network intensive workload. top
+showed the following:
 
-This corrects nilfs_page_mkwrite() and will resolve the data loss
-problem in mmap write.
+0.0%us,  1.1%sy,  0.0%ni, 85.7%id,  0.0%wa,  9.9%hi,  3.3%si,  0.0%st
 
-[This should be applied to every kernel since 2.6.30 but a fix is
- needed for 2.6.37 and prior kernels]
+85.7% idle. But this was wildly different to the perf events data.
+To confirm the suspicion I ran something to keep the core busy:
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+# yes > /dev/null &
+
+8.2%us,  0.0%sy,  0.0%ni,  0.0%id,  0.0%wa, 10.3%hi, 81.4%si,  0.0%st
+
+We only got 8.2% of the CPU for the userspace task and softirq has
+shot up to 81.4%.
+
+With the patch below top shows the correct stats:
+
+0.0%us,  0.0%sy,  0.0%ni,  5.3%id,  0.0%wa, 13.3%hi, 81.3%si,  0.0%st
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nilfs2/file.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nilfs2/file.c
-+++ b/fs/nilfs2/file.c
-@@ -72,10 +72,9 @@ static int nilfs_page_mkwrite(struct vm_
- 	/*
- 	 * check to see if the page is mapped already (no holes)
- 	 */
--	if (PageMappedToDisk(page)) {
--		unlock_page(page);
-+	if (PageMappedToDisk(page))
- 		goto mapped;
--	}
-+
- 	if (page_has_buffers(page)) {
- 		struct buffer_head *bh, *head;
- 		int fully_mapped = 1;
-@@ -90,7 +89,6 @@ static int nilfs_page_mkwrite(struct vm_
- 
- 		if (fully_mapped) {
- 			SetPageMappedToDisk(page);
--			unlock_page(page);
- 			goto mapped;
- 		}
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -356,7 +356,7 @@ void account_system_vtime(struct task_st
  	}
-@@ -105,16 +103,17 @@ static int nilfs_page_mkwrite(struct vm_
- 		return VM_FAULT_SIGBUS;
+ 	get_paca()->user_time_scaled += user_scaled;
  
- 	ret = block_page_mkwrite(vma, vmf, nilfs_get_block);
--	if (unlikely(ret)) {
-+	if (ret != VM_FAULT_LOCKED) {
- 		nilfs_transaction_abort(inode->i_sb);
- 		return ret;
- 	}
-+	nilfs_set_file_dirty(inode, 1 << (PAGE_SHIFT - inode->i_blkbits));
- 	nilfs_transaction_commit(inode->i_sb);
- 
-  mapped:
- 	SetPageChecked(page);
- 	wait_on_page_writeback(page);
--	return 0;
-+	return VM_FAULT_LOCKED;
- }
- 
- static const struct vm_operations_struct nilfs_file_vm_ops = {
+-	if (in_irq() || idle_task(smp_processor_id()) != tsk) {
++	if (in_interrupt() || idle_task(smp_processor_id()) != tsk) {
+ 		account_system_time(tsk, 0, delta, sys_scaled);
+ 		if (stolen)
+ 			account_steal_time(stolen);
 
 
