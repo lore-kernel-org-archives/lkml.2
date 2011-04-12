@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab1DLVO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 17:14:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35423 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab1DLVO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 17:14:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vs3TZRDjh5Umy+O39HnPClCLc4lq+2nkmRtnmD05wNQN+v1e+mZahmktaUkdt//KZQ
-         3sEhePdSwWlJqZPCl51YVNCL3SHSFikSWIoSYnU8rOMN+k0V//lCMyCiRFcua/v1XIli
-         z/3gVNefOMnykCqb1x3mvfhApmrzbu+9Eo4Lw=
-Date: Wed, 13 Apr 2011 00:14:53 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        behlendorf1@llnl.gov, oleg@redhat.com
-Subject: Re: [PATCH] remove abs64()
-Message-ID: <20110412211452.GA20135@p183>
-References: <20110412210045.GA19901@p183>
- <20110412140726.3f4f2a7b.rdunlap@xenotime.net>
+	id S932597Ab1DLVQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 17:16:32 -0400
+Received: from void.printf.net ([89.145.121.20]:32944 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932503Ab1DLVQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 17:16:30 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com,
+        linux-mmc@vger.kernel.org
+Subject: Re: zaurus: mmcblk0: error -110
+References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz>
+	<m3aafvz30t.fsf@pullcord.laptop.org>
+	<20110412193944.GC2665@atrey.karlin.mff.cuni.cz>
+	<m3oc4bxne1.fsf@pullcord.laptop.org>
+	<20110412205421.GD2665@atrey.karlin.mff.cuni.cz>
+Date: Tue, 12 Apr 2011 17:21:15 -0400
+In-Reply-To: <20110412205421.GD2665@atrey.karlin.mff.cuni.cz> (Cyril Hrubis's
+	message of "Tue, 12 Apr 2011 22:54:21 +0200")
+Message-ID: <m3fwpnxj1w.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412140726.3f4f2a7b.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 02:07:26PM -0700, Randy Dunlap wrote:
-> On Wed, 13 Apr 2011 00:00:45 +0300 Alexey Dobriyan wrote:
-> 
-> > We don't need no stinking abs64() given some GCC extensions
-> > (especially __builtin_choose_expr()).
-> > 
-> > One abs() implementation is better than two abs() implementations.
-> 
-> questionable.
+Hi,
 
-Come on, what's so special in 64-bit types?
+On Tue, Apr 12 2011, Cyril Hrubis wrote:
+> Tried 2.6.39-rc3 both with and without CONFIG_MMC_UNSAFE_RESUME and the
+> insert/remove detection works but both with and without unsafe resume, if the
+> card is removed for more than second or two it fails to recognize the card
+> after insertion failing with:
+>
+> mmc0: error -95 whilst initialising SD card
 
-> > --- a/include/linux/kernel.h
-> > +++ b/include/linux/kernel.h
+That's interesting.  Would you mind trying to bisect?  (Knowing whether
+2.6.38 final does it, for example, would be very helpful.)
 
-> > -#define abs64(x) ({				\
-> > -		s64 __x = (x);			\
-> > -		(__x < 0) ? -__x : __x;		\
-> > -	})
-> > +#define abs(x)								\
-> > +({									\
-> > +	typeof(x) _x = (x);						\
-> > +									\
-> > +	__builtin_choose_expr(						\
-> > +		__builtin_types_compatible_p(typeof(_x), signed char),	\
-> > +		(unsigned char)({ _x < 0 ? -_x : _x; }),		\
+There aren't many -EOPNOTSUPP returns in the stack.  I see:
 
-> that is better?
+card/block.c: mmc_blk_issue_secdiscard_rq and mmc_blk_issue_discard_rq
+card/core.c: mmc_erase
+core/sd_ops.c: mmc_app_cmd
 
-Infinitely better.
-sizeof(abs(x)) == sizeof(x) for one thing.
+Mind doing some instrumentation to figure out which it is?
 
-Implementation is ugly, but, hey, one can't do better in C.
+Thanks,
 
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
