@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab1DLWFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 18:05:47 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45529
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757255Ab1DLWFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 18:05:46 -0400
-Date: Tue, 12 Apr 2011 15:05:11 -0700 (PDT)
-Message-Id: <20110412.150511.35038648.davem@davemloft.net>
-To: dwalter@barracuda.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ipv6: RTA_PREFSRC support for ipv6 route source
- address selection
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1302505409.8923.2.camel@localhost>
-References: <1302505409.8923.2.camel@localhost>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1757392Ab1DLWHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 18:07:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:32851 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757316Ab1DLWHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 18:07:48 -0400
+Subject: Re: mm: convert vma->vm_flags to 64bit
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <BANLkTinLdWB+ON=TY=KHyzsrC8gC5bXg7Q@mail.gmail.com>
+References: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
+	 <20110411233358.dd400e59.akpm@linux-foundation.org>
+	 <20110412161315.B518.A69D9226@jp.fujitsu.com>
+	 <BANLkTinLdWB+ON=TY=KHyzsrC8gC5bXg7Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 08:07:04 +1000
+Message-ID: <1302646024.28876.52.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=utf-8
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3CM5uZF008758
 
-From: Daniel Walter <dwalter@barracuda.com>
-Date: Mon, 11 Apr 2011 09:03:29 +0200
+On Tue, 2011-04-12 at 14:06 +0300, Alexey Dobriyan wrote:
+> On Tue, Apr 12, 2011 at 10:12 AM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > After next year? All developers don't have to ignore compiler warnings!
+> 
+> At least add vm_flags_t which is sparse-checked, just like we do with gfp_t.
+> 
+> VM_SAO is ppc64 only, so it could be moved into high part,
+> freeing 1 bit?
 
-> ï»¿[ipv6] Add support for RTA_PREFSRC
-> 
-> This patch allows a user to select the preferred source address
-> for a specific IPv6-Route. It can be set via a netlink message
-> setting RTA_PREFSRC to a valid IPv6 address which must be
-> up on the device the route will be bound to.
-> 
-> 
-> Signed-off-by: Daniel Walter <dwalter@barracuda.com>
+My original series did use a type, I don't know what that was dropped,
+it made conversion easier imho.
 
-Ok, I can live with this, applied, thanks!
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Cheers,
+Ben.
+
+
