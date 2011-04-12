@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab1DLSiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 14:38:46 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:20510 "EHLO mx2.netapp.com"
+	id S932271Ab1DLSlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 14:41:17 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:48023 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793Ab1DLSip convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 14:38:45 -0400
-X-IronPort-AV: E=Sophos;i="4.64,198,1301900400"; 
-   d="scan'208";a="540882502"
-Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Bryan Schumaker <bjschuma@netapp.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <4DA49B49.1020005@suse.cz>
-References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>
-	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>
-	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>
-	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>
-	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz>
-	 <1302633088.4801.48.camel@lade.trondhjem.org>  <4DA49B49.1020005@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Tue, 12 Apr 2011 14:38:42 -0400
-Message-ID: <1302633522.4801.49.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 12 Apr 2011 18:38:44.0160 (UTC) FILETIME=[DA0B7C00:01CBF940]
+	id S1755981Ab1DLSlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 14:41:16 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Christoph Lameter <cl@linux.com>
+Subject: Re: um: this_cpu_cmpxchg16b_emu
+Date: Tue, 12 Apr 2011 20:41:11 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        penberg@kernel.org, hpa@zytor.com
+References: <201104121609.56901.richard@nod.at> <alpine.DEB.2.00.1104121309480.14692@router.home>
+In-Reply-To: <alpine.DEB.2.00.1104121309480.14692@router.home>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104122041.11460.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 20:34 +0200, Jiri Slaby wrote:
-> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
-> >> Yes, it fixes the problem. But it waits 15s before it times out. This is
-> >> inacceptable for automounted NFS dirs.
-> > 
-> > I'm still confused as to why you are hitting it at all. In the normal
-> > autonegotiation case, the client should be trying to use AUTH_SYS first
-> > and then trying rpcsec_gss if and only if that fails.
-> > 
-> > Are you really exporting a filesystem using AUTH_NULL as the only
-> > supported flavour?
+Am Dienstag 12 April 2011, 20:10:37 schrieb Christoph Lameter:
+> On Tue, 12 Apr 2011, Richard Weinberger wrote:
+> > This patch implements this_cpu_cmpxchg16b_emu() for UML.
 > 
-> I don't know, I connect to a nfs server which is not maintained by me.
-> It looks like that. How can I find out?
+> Is this really necessary? Just undefine CONFIG_CMPXCHG_LOCAL for UML and
+> the asm code will not be used.
 
-A wireshark trace of a successful mount would help.
--- 
-Trond Myklebust
-Linux NFS client maintainer
+UML includes arch/x86/Kconfig.cpu which defines CONFIG_CMPXCHG_LOCAL automatically.
+Just disabling CONFIG_CMPXCHG_LOCAL for UML is IMHO not very nice.
+When chpxchg is available also UML should use it...
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Thanks,
+//richard
