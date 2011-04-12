@@ -1,93 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab1DLUSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 16:18:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64498 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab1DLUSq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 16:18:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=R8PwvBb8NhmxCjO9Ha0GE4O7/LbkQep2Jqx3j0JCWbWFXWvJQSIEXuavHn1lIYVGjE
-         0Kmwu+vZYhI/F3lYL0GaX8msciCCL3bgdD/jPGDEXFmg5PuFTNVo34joc1OYSEx/EqwG
-         MLpjzKHn6exbDmDAgbSWd/uNiUTS4y9apkbD0=
+	id S1757033Ab1DLUUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 16:20:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756173Ab1DLUUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 16:20:20 -0400
+Message-ID: <4DA4B3FE.2080609@redhat.com>
+Date: Tue, 12 Apr 2011 15:20:14 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <BANLkTik0WzoBig5tfefkEEaWc-xaXQDq9Q@mail.gmail.com>
-References: <4D90CBE5.6090706@kernel.org>
-	<20110412091145.2bc5e6a9@jbarnes-desktop>
-	<4DA489F0.4000003@kernel.org>
-	<20110412104716.5388849d@jbarnes-desktop>
-	<4DA491C6.90403@kernel.org>
-	<20110412105827.443bd56e@jbarnes-desktop>
-	<BANLkTik0WzoBig5tfefkEEaWc-xaXQDq9Q@mail.gmail.com>
-Date: Tue, 12 Apr 2011 13:18:45 -0700
-X-Google-Sender-Auth: TzMPYTrIR2sIJL-8_wzaNaQIyXM
-Message-ID: <BANLkTin+ytTv3zSMdPSgSXuT8NqQ1ExszQ@mail.gmail.com>
-Subject: Re: [PATCH -v2] x86: Remove dma32_reserve_bootmem
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Karel Zak <kzak@redhat.com>
+Subject: Re: Linux 2.6.39-rc3
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412190934.GA12082@redhat.com>
+In-Reply-To: <20110412190934.GA12082@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 12:25 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Apr 12, 2011 at 10:58 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->> On Tue, 12 Apr 2011 10:54:14 -0700
->> Yinghai Lu <yinghai@kernel.org> wrote:
->>
->>> On 04/12/2011 10:47 AM, Jesse Barnes wrote:
->>> > On Tue, 12 Apr 2011 10:20:48 -0700
->>> > Yinghai Lu<yinghai@kernel.org>  wrote:
->>> >
->>> >>
->>> >> That is workaround for holding dma32 buf when early bootmem could use up
->>> >> those range on system that have lots of RAM.
->>> >>
->>> >> Now x86 is using memblock, and even nobootmem wrapper do top-down allocation.
->>> >>
->>> >> So We could remove those not needed code now.
->>> >>
->>> >> -v2: rebase on pci-next
->>> >>
->>> >> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
->>> >>
->>> >
->>> > Hm, still didn't apply cleanly, I guess the patch got corrupted.  I
->>> > fixed it up by hand and applied to linux-next though, thanks.
->>>
->>> sorry for that. looks like recent thunderbird upgrade convert TAB to space..
->>
->> Thanks for checking.  I wonder why every mailer (and some MTAs!) feel
->> the need to molest message content so thoroughly...
->>
->
-> looks like patchwork and LKML have tab instead of spaces.
->
-> https://patchwork.kernel.org/patch/701342/
->
-> https://lkml.org/lkml/2011/4/12/358
->
-> also it is very interesting: in thunderbox inbox/send box, some mails
-> are viewed with TAB as spaces.
-> but source does have TAB.
->
+On 4/12/11 2:09 PM, Dave Jones wrote:
+> On Mon, Apr 11, 2011 at 05:40:11PM -0700, Linus Torvalds wrote:
+>  > It's been another almost spookily calm week. Usually this kind of
+>  > calmness happens much later in the -rc series (during -rc7 or -rc8,
+>  > say), but I'm not going to complain. I'm just still waiting for the
+>  > other shoe to drop.
+>  
+> Here's an odd one.
+> 
+> my laptop's fstab has
+> 
+> /dev/mapper/vg_adamo-lv_home /home                   ext4    defaults        1 2
+> 
+> on 2.6.38, /proc/mounts contains ..
+> 
+> /dev/mapper/vg_adamo-lv_home /home ext4 rw,seclabel,relatime,barrier=1,data=ordered 0 0
+> 
+> on 2.6.39rc3 it looks like..
+> 
+> /dev/mapper/vg_adamo-lv_home /home ext4 rw,seclabel,relatime,user_xattr,barrier=1,data=ordered 0 0
+> 
+> 
+> Which looks like ea6633369458992241599c9d9ebadffaeddec164, so nothing untoward..
+> 
+> however, the output of mount looks very confused..
+> 
+> .38:
+> /dev/mapper/vg_adamo-lv_home on /home type ext4 (rw,relatime,seclabel,barrier=1,data=ordered)
+> 
+> .39:
+> - on /home type 79a9-4526-888c-1f86d35a6704 (rw,relatime,ext4)
+> 
+> It looks like /proc/self/mountinfo broke abi.
+> 
+> .38:
+> 48 45 253:3 / /home rw,relatime - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,barrier=1,data=ordered
+> 
+> .39:
+> 46 22 253:3 / /home rw,relatime uuid:f3971858-79a9-4526-888c-1f86d35a6704 - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,user_xattr,barrier=1,data=ordered
+> 
 
-while using thunderbird 3.1.8 to send patch, need to set
+so it's supposed to be like this, from Documentation/filesystems/proc.txt:
 
-mailnews.send_plaintext_flowed
+> This file contains lines of the form:
+> 
+> 36 35 98:0 /mnt1 /mnt2 rw,noatime master:1 - ext3 /dev/root rw,errors=continue
+> (1)(2)(3)   (4)   (5)      (6)      (7)   (8) (9)   (10)         (11)
+> 
+> (1) mount ID:  unique identifier of the mount (may be reused after umount)
+> (2) parent ID:  ID of parent (or of self for the top of the mount tree)
+> (3) major:minor:  value of st_dev for files on filesystem
+> (4) root:  root of the mount within the filesystem
+> (5) mount point:  mount point relative to the process's root
+> (6) mount options:  per mount options
+> (7) optional fields:  zero or more fields of the form "tag[:value]"
+> (8) separator:  marks the end of the optional fields
+> (9) filesystem type:  name of filesystem of the form "type[.subtype]"
+> (10) mount source:  filesystem specific information or "none"
+> (11) super options:  per super block options
 
-to false.
+it does seem that the new UUID info is in a perfectly fine place (the optional fields slot), at least per the docs, so I guess I might blame the mount binary for not following the aforementioned rules...
 
-otherwise viewer could show TAB as spaces.
+Maybe Karel knows?  cc'd...
 
-Yinghai
+-Eric
+
+> 
+> 	Dave
+> 
+
