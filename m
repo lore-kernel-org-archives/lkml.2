@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab1DLPv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 11:51:59 -0400
-Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:38819 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757882Ab1DLPv5 (ORCPT
+	id S1758005Ab1DLPwV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 11:52:21 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:42084 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757979Ab1DLPwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 11:51:57 -0400
-Message-ID: <45715.64.20.0.20.1302618354.squirrel@64.20.0.20>
-Date: Tue, 12 Apr 2011 14:25:54 -0000 (GMT)
-Subject: Mutual Aid (Stash of Fortune) 37.5 million USD
-From: "George" <george@info.com>
-Reply-To: ivannickerson.claims@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	Tue, 12 Apr 2011 11:52:18 -0400
+Date: Tue, 12 Apr 2011 17:52:17 +0200
+From: Cyril Hrubis <metan@ucw.cz>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, utx@penguin.cz,
+        zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com
+Subject: Re: zaurus: mmcblk0: error -110
+Message-ID: <20110412155217.GA982@atrey.karlin.mff.cuni.cz>
+References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz> <BANLkTikNEJEwq4cfr6cmTcHqcRfyGLM6Ww@mail.gmail.com> <20110412152307.GD20815@atrey.karlin.mff.cuni.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412152307.GD20815@atrey.karlin.mff.cuni.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mutual Aid (Stash of Fortune) 37.5 million USD
+Hi!
+> > Which model do you have? And check the corresponding board file if
+> > card detect GPIO handling is doing right.
+> 
+> I've got spitz (SL-3200).
+> 
+> So I suppose the board file is arch/arm/mach-pxa/spitz.c, I'll have a look.
 
-Hi
-I would hold back certain information for security reasons for now until
-you have found time to visit the BBC website stated below to enable you
-have an insight into what I intend sharing with you.
+Hmm, besides cleanup by Marek Vasut there were no changes in the code. And it
+seems that it was just cleanup in spitz_card_pwr_ctrl().
 
-http://news.bbc.co.uk/2/hi/middle_east/2988455.stm
-
-Get back to me having visited the above website with this email:
-ivannickerson.claims@yahoo.com.hk
-
-Best Regards
-A former member of the  3rd Infantry Division
-
+-- 
+metan
