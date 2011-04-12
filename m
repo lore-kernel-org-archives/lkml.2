@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1DLNH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 09:07:26 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:58347 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab1DLNHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 09:07:25 -0400
-X-ASG-Debug-ID: 1302613643-01de284cf8133e50001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DA44E8B.9040101@fusionio.com>
-Date: Tue, 12 Apr 2011 15:07:23 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>
-Subject: Re: regression - slow git rebase performance with 2.6.39-rcX kernel
-References: <BANLkTimAY2YTFE1_uFJg=XVtV_ww2jdJrw@mail.gmail.com> <BANLkTimAvqT0MxPWvQH6ga698TYhCXF3CQ@mail.gmail.com>
-X-ASG-Orig-Subj: Re: regression - slow git rebase performance with 2.6.39-rcX kernel
-In-Reply-To: <BANLkTimAvqT0MxPWvQH6ga698TYhCXF3CQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1302613643
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60641
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1754576Ab1DLNI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 09:08:29 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52635 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1DLNI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 09:08:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Y9ZKGy5I8/3xdU8vzvT4t4F7VzEJTumo/2hc0UV50WxlOfm7VDyakuOXlyuYkCo3vv
+         AgoRxzbFL4Cy7c9M7KT5QEqldFEgQMXUbLGLIZdlpSKKzHofcUVCXbRhGPh1dAtsaSQ6
+         DzfWqxiPVvmruvoI0GAO3u+CiNVrDZt0uZ3AQ=
+Subject: Re: Loopback and Nagle's algorithm
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Adam McLaurin <lkml@irotas.net>, Will Newton <will.newton@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <alpine.LRH.2.00.1104121354010.6953@twin.jikos.cz>
+References: <1302575869.13492.1440076201@webmail.messagingengine.com>
+	 <BANLkTi=jpdLRc35DkBhLmUr8-P+ggcrgoA@mail.gmail.com>
+	 <1302606246.21782.1440195277@webmail.messagingengine.com>
+	 <alpine.LRH.2.00.1104121354010.6953@twin.jikos.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 15:08:23 +0200
+Message-ID: <1302613703.3233.40.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-12 14:51, Pekka Enberg wrote:
-> Hi,
+Le mardi 12 avril 2011 à 13:54 +0200, Jiri Kosina a écrit :
+> On Tue, 12 Apr 2011, Adam McLaurin wrote:
 > 
-> [ Fixed your empty CC list. ]
+> > > It may be caused by an increase in context switch rate, as both sender
+> > > and receiver are on the same machine.
+> > 
+> > I'm not sure that's what's happening, since the box where I'm running
+> > this test has 8 physical CPU's and 32 cores in total.
 > 
-> On Tue, Apr 12, 2011 at 3:45 PM, Zdenek Kabelac
-> <zdenek.kabelac@gmail.com> wrote:
->> I'm noticing quite slower speed of my git rebase commands on my git
->> tree compared with 2.6.38 kernel.
->> I've  T61 with SSD disc drive, ext4 fs, and by default deadline disk
->> io scheduler
->> The counter showing the number of 'rebased' patches on top of master
->> is going much slower.
->> When I boot 2.6.38 kernel it's much faster.
->>
->> Is it a known problem - or do I need to make a bisect ?
+> Have you tried firing up the testcase under perf, to see what it reveals 
+> as the bottleneck?
 > 
-> No, I don't think it's a known problem. Git bisect would be helpful,
-> obviously.
+CC netdev
 
-Definitely, interesting. Bisect would help. I'll try a similar workload
-here and see if I see any differences. How big is your rebase, and what
-are the runtimes (approximately) on .38 vs .39-rc?
+This rings a bell here.
 
--- 
-Jens Axboe
+I suspect we hit mod_timer() / lock_timer_base()  because of delack
+timer constantly changing.
+
+I remember raising this point last year :
+
+http://kerneltrap.org/mailarchive/linux-netdev/2010/5/20/6277741
+
+David answer : 
+http://kerneltrap.org/mailarchive/linux-netdev/2010/6/2/6278430
+
+I am afraid no change was done...
+
 
