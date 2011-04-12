@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab1DLSCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 14:02:23 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:31251 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755665Ab1DLSCW (ORCPT
+	id S1758252Ab1DLSER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 14:04:17 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:44232 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757477Ab1DLSEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 14:02:22 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: uxgMC_kVM1njLS7pyCPu5xmePxg48cmGE.2PZGWFv0qXTPp
- YfnxxpQCz.4BMtrWLFEBLENwIo8xyDa7YM.tgh_7ZColfsDWyaOew77MFMc9
- pAE7Bt6WKpHRjPPXUpfH9LgleRMbWyuIFH8l_GHuKAQongz6rOulCNnpl1V.
- g608rISiZBRbAJv4HCRjzPeeMLe.mxB_0P2Okz0YIBCNtw.8TQmfWPsGOsZx
- YiYRWmfa1dXA27fAHQXqxbwllrY1EnRXGhpONeBKTMKzfLdC_4AwrbRJXoLE
- .Hm6dXJN4DiX0lH.vrUGjsLmh_SpdxsY23eN7C0E2LIcbYznRD5JSFi9W6Lq
- 783BNuaM2rjn4EIFitlRGo8E-
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 12 Apr 2011 13:02:19 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Li Zefan <lizf@cn.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, penberg@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: Fix a typo in config name
-In-Reply-To: <4DA3FDB2.9090100@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1104121301430.14692@router.home>
-References: <4DA3FDB2.9090100@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 12 Apr 2011 14:04:16 -0400
+Date: Tue, 12 Apr 2011 20:04:14 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, utx@penguin.cz,
+        zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com
+Subject: Re: zaurus: mmcblk0: error -110
+Message-ID: <20110412180414.GA26916@elf.ucw.cz>
+References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz>
+ <BANLkTikNEJEwq4cfr6cmTcHqcRfyGLM6Ww@mail.gmail.com>
+ <20110412152307.GD20815@atrey.karlin.mff.cuni.cz>
+ <20110412155217.GA982@atrey.karlin.mff.cuni.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412155217.GA982@atrey.karlin.mff.cuni.cz>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Apr 2011, Li Zefan wrote:
+On Tue 2011-04-12 17:52:17, Cyril Hrubis wrote:
+> Hi!
+> > > Which model do you have? And check the corresponding board file if
+> > > card detect GPIO handling is doing right.
+> > 
+> > I've got spitz (SL-3200).
+> > 
+> > So I suppose the board file is arch/arm/mach-pxa/spitz.c, I'll have a look.
+> 
+> Hmm, besides cleanup by Marek Vasut there were no changes in the code. And it
+> seems that it was just cleanup in spitz_card_pwr_ctrl().
 
-> There's no config named SLAB_DEBUG, and it should be a typo
-> of SLUB_DEBUG.
->
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->
-> not slub expert, don't know how this bug affects slub debugging.
-
-Affects the bootstrap code.
-
-Acked-by: Christoph Lameter <cl@linux.com>
+With vanilla 2.6.38, I observe similar problem. MMC removal is not
+detected; I get "error -110 whilst initalising SD card" on reinsert.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
