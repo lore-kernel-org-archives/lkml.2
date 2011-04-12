@@ -1,83 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab1DLE5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 00:57:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34588 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab1DLE5x (ORCPT
+	id S1752670Ab1DLFB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 01:01:57 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:34708 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab1DLFB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 00:57:53 -0400
-Date: Tue, 12 Apr 2011 05:57:34 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kenneth Heitke <kheitke@codeaurora.org>
-Cc: davidb@codeaurora.org, dwalker@fifo99.com, ben-linux@fluff.org,
-        tsoni@codeaurora.org, linux@arm.linux.org.uk,
-        linus.walleij@stericsson.com, linux-arm-msm@vger.kernel.org,
-        seth.heasley@intel.com, w.sang@pengutronix.de,
-        tomoya-linux@dsn.okisemi.com, arve@android.com,
-        "open list:I2C SUBSYSTEM" <linux-i2c@vger.kernel.org>,
-        swetland@google.com, khali@linux-fr.org,
-        open list <linux-kernel@vger.kernel.org>, bryanh@codeaurora.org,
-        sdharia@codeaurora.org,
-        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        guenter.roeck@ericsson.com
-Subject: Re: [PATCH] i2c: QUP based bus driver for Qualcomm MSM chipsets
-Message-ID: <20110412045733.GA21059@sirena.org.uk>
-References: <1302573749-15647-1-git-send-email-kheitke@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302573749-15647-1-git-send-email-kheitke@codeaurora.org>
-X-Cookie: I will not forget you.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Tue, 12 Apr 2011 01:01:56 -0400
+Subject: Re: [PATCH 09/34] x86: Allow to override the ROOT_DEV variable
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Michal Marek <mmarek@suse.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+In-Reply-To: <20110411150820.GA22004@sepie.suse.cz>
+References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
+	 <1302015561-21047-10-git-send-email-mmarek@suse.cz>
+	 <4D9B3581.6080105@zytor.com> <4D9C1AA0.9030008@suse.cz>
+	 <20110411150820.GA22004@sepie.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 07:01:10 +0200
+Message-ID: <1302584470.26451.11.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 08:02:27PM -0600, Kenneth Heitke wrote:
+On Mon, 2011-04-11 at 17:08 +0200, Michal Marek wrote:
+> Subject: [PATCH] x86: Do not set the rood_dev field in bzImage
+> 
+> This has been obsoleted by the root= commandline for several years.
+> People who still depend on this will surely have a copy of the rdev
+> command around, the rest of the world gets rid of another piece of
+> buildhost-dependent data in the build.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  arch/x86/boot/Makefile |    9 +--------
+>  1 files changed, 1 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+> index f7cb086..95365a8 100644
+> --- a/arch/x86/boot/Makefile
+> +++ b/arch/x86/boot/Makefile
+> @@ -9,12 +9,6 @@
+>  # Changed by many, many contributors over the years.
+>  #
+>  
+> -# ROOT_DEV specifies the default root-device when making the image.
+> -# This can be either FLOPPY, CURRENT, /dev/xxxx or empty, in which case
+> -# the default of FLOPPY is used by 'build'.
+> -
+> -ROOT_DEV	:= CURRENT
+> -
+>  # If you want to preset the SVGA mode, uncomment the next line and
+>  # set SVGA_MODE to whatever number you want.
+>  # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
+> @@ -75,8 +69,7 @@ GCOV_PROFILE := n
+>  $(obj)/bzImage: asflags-y  := $(SVGA_MODE)
+>  
+>  quiet_cmd_image = BUILD   $@
+> -cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin \
+> -	$(ROOT_DEV) > $@
+> +cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin > $@
+>  
+>  $(obj)/bzImage: $(obj)/setup.bin $(obj)/vmlinux.bin $(obj)/tools/build FORCE
+>  	$(call if_changed,image)
 
-> mini-core. The driver supports FIFO mode (for low bandwidth applications)
-> and block mode (interrupt generated for each block-size data transfer).
-> The driver currently does not support DMA transfers.
+I'm not familiar with the rdev command. I assume it allows one to
+manipulate the two rootdev bytes in a kernel image. Anyhow, shouldn't
+the above patch be complemented with something like the following?
 
-> +static inline void qup_i2c_pwr_disable(struct qup_i2c_dev *dev)
-> +{
-> +	dev_dbg(dev->dev, "%s\n", __func__);
-> +
-> +	if (pm_runtime_enabled(dev->dev)) {
-> +		pm_runtime_mark_last_busy(dev->dev);
-> +		pm_runtime_put_sync(dev->dev);
-> +	} else
-> +		qup_i2c_clk_disable(dev);
-> +}
+diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+index ee3a4ea..fdc60a0 100644
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -130,7 +130,7 @@ static void die(const char * str, ...)
+ 
+ static void usage(void)
+ {
+-	die("Usage: build setup system [rootdev] [> image]");
++	die("Usage: build setup system [> image]");
+ }
+ 
+ int main(int argc, char ** argv)
+@@ -138,39 +138,14 @@ int main(int argc, char ** argv)
+ 	unsigned int i, sz, setup_sectors;
+ 	int c;
+ 	u32 sys_size;
+-	u8 major_root, minor_root;
+ 	struct stat sb;
+ 	FILE *file;
+ 	int fd;
+ 	void *kernel;
+ 	u32 crc = 0xffffffffUL;
+ 
+-	if ((argc < 3) || (argc > 4))
++	if (argc != 3)
+ 		usage();
+-	if (argc > 3) {
+-		if (!strcmp(argv[3], "CURRENT")) {
+-			if (stat("/", &sb)) {
+-				perror("/");
+-				die("Couldn't stat /");
+-			}
+-			major_root = major(sb.st_dev);
+-			minor_root = minor(sb.st_dev);
+-		} else if (strcmp(argv[3], "FLOPPY")) {
+-			if (stat(argv[3], &sb)) {
+-				perror(argv[3]);
+-				die("Couldn't stat root device.");
+-			}
+-			major_root = major(sb.st_rdev);
+-			minor_root = minor(sb.st_rdev);
+-		} else {
+-			major_root = 0;
+-			minor_root = 0;
+-		}
+-	} else {
+-		major_root = DEFAULT_MAJOR_ROOT;
+-		minor_root = DEFAULT_MINOR_ROOT;
+-	}
+-	fprintf(stderr, "Root device is (%d, %d)\n", major_root, minor_root);
+ 
+ 	/* Copy the setup code */
+ 	file = fopen(argv[1], "r");
+@@ -193,8 +168,8 @@ int main(int argc, char ** argv)
+ 	memset(buf+c, 0, i-c);
+ 
+ 	/* Set the default root device */
+-	buf[508] = minor_root;
+-	buf[509] = major_root;
++	buf[508] = DEFAULT_MINOR_ROOT;
++	buf[509] = DEFAULT_MAJOR_ROOT;
+ 
+ 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
+ 
 
-What happens if someone changes the pm_runtime configuration in between
-a pwr_disable() and the corresponding enable?
 
-> +static void
-> +qup_issue_read(struct qup_i2c_dev *dev, struct i2c_msg *msg, int *idx,
-> +		uint32_t carry_over)
-> +{
-> +	uint16_t addr = (msg->addr << 1) | 1;
-> +	/*
-> +	 * QUP limit 256 bytes per read. By HW design, 0 in the 8-bit field
-> +	 * is treated as 256 byte read.
-> +	 */
-> +	uint16_t rd_len = ((dev->cnt == 256) ? 0 : dev->cnt);
-
-This is a substantila incompatibility with most I2C ccontrollers i the
-kernel.  Is it possible for the driver to deal with this transparently,
-for example by expanding into a number of continued transfers?  If not
-we should add support to the I2C core for determining transfer limits,
-the 256 bytes limit is pretty low.
-
-> +		/* HW limits Read upto 256 bytes in 1 read without stop */
-> +		if (dev->msg->flags & I2C_M_RD) {
-> +			qup_set_read_mode(dev, dev->cnt);
-> +			if (dev->cnt > 256)
-> +				dev->cnt = 256;
-
-This definitely seems buggy - there's no error returned to the caller?
