@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab1DLOly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:41:54 -0400
-Received: from kroah.org ([198.145.64.141]:57829 "EHLO coco.kroah.org"
+	id S932425Ab1DLOis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:48 -0400
+Received: from kroah.org ([198.145.64.141]:57751 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932447Ab1DLOiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:57 2011
-Message-Id: <20110412143557.898022183@clark.kroah.org>
+	id S932383Ab1DLOil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:56 2011
+Message-Id: <20110412143556.631175093@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:22 -0700
+Date: Tue, 12 Apr 2011 07:35:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Sterba <dsterba@suse.cz>, Patrick McHardy <kaber@trash.net>
-Subject: [093/105] netfilter: h323: bug in parsing of ASN1 SEQOF field
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [081/105] netfilter: arp_tables: fix infoleak to userspace
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Sterba <dsterba@suse.cz>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit b4232a22776aa5d063f890d21ca69870dbbe431b upstream.
+commit 42eab94fff18cb1091d3501cd284d6bd6cc9c143 upstream.
 
-Static analyzer of clang found a dead store which appears to be a bug in
-reading count of items in SEQOF field, only the lower byte of word is
-stored. This may lead to corrupted read and communication shutdown.
+Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
+copied from userspace.  Fields of these structs that are
+zero-terminated strings are not checked.  When they are used as argument
+to a format string containing "%s" in request_module(), some sensitive
+information is leaked to userspace via argument of spawned modprobe
+process.
 
-The bug has been in the module since it's first inclusion into linux
-kernel.
+The first bug was introduced before the git epoch;  the second is
+introduced by 6b7d31fc (v2.6.15-rc1);  the third is introduced by
+6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
+CAP_NET_ADMIN.
 
-[Patrick: the bug is real, but without practical consequence since the
- largest amount of sequence-of members we parse is 30.]
-
-Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/nf_conntrack_h323_asn1.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/netfilter/arp_tables.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/netfilter/nf_conntrack_h323_asn1.c
-+++ b/net/netfilter/nf_conntrack_h323_asn1.c
-@@ -631,7 +631,7 @@ static int decode_seqof(bitstr_t *bs, co
- 		CHECK_BOUND(bs, 2);
- 		count = *bs->cur++;
- 		count <<= 8;
--		count = *bs->cur++;
-+		count += *bs->cur++;
- 		break;
- 	case SEMI:
- 		BYTE_ALIGN(bs);
+--- a/net/ipv4/netfilter/arp_tables.c
++++ b/net/ipv4/netfilter/arp_tables.c
+@@ -1065,6 +1065,7 @@ static int do_replace(struct net *net, c
+ 	/* overflow check */
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
+ 
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1486,6 +1487,7 @@ static int compat_do_replace(struct net
+ 		return -ENOMEM;
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
+ 
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1738,6 +1740,7 @@ static int do_arpt_get_ctl(struct sock *
+ 			ret = -EFAULT;
+ 			break;
+ 		}
++		rev.name[sizeof(rev.name)-1] = 0;
+ 
+ 		try_then_request_module(xt_find_revision(NFPROTO_ARP, rev.name,
+ 							 rev.revision, 1, &ret),
 
 
