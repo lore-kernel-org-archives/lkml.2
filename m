@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab1DLPrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 11:47:18 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58198 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757583Ab1DLPrR (ORCPT
+	id S1757844Ab1DLPs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 11:48:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53195 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757640Ab1DLPsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 11:47:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=jH9QaVYtKb7pvEe3N6UtMhVEBIsQLqicEnwRVqoGK1GpIERTO8LKvs7YbIKQCrSZdp
-         wXhE9pWrlqY3shl1ShQalj6CYdRWNpRDdpVYDszmOGgUaQTeVJaknaPhcTCZr4ZJBPHE
-         okoEe/Xrm9wCne4YL2BHXk3kqFgSGQDMg/TYQ=
-Message-ID: <4DA473FE.2040800@gmail.com>
-Date: Tue, 12 Apr 2011 08:47:10 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	Tue, 12 Apr 2011 11:48:55 -0400
+Message-ID: <4DA4743C.7070408@oracle.com>
+Date: Tue, 12 Apr 2011 08:48:12 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Mikko Vinni <mmvinni@yahoo.com>, Ed Tomlinson <edt@aei.ca>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38 kernel breaks userspace bluetooth management tools
-References: <AANLkTikdco2Ex_xEAgWyOQ9OytQkTqR90Nh2hOnneXSu@mail.gmail.com> <loom.20110319T223719-154@post.gmane.org> <20110411214416.GB25899@kroah.com>
-In-Reply-To: <20110411214416.GB25899@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Jean Delvare <khali@linux-fr.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ben Dooks <ben-linux@fluff.org>, Baruch Siach <baruch@tkos.co.il>,
+        linux-i2c@vger.kernel.org, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next reresend] i2c: designware-pcidrv depends on PCI
+References: <20110408083215.6b3b0bfe.randy.dunlap@oracle.com>	<BANLkTikX_rG+6Eg4owary1YRGRG8NzyrGQ@mail.gmail.com> <20110412114722.0f2e67d6@endymion.delvare>
+In-Reply-To: <20110412114722.0f2e67d6@endymion.delvare>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DA47442.00B0:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 02:44 PM, Greg KH wrote:
-> On Sat, Mar 19, 2011 at 09:46:03PM +0000, Mikko Vinni wrote:
->> İsmail Dönmez<ismail<at>  namtrac.org>  writes:
->>> According to http://www.bluez.org/the-management-interface/ bluetooth
->>> management interface has changed in the 2.6.38 kernel and this ends up
->>> breaking bluetooth management tools (the ones that get your bluetooth
->>> mouse working) in both KDE&  Gnome ( see
->>> https://bugzilla.novell.com/show_bug.cgi?id=680170 ).
+On 04/12/11 02:47, Jean Delvare wrote:
+> Geert, Randy,
+> 
+> On Sat, 9 Apr 2011 13:34:49 +0200, Geert Uytterhoeven wrote:
+>> On Fri, Apr 8, 2011 at 17:32, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>>
+>>> i2c-designware-pcidrv is a PCI driver and should depend on PCI.
+>>> Fixes these build errors:
+>>>
+>>> drivers/i2c/busses/i2c-designware-pcidrv.c:256: error: implicit declaration of function 'pci_request_region'
+>>> drivers/i2c/busses/i2c-designware-pcidrv.c:338: error: implicit declaration of function 'pci_release_region'
+>>>
+>>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+>>> Cc: Baruch Siach <baruch@tkos.co.il>
+>>> ---
+>>>  drivers/i2c/busses/Kconfig |    1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> Does anybody merge i2c patches???
 >>
->> This sounds like http://www.spinics.net/lists/linux-bluetooth/msg10695.html
->>
->> The fix is on its way. Nothing is deliberately broken.
->>
->> http://git.kernel.org/?p=linux/kernel/git/padovan/bluetooth-next-2.6.git;a=commitdiff;h=b99faf1b798d6d0e33526fd2cef55a405c08ff09;hp=58b6e124aac64bebb2e9e1a136cbd21a5ab0485a
->
-> That fix isn't in the -stable tree, and doesn't apply cleanly to the
-> .38-stable tree.
->
-> Can someone provide a backport to stable@kernel.org?
->
-> thanks,
->
-> greg k-h
->
+>> Yes please, it's been there since Mar 17, reported several times, and probably
+>> masking other build failures.
+> 
+> This bug only exists in linux-next, as the code in question wasn't
+> merged in Linus's tree yet. It is drawn into linux-next from Ben
+> Dooks's next-i2c branch:
+>   http://git.fluff.org/gitweb?p=bjdooks/linux.git;a=shortlog;h=refs/heads/next-i2c
+> 
+> This is where it has to be fixed, so only Ben can do it. Ben, please?
+> 
+> Meanwhile, it should be possible to apply a hot fix to linux-next
+> directly, Stephen does it pretty often. Stephen, could you please apply
+> this fix temporarily until Ben wakes up and applies it to his tree?
+
+Thanks, Jean.
+
+>>> --- linux-next-20110316.orig/drivers/i2c/busses/Kconfig
+>>> +++ linux-next-20110316/drivers/i2c/busses/Kconfig
+>>> @@ -359,6 +359,7 @@ config I2C_DESIGNWARE_PLATFORM
+>>>
+>>>  config I2C_DESIGNWARE_PCI
+>>>        tristate "Synopsys DesignWare PCI"
+>>> +       depends on PCI
+>>>        help
+>>>          If you say yes to this option, support will be included for the
+>>>          Synopsys DesignWare I2C adapter. Only master mode is supported.
+> 
 
 
-o.k my diff skills sucks, but(hopefully) backported correctly, sent out 
-to stable@kernel.org..
-
-let me know if you get this or not(seems gmail is not showing my sent 
-mail)..
-
-Justin P. Mattock
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
