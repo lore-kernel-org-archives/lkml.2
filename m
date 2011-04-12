@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab1DLRbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 13:31:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53839 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932180Ab1DLRbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 13:31:33 -0400
-Date: Tue, 12 Apr 2011 10:23:12 -0700
-From: Greg KH <gregkh@suse.de>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [014/105] x86-64, mm: Put early page table high
-Message-ID: <20110412172312.GA10300@suse.de>
-References: <20110412143549.416968403@clark.kroah.org>
- <alpine.DEB.2.00.1104121623410.22672@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1104121623410.22672@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757175Ab1DLRhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 13:37:13 -0400
+Received: from smtp-out-051.synserver.de ([212.40.185.51]:1097 "HELO
+	smtp-out-049.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753590Ab1DLRhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 13:37:12 -0400
+X-Greylist: delayed 393 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Apr 2011 13:37:11 EDT
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 24502
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/5] ASoC: Make struct snd_soc_card's dapm_widgets and dapm_routes const
+Date: Tue, 12 Apr 2011 19:31:01 +0200
+Message-Id: <1302629465-21315-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 04:25:14PM +0100, Stefano Stabellini wrote:
-> On Tue, 12 Apr 2011, Greg KH wrote:
-> > 2.6.38-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> 
-> 
-> this patch breaks Xen and there isn't even a fix upstream yet, so please
-> do not backport it
+Those should not be modified (and are not) by the core code, so make them const.
+This also makes them consistent with the same members of snd_soc_codec.
 
-Ok, now dropped, thanks for letting me know.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ include/sound/soc.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 435cb83..cb6b18b 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -755,9 +755,9 @@ struct snd_soc_card {
+ 	/*
+ 	 * Card-specific routes and widgets.
+ 	 */
+-	struct snd_soc_dapm_widget *dapm_widgets;
++	const struct snd_soc_dapm_widget *dapm_widgets;
+ 	int num_dapm_widgets;
+-	struct snd_soc_dapm_route *dapm_routes;
++	const struct snd_soc_dapm_route *dapm_routes;
+ 	int num_dapm_routes;
+ 
+ 	struct work_struct deferred_resume_work;
+-- 
+1.7.2.5
+
