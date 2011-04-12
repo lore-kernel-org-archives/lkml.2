@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab1DKXCh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 19:02:37 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:53047 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab1DKXCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 19:02:33 -0400
-X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Apr 2011 19:02:33 EDT
-Date: Mon, 11 Apr 2011 18:51:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: John Stultz <john.stultz@linaro.org>, tglx@linutronix.de
-Cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Vasily Khoruzhick <anarsoul@gmail.com>,
-        Jiri Pinkava <jiri.pinkava@vscht.cz>,
-        MikeFrysinger <vapier@gentoo.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [git pull] RTC fixups for 2.6.39
-Message-ID: <20110411225147.GA30116@andromeda.dapyr.net>
-References: <1301456369.25964.5.camel@work-vm>
-Mime-Version: 1.0
+	id S1756523Ab1DLAJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 20:09:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56009 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754023Ab1DLAJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 20:09:26 -0400
+Date: Mon, 11 Apr 2011 17:08:09 -0700
+From: Greg KH <gregkh@suse.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Wolfgang Walter <wolfgang.walter@stwm.de>, linux-kernel@vger.kernel.org,
+        Rick Koshi <nfs-bug-report@more-right-rudder.com>,
+        Ivo =?utf-8?Q?P=C5=99ikryl?= <prikryl@eurosat.cz>
+Subject: Re: 2.6.38.2: regression from 2.6.38: kernel BUG at
+ fs/nfsd/nfs4state.c:380!
+Message-ID: <20110412000809.GB11110@suse.de>
+References: <201103282223.06191.wolfgang.walter@stwm.de>
+ <20110328203207.GA17493@suse.de>
+ <201103282300.57903.wolfgang.walter@stwm.de>
+ <20110328214122.GA19854@suse.de>
+ <20110329031347.GC2695@fieldses.org>
+ <20110329031725.GA3665@suse.de>
+ <20110411081726.GB31311@fieldses.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1301456369.25964.5.camel@work-vm>
-User-Agent: Mutt/1.5.9i
+In-Reply-To: <20110411081726.GB31311@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 29, 2011 at 08:39:29PM -0700, John Stultz wrote:
-> Hey Thomas,
+On Mon, Apr 11, 2011 at 04:17:26AM -0400, J. Bruce Fields wrote:
+> On Mon, Mar 28, 2011 at 08:17:25PM -0700, Greg KH wrote:
+> > On Mon, Mar 28, 2011 at 11:13:47PM -0400, J. Bruce Fields wrote:
+> > > Bah, apologies about this, I don't know how it got through my own
+> > > testing.
+> > > 
+> > > On Mon, Mar 28, 2011 at 02:41:22PM -0700, Greg KH wrote:
+> > > > On Mon, Mar 28, 2011 at 11:00:57PM +0200, Wolfgang Walter wrote:
+> > > > > I just searched linux-nfs and found this:
+> > > > > 
+> > > > > http://marc.info/?l=linux-nfs&m=130129644016061&w=4
+> > > > > 
+> > > > > He even seems to have a real fix though I don't want to test it
+> > > > > without blessing.
+> > > > 
+> > > > Well, you aren't going to get that from me, Bruce?
+> > > 
+> > > Good analysis from Mi Jinlong, but I'm not convinced by the patch....
+> > > 
+> > > I'll look closer.
+> > > 
+> > > (Disclaimer: between the sleep deprivation and the UM hospital's dubious
+> > > guest wifi (hey, how's a new dad supposed to keep up with his kernel
+> > > hacking if they block git?), I may be a little slow.)
+> > 
+> > Hey, no rush, you have more important things to deal with, I can always
+> > revert the patch for now :)
+> 
+> Argh, I forgot to stick the "Cc: stable" on this one.  Anyway, should be
+> in Linus's tree soon:
+> 
+> --b.
+> 
+> commit 23fcf2ec93fb8573a653408316af599939ff9a8e
 
-Hey Thomas,
+Now picked up.
 
-I was wondering when you planned to push these up to Linus?
+In the future, at least cc: this email to stable@kernel.org so I don't
+loose it in the wilds that are my suse.de email account...
 
-Without the "RTC: Fix early irqs caused by calling rtc_set_alarm too
-early" which fixes a regression introduced by some earlier
-patches that John added, Linux guests under Xen fail to boot.
+thanks,
 
-Thank you,
-
-Konrad
-> 
-> Here's a collection of RTC fixups for 2.6.39:
->   git://git.linaro.org/people/jstultz/linux.git fortglx/39/tip/timers/rtc
-> 
-> Let me know if you have any issues with them.
-> thanks
-> -john
-> 
-> 
-> John Stultz (1):
->       RTC: Fix early irqs caused by calling rtc_set_alarm too early
-> 
-> Mike Frysinger (1):
->       RTC: add missing "return 0" in new alarm func for rtc-bfin.c
-> 
-> Vasily Khoruzhick (1):
->       RTC: Fix s3c compile error due to missing s3c_rtc_setpie
-> 
->  drivers/rtc/class.c     |    2 +-
->  drivers/rtc/interface.c |   26 ++++++++++++++++++++++++++
->  drivers/rtc/rtc-bfin.c  |    2 ++
->  drivers/rtc/rtc-s3c.c   |    2 --
->  include/linux/rtc.h     |    2 ++
->  5 files changed, 31 insertions(+), 3 deletions(-)
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+greg k-h
