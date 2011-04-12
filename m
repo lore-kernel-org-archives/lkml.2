@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab1DLRhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 13:37:24 -0400
-Received: from smtp-out-051.synserver.de ([212.40.185.51]:1100 "HELO
+	id S932251Ab1DLRhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 13:37:42 -0400
+Received: from smtp-out-051.synserver.de ([212.40.185.51]:1077 "HELO
 	smtp-out-049.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1756226Ab1DLRhN (ORCPT
+	by vger.kernel.org with SMTP id S1753590Ab1DLRhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 13:37:13 -0400
+	Tue, 12 Apr 2011 13:37:15 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 24502
@@ -15,9 +15,9 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@slimlogic.co.uk>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/5] ASoC: Call snd_soc_new_widgets() after registering cards DAPM widgets
-Date: Tue, 12 Apr 2011 19:31:02 +0200
-Message-Id: <1302629465-21315-2-git-send-email-lars@metafoo.de>
+Subject: [PATCH 3/5] ASoC: JZ4740: Convert qi_lb60 codec to table based DAPM setup
+Date: Tue, 12 Apr 2011 19:31:03 +0200
+Message-Id: <1302629465-21315-3-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1302629465-21315-1-git-send-email-lars@metafoo.de>
 References: <1302629465-21315-1-git-send-email-lars@metafoo.de>
@@ -25,30 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After registering new DAPM widgets nd_soc_new_widgets() must be called,
-otherwise DAPM for those new widgets will not work.
-
-snd_soc_new_widgets() is placed after the card late_probe call, so cards
-can register new DAPM widgets in there.
+Use the newly introduced dapm_widgets, dpam_routes and fields of the
+snd_soc_card struct to setup DAPM.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- sound/soc/soc-core.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ sound/soc/jz4740/qi_lb60.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index f75f139..b6a78d9 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -1932,6 +1932,8 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
- 		}
+diff --git a/sound/soc/jz4740/qi_lb60.c b/sound/soc/jz4740/qi_lb60.c
+index 49723e3..875abc9 100644
+--- a/sound/soc/jz4740/qi_lb60.c
++++ b/sound/soc/jz4740/qi_lb60.c
+@@ -70,12 +70,6 @@ static int qi_lb60_codec_init(struct snd_soc_pcm_runtime *rtd)
+ 		return ret;
  	}
  
-+	snd_soc_dapm_new_widgets(&card->dapm);
+-	snd_soc_dapm_new_controls(dapm, qi_lb60_widgets,
+-				  ARRAY_SIZE(qi_lb60_widgets));
+-	snd_soc_dapm_add_routes(dapm, qi_lb60_routes,
+-				ARRAY_SIZE(qi_lb60_routes));
+-	snd_soc_dapm_sync(dapm);
+-
+ 	return 0;
+ }
+ 
+@@ -93,6 +87,11 @@ static struct snd_soc_card qi_lb60 = {
+ 	.name = "QI LB60",
+ 	.dai_link = &qi_lb60_dai,
+ 	.num_links = 1,
 +
- 	ret = snd_card_register(card->snd_card);
- 	if (ret < 0) {
- 		printk(KERN_ERR "asoc: failed to register soundcard for %s\n", card->name);
++	.dapm_widgets = qi_lb60_widgets,
++	.num_dapm_widgets = ARRAY_SIZE(qi_lb60_widgets),
++	.dapm_routes = qi_lb60_routes,
++	.num_dapm_routes = ARRAY_SIZE(qi_lb60_routes),
+ };
+ 
+ static struct platform_device *qi_lb60_snd_device;
 -- 
 1.7.2.5
 
