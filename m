@@ -1,34 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab1DLMPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 08:15:35 -0400
-Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:43911 "EHLO
-	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab1DLMPe (ORCPT
+	id S1755241Ab1DLMQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 08:16:09 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39419 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754321Ab1DLMQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 08:15:34 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: O_EXCL in NFSv3
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1302609371.10760.6.camel@lade.trondhjem.org>
-References: <20361.1302593733@jrobl> <1302609371.10760.6.camel@lade.trondhjem.org>
-Date: Tue, 12 Apr 2011 21:15:05 +0900
-Message-ID: <28433.1302610505@jrobl>
+	Tue, 12 Apr 2011 08:16:05 -0400
+Date: Tue, 12 Apr 2011 13:15:43 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] x86: signal: handle_signal() should use
+ sigprocmask()
+Message-ID: <20110412131543.231659d2@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110411172201.GF32469@redhat.com>
+References: <20110411171957.GA32469@redhat.com>
+	<20110411172201.GF32469@redhat.com>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 11 Apr 2011 19:22:01 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Trond Myklebust:
-> Doesn't commit 8a0eebf66e3b1deae036553ba641a9c2bdbae678 (NFS: Fix NFSv3
-> exclusive open semantics) fix this? It should be in the stable tree.
+> This is ugly, but if sigprocmask() needs retarget_shared_pending() then
+> handle signal should follow this logic. In theory it is newer correct to
+							   ^^^ never
 
-Ah, I can see the commit in v2.6.38.
-So it is fixed already, sorry.
-I just skipped all NFS tests for v2.6.38. due to the sillyrename
-problem.
-Also I know it was fixed just after v2.6.38(.0).
+> add the new signals to current->blocked, the signal handler can sleep/etc
+> so we should notify other threads in case we block the pending signal and
+> nobody else has TIF_SIGPENDING.
+> 
+> Of course, this change doesn't make signals faster :/
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Thank you
-J. R. Okajima
+Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
+
+I guess all assigments to current->blocked need auditing now? Forcing
+everything through sigprocmask() seems worthwhile to me.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
