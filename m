@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab1DLLNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 07:13:12 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:48821
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750927Ab1DLLNK (ORCPT
+	id S1753450Ab1DLLQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 07:16:04 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:51031 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab1DLLQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 07:13:10 -0400
-X-SpamScore: -35
-X-BigFish: VPS-35(zzbb2cK936eK179dN154dM1432N98dKzz1202hzz15d4Rz32i637h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJJDTQ-01-3IB-02
-X-M-MSG: 
-Date: Tue, 12 Apr 2011 13:13:00 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, Borislav Petkov <bp@alien8.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6] USB host: Fix lockdep warning in AMD PLL quirk
-Message-ID: <20110412111300.GE20607@amd.com>
-References: <20110411163711.GA20607@amd.com>
- <Pine.LNX.4.44L0.1104111304080.1975-100000@iolanthe.rowland.org>
- <20110412064128.GC20607@amd.com>
- <4DA4308F.6060601@ru.mvista.com>
+	Tue, 12 Apr 2011 07:16:03 -0400
+X-IronPort-AV: E=Sophos;i="4.64,194,1301875200"; 
+   d="scan'208";a="5261097"
+Date: Tue, 12 Apr 2011 12:16:20 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 0/4] xen: critical bug fixes for 2.6.39-rc3
+Message-ID: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4DA4308F.6060601@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 06:59:27AM -0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 12-04-2011 10:41, Roedel, Joerg wrote:
-> 
-> >>> Hmm, I see how it can be done differently, but no real bug.
-> 
-> >> Never mind, you're right.  In the no-race case, the initial count is
-> >> always going to be 0, and so incrementing info.probe_count is the right
-> >> thing to do.
-> 
-> > Okay, cool. So now that we have settled on this I removed the last
-> > occurence of '2.6.38' from the changelog and here is the result. No
-> > code changes since v5.
-> 
->     I've pointed out the mistake in the code that you didn't fix... :-(
+Hi all,
+this is a small collection of critical xen bug fixes for 2.6.39-rc3:
+the recent changes to the initial kernel pagetable allocation mechanism
+(4b239f458c229de044d6905c2b0f9fe16ed9e01e in particular) caused a number
+of issues on Xen.
+This patch series fixes those issues and it is required just to boot a
+2.6.39 linux kernel as regular xen guest.
 
-Argh, sorry, I missed this comment from you. I'll fix this.
 
-	Joerg
+The list of patches with a diffstat follows:
 
--- 
-AMD Operating System Research Center
+Stefano Stabellini (4):
+      xen: mask_rw_pte mark RO all pagetable pages up to pgt_buf_top
+      x86,xen: introduce x86_init.mapping.pagetable_reserve
+      xen: more debugging in the e820 parsing
+      xen: do not create the extra e820 region at an addr lower than 4G
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+ arch/x86/include/asm/pgtable_types.h |    1 +
+ arch/x86/include/asm/x86_init.h      |    9 +++++++++
+ arch/x86/kernel/x86_init.c           |    4 ++++
+ arch/x86/mm/init.c                   |    9 +++++++--
+ arch/x86/xen/mmu.c                   |   17 ++++++++++++++++-
+ arch/x86/xen/setup.c                 |    6 +++++-
+ 6 files changed, 42 insertions(+), 4 deletions(-)
 
+
+The first two commits make sure pagetable pages are marked RO while
+other pages are marked RW.
+
+The third commit adds a couple of useful debugging statements.
+
+The fourth commit fixes a boot crash on xen when booting as initial
+domain: the xen extra memory region shouldn't start below 4G otherwise
+e820_end_of_low_ram_pfn() could return an address above 4G. As a
+consequence init_memory_mapping would end up mapping MMIO regions
+without going through the fixmap.
+
+
+A git branch with this series is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.39-rc3-fixes
+
+
+Comments are welcome.
+
+- Stefano
