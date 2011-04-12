@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab1DLOon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:44:43 -0400
-Received: from kroah.org ([198.145.64.141]:57755 "EHLO coco.kroah.org"
+	id S932350Ab1DLOif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:35 -0400
+Received: from kroah.org ([198.145.64.141]:57677 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387Ab1DLOim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:42 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:56 2011
-Message-Id: <20110412143556.735835945@clark.kroah.org>
+	id S932306Ab1DLOid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:33 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:55 2011
+Message-Id: <20110412143555.549263406@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:11 -0700
+Date: Tue, 12 Apr 2011 07:35:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>, Changli Gao <xiaosuo@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [082/105] netfilter: ipt_CLUSTERIP: fix buffer overflow
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Matti Aaltonen <matti.j.aaltonen@nokia.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: [071/105] [media] media/radio/wl1273: fix build errors
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-commit 961ed183a9fd080cf306c659b8736007e44065a5 upstream.
+commit 1b149bbe9156d2eb2afd5a072bd61ad0d4bfaca7 upstream.
 
-'buffer' string is copied from userspace.  It is not checked whether it is
-zero terminated.  This may lead to overflow inside of simple_strtoul().
-Changli Gao suggested to copy not more than user supplied 'size' bytes.
+RADIO_WL1273 needs to make sure that the mfd core is built to avoid
+build errors:
 
-It was introduced before the git epoch.  Files "ipt_CLUSTERIP/*" are
-root writable only by default, however, on some setups permissions might be
-relaxed to e.g. network admin user.
+ERROR: "mfd_add_devices" [drivers/mfd/wl1273-core.ko] undefined!
+ERROR: "mfd_remove_devices" [drivers/mfd/wl1273-core.ko] undefined!
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Changli Gao <xiaosuo@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Matti Aaltonen <matti.j.aaltonen@nokia.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mike Frysinger <vapier.adi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/netfilter/ipt_CLUSTERIP.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/media/radio/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
-+++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-@@ -669,8 +669,11 @@ static ssize_t clusterip_proc_write(stru
- 	char buffer[PROC_WRITELEN+1];
- 	unsigned long nodenum;
- 
--	if (copy_from_user(buffer, input, PROC_WRITELEN))
-+	if (size > PROC_WRITELEN)
-+		return -EIO;
-+	if (copy_from_user(buffer, input, size))
- 		return -EFAULT;
-+	buffer[size] = 0;
- 
- 	if (*buffer == '+') {
- 		nodenum = simple_strtoul(buffer+1, NULL, 10);
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -441,6 +441,7 @@ config RADIO_TIMBERDALE
+ config RADIO_WL1273
+ 	tristate "Texas Instruments WL1273 I2C FM Radio"
+ 	depends on I2C && VIDEO_V4L2
++	select MFD_CORE
+ 	select MFD_WL1273_CORE
+ 	select FW_LOADER
+ 	---help---
 
 
