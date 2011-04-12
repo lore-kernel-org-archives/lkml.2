@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab1DLSvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 14:51:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46170 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754305Ab1DLSvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 14:51:11 -0400
-Date: Tue, 12 Apr 2011 20:51:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: adding trace-cmd's plugins to perf
-Message-ID: <20110412185104.GA9891@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <4DA12905.2020806@gmail.com>
- <20110412162245.GB2240@nowhere>
- <20110412183536.GA20452@ghostprotocols.net>
+	id S1751579Ab1DLSw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 14:52:29 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40420 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab1DLSw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 14:52:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=izcgywgSPvjZZlkdPaVrMXhbOaerYiW1WgzTTWWyWDsiuqt9MHLBdi+mnv3qvx7C5e
+         41xJRGax8fzSrxmhixqosEcC/8T1xwQNOMfc6ACcx0qzFM8DmRE8lyG3KGB52OO9HcJ7
+         VEETzxn1GV2Ap2ViqBU0/X9DjTV7K0vkDOmJI=
+Date: Wed, 13 Apr 2011 03:52:21 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, cl@linux.com
+Subject: Re: [PATCH 2/4]percpu_counter: use correct API
+Message-ID: <20110412185221.GC16342@mtj.dyndns.org>
+References: <1302595441.3981.128.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110412183536.GA20452@ghostprotocols.net>
+In-Reply-To: <1302595441.3981.128.camel@sli10-conroe>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 03:35:36PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Apr 12, 2011 at 06:22:47PM +0200, Frederic Weisbecker escreveu:
-> > On Sat, Apr 09, 2011 at 09:50:29PM -0600, David Ahern wrote:
-> > > Right now perf script cannot process kvm tracepoints:
-> > > 
-> > > perf record -e kvm:* -p 6446 -- sleep 5
-> > > 
-> > > perf script
-> > >   Warning: Error: expected type 4 but read 7
+On Tue, Apr 12, 2011 at 04:04:01PM +0800, Shaohua Li wrote:
+> percpu_counter_sum_positive never returns negative, since there
+> is a negative check, I changed it to percpu_counter_sum.
 > 
-> > > are about merging common code between the two commands. Also, trace-cmd and perf
-> > > are in separate repositories so a shared lib is going to inconvenience
-> > > one of the two.
-> > 
-> > So, we copied the tools/perf/util/trace-event-* files from trace-cmd to perf
-> > a while go. Then both files took their own path, both pulling fixes/enhancement
-> > from each others (probably more in the trace-cmd -> perf direction).
-> > 
-> > And perf is indeed a bit backward wrt parsing, because it lacks those plugins
-> > for example. So now it would be nice to unify that in a common lib so that it
-> > works well in both.
-> > 
-> > Steve proposed a shared tools/trace.so, that perf and trace-cmd could plug
-> > into, I really would like to see that happening too.
-> > 
-> > I think Ingo had some reserves about this, due to potential versioning
-> > and compatibility that such a dynamic lib would involve.
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 > 
-> So we don't commit to an ABI for a while, just linking with it, changing
-> users when changing the ABI.
+> ---
+>  fs/ext4/balloc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> I encourage David to go and add the bits of trace-cmd he needs for
-> support the plugins he wants used in perf on tools/lib/ and make perf
-> use it.
-> 
-> That way we again reduce the differences between the codebases, or at least
-> reduce the feature gap.
+> Index: linux/fs/ext4/balloc.c
+> ===================================================================
+> --- linux.orig/fs/ext4/balloc.c	2011-04-12 15:48:42.000000000 +0800
+> +++ linux/fs/ext4/balloc.c	2011-04-12 15:48:50.000000000 +0800
+> @@ -506,7 +506,7 @@ static int ext4_has_free_blocks(struct e
+>  	if (free_blocks - (nblocks + root_blocks + dirty_blocks) <
+>  						EXT4_FREEBLOCKS_WATERMARK) {
+>  		free_blocks  = percpu_counter_sum_positive(fbc);
+> -		dirty_blocks = percpu_counter_sum_positive(dbc);
+> +		dirty_blocks = percpu_counter_sum(dbc);
+>  		if (dirty_blocks < 0) {
+>  			printk(KERN_CRIT "Dirty block accounting "
+>  					"went wrong %lld\n",
 
-Also, just FYI, I have this RAS daemon patchset which splits perf functionality
-into different sub-libs, which are more or less topic based:
-
-tools/lib/trace/ - all the trace-event* stuff from Steven
-tools/lib/lk/	- generic enough stuff (git headers, etc) which several tools could use
-tools/lib/perf/ - functionality related to perf events
-
-Here's the last submission http://marc.info/?l=linux-edac&m=129562244211501&w=2
-and I'm currently finishing a new rebase against tip/perf/core.
-
-If you're fine with that split I'd suggest I load off my stuff first so
-that David can continue from there and I can finally stop rebasing like
-crazy each time perf moves forward.
-
-Opinions? Suggestions?
+The right thing to do would be removing if (dirty_blocks < 0) and keep
+using _positive.  perpcu_counter_sum() may return a negative number
+spuriously (that's the whole point of _positive functions) and may
+trigger the critial error path when nothing is really wrong.
 
 Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
+tejun
