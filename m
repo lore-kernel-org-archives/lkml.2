@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab1DLOjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:39:05 -0400
-Received: from kroah.org ([198.145.64.141]:57895 "EHLO coco.kroah.org"
+	id S932504Ab1DLOjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:39:08 -0400
+Received: from kroah.org ([198.145.64.141]:57901 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932479Ab1DLOjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:39:00 -0400
+	id S932480Ab1DLOjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:39:01 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:58 2011
-Message-Id: <20110412143558.774730234@clark.kroah.org>
+Message-Id: <20110412143558.883841857@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:30 -0700
+Date: Tue, 12 Apr 2011 07:35:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Philip A. Prindeville" <philipp@redfish-solutions.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [101/105] atm/solos-pci: Dont flap VCs when carrier state changes
+        Tao Ma <boyu.mt@taobao.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [102/105] ext4: fix a double free in ext4_register_li_request
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philip A. Prindeville <philipp@redfish-solutions.com>
+From: Tao Ma <boyu.mt@taobao.com>
 
-commit c031235b395433350f25943b7580a5e343c7b7b2 upstream.
+commit 46e4690bbd9a4f8d9e7c4f34e34b48f703ad47e0 upstream.
 
-Don't flap VCs when carrier state changes; higher-level protocols
-can detect loss of connectivity and act accordingly. This is more
-consistent with how other network interfaces work.
+In ext4_register_li_request, we malloc a ext4_li_request and
+inserts it into ext4_li_info->li_request_list. In case of any
+error later, we free it in the end.  But if we have some error
+in ext4_run_lazyinit_thread, the whole li_request_list will be
+dropped and freed in it. So we will double free this ext4_li_request.
 
-We no longer use release_vccs() so we can delete it.
+This patch just sets elr to NULL after it is inserted to the list
+so that the latter kfree won't double free it.
 
-release_vccs() was duplicated from net/atm/common.c; make the
-corresponding function exported, since other code duplicates it
-and could leverage it if it were public.
-
-Signed-off-by: Philip A. Prindeville <philipp@redfish-solutions.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/atm/solos-pci.c |   26 +-------------------------
- include/linux/atmdev.h  |    1 +
- net/atm/common.c        |    1 +
- 3 files changed, 3 insertions(+), 25 deletions(-)
+ fs/ext4/super.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -165,7 +165,6 @@ static uint32_t fpga_tx(struct solos_car
- static irqreturn_t solos_irq(int irq, void *dev_id);
- static struct atm_vcc* find_vcc(struct atm_dev *dev, short vpi, int vci);
- static int list_vccs(int vci);
--static void release_vccs(struct atm_dev *dev);
- static int atm_init(struct solos_card *, struct device *);
- static void atm_remove(struct solos_card *);
- static int send_command(struct solos_card *card, int dev, const char *buf, size_t size);
-@@ -384,7 +383,6 @@ static int process_status(struct solos_c
- 	/* Anything but 'Showtime' is down */
- 	if (strcmp(state_str, "Showtime")) {
- 		atm_dev_signal_change(card->atmdev[port], ATM_PHY_SIG_LOST);
--		release_vccs(card->atmdev[port]);
- 		dev_info(&card->dev->dev, "Port %d: %s\n", port, state_str);
- 		return 0;
- 	}
-@@ -830,28 +828,6 @@ static int list_vccs(int vci)
- 	return num_found;
- }
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2978,6 +2978,12 @@ static int ext4_register_li_request(stru
+ 	mutex_unlock(&ext4_li_info->li_list_mtx);
  
--static void release_vccs(struct atm_dev *dev)
--{
--        int i;
--
--        write_lock_irq(&vcc_sklist_lock);
--        for (i = 0; i < VCC_HTABLE_SIZE; i++) {
--                struct hlist_head *head = &vcc_hash[i];
--                struct hlist_node *node, *tmp;
--                struct sock *s;
--                struct atm_vcc *vcc;
--
--                sk_for_each_safe(s, node, tmp, head) {
--                        vcc = atm_sk(s);
--                        if (vcc->dev == dev) {
--                                vcc_release_async(vcc, -EPIPE);
--                                sk_del_node_init(s);
--                        }
--                }
--        }
--        write_unlock_irq(&vcc_sklist_lock);
--}
--
+ 	sbi->s_li_request = elr;
++	/*
++	 * set elr to NULL here since it has been inserted to
++	 * the request_list and the removal and free of it is
++	 * handled by ext4_clear_request_list from now on.
++	 */
++	elr = NULL;
  
- static int popen(struct atm_vcc *vcc)
- {
-@@ -1269,7 +1245,7 @@ static int atm_init(struct solos_card *c
- 		card->atmdev[i]->ci_range.vci_bits = 16;
- 		card->atmdev[i]->dev_data = card;
- 		card->atmdev[i]->phy_data = (void *)(unsigned long)i;
--		atm_dev_signal_change(card->atmdev[i], ATM_PHY_SIG_UNKNOWN);
-+		atm_dev_signal_change(card->atmdev[i], ATM_PHY_SIG_FOUND);
- 
- 		skb = alloc_skb(sizeof(*header), GFP_ATOMIC);
- 		if (!skb) {
---- a/include/linux/atmdev.h
-+++ b/include/linux/atmdev.h
-@@ -443,6 +443,7 @@ void atm_dev_signal_change(struct atm_de
- 
- void vcc_insert_socket(struct sock *sk);
- 
-+void atm_dev_release_vccs(struct atm_dev *dev);
- 
- /*
-  * This is approximately the algorithm used by alloc_skb.
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -252,6 +252,7 @@ void atm_dev_release_vccs(struct atm_dev
- 	}
- 	write_unlock_irq(&vcc_sklist_lock);
- }
-+EXPORT_SYMBOL(atm_dev_release_vccs);
- 
- static int adjust_tp(struct atm_trafprm *tp, unsigned char aal)
- {
+ 	if (!(ext4_li_info->li_state & EXT4_LAZYINIT_RUNNING)) {
+ 		ret = ext4_run_lazyinit_thread();
 
 
