@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab1DLOh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:37:56 -0400
-Received: from kroah.org ([198.145.64.141]:57492 "EHLO coco.kroah.org"
+	id S932182Ab1DLOiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:01 -0400
+Received: from kroah.org ([198.145.64.141]:57519 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932121Ab1DLOhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:53 -0400
+	id S932121Ab1DLOh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:57 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:51 2011
-Message-Id: <20110412143551.142307016@clark.kroah.org>
+Message-Id: <20110412143551.567004558@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:19 -0700
+Date: Tue, 12 Apr 2011 07:34:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [030/105] irda: prevent heap corruption on invalid nickname
+        Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [034/105] ASoC: imx: set watermarks for mx2-dma
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit d50e7e3604778bfc2dc40f440e0742dbae399d54 upstream.
+commit 2c4cf17a52f04fbe929977252d5b8ab81d2c6e9b upstream.
 
-Invalid nicknames containing only spaces will result in an underflow in
-a memcpy size calculation, subsequently destroying the heap and
-panicking.
+They got accidently removed by f0fba2a (ASoC: multi-component - ASoC
+Multi-Component Support). Reintroduce them and get rid of the
+superfluous defines because the fiq-driver has its own hardcoded values.
 
-v2 also catches the case where the provided nickname is longer than the
-buffer size, which can result in controllable heap corruption.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Acked-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/irda/irnet/irnet_ppp.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/imx/imx-pcm-dma-mx2.c |    5 +++++
+ sound/soc/imx/imx-ssi.h         |    3 ---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---- a/net/irda/irnet/irnet_ppp.c
-+++ b/net/irda/irnet/irnet_ppp.c
-@@ -105,6 +105,9 @@ irnet_ctrl_write(irnet_socket *	ap,
- 	      while(isspace(start[length - 1]))
- 		length--;
+--- a/sound/soc/imx/imx-pcm-dma-mx2.c
++++ b/sound/soc/imx/imx-pcm-dma-mx2.c
+@@ -303,6 +303,11 @@ static struct snd_soc_platform_driver im
  
-+	      DABORT(length < 5 || length > NICKNAME_MAX_LEN + 5,
-+		     -EINVAL, CTRL_ERROR, "Invalid nickname.\n");
+ static int __devinit imx_soc_platform_probe(struct platform_device *pdev)
+ {
++	struct imx_ssi *ssi = platform_get_drvdata(pdev);
 +
- 	      /* Copy the name for later reuse */
- 	      memcpy(ap->rname, start + 5, length - 5);
- 	      ap->rname[length - 5] = '\0';
++	ssi->dma_params_tx.burstsize = 6;
++	ssi->dma_params_rx.burstsize = 4;
++
+ 	return snd_soc_register_platform(&pdev->dev, &imx_soc_platform_mx2);
+ }
+ 
+--- a/sound/soc/imx/imx-ssi.h
++++ b/sound/soc/imx/imx-ssi.h
+@@ -234,7 +234,4 @@ void imx_pcm_free(struct snd_pcm *pcm);
+  */
+ #define IMX_SSI_DMABUF_SIZE	(64 * 1024)
+ 
+-#define DMA_RXFIFO_BURST      0x4
+-#define DMA_TXFIFO_BURST      0x6
+-
+ #endif /* _IMX_SSI_H */
 
 
