@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab1DLOiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:38:54 -0400
-Received: from kroah.org ([198.145.64.141]:57815 "EHLO coco.kroah.org"
+	id S932477Ab1DLOjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:39:00 -0400
+Received: from kroah.org ([198.145.64.141]:57837 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1DLOiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:51 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:57 2011
-Message-Id: <20110412143557.699698466@clark.kroah.org>
+	id S932450Ab1DLOiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:54 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:58 2011
+Message-Id: <20110412143558.006614474@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:20 -0700
+Date: Tue, 12 Apr 2011 07:35:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: [091/105] drivers/leds/leds-lp5521.c: world-writable sysfs engine* files
+        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [094/105] sound/oss: remove offset from load_patch callbacks
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 67d1da79b25c05d9a38b820bb5b5d89c91070ab2 upstream.
+commit b769f49463711205d57286e64cf535ed4daf59e9 upstream.
 
-Don't allow everybody to change LED settings.
+Was: [PATCH] sound/oss/midi_synth: prevent underflow, use of
+uninitialized value, and signedness issue
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The offset passed to midi_synth_load_patch() can be essentially
+arbitrary.  If it's greater than the header length, this will result in
+a copy_from_user(dst, src, negative_val).  While this will just return
+-EFAULT on x86, on other architectures this may cause memory corruption.
+Additionally, the length field of the sysex_info structure may not be
+initialized prior to its use.  Finally, a signed comparison may result
+in an unintentionally large loop.
+
+On suggestion by Takashi Iwai, version two removes the offset argument
+from the load_patch callbacks entirely, which also resolves similar
+issues in opl3.  Compile tested only.
+
+v3 adjusts comments and hopefully gets copy offsets right.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/leds/leds-lp5521.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ sound/oss/dev_table.h  |    2 +-
+ sound/oss/midi_synth.c |   30 +++++++++++++-----------------
+ sound/oss/midi_synth.h |    2 +-
+ sound/oss/opl3.c       |    8 ++------
+ sound/oss/sequencer.c  |    2 +-
+ 5 files changed, 18 insertions(+), 26 deletions(-)
 
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -534,7 +534,7 @@ static ssize_t lp5521_selftest(struct de
+--- a/sound/oss/dev_table.h
++++ b/sound/oss/dev_table.h
+@@ -271,7 +271,7 @@ struct synth_operations
+ 	void (*reset) (int dev);
+ 	void (*hw_control) (int dev, unsigned char *event);
+ 	int (*load_patch) (int dev, int format, const char __user *addr,
+-	     int offs, int count, int pmgr_flag);
++	     int count, int pmgr_flag);
+ 	void (*aftertouch) (int dev, int voice, int pressure);
+ 	void (*controller) (int dev, int voice, int ctrl_num, int value);
+ 	void (*panning) (int dev, int voice, int value);
+--- a/sound/oss/midi_synth.c
++++ b/sound/oss/midi_synth.c
+@@ -476,7 +476,7 @@ EXPORT_SYMBOL(midi_synth_hw_control);
+ 
+ int
+ midi_synth_load_patch(int dev, int format, const char __user *addr,
+-		      int offs, int count, int pmgr_flag)
++		      int count, int pmgr_flag)
+ {
+ 	int             orig_dev = synth_devs[dev]->midi_dev;
+ 
+@@ -491,33 +491,29 @@ midi_synth_load_patch(int dev, int forma
+ 	if (!prefix_cmd(orig_dev, 0xf0))
+ 		return 0;
+ 
++	/* Invalid patch format */
+ 	if (format != SYSEX_PATCH)
+-	{
+-/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
+ 		  return -EINVAL;
+-	}
++
++	/* Patch header too short */
+ 	if (count < hdr_size)
+-	{
+-/*		printk("MIDI Error: Patch header too short\n");*/
+ 		return -EINVAL;
+-	}
++
+ 	count -= hdr_size;
+ 
+ 	/*
+-	 * Copy the header from user space but ignore the first bytes which have
+-	 * been transferred already.
++	 * Copy the header from user space
+ 	 */
+ 
+-	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
++	if (copy_from_user(&sysex, addr, hdr_size))
+ 		return -EFAULT;
+- 
+- 	if (count < sysex.len)
+-	{
+-/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
++
++	/* Sysex record too short */
++	if ((unsigned)count < (unsigned)sysex.len)
+ 		sysex.len = count;
+-	}
+-  	left = sysex.len;
+-  	src_offs = 0;
++
++	left = sysex.len;
++	src_offs = 0;
+ 
+ 	for (i = 0; i < left && !signal_pending(current); i++)
+ 	{
+--- a/sound/oss/midi_synth.h
++++ b/sound/oss/midi_synth.h
+@@ -8,7 +8,7 @@ int midi_synth_open (int dev, int mode);
+ void midi_synth_close (int dev);
+ void midi_synth_hw_control (int dev, unsigned char *event);
+ int midi_synth_load_patch (int dev, int format, const char __user * addr,
+-		 int offs, int count, int pmgr_flag);
++		 int count, int pmgr_flag);
+ void midi_synth_panning (int dev, int channel, int pressure);
+ void midi_synth_aftertouch (int dev, int channel, int pressure);
+ void midi_synth_controller (int dev, int channel, int ctrl_num, int value);
+--- a/sound/oss/opl3.c
++++ b/sound/oss/opl3.c
+@@ -820,7 +820,7 @@ static void opl3_hw_control(int dev, uns
  }
  
- /* led class device attributes */
--static DEVICE_ATTR(led_current, S_IRUGO | S_IWUGO, show_current, store_current);
-+static DEVICE_ATTR(led_current, S_IRUGO | S_IWUSR, show_current, store_current);
- static DEVICE_ATTR(max_current, S_IRUGO , show_max_current, NULL);
+ static int opl3_load_patch(int dev, int format, const char __user *addr,
+-		int offs, int count, int pmgr_flag)
++		int count, int pmgr_flag)
+ {
+ 	struct sbi_instrument ins;
  
- static struct attribute *lp5521_led_attributes[] = {
-@@ -548,15 +548,15 @@ static struct attribute_group lp5521_led
- };
+@@ -830,11 +830,7 @@ static int opl3_load_patch(int dev, int
+ 		return -EINVAL;
+ 	}
  
- /* device attributes */
--static DEVICE_ATTR(engine1_mode, S_IRUGO | S_IWUGO,
-+static DEVICE_ATTR(engine1_mode, S_IRUGO | S_IWUSR,
- 		   show_engine1_mode, store_engine1_mode);
--static DEVICE_ATTR(engine2_mode, S_IRUGO | S_IWUGO,
-+static DEVICE_ATTR(engine2_mode, S_IRUGO | S_IWUSR,
- 		   show_engine2_mode, store_engine2_mode);
--static DEVICE_ATTR(engine3_mode, S_IRUGO | S_IWUGO,
-+static DEVICE_ATTR(engine3_mode, S_IRUGO | S_IWUSR,
- 		   show_engine3_mode, store_engine3_mode);
--static DEVICE_ATTR(engine1_load, S_IWUGO, NULL, store_engine1_load);
--static DEVICE_ATTR(engine2_load, S_IWUGO, NULL, store_engine2_load);
--static DEVICE_ATTR(engine3_load, S_IWUGO, NULL, store_engine3_load);
-+static DEVICE_ATTR(engine1_load, S_IWUSR, NULL, store_engine1_load);
-+static DEVICE_ATTR(engine2_load, S_IWUSR, NULL, store_engine2_load);
-+static DEVICE_ATTR(engine3_load, S_IWUSR, NULL, store_engine3_load);
- static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
+-	/*
+-	 * What the fuck is going on here?  We leave junk in the beginning
+-	 * of ins and then check the field pretty close to that beginning?
+-	 */
+-	if(copy_from_user(&((char *) &ins)[offs], addr + offs, sizeof(ins) - offs))
++	if (copy_from_user(&ins, addr, sizeof(ins)))
+ 		return -EFAULT;
  
- static struct attribute *lp5521_attributes[] = {
+ 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
+--- a/sound/oss/sequencer.c
++++ b/sound/oss/sequencer.c
+@@ -241,7 +241,7 @@ int sequencer_write(int dev, struct file
+ 				return -ENXIO;
+ 
+ 			fmt = (*(short *) &event_rec[0]) & 0xffff;
+-			err = synth_devs[dev]->load_patch(dev, fmt, buf, p + 4, c, 0);
++			err = synth_devs[dev]->load_patch(dev, fmt, buf + p, c, 0);
+ 			if (err < 0)
+ 				return err;
+ 
 
 
