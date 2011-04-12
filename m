@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab1DLOio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:38:44 -0400
-Received: from kroah.org ([198.145.64.141]:57717 "EHLO coco.kroah.org"
+	id S932431Ab1DLOpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:45:04 -0400
+Received: from kroah.org ([198.145.64.141]:57743 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932371Ab1DLOij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:39 -0400
+	id S932373Ab1DLOik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:40 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:56 2011
-Message-Id: <20110412143556.428027136@clark.kroah.org>
+Message-Id: <20110412143556.534215116@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:08 -0700
+Date: Tue, 12 Apr 2011 07:35:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [079/105] netfilter: ip_tables: fix infoleak to userspace
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+Subject: [080/105] netfilter: xtables: fix reentrancy
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 78b79876761b86653df89c48a7010b5cbd41a84a upstream.
+commit db856674ac69e31946e56085239757cca3f7655f upstream.
 
-Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
-copied from userspace.  Fields of these structs that are
-zero-terminated strings are not checked.  When they are used as argument
-to a format string containing "%s" in request_module(), some sensitive
-information is leaked to userspace via argument of spawned modprobe
-process.
+commit f3c5c1bfd4308 (make ip_tables reentrant) introduced a race in
+handling the stackptr restore, at the end of ipt_do_table()
 
-The first and the third bugs were introduced before the git epoch; the
-second was introduced in 2722971c (v2.6.17-rc1).  To trigger the bug
-one should have CAP_NET_ADMIN.
+We should do it before the call to xt_info_rdunlock_bh(), or we allow
+cpu preemption and another cpu overwrites stackptr of original one.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+A second fix is to change the underflow test to check the origptr value
+instead of 0 to detect underflow, or else we allow a jump from different
+hooks.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jan Engelhardt <jengelh@medozas.de>
 Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/netfilter/ip_tables.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/netfilter/ip_tables.c  |    4 ++--
+ net/ipv6/netfilter/ip6_tables.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
 --- a/net/ipv4/netfilter/ip_tables.c
 +++ b/net/ipv4/netfilter/ip_tables.c
-@@ -1261,6 +1261,7 @@ do_replace(struct net *net, const void _
- 	/* overflow check */
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
- 
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -1805,6 +1806,7 @@ compat_do_replace(struct net *net, void
- 		return -ENOMEM;
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
- 
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -2034,6 +2036,7 @@ do_ipt_get_ctl(struct sock *sk, int cmd,
- 			ret = -EFAULT;
+@@ -387,7 +387,7 @@ ipt_do_table(struct sk_buff *skb,
+ 					verdict = (unsigned)(-v) - 1;
+ 					break;
+ 				}
+-				if (*stackptr == 0) {
++				if (*stackptr <= origptr) {
+ 					e = get_entry(table_base,
+ 					    private->underflow[hook]);
+ 					pr_debug("Underflow (this is normal) "
+@@ -427,10 +427,10 @@ ipt_do_table(struct sk_buff *skb,
+ 			/* Verdict */
  			break;
- 		}
-+		rev.name[sizeof(rev.name)-1] = 0;
+ 	} while (!acpar.hotdrop);
+-	xt_info_rdunlock_bh();
+ 	pr_debug("Exiting %s; resetting sp from %u to %u\n",
+ 		 __func__, *stackptr, origptr);
+ 	*stackptr = origptr;
++	xt_info_rdunlock_bh();
+ #ifdef DEBUG_ALLOW_ALL
+ 	return NF_ACCEPT;
+ #else
+--- a/net/ipv6/netfilter/ip6_tables.c
++++ b/net/ipv6/netfilter/ip6_tables.c
+@@ -410,7 +410,7 @@ ip6t_do_table(struct sk_buff *skb,
+ 					verdict = (unsigned)(-v) - 1;
+ 					break;
+ 				}
+-				if (*stackptr == 0)
++				if (*stackptr <= origptr)
+ 					e = get_entry(table_base,
+ 					    private->underflow[hook]);
+ 				else
+@@ -441,8 +441,8 @@ ip6t_do_table(struct sk_buff *skb,
+ 			break;
+ 	} while (!acpar.hotdrop);
  
- 		if (cmd == IPT_SO_GET_REVISION_TARGET)
- 			target = 1;
+-	xt_info_rdunlock_bh();
+ 	*stackptr = origptr;
++	xt_info_rdunlock_bh();
+ 
+ #ifdef DEBUG_ALLOW_ALL
+ 	return NF_ACCEPT;
 
 
