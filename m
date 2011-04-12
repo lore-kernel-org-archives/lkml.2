@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab1DLQK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:10:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46612 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758056Ab1DLQK5 (ORCPT
+	id S1758097Ab1DLQM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:12:28 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:57041 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758082Ab1DLQM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:10:57 -0400
-Date: Tue, 12 Apr 2011 12:10:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-cc: USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-bluetooth@vger.kernel.org>
-Subject: Re: Endless print of uhci_result_common: failed with status 440000
-In-Reply-To: <BANLkTin0bKs1D3JxVODw3F+qH0ZqRwh5KA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1104121210250.2000-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 12 Apr 2011 12:12:27 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=XvvGJZv5dpfq1PzjP5jUAMedaqH6L+3f0e4mJYojd48Fm3ZYL31Le6RaBdyKNH2Pl5Im+5ZfhjwL0D6lHtnE0njtHUnlQV4CNZxWK/xzWo5BtA2Z9qUDaG0Uclo6snGH;
+Date: Tue, 12 Apr 2011 09:11:45 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] x86: Remove dma32_reserve_bootmem
+Message-ID: <20110412091145.2bc5e6a9@jbarnes-desktop>
+In-Reply-To: <4D90CBE5.6090706@kernel.org>
+References: <4D90CBE5.6090706@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Apr 2011, Zdenek Kabelac wrote:
+On Mon, 28 Mar 2011 10:56:53 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-> 2011/4/11 Alan Stern <stern@rowland.harvard.edu>:
-> > On Mon, 11 Apr 2011, Zdenek Kabelac wrote:
-> >
-> >> > I've created:
-> >> >
-> >> > https://bugzilla.kernel.org/show_bug.cgi?id=33062
-> >> >
-> >> > and I'm cc-ing linux-bluetooth.
-> >> >
-> >>
-> >> In fact this Ooops might be related to:
-> >>
-> >> http://marc.info/?l=linux-kernel&m=130207593728273&w=2
-> >
-> > It might be.  Did you try reverting the patch mentioned in that email?
-> >
 > 
-> Yep - it looks like the patch
-> http://marc.info/?l=linux-bluetooth&m=130230770920378&w=2
-> solved my problem with weird deadlocks.
+> That is workaround for holding dma32 buf when early bootmem could use up
+> those range on system that have lots of RAM.
+> 
+> Now x86 is using memblock, and even nobootmem wrapper do top-down allocation.
+> 
+> So We could remove those not needed code now.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
 
-Okay, great!
+Looks like a nice cleanup, can you re-send based on my linux-next
+branch?
 
-Alan Stern
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
