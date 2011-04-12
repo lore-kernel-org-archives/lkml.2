@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab1DLOjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:39:10 -0400
-Received: from kroah.org ([198.145.64.141]:57909 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932450Ab1DLOjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:39:02 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:59 2011
-Message-Id: <20110412143558.995278661@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:32 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [103/105] ext4: fix credits computing for indirect mapped files
-In-Reply-To: <20110412143613.GA19478@kroah.com>
+	id S932535Ab1DLOj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:39:56 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:44713 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421Ab1DLOjx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:39:53 -0400
+Date: Tue, 12 Apr 2011 16:39:49 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@c4eb
+To: Greg KH <gregkh@suse.de>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: sysfs: cannot create duplicate filename
+In-Reply-To: <20110411175628.GA24301@suse.de>
+Message-ID: <alpine.LFD.2.02.1104121637450.2239@c4eb>
+References: <alpine.LFD.2.02.1104111556280.1938@c4eb> <20110411141309.GA8924@suse.de> <alpine.LFD.2.02.1104111622490.1938@c4eb> <20110411144956.GA16610@suse.de> <alpine.LFD.2.02.1104111658560.1770@c4eb> <20110411151947.GA17913@suse.de>
+ <alpine.LFD.2.02.1104111943590.2036@c4eb> <20110411175628.GA24301@suse.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Organization: "IBM Deutschland Research & Development GmbH Vorsitzender des Aufsichtsrats: Martin Jetter Geschaeftsfuehrung: Dirk Wittkopp Sitz der Gesellschaft: Boeblingen Registergericht: Amtsgericht Stuttgart, HRB 243294"
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
-
-------------------
-
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-
-commit 5b41395fcc0265fc9f193aef9df39ce49d64677c upstream.
-
-When writing a contiguous set of blocks, two indirect blocks could be
-needed depending on how the blocks are aligned, so we need to increase
-the number of credits needed by one.
-
-[ Also fixed a another bug which could further underestimate the
-  number of journal credits needed by 1; the code was using integer
-  division instead of DIV_ROUND_UP() -- tytso]
-
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ext4/inode.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
-
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5460,13 +5460,12 @@ static int ext4_indirect_trans_blocks(st
- 	/* if nrblocks are contiguous */
- 	if (chunk) {
- 		/*
--		 * With N contiguous data blocks, it need at most
--		 * N/EXT4_ADDR_PER_BLOCK(inode->i_sb) indirect blocks
--		 * 2 dindirect blocks
--		 * 1 tindirect block
-+		 * With N contiguous data blocks, we need at most
-+		 * N/EXT4_ADDR_PER_BLOCK(inode->i_sb) + 1 indirect blocks,
-+		 * 2 dindirect blocks, and 1 tindirect block
- 		 */
--		indirects = nrblocks / EXT4_ADDR_PER_BLOCK(inode->i_sb);
--		return indirects + 3;
-+		return DIV_ROUND_UP(nrblocks,
-+				    EXT4_ADDR_PER_BLOCK(inode->i_sb)) + 4;
- 	}
- 	/*
- 	 * if nrblocks are not contiguous, worse case, each block touch
 
 
+On Mon, 11 Apr 2011, Greg KH wrote:
+
+> On Mon, Apr 11, 2011 at 07:50:34PM +0200, Sebastian Ott wrote:
+> > 
+> > 
+> > On Mon, 11 Apr 2011, Greg KH wrote:
+> > 
+> > > On Mon, Apr 11, 2011 at 05:05:08PM +0200, Sebastian Ott wrote:
+> > > > 
+> > > > 
+> > > > On Mon, 11 Apr 2011, Greg KH wrote:
+> > > > 
+> > > > > On Mon, Apr 11, 2011 at 04:33:03PM +0200, Sebastian Ott wrote:
+> > > > > > On Mon, 11 Apr 2011, Greg KH wrote:
+> > > > > > 
+> > > > > > > On Mon, Apr 11, 2011 at 04:04:08PM +0200, Sebastian Ott wrote:
+> > > > > > > > Hi,
+> > > > > > > > 
+> > > > > > > > i've seen this warning which looks to be caused by a race between device_add
+> > > > > > > > and driver_register
+> > > > > > > > 
+> > > > > > > > [   80.893594] sysfs: cannot create duplicate filename '/bus/ccw/drivers/qeth/0.0.b57d'
+> > > > > > > 
+> > > > > > > Isn't the problem here the fact that you are creating 2 directories of
+> > > > > > > the same name?
+> > > > > > I'm sure this isn't the case here. The bus code just calls device_add and
+> > > > > > at the same time on a different thread a module is loaded which registers
+> > > > > > a driver at the bus.
+> > > > > > 
+> > > > > > I was able to reproduce this with a module which creates a dummy bus
+> > > > > > and registers drivers and devices on this bus on 2 different workqueues.
+> > > > > 
+> > > > > That makes sense, as no bus should be doing this on multiple "threads".
+> > > > > What real-life bus does this today?
+> > > > A bus that will recognize and register a lot of devices, after the first
+> > > > uevent is presented to userspace, a module will be loaded registering a
+> > > > driver from a different thread. I don't think thats uncommon.
+> > > 
+> > > But again, what kernel code today does this?  I think they all have
+> > > locks to keep this from happening, right?
+> > I couldn't find a bus who protects device_register against driver_register
+> > and I don't think this is something which should be handled by every
+> > individual bus but from within the driver core.
+> 
+> How did you cause the oops in this original message?  What type of bus
+> was it on?  And did your patch solve the issue?
+
+I've seen this warning on a system which had a lot of devices attached.
+Those devices also responded _very_ slow. So it took some time to
+register all these deivces (qeth) on the bus (ccw). During this time
+the qeth module got loaded and registered the qeth driver.
+
+Since i've never seen this warning and those devices normally don't
+take so much time to respond I wrote the beforementioned module to
+reproduce the race and make sure that this is no driver issue.
+
+With this module the warning could be triggered after a few cycles.
+With the patch applied, I did not see the warning again even after
+> 10.000 cycles.
+
+regards,
+Sebastian
