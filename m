@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab1DLLmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 07:42:04 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54286 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750720Ab1DLLmC (ORCPT
+	id S1754101Ab1DLLoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 07:44:10 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:37921 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab1DLLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 07:42:02 -0400
-Date: Tue, 12 Apr 2011 12:41:55 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nat Gurumoorthy <natg@google.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Mike Waychison <mikew@google.com>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] Use "request_muxed_region" in it87 watchdog
- drivers
-Message-ID: <20110412124155.36787390@lxorguk.ukuu.org.uk>
-In-Reply-To: <1302565974-23906-1-git-send-email-natg@google.com>
-References: <1302565858-23849-1-git-send-email-natg@google.com>
-	<1302565974-23906-1-git-send-email-natg@google.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 12 Apr 2011 07:44:09 -0400
+Subject: Re: [PATCH v2] rfkill: Regulator consumer driver for rfkill
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Antonio Ospite <ospite@studenti.unina.it>
+Cc: linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
+        "John W . Linville" <linville@tuxdriver.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
+        Guiming Zhuo <gmzhuo@gmail.com>
+In-Reply-To: <1302608488.3639.15.camel@jlt3.sipsolutions.net>
+References: <1302082178.3811.7.camel@jlt3.sipsolutions.net>
+	 <1302260395-11872-1-git-send-email-ospite@studenti.unina.it>
+	 <1302608488.3639.15.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 13:44:02 +0200
+Message-ID: <1302608642.3639.17.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	while (!request_muxed_region(REG, 2, NAME))
-> +		continue;
-> +
+On Tue, 2011-04-12 at 13:41 +0200, Johannes Berg wrote:
 
-This shouldn't need the loop ? - is it only working with the loop
-present ?
+> > + * static struct regulator_consumer_supply pcap_regulator_V6_consumers [] = {
+> > + * 	{ .dev_name = "rfkill-regulator.0", supply = "vrfkill" },
+> > + * };
+> 
+> It's a comment, but it should be .supply = (missing the .)
+> 
+> > +	if (pdata->name == NULL || pdata->type == 0) {
+> > +		dev_err(&pdev->dev, "invalid name or type in platform data\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	vcc = regulator_get_exclusive(&pdev->dev, "vrfkill");
+> 
+> Wasn't that supposed to use pdata->supply? Actually, there's no member
+> "supply" in the struct?
 
+Oh wait, I think I just misunderstood how this works. But if the name is
+"vrfkill" how does that really work with multiple instances?
 
-Otherwise this looks good - I'd just like to understand if the loop was
-needed (indicating a bug has crept into the muxed alloc code somewhere
-perhaps) or not
+johannes
 
-Alan
