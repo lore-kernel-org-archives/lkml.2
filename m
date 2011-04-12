@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab1DLUCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 16:02:24 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:52271 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932227Ab1DLUCW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 16:02:22 -0400
-Message-ID: <4DA4AFE6.8050007@metafoo.de>
-Date: Tue, 12 Apr 2011 22:02:46 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	id S932356Ab1DLUDC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 16:03:02 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42744 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932159Ab1DLUDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 16:03:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,198,1301900400"; 
+   d="scan'208";a="627569599"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>, Prarit Bhargava <prarit@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>
+Date: Tue, 12 Apr 2011 13:02:21 -0700
+Subject: RE: [PATCH]: mce: don't print "human readable" message for
+ corrected errors
+Thread-Topic: [PATCH]: mce: don't print "human readable" message for
+ corrected errors
+Thread-Index: Acv5Q6l5d0fmcpzVQeuhxLwO3ZyWHQACBPTA
+Message-ID: <987664A83D2D224EAE907B061CE93D5301A9629BD5@orsmsx505.amr.corp.intel.com>
+References: <20110412174405.26867.65604.sendpatchset@prarit.bos.redhat.com>
+ <20110412185842.GB9891@liondog.tnic>
+In-Reply-To: <20110412185842.GB9891@liondog.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Jassi Brar <jassi.brar@samsung.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
-Subject: Re: [alsa-devel] [PATCH 1/7] ASoC: neo1973_wm8753: Remove scenario
- management code.
-References: <1299481500-5481-1-git-send-email-lars@metafoo.de>	<1299495878.3377.17.camel@odin> <20110307122520.GI13471@opensource.wolfsonmicro.com>
-In-Reply-To: <20110307122520.GI13471@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3CK39qs008287
 
-On 03/07/2011 01:25 PM, Mark Brown wrote:
-> On Mon, Mar 07, 2011 at 11:04:38AM +0000, Liam Girdwood wrote:
-> 
->> Just had a quick look. All 
-> 
->> Acked-by: Liam Girdwood <lrg@ti.com>
-> 
-> Applied 1-6 - I'll wait for Kukjin to check patch 7 just in case he
-> wants it to go via his tree, there's no compile time dependency.
+> Why not? This way you turn reporting of _ALL_ correctable MCEs
+> completely off and some users would actually like to run them through
+> mcelog on Intel.
 
-Thanks.
+pr_emerg() is rather overkill for a corrected error - on large systems
+corrected errors are going to be a routine occurrence (my personal estimation
+is "one soft error per gigabyte per month" ... which is pretty much the
+same as "one per terabyte per hour" for the people with the really cool
+toys.
 
-So far patch 7 (adding the dfbmcs320 platform device to gta02 mach file) hasn't
-been applied. Should I resent it, or do you still have it?
+We are also setting TAINT_MACHINE_CHECK for corrected errors - perhaps
+this made sense when systems were small and machine checks were rare and
+scary.  But I think we need to start working with the reality that
+corrected errors are normal events.
 
-- Lars
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
