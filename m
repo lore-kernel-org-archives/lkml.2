@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab1DLOjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:39:51 -0400
-Received: from kroah.org ([198.145.64.141]:57923 "EHLO coco.kroah.org"
+	id S932326Ab1DLOjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:39:05 -0400
+Received: from kroah.org ([198.145.64.141]:57895 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932487Ab1DLOjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:39:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:59 2011
-Message-Id: <20110412143559.186613198@clark.kroah.org>
+	id S932479Ab1DLOjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:39:00 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:58 2011
+Message-Id: <20110412143558.774730234@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:34 -0700
+Date: Tue, 12 Apr 2011 07:35:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [105/105] nfsd4: fix oops on lock failure
+        "Philip A. Prindeville" <philipp@redfish-solutions.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [101/105] atm/solos-pci: Dont flap VCs when carrier state changes
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,103 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: J. Bruce Fields <bfields@redhat.com>
+From: Philip A. Prindeville <philipp@redfish-solutions.com>
 
-commit 23fcf2ec93fb8573a653408316af599939ff9a8e upstream.
+commit c031235b395433350f25943b7580a5e343c7b7b2 upstream.
 
-Lock stateid's can have access_bmap 0 if they were only partially
-initialized (due to a failed lock request); handle that case in
-free_generic_stateid.
+Don't flap VCs when carrier state changes; higher-level protocols
+can detect loss of connectivity and act accordingly. This is more
+consistent with how other network interfaces work.
 
-------------[ cut here ]------------
-kernel BUG at fs/nfsd/nfs4state.c:380!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/kernel/mm/ksm/run
-Modules linked in: nfs fscache md4 nls_utf8 cifs ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat bridge stp llc nfsd lockd nfs_acl auth_rpcgss sunrpc ipv6 ppdev parport_pc parport pcnet32 mii pcspkr microcode i2c_piix4 BusLogic floppy [last unloaded: mperf]
+We no longer use release_vccs() so we can delete it.
 
-Pid: 1468, comm: nfsd Not tainted 2.6.38+ #120 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-EIP: 0060:[<e24f180d>] EFLAGS: 00010297 CPU: 0
-EIP is at nfs4_access_to_omode+0x1c/0x29 [nfsd]
-EAX: ffffffff EBX: dd758120 ECX: 00000000 EDX: 00000004
-ESI: dd758120 EDI: ddfe657c EBP: dd54dde0 ESP: dd54dde0
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process nfsd (pid: 1468, ti=dd54c000 task=ddc92580 task.ti=dd54c000)
-Stack:
- dd54ddf0 e24f19ca 00000000 ddfe6560 dd54de08 e24f1a5d dd758130 deee3a20
- ddfe6560 31270000 dd54df1c e24f52fd 0000000f dd758090 e2505dd0 0be304cf
- dbb51d68 0000000e ddfe657c ddcd8020 dd758130 dd758128 dd7580d8 dd54de68
-Call Trace:
- [<e24f19ca>] free_generic_stateid+0x1c/0x3e [nfsd]
- [<e24f1a5d>] release_lockowner+0x71/0x8a [nfsd]
- [<e24f52fd>] nfsd4_lock+0x617/0x66c [nfsd]
- [<e24e57b6>] ? nfsd_setuser+0x199/0x1bb [nfsd]
- [<e24e056c>] ? nfsd_setuser_and_check_port+0x65/0x81 [nfsd]
- [<c07a0052>] ? _cond_resched+0x8/0x1c
- [<c04ca61f>] ? slab_pre_alloc_hook.clone.33+0x23/0x27
- [<c04cac01>] ? kmem_cache_alloc+0x1a/0xd2
- [<c04835a0>] ? __call_rcu+0xd7/0xdd
- [<e24e0dfb>] ? fh_verify+0x401/0x452 [nfsd]
- [<e24f0b61>] ? nfsd4_encode_operation+0x52/0x117 [nfsd]
- [<e24ea0d7>] ? nfsd4_putfh+0x33/0x3b [nfsd]
- [<e24f4ce6>] ? nfsd4_delegreturn+0xd4/0xd4 [nfsd]
- [<e24ea2c9>] nfsd4_proc_compound+0x1ea/0x33e [nfsd]
- [<e24de6ee>] nfsd_dispatch+0xd1/0x1a5 [nfsd]
- [<e1d6e1c7>] svc_process_common+0x282/0x46f [sunrpc]
- [<e1d6e578>] svc_process+0xdc/0xfa [sunrpc]
- [<e24de0fa>] nfsd+0xd6/0x115 [nfsd]
- [<e24de024>] ? nfsd_shutdown+0x24/0x24 [nfsd]
- [<c0454322>] kthread+0x62/0x67
- [<c04542c0>] ? kthread_worker_fn+0x114/0x114
- [<c07a6ebe>] kernel_thread_helper+0x6/0x10
-Code: eb 05 b8 00 00 27 4f 8d 65 f4 5b 5e 5f 5d c3 83 e0 03 55 83 f8 02 89 e5 74 17 83 f8 03 74 05 48 75 09 eb 09 b8 02 00 00 00 eb 0b <0f> 0b 31 c0 eb 05 b8 01 00 00 00 5d c3 55 89 e5 57 56 89 d6 8d
-EIP: [<e24f180d>] nfs4_access_to_omode+0x1c/0x29 [nfsd] SS:ESP 0068:dd54dde0
----[ end trace 2b0bf6c6557cb284 ]---
+release_vccs() was duplicated from net/atm/common.c; make the
+corresponding function exported, since other code duplicates it
+and could leverage it if it were public.
 
-The trace route is:
-
- -> nfsd4_lock()
-   -> if (lock->lk_is_new) {
-     -> alloc_init_lock_stateid()
-
-        3739: stp->st_access_bmap = 0;
-
-   ->if (status && lock->lk_is_new && lock_sop)
-     -> release_lockowner()
-      -> free_generic_stateid()
-       -> nfs4_access_bmap_to_omode()
-          -> nfs4_access_to_omode()
-
-        380: BUG();   *****
-
-This problem was introduced by 0997b173609b9229ece28941c118a2a9b278796e.
-
-Reported-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Tested-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Philip A. Prindeville <philipp@redfish-solutions.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4state.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/atm/solos-pci.c |   26 +-------------------------
+ include/linux/atmdev.h  |    1 +
+ net/atm/common.c        |    1 +
+ 3 files changed, 3 insertions(+), 25 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -397,10 +397,13 @@ static void unhash_generic_stateid(struc
- 
- static void free_generic_stateid(struct nfs4_stateid *stp)
- {
--	int oflag = nfs4_access_bmap_to_omode(stp);
-+	int oflag;
- 
--	nfs4_file_put_access(stp->st_file, oflag);
--	put_nfs4_file(stp->st_file);
-+	if (stp->st_access_bmap) {
-+		oflag = nfs4_access_bmap_to_omode(stp);
-+		nfs4_file_put_access(stp->st_file, oflag);
-+		put_nfs4_file(stp->st_file);
-+	}
- 	kmem_cache_free(stateid_slab, stp);
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -165,7 +165,6 @@ static uint32_t fpga_tx(struct solos_car
+ static irqreturn_t solos_irq(int irq, void *dev_id);
+ static struct atm_vcc* find_vcc(struct atm_dev *dev, short vpi, int vci);
+ static int list_vccs(int vci);
+-static void release_vccs(struct atm_dev *dev);
+ static int atm_init(struct solos_card *, struct device *);
+ static void atm_remove(struct solos_card *);
+ static int send_command(struct solos_card *card, int dev, const char *buf, size_t size);
+@@ -384,7 +383,6 @@ static int process_status(struct solos_c
+ 	/* Anything but 'Showtime' is down */
+ 	if (strcmp(state_str, "Showtime")) {
+ 		atm_dev_signal_change(card->atmdev[port], ATM_PHY_SIG_LOST);
+-		release_vccs(card->atmdev[port]);
+ 		dev_info(&card->dev->dev, "Port %d: %s\n", port, state_str);
+ 		return 0;
+ 	}
+@@ -830,28 +828,6 @@ static int list_vccs(int vci)
+ 	return num_found;
  }
  
+-static void release_vccs(struct atm_dev *dev)
+-{
+-        int i;
+-
+-        write_lock_irq(&vcc_sklist_lock);
+-        for (i = 0; i < VCC_HTABLE_SIZE; i++) {
+-                struct hlist_head *head = &vcc_hash[i];
+-                struct hlist_node *node, *tmp;
+-                struct sock *s;
+-                struct atm_vcc *vcc;
+-
+-                sk_for_each_safe(s, node, tmp, head) {
+-                        vcc = atm_sk(s);
+-                        if (vcc->dev == dev) {
+-                                vcc_release_async(vcc, -EPIPE);
+-                                sk_del_node_init(s);
+-                        }
+-                }
+-        }
+-        write_unlock_irq(&vcc_sklist_lock);
+-}
+-
+ 
+ static int popen(struct atm_vcc *vcc)
+ {
+@@ -1269,7 +1245,7 @@ static int atm_init(struct solos_card *c
+ 		card->atmdev[i]->ci_range.vci_bits = 16;
+ 		card->atmdev[i]->dev_data = card;
+ 		card->atmdev[i]->phy_data = (void *)(unsigned long)i;
+-		atm_dev_signal_change(card->atmdev[i], ATM_PHY_SIG_UNKNOWN);
++		atm_dev_signal_change(card->atmdev[i], ATM_PHY_SIG_FOUND);
+ 
+ 		skb = alloc_skb(sizeof(*header), GFP_ATOMIC);
+ 		if (!skb) {
+--- a/include/linux/atmdev.h
++++ b/include/linux/atmdev.h
+@@ -443,6 +443,7 @@ void atm_dev_signal_change(struct atm_de
+ 
+ void vcc_insert_socket(struct sock *sk);
+ 
++void atm_dev_release_vccs(struct atm_dev *dev);
+ 
+ /*
+  * This is approximately the algorithm used by alloc_skb.
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -252,6 +252,7 @@ void atm_dev_release_vccs(struct atm_dev
+ 	}
+ 	write_unlock_irq(&vcc_sklist_lock);
+ }
++EXPORT_SYMBOL(atm_dev_release_vccs);
+ 
+ static int adjust_tp(struct atm_trafprm *tp, unsigned char aal)
+ {
 
 
