@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab1DLOiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:38:05 -0400
-Received: from kroah.org ([198.145.64.141]:57550 "EHLO coco.kroah.org"
+	id S932208Ab1DLOiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:12 -0400
+Received: from kroah.org ([198.145.64.141]:57570 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932183Ab1DLOiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:02 -0400
+	id S1757252Ab1DLOiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:05 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:52 2011
-Message-Id: <20110412143552.120626910@clark.kroah.org>
+Message-Id: <20110412143552.553555358@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:28 -0700
+Date: Tue, 12 Apr 2011 07:34:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [039/105] ALSA: HDA: Add dock mic quirk for Lenovo Thinkpad X220
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [043/105] net: fix ethtool->set_flags not intended -EINVAL return value
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 840126579da56edae8ecc4a0d85198f742982f10 upstream.
+commit 673e63c688f43104c73aad8ea4237f7ad41fa14d upstream.
 
-This quirk is needed for the docking station mic of
-Lenovo Thinkpad X220 to function correctly.
+After commit d5dbda23804156ae6f35025ade5307a49d1db6d7 "ethtool: Add
+support for vlan accleration.", drivers that have NETIF_F_HW_VLAN_TX,
+and/or NETIF_F_HW_VLAN_RX feature, but do not allow enable/disable vlan
+acceleration via ethtool set_flags, always return -EINVAL from that
+function. Fix by returning -EINVAL only if requested features do not
+match current settings and can not be changed by driver.
 
-BugLink: http://bugs.launchpad.net/bugs/746259
-Tested-by: James Ferguson <james.ferguson@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Change any driver that define ethtool->set_flags to use
+ethtool_invalid_flags() to avoid similar problems in the future
+(also on drivers that do not have the problem).
+
+Tested with modified (to reproduce this bug) myri10ge driver.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/netxen/netxen_nic_ethtool.c |    2 +-
+ drivers/net/qlcnic/qlcnic_ethtool.c     |    2 +-
+ drivers/net/s2io.c                      |    2 +-
+ drivers/net/vmxnet3/vmxnet3_ethtool.c   |    4 ++--
+ drivers/net/vxge/vxge-ethtool.c         |    4 ++--
+ include/linux/ethtool.h                 |    1 +
+ net/core/ethtool.c                      |   17 ++++++++++++++++-
+ 7 files changed, 24 insertions(+), 8 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3130,6 +3130,7 @@ static struct snd_pci_quirk cxt5066_cfg_
- 	SND_PCI_QUIRK(0x17aa, 0x21c5, "Thinkpad Edge 13", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21c6, "Thinkpad Edge 13", CXT5066_ASUS),
-  	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
-+	SND_PCI_QUIRK(0x17aa, 0x21da, "Lenovo X220", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo G560", CXT5066_ASUS),
- 	SND_PCI_QUIRK_VENDOR(0x17aa, "Lenovo", CXT5066_IDEAPAD), /* Fallback for Lenovos without dock mic */
- 	{}
+--- a/drivers/net/netxen/netxen_nic_ethtool.c
++++ b/drivers/net/netxen/netxen_nic_ethtool.c
+@@ -901,7 +901,7 @@ static int netxen_nic_set_flags(struct n
+ 	struct netxen_adapter *adapter = netdev_priv(netdev);
+ 	int hw_lro;
+ 
+-	if (data & ~ETH_FLAG_LRO)
++	if (ethtool_invalid_flags(netdev, data, ETH_FLAG_LRO))
+ 		return -EINVAL;
+ 
+ 	if (!(adapter->capabilities & NX_FW_CAPABILITY_HW_LRO))
+--- a/drivers/net/qlcnic/qlcnic_ethtool.c
++++ b/drivers/net/qlcnic/qlcnic_ethtool.c
+@@ -1003,7 +1003,7 @@ static int qlcnic_set_flags(struct net_d
+ 	struct qlcnic_adapter *adapter = netdev_priv(netdev);
+ 	int hw_lro;
+ 
+-	if (data & ~ETH_FLAG_LRO)
++	if (ethtool_invalid_flags(netdev, data, ETH_FLAG_LRO))
+ 		return -EINVAL;
+ 
+ 	if (!(adapter->capabilities & QLCNIC_FW_CAPABILITY_HW_LRO))
+--- a/drivers/net/s2io.c
++++ b/drivers/net/s2io.c
+@@ -6726,7 +6726,7 @@ static int s2io_ethtool_set_flags(struct
+ 	int rc = 0;
+ 	int changed = 0;
+ 
+-	if (data & ~ETH_FLAG_LRO)
++	if (ethtool_invalid_flags(dev, data, ETH_FLAG_LRO))
+ 		return -EINVAL;
+ 
+ 	if (data & ETH_FLAG_LRO) {
+--- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
++++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+@@ -304,8 +304,8 @@ vmxnet3_set_flags(struct net_device *net
+ 	u8 lro_present = (netdev->features & NETIF_F_LRO) == 0 ? 0 : 1;
+ 	unsigned long flags;
+ 
+-	if (data & ~ETH_FLAG_LRO)
+-		return -EOPNOTSUPP;
++	if (ethtool_invalid_flags(netdev, data, ETH_FLAG_LRO))
++		return -EINVAL;
+ 
+ 	if (lro_requested ^ lro_present) {
+ 		/* toggle the LRO feature*/
+--- a/drivers/net/vxge/vxge-ethtool.c
++++ b/drivers/net/vxge/vxge-ethtool.c
+@@ -1117,8 +1117,8 @@ static int vxge_set_flags(struct net_dev
+ 	struct vxgedev *vdev = netdev_priv(dev);
+ 	enum vxge_hw_status status;
+ 
+-	if (data & ~ETH_FLAG_RXHASH)
+-		return -EOPNOTSUPP;
++	if (ethtool_invalid_flags(dev, data, ETH_FLAG_RXHASH))
++		return -EINVAL;
+ 
+ 	if (!!(data & ETH_FLAG_RXHASH) == vdev->devh->config.rth_en)
+ 		return 0;
+--- a/include/linux/ethtool.h
++++ b/include/linux/ethtool.h
+@@ -591,6 +591,7 @@ int ethtool_op_set_ufo(struct net_device
+ u32 ethtool_op_get_flags(struct net_device *dev);
+ int ethtool_op_set_flags(struct net_device *dev, u32 data, u32 supported);
+ void ethtool_ntuple_flush(struct net_device *dev);
++bool ethtool_invalid_flags(struct net_device *dev, u32 data, u32 supported);
+ 
+ /**
+  * &ethtool_ops - Alter and report network device settings
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -146,9 +146,24 @@ u32 ethtool_op_get_flags(struct net_devi
+ }
+ EXPORT_SYMBOL(ethtool_op_get_flags);
+ 
++/* Check if device can enable (or disable) particular feature coded in "data"
++ * argument. Flags "supported" describe features that can be toggled by device.
++ * If feature can not be toggled, it state (enabled or disabled) must match
++ * hardcoded device features state, otherwise flags are marked as invalid.
++ */
++bool ethtool_invalid_flags(struct net_device *dev, u32 data, u32 supported)
++{
++	u32 features = dev->features & flags_dup_features;
++	/* "data" can contain only flags_dup_features bits,
++	 * see __ethtool_set_flags */
++
++	return (features & ~supported) != (data & ~supported);
++}
++EXPORT_SYMBOL(ethtool_invalid_flags);
++
+ int ethtool_op_set_flags(struct net_device *dev, u32 data, u32 supported)
+ {
+-	if (data & ~supported)
++	if (ethtool_invalid_flags(dev, data, supported))
+ 		return -EINVAL;
+ 
+ 	dev->features = ((dev->features & ~flags_dup_features) |
 
 
