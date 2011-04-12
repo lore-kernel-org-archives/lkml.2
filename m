@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab1DLTyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:54:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53054 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab1DLTyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:54:44 -0400
-Date: Tue, 12 Apr 2011 21:53:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] signal: retarget_shared_pending: consider
-	shared/unblocked signals only
-Message-ID: <20110412195321.GA15586@redhat.com>
-References: <20110411171957.GA32469@redhat.com> <20110411172045.GC32469@redhat.com> <20110412124022.6256b8ed@mfleming-mobl1.ger.corp.intel.com>
+	id S1757000Ab1DLT4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:56:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52802 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756915Ab1DLT4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 15:56:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412124022.6256b8ed@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110412192103.GA13278@redhat.com>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+ <20110412190934.GA12082@redhat.com> <20110412192103.GA13278@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 12 Apr 2011 12:55:24 -0700
+Message-ID: <BANLkTin6CTjxJLW49ExgFzS6-vne2gdH5w@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Sandeen <sandeen@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12, Matt Fleming wrote:
+On Tue, Apr 12, 2011 at 12:21 PM, Dave Jones <davej@redhat.com> wrote:
 >
-> On Mon, 11 Apr 2011 19:20:45 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
+> looks like this was caused by 93f1c20bc8cdb757be50566eff88d65c3b26881f
 >
-> > exit_signals() checks signal_pending() before
-> > retarget_shared_pending() but this is suboptimal. We can avoid the
-> > while_each_thread() loop in case when there are no shared signals
-> > visible to us.
-> >
-> > Add the has_pending_signals(shared_pending, blocked) check. We don
-> > not use tsk->blocked directly but pass this sigset_t as an argument,
-> > this is needed for the next patch.
-> >
-> > Note: we can optimize this more. while_each_thread(t) can check
-> > t->blocked into account and stop after every pending signal has the
-> > new target.
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->
-> Nice. Do you have plans to implement that further optimisation?
+> perhaps adding that string to the end of the line would preserve what mount expects ?
 
-Probably yes, this is straightforward...
+Care to test? Otherwise I'll just revert the thing.. It's clearly not
+valid behavior to randomly add some new field into the middle of a
+/proc file.
 
-> Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
-
-Thanks Matt, thanks all.
-
-I'll reply to other emails tomorrow. I was distracted by other things,
-sorry. Oh, as always :/
-
-Oleg.
-
+                              Linus
