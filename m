@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab1DLJSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 05:18:22 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:52350 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753303Ab1DLJSU (ORCPT
+	id S1756891Ab1DLJYL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 05:24:11 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63406 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab1DLJYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 05:18:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgQGACwYpE15LHHJgWdsb2JhbACZAo0cFQEBFiYlwXKFbgSUBw
-From: Dave Chinner <david@fromorbit.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        simoneau@ele.uri.edu
-Subject: [PATCH] nfs: don't call __mark_inode_dirty while holding i_lock
-Date: Tue, 12 Apr 2011 19:18:08 +1000
-Message-Id: <1302599888-21458-1-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.2.3
+	Tue, 12 Apr 2011 05:24:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=urzmTKVqHnpZCwsZzKCK0S/MAZ9qWkcJkOcz/wQLydoP2epmwRwUyPc9nhvhfODkVI
+         hQBhBp3InpetA66AF72+sKcjuYsi0GPX6iVcfOd50lBIHge5YFMnaAPqlheucoZXIzRl
+         P+5KmcKK6C2PRieKpm9YM2rrRtg4LtVvFUZSQ=
+MIME-Version: 1.0
+In-Reply-To: <20110411170134.035E.A69D9226@jp.fujitsu.com>
+References: <20110411165957.0352.A69D9226@jp.fujitsu.com>
+	<20110411170134.035E.A69D9226@jp.fujitsu.com>
+Date: Tue, 12 Apr 2011 18:24:08 +0900
+Message-ID: <BANLkTi=fEejkrPdX27bFi1x+dHpOSGxQaQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm, mem-hotplug: update pcp->stat_threshold when
+ memory hotplug occur
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+Hi, KOSAKI
 
-nfs_scan_commit() is called with the inode->i_lock held, but it then
-calls __mark_inode_dirty() while still holding the lock. This causes
-a deadlock.
+On Mon, Apr 11, 2011 at 5:01 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Currently, cpu hotplug updates pcp->stat_threashold, but memory
+> hotplug doesn't. there is no reason.
+>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Acked-by: Christoph Lameter <cl@linux.com>
 
-Push the inode->i_lock into nfs_scan_commit() so it can protect only
-the parts of the code it needs to and can be dropped before the call
-to __mark_inode_dirty() to avoid the deadlock.
+I can think it makes sense so I don't oppose the patch merging.
+But as you know I am very keen on the description.
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Tested-by: Will Simoneau <simoneau@ele.uri.edu>
----
- fs/nfs/write.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+What is the problem if hotplug doesn't do it?
+I means the patch solves what's problem?
 
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index af0c627..e4cbc11 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -542,11 +542,15 @@ nfs_scan_commit(struct inode *inode, struct list_head *dst, pgoff_t idx_start, u
- 	if (!nfs_need_commit(nfsi))
- 		return 0;
- 
-+	spin_lock(&inode->i_lock);
- 	ret = nfs_scan_list(nfsi, dst, idx_start, npages, NFS_PAGE_TAG_COMMIT);
- 	if (ret > 0)
- 		nfsi->ncommit -= ret;
-+	spin_unlock(&inode->i_lock);
-+
- 	if (nfs_need_commit(NFS_I(inode)))
- 		__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
-+
- 	return ret;
- }
- #else
-@@ -1483,9 +1487,7 @@ int nfs_commit_inode(struct inode *inode, int how)
- 	res = nfs_commit_set_lock(NFS_I(inode), may_wait);
- 	if (res <= 0)
- 		goto out_mark_dirty;
--	spin_lock(&inode->i_lock);
- 	res = nfs_scan_commit(inode, &head, 0, 0);
--	spin_unlock(&inode->i_lock);
- 	if (res) {
- 		int error;
- 
+Please write down fully for better description.
+Thanks.
+
 -- 
-1.7.2.3
-
+Kind regards,
+Minchan Kim
