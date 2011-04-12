@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab1DLO7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:59:41 -0400
-Received: from kroah.org ([198.145.64.141]:57388 "EHLO coco.kroah.org"
+	id S1757290Ab1DLPAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 11:00:04 -0400
+Received: from kroah.org ([198.145.64.141]:57354 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756842Ab1DLOhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:35 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:49 2011
-Message-Id: <20110412143549.103237978@clark.kroah.org>
+	id S1756743Ab1DLOha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
+Message-Id: <20110412143548.553674621@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:00 -0700
+Date: Tue, 12 Apr 2011 07:33:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [011/105] [SCSI] ses: show devices for enclosures with no page 7
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [006/105] myri10ge: fix rmmod crash
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Hughes <john@Calva.COM>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 877a55979c189c590e819a61cbbe2b7947875f17 upstream.
+commit cda6587c21a887254c8ed4b58da8fcc4040ab557 upstream.
 
-enclosure page 7 gives us the "pretty" names of the enclosure slots.
-Without a page 7, we can still use the enclosure code as long as we
-make up numeric names for the slots. Unfortunately, the current code
-fails to add any devices because the check for page 10 is in the wrong
-place if we have no page 7.  Fix it so that devices show up even if
-the enclosure has no page 7.
+Rmmod myri10ge crash at free_netdev() -> netif_napi_del(), because napi
+structures are already deallocated. To fix call netif_napi_del() before
+kfree() at myri10ge_free_slices().
 
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/ses.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/myri10ge/myri10ge.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/ses.c
-+++ b/drivers/scsi/ses.c
-@@ -390,9 +390,9 @@ static void ses_enclosure_data_process(s
- 		len = (desc_ptr[2] << 8) + desc_ptr[3];
- 		/* skip past overall descriptor */
- 		desc_ptr += len + 4;
--		if (ses_dev->page10)
--			addl_desc_ptr = ses_dev->page10 + 8;
+--- a/drivers/net/myri10ge/myri10ge.c
++++ b/drivers/net/myri10ge/myri10ge.c
+@@ -3645,6 +3645,7 @@ static void myri10ge_free_slices(struct
+ 			dma_free_coherent(&pdev->dev, bytes,
+ 					  ss->fw_stats, ss->fw_stats_bus);
+ 			ss->fw_stats = NULL;
++			netif_napi_del(&ss->napi);
+ 		}
  	}
-+	if (ses_dev->page10)
-+		addl_desc_ptr = ses_dev->page10 + 8;
- 	type_ptr = ses_dev->page1 + 12 + ses_dev->page1[11];
- 	components = 0;
- 	for (i = 0; i < types; i++, type_ptr += 4) {
+ 	kfree(mgp->ss);
 
 
