@@ -1,34 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab1DLHgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 03:36:04 -0400
-Received: from mtoichi14.ns.itscom.net ([219.110.2.184]:58518 "EHLO
-	mtoichi14.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab1DLHgC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 03:36:02 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-cc: linux-kernel@vger.kernel.org
-Subject: O_EXCL in NFSv3
-Date: Tue, 12 Apr 2011 16:35:33 +0900
-Message-ID: <20361.1302593733@jrobl>
+	id S1755423Ab1DLHjm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 03:39:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52035 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752434Ab1DLHjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 03:39:39 -0400
+Date: Tue, 12 Apr 2011 09:39:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Florian Mickler <florian@mickler.org>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
+        maciej.rutecki@gmail.com, rjw@sisk.pl, sedat.dilek@gmail.com
+Subject: Re: [PATCH] x86, ioapic: move acpi_get_override_irq to acpi.c
+Message-ID: <20110412073929.GA26892@elte.hu>
+References: <20110401075011.GD7594@elte.hu>
+ <1301672686-10096-1-git-send-email-florian@mickler.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1301672686-10096-1-git-send-email-florian@mickler.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hello Trond,
+* Florian Mickler <florian@mickler.org> wrote:
 
-The commit in v2.6.37
-	c0204fd 2010-09-17 NFS: Clean up nfs4_proc_create()
-looks totally dropping O_EXCL flag from NFSv3.
-But fs/nfs/nfs3proc.c:nfs3_proc_create() and
-fs/nfsd/nfs3proc.c:nfsd3_proc_create() still expect O_EXCL to be passed.
+> In order to get rid of the ugly CONFIG_ACPI ifdef, we move
+> the function acpi_get_override_irq into acpi.c and add a new
+> helper function ioapic_get_irq to io_apic.c.
+> 
+> Signed-off-by: Florian Mickler <florian@mickler.org>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: kurup_avinash@yahoo.com
+> Cc: maciej.rutecki@gmail.com
+> Cc: rjw@sisk.pl
+> Cc: sedat.dilek@gmail.com
+> LKML-Reference: <1301558489-4198-1-git-send-email-florian@mickler.org>
+> ---
+> 
+> Hi Ingo,
+> 
+> Instead of exporting find_irq_entry, irq_trigger and irq_polarity, I added a 
+> new helper function 'ioapic_get_irq(..)' and exported that. 
+> 
+> Also I did it as a seperate commit, since it is more of a cleanup and the other 
+> commit is already tested... hope this is ok. 
 
-And the commit log says "Clean up nfs4_proc_create()".
-Is this change for NFSv3 intentional?
-Actually O_EXCL in NFSv3 doesn't work in v2.6.37 and later.
+Yeah, looks good in principle.
 
+Mind porting to the latest x86 devel tree and resend the patch? I tried to 
+apply your patch but there's a conflict. You can find the tree at:
 
-J. R. Okajima
+  http://people.redhat.com/mingo/tip.git/README
+
+Thanks,
+
+	Ingo
