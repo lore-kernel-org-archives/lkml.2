@@ -1,73 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab1DLWa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 18:30:59 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37112 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab1DLWax convert rfc822-to-8bit (ORCPT
+	id S1752033Ab1DLWgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 18:36:53 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64987 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab1DLWgv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 18:30:53 -0400
+	Tue, 12 Apr 2011 18:36:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=ksplice.com; s=google;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type
+         :content-transfer-encoding;
+        b=GY2AVtrLFGacdUzQP5PgE0+naWelr+B4awnm8aumEHF8zyrSWeSGtE2OBxfjJmT9WM
+         dHK07Y8Z0a6D3k6Dz3Kd+5VK7kJhiZ3ermnjHhThHm2ktHaAKDuUZCF2HWxr/dcQasaT
+         bgrKmOM5p5QBlqZVmtgFDj+2R3O2aJZwnETZE=
+Date: Tue, 12 Apr 2011 18:36:47 -0400 (EDT)
+From: Anders Kaseorg <andersk@ksplice.com>
+X-X-Sender: andersk@dr-wily.mit.edu
+To: Rusty Russell <rusty@rustcorp.com.au>
+cc: Alessio Igor Bogani <abogani@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
+        Tim Abbott <tabbott@ksplice.com>
+Subject: Re: [PATCH] module: Use the binary search for symbols resolution
+In-Reply-To: <87aafwceop.fsf@rustcorp.com.au>
+Message-ID: <alpine.DEB.2.02.1104121809030.2997@dr-wily.mit.edu>
+References: <1302024146-2608-1-git-send-email-abogani@kernel.org> <1302024146-2608-2-git-send-email-abogani@kernel.org> <87aafwceop.fsf@rustcorp.com.au>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinzz5TuGPAMVY39V3D0x+PgKr7eGg@mail.gmail.com>
-References: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
-	<BANLkTimJLcfsYAhV+3=-F14YZvX12-yXgA@mail.gmail.com>
-	<20110412182809.GA1218@redhat.com>
-	<BANLkTinb1gXcZug5ApmmrudWLY7PwxNf-A@mail.gmail.com>
-	<20110412192059.GA14360@redhat.com>
-	<BANLkTimJgx_x=0bpBDWaUkJgZPYs3_iwsg@mail.gmail.com>
-	<BANLkTimBegMUq2fX67o2YnoATWG-NDbKgA@mail.gmail.com>
-	<BANLkTikoDELrA-RtA9BLm64mfoPgdADR0Q@mail.gmail.com>
-	<BANLkTi=HyK+8DhJS3db0j2fefdOjwVMN3w@mail.gmail.com>
-	<BANLkTinMAGmdEDviRwZ1-mxrAAe_WK5jvg@mail.gmail.com>
-	<BANLkTinjGkbBMUo7MQ2Dg2yDwQ932qJ7rQ@mail.gmail.com>
-	<BANLkTikRH0q3RyP_CORXjAX34-br4pqf=A@mail.gmail.com>
-	<BANLkTinp6gaPrjQF6eXk4WHa653GShDuYQ@mail.gmail.com>
-	<BANLkTinzz5TuGPAMVY39V3D0x+PgKr7eGg@mail.gmail.com>
-Date: Wed, 13 Apr 2011 00:30:51 +0200
-Message-ID: <BANLkTimfRrFTkZqqekgs3e6OgqSc2AH9NQ@mail.gmail.com>
-Subject: Re: Processes hang in an unkillable state
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 12:18 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Apr 12, 2011 at 3:16 PM, Robert Święcki <robert@swiecki.net> wrote:
->> On Wed, Apr 13, 2011 at 12:12 AM, Linus Torvalds
->> <torvalds@linux-foundation.org> wrote:
->>> On Tue, Apr 12, 2011 at 2:59 PM, Robert Święcki <robert@swiecki.net> wrote:
->>>>
->>>> Compiling now with CONFIG_OPTIMIZE_SIZE and vma dump code. Will
->>>> probably post some results tomorrow.
->>>
->>> .. and if you've added my patch to the stack growth case, hopefully
->>> there won't _be_ any results ;)
->>
->> I can, depending in whether you'd like to see vma dump results for
->> this case or not. Let me know, it's still cooooompiling :).
->
-> Please do add it. Since it can take a long time to trigger, it's best
-> to just try to fix this issue asap. If it never triggers, and we don't
-> see any vma dumps, I won't cry.
+On Tue,  5 Apr 2011 19:22:26 +0200, Alessio Igor Bogani <abogani@kernel.org> wrote:
+> Let the linker sort the exported symbols and use the binary search for
+> locate them.
 
-Ok,
+Previously, the each_symbol API allowed you to iterate through every 
+exported symbol in the kernel.  With your modification it can no longer be 
+used for that purpose.  Now, in fact, it’s impossible to use each_symbol 
+for _any_ purpose outside module.c:
 
-btw, here might be another path which hits this (at least I think so).
+bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
+			    unsigned int symnum, void *data), void *data)
 
-http://alt.swiecki.net/linux_kernel/sys_mprotect-2.6.38.txt
+‘void *data’ was intended as an argument of arbitrary type to be passed to 
+‘fn’.  But your patched each_symbol_in_section uses it as a ‘struct 
+find_symbol_arg *’, and that struct only exists inside module.c.
 
-And, generally: here are a few deadlocks/bug_on's/ooops gathered
-earlier (some fixed already) - http://alt.swiecki.net/linux_kernel/ -
-I'll try to ask for fixes for them one by one, as soon as they repeat
-and I have proper kdb/perf dumps.
+I’ve refactored your module.c change below to avoid breaking the 
+each_symbol API, by introducing an intermediate each_symsearch API that 
+can be used for both purposes.
 
+Signed-off-by: Anders Kaseorg <andersk@ksplice.com>
+---
+ kernel/module.c |   96 +++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 76 insertions(+), 20 deletions(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index efa290e..a67a1c9 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -235,28 +235,28 @@ extern const unsigned long __start___kcrctab_unused_gpl[];
+ #define symversion(base, idx) ((base != NULL) ? ((base) + (idx)) : NULL)
+ #endif
+ 
+-static bool each_symbol_in_section(const struct symsearch *arr,
+-				   unsigned int arrsize,
+-				   struct module *owner,
+-				   bool (*fn)(const struct symsearch *syms,
+-					      struct module *owner,
+-					      unsigned int symnum, void *data),
+-				   void *data)
++static bool each_symsearch_in_section(const struct symsearch *arr,
++				      unsigned int arrsize,
++				      struct module *owner,
++				      bool (*fn)(const struct symsearch *syms,
++						 struct module *owner,
++						 void *data),
++				      void *data)
+ {
+-	unsigned int i, j;
++	unsigned int j;
+ 
+ 	for (j = 0; j < arrsize; j++) {
+-		for (i = 0; i < arr[j].stop - arr[j].start; i++)
+-			if (fn(&arr[j], owner, i, data))
+-				return true;
++		if (fn(&arr[j], owner, data))
++			return true;
+ 	}
+ 
+ 	return false;
+ }
+ 
+ /* Returns true as soon as fn returns true, otherwise false. */
+-bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
+-			    unsigned int symnum, void *data), void *data)
++static bool each_symsearch(bool (*fn)(const struct symsearch *syms,
++				      struct module *owner, void *data),
++			   void *data)
+ {
+ 	struct module *mod;
+ 	static const struct symsearch arr[] = {
+@@ -278,7 +278,7 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
+ #endif
+ 	};
+ 
+-	if (each_symbol_in_section(arr, ARRAY_SIZE(arr), NULL, fn, data))
++	if (each_symsearch_in_section(arr, ARRAY_SIZE(arr), NULL, fn, data))
+ 		return true;
+ 
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+@@ -304,11 +304,39 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
+ #endif
+ 		};
+ 
+-		if (each_symbol_in_section(arr, ARRAY_SIZE(arr), mod, fn, data))
++		if (each_symsearch_in_section(arr, ARRAY_SIZE(arr), mod, fn,
++					      data))
++			return true;
++	}
++	return false;
++}
++
++struct each_symbol_arg {
++	bool (*fn)(const struct symsearch *arr, struct module *owner,
++		   unsigned int symnum, void *data);
++	void *data;
++};
++
++static bool each_symbol_in_symsearch(const struct symsearch *syms,
++				     struct module *owner, void *data)
++{
++	struct each_symbol_arg *esa = data;
++	unsigned int i;
++
++	for (i = 0; i < syms->stop - syms->start; i++) {
++		if (esa->fn(syms, owner, i, esa->data))
+ 			return true;
+ 	}
+ 	return false;
+ }
++
++/* Returns true as soon as fn returns true, otherwise false. */
++bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
++			    unsigned int symnum, void *data), void *data)
++{
++	struct each_symbol_arg esa = {fn, data};
++	return each_symsearch(each_symbol_in_symsearch, &esa);
++}
+ EXPORT_SYMBOL_GPL(each_symbol);
+ 
+ struct find_symbol_arg {
+@@ -323,14 +351,42 @@ struct find_symbol_arg {
+ 	const struct kernel_symbol *sym;
+ };
+ 
+-static bool find_symbol_in_section(const struct symsearch *syms,
+-				   struct module *owner,
+-				   unsigned int symnum, void *data)
++#define CONFIG_SYMBOLS_BSEARCH
++static bool find_symbol_in_symsearch(const struct symsearch *syms,
++				     struct module *owner,
++				     void *data)
+ {
+ 	struct find_symbol_arg *fsa = data;
++	unsigned int symnum;
++	int result;
++#ifdef CONFIG_SYMBOLS_BSEARCH
++	int start, end;
++#endif
+ 
+-	if (strcmp(syms->start[symnum].name, fsa->name) != 0)
++#ifdef CONFIG_SYMBOLS_BSEARCH
++	start = 0;
++	end = syms->stop - syms->start - 1;
++	while (true) {
++		if (start > end)
++			return false;
++		symnum = (start + end) / 2;
++		result = strcmp(fsa->name, syms->start[symnum].name);
++		if (result < 0)
++			end = symnum - 1;
++		else if (result > 0)
++			start = symnum + 1;
++		else
++			break;
++	}
++#else
++	for (symnum = 0; symnum < syms->stop - syms->start; symnum++) {
++		result = strcmp(fsa->name, syms->start[symnum].name);
++		if (result == 0)
++			break;
++	}
++	if (symnum >= syms->stop - syms->start)
+ 		return false;
++#endif
+ 
+ 	if (!fsa->gplok) {
+ 		if (syms->licence == GPL_ONLY)
+@@ -379,7 +435,7 @@ const struct kernel_symbol *find_symbol(const char *name,
+ 	fsa.gplok = gplok;
+ 	fsa.warn = warn;
+ 
+-	if (each_symbol(find_symbol_in_section, &fsa)) {
++	if (each_symsearch(find_symbol_in_symsearch, &fsa)) {
+ 		if (owner)
+ 			*owner = fsa.owner;
+ 		if (crc)
 -- 
-Robert Święcki
+1.7.5.rc0
+
