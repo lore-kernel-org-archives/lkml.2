@@ -1,58 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab1DLXZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 19:25:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55269 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756363Ab1DLXZj (ORCPT
+	id S1757128Ab1DLXfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 19:35:43 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:47815 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757052Ab1DLXfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 19:25:39 -0400
-Date: Tue, 12 Apr 2011 16:25:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
-        menage@google.com, oleg@redhat.com,
-        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH v8.75 0/4] cgroups: implement moving a threadgroup's
- threads atomically with cgroup.procs
-Message-Id: <20110412162516.4120c441.akpm@linux-foundation.org>
-In-Reply-To: <20110406194420.GC10792@ghc17.ghc.andrew.cmu.edu>
-References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
-	<20110406194420.GC10792@ghc17.ghc.andrew.cmu.edu>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Apr 2011 19:35:42 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmQEAJXgpE15LHHJgWdsb2JhbACmBBUBARYmJYh6u24OgnOCbQQ
+Date: Wed, 13 Apr 2011 09:35:36 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "hch@infradead.org" <hch@infradead.org>, NeilBrown <neilb@suse.de>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110412233536.GK31057@dastard>
+References: <20110411220505.1028816e@notabene.brown>
+ <4DA2F00E.6010907@fusionio.com>
+ <20110411223623.4278fad1@notabene.brown>
+ <4DA2F8AD.1060605@fusionio.com>
+ <20110412011255.GA29236@infradead.org>
+ <4DA40F0E.1070903@fusionio.com>
+ <20110412122248.GC31057@dastard>
+ <4DA4456F.3070301@fusionio.com>
+ <20110412134031.GF31057@dastard>
+ <4DA4581A.4090600@fusionio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA4581A.4090600@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Apr 2011 15:44:20 -0400
-Ben Blum <bblum@andrew.cmu.edu> wrote:
-
-> Same as before; using flex_array in attach_proc (thanks Kame).
+On Tue, Apr 12, 2011 at 03:48:10PM +0200, Jens Axboe wrote:
+> On 2011-04-12 15:40, Dave Chinner wrote:
+> > On Tue, Apr 12, 2011 at 02:28:31PM +0200, Jens Axboe wrote:
+> >> On 2011-04-12 14:22, Dave Chinner wrote:
+> >>> On Tue, Apr 12, 2011 at 10:36:30AM +0200, Jens Axboe wrote:
+> >>>> On 2011-04-12 03:12, hch@infradead.org wrote:
+> >>>>> On Mon, Apr 11, 2011 at 02:48:45PM +0200, Jens Axboe wrote:
+> >>>>>    function calls.
+> >>>>>  - Why is having a plug in blk_flush_plug marked unlikely?  Note that
+> >>>>>    unlikely is the static branch prediction hint to mark the case
+> >>>>>    extremly unlikely and is even used for hot/cold partitioning.  But
+> >>>>>    when we call it we usually check beforehand if we actually have
+> >>>>>    plugs, so it's actually likely to happen.
+> >>>>
+> >>>> The existance and out-of-line is for the scheduler() hook. It should be
+> >>>> an unlikely event to schedule with a plug held, normally the plug should
+> >>>> have been explicitly unplugged before that happens.
+> >>>
+> >>> Though if it does, haven't you just added a significant amount of
+> >>> depth to the worst case stack usage? I'm seeing this sort of thing
+> >>> from io_schedule():
+> >>>
+> >>>         Depth    Size   Location    (40 entries)
+> >>>         -----    ----   --------
+> >>>   0)     4256      16   mempool_alloc_slab+0x15/0x20
+> >>>   1)     4240     144   mempool_alloc+0x63/0x160
+> >>>   2)     4096      16   scsi_sg_alloc+0x4c/0x60
+> >>>   3)     4080     112   __sg_alloc_table+0x66/0x140
+> >>>   4)     3968      32   scsi_init_sgtable+0x33/0x90
+> >>>   5)     3936      48   scsi_init_io+0x31/0xc0
+> >>>   6)     3888      32   scsi_setup_fs_cmnd+0x79/0xe0
+> >>>   7)     3856     112   sd_prep_fn+0x150/0xa90
+> >>>   8)     3744      48   blk_peek_request+0x6a/0x1f0
+> >>>   9)     3696      96   scsi_request_fn+0x60/0x510
+> >>>  10)     3600      32   __blk_run_queue+0x57/0x100
+> >>>  11)     3568      80   flush_plug_list+0x133/0x1d0
+> >>>  12)     3488      32   __blk_flush_plug+0x24/0x50
+> >>>  13)     3456      32   io_schedule+0x79/0x80
+> >>>
+> >>> (This is from a page fault on ext3 that is doing page cache
+> >>> readahead and blocking on a locked buffer.)
+> > 
+> > FYI, the next step in the allocation chain adds >900 bytes to that
+> > stack:
+> > 
+> > $ cat /sys/kernel/debug/tracing/stack_trace
+> >         Depth    Size   Location    (47 entries)
+> >         -----    ----   --------
+> >   0)     5176      40   zone_statistics+0xad/0xc0
+> >   1)     5136     288   get_page_from_freelist+0x2cf/0x840
+> >   2)     4848     304   __alloc_pages_nodemask+0x121/0x930
+> >   3)     4544      48   kmem_getpages+0x62/0x160
+> >   4)     4496      96   cache_grow+0x308/0x330
+> >   5)     4400      80   cache_alloc_refill+0x21c/0x260
+> >   6)     4320      64   kmem_cache_alloc+0x1b7/0x1e0
+> >   7)     4256      16   mempool_alloc_slab+0x15/0x20
+> >   8)     4240     144   mempool_alloc+0x63/0x160
+> >   9)     4096      16   scsi_sg_alloc+0x4c/0x60
+> >  10)     4080     112   __sg_alloc_table+0x66/0x140
+> >  11)     3968      32   scsi_init_sgtable+0x33/0x90
+> >  12)     3936      48   scsi_init_io+0x31/0xc0
+> >  13)     3888      32   scsi_setup_fs_cmnd+0x79/0xe0
+> >  14)     3856     112   sd_prep_fn+0x150/0xa90
+> >  15)     3744      48   blk_peek_request+0x6a/0x1f0
+> >  16)     3696      96   scsi_request_fn+0x60/0x510
+> >  17)     3600      32   __blk_run_queue+0x57/0x100
+> >  18)     3568      80   flush_plug_list+0x133/0x1d0
+> >  19)     3488      32   __blk_flush_plug+0x24/0x50
+> >  20)     3456      32   io_schedule+0x79/0x80
+> > 
+> > That's close to 1800 bytes now, and that's not entering the reclaim
+> > path. If i get one deeper than that, I'll be sure to post it. :)
 > 
-> -- Ben
-> 
-> ---
->  Documentation/cgroups/cgroups.txt |   39 ++-
->  block/blk-cgroup.c                |   18 -
->  include/linux/cgroup.h            |   10 
->  include/linux/init_task.h         |    9 
->  include/linux/sched.h             |   36 ++
->  kernel/cgroup.c                   |  489 +++++++++++++++++++++++++++++++++-----
->  kernel/cgroup_freezer.c           |   26 --
->  kernel/cpuset.c                   |   96 +++----
->  kernel/fork.c                     |   10 
->  kernel/sched.c                    |   38 --
->  mm/memcontrol.c                   |   18 -
->  security/device_cgroup.c          |    3 
->  12 files changed, 594 insertions(+), 198 deletions(-)
+> Do you have traces from 2.6.38, or are you just doing them now?
 
-So where are we up to with all this.
+I do stack checks like this all the time. I generally don't keep
+them around, just pay attention to the path and depth. ext3 is used
+for / on my test VMs, and has never shown up as the worse case stack
+usage when running xfstests. As of the block plugging code, this
+trace is the top stack user for the first ~130 tests, and often for
+the entire test run on XFS....
 
-I'm surprised that none of the patches had anyone's Acked-by: or
-Reviewed-by:.  Were they really that mean to you, or have you not been
-tracking these?
+> The path you quote above should not go into reclaim, it's a GFP_ATOMIC
+> allocation.
 
+Right. I'm still trying to produce a trace that shows more stack
+usage in the block layer. It's random chance as to what pops up most
+of the time. However, some of the stacks that are showing up in
+2.6.39 are quite different from any I've ever seen before...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
