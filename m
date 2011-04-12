@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab1DLL4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 07:56:18 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:52211 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab1DLL4R convert rfc822-to-8bit (ORCPT
+	id S1754906Ab1DLMBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 08:01:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38009 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab1DLMBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 07:56:17 -0400
-X-IronPort-AV: E=Sophos;i="4.64,195,1301900400"; 
-   d="scan'208";a="540761788"
-Subject: Re: O_EXCL in NFSv3
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20361.1302593733@jrobl>
-References: <20361.1302593733@jrobl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Tue, 12 Apr 2011 07:56:11 -0400
-Message-ID: <1302609371.10760.6.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 12 Apr 2011 11:56:16.0652 (UTC) FILETIME=[A1022CC0:01CBF908]
+	Tue, 12 Apr 2011 08:01:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=R7raMMs1ju9DhlxVX9ZYEKADCieVF1J4zMhwgInIE6RzSlUREEQrjVJtB3+TZJVVS9
+         3j2odyELgastnMdWdMSlJfhE6pWIItyowGxzVOYzn7z/xbwMHyQJF/7PzkGFzHhj78OC
+         v5HoNfZog7jQumhYGrx+tHqXkOzaQFc7ZDZB8=
+MIME-Version: 1.0
+In-Reply-To: <20110411231843.GB2061@nowhere>
+References: <201011181650.00152.roucaries.bastien@gmail.com>
+	<AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
+	<AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>
+	<201103311704.40372.roucaries.bastien@gmail.com>
+	<BANLkTikmtyyMes84rED5wpMxuN8kL91jEw@mail.gmail.com>
+	<4D9B3C10.9060704@suse.com>
+	<BANLkTi=XDzOcZsP+aKS_WQSRxT+N8XHBRQ@mail.gmail.com>
+	<BANLkTi=yTfMiLvVtZTqQvxVhy7aFPdwSXQ@mail.gmail.com>
+	<BANLkTi=KUMNWJZZBQSHK+WViy6BYv8+4dQ@mail.gmail.com>
+	<BANLkTi=LHx-cwQ8dAY7ogLN0B5xtJApVWg@mail.gmail.com>
+	<20110411231843.GB2061@nowhere>
+Date: Tue, 12 Apr 2011 14:01:00 +0200
+Message-ID: <BANLkTinHk7fVi62_Xftwn_0WLOzkS4jggw@mail.gmail.com>
+Subject: Re: Reiserfs deadlock in 2.6.36
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jeff Mahoney <jeffm@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 16:35 +0900, J. R. Okajima wrote:
-> Hello Trond,
-> 
-> The commit in v2.6.37
-> 	c0204fd 2010-09-17 NFS: Clean up nfs4_proc_create()
-> looks totally dropping O_EXCL flag from NFSv3.
-> But fs/nfs/nfs3proc.c:nfs3_proc_create() and
-> fs/nfsd/nfs3proc.c:nfsd3_proc_create() still expect O_EXCL to be passed.
-> 
-> And the commit log says "Clean up nfs4_proc_create()".
-> Is this change for NFSv3 intentional?
-> Actually O_EXCL in NFSv3 doesn't work in v2.6.37 and later.
+On Tue, Apr 12, 2011 at 1:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Mon, Apr 11, 2011 at 10:40:18AM +0200, Bastien ROUCARIES wrote:
+>> Any news ? Can I test some patch ?
+>>
+>> Bastien
+>
+> I have a box currently running two parallel loops of git pull.
+> It has run for two hours now and nothing happened, I'm going to
+> let that wheel run the whole night and see tomorrow.
+>
+> In the meantime I'm preparing another box with more CPUs to run
+> more parallel git pull. Hopefully I could stress it enough to
+> reproduce.
+>
+As mentionned by thomas I do not know why but running kmail fetching
+an imap account in parallel of git increase the lookup rate.
 
-Doesn't commit 8a0eebf66e3b1deae036553ba641a9c2bdbae678 (NFS: Fix NFSv3
-exclusive open semantics) fix this? It should be in the stable tree.
+Thanks for trying to reproduce.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Bastien
