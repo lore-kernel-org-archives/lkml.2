@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab1DLSwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 14:52:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58157 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab1DLSww (ORCPT
+	id S1751979Ab1DLS5D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 14:57:03 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60411 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1DLS5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 14:52:52 -0400
+	Tue, 12 Apr 2011 14:57:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=MS6p72JeCaya+uyI9QLRtyjqT1XV+GnWQjZPUKwgPCw2WbAbwko7MJ24lRgiA9k4cL
-         Wrzg5QZKJtZ3POn6TFrc6anQTQc0zvJrK6GCHnSdB/6U4zJCEAqs/voxStaSju0TJTtX
-         4gmtSjDAYYukHsAyd0qdTUk0mj85y43JTERpo=
-Message-ID: <4DA49F7F.8060005@suse.cz>
-Date: Tue, 12 Apr 2011 20:52:47 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=bKuONYES3LkJRsqrRXMYazmFMs47pUJjvRPmaLcMa/3w6ag0urLfX5kvsEpU/4+0zs
+         Xb+X/WuCbEjcU4iAnbwrUcXSwJ0j+yykD5HUk7Ip6/op7Iv58qEwZKNeAVw4J/wPasLZ
+         9hZyTYsc00AfmFzPSfmTPMYHv4kM+dRrCLaMw=
+Date: Tue, 12 Apr 2011 15:56:52 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Borislav Petkov <bp@alien8.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: adding trace-cmd's plugins to perf
+Message-ID: <20110412185652.GB20452@ghostprotocols.net>
+References: <4DA12905.2020806@gmail.com>
+ <20110412162245.GB2240@nowhere>
+ <20110412183536.GA20452@ghostprotocols.net>
+ <20110412185104.GA9891@liondog.tnic>
 MIME-Version: 1.0
-To: Bryan Schumaker <bjschuma@netapp.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        ML netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
-References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz> <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz> <4DA49D3A.7090800@netapp.com>
-In-Reply-To: <4DA49D3A.7090800@netapp.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412185104.GA9891@liondog.tnic>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
-> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
->> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
->>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
->>>> inacceptable for automounted NFS dirs.
->>>
->>> I'm still confused as to why you are hitting it at all. In the normal
->>> autonegotiation case, the client should be trying to use AUTH_SYS first
->>> and then trying rpcsec_gss if and only if that fails.
->>>
->>> Are you really exporting a filesystem using AUTH_NULL as the only
->>> supported flavour?
->>
->> I don't know, I connect to a nfs server which is not maintained by me.
->> It looks like that. How can I find out?
+Em Tue, Apr 12, 2011 at 08:51:04PM +0200, Borislav Petkov escreveu:
+> On Tue, Apr 12, 2011 at 03:35:36PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Apr 12, 2011 at 06:22:47PM +0200, Frederic Weisbecker escreveu:
+> > > On Sat, Apr 09, 2011 at 09:50:29PM -0600, David Ahern wrote:
+> > > > Right now perf script cannot process kvm tracepoints:
+> > > > 
+> > > > perf record -e kvm:* -p 6446 -- sleep 5
+> > > > 
+> > > > perf script
+> > > >   Warning: Error: expected type 4 but read 7
+> > 
+> > > > are about merging common code between the two commands. Also, trace-cmd and perf
+> > > > are in separate repositories so a shared lib is going to inconvenience
+> > > > one of the two.
+> > > 
+> > > So, we copied the tools/perf/util/trace-event-* files from trace-cmd to perf
+> > > a while go. Then both files took their own path, both pulling fixes/enhancement
+> > > from each others (probably more in the trace-cmd -> perf direction).
+> > > 
+> > > And perf is indeed a bit backward wrt parsing, because it lacks those plugins
+> > > for example. So now it would be nice to unify that in a common lib so that it
+> > > works well in both.
+> > > 
+> > > Steve proposed a shared tools/trace.so, that perf and trace-cmd could plug
+> > > into, I really would like to see that happening too.
+> > > 
+> > > I think Ingo had some reserves about this, due to potential versioning
+> > > and compatibility that such a dynamic lib would involve.
+> > 
+> > So we don't commit to an ABI for a while, just linking with it, changing
+> > users when changing the ABI.
+> > 
+> > I encourage David to go and add the bits of trace-cmd he needs for
+> > support the plugins he wants used in perf on tools/lib/ and make perf
+> > use it.
+> > 
+> > That way we again reduce the differences between the codebases, or at least
+> > reduce the feature gap.
 > 
-> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
+> Also, just FYI, I have this RAS daemon patchset which splits perf functionality
+> into different sub-libs, which are more or less topic based:
+> 
+> tools/lib/trace/ - all the trace-event* stuff from Steven
+> tools/lib/lk/	- generic enough stuff (git headers, etc) which several tools could use
+> tools/lib/perf/ - functionality related to perf events
+> 
+> Here's the last submission http://marc.info/?l=linux-edac&m=129562244211501&w=2
+> and I'm currently finishing a new rebase against tip/perf/core.
+> 
+> If you're fine with that split I'd suggest I load off my stuff first so
+> that David can continue from there and I can finally stop rebasing like
+> crazy each time perf moves forward.
+> 
+> Opinions? Suggestions?
 
-I don't have NFS in modules. It's all built-in. And this one is
-unconditionally selected because of CONFIG_NFS_V4.
+Yeah, David, can you try Borislav's patchset and tell us what you think
+wrt servicing your needs?
 
-regards,
--- 
-js
-suse labs
+- Arnaldo
