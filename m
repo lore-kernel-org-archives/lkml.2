@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117Ab1DLK1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 06:27:52 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38629 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756806Ab1DLK1v (ORCPT
+	id S1757161Ab1DLK2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 06:28:05 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45364 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757133Ab1DLK2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 06:27:51 -0400
-Subject: [PATCH] i915: select VIDEO_OUTPUT_CONTROL for ACPI_VIDEO
-To: David Airlie <airlied@linux.ie>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
-Date: Tue, 12 Apr 2011 14:27:47 +0400
-Message-ID: <20110412102747.3599.33792.stgit@localhost6>
-User-Agent: StGit/0.15
+	Tue, 12 Apr 2011 06:28:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/3] mm, mem-hotplug: fix section mismatch. setup_per_zone_inactive_ratio() should be __meminit.
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
+In-Reply-To: <BANLkTimPB5e_A3AxS_7kuJmqciRciCm2Sw@mail.gmail.com>
+References: <20110411170033.0356.A69D9226@jp.fujitsu.com> <BANLkTimPB5e_A3AxS_7kuJmqciRciCm2Sw@mail.gmail.com>
+Message-Id: <20110412192751.B52B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 12 Apr 2011 19:28:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix Kconfig warning:
+Hi
 
-(DRM_I915 && STUB_POULSBO) selects ACPI_VIDEO which has unmet direct dependencies
-(ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT)
+> On Mon, Apr 11, 2011 at 5:00 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > Commit bce7394a3e (page-allocator: reset wmark_min and inactive ratio of
+> > zone when hotplug happens) introduced invalid section references.
+> > Now, setup_per_zone_inactive_ratio() is marked __init and then it can't
+> > be referenced from memory hotplug code.
+> >
+> > Then, this patch marks it as __meminit and also marks caller as __ref.
+> >
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> 
+> Just a nitpick.
+> 
+> As below comment of __ref said, It would be better to add _why_ such
+> as memory_hotplug.c.
+> 
+> "so optimally document why the __ref is needed and why it's OK"
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- drivers/gpu/drm/Kconfig  |    1 +
- drivers/gpu/stub/Kconfig |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+Hmm...
+All of memory_hotplug.c function can call __meminit function. It's
+definition of __meminit.
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index a6feb78c..c58f691 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -96,6 +96,7 @@ config DRM_I915
- 	# i915 depends on ACPI_VIDEO when ACPI is enabled
- 	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
- 	select BACKLIGHT_CLASS_DEVICE if ACPI
-+	select VIDEO_OUTPUT_CONTROL if ACPI
- 	select INPUT if ACPI
- 	select ACPI_VIDEO if ACPI
- 	select ACPI_BUTTON if ACPI
-diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
-index 70e60a4..4199179 100644
---- a/drivers/gpu/stub/Kconfig
-+++ b/drivers/gpu/stub/Kconfig
-@@ -5,6 +5,7 @@ config STUB_POULSBO
- 	# Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
- 	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
- 	select BACKLIGHT_CLASS_DEVICE if ACPI
-+	select VIDEO_OUTPUT_CONTROL if ACPI
- 	select INPUT if ACPI
- 	select ACPI_VIDEO if ACPI
- 	select THERMAL if ACPI
+We can put the same comment to every function in memory_hotplug.c. 
+like hotadd_newpgdat().
+
+/* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
+static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+{
+(snip)
+}
+
+But it has zero information. ;)
+
+
 
