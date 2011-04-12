@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab1DLOne (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:43:34 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:49699 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932455Ab1DLOnc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:43:32 -0400
-Date: Tue, 12 Apr 2011 16:43:30 +0200
-From: Cyril Hrubis <metan@ucw.cz>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, utx@penguin.cz,
-        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>,
-        Kexec Mailing List <kexec@lists.infradead.org>
-Subject: Re: reboot/kexec in 2.6.38
-Message-ID: <20110412144330.GB20815@atrey.karlin.mff.cuni.cz>
-References: <20110317064523.GA1995@ucw.cz> <AANLkTik1CdT4k8SJop7b-MjR27RzF7a=i7WuodNKJi+J@mail.gmail.com> <20110322133034.GA15475@atrey.karlin.mff.cuni.cz> <m1bp0zylgg.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1bp0zylgg.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932244Ab1DLOiq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:46 -0400
+Received: from kroah.org ([198.145.64.141]:57729 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932369Ab1DLOii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:56 2011
+Message-Id: <20110412143556.196623410@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 12 Apr 2011 07:35:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Goldwyn Rodrigues <rgoldwyn@suse.de>, jlbec <jlbec@evilplan.org>
+Subject: [077/105] Treat writes as new when holes span across page boundaries
+In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> >> I think it's config issue. Never heard of this.
-> >
-> > I've just compiled and booted 2.6.38. The kernel boots without problems when
-> > flashed in. But I've had no success with kexec, the last lines I see are:
-> >
-> > Starting new kernel
-> 
-> Enable early_printk to a serial port if you can.
-> 
-> There is definitely an issue in 2.6.38 where kdump doesn't work, that
-> right now looks like a memblock issue.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-Finaly got time to solder serial adapter...
+------------------
 
-And now, after I configured kernel to print to both ttyS0 serial console and
-tty0 the kexec started to work.
+From: Goldwyn Rodrigues <rgoldwyn@gmail.com>
 
--- 
-metan
+commit 272b62c1f0f6f742046e45b50b6fec98860208a0 upstream.
+
+When a hole spans across page boundaries, the next write forces
+a read of the block. This could end up reading existing garbage
+data from the disk in ocfs2_map_page_blocks. This leads to
+non-zero holes. In order to avoid this, mark the writes as new
+when the holes span across page boundaries.
+
+Signed-off-by: Goldwyn Rodrigues <rgoldwyn@suse.de>
+Signed-off-by: jlbec <jlbec@evilplan.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/ocfs2/aops.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -1026,6 +1026,12 @@ static int ocfs2_prepare_page_for_write(
+ 	ocfs2_figure_cluster_boundaries(OCFS2_SB(inode->i_sb), cpos,
+ 					&cluster_start, &cluster_end);
+ 
++	/* treat the write as new if the a hole/lseek spanned across
++	 * the page boundary.
++	 */
++	new = new | ((i_size_read(inode) <= page_offset(page)) &&
++			(page_offset(page) <= user_pos));
++
+ 	if (page == wc->w_target_page) {
+ 		map_from = user_pos & (PAGE_CACHE_SIZE - 1);
+ 		map_to = map_from + user_len;
+
+
