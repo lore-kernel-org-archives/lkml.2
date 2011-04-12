@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab1DLO6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:58:40 -0400
-Received: from kroah.org ([198.145.64.141]:57407 "EHLO coco.kroah.org"
+	id S1756893Ab1DLOhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:37:36 -0400
+Received: from kroah.org ([198.145.64.141]:57358 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756637Ab1DLOhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:37 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:49 2011
-Message-Id: <20110412143549.416968403@clark.kroah.org>
+	id S1756785Ab1DLOhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:31 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
+Message-Id: <20110412143548.671345022@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:03 -0700
+Date: Tue, 12 Apr 2011 07:33:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [014/105] x86-64, mm: Put early page table high
+        Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [007/105] cciss: fix lost command issue
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,212 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Bud Brown <bud.brown@redhat.com>
 
-commit 4b239f458c229de044d6905c2b0f9fe16ed9e01e upstream.
+commit 1ddd5049545e0aa1a0ed19bca4d9c9c3ce1ac8a2 upstream.
 
-While dubug kdump, found current kernel will have problem with crashkernel=512M.
+Under certain workloads a command may seem to get lost. IOW, the Smart Array
+thinks all commands have been completed but we still have commands in our
+completion queue. This may lead to system instability, filesystems going
+read-only, or even panics depending on the affected filesystem. We add an
+extra read to force the write to complete.
 
-It turns out that initial mapping is to 512M, and later initial mapping to 4G
-(acutally is 2040M in my platform), will put page table near 512M.
-then initial mapping to 128g will be near 2g.
+Testing shows this extra read avoids the problem.
 
-before this patch:
-[    0.000000] initial memory mapped : 0 - 20000000
-[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
-[    0.000000]  0000000000 - 007f600000 page 2M
-[    0.000000]  007f600000 - 007f750000 page 4k
-[    0.000000] kernel direct mapping tables up to 7f750000 @ [0x1fffc000-0x1fffffff]
-[    0.000000]     memblock_x86_reserve_range: [0x1fffc000-0x1fffdfff]          PGTABLE
-[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
-[    0.000000]  0100000000 - 2080000000 page 2M
-[    0.000000] kernel direct mapping tables up to 2080000000 @ [0x7bc01000-0x7bc83fff]
-[    0.000000]     memblock_x86_reserve_range: [0x7bc01000-0x7bc7efff]          PGTABLE
-[    0.000000] RAMDISK: 7bc84000 - 7f745000
-[    0.000000] crashkernel reservation failed - No suitable area found.
-
-after patch:
-[    0.000000] initial memory mapped : 0 - 20000000
-[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
-[    0.000000]  0000000000 - 007f600000 page 2M
-[    0.000000]  007f600000 - 007f750000 page 4k
-[    0.000000] kernel direct mapping tables up to 7f750000 @ [0x7f74c000-0x7f74ffff]
-[    0.000000]     memblock_x86_reserve_range: [0x7f74c000-0x7f74dfff]          PGTABLE
-[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
-[    0.000000]  0100000000 - 2080000000 page 2M
-[    0.000000] kernel direct mapping tables up to 2080000000 @ [0x207ff7d000-0x207fffffff]
-[    0.000000]     memblock_x86_reserve_range: [0x207ff7d000-0x207fffafff]          PGTABLE
-[    0.000000] RAMDISK: 7bc84000 - 7f745000
-[    0.000000]     memblock_x86_reserve_range: [0x17000000-0x36ffffff]     CRASH KERNEL
-[    0.000000] Reserving 512MB of memory at 368MB for crashkernel (System RAM: 133120MB)
-
-It means with the patch, page table for [0, 2g) will need 2g, instead of under 512M,
-page table for [4g, 128g) will be near 128g, instead of under 2g.
-
-That would good, if we have lots of memory above 4g, like 1024g, or 2048g or 16T, will not put
-related page table under 2g. that would be have chance to fill the under 2g if 1G or 2M page is
-not used.
-
-the code change will use add map_low_page() and update unmap_low_page() for 64bit, and use them
-to get access the corresponding high memory for page table setting.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4D0C0734.7060900@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/mm/init.c    |    9 ++-----
- arch/x86/mm/init_64.c |   63 +++++++++++++++++++++-----------------------------
- 2 files changed, 30 insertions(+), 42 deletions(-)
+ drivers/block/cciss.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -33,7 +33,7 @@ int direct_gbpages
- static void __init find_early_table_space(unsigned long end, int use_pse,
- 					  int use_gbpages)
- {
--	unsigned long puds, pmds, ptes, tables, start;
-+	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
- 	phys_addr_t base;
- 
- 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
-@@ -73,12 +73,9 @@ static void __init find_early_table_spac
- 	 * need roughly 0.5KB per GB.
- 	 */
- #ifdef CONFIG_X86_32
--	start = 0x7000;
--#else
--	start = 0x8000;
-+	good_end = max_pfn_mapped << PAGE_SHIFT;
- #endif
--	base = memblock_find_in_range(start, max_pfn_mapped<<PAGE_SHIFT,
--					tables, PAGE_SIZE);
-+	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
- 	if (base == MEMBLOCK_ERROR)
- 		panic("Cannot find space for the kernel page tables");
- 
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -334,12 +334,28 @@ static __ref void *alloc_low_page(unsign
- 	return adr;
- }
- 
-+static __ref void *map_low_page(void *virt)
-+{
-+	void *adr;
-+	unsigned long phys, left;
-+
-+	if (after_bootmem)
-+		return virt;
-+
-+	phys = __pa(virt);
-+	left = phys & (PAGE_SIZE - 1);
-+	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
-+	adr = (void *)(((unsigned long)adr) | left);
-+
-+	return adr;
-+}
-+
- static __ref void unmap_low_page(void *adr)
- {
- 	if (after_bootmem)
- 		return;
- 
--	early_iounmap(adr, PAGE_SIZE);
-+	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
- }
- 
- static unsigned long __meminit
-@@ -387,15 +403,6 @@ phys_pte_init(pte_t *pte_page, unsigned
- }
- 
- static unsigned long __meminit
--phys_pte_update(pmd_t *pmd, unsigned long address, unsigned long end,
--		pgprot_t prot)
--{
--	pte_t *pte = (pte_t *)pmd_page_vaddr(*pmd);
--
--	return phys_pte_init(pte, address, end, prot);
--}
--
--static unsigned long __meminit
- phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 	      unsigned long page_size_mask, pgprot_t prot)
- {
-@@ -421,8 +428,10 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
--				last_map_addr = phys_pte_update(pmd, address,
-+				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
-+				last_map_addr = phys_pte_init(pte, address,
- 								end, prot);
-+				unmap_low_page(pte);
- 				spin_unlock(&init_mm.page_table_lock);
- 				continue;
- 			}
-@@ -469,18 +478,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
- }
- 
- static unsigned long __meminit
--phys_pmd_update(pud_t *pud, unsigned long address, unsigned long end,
--		unsigned long page_size_mask, pgprot_t prot)
--{
--	pmd_t *pmd = pmd_offset(pud, 0);
--	unsigned long last_map_addr;
--
--	last_map_addr = phys_pmd_init(pmd, address, end, page_size_mask, prot);
--	__flush_tlb_all();
--	return last_map_addr;
--}
--
--static unsigned long __meminit
- phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 			 unsigned long page_size_mask)
- {
-@@ -505,8 +502,11 @@ phys_pud_init(pud_t *pud_page, unsigned
- 
- 		if (pud_val(*pud)) {
- 			if (!pud_large(*pud)) {
--				last_map_addr = phys_pmd_update(pud, addr, end,
-+				pmd = map_low_page(pmd_offset(pud, 0));
-+				last_map_addr = phys_pmd_init(pmd, addr, end,
- 							 page_size_mask, prot);
-+				unmap_low_page(pmd);
-+				__flush_tlb_all();
- 				continue;
- 			}
- 			/*
-@@ -554,17 +554,6 @@ phys_pud_init(pud_t *pud_page, unsigned
- 	return last_map_addr;
- }
- 
--static unsigned long __meminit
--phys_pud_update(pgd_t *pgd, unsigned long addr, unsigned long end,
--		 unsigned long page_size_mask)
--{
--	pud_t *pud;
--
--	pud = (pud_t *)pgd_page_vaddr(*pgd);
--
--	return phys_pud_init(pud, addr, end, page_size_mask);
--}
--
- unsigned long __meminit
- kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
-@@ -588,8 +577,10 @@ kernel_physical_mapping_init(unsigned lo
- 			next = end;
- 
- 		if (pgd_val(*pgd)) {
--			last_map_addr = phys_pud_update(pgd, __pa(start),
-+			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
-+			last_map_addr = phys_pud_init(pud, __pa(start),
- 						 __pa(end), page_size_mask);
-+			unmap_low_page(pud);
- 			continue;
- 		}
- 
+--- a/drivers/block/cciss.h
++++ b/drivers/block/cciss.h
+@@ -222,6 +222,7 @@ static void SA5_submit_command( ctlr_inf
+ 			h->ctlr, c->busaddr);
+ #endif /* CCISS_DEBUG */
+          writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
++	readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
+ 	 h->commands_outstanding++;
+ 	 if ( h->commands_outstanding > h->max_outstanding)
+ 		h->max_outstanding = h->commands_outstanding;
 
 
