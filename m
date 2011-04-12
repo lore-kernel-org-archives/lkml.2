@@ -1,32 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab1DLWuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 18:50:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42598 "EHLO
+	id S1756711Ab1DLXNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 19:13:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34797 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754870Ab1DLWuL (ORCPT
+	by vger.kernel.org with ESMTP id S1756324Ab1DLXNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 18:50:11 -0400
-Date: Tue, 12 Apr 2011 15:49:06 -0700
+	Tue, 12 Apr 2011 19:13:48 -0400
+Date: Tue, 12 Apr 2011 16:13:23 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Changli Gao <xiaosuo@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: Regression from 2.6.36
-Message-Id: <20110412154906.70829d60.akpm@linux-foundation.org>
-In-Reply-To: <1302190586.3357.45.camel@edumazet-laptop>
-References: <20110315132527.130FB80018F1@mail1005.cent>
-	<20110317001519.GB18911@kroah.com>
-	<20110407120112.E08DCA03@pobox.sk>
-	<4D9D8FAA.9080405@suse.cz>
-	<BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>
-	<1302177428.3357.25.camel@edumazet-laptop>
-	<1302178426.3357.34.camel@edumazet-laptop>
-	<BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
-	<1302190586.3357.45.camel@edumazet-laptop>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: printk: /dev/kmsg - properly support writev() to avoid
+ interleaved printk() lines
+Message-Id: <20110412161323.b4b03a1d.akpm@linux-foundation.org>
+In-Reply-To: <1302143360.1143.3.camel@zag>
+References: <1302143360.1143.3.camel@zag>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -35,38 +25,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Apr 2011 17:36:26 +0200
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Thu, 07 Apr 2011 04:29:20 +0200
+Kay Sievers <kay.sievers@vrfy.org> wrote:
 
-> Le jeudi 07 avril 2011 __ 23:27 +0800, Changli Gao a __crit :
+> From: Kay Sievers <kay.sievers@vrfy.org>
 > 
-> > azurlt, would you please test the patch attached? Thanks.
-> > 
+> printk: /dev/kmsg - properly support writev() to avoid interleaved printk lines
 > 
-> Yes of course, I meant to reverse the patch
+> We should avoid calling printk() in a loop, when we pass a single
+> string to /dev/kmsg with writev(). 
 > 
-> (use kmalloc() under PAGE_SIZE, vmalloc() for 'big' allocs)
-> 
-> 
-> Dont fallback to vmalloc if kmalloc() fails.
-> 
-> 
-> if (size <= PAGE_SIZE)
-> 	return kmalloc(size, GFP_KERNEL);
-> else
-> 	return vmalloc(size);
-> 
+> ...
+> --- a/drivers/char/mem.c
+> +++ b/drivers/char/mem.c
+> @@ -806,29 +806,40 @@ static const struct file_operations oldmem_fops = {
+>  };
+>  #endif
+>  
+> -static ssize_t kmsg_write(struct file *file, const char __user *buf,
+> -			  size_t count, loff_t *ppos)
+> +static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
+> +			   unsigned long count, loff_t pos)
+>  {
+> -	char *tmp;
+> -	ssize_t ret;
+> +	char *line, *p;
+> +	int len, i;
+> +	ssize_t ret = -EFAULT;
+>  
+> -	tmp = kmalloc(count + 1, GFP_KERNEL);
+> -	if (tmp == NULL)
+> +	len = iov_length(iv, count);
+> +	line = p = kmalloc(len + 1, GFP_KERNEL);
+> +	if (line == NULL)
+>  		return -ENOMEM;
+> -	ret = -EFAULT;
+> -	if (!copy_from_user(tmp, buf, count)) {
+> -		tmp[count] = 0;
+> -		ret = printk("%s", tmp);
+> -		if (ret > count)
+> -			/* printk can add a prefix */
+> -			ret = count;
+> +
+> +	/*
+> +	 * copy all vectors into a single string, to ensure we do
+> +	 * not interleave our log line with other printk calls
+> +	 */
+> +	for (i = 0; i < count; i++) {
+> +		if (copy_from_user(p, iv[i].iov_base, iv[i].iov_len))
+> +			goto out;
+> +		p += iv[i].iov_len;
+>  	}
+> -	kfree(tmp);
+> +	p[0] = '\0';
+> +
+> +	ret = printk("%s", line);
+> +	/* printk can add a prefix */
+> +	if (ret > len)
+> +		ret = len;
+> +out:
+> +	kfree(line);
+>  	return ret;
+>  }
+>  
+>  static const struct file_operations kmsg_fops = {
+> -	.write = kmsg_write,
+> +	.aio_write = kmsg_writev,
+>  	.llseek = noop_llseek,
+>  };
+>  
 
-It's somewhat unclear (to me) what caused this regression.
+LGTM.  Nitpicks:
 
-Is it because the kernel is now doing large kmalloc()s for the fdtable,
-and this makes the page allocator go nuts trying to satisfy high-order
-page allocation requests?
+From: Andrew Morton <akpm@linux-foundation.org>
 
-Is it because the kernel now will usually free the fdtable
-synchronously within the rcu callback, rather than deferring this to a
-workqueue?
+make `len' size_t, avoid multiple-assignments.
 
-The latter seems unlikely, so I'm thinking this was a case of
-high-order-allocations-considered-harmful?
+Cc: Greg KH <gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Lennart Poettering <lennart@poettering.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/char/mem.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff -puN drivers/char/mem.c~dev-kmsg-properly-support-writev-to-avoid-interleaved-printk-lines-fix drivers/char/mem.c
+--- a/drivers/char/mem.c~dev-kmsg-properly-support-writev-to-avoid-interleaved-printk-lines-fix
++++ a/drivers/char/mem.c
+@@ -810,11 +810,11 @@ static ssize_t kmsg_writev(struct kiocb 
+ 			   unsigned long count, loff_t pos)
+ {
+ 	char *line, *p;
+-	int len, i;
++	int i;
+ 	ssize_t ret = -EFAULT;
++	size_t len = iov_length(iv, count);
+ 
+-	len = iov_length(iv, count);
+-	line = p = kmalloc(len + 1, GFP_KERNEL);
++	line = kmalloc(len + 1, GFP_KERNEL);
+ 	if (line == NULL)
+ 		return -ENOMEM;
+ 
+@@ -822,6 +822,7 @@ static ssize_t kmsg_writev(struct kiocb 
+ 	 * copy all vectors into a single string, to ensure we do
+ 	 * not interleave our log line with other printk calls
+ 	 */
++	p = line;
+ 	for (i = 0; i < count; i++) {
+ 		if (copy_from_user(p, iv[i].iov_base, iv[i].iov_len))
+ 			goto out;
+_
+
+
 
