@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab1DLSIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 14:08:15 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:40035 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754731Ab1DLSIN (ORCPT
+	id S1758284Ab1DLSJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 14:09:12 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:55743 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab1DLSJK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 14:08:13 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 3g9V1DgVM1lDH_C1vs32eCv0jXOtqTKO3yjmlpeQTZAziDs
- cafkCXBaL_ikDoWE65mU9Wnxz4HElYF0eYzxjsfou0sz1W4Ha.T3rzqV4GXp
- jpe4RWWv0cSTWxa9khtAyYJAX9igPZlxR6lRId3vMf20Q4RJxEHAlXHxHEEK
- iw27oGGuv0EhXFWFTDqP20sXxl71G_Am8vBaAZ9BB9HRTrY09xOoYMKVj2BN
- qRQL9.l2ZP0i.pxWOD76HWbPpj3G4iSjiPeepa82n8E2XSMDOykOlKA09ewu
- 5Co49YRddLDfbCiVMyBxubw5bvD7hZkMMpUjoWkInB3RalqpM
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 12 Apr 2011 13:08:09 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Kruse <pk@q-leap.de>
-cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: I have a blaze of 353 page allocation failures, all alike
-In-Reply-To: <4DA4692D.7080207@q-leap.de>
-Message-ID: <alpine.DEB.2.00.1104121306581.14692@router.home>
-References: <4D53FE43.8030106@q-leap.com>    <alpine.DEB.2.00.1102141046170.26158@router.home>    <4D5A2EDB.8060603@q-leap.com>    <alpine.DEB.2.00.1102151040560.10511@router.home>    <4D5BC16A.2090205@q-leap.com>    <alpine.DEB.2.00.1102160956250.27814@router.home>
-    <4D5BF56F.1000504@q-leap.com>    <alpine.DEB.2.00.1102161010330.27814@router.home>    <4D5CCEED.3010501@q-leap.com>    <alpine.DEB.2.00.1102171102520.11140@router.home> <272bf0cc51439a2ab31ee2f06317dd9f.squirrel@www.q-leap.de> <4D6648B5.1090306@q-leap.com>
- <4DA4692D.7080207@q-leap.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 12 Apr 2011 14:09:10 -0400
+Date: Tue, 12 Apr 2011 15:09:33 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        Keith Packard <keithp@keithp.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: 2.6.39-rc2 regression: X201s fails to resume
+ b77dcf8460ae57d4eb9fd3633eb4f97b8fb20716
+Message-ID: <20110412180933.GA2836@joana>
+Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+	Keith Packard <keithp@keithp.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-bluetooth@vger.kernel.org
+References: <yun1v1fj024.fsf@aiko.keithp.com>
+ <alpine.LFD.2.00.1104070022280.3971@localhost6.localdomain6>
+ <alpine.LFD.2.00.1104082340020.2724@localhost6.localdomain6>
+ <yunaag0tjzb.fsf@aiko.keithp.com>
+ <20110409000857.GB25581@piper>
+ <alpine.LFD.2.00.1104111807480.4501@localhost6.localdomain6>
+ <1302558033.2572.219.camel@aeonflux>
+ <alpine.LFD.2.00.1104120014130.2702@localhost6.localdomain6>
+ <alpine.LFD.2.00.1104120016490.2702@localhost6.localdomain6>
+ <20110411222504.GE2195@joana>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII; FORMAT=flowed
-Content-ID: <alpine.DEB.2.00.1104121306583.14692@router.home>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110411222504.GE2195@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Apr 2011, Peter Kruse wrote:
+* Gustavo F. Padovan <padovan@profusion.mobi> [2011-04-11 19:25:04 -0300]:
 
-> Hello,
->
-> On 02/24/2011 01:01 PM, Peter Kruse wrote:
-> > it took a while to find a date for a reboot... Unfortunately
-> > it was not possible to get the early boot messages with the
-> > kernel 2.6.32.23 since the compiled in log buffer is too
-> > small. So we installed as you suggested a more recent kernel
-> > 2.6.32.29 with a bigger log buffer, I attach the dmesg
-> > of that, and hope that the information in there is useful.
-> > We will keep an eye on that server with the newer kernel
-> > to see if the allocation failures appear again.
->
-> the server was running for a few without any more allocation
-> failures with kernel 2.6.32.29 but at one point the server
-> stopped responding, it was still possible for a while to
-> get a login, and trying to kill some processes but that
-> didn't succeed.  But after that even login was
-> no longer possible so we had to reset it.
-> I attach the call trace, I hope you can find out what is
-> the problem.
+> * Thomas Gleixner <tglx@linutronix.de> [2011-04-12 00:19:32 +0200]:
+> 
+> > On Tue, 12 Apr 2011, Thomas Gleixner wrote:
+> > > On Mon, 11 Apr 2011, Marcel Holtmann wrote:
+> > > 
+> > > > Hi Thomas,
+> > > > 
+> > > > > > > > Can the bluetooth folks please have a look at that ASAP? The obvious
+> > > > > > > > fast fix for Linus tree is to revert the second hunk for now, but this
+> > > > > > > > needs to be fixed proper.
+> > > > > > > 
+> > > > > > > Who will submit this patch? I'd rather have your name on it so that
+> > > > > > > people come complain at you...
+> > > > > > 
+> > > > > > I took a shot at it and just sent a patch (also attached for convenience) 
+> > > > > > that should solve the problem.
+> > > > > 
+> > > > > Aaarg. No. That patch reverts both hunks.
+> > > > > 
+> > > > > --- a/net/bluetooth/hci_core.c
+> > > > > +++ b/net/bluetooth/hci_core.c
+> > > > > @@ -586,9 +586,6 @@ static int hci_dev_do_close(struct hci_dev *hdev)
+> > > > >  	hci_req_cancel(hdev, ENODEV);
+> > > > >  	hci_req_lock(hdev);
+> > > > >  
+> > > > > -	/* Stop timer, it might be running */
+> > > > > -	del_timer_sync(&hdev->cmd_timer);
+> > > > > -
+> > > > >  	if (!test_and_clear_bit(HCI_UP, &hdev->flags)) {
+> > > > >  		hci_req_unlock(hdev);
+> > > > >  		return 0;
+> > > > > 
+> > > > > As I said before you need that first hunk to stay for the case where
+> > > > > there is no device up and you return via the !HCI_UP check. You just
+> > > > > moved back to the state before as the stupid timer is active for
+> > > > > whatever reason even when HCI_UP is not set.
+> > > > 
+> > > > if I read this right then we have the case that we arm this timer for no
+> > > > real reason. A device in !HCI_UP should have nothing running. Certainly
+> > > > not the cmd_timer since it will never process any commands.
+> > > > 
+> > > > According to Gustavo, the problem is really in the hci_reset logic were
+> > > > we arm the timer even when shutting down the device.
+> > > 
+> > > The reason why the original patch was sent is, that the timer was
+> > > running when the thing went out via the !HCI_UP path, which caused the
+> > > whole thing to explode in the first place. I had no time to figure out
+> > > why, but moving the del_timer_sync above the
+> > > if (!test_and_clear_bit(HCI_UP, &hdev->flags)) solved it.
+> > 
+> > Oops. Hit send too fast.
+> > 
+> > Then it broke the resume on Keith machine and reverting just the hunk
+> > which disarms the timer in the 
+> > 
+> >         if (hdev->sent_cmd) {
+> > 
+> > path made both scenarios working. So there are two problems:
+> > 
+> >      1) Why do we need the del_timer_sync() above the !HCI_UP check
+> 
+> That is still a mysterious to me, the real bug the hiding here. I'm trying to
+> track this down but no luck yet.
+> 
+> > 
+> >      2) Why gets the timer rearmed after that
+> 
+> It is armed at each HCI command we send. In the close path we send out an HCI
+> RESET command that rearms it.
 
-The problem maybe that you have lots and lots of SCSI devices which
-consume ZONE_DMA memory for their control structures. I guess that is
-oversubscribing the 16M zone.
+I applied v2 patch from Vinícius that fix all the symptoms. Now we have more time
+to find the real cause of this bug. However I still have no idea, I'm not able
+to reproduce it.
 
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
