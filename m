@@ -1,146 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1DLFB5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 01:01:57 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:34708 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab1DLFB4 (ORCPT
+	id S1752703Ab1DLFCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 01:02:55 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51095 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751078Ab1DLFCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 01:01:56 -0400
-Subject: Re: [PATCH 09/34] x86: Allow to override the ROOT_DEV variable
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Michal Marek <mmarek@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
-In-Reply-To: <20110411150820.GA22004@sepie.suse.cz>
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz>
-	 <1302015561-21047-10-git-send-email-mmarek@suse.cz>
-	 <4D9B3581.6080105@zytor.com> <4D9C1AA0.9030008@suse.cz>
-	 <20110411150820.GA22004@sepie.suse.cz>
+	Tue, 12 Apr 2011 01:02:54 -0400
+Subject: Re: Strange block/scsi/workqueue issue
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <1302583757.2558.21.camel@mulgrave.site>
+References: <1302533763.2596.23.camel@dolmen>
+	 <20110411171803.GG9673@mtj.dyndns.org>
+	 <1302569276.2558.9.camel@mulgrave.site>
+	 <20110412025145.GJ9673@mtj.dyndns.org>
+	 <1302583757.2558.21.camel@mulgrave.site>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 07:01:10 +0200
-Message-ID: <1302584470.26451.11.camel@x61.thuisdomein>
+Date: Tue, 12 Apr 2011 00:02:51 -0500
+Message-ID: <1302584571.2558.24.camel@mulgrave.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-11 at 17:08 +0200, Michal Marek wrote:
-> Subject: [PATCH] x86: Do not set the rood_dev field in bzImage
+On Mon, 2011-04-11 at 23:49 -0500, James Bottomley wrote:
+> The entangled deadlock seems to have been introduced by commit
+> 3cca6dc1c81e2407928dc4c6105252146fd3924f prior to that, there was no
+> synchronous cancel in the destroy path.
 > 
-> This has been obsoleted by the root= commandline for several years.
-> People who still depend on this will surely have a copy of the rdev
-> command around, the rest of the world gets rid of another piece of
-> buildhost-dependent data in the build.
+> A fix might be to shunt more stuff off to workqueues, but that's
+> producing a more complex system which would be prone to entanglements
+> that would be even harder to spot.
 > 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  arch/x86/boot/Makefile |    9 +--------
->  1 files changed, 1 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-> index f7cb086..95365a8 100644
-> --- a/arch/x86/boot/Makefile
-> +++ b/arch/x86/boot/Makefile
-> @@ -9,12 +9,6 @@
->  # Changed by many, many contributors over the years.
->  #
->  
-> -# ROOT_DEV specifies the default root-device when making the image.
-> -# This can be either FLOPPY, CURRENT, /dev/xxxx or empty, in which case
-> -# the default of FLOPPY is used by 'build'.
-> -
-> -ROOT_DEV	:= CURRENT
-> -
->  # If you want to preset the SVGA mode, uncomment the next line and
->  # set SVGA_MODE to whatever number you want.
->  # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
-> @@ -75,8 +69,7 @@ GCOV_PROFILE := n
->  $(obj)/bzImage: asflags-y  := $(SVGA_MODE)
->  
->  quiet_cmd_image = BUILD   $@
-> -cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin \
-> -	$(ROOT_DEV) > $@
-> +cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin > $@
->  
->  $(obj)/bzImage: $(obj)/setup.bin $(obj)/vmlinux.bin $(obj)/tools/build FORCE
->  	$(call if_changed,image)
+> Perhaps a better solution is just not to use sync cancellations in
+> block?  As long as the work in the queue holds a queue ref, they can be
+> done asynchronously.
 
-I'm not familiar with the rdev command. I assume it allows one to
-manipulate the two rootdev bytes in a kernel image. Anyhow, shouldn't
-the above patch be complemented with something like the following?
+So this is a possible implementation, does this fix the problem?
+(compile tested only).
 
-diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
-index ee3a4ea..fdc60a0 100644
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -130,7 +130,7 @@ static void die(const char * str, ...)
- 
- static void usage(void)
- {
--	die("Usage: build setup system [rootdev] [> image]");
-+	die("Usage: build setup system [> image]");
+James
+
+---
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 90f22cc..f600f88 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -219,6 +219,7 @@ static void blk_delay_work(struct work_struct *work)
+ 	spin_lock_irq(q->queue_lock);
+ 	__blk_run_queue(q, false);
+ 	spin_unlock_irq(q->queue_lock);
++	blk_put_queue(q);
  }
  
- int main(int argc, char ** argv)
-@@ -138,39 +138,14 @@ int main(int argc, char ** argv)
- 	unsigned int i, sz, setup_sectors;
- 	int c;
- 	u32 sys_size;
--	u8 major_root, minor_root;
- 	struct stat sb;
- 	FILE *file;
- 	int fd;
- 	void *kernel;
- 	u32 crc = 0xffffffffUL;
+ /**
+@@ -233,7 +234,8 @@ static void blk_delay_work(struct work_struct *work)
+  */
+ void blk_delay_queue(struct request_queue *q, unsigned long msecs)
+ {
+-	schedule_delayed_work(&q->delay_work, msecs_to_jiffies(msecs));
++	if (!blk_get_queue(q))
++		schedule_delayed_work(&q->delay_work, msecs_to_jiffies(msecs));
+ }
+ EXPORT_SYMBOL(blk_delay_queue);
  
--	if ((argc < 3) || (argc > 4))
-+	if (argc != 3)
- 		usage();
--	if (argc > 3) {
--		if (!strcmp(argv[3], "CURRENT")) {
--			if (stat("/", &sb)) {
--				perror("/");
--				die("Couldn't stat /");
--			}
--			major_root = major(sb.st_dev);
--			minor_root = minor(sb.st_dev);
--		} else if (strcmp(argv[3], "FLOPPY")) {
--			if (stat(argv[3], &sb)) {
--				perror(argv[3]);
--				die("Couldn't stat root device.");
--			}
--			major_root = major(sb.st_rdev);
--			minor_root = minor(sb.st_rdev);
--		} else {
--			major_root = 0;
--			minor_root = 0;
--		}
--	} else {
--		major_root = DEFAULT_MAJOR_ROOT;
--		minor_root = DEFAULT_MINOR_ROOT;
--	}
--	fprintf(stderr, "Root device is (%d, %d)\n", major_root, minor_root);
- 
- 	/* Copy the setup code */
- 	file = fopen(argv[1], "r");
-@@ -193,8 +168,8 @@ int main(int argc, char ** argv)
- 	memset(buf+c, 0, i-c);
- 
- 	/* Set the default root device */
--	buf[508] = minor_root;
--	buf[509] = major_root;
-+	buf[508] = DEFAULT_MINOR_ROOT;
-+	buf[509] = DEFAULT_MAJOR_ROOT;
- 
- 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
- 
+@@ -271,7 +273,8 @@ EXPORT_SYMBOL(blk_start_queue);
+  **/
+ void blk_stop_queue(struct request_queue *q)
+ {
+-	__cancel_delayed_work(&q->delay_work);
++	if (__cancel_delayed_work(&q->delay_work))
++		blk_put_queue(q);
+ 	queue_flag_set(QUEUE_FLAG_STOPPED, q);
+ }
+ EXPORT_SYMBOL(blk_stop_queue);
+@@ -297,7 +300,8 @@ EXPORT_SYMBOL(blk_stop_queue);
+ void blk_sync_queue(struct request_queue *q)
+ {
+ 	del_timer_sync(&q->timeout);
+-	cancel_delayed_work_sync(&q->delay_work);
++	if (__cancel_delayed_work(&q->delay_work))
++		blk_put_queue(q);
+ 	queue_sync_plugs(q);
+ }
+ EXPORT_SYMBOL(blk_sync_queue);
 
 
