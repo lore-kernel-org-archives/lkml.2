@@ -1,294 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1DLL2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 07:28:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37428 "EHLO mx1.suse.de"
+	id S1754355Ab1DLLaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 07:30:46 -0400
+Received: from gra-lx1.iram.es ([150.214.224.41]:41193 "EHLO gra-lx1.iram.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab1DLL2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 07:28:02 -0400
-Date: Tue, 12 Apr 2011 13:27:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: fixing actual/startup profile sysfs attribute
- in koneplus
-In-Reply-To: <1302444165.12514.2.camel@neuromancer>
-Message-ID: <alpine.LNX.2.00.1104121326290.12035@pobox.suse.cz>
-References: <1302444165.12514.2.camel@neuromancer>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752870Ab1DLLap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 07:30:45 -0400
+Date: Tue, 12 Apr 2011 13:30:34 +0200
+From: Gabriel Paubert <paubert@iram.es>
+To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+Message-ID: <20110412113033.GA16649@iram.es>
+References: <20110404235259.GA30132@iram.es> <20110406084101.GB13963@pengutronix.de> <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com> <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local> <20110411133128.GA24344@iram.es> <1302535963.24704.268.camel@thor.local>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1302535963.24704.268.camel@thor.local>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Apr 2011, Stefan Achatz wrote:
+	Hi Micel,
 
-> startup_profile and actual_profile didn't work as expected. Also
-> as the actual profile is persistent, the distinction between the
-> two was ambiguous. And the event is now propagated through chardev.
-> The userland tool has been updated to support this change.
-
-Fortunately, this is 'testing' ABI. But still, I'd prefer to follow good 
-practices here, and minimize incompatible ABI changes.
-
-Is the userspace tool able to handle the situations:
-
-- too old tool running to kernel containing this patch
-- new tool running on older kernel
-
-?
-
+On Mon, Apr 11, 2011 at 05:32:43PM +0200, Michel Dänzer wrote:
+> [ Adding the dri-devel list ]
 > 
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  .../ABI/testing/sysfs-driver-hid-roccat-koneplus   |   19 ++---
->  drivers/hid/hid-roccat-koneplus.c                  |   81 ++++++++++----------
->  drivers/hid/hid-roccat-koneplus.h                  |   11 +--
->  3 files changed, 53 insertions(+), 58 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus b/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-> index 00efced..e5311a0 100644
-> --- a/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-> +++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-> @@ -1,9 +1,12 @@
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/actual_profile
->  Date:		October 2010
->  Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-> -Description:	When read, this file returns the number of the actual profile in
-> -		range 0-4.
-> -		This file is readonly.
-> +Description:	The integer value of this attribute ranges from 0-4.
-> +                When read, this attribute returns the number of the actual
-> +                profile. This value is persistent, so its equivalent to the
-> +                profile that's active when the mouse is powered on next time.
-> +		When written, this file sets the number of the startup profile
-> +		and the mouse activates this profile immediately.
->  Users:		http://roccat.sourceforge.net
->  
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/firmware_version
-> @@ -89,16 +92,6 @@ Description:	The mouse has a tracking- and a distance-control-unit. These
->  		This file is writeonly.
->  Users:		http://roccat.sourceforge.net
->  
-> -What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/startup_profile
-> -Date:		October 2010
-> -Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-> -Description:	The integer value of this attribute ranges from 0-4.
-> -                When read, this attribute returns the number of the profile
-> -                that's active when the mouse is powered on.
-> -		When written, this file sets the number of the startup profile
-> -		and the mouse activates this profile immediately.
-> -Users:		http://roccat.sourceforge.net
-> -
->  What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/tcu
->  Date:		October 2010
->  Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-> diff --git a/drivers/hid/hid-roccat-koneplus.c b/drivers/hid/hid-roccat-koneplus.c
-> index 33eec74..182c954 100644
-> --- a/drivers/hid/hid-roccat-koneplus.c
-> +++ b/drivers/hid/hid-roccat-koneplus.c
-> @@ -167,28 +167,28 @@ static int koneplus_set_profile_buttons(struct usb_device *usb_dev,
->  }
->  
->  /* retval is 0-4 on success, < 0 on error */
-> -static int koneplus_get_startup_profile(struct usb_device *usb_dev)
-> +static int koneplus_get_actual_profile(struct usb_device *usb_dev)
->  {
-> -	struct koneplus_startup_profile buf;
-> +	struct koneplus_actual_profile buf;
->  	int retval;
->  
-> -	retval = roccat_common_receive(usb_dev, KONEPLUS_USB_COMMAND_STARTUP_PROFILE,
-> -			&buf, sizeof(struct koneplus_startup_profile));
-> +	retval = roccat_common_receive(usb_dev, KONEPLUS_USB_COMMAND_ACTUAL_PROFILE,
-> +			&buf, sizeof(struct koneplus_actual_profile));
->  
-> -	return retval ? retval : buf.startup_profile;
-> +	return retval ? retval : buf.actual_profile;
->  }
->  
-> -static int koneplus_set_startup_profile(struct usb_device *usb_dev,
-> -		int startup_profile)
-> +static int koneplus_set_actual_profile(struct usb_device *usb_dev,
-> +		int new_profile)
->  {
-> -	struct koneplus_startup_profile buf;
-> +	struct koneplus_actual_profile buf;
->  
-> -	buf.command = KONEPLUS_COMMAND_STARTUP_PROFILE;
-> -	buf.size = sizeof(struct koneplus_startup_profile);
-> -	buf.startup_profile = startup_profile;
-> +	buf.command = KONEPLUS_COMMAND_ACTUAL_PROFILE;
-> +	buf.size = sizeof(struct koneplus_actual_profile);
-> +	buf.actual_profile = new_profile;
->  
-> -	return koneplus_send(usb_dev, KONEPLUS_USB_COMMAND_STARTUP_PROFILE,
-> -			&buf, sizeof(struct koneplus_profile_buttons));
-> +	return koneplus_send(usb_dev, KONEPLUS_USB_COMMAND_ACTUAL_PROFILE,
-> +			&buf, sizeof(struct koneplus_actual_profile));
->  }
->  
->  static ssize_t koneplus_sysfs_read(struct file *fp, struct kobject *kobj,
-> @@ -398,21 +398,22 @@ static ssize_t koneplus_sysfs_write_profile_buttons(struct file *fp,
->  	return sizeof(struct koneplus_profile_buttons);
->  }
->  
-> -static ssize_t koneplus_sysfs_show_startup_profile(struct device *dev,
-> +static ssize_t koneplus_sysfs_show_actual_profile(struct device *dev,
->  		struct device_attribute *attr, char *buf)
->  {
->  	struct koneplus_device *koneplus =
->  			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
-> -	return snprintf(buf, PAGE_SIZE, "%d\n", koneplus->startup_profile);
-> +	return snprintf(buf, PAGE_SIZE, "%d\n", koneplus->actual_profile);
->  }
->  
-> -static ssize_t koneplus_sysfs_set_startup_profile(struct device *dev,
-> +static ssize_t koneplus_sysfs_set_actual_profile(struct device *dev,
->  		struct device_attribute *attr, char const *buf, size_t size)
->  {
->  	struct koneplus_device *koneplus;
->  	struct usb_device *usb_dev;
->  	unsigned long profile;
->  	int retval;
-> +	struct koneplus_roccat_report roccat_report;
->  
->  	dev = dev->parent->parent;
->  	koneplus = hid_get_drvdata(dev_get_drvdata(dev));
-> @@ -423,20 +424,25 @@ static ssize_t koneplus_sysfs_set_startup_profile(struct device *dev,
->  		return retval;
->  
->  	mutex_lock(&koneplus->koneplus_lock);
-> -	retval = koneplus_set_startup_profile(usb_dev, profile);
-> -	mutex_unlock(&koneplus->koneplus_lock);
-> -	if (retval)
-> +
-> +	retval = koneplus_set_actual_profile(usb_dev, profile);
-> +	if (retval) {
-> +		mutex_unlock(&koneplus->koneplus_lock);
->  		return retval;
-> +	}
->  
-> -	return size;
-> -}
-> +	koneplus->actual_profile = profile;
->  
-> -static ssize_t koneplus_sysfs_show_actual_profile(struct device *dev,
-> -		struct device_attribute *attr, char *buf)
-> -{
-> -	struct koneplus_device *koneplus =
-> -			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
-> -	return snprintf(buf, PAGE_SIZE, "%d\n", koneplus->actual_profile);
-> +	roccat_report.type = KONEPLUS_MOUSE_REPORT_BUTTON_TYPE_PROFILE;
-> +	roccat_report.data1 = profile + 1;
-> +	roccat_report.data2 = 0;
-> +	roccat_report.profile = profile + 1;
-> +	roccat_report_event(koneplus->chrdev_minor,
-> +			(uint8_t const *)&roccat_report);
-> +
-> +	mutex_unlock(&koneplus->koneplus_lock);
-> +
-> +	return size;
->  }
->  
->  static ssize_t koneplus_sysfs_show_firmware_version(struct device *dev,
-> @@ -448,11 +454,9 @@ static ssize_t koneplus_sysfs_show_firmware_version(struct device *dev,
->  }
->  
->  static struct device_attribute koneplus_attributes[] = {
-> -	__ATTR(startup_profile, 0660,
-> -			koneplus_sysfs_show_startup_profile,
-> -			koneplus_sysfs_set_startup_profile),
-> -	__ATTR(actual_profile, 0440,
-> -			koneplus_sysfs_show_actual_profile, NULL),
-> +	__ATTR(actual_profile, 0660,
-> +			koneplus_sysfs_show_actual_profile,
-> +			koneplus_sysfs_set_actual_profile),
->  	__ATTR(firmware_version, 0440,
->  			koneplus_sysfs_show_firmware_version, NULL),
->  	__ATTR_NULL
-> @@ -557,15 +561,10 @@ static int koneplus_init_koneplus_device_struct(struct usb_device *usb_dev,
->  		struct koneplus_device *koneplus)
->  {
->  	int retval, i;
-> -	static uint wait = 100; /* device will freeze with just 60 */
-> +	static uint wait = 200;
->  
->  	mutex_init(&koneplus->koneplus_lock);
->  
-> -	koneplus->startup_profile = koneplus_get_startup_profile(usb_dev);
-> -	if (koneplus->startup_profile < 0)
-> -		return koneplus->startup_profile;
-> -
-> -	msleep(wait);
->  	retval = koneplus_get_info(usb_dev, &koneplus->info);
->  	if (retval)
->  		return retval;
-> @@ -584,7 +583,11 @@ static int koneplus_init_koneplus_device_struct(struct usb_device *usb_dev,
->  			return retval;
->  	}
->  
-> -	koneplus_profile_activated(koneplus, koneplus->startup_profile);
-> +	msleep(wait);
-> +	retval = koneplus_get_actual_profile(usb_dev);
-> +	if (retval < 0)
-> +		return retval;
-> +	koneplus_profile_activated(koneplus, retval);
->  
->  	return 0;
->  }
-> diff --git a/drivers/hid/hid-roccat-koneplus.h b/drivers/hid/hid-roccat-koneplus.h
-> index 57a5c1a..c57a376 100644
-> --- a/drivers/hid/hid-roccat-koneplus.h
-> +++ b/drivers/hid/hid-roccat-koneplus.h
-> @@ -40,10 +40,10 @@ enum koneplus_control_values {
->  	KONEPLUS_CONTROL_REQUEST_STATUS_WAIT = 3,
->  };
->  
-> -struct koneplus_startup_profile {
-> -	uint8_t command; /* KONEPLUS_COMMAND_STARTUP_PROFILE */
-> +struct koneplus_actual_profile {
-> +	uint8_t command; /* KONEPLUS_COMMAND_ACTUAL_PROFILE */
->  	uint8_t size; /* always 3 */
-> -	uint8_t startup_profile; /* Range 0-4! */
-> +	uint8_t actual_profile; /* Range 0-4! */
->  } __attribute__ ((__packed__));
->  
->  struct koneplus_profile_settings {
-> @@ -132,7 +132,7 @@ struct koneplus_tcu_image {
->  
->  enum koneplus_commands {
->  	KONEPLUS_COMMAND_CONTROL = 0x4,
-> -	KONEPLUS_COMMAND_STARTUP_PROFILE = 0x5,
-> +	KONEPLUS_COMMAND_ACTUAL_PROFILE = 0x5,
->  	KONEPLUS_COMMAND_PROFILE_SETTINGS = 0x6,
->  	KONEPLUS_COMMAND_PROFILE_BUTTONS = 0x7,
->  	KONEPLUS_COMMAND_MACRO = 0x8,
-> @@ -145,7 +145,7 @@ enum koneplus_commands {
->  
->  enum koneplus_usb_commands {
->  	KONEPLUS_USB_COMMAND_CONTROL = 0x304,
-> -	KONEPLUS_USB_COMMAND_STARTUP_PROFILE = 0x305,
-> +	KONEPLUS_USB_COMMAND_ACTUAL_PROFILE = 0x305,
->  	KONEPLUS_USB_COMMAND_PROFILE_SETTINGS = 0x306,
->  	KONEPLUS_USB_COMMAND_PROFILE_BUTTONS = 0x307,
->  	KONEPLUS_USB_COMMAND_MACRO = 0x308,
-> @@ -215,7 +215,6 @@ struct koneplus_device {
->  
->  	struct mutex koneplus_lock;
->  
-> -	int startup_profile;
->  	struct koneplus_info info;
->  	struct koneplus_profile_settings profile_settings[5];
->  	struct koneplus_profile_buttons profile_buttons[5];
-> -- 
-> 1.7.3.4
-> 
-> 
+> Have you ruled out any MSI related problems? I think the IRQ not working
+> could explain the symptoms...
+
+Booting with MSI disabled does not change anything. Actually on this
+machine the Ethernet (tigon3) uses MSI and everything is fine. OTOH,
+on my home PC (dual code Athlon64 4 1/2 years old), MSI has never worked.
+
+> Make sure this line changes to 'WB disabled' with no_wb=1. There's a
+> writeback endianness bug with modeset=1, see
+> http://lists.freedesktop.org/archives/dri-devel/2011-April/009960.html .
 > 
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+With no_wb=1 the driver goes a bit further but the X server ends
+up in an infinite ioctl loop and the logs are: 
+
+kernel: [drm] radeon kernel modesetting enabled.
+kernel: checking generic (c0000000 140000) vs hw (c0000000 10000000)
+kernel: fb: conflicting fb hw usage radeondrmfb vs OFfb vga,Displa - removing generic driver
+kernel: [drm] initializing kernel modesetting (RV530 0x1002:0x71C7).
+kernel: radeon 0000:f1:00.0: Using 64-bit DMA iommu bypass
+kernel: [drm] register mmio base: 0xE8000000
+kernel: [drm] register mmio size: 65536
+kernel: radeon 0000:f1:00.0: Invalid ROM contents
+kernel: ATOM BIOS: X1650PRO
+kernel: [drm] Generation 2 PCI interface, using max accessible memory
+kernel: radeon 0000:f1:00.0: VRAM: 512M 0x0000000000000000 - 0x000000001FFFFFFF (512M used)
+kernel: radeon 0000:f1:00.0: GTT: 512M 0x0000000020000000 - 0x000000003FFFFFFF
+kernel: [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+kernel: [drm] Driver supports precise vblank timestamp query.
+kernel: [drm] radeon: irq initialized.
+kernel: [drm] Detected VRAM RAM=512M, BAR=256M
+kernel: [drm] RAM width 128bits DDR
+kernel: [TTM] Zone  kernel: Available graphics memory: 1003018 kiB.
+kernel: [TTM] Initializing pool allocator.
+kernel: [drm] radeon: 512M of VRAM memory ready
+kernel: [drm] radeon: 512M of GTT memory ready.
+kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
+kernel: [drm] radeon: 1 quad pipes, 2 z pipes initialized.
+kernel: [drm] PCIE GART of 512M enabled (table at 0x00040000).
+kernel: radeon 0000:f1:00.0: WB disabled
+kernel: [drm] Loading R500 Microcode
+kernel: [drm] radeon: ring at 0x0000000020001000
+kernel: [drm] ring test succeeded in 6 usecs
+kernel: [drm] radeon: ib pool ready.
+kernel: [drm] ib test succeeded in 0 usecs
+kernel: [drm] Radeon Display Connectors
+kernel: [drm] Connector 0:
+kernel: [drm]   DVI-I
+kernel: [drm]   HPD1
+kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
+kernel: [drm]   Encoders:
+kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+kernel: [drm]     DFP1: INTERNAL_KLDSCP_TMDS1
+kernel: [drm] Connector 1:
+kernel: [drm]   S-video
+kernel: [drm]   Encoders:
+kernel: [drm]     TV1: INTERNAL_KLDSCP_DAC2
+kernel: [drm] Connector 2:
+kernel: [drm]   DVI-I
+kernel: [drm]   HPD2
+kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
+kernel: [drm]   Encoders:
+kernel: [drm]     CRT2: INTERNAL_KLDSCP_DAC2
+kernel: [drm]     DFP3: INTERNAL_LVTM1
+kernel: [drm] Possible lm63 thermal controller at 0x4c
+kernel: [drm] fb mappable at 0xC00C0000
+kernel: [drm] vram apper at 0xC0000000
+kernel: [drm] size 9216000
+kernel: [drm] fb depth is 24
+kernel: [drm]    pitch is 7680
+kernel: checking generic (c0000000 140000) vs hw (c0000000 10000000)
+kernel: fb: conflicting fb hw usage radeondrmfb vs OFfb vga,Displa - removing generic driver
+kernel: fb1: radeondrmfb frame buffer device
+kernel: drm: registered panic notifier
+kernel: [drm] Initialized radeon 2.8.0 20080528 for 0000:f1:00.0 on minor 0
+kernel: [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+
+There is only one display connected and it is to the first DVI connector, BTW.
+
+	Regards,
+	Gabriel
