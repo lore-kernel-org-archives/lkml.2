@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab1DLOlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:41:42 -0400
-Received: from kroah.org ([198.145.64.141]:57850 "EHLO coco.kroah.org"
+	id S932511Ab1DLOl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:41:26 -0400
+Received: from kroah.org ([198.145.64.141]:57862 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932449Ab1DLOiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:55 -0400
+	id S932219Ab1DLOi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:56 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:58 2011
-Message-Id: <20110412143558.223802905@clark.kroah.org>
+Message-Id: <20110412143558.321710422@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:25 -0700
+Date: Tue, 12 Apr 2011 07:35:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Corentin Chary <corentincj@iksaif.net>,
-        =?ISO-8859-15?q?Old=C3=85=C2=99ich=20Jedli=C3=84=C2=8Dka?= 
-	<oldium.pro@seznam.cz>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Chun-Yi Lee <jlee@novell.com>
-Subject: [096/105] acer-wmi: does not set persistence state by rfkill_init_sw_state
+        Yinghai Lu <yinghai@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [097/105] [PATCH] Revert "x86: Cleanup highmap after brk is concluded"
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,91 +27,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chun-Yi Lee <joeyli.kernel@gmail.com>
+This reverts upstream commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e
 
-commit 8215af019040ce9182728afee9642d8fdeb17f59 upstream.
+It caused problems in the stable tree and should not have been there.
 
-Acer BIOS keeps devices state when system reboot, but reset to default
-device states (Wlan on, Bluetooth off, wwan on) if system cold boot.
-That means BIOS's initial state is not always real persistence.
-
-So, removed rfkill_init_sw_state because it sets initial state to
-persistence then replicate to other new killswitch when rfkill-input
-enabled.
-After removed it, acer-wmi set initial soft-block state after rfkill
-register, and doesn't allow set_block until rfkill initial finished.
-
-Reference: bko#31002
-	https://bugzilla.kernel.org/show_bug.cgi?id=31002
-
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: OldÅich JedliÄka <oldium.pro@seznam.cz>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Chun-Yi Lee <jlee@novell.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/acer-wmi.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ arch/x86/kernel/head64.c |    3 +++
+ arch/x86/kernel/setup.c  |    5 -----
+ arch/x86/mm/init.c       |   19 +++++++++++++++++++
+ arch/x86/mm/init_64.c    |   11 +++++------
+ 4 files changed, 27 insertions(+), 11 deletions(-)
 
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -222,6 +222,7 @@ struct acer_debug {
- static struct rfkill *wireless_rfkill;
- static struct rfkill *bluetooth_rfkill;
- static struct rfkill *threeg_rfkill;
-+static bool rfkill_inited;
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -77,6 +77,9 @@ void __init x86_64_start_kernel(char * r
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
  
- /* Each low-level interface must define at least some of the following */
- struct wmi_interface {
-@@ -1161,9 +1162,13 @@ static int acer_rfkill_set(void *data, b
++	/* Cleanup the over mapped high alias */
++	cleanup_highmap();
++
+ 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+ 
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -297,9 +297,6 @@ static void __init init_gbpages(void)
+ static inline void init_gbpages(void)
  {
- 	acpi_status status;
- 	u32 cap = (unsigned long)data;
--	status = set_u32(!blocked, cap);
--	if (ACPI_FAILURE(status))
--		return -ENODEV;
+ }
+-static void __init cleanup_highmap(void)
+-{
+-}
+ #endif
+ 
+ static void __init reserve_brk(void)
+@@ -925,8 +922,6 @@ void __init setup_arch(char **cmdline_p)
+ 	 */
+ 	reserve_brk();
+ 
+-	cleanup_highmap();
+-
+ 	memblock.current_limit = get_max_mapped();
+ 	memblock_x86_fill();
+ 
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -276,6 +276,25 @@ unsigned long __init_refok init_memory_m
+ 	load_cr3(swapper_pg_dir);
+ #endif
+ 
++#ifdef CONFIG_X86_64
++	if (!after_bootmem && !start) {
++		pud_t *pud;
++		pmd_t *pmd;
 +
-+	if (rfkill_inited) {
-+		status = set_u32(!blocked, cap);
-+		if (ACPI_FAILURE(status))
-+			return -ENODEV;
++		mmu_cr4_features = read_cr4();
++
++		/*
++		 * _brk_end cannot change anymore, but it and _end may be
++		 * located on different 2M pages. cleanup_highmap(), however,
++		 * can only consider _end when it runs, so destroy any
++		 * mappings beyond _brk_end here.
++		 */
++		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
++		pmd = pmd_offset(pud, _brk_end - 1);
++		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
++			pmd_clear(pmd);
 +	}
-+
- 	return 0;
- }
++#endif
+ 	__flush_tlb_all();
  
-@@ -1187,14 +1192,16 @@ static struct rfkill *acer_rfkill_regist
- 		return ERR_PTR(-ENOMEM);
+ 	if (!after_bootmem && e820_table_end > e820_table_start)
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -51,7 +51,6 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
+-#include <asm/setup.h>
  
- 	status = get_device_status(&state, cap);
--	if (ACPI_SUCCESS(status))
--		rfkill_init_sw_state(rfkill_dev, !state);
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+@@ -294,18 +293,18 @@ void __init init_extra_mapping_uc(unsign
+  * to the compile time generated pmds. This results in invalid pmds up
+  * to the point where we hit the physaddr 0 mapping.
+  *
+- * We limit the mappings to the region from _text to _brk_end.  _brk_end
+- * is rounded up to the 2MB boundary. This catches the invalid pmds as
++ * We limit the mappings to the region from _text to _end.  _end is
++ * rounded up to the 2MB boundary. This catches the invalid pmds as
+  * well, as they are located before _text:
+  */
+ void __init cleanup_highmap(void)
+ {
+ 	unsigned long vaddr = __START_KERNEL_map;
+-	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
+-	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
++	unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
+ 	pmd_t *pmd = level2_kernel_pgt;
++	pmd_t *last_pmd = pmd + PTRS_PER_PMD;
  
- 	err = rfkill_register(rfkill_dev);
- 	if (err) {
- 		rfkill_destroy(rfkill_dev);
- 		return ERR_PTR(err);
- 	}
-+
-+	if (ACPI_SUCCESS(status))
-+		rfkill_set_sw_state(rfkill_dev, !state);
-+
- 	return rfkill_dev;
- }
- 
-@@ -1229,6 +1236,8 @@ static int acer_rfkill_init(struct devic
- 		}
- 	}
- 
-+	rfkill_inited = true;
-+
- 	schedule_delayed_work(&acer_rfkill_work, round_jiffies_relative(HZ));
- 
- 	return 0;
+-	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
++	for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
+ 		if (pmd_none(*pmd))
+ 			continue;
+ 		if (vaddr < (unsigned long) _text || vaddr > end)
 
 
