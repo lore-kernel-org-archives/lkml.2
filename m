@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab1DLQx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:53:28 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:64252 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab1DLQx1 (ORCPT
+	id S1758197Ab1DLQzC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:55:02 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40183 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754684Ab1DLQzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:53:27 -0400
-Message-ID: <4DA48383.4000604@linaro.org>
-Date: Tue, 12 Apr 2011 10:53:23 -0600
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Tue, 12 Apr 2011 12:55:00 -0400
+Date: Tue, 12 Apr 2011 12:54:55 -0400
+From: "hch@infradead.org" <hch@infradead.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "hch@infradead.org" <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, NeilBrown <neilb@suse.de>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110412165455.GB23764@infradead.org>
+References: <20110411223623.4278fad1@notabene.brown>
+ <4DA2F8AD.1060605@fusionio.com>
+ <20110412011255.GA29236@infradead.org>
+ <4DA40F0E.1070903@fusionio.com>
+ <20110412122248.GC31057@dastard>
+ <4DA4456F.3070301@fusionio.com>
+ <20110412124134.GD31057@dastard>
+ <4DA44C86.3090305@fusionio.com>
+ <20110412164417.GA13890@infradead.org>
+ <4DA482B1.5000005@fusionio.com>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality
- V2
-References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org> <BANLkTin7DEWJt4PrBp85disqXd9ZBG3Z_g@mail.gmail.com>
-In-Reply-To: <BANLkTin7DEWJt4PrBp85disqXd9ZBG3Z_g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA482B1.5000005@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-12 07:44 AM, Ohad Ben-Cohen wrote:
-> On Mon, Apr 11, 2011 at 6:24 PM,<mathieu.poirier@linaro.org>  wrote:
->> From: Mathieu J. Poirier<mathieu.poirier@linaro.org>
->>
->> This is the second spin on STE's Hsem driver that is implemented
->> through the hwspinlock scheme.  More specifically:
->>
->>   More comments have been added in the code.
->>   Cleanup of included header files.
->>   One of the original contributor's name corrected.
->>   Calls to 'pm_runtime_disable'restored.
->>
->> Signed-off-by: Mathieu Poirier<mathieu.poirier@linaro.org>
->> ---
-> Looks good, but please revise the commit log (think of a random reader
-> who tries to understand what does this patch do, and is less
-> interested to hear about its revisions' history).
->
-> Otherwise,
->
-> Acked-by: Ohad Ben-Cohen<ohad@wizery.com>
->
-> (btw I assume the "PATCH 1/2" in the subject is just a typo, and
-> there's no missing "PATCH 2/2")
->
-Ohad,
+On Tue, Apr 12, 2011 at 06:49:53PM +0200, Jens Axboe wrote:
+> I realize that, in fact it's already safe as long as you pass in 'true'
+> for __blk_run_queue(). Before I had rewritten it to move the running
+> out, so that makes the trick a little difficult. This afternoon I also
+> tested it and saw no noticable difference, but I'll probably just do it
+> anyway as it makes sense.
 
-I will revise the commit log and send a V3.  The PATCH 1/2 was generated 
-by send-email even if there was only one patch file...  But you are 
-correct, there was only just one patch.
+We still need the lock for __elv_add_request, so we'll need to keep the
+logic anyway.  But splitting out the just queue to kblockd case from
+__blk_run_queue and giving the latter a sane prototype still sounds
+like a good idea to me.
 
-Mathieu.
+Btw, now that we don't call the request_fn directly any more and thus
+can't block, can the unplugging be moved into the preempt notifiers?
