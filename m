@@ -1,128 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab1DLRyK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 13:54:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56668 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab1DLRyI (ORCPT
+	id S1756191Ab1DLRyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 13:54:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:32890 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755402Ab1DLRyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 13:54:08 -0400
+	Tue, 12 Apr 2011 13:54:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=g+GVsiRRZmtPte64SJNhUme4+JwCgEtQVS6Zab6uP0FpVvJ5nRMKgPLjIEy3r5vTIY
-         LBiCiTRp7P0hxlbwVk+sYSVESEcEJJioiIQOuFsc2D8dTD+Mc3lBeOo9IWkWqFsuPYAl
-         uytpxjFyyr5TsudYJdPJJKh+r1zYmlo4kA3HU=
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=HBNZ+gxuGAjkuqYGZDmMLeYbi1PmkrjNDPXxskLWx565QHnigiFkw2dh5yeQKaRs7w
+         w4vuM/nE5BNvXaph8qD+fzN3Wxs3F4CYWW11wqa52fuf76MDJEERz4o7re7IUeaMTvXo
+         tFjTTj4rfOGelBe7qqK6gWsjCnf/8gcm6F8os=
+From: "=?UTF-8?q?Stefan=20Br=C3=A4hler?=" <stefan.braehler@googlemail.com>
+To: gregkh@suse.de
+Cc: dilinger@queued.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Stefan=20Br=C3=A4hler?= <Stefan.Braehler@gmail.com>
+Subject: [PATCH] staging: olpc_dcon: fix space and coding issues
+Date: Tue, 12 Apr 2011 19:53:31 +0200
+Message-Id: <1302630811-15750-1-git-send-email-Stefan.Braehler@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-Date: Tue, 12 Apr 2011 12:54:06 -0500
-Message-ID: <BANLkTikTVuV9eH4GiLDs0DewGJXo_3daeg@mail.gmail.com>
-Subject: oops in radeon_ddc_get_modes on first boot of rc3
-From: Steve French <smfrench@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI - Radeon Oops occurred on my first boot of the 2.6.39-rc3 kernel
-(the system booted fine with 2.6.38-rcs) a few minutes ago.  x also
-would not start.  On the next reboot I did not get the oops.
+Fix the whitespace and coding style issues in olpc_dcon metioned by
+checkpatch.
 
-[   23.831830] BUG: unable to handle kernel NULL pointer dereference
-at 000000000000008e
-[   23.831867] IP: [<ffffffffa0158ff6>]
-drm_mode_connector_update_edid_property+0x76/0x1c0 [drm]
-[   23.831918] PGD 156de7067 PUD 156de6067 PMD 0
-[   23.831949] Oops: 0000 [#1] SMP
-[   23.831972] last sysfs file:
-/sys/devices/virtual/wmi/98479A64-33F5-4E33-A707-8E251EBBC3A1/uevent
-[   23.832005] CPU 0
-[   23.832016] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat
-nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT
-xt_tcpudp iptable_filter ip_tables x_tables bridge stp
-snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep
-snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss
-snd_seq_midi snd_rawmidi arc4 snd_seq_midi_event radeon(+) fbcon
-tileblit font bitblit snd_seq softcursor joydev snd_timer i915 iwlagn
-ttm mac80211 snd_seq_device pcmcia drm_kms_helper snd lp drm uvcvideo
-cfg80211 sdhci_pci soundcore psmouse serio_raw parport videodev
-v4l2_compat_ioctl32 intel_agp snd_page_alloc yenta_socket tpm_tis tpm
-sdhci tpm_bios intel_gtt video ahci libahci e1000e [last unloaded:
-kvm]
-[   23.832494]
-[   23.832505] Pid: 473, comm: modprobe Not tainted 2.6.39-rc3-custom+
-#122 LENOVO 4061BL2/4061BL2
-[   23.832550] RIP: 0010:[<ffffffffa0158ff6>]  [<ffffffffa0158ff6>]
-drm_mode_connector_update_edid_property+0x76/0x1c0 [drm]
-[   23.832600] RSP: 0018:ffff880156a49978  EFLAGS: 00010202
-[   23.832623] RAX: 0000000000000010 RBX: ffff880156ac2000 RCX: 0000000000000000
-[   23.832650] RDX: 0000000000000000 RSI: 0000000000000010 RDI: ffff880156ac2000
-[   23.832677] RBP: ffff880156a499b8 R08: 0000000000000100 R09: 0000000000000001
-[   23.832704] R10: 0000000000000632 R11: 0000000000000000 R12: 0000000000000000
-[   23.832730] R13: 0000000000000010 R14: ffff880156a5c000 R15: ffff880156a5c000
-[   23.832758] FS:  00007f223b7ec700(0000) GS:ffff88015bc00000(0000)
-knlGS:0000000000000000
-[   23.832792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   23.832814] CR2: 000000000000008e CR3: 00000001577c9000 CR4: 00000000000406f0
-[   23.832841] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   23.832867] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   23.832895] Process modprobe (pid: 473, threadinfo
-ffff880156a48000, task ffff8801574f4410)
-[   23.832925] Stack:
-[   23.832936]  ffff880157aa8000 0000000000000000 ffffffffa044bb00
-ffff880156ac2000
-[   23.832979]  ffff880157aa8000 0000000000000000 ffffffffa044bb00
-ffff880156a5c000
-[   23.833022]  ffff880156a499d8 ffffffffa03b47f7 ffff880156ac2000
-ffff880156ac2000
-[   23.833065] Call Trace:
-[   23.833103]  [<ffffffffa03b47f7>] +0x57/0x120 [radeon]
-[   23.833147]  [<ffffffffa03addda>] radeon_lvds_get_modes+0x2a/0x280 [radeon]
-[   23.833178]  [<ffffffffa0202bbc>]
-drm_helper_probe_single_connector_modes+0xdc/0x380 [drm_kms_helper]
-[   23.833215]  [<ffffffff812d34f2>] ? fb_get_options+0x22/0x110
-[   23.833240]  [<ffffffffa020159b>]
-drm_fb_helper_initial_config+0x2ab/0x780 [drm_kms_helper]
-[   23.833274]  [<ffffffff81135874>] ? __kmalloc+0x134/0x1d0
-[   23.833297]  [<ffffffffa0200639>] ? drm_fb_helper_init+0x119/0x210
-[drm_kms_helper]
-[   23.833327]  [<ffffffff81135654>] ? kmem_cache_alloc_trace+0xc4/0x110
-[   23.833368]  [<ffffffffa03bb677>] radeon_fbdev_init+0xb7/0x100 [radeon]
-[   23.833410]  [<ffffffffa03b5198>] radeon_modeset_init+0x558/0x910 [radeon]
-[   23.833456]  [<ffffffffa042125a>] ? radeon_acpi_init+0x8a/0xc0 [radeon]
-[   23.833496]  [<ffffffffa038df38>] radeon_driver_load_kms+0xf8/0x170 [radeon]
-[   23.833532]  [<ffffffffa0151610>] drm_get_pci_dev+0x190/0x2b0 [drm]
-[   23.833558]  [<ffffffff81135654>] ? kmem_cache_alloc_trace+0xc4/0x110
-[   23.833598]  [<ffffffffa0421362>] radeon_pci_probe+0xb4/0x30e [radeon]
-[   23.833628]  [<ffffffff812bad5f>] local_pci_probe+0x5f/0xd0
-[   23.833652]  [<ffffffff812bbf08>] pci_device_probe+0x88/0xb0
-[   23.833679]  [<ffffffff81360aca>] ? driver_sysfs_add+0x7a/0xb0
-[   23.833705]  [<ffffffff81360c26>] driver_probe_device+0x96/0x1c0
-[   23.833732]  [<ffffffff81360deb>] __driver_attach+0x9b/0xa0
-[   23.833755]  [<ffffffff81360d50>] ? driver_probe_device+0x1c0/0x1c0
-[   23.833780]  [<ffffffff81360048>] bus_for_each_dev+0x68/0x90
-[   23.833805]  [<ffffffff81360a4e>] driver_attach+0x1e/0x20
-[   23.833827]  [<ffffffff8136032d>] bus_add_driver+0xcd/0x270
-[   23.833851]  [<ffffffff81361480>] driver_register+0x80/0x150
-[   23.833878]  [<ffffffff812bc196>] __pci_register_driver+0x56/0xd0
-[   23.833903]  [<ffffffff81569725>] ? printk+0x41/0x44
-[   23.833932]  [<ffffffffa015184a>] drm_pci_init+0x11a/0x130 [drm]
-[   23.833960]  [<ffffffffa01a4000>] ? 0xffffffffa01a3fff
-[   23.833995]  [<ffffffffa01a40e7>] radeon_init+0xe7/0xe9 [radeon]
-[   23.834024]  [<ffffffff81002043>] do_one_initcall+0x43/0x190
-[   23.834051]  [<ffffffff81098e7b>] sys_init_module+0xbb/0x200
-[   23.835843]  [<ffffffff81574542>] system_call_fastpath+0x16/0x1b
-[   23.837627] Code: 89 e7 48 89 42 08 48 89 10 48 b8 00 01 10 00 00
-00 ad de 49 89 44 24 08 4d 89 7c 24 10 e8 13 d3 fd e0 4d 85 ed 0f 84
-f2 00 00 00
-[   23.837826]  0f b6 4d 7e 4c 8b 3b be d0 80 00 00 83 c1 01 c1 e1 07 48 63
-[   23.840004] RIP  [<ffffffffa0158ff6>]
-drm_mode_connector_update_edid_property+0x76/0x1c0 [drm]
-[   23.840004]  RSP <ffff880156a49978>
-[   23.840004] CR2: 000000000000008e
-[   23.847502] ---[ end trace 34ab89fdff52c124 ]---
+Signed-off-by: Stefan Brähler <Stefan.Braehler@gmail.com>
+---
+ drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |    2 +-
+ drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |   22 ++++++++++------------
+ 2 files changed, 11 insertions(+), 13 deletions(-)
 
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+index b5d21f6..f4e9747 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+@@ -152,7 +152,7 @@ static void dcon_wiggle_xo_1(void)
+ 	 * According to the cs5536 spec, to set GPIO14 to SMB_CLK we must
+ 	 * simultaneously set AUX1 IN/OUT to GPIO14; ditto for SMB_DATA and
+ 	 * GPIO15.
+- 	 */
++	 */
+ 	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_VAL);
+ 	cs5535_gpio_set(OLPC_GPIO_SMB_DATA, GPIO_OUTPUT_VAL);
+ 	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_ENABLE);
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+index 7aa9b1a..a6a6cf2 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+@@ -24,9 +24,8 @@
+ #include "olpc_dcon.h"
+ 
+ /* Hardware setup on the XO 1.5:
+- * 	DCONLOAD connects to
+- *		VX855_GPIO1 (not SMBCK2)
+- * 	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused in driver
++ *	DCONLOAD connects to VX855_GPIO1 (not SMBCK2)
++ *	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused in driver
+  *	DCONSTAT0 connects to VX855_GPI10 (not SSPISDI)
+  *	DCONSTAT1 connects to VX855_GPI11 (not nSSPISS)
+  *	DCONIRQ connects to VX855_GPIO12
+@@ -34,9 +33,9 @@
+  *	DCONSMBCLK connects to VX855 graphics CRTSPCLK
+  */
+ 
+-#define VX855_GENL_PURPOSE_OUTPUT 0x44c // PMIO_Rx4c-4f
+-#define VX855_GPI_STATUS_CHG 0x450  // PMIO_Rx50
+-#define VX855_GPI_SCI_SMI 0x452  // PMIO_Rx52
++#define VX855_GENL_PURPOSE_OUTPUT 0x44c /* PMIO_Rx4c-4f */
++#define VX855_GPI_STATUS_CHG 0x450  /* PMIO_Rx50 */
++#define VX855_GPI_SCI_SMI 0x452  /* PMIO_Rx52 */
+ #define BIT_GPIO12 0x40
+ 
+ #define PREFIX "OLPC DCON:"
+@@ -63,8 +62,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
+ 	unsigned int irq;
+ 	u_int8_t tmp;
+ 	struct pci_dev *pdev;
+-	
+-	
++
+ 	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
+ 			      PCI_DEVICE_ID_VIA_VX855, NULL);
+ 	if (!pdev) {
+@@ -149,7 +147,7 @@ static void dcon_wiggle_xo_1_5(void)
+ 	 * state machine to reset to a (sane) initial state.  Mitch Bradley
+ 	 * did some testing and discovered that holding for 16 SMB_CLK cycles
+ 	 * worked a lot more reliably, so that's what we do here.
+- 	 */
++	 */
+ 	set_i2c_line(1, 1);
+ 
+ 	for (x = 0; x < 16; x++) {
+@@ -172,13 +170,13 @@ static void dcon_set_dconload_xo_1_5(int val)
+ static u8 dcon_read_status_xo_1_5(void)
+ {
+ 	u8 status;
+-	
++
+ 	if (!dcon_was_irq())
+ 		return -1;
+ 
+-	// i believe this is the same as "inb(0x44b) & 3"
++	/* i believe this is the same as "inb(0x44b) & 3" */
+ 	status = gpio_get_value(VX855_GPI(10));
+-	status |= gpio_get_value(VX855_GPI(11)) << 1; 
++	status |= gpio_get_value(VX855_GPI(11)) << 1;
+ 
+ 	dcon_clear_irq();
+ 
 -- 
-Thanks,
+1.7.3.4
 
-Steve
