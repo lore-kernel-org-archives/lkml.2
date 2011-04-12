@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab1DLOhj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:37:39 -0400
-Received: from kroah.org ([198.145.64.141]:57371 "EHLO coco.kroah.org"
+	id S932091Ab1DLO6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:58:25 -0400
+Received: from kroah.org ([198.145.64.141]:57409 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756812Ab1DLOhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
-Message-Id: <20110412143548.900956204@clark.kroah.org>
+	id S1756968Ab1DLOhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:49 2011
+Message-Id: <20110412143549.515762436@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:33:58 -0700
+Date: Tue, 12 Apr 2011 07:34:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [009/105] sound/oss/opl3: validate voice and channel indexes
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [015/105] eCryptfs: Unlock page in write_begin error path
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-commit 4d00135a680727f6c3be78f8befaac009030e4df upstream.
+commit 50f198ae16ac66508d4b8d5a40967a8507ad19ee upstream.
 
-User-controllable indexes for voice and channel values may cause reading
-and writing beyond the bounds of their respective arrays, leading to
-potentially exploitable memory corruption.  Validate these indexes.
+Unlock the page in error path of ecryptfs_write_begin(). This may
+happen, for example, if decryption fails while bring the page
+up-to-date.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/oss/opl3.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ fs/ecryptfs/mmap.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/oss/opl3.c
-+++ b/sound/oss/opl3.c
-@@ -849,6 +849,10 @@ static int opl3_load_patch(int dev, int
- 
- static void opl3_panning(int dev, int voice, int value)
- {
-+
-+	if (voice < 0 || voice >= devc->nr_voice)
-+		return;
-+
- 	devc->voc[voice].panning = value;
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -374,6 +374,11 @@ static int ecryptfs_write_begin(struct f
+ 	    && (pos != 0))
+ 		zero_user(page, 0, PAGE_CACHE_SIZE);
+ out:
++	if (unlikely(rc)) {
++		unlock_page(page);
++		page_cache_release(page);
++		*pagep = NULL;
++	}
+ 	return rc;
  }
- 
-@@ -1066,8 +1070,15 @@ static int opl3_alloc_voice(int dev, int
- 
- static void opl3_setup_voice(int dev, int voice, int chn)
- {
--	struct channel_info *info =
--	&synth_devs[dev]->chn_info[chn];
-+	struct channel_info *info;
-+
-+	if (voice < 0 || voice >= devc->nr_voice)
-+		return;
-+
-+	if (chn < 0 || chn > 15)
-+		return;
-+
-+	info = &synth_devs[dev]->chn_info[chn];
- 
- 	opl3_set_instr(dev, voice, info->pgm_num);
  
 
 
