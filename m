@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab1DLWQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 18:16:18 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53091 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541Ab1DLWQQ convert rfc822-to-8bit (ORCPT
+	id S932710Ab1DLWRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 18:17:35 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33626
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932541Ab1DLWRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 18:16:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikRH0q3RyP_CORXjAX34-br4pqf=A@mail.gmail.com>
-References: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
-	<BANLkTimJLcfsYAhV+3=-F14YZvX12-yXgA@mail.gmail.com>
-	<20110412182809.GA1218@redhat.com>
-	<BANLkTinb1gXcZug5ApmmrudWLY7PwxNf-A@mail.gmail.com>
-	<20110412192059.GA14360@redhat.com>
-	<BANLkTimJgx_x=0bpBDWaUkJgZPYs3_iwsg@mail.gmail.com>
-	<BANLkTimBegMUq2fX67o2YnoATWG-NDbKgA@mail.gmail.com>
-	<BANLkTikoDELrA-RtA9BLm64mfoPgdADR0Q@mail.gmail.com>
-	<BANLkTi=HyK+8DhJS3db0j2fefdOjwVMN3w@mail.gmail.com>
-	<BANLkTinMAGmdEDviRwZ1-mxrAAe_WK5jvg@mail.gmail.com>
-	<BANLkTinjGkbBMUo7MQ2Dg2yDwQ932qJ7rQ@mail.gmail.com>
-	<BANLkTikRH0q3RyP_CORXjAX34-br4pqf=A@mail.gmail.com>
-Date: Wed, 13 Apr 2011 00:16:15 +0200
-Message-ID: <BANLkTinp6gaPrjQF6eXk4WHa653GShDuYQ@mail.gmail.com>
-Subject: Re: Processes hang in an unkillable state
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 12 Apr 2011 18:17:34 -0400
+Date: Tue, 12 Apr 2011 15:16:59 -0700 (PDT)
+Message-Id: <20110412.151659.15244967.davem@davemloft.net>
+To: dwalter@barracuda.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ipv6: RTA_PREFSRC support for ipv6 route source
+ address selection
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110412.150511.35038648.davem@davemloft.net>
+References: <1302505409.8923.2.camel@localhost>
+	<20110412.150511.35038648.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3CMHipO008810
 
-On Wed, Apr 13, 2011 at 12:12 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Apr 12, 2011 at 2:59 PM, Robert ÅšwiÄ™cki <robert@swiecki.net> wrote:
->>
->> Compiling now with CONFIG_OPTIMIZE_SIZE and vma dump code. Will
->> probably post some results tomorrow.
->
-> .. and if you've added my patch to the stack growth case, hopefully
-> there won't _be_ any results ;)
+From: David Miller <davem@davemloft.net>
+Date: Tue, 12 Apr 2011 15:05:11 -0700 (PDT)
 
-I can, depending in whether you'd like to see vma dump results for
-this case or not. Let me know, it's still cooooompiling :).
+> From: Daniel Walter <dwalter@barracuda.com>
+> Date: Mon, 11 Apr 2011 09:03:29 +0200
+> 
+>> ï»¿[ipv6] Add support for RTA_PREFSRC
+>> 
+>> This patch allows a user to select the preferred source address
+>> for a specific IPv6-Route. It can be set via a netlink message
+>> setting RTA_PREFSRC to a valid IPv6 address which must be
+>> up on the device the route will be bound to.
+>> 
+>> 
+>> Signed-off-by: Daniel Walter <dwalter@barracuda.com>
+> 
+> Ok, I can live with this, applied, thanks!
 
--- 
-Robert ÅšwiÄ™cki
+Sorry, I had to revert.
+
+Please fix this warning, test your patch, and resubmit it.
+
+net/ipv6/ip6_output.c: In function â€˜ip6_dst_lookup_tailâ€™:
+net/ipv6/ip6_output.c:936: warning: passing argument 3 of â€˜ip6_route_get_saddrâ€™ from incompatible pointer type
+include/net/ip6_route.h:87: note: expected â€˜struct in6_addr *â€™ but argument is of type â€˜struct dst_entry **â€™
+
+Thanks.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
