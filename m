@@ -1,82 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab1DLG0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 02:26:21 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47826
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754504Ab1DLG0U (ORCPT
+	id S932085Ab1DLGbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 02:31:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53650 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753122Ab1DLGbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 02:26:20 -0400
-Date: Mon, 11 Apr 2011 23:25:43 -0700 (PDT)
-Message-Id: <20110411.232543.193698090.davem@davemloft.net>
-To: mingo@elte.hu
-Cc: sfr@canb.auug.org.au, tglx@linutronix.de, hpa@zytor.com,
-        peterz@infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110412062002.GA31050@elte.hu>
-References: <20110412140040.3020ef55.sfr@canb.auug.org.au>
-	<20110412062002.GA31050@elte.hu>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 12 Apr 2011 02:31:39 -0400
+Date: Mon, 11 Apr 2011 23:33:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: mm: convert vma->vm_flags to 64bit
+Message-Id: <20110411233358.dd400e59.akpm@linux-foundation.org>
+In-Reply-To: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
+References: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@elte.hu>
-Date: Tue, 12 Apr 2011 08:20:02 +0200
+On Tue, 12 Apr 2011 15:10:56 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
 > 
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Benjamin, Hugh, I hope to add your S-O-B to this one because you are original author. 
+> Can I do?
 > 
->> Hi all,
->> 
->> After merging the final tree, today's linux-next build (sparc64 defconfig)
->> failed like this:
->> 
->> kernel/sched.c:7140: error: 'cpu_coregroup_mask' undeclared here (not in a function)
->> 
->> Caused by commit 2c402dc3bb50 ("sched: Unify the sched_domain build
->> functions").  On sparc64, cpu_coregroup_mask is a #define, not a function.
->> 
->> I applied tha patch below (idea stolen from s390) whcih could probably be
->> better.
->> 
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Tue, 12 Apr 2011 13:51:32 +1000
->> Subject: [PATCH] sched: fix sparc64 for sched_domain changes
->> 
->> Fixes this compile error:
->> 
->> kernel/sched.c:7140: error: 'cpu_coregroup_mask' undeclared here (not in a function)
->> 
->> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> ---
->>  arch/sparc/include/asm/topology_64.h |    6 +++++-
->>  1 files changed, 5 insertions(+), 1 deletions(-)
->> 
->> diff --git a/arch/sparc/include/asm/topology_64.h b/arch/sparc/include/asm/topology_64.h
->> index 1c79f32..16f477d 100644
->> --- a/arch/sparc/include/asm/topology_64.h
->> +++ b/arch/sparc/include/asm/topology_64.h
->> @@ -65,6 +65,10 @@ static inline int pcibus_to_node(struct pci_bus *pbus)
->>  #define smt_capable()				(sparc64_multi_core)
->>  #endif /* CONFIG_SMP */
->>  
->> -#define cpu_coregroup_mask(cpu)			(&cpu_core_map[cpu])
->> +extern cpumask_t cpu_core_map[NR_CPUS];
->> +static inline const struct cpumask *cpu_coregroup_mask(int cpu)
->> +{
->> +        return &cpu_core_map[cpu];
->> +}
+> Paul, Russell, This patch modifies arm and sh code a bit. I don't think
+> they are risky change. but I'm really glad if you see it.
 > 
-> Dave, if this change is fine with you i'd like to queue it up in 
-> tip:sched/domains.
+> 
+> Note: I confirmed x86, power and nommu-arm cross compiler build and
+> I've got no warning/error.
+> 
+> 
+> 
+> >From d5a0d1c265e4caccb9ff5978c615f74019b65453 Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Tue, 12 Apr 2011 14:00:42 +0900
+> Subject: [PATCH] mm: convert vma->vm_flags to 64bit
+> 
+> For years, powerpc people repeatedly request us to convert vm_flags
+> to 64bit. Because now it has no room to store an addional powerpc
+> specific flags.
+> 
+> Here is previous discussion logs.
+> 
+> 	http://lkml.org/lkml/2009/10/1/202
+> 	http://lkml.org/lkml/2010/4/27/23
+> 
+> But, unforunately they didn't get merged. This is 3rd trial.
+> I've merged previous two posted patches and adapted it for
+> latest tree.
+> 
+> Of cource, this patch has no functional change.
 
-Yep, it's fine:
+That's a bit sad, but all 32 bits are used up, so we'll presumably need
+this change pretty soon anyway.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+How the heck did we end up using 32 flags??
+
+> @@ -217,7 +217,7 @@ vivt_flush_cache_range(struct vm_area_struct *vma, unsigned long start, unsigned
+>  {
+>  	if (cpumask_test_cpu(smp_processor_id(), mm_cpumask(vma->vm_mm)))
+>  		__cpuc_flush_user_range(start & PAGE_MASK, PAGE_ALIGN(end),
+> -					vma->vm_flags);
+> +					(unsigned long)vma->vm_flags);
+>  }
+
+I'm surprised this change (and similar) are needed?
+
+Is it risky?  What happens if we add yet another vm_flags bit and
+__cpuc_flush_user_range() wants to use it?  I guess when that happens,
+__cpuc_flush_user_range() needs to be changed to take a ull.
+
+> -static inline unsigned long arch_calc_vm_prot_bits(unsigned long prot)
+> +static inline unsigned long long arch_calc_vm_prot_bits(unsigned long prot)
+>  {
+> -	return (prot & PROT_SAO) ? VM_SAO : 0;
+> +	return (prot & PROT_SAO) ? VM_SAO : 0ULL;
+>  }
+
+The patch does a lot of adding "ULL" like this.  But I don't think any
+of it is needed - won't the compiler do the right thing, without
+warning?
+
+> --- a/arch/x86/mm/hugetlbpage.c
+> +++ b/arch/x86/mm/hugetlbpage.c
+> @@ -26,8 +26,8 @@ static unsigned long page_table_shareable(struct vm_area_struct *svma,
+>  	unsigned long s_end = sbase + PUD_SIZE;
+>  
+>  	/* Allow segments to share if only one is marked locked */
+> -	unsigned long vm_flags = vma->vm_flags & ~VM_LOCKED;
+> -	unsigned long svm_flags = svma->vm_flags & ~VM_LOCKED;
+> +	unsigned long long vm_flags = vma->vm_flags & ~VM_LOCKED;
+> +	unsigned long long svm_flags = svma->vm_flags & ~VM_LOCKED;
+
+hm, on second thoughts it is safer to add the ULL when we're doing ~ on
+the constants.
+
+>  static inline int private_mapping_ok(struct vm_area_struct *vma)
+>  {
+> -	return vma->vm_flags & VM_MAYSHARE;
+> +	return !!(vma->vm_flags & VM_MAYSHARE);
+>  }
+
+Fair enough.
+
+> @@ -67,55 +67,55 @@ extern unsigned int kobjsize(const void *objp);
+>  /*
+>   * vm_flags in vm_area_struct, see mm_types.h.
+>   */
+> -#define VM_READ		0x00000001	/* currently active flags */
+> -#define VM_WRITE	0x00000002
+> -#define VM_EXEC		0x00000004
+> -#define VM_SHARED	0x00000008
+> +#define VM_READ		0x00000001ULL	/* currently active flags */
+> +#define VM_WRITE	0x00000002ULL
+> +#define VM_EXEC		0x00000004ULL
+> +#define VM_SHARED	0x00000008ULL
+>  
+>  /* mprotect() hardcodes VM_MAYREAD >> 4 == VM_READ, and so for r/w/x bits. */
+> -#define VM_MAYREAD	0x00000010	/* limits for mprotect() etc */
+> -#define VM_MAYWRITE	0x00000020
+> -#define VM_MAYEXEC	0x00000040
+> -#define VM_MAYSHARE	0x00000080
+> +#define VM_MAYREAD	0x00000010ULL	/* limits for mprotect() etc */
+> +#define VM_MAYWRITE	0x00000020ULL
+> +#define VM_MAYEXEC	0x00000040ULL
+> +#define VM_MAYSHARE	0x00000080ULL
+>  
+> -#define VM_GROWSDOWN	0x00000100	/* general info on the segment */
+> +#define VM_GROWSDOWN	0x00000100ULL	/* general info on the segment */
+>  #if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
+> -#define VM_GROWSUP	0x00000200
+> +#define VM_GROWSUP	0x00000200ULL
+>  #else
+> -#define VM_GROWSUP	0x00000000
+> -#define VM_NOHUGEPAGE	0x00000200	/* MADV_NOHUGEPAGE marked this vma */
+> +#define VM_GROWSUP	0x00000000ULL
+> +#define VM_NOHUGEPAGE	0x00000200ULL	/* MADV_NOHUGEPAGE marked this vma */
+>  #endif
+> -#define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+> -#define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+> +#define VM_PFNMAP	0x00000400ULL	/* Page-ranges managed without "struct page", just pure PFN */
+> +#define VM_DENYWRITE	0x00000800ULL	/* ETXTBSY on write attempts.. */
+>  
+> -#define VM_EXECUTABLE	0x00001000
+> -#define VM_LOCKED	0x00002000
+> -#define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+> +#define VM_EXECUTABLE	0x00001000ULL
+> +#define VM_LOCKED	0x00002000ULL
+> +#define VM_IO           0x00004000ULL	/* Memory mapped I/O or similar */
+
+A problem with this patch is that there might be unconverted code,
+either in-tree or out-of-tree or soon-to-be-in-tree.  If that code
+isn't 64-bit aware then we'll be adding subtle bugs which take a long
+time to discover.
+
+One way to detect those bugs nice and quickly might be to change some
+of all of these existing constants so they use the upper 32-bits.  But that
+will make __cpuc_flush_user_range() fail ;)
+
