@@ -1,111 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab1DLA73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 20:59:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7117 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224Ab1DLA72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 20:59:28 -0400
-Date: Tue, 12 Apr 2011 02:58:56 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Pekka Enberg <penberg@kernel.org>,
-        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        mtosatti@redhat.com, kvm@vger.kernel.org, joro@8bytes.org,
-        penberg@cs.helsinki.fi, asias.hejun@gmail.com, gorcunov@gmail.com
-Subject: Re: [ANNOUNCE] Native Linux KVM tool
-Message-ID: <20110412005856.GJ29444@random.random>
-References: <BANLkTinbCAUqaKfmKaj-7GXTh9F2if0x+Q@mail.gmail.com>
- <4D9847BC.9060906@redhat.com>
- <4D98716D.9040307@codemonkey.ws>
- <4D9873CD.3080207@redhat.com>
- <20110406093333.GB6465@elte.hu>
- <4D9E6F6E.9050709@codemonkey.ws>
- <BANLkTimEwAuL4PM9vBfogkrua-Z44AZQvg@mail.gmail.com>
- <4D9F150B.1030809@codemonkey.ws>
- <20110408192039.GJ29444@random.random>
- <20110409074009.GA25729@elte.hu>
+	id S1756420Ab1DLBAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 21:00:03 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42890 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab1DLBAB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 21:00:01 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110411141950.46d3d6da.akpm@linux-foundation.org>
+References: <20110411172004.0361.A69D9226@jp.fujitsu.com> <20110411141950.46d3d6da.akpm@linux-foundation.org>
+Message-Id: <20110412095958.43F0.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110409074009.GA25729@elte.hu>
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 12 Apr 2011 09:59:53 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 09, 2011 at 09:40:09AM +0200, Ingo Molnar wrote:
+> On Mon, 11 Apr 2011 17:19:31 +0900 (JST)
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 > 
-> * Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > Recently, Robert Mueller reported zone_reclaim_mode doesn't work
 > 
-> > [...] I thought the whole point of a native kvm tool was to go all the 
-> > paravirt way to provide max performance and maybe also depend on vhost as 
-> > much as possible.
-
-BTW, I should elaborate on the "all the paravirt way", going 100%
-paravirt isn't what I meant. I was thinking at the performance
-critical drivers mainly like storage and network. The kvm tool could
-be more hackable and evolve faster by exposing a single hardware view
-to the linux guest (using only paravirt whenever that improves
-performance, like network/storage).
-
-Whenever full emulation doesn't affect any fast path, it should be
-preferred rather than inventing new paravirt interfaces for no
-good.
-
-That for example applies first and foremost to the EPT support which
-is simpler and more optimal than any shadow paravirt pagetables. It'd
-be a dead end to do all in paravirt performance-wise. I definitely
-didn't mean any resemblance to lguest when I said full paravirt ;).
-Sorry for the confusion.
-
-> To me it's more than that: today i can use it to minimally boot test various 
-> native bzImages just by typing:
+> It's time for some nagging.  
 > 
-> 	kvm run ./bzImage
-> 
-> this will get me past most of the kernel init, up to the point where it would 
-> try to mount user-space. ( That's rather powerful to me personally, as i 
-> introduce most of my bugs to these stages of kernel bootup - and as a kernel 
-> developer i'm not alone there ;-)
-> 
-> I would be sad if i were forced to compile in some sort of paravirt support, 
-> just to be able to boot-test random native kernel images.
->
-> Really, if you check the code, serial console and timer support is not a big 
-> deal complexity-wise and it is rather useful:
+> I'm trying to work out what the user-visible effect of this problem
+> was, but it isn't described in the changelog and there is no link to
+> any report and not even a Reported-by: or a Cc: and a search for Robert
+> in linux-mm and linux-kernel turned up blank.
 
-Agree with that.
+Here.
+	http://lkml.org/lkml/2010/9/12/236
+
 
 > 
->   git pull git://github.com/penberg/linux-kvm master
+> > properly on his new NUMA server (Dual Xeon E5520 + Intel S5520UR MB).
+> > He is using Cyrus IMAPd and it's built on a very traditional
+> > single-process model.
+> > 
+> >   * a master process which reads config files and manages the other
+> >     process
+> >   * multiple imapd processes, one per connection
+> >   * multiple pop3d processes, one per connection
+> >   * multiple lmtpd processes, one per connection
+> >   * periodical "cleanup" processes.
+> > 
+> > Then, there are thousands of independent processes. The problem is,
+> > recent Intel motherboard turn on zone_reclaim_mode by default and
+> > traditional prefork model software don't work fine on it.
+> > Unfortunatelly, Such model is still typical one even though 21th
+> > century. We can't ignore them.
+> > 
+> > This patch raise zone_reclaim_mode threshold to 30. 30 don't have
+> > specific meaning. but 20 mean one-hop QPI/Hypertransport and such
+> > relatively cheap 2-4 socket machine are often used for tradiotional
+> > server as above. The intention is, their machine don't use
+> > zone_reclaim_mode.
+> > 
+> > Note: ia64 and Power have arch specific RECLAIM_DISTANCE definition.
+> > then this patch doesn't change such high-end NUMA machine behavior.
+> > 
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Acked-by: Christoph Lameter <cl@linux.com>
+> > Acked-by: David Rientjes <rientjes@google.com>
+> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  include/linux/topology.h |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/linux/topology.h b/include/linux/topology.h
+> > index b91a40e..fc839bf 100644
+> > --- a/include/linux/topology.h
+> > +++ b/include/linux/topology.h
+> > @@ -60,7 +60,7 @@ int arch_update_cpu_topology(void);
+> >   * (in whatever arch specific measurement units returned by node_distance())
+> >   * then switch on zone reclaim on boot.
+> >   */
+> > -#define RECLAIM_DISTANCE 20
+> > +#define RECLAIM_DISTANCE 30
 > 
-> So i think up to a point hardware emulation is both fun to implement (it's fun 
-> to be on the receiving end of hw calls, for a change) and a no-brainer to have 
-> from a usability POV. How far it wants to go we'll see! :-)
+> Any time we tweak a magic number to improve one platform, we risk
+> causing deterioration on another.  Do we know that this risk is low
+> with this patch?
 
-About using the kvm tool as a debugging tool I don't see the point
-though. It's very unlikely the kvm tool will ever be able to match
-qemu power and capabilities for debugging, in fact qemu will allow you
-to do basic debug of several device drivers too (e1000, IDE etc...). I
-don't really see the point of the kvm tool as a debugging tool
-considering how qemu is mature in terms of monitor memory inspection
-commands and gdbstub for that, if it's debug you're going after adding
-more features to the qemu monitor looks a better way to go.
+In last thread, Robert Mueller who bug reporter explained he is only using
+mere commodity whitebox hardware and very common workload.
+Therefore, we agreed benefit is bigger than negative. IOW, mere whitebox
+are used lots than special purpose one.
 
-The only way I see this useful is to lead it into a full performance
-direction, using paravirt whenever it saves CPU (like virtio-blk,
-vhost-net) and allow it to scale to hundred of cpus doing I/O
-simultaneously and get there faster than qemu. Now smp scaling with
-qemu-kvm driver backends hasn't been a big issue according to Avi, so
-it's not like we're under pressure from it, but clearly someday it may
-become a bigger issue and having less drivers to deal with (especially
-only having vhost-blk in userland with vhost-net already being in the
-kernel) may provide an advantage in allowing a more performance
-oriented implementation of the backends without breaking lots of
-existing and valuable full-emulated drivers.
 
-In terms of pure kernel debugging I'm afraid this will be dead end and
-for the kernel testing you describe I think qemu-kvm will work best
-already. We already have a simpler kvm support in qemu (vs qemu-kvm)
-and we don't want a third that is even slower than qemu kvm support,
-so it has to be faster than qemu-kvm or nothing IMHO :).
+
+> Also, what are we doing setting
+> 
+> 	zone_relaim_mode = 1;
+> 
+> when we have nice enumerated constants for this?  It should be
+> 
+> 	zone_relaim_mode = RECLAIM_ZONE;
+> 
+> or, pedantically but clearer:
+> 
+> 	zone_relaim_mode = RECLAIM_ZONE & !RECLAIM_WRITE & !RECLAIM_SWAP;
+
+Indeed.
+
+
+
+>From 0298eb3256bd17eb88584a90917be749bd8d2c98 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 12 Apr 2011 09:40:38 +0900
+Subject: [PATCH 2/2] mm: Don't use hardcoded constant for zone_reclaim_mode
+
+Initially, zone_reclaim_mode was introduced by commit 9eeff2395e3
+(Zone reclaim: Reclaim logic). At that time, it was 0/1 boolean
+variable.
+
+Next, commit 1b2ffb7896 (Zone reclaim: Allow modification of zone reclaim
+behavior) changed it to bitmask. But, page_alloc.c still use it as
+boolean. It is slightly harder to read.
+
+Let's convert it.
+
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ include/linux/swap.h |    5 +++++
+ mm/page_alloc.c      |    2 +-
+ mm/vmscan.c          |    5 -----
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 384eb5f..078ba25 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -266,6 +266,11 @@ extern int remove_mapping(struct address_space *mapping, struct page *page);
+ extern long vm_total_pages;
+ 
+ #ifdef CONFIG_NUMA
++#define RECLAIM_OFF 0
++#define RECLAIM_ZONE (1<<0)	/* Run shrink_inactive_list on the zone */
++#define RECLAIM_WRITE (1<<1)	/* Writeout pages during reclaim */
++#define RECLAIM_SWAP (1<<2)	/* Swap pages out during reclaim */
++
+ extern int zone_reclaim_mode;
+ extern int sysctl_min_unmapped_ratio;
+ extern int sysctl_min_slab_ratio;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e400779..be8607e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2982,7 +2982,7 @@ static void build_zonelists(pg_data_t *pgdat)
+ 		 * to reclaim pages in a zone before going off node.
+ 		 */
+ 		if (distance > RECLAIM_DISTANCE)
+-			zone_reclaim_mode = 1;
++			zone_reclaim_mode = RECLAIM_ZONE;
+ 
+ 		/*
+ 		 * We don't want to pressure a particular node.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 0c5a3d6..019e00c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2893,11 +2893,6 @@ module_init(kswapd_init)
+  */
+ int zone_reclaim_mode __read_mostly;
+ 
+-#define RECLAIM_OFF 0
+-#define RECLAIM_ZONE (1<<0)	/* Run shrink_inactive_list on the zone */
+-#define RECLAIM_WRITE (1<<1)	/* Writeout pages during reclaim */
+-#define RECLAIM_SWAP (1<<2)	/* Swap pages out during reclaim */
+-
+ /*
+  * Priority for ZONE_RECLAIM. This determines the fraction of pages
+  * of a node considered for each zone_reclaim. 4 scans 1/16th of
+-- 
+1.7.3.1
+
+
+
