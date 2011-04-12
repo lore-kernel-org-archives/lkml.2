@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175Ab1DLQwg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:52:36 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:41653 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab1DLQwf (ORCPT
+	id S1758194Ab1DLQx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:53:28 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:64252 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754684Ab1DLQx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:52:35 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4DA4832F.2090600@ise.pw.edu.pl>
-Date: Tue, 12 Apr 2011 18:51:59 +0200
-From: wzab <wzab@ise.pw.edu.pl>
-Reply-To: wzab@ise.pw.edu.pl
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+	Tue, 12 Apr 2011 12:53:27 -0400
+Message-ID: <4DA48383.4000604@linaro.org>
+Date: Tue, 12 Apr 2011 10:53:23 -0600
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-CC: wzab@ise.pw.edu.pl, linux-kernel@vger.kernel.org,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: Screen corrupted in Xorg with KMS on 945GM/GMS, 943/940GML chipset
- with kernel 2.6.38.2
-References: <4DA4243A.5030805@ise.pw.edu.pl> <20110412184143.27dbf34f@neptune.home>
-In-Reply-To: <20110412184143.27dbf34f@neptune.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality
+ V2
+References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org> <BANLkTin7DEWJt4PrBp85disqXd9ZBG3Z_g@mail.gmail.com>
+In-Reply-To: <BANLkTin7DEWJt4PrBp85disqXd9ZBG3Z_g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 12.04.2011 18:41, Bruno Prémont pisze:
-> [CCing intel-gfx]
+On 11-04-12 07:44 AM, Ohad Ben-Cohen wrote:
+> On Mon, Apr 11, 2011 at 6:24 PM,<mathieu.poirier@linaro.org>  wrote:
+>> From: Mathieu J. Poirier<mathieu.poirier@linaro.org>
+>>
+>> This is the second spin on STE's Hsem driver that is implemented
+>> through the hwspinlock scheme.  More specifically:
+>>
+>>   More comments have been added in the code.
+>>   Cleanup of included header files.
+>>   One of the original contributor's name corrected.
+>>   Calls to 'pm_runtime_disable'restored.
+>>
+>> Signed-off-by: Mathieu Poirier<mathieu.poirier@linaro.org>
+>> ---
+> Looks good, but please revise the commit log (think of a random reader
+> who tries to understand what does this patch do, and is less
+> interested to hear about its revisions' history).
 >
-> On Tue, 12 April 2011 Wojciech Zabołotny<wzab@ise.pw.edu.pl>  wrote:
->> After I've upgraded my kernel to 2.6.38.2, I started to experience very
->> often screen corruption in X (it happened also earlier with 2.6.37.3,
->> but now is very often.
->> Hardware seems to be OK. I attach  sample screendumps, configuration of
->> my kernel, log of the X server and output of the lspci command.
+> Otherwise,
 >
-> This looks similar to the xchat corruptions I see (on i855).
+> Acked-by: Ohad Ben-Cohen<ohad@wizery.com>
 >
-> Have a look at #34980 (also 945 family) and #35460 on bugs.freedesktop.org.
+> (btw I assume the "PATCH 1/2" in the subject is just a typo, and
+> there's no missing "PATCH 2/2")
 >
-> Bruno
+Ohad,
 
-Yes, the similar symptoms have also been reported in Ubuntu
+I will revise the commit log and send a V3.  The PATCH 1/2 was generated 
+by send-email even if there was only one patch file...  But you are 
+correct, there was only just one patch.
 
-https://bugs.launchpad.net/ubuntu/+source/xorg/+bug/737900
-
-I have yet another machine, with an older chipset - VGA compatible 
-controller: Intel Corporation 82865G Integrated Graphics Controller (rev 
-02) no corruptions occur in this machine.
+Mathieu.
