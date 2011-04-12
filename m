@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab1DLTiv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:38:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54434 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751913Ab1DLTiu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:38:50 -0400
+	id S1756785Ab1DLTjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:39:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41512 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab1DLTjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 15:39:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=dELELYnBozhJiq845q5UICgP/LSFb6EGDR3ReopN8sQTjn2U0kQfzKUNldlsv2IXnM
+         x0YRqlOhBtWmzzae4eXWnA4TaiBsFEDPSrGHKTv+7V3x+DzoK/VjPteZe+rru8JGPQ2b
+         y6ZS4mQibzpmjV7NWUX/OjSUJhmRbxf1q9iDo=
+Message-ID: <4DA4AA72.4070904@gmail.com>
+Date: Tue, 12 Apr 2011 13:39:30 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
-References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
- <AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
- <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
- <alpine.LSU.2.00.1103182158200.18771@sister.anvils> <BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
- <AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
- <BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com> <BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
- <BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com> <BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
- <BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com> <BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
- <BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com> <alpine.LSU.2.00.1104060837590.4909@sister.anvils>
- <BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com> <BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
- <BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com> <alpine.LSU.2.00.1104070718120.28555@sister.anvils>
- <BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com> <BANLkTiniyAN40p0q+2wxWsRZ5PJFn9zE0Q@mail.gmail.com>
- <BANLkTik6U21r91DYiUsz9A0P--=5QcsBrA@mail.gmail.com> <BANLkTim6ATGxTiMcfK5-03azgcWuT4wtJA@mail.gmail.com>
- <BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com> <BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Apr 2011 12:38:00 -0700
-Message-ID: <BANLkTikZ1szdH5HZdjKEEzG2+1VPusWEeg@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
-To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Michel Lespinasse <walken@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>
+To: Borislav Petkov <bp@alien8.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: adding trace-cmd's plugins to perf
+References: <4DA12905.2020806@gmail.com> <20110412162245.GB2240@nowhere> <20110412183536.GA20452@ghostprotocols.net> <20110412185104.GA9891@liondog.tnic> <20110412185652.GB20452@ghostprotocols.net> <20110412190150.GC9891@liondog.tnic>
+In-Reply-To: <20110412190150.GC9891@liondog.tnic>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 12:02 PM, Robert Święcki <robert@swiecki.net> wrote:
->
-> I'm testing currently with the old one, w/o any symptoms of problems
-> by now, but it's not a meaningful period of time. I can try with the
-> new one, leave it over(European)night, and let you know tomorrow.
 
-You might as well keep testing the old one, if that gives it better
-coverage. No need to disrupt anything you already have running.
 
-The more important input is "was that actually the root cause", rather
-than deciding between the ugly or clean way of fixing it.
+On 04/12/11 13:01, Borislav Petkov wrote:
+>>> Also, just FYI, I have this RAS daemon patchset which splits perf functionality
+>>> into different sub-libs, which are more or less topic based:
+>>>
+>>> tools/lib/trace/ - all the trace-event* stuff from Steven
+>>> tools/lib/lk/	- generic enough stuff (git headers, etc) which several tools could use
 
-So if the first patch fixes it, then I'm pretty sure the second one
-will too - just in a cleaner manner.
+Is this going to contain the option parsing as well? e.g., something
+tools/kvm is picking up from perf.
 
-                          Linus
+
+>>> tools/lib/perf/ - functionality related to perf events
+>>>
+>>> Here's the last submission http://marc.info/?l=linux-edac&m=129562244211501&w=2
+>>> and I'm currently finishing a new rebase against tip/perf/core.
+>>>
+>>> If you're fine with that split I'd suggest I load off my stuff first so
+>>> that David can continue from there and I can finally stop rebasing like
+>>> crazy each time perf moves forward.
+>>>
+>>> Opinions? Suggestions?
+>>
+>> Yeah, David, can you try Borislav's patchset and tell us what you think
+>> wrt servicing your needs?
+> 
+> Yeah, but first let me post the latest version - I'll try to do so in
+> the next couple of days.
+> 
+> Thanks.
+> 
+
+Sure. This is a background task, and I still need to spend time on
+trace-cmd to understand it. ie. it's not something I expect to do within
+the next week -- more like within the next month if I get the time.
+
+David
