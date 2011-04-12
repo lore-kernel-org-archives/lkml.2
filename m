@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab1DLOxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:53:17 -0400
-Received: from kroah.org ([198.145.64.141]:57545 "EHLO coco.kroah.org"
+	id S932566Ab1DLOxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:53:35 -0400
+Received: from kroah.org ([198.145.64.141]:57536 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab1DLOiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932137Ab1DLOiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Apr 2011 10:38:00 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:52 2011
-Message-Id: <20110412143552.009741137@clark.kroah.org>
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:51 2011
+Message-Id: <20110412143551.899960239@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:27 -0700
+Date: Tue, 12 Apr 2011 07:34:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kelly Anderson <kelly@silka.with-linux.com>,
         Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [038/105] ALSA: pcm: fix infinite loop in snd_pcm_update_hw_ptr0()
+Subject: [037/105] ALSA: ens1371: fix Creative Ectiva support
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kelly Anderson <kelly@silka.with-linux.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 12ff414e2e4512f59fe191dc18e856e2939a1c79 upstream.
+commit 6ebb8a4a43e34f999ab36f27f972f3cd751cda4f upstream.
 
-When period interrupts are disabled, snd_pcm_update_hw_ptr0() compares
-the current time against the time estimated for the current hardware
-pointer to detect xruns.  The somewhat fuzzy threshold in the while loop
-makes it possible that hdelta becomes negative; the comparison being
-done with unsigned types then makes the loop go through the entire 263
-negative range, and, depending on the value, never reach an unsigned
-value that is small enough to stop the loop.  Doing this with interrupts
-disabled results in the machine locking up.
+To make the EV1938 chip work, add a magic bit and an extra delay.
 
-To prevent this, ensure that the loop condition uses signed types for
-both operands so that the comparison is correctly done.
-
-Many thanks to Kelly Anderson for debugging this.
-
-Reported-by: Nix <nix@esperi.org.uk>
-Reported-by: "Christopher K." <c.krooss@googlemail.com>
-Reported-and-tested-by: Kelly Anderson <kelly@silka.with-linux.com>
-Signed-off-by: Kelly Anderson <kelly@silka.with-linux.com>
-[cl: remove unneeded casts; use a temp variable]
 Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Tino Schmidt <mailtinoshomepage@gmx.net>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/core/pcm_lib.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/pci/ens1370.c |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -375,6 +375,7 @@ static int snd_pcm_update_hw_ptr0(struct
- 	}
+--- a/sound/pci/ens1370.c
++++ b/sound/pci/ens1370.c
+@@ -229,6 +229,7 @@ MODULE_PARM_DESC(lineio, "Line In to Rea
+ #define ES_REG_1371_CODEC 0x14	/* W/R: Codec Read/Write register address */
+ #define   ES_1371_CODEC_RDY	   (1<<31)	/* codec ready */
+ #define   ES_1371_CODEC_WIP	   (1<<30)	/* codec register access in progress */
++#define   EV_1938_CODEC_MAGIC	   (1<<26)
+ #define   ES_1371_CODEC_PIRD	   (1<<23)	/* codec read/write select register */
+ #define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x7f)<<16)|(((d)&0xffff)<<0))
+ #define   ES_1371_CODEC_READS(a)   ((((a)&0x7f)<<16)|ES_1371_CODEC_PIRD)
+@@ -603,12 +604,18 @@ static void snd_es1370_codec_write(struc
  
- 	if (runtime->no_period_wakeup) {
-+		snd_pcm_sframes_t xrun_threshold;
- 		/*
- 		 * Without regular period interrupts, we have to check
- 		 * the elapsed time to detect xruns.
-@@ -383,7 +384,8 @@ static int snd_pcm_update_hw_ptr0(struct
- 		if (jdelta < runtime->hw_ptr_buffer_jiffies / 2)
- 			goto no_delta_check;
- 		hdelta = jdelta - delta * HZ / runtime->rate;
--		while (hdelta > runtime->hw_ptr_buffer_jiffies / 2 + 1) {
-+		xrun_threshold = runtime->hw_ptr_buffer_jiffies / 2 + 1;
-+		while (hdelta > xrun_threshold) {
- 			delta += runtime->buffer_size;
- 			hw_base += runtime->buffer_size;
- 			if (hw_base >= runtime->boundary)
+ #ifdef CHIP1371
+ 
++static inline bool is_ev1938(struct ensoniq *ensoniq)
++{
++	return ensoniq->pci->device == 0x8938;
++}
++
+ static void snd_es1371_codec_write(struct snd_ac97 *ac97,
+ 				   unsigned short reg, unsigned short val)
+ {
+ 	struct ensoniq *ensoniq = ac97->private_data;
+-	unsigned int t, x;
++	unsigned int t, x, flag;
+ 
++	flag = is_ev1938(ensoniq) ? EV_1938_CODEC_MAGIC : 0;
+ 	mutex_lock(&ensoniq->src_mutex);
+ 	for (t = 0; t < POLL_COUNT; t++) {
+ 		if (!(inl(ES_REG(ensoniq, 1371_CODEC)) & ES_1371_CODEC_WIP)) {
+@@ -630,7 +637,8 @@ static void snd_es1371_codec_write(struc
+ 				    0x00010000)
+ 					break;
+ 			}
+-			outl(ES_1371_CODEC_WRITE(reg, val), ES_REG(ensoniq, 1371_CODEC));
++			outl(ES_1371_CODEC_WRITE(reg, val) | flag,
++			     ES_REG(ensoniq, 1371_CODEC));
+ 			/* restore SRC reg */
+ 			snd_es1371_wait_src_ready(ensoniq);
+ 			outl(x, ES_REG(ensoniq, 1371_SMPRATE));
+@@ -647,8 +655,9 @@ static unsigned short snd_es1371_codec_r
+ 					    unsigned short reg)
+ {
+ 	struct ensoniq *ensoniq = ac97->private_data;
+-	unsigned int t, x, fail = 0;
++	unsigned int t, x, flag, fail = 0;
+ 
++	flag = is_ev1938(ensoniq) ? EV_1938_CODEC_MAGIC : 0;
+       __again:
+ 	mutex_lock(&ensoniq->src_mutex);
+ 	for (t = 0; t < POLL_COUNT; t++) {
+@@ -671,7 +680,8 @@ static unsigned short snd_es1371_codec_r
+ 				    0x00010000)
+ 					break;
+ 			}
+-			outl(ES_1371_CODEC_READS(reg), ES_REG(ensoniq, 1371_CODEC));
++			outl(ES_1371_CODEC_READS(reg) | flag,
++			     ES_REG(ensoniq, 1371_CODEC));
+ 			/* restore SRC reg */
+ 			snd_es1371_wait_src_ready(ensoniq);
+ 			outl(x, ES_REG(ensoniq, 1371_SMPRATE));
+@@ -683,6 +693,11 @@ static unsigned short snd_es1371_codec_r
+ 			/* now wait for the stinkin' data (RDY) */
+ 			for (t = 0; t < POLL_COUNT; t++) {
+ 				if ((x = inl(ES_REG(ensoniq, 1371_CODEC))) & ES_1371_CODEC_RDY) {
++					if (is_ev1938(ensoniq)) {
++						for (t = 0; t < 100; t++)
++							inl(ES_REG(ensoniq, CONTROL));
++						x = inl(ES_REG(ensoniq, 1371_CODEC));
++					}
+ 					mutex_unlock(&ensoniq->src_mutex);
+ 					return ES_1371_CODEC_READ(x);
+ 				}
 
 
