@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab1DLNVr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 09:21:47 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61217 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1DLNVp convert rfc822-to-8bit (ORCPT
+	id S1755224Ab1DLNYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 09:24:33 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:36053 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756Ab1DLNYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 09:21:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Q2BybYjyIqA6czktpZO2jGyQtOIE1bDAQu2REIStzVyznsR0nyBhk4Cq7HOXtRHbCL
-         DYA4PjCHNnL8GoA3pCnuQPTGSNMifCNH/ocF/fcLAA6WzOqE7EN5LOdjsa6ALoR3lzq0
-         sINxrkUEadjMSZ9DcktAaSmSh8lf0Vq+I2Jnc=
+	Tue, 12 Apr 2011 09:24:31 -0400
+X-AuditID: b753bd60-a3cafba0000019f4-ea-4da4528c055d
+X-AuditID: b753bd60-a3cafba0000019f4-ea-4da4528c055d
+Message-ID: <4DA4526B.2030609@hitachi.com>
+Date: Tue, 12 Apr 2011 22:23:55 +0900
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <op.vtttxt083ri7v4@arend-laptop>
-References: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
-	<BANLkTi=jV12tOR_=idn0z+oO_RQ2xaFhCQ@mail.gmail.com>
-	<op.vtttxt083ri7v4@arend-laptop>
-Date: Tue, 12 Apr 2011 15:21:44 +0200
-Message-ID: <BANLkTiksJmiiK53kcP6vm6CTmzXhQa7oTA@mail.gmail.com>
-Subject: Re: [RFC][PATCH] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Hannes Reinecke <hare@suse.de>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
+ in Kernel.
+References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>	 <20110405161400.GA885@kroah.com> <4D9F17DF.5030601@hitachi.com>	 <4D9F1CD1.2020600@suse.de> <1302275652.4090.10.camel@mulgrave.site>
+In-Reply-To: <1302275652.4090.10.camel@mulgrave.site>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/12 Arend van Spriel <arend@broadcom.com>:
-> On Tue, 12 Apr 2011 15:04:48 +0200, Rafał Miłecki <zajec5@gmail.com> wrote:
->
->> There is one more change I started to consider. Is "core" correct name
->> for AXI's device? Almost everywhere we can read about *components* on
->> the AXI interconnect.
->>
->> Maybe it'd make sense to s/core/comp/? Arend?
->
-> I have no strong preference on this. I tried the latest patch and it does
-> not crash anymore with load/unload.
+Hi, James
 
-Could you post dmesg? Probably nothing exciting, just my curiosity :)
+(2011/04/09 0:14), James Bottomley wrote:
+> On Fri, 2011-04-08 at 07:33 -0700, Hannes Reinecke wrote:
+>>> The problem I would like to discuss here is that users can not identify
+>>> a disk from kernel messages when they DIRECTLY refer to these messages.
+>>> For example, a device name is used instead of a symbolic link names in
+>>> bootup messages, I/O devices errors and /proc/partitions …etc.
+>>>
+>>> In particular, users can not identify an appropriate device from a
+>>> device name in syslog since different device name may be assigned to it
+>>> at each boot time.
+>>>
+>>> My idea is able to fix this issue with small changes in scsi subsystem.
+>>> Also, it is implemented as an option. Therefore, it does not affect
+>>> users who do not select this option.
+>>>
+>> We have been discussing this problem several times in the past, and
+>> indeed on these very mailing list.
+>>
+>> The conclusion we arrived at is that the kernel-provided device node
+>> name is inherently unstable and impossible to fix within the existing
+>> 'sdX' naming scheme.
+>> So the choices have been to either move to a totally different naming
+>> scheme or keep the naming scheme and provide the required information
+>> by other means.
+>> We have decided on the latter, and agreed on using udev to provide
+>> persistent device names.
+>> We are fully aware that any kernel related messages are subject to
+>> chance after reboot, but then most kernel related messages are
+>> (PID number, timestamps, login tty etc).
+>> And also we are aware that any kernel messages need to be matched
+>> against the current system layout to figure out any hardware-related
+>> issue.
+>>
+>> But then basically all products requiring to filter out information
+>> from kernel messages already do so I don't see a problem with that.
+>>
+>> Just adding an in-kernel identifier to the LUN will only be an
+>> incomplete solution, as other identifiers will still be volatile.
+>>
+>> So I would prefer by keeping the in-kernel information as small
+>> as possible to reduce memory consumption and rely on out-of-band
+>> programs to provide the required mapping.
+> 
+> So, while I agree totally with the above: udev and userspace is the way
+> to go, I'm not totally opposed to having a non-invasive mechanism for
+> indicating a user's preferred name for a device.  I think there are a
+> couple of ways to do this:
+> 
+>      1. Entirely in userspace: just have udev consult a preferred name
+>         file and create say /dev/disk/by-preferred.  Then have all the
+>         tools that normally output device information do the same (i.e.
+>         since real name to preferred name is 1:1, they could all do a
+>         reverse lookup).
+>      2. have a writeable sysfs preferred_name field, either in the
+>         generic device or just in SCSI.  The preferred name would be
+>         used by outbound only (i.e. kernel dev_printk messages and
+>         possibly /proc/partitions).  All inbound uses of the device
+>         would come via the standard udev mechanisms
+>         (i.e. /dev/disk/by-preferred would be the usual symlink).  This
+>         means from the kernel point of view, no renaming has happened.
+>         We'd just try to print out the preferred name in certain
+>         circumstances, which should solve most of the described problem.
+> 
+> James
+> 
+> 
+> 
+
+I have a question. Why is in-kernel device name necessary? The kernel
+can identify a device by major/miner number and udev can create a
+device node of a prefer name.
+
+Currently, device names are only used to show to users. Therefore I
+think that in-kernel device name is unnecessary if we introduce your
+/dev/disk/by-prefferd idea.
+
+
+thanks,
 
 -- 
-Rafał
+Nao NISHIJIMA
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., YOKOHAMA Research  Laboratory
+Email： nao.nishijima.xt@hitachi.com
