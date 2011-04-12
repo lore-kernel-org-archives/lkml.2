@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab1DLPPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 11:15:22 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34179 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756080Ab1DLPPV (ORCPT
+	id S1756475Ab1DLPPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 11:15:47 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:37573 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756283Ab1DLPPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 11:15:21 -0400
-Subject: Re: Strange block/scsi/workqueue issue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <20110412051512.GL9673@mtj.dyndns.org>
-References: <1302533763.2596.23.camel@dolmen>
-	 <20110411171803.GG9673@mtj.dyndns.org>
-	 <1302569276.2558.9.camel@mulgrave.site>
-	 <20110412025145.GJ9673@mtj.dyndns.org>
-	 <1302583757.2558.21.camel@mulgrave.site>
-	 <20110412051512.GL9673@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 10:15:18 -0500
-Message-ID: <1302621318.2604.19.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Apr 2011 11:15:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=FQvCt/4riKXf7y6ovqgHwJY9eDAa/KZfBp/bsoxDrLClOAp7t7iGWde7JD9LvovBKc
+         GAZf5GThm9j8A2lHVgp5v+WOwfgx2wBOxaxZJ1ILY6llKRNLLmhKYEcEVUZ8yMX35Hvu
+         OKbj9/ze37zxLgnx1xKV8Nxg/NWqgcIwQuEFw=
+MIME-Version: 1.0
+In-Reply-To: <20110411195143.GD2618@sortiz-mobl>
+References: <1302444629-17043-1-git-send-email-wanlong.gao@gmail.com>
+	<1302444629-17043-2-git-send-email-wanlong.gao@gmail.com>
+	<20110411195143.GD2618@sortiz-mobl>
+Date: Tue, 12 Apr 2011 23:05:03 +0800
+Message-ID: <BANLkTinjvYhGvDNuMPf9_5q2F=ram7HMnQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] mfd:removed the unused variable
+From: wanlong gao <wanlong.gao@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: broonie@opensource.wolfsonmicro.com, geert@linux-m68k.org,
+        starvik@axis.com, jesper.nilsson@axis.com,
+        ian@opensource.wolfsonmicro.com, dp@opensource.wolfsonmicro.com,
+        lrg@slimlogic.co.uk, James.Bottomley@suse.de, aelder@sgi.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 14:15 +0900, Tejun Heo wrote:
-> > A fix might be to shunt more stuff off to workqueues, but that's
-> > producing a more complex system which would be prone to entanglements
-> > that would be even harder to spot.
-> 
-> I don't agree there.  To me, the cause for entanglement seems to be
-> request_fn calling all the way through blocking destruction because it
-> detected that the final put was called with sleepable context.  It's
-> just weird and difficult to anticipate to directly call into sleepable
-> destruction path from request_fn whether it had sleepable context or
-> not.  With the yet-to-be-debugged bug caused by the conversion aside,
-> I think simply using workqueue is the better solution.
+On 4/12/11, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Wanlong,
+>
+> On Sun, Apr 10, 2011 at 10:10:26PM +0800, wanlong.gao@gmail.com wrote:
+>> From: Wanlong Gao <wanlong.gao@gmail.com>
+>>
+>> removed the unused variable "u16 val" of wl1273-core.c.
+> Patch applied, thanks.
+>
+> Cheers,
+> Samuel.
+Thank you for your hard work to the  open source .
 
-So your idea is that all final puts should go through a workqueue?  Like
-I said, that would work, but it's not just SCSI ... any call path that
-destroys a queue has to be audited.
-
-The problem is nothing to do with sleeping context ... it's that any
-work called by the block workqueue can't destroy that queue.  In a
-refcounted model, that's a bit nasty.
-
-> > Perhaps a better solution is just not to use sync cancellations in
-> > block?  As long as the work in the queue holds a queue ref, they can be
-> > done asynchronously.
-> 
-> Hmmm... maybe but at least I prefer doing explicit shutdown/draining
-> on destruction even if the base data structure is refcounted.  Things
-> become much more predictable that way.
-
-It is pretty much instantaneous.  Unless we're executing, we cancel the
-work.  If the work is already running, we just let it complete instead
-of waiting for it.
-
-Synchronous waits are dangerous because they cause entanglement.
-
-James
-
-
+Best regards .
+>
+> --
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
+>
