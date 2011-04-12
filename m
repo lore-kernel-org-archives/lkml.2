@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab1DLOj4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:39:56 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:44713 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932421Ab1DLOjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:39:53 -0400
-Date: Tue, 12 Apr 2011 16:39:49 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@c4eb
-To: Greg KH <gregkh@suse.de>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: sysfs: cannot create duplicate filename
-In-Reply-To: <20110411175628.GA24301@suse.de>
-Message-ID: <alpine.LFD.2.02.1104121637450.2239@c4eb>
-References: <alpine.LFD.2.02.1104111556280.1938@c4eb> <20110411141309.GA8924@suse.de> <alpine.LFD.2.02.1104111622490.1938@c4eb> <20110411144956.GA16610@suse.de> <alpine.LFD.2.02.1104111658560.1770@c4eb> <20110411151947.GA17913@suse.de>
- <alpine.LFD.2.02.1104111943590.2036@c4eb> <20110411175628.GA24301@suse.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-Organization: "IBM Deutschland Research & Development GmbH Vorsitzender des Aufsichtsrats: Martin Jetter Geschaeftsfuehrung: Dirk Wittkopp Sitz der Gesellschaft: Boeblingen Registergericht: Amtsgericht Stuttgart, HRB 243294"
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932526Ab1DLOjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:39:13 -0400
+Received: from kroah.org ([198.145.64.141]:57887 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932474Ab1DLOi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:58 2011
+Message-Id: <20110412143558.658074747@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 12 Apr 2011 07:35:29 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Philip Prindeville <philipp@redfish-solutions.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [100/105] atm/solos-pci: Dont include frame pseudo-header on transmit hex-dump
+In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
+
+------------------
+
+From: Philip A. Prindeville <philipp@redfish-solutions.com>
+
+commit 18b429e74eeafe42e947b1b0f9a760c7153a0b5c upstream.
+
+Omit pkt_hdr preamble when dumping transmitted packet as hex-dump;
+we can pull this up because the frame has already been sent, and
+dumping it is the last thing we do with it before freeing it.
+
+Also include the size, vpi, and vci in the debug as is done on
+receive.
+
+Use "port" consistently instead of "device" intermittently.
+
+Signed-off-by: Philip Prindeville <philipp@redfish-solutions.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/atm/solos-pci.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -697,7 +697,7 @@ void solos_bh(unsigned long card_arg)
+ 					      size);
+ 			}
+ 			if (atmdebug) {
+-				dev_info(&card->dev->dev, "Received: device %d\n", port);
++				dev_info(&card->dev->dev, "Received: port %d\n", port);
+ 				dev_info(&card->dev->dev, "size: %d VPI: %d VCI: %d\n",
+ 					 size, le16_to_cpu(header->vpi),
+ 					 le16_to_cpu(header->vci));
+@@ -1018,8 +1018,15 @@ static uint32_t fpga_tx(struct solos_car
+ 
+ 			/* Clean up and free oldskb now it's gone */
+ 			if (atmdebug) {
++				struct pkt_hdr *header = (void *)oldskb->data;
++				int size = le16_to_cpu(header->size);
++
++				skb_pull(oldskb, sizeof(*header));
+ 				dev_info(&card->dev->dev, "Transmitted: port %d\n",
+ 					 port);
++				dev_info(&card->dev->dev, "size: %d VPI: %d VCI: %d\n",
++					 size, le16_to_cpu(header->vpi),
++					 le16_to_cpu(header->vci));
+ 				print_buffer(oldskb);
+ 			}
+ 
 
 
-On Mon, 11 Apr 2011, Greg KH wrote:
-
-> On Mon, Apr 11, 2011 at 07:50:34PM +0200, Sebastian Ott wrote:
-> > 
-> > 
-> > On Mon, 11 Apr 2011, Greg KH wrote:
-> > 
-> > > On Mon, Apr 11, 2011 at 05:05:08PM +0200, Sebastian Ott wrote:
-> > > > 
-> > > > 
-> > > > On Mon, 11 Apr 2011, Greg KH wrote:
-> > > > 
-> > > > > On Mon, Apr 11, 2011 at 04:33:03PM +0200, Sebastian Ott wrote:
-> > > > > > On Mon, 11 Apr 2011, Greg KH wrote:
-> > > > > > 
-> > > > > > > On Mon, Apr 11, 2011 at 04:04:08PM +0200, Sebastian Ott wrote:
-> > > > > > > > Hi,
-> > > > > > > > 
-> > > > > > > > i've seen this warning which looks to be caused by a race between device_add
-> > > > > > > > and driver_register
-> > > > > > > > 
-> > > > > > > > [   80.893594] sysfs: cannot create duplicate filename '/bus/ccw/drivers/qeth/0.0.b57d'
-> > > > > > > 
-> > > > > > > Isn't the problem here the fact that you are creating 2 directories of
-> > > > > > > the same name?
-> > > > > > I'm sure this isn't the case here. The bus code just calls device_add and
-> > > > > > at the same time on a different thread a module is loaded which registers
-> > > > > > a driver at the bus.
-> > > > > > 
-> > > > > > I was able to reproduce this with a module which creates a dummy bus
-> > > > > > and registers drivers and devices on this bus on 2 different workqueues.
-> > > > > 
-> > > > > That makes sense, as no bus should be doing this on multiple "threads".
-> > > > > What real-life bus does this today?
-> > > > A bus that will recognize and register a lot of devices, after the first
-> > > > uevent is presented to userspace, a module will be loaded registering a
-> > > > driver from a different thread. I don't think thats uncommon.
-> > > 
-> > > But again, what kernel code today does this?  I think they all have
-> > > locks to keep this from happening, right?
-> > I couldn't find a bus who protects device_register against driver_register
-> > and I don't think this is something which should be handled by every
-> > individual bus but from within the driver core.
-> 
-> How did you cause the oops in this original message?  What type of bus
-> was it on?  And did your patch solve the issue?
-
-I've seen this warning on a system which had a lot of devices attached.
-Those devices also responded _very_ slow. So it took some time to
-register all these deivces (qeth) on the bus (ccw). During this time
-the qeth module got loaded and registered the qeth driver.
-
-Since i've never seen this warning and those devices normally don't
-take so much time to respond I wrote the beforementioned module to
-reproduce the race and make sure that this is no driver issue.
-
-With this module the warning could be triggered after a few cycles.
-With the patch applied, I did not see the warning again even after
-> 10.000 cycles.
-
-regards,
-Sebastian
