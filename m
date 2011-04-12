@@ -1,66 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab1DLC1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 22:27:30 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:46210 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617Ab1DLC13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 22:27:29 -0400
-Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Chris McDermott <lcm@linux.vnet.ibm.com>
-In-Reply-To: <20110412100129.43F1.A69D9226@jp.fujitsu.com>
-References: <20110411172004.0361.A69D9226@jp.fujitsu.com>
-	 <1302557371.7286.16607.camel@nimitz>
-	 <20110412100129.43F1.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 11 Apr 2011 19:27:21 -0700
-Message-ID: <1302575241.7286.17853.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756455Ab1DLChv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 22:37:51 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54827 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754153Ab1DLChv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 22:37:51 -0400
+Message-Id: <1302575869.13492.1440076201@webmail.messagingengine.com>
+X-Sasl-Enc: C3zISBPQnLGDZxmllZMFD36qRXOgplFWCGBxCcMJSRME 1302575869
+From: "Adam McLaurin" <lkml@irotas.net>
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: MessagingEngine.com Webmail Interface
+Subject: Loopback and Nagle's algorithm
+Date: Mon, 11 Apr 2011 22:37:49 -0400
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 10:01 +0900, KOSAKI Motohiro wrote:
-> > On Mon, 2011-04-11 at 17:19 +0900, KOSAKI Motohiro wrote:
-> > > This patch raise zone_reclaim_mode threshold to 30. 30 don't have
-> > > specific meaning. but 20 mean one-hop QPI/Hypertransport and such
-> > > relatively cheap 2-4 socket machine are often used for tradiotional
-> > > server as above. The intention is, their machine don't use
-> > > zone_reclaim_mode.
-> > 
-> > I know specifically of pieces of x86 hardware that set the information
-> > in the BIOS to '21' *specifically* so they'll get the zone_reclaim_mode
-> > behavior which that implies.
-> 
-> Which hardware?
+I understand that disabling Nagle's algorithm via TCP_NODELAY will
+generally degrade throughput. However, in my scenario (150 byte
+messages, sending as fast as possible), the actual throughput penalty
+over the network is marginal (maybe 10% at most).
 
-I'd have to go digging for the model numbers.  I just remember having
-discussions with folks about it a couple of years ago.  My memory isn't
-what it used to be. :)
+However, when I disable Nagle's algorithm when connecting over loopback,
+the performance hit is *huge* - 10x reduction in throughput.
 
-> The reason why now we decided to change default is the original bug reporter was using
-> mere commodity whitebox hardware and very common workload. 
-> If it is enough commotidy, we have to concern it. but if it is special, we don't care it.
-> Hardware vendor should fix a firmware.
+The question is, why is disabling Nagle's algorithm on loopback so much
+worse w.r.t. throughput? Is there anything I can do to reduce the
+incurred throughput penalty?
 
-Yeah, it's certainly a "simple" fix.  The distance tables can certainly
-be adjusted easily, and worked around pretty trivially with boot
-options.  If we decide to change the generic case, let's also make sure
-that we put something else in place simultaneously that is nice for the
-folks that don't want it changed.  Maybe something DMI-based that digs
-for model numbers?
-
-I'll go try and dig for some more specifics on the hardware so we at
-least have something to test on.
-
--- Dave
-
+Thanks,
+Adam
