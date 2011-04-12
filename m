@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab1DLWM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 18:12:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932419Ab1DLWM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 18:12:57 -0400
-Date: Tue, 12 Apr 2011 18:12:55 -0400
-From: Dave Jones <davej@redhat.com>
-To: netdev@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: fix locking unbalance in irda_sendmsg
-Message-ID: <20110412221254.GA23906@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, netdev@vger.kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S932685Ab1DLWNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 18:13:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44906 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932628Ab1DLWNv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 18:13:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTinjGkbBMUo7MQ2Dg2yDwQ932qJ7rQ@mail.gmail.com>
+References: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
+ <BANLkTimJLcfsYAhV+3=-F14YZvX12-yXgA@mail.gmail.com> <20110412182809.GA1218@redhat.com>
+ <BANLkTinb1gXcZug5ApmmrudWLY7PwxNf-A@mail.gmail.com> <20110412192059.GA14360@redhat.com>
+ <BANLkTimJgx_x=0bpBDWaUkJgZPYs3_iwsg@mail.gmail.com> <BANLkTimBegMUq2fX67o2YnoATWG-NDbKgA@mail.gmail.com>
+ <BANLkTikoDELrA-RtA9BLm64mfoPgdADR0Q@mail.gmail.com> <BANLkTi=HyK+8DhJS3db0j2fefdOjwVMN3w@mail.gmail.com>
+ <BANLkTinMAGmdEDviRwZ1-mxrAAe_WK5jvg@mail.gmail.com> <BANLkTinjGkbBMUo7MQ2Dg2yDwQ932qJ7rQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 12 Apr 2011 15:12:58 -0700
+Message-ID: <BANLkTikRH0q3RyP_CORXjAX34-br4pqf=A@mail.gmail.com>
+Subject: Re: Processes hang in an unkillable state
+To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-5b40964eadea40509d353318d2c82e8b7bf5e8a5 introduced a path where
-we have a locking unbalance.  If we pass invalid flags, we unlock
-a socket we never locked, resulting in this...
+On Tue, Apr 12, 2011 at 2:59 PM, Robert Święcki <robert@swiecki.net> wrote:
+>
+> Compiling now with CONFIG_OPTIMIZE_SIZE and vma dump code. Will
+> probably post some results tomorrow.
 
-=====================================
-[ BUG: bad unlock balance detected! ]
--------------------------------------
-trinity/20101 is trying to release lock (sk_lock-AF_IRDA) at:
-[<ffffffffa057f001>] irda_sendmsg+0x207/0x21d [irda]
-but there are no more locks to release!
+.. and if you've added my patch to the stack growth case, hopefully
+there won't _be_ any results ;)
 
-other info that might help us debug this:
-no locks held by trinity/20101.
-
-stack backtrace:
-Pid: 20101, comm: trinity Not tainted 2.6.39-rc3+ #3
-Call Trace:
- [<ffffffffa057f001>] ? irda_sendmsg+0x207/0x21d [irda]
- [<ffffffff81085041>] print_unlock_inbalance_bug+0xc7/0xd2
- [<ffffffffa057f001>] ? irda_sendmsg+0x207/0x21d [irda]
- [<ffffffff81086aca>] lock_release+0xcf/0x18e
- [<ffffffff813ed190>] release_sock+0x2d/0x155
- [<ffffffffa057f001>] irda_sendmsg+0x207/0x21d [irda]
- [<ffffffff813e9f8c>] __sock_sendmsg+0x69/0x75
- [<ffffffff813ea105>] sock_sendmsg+0xa1/0xb6
- [<ffffffff81100ca3>] ? might_fault+0x5c/0xac
- [<ffffffff81086b7c>] ? lock_release+0x181/0x18e
- [<ffffffff81100cec>] ? might_fault+0xa5/0xac
- [<ffffffff81100ca3>] ? might_fault+0x5c/0xac
- [<ffffffff81133b94>] ? fcheck_files+0xb9/0xf0
- [<ffffffff813f387a>] ? copy_from_user+0x2f/0x31
- [<ffffffff813f3b70>] ? verify_iovec+0x52/0xa6
- [<ffffffff813eb4e3>] sys_sendmsg+0x23a/0x2b8
- [<ffffffff81086b7c>] ? lock_release+0x181/0x18e
- [<ffffffff810773c6>] ? up_read+0x28/0x2c
- [<ffffffff814bec3d>] ? do_page_fault+0x360/0x3b4
- [<ffffffff81087043>] ? trace_hardirqs_on_caller+0x10b/0x12f
- [<ffffffff810458aa>] ? finish_task_switch+0xb2/0xe3
- [<ffffffff8104583e>] ? finish_task_switch+0x46/0xe3
- [<ffffffff8108364a>] ? trace_hardirqs_off_caller+0x33/0x90
- [<ffffffff814bbaf9>] ? retint_swapgs+0x13/0x1b
- [<ffffffff81087043>] ? trace_hardirqs_on_caller+0x10b/0x12f
- [<ffffffff810a9dd3>] ? audit_syscall_entry+0x11c/0x148
- [<ffffffff8125609e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff814c22c2>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/net/irda/af_irda.c b/net/irda/af_irda.c
-index c9890e2..cc61697 100644
---- a/net/irda/af_irda.c
-+++ b/net/irda/af_irda.c
-@@ -1297,8 +1297,7 @@ static int irda_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	/* Note : socket.c set MSG_EOR on SEQPACKET sockets */
- 	if (msg->msg_flags & ~(MSG_DONTWAIT | MSG_EOR | MSG_CMSG_COMPAT |
- 			       MSG_NOSIGNAL)) {
--		err = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	lock_sock(sk);
+                     Linus
