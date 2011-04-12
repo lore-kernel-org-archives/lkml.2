@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab1DLHxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 03:53:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39052 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab1DLHxd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 03:53:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Ng/zK0pewgLYBOH5ntB037fxl0uVyqRkBU0m7LAJb0mRjf5dJoS1cPQtsoB1yktzMh
-         qRS4uTYJ9uLHtcVG1+yub/sF2R1DoNkG5BnrgCH0ZjO29WqvG86ZeU9IOLTtJ0GyPe+1
-         747HQPh/pNld7RtAwXJ0+sFg8sAHtDdhg7ViM=
-Subject: Huge XFS regression in 2.6.32 upto 2.6.38
-From: raz ben yehuda <raziebe@gmail.com>
-To: hch@lst.de
-Cc: linux-kernel@vger.kernel.org, felixb@sgi.com, dgc@sgi.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 10:52:28 +0300
-Message-ID: <1302594748.2750.11.camel@raz.scalemp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753907Ab1DLH5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 03:57:11 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:45026 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753508Ab1DLH5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 03:57:10 -0400
+Date: Tue, 12 Apr 2011 09:57:06 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: "wanlong.gao@gmail.com" <wanlong.gao@gmail.com>
+Cc: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        Mikael Starvik <starvik@axis.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "ian@opensource.wolfsonmicro.com" <ian@opensource.wolfsonmicro.com>,
+        "dp@opensource.wolfsonmicro.com" <dp@opensource.wolfsonmicro.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "aelder@sgi.com" <aelder@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] cris:removed the unused variable
+Message-ID: <20110412075706.GL16179@axis.com>
+References: <1302444629-17043-1-git-send-email-wanlong.gao@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302444629-17043-1-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hello
-I am testing 2.6.38 with AIM benchmark. 
-I compared 2.6.38 to 2.6.27 and I noticed that 2.6.27 is much better than 2.6.38 when 
-doing sync random writes test over an xfs regular file over native Linux partition on top common sata disk.
-I git bisected the problem and I reached this SHA1:
-commit 13e6d5cdde0e785aa943810f08b801cadd0935df
-Author: Christoph Hellwig <hch@lst.de>
-Date:   Mon Aug 31 21:00:31 2009 -0300
+On Sun, Apr 10, 2011 at 04:10:25PM +0200, wanlong.gao@gmail.com wrote:
+> From: Wanlong Gao <wanlong.gao@gmail.com>
+> 
+> removed the unused variable "unsigned long tmp".
+> 
+> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
 
-    xfs: merge fsync and O_SYNC handling
+Applied, thanks!
 
-    The guarantees for O_SYNC are exactly the same as the ones we need to
-    make for an fsync call (and given that Linux O_SYNC is O_DSYNC the
-    equivalent is fdadatasync, but we treat both the same in XFS), except
-    with a range data writeout.  Jan Kara has started unifying these two
-    path for filesystems using the generic helpers, and I've started to
-    look at XFS.
-...
-
-
-The bellow two tests presents the how different performance is before and patch:
-#test 16) bisect 11
-------------------------------------------------------------------------------------------------------------
- Test        Test        Elapsed  Iteration    Iteration          Operation
-Number       Name      Time (sec)   Count   Rate (loops/sec)    Rate (ops/sec)
-------------------------------------------------------------------------------------------------------------
-     1 sync_disk_rw        30.71         19    0.61869         1583.85 Sync Random Disk Writes (K)/second
-------------------------------------------------------------------------------------------------------------
-
-#test 17 ) bisect 12
-------------------------------------------------------------------------------------------------------------
-     1 sync_disk_rw        69.05          1    0.01448           37.07 Sync Random Disk Writes (K)/second
-------------------------------------------------------------------------------------------------------------
-
-
-Regards
-Raz Ben-Yehuda
-
-
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
