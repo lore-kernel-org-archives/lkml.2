@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab1DLOsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:48:55 -0400
-Received: from kroah.org ([198.145.64.141]:57639 "EHLO coco.kroah.org"
+	id S932340Ab1DLOtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:49:31 -0400
+Received: from kroah.org ([198.145.64.141]:57627 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932274Ab1DLOiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:21 -0400
+	id S932262Ab1DLOiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:20 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:54 2011
-Message-Id: <20110412143554.289223792@clark.kroah.org>
+Message-Id: <20110412143554.181505970@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:48 -0700
+Date: Tue, 12 Apr 2011 07:34:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Michael Hennerich <michael.hennerich@analog.com>,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [059/105] staging: IIO: IMU: ADIS16400: Make sure only enabled scan_elements are pushed into the ring
+Subject: [058/105] staging: IIO: IMU: ADIS16400: Fix addresses of GYRO and ACCEL calibration offset
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Hennerich <michael.hennerich@analog.com>
 
-commit 0fea4d6192cb82789e28905240d3c1dac6529c7c upstream.
+commit b181119723d62b19904e1f12e467e996631c5a29 upstream.
 
 Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
 Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/iio/imu/adis16400_ring.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/staging/iio/imu/adis16400_core.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/iio/imu/adis16400_ring.c
-+++ b/drivers/staging/iio/imu/adis16400_ring.c
-@@ -160,9 +160,10 @@ static void adis16400_trigger_bh_to_ring
- 			       work_trigger_to_ring);
- 	struct iio_ring_buffer *ring = st->indio_dev->ring;
+--- a/drivers/staging/iio/imu/adis16400_core.c
++++ b/drivers/staging/iio/imu/adis16400_core.c
+@@ -495,12 +495,12 @@ err_ret:
+ 			_reg)
  
--	int i = 0;
-+	int i = 0, j;
- 	s16 *data;
- 	size_t datasize = ring->access.get_bytes_per_datum(ring);
-+	unsigned long mask = ring->scan_mask;
+ static ADIS16400_DEV_ATTR_CALIBBIAS(GYRO_X, ADIS16400_XGYRO_OFF);
+-static ADIS16400_DEV_ATTR_CALIBBIAS(GYRO_Y, ADIS16400_XGYRO_OFF);
+-static ADIS16400_DEV_ATTR_CALIBBIAS(GYRO_Z, ADIS16400_XGYRO_OFF);
++static ADIS16400_DEV_ATTR_CALIBBIAS(GYRO_Y, ADIS16400_YGYRO_OFF);
++static ADIS16400_DEV_ATTR_CALIBBIAS(GYRO_Z, ADIS16400_ZGYRO_OFF);
  
- 	data = kmalloc(datasize , GFP_KERNEL);
- 	if (data == NULL) {
-@@ -172,9 +173,12 @@ static void adis16400_trigger_bh_to_ring
+ static ADIS16400_DEV_ATTR_CALIBBIAS(ACCEL_X, ADIS16400_XACCL_OFF);
+-static ADIS16400_DEV_ATTR_CALIBBIAS(ACCEL_Y, ADIS16400_XACCL_OFF);
+-static ADIS16400_DEV_ATTR_CALIBBIAS(ACCEL_Z, ADIS16400_XACCL_OFF);
++static ADIS16400_DEV_ATTR_CALIBBIAS(ACCEL_Y, ADIS16400_YACCL_OFF);
++static ADIS16400_DEV_ATTR_CALIBBIAS(ACCEL_Z, ADIS16400_ZACCL_OFF);
  
- 	if (ring->scan_count)
- 		if (adis16400_spi_read_burst(&st->indio_dev->dev, st->rx) >= 0)
--			for (; i < ring->scan_count; i++)
-+			for (; i < ring->scan_count; i++) {
-+				j = __ffs(mask);
-+				mask &= ~(1 << j);
- 				data[i]	= be16_to_cpup(
--					(__be16 *)&(st->rx[i*2]));
-+					(__be16 *)&(st->rx[j*2]));
-+			}
  
- 	/* Guaranteed to be aligned with 8 byte boundary */
- 	if (ring->scan_timestamp)
+ static IIO_DEV_ATTR_IN_NAMED_RAW(0, supply, adis16400_read_14bit_signed,
 
 
