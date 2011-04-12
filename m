@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab1DLOiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:38:50 -0400
-Received: from kroah.org ([198.145.64.141]:57774 "EHLO coco.kroah.org"
+	id S932399Ab1DLOio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:44 -0400
+Received: from kroah.org ([198.145.64.141]:57717 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1DLOip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:45 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:57 2011
-Message-Id: <20110412143557.046968936@clark.kroah.org>
+	id S932371Ab1DLOij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:39 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:56 2011
+Message-Id: <20110412143556.428027136@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:14 -0700
+Date: Tue, 12 Apr 2011 07:35:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [085/105] mfd: ab8500: world-writable debugfs register-* files
+        Patrick McHardy <kaber@trash.net>
+Subject: [079/105] netfilter: ip_tables: fix infoleak to userspace
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,42 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 44bdcb54df2714da18c4a0c6f711a350ab4ed93c upstream.
+commit 78b79876761b86653df89c48a7010b5cbd41a84a upstream.
 
-Don't allow everybody to interact with hardware registers.
+Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
+copied from userspace.  Fields of these structs that are
+zero-terminated strings are not checked.  When they are used as argument
+to a format string containing "%s" in request_module(), some sensitive
+information is leaked to userspace via argument of spawned modprobe
+process.
+
+The first and the third bugs were introduced before the git epoch; the
+second was introduced in 2722971c (v2.6.17-rc1).  To trigger the bug
+one should have CAP_NET_ADMIN.
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mfd/ab8500-debugfs.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/ipv4/netfilter/ip_tables.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -585,18 +585,18 @@ static int __devinit ab8500_debug_probe(
- 		goto exit_destroy_dir;
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -1261,6 +1261,7 @@ do_replace(struct net *net, const void _
+ 	/* overflow check */
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
  
- 	ab8500_bank_file = debugfs_create_file("register-bank",
--		(S_IRUGO | S_IWUGO), ab8500_dir, &plf->dev, &ab8500_bank_fops);
-+		(S_IRUGO | S_IWUSR), ab8500_dir, &plf->dev, &ab8500_bank_fops);
- 	if (!ab8500_bank_file)
- 		goto exit_destroy_reg;
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1805,6 +1806,7 @@ compat_do_replace(struct net *net, void
+ 		return -ENOMEM;
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
  
- 	ab8500_address_file = debugfs_create_file("register-address",
--		(S_IRUGO | S_IWUGO), ab8500_dir, &plf->dev,
-+		(S_IRUGO | S_IWUSR), ab8500_dir, &plf->dev,
- 		&ab8500_address_fops);
- 	if (!ab8500_address_file)
- 		goto exit_destroy_bank;
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -2034,6 +2036,7 @@ do_ipt_get_ctl(struct sock *sk, int cmd,
+ 			ret = -EFAULT;
+ 			break;
+ 		}
++		rev.name[sizeof(rev.name)-1] = 0;
  
- 	ab8500_val_file = debugfs_create_file("register-value",
--		(S_IRUGO | S_IWUGO), ab8500_dir, &plf->dev, &ab8500_val_fops);
-+		(S_IRUGO | S_IWUSR), ab8500_dir, &plf->dev, &ab8500_val_fops);
- 	if (!ab8500_val_file)
- 		goto exit_destroy_address;
- 
+ 		if (cmd == IPT_SO_GET_REVISION_TARGET)
+ 			target = 1;
 
 
