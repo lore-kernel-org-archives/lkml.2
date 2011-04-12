@@ -1,142 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab1DLTiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:38:05 -0400
-Received: from www.xplot.org ([66.92.66.146]:45635 "EHLO www.xplot.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab1DLTiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:38:03 -0400
-X-Greylist: delayed 1406 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Apr 2011 15:38:03 EDT
-From: Tim Shepard <shep@alum.mit.edu>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.39-rc3 udevadm settle timeout, many hdb events, interrupt storm
-Date: Tue, 12 Apr 2011 15:14:35 -0400
-Message-Id: <E1Q9j2p-0008Rr-00@www.xplot.org>
+	id S1756761Ab1DLTiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:38:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54434 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751913Ab1DLTiu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 15:38:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+ <AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+ <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+ <alpine.LSU.2.00.1103182158200.18771@sister.anvils> <BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+ <AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+ <BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com> <BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
+ <BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com> <BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
+ <BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com> <BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
+ <BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com> <alpine.LSU.2.00.1104060837590.4909@sister.anvils>
+ <BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com> <BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
+ <BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com> <alpine.LSU.2.00.1104070718120.28555@sister.anvils>
+ <BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com> <BANLkTiniyAN40p0q+2wxWsRZ5PJFn9zE0Q@mail.gmail.com>
+ <BANLkTik6U21r91DYiUsz9A0P--=5QcsBrA@mail.gmail.com> <BANLkTim6ATGxTiMcfK5-03azgcWuT4wtJA@mail.gmail.com>
+ <BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com> <BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 12 Apr 2011 12:38:00 -0700
+Message-ID: <BANLkTikZ1szdH5HZdjKEEzG2+1VPusWEeg@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Michel Lespinasse <walken@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 12, 2011 at 12:02 PM, Robert Święcki <robert@swiecki.net> wrote:
+>
+> I'm testing currently with the old one, w/o any symptoms of problems
+> by now, but it's not a meaningful period of time. I can try with the
+> new one, leave it over(European)night, and let you know tomorrow.
 
+You might as well keep testing the old one, if that gives it better
+coverage. No need to disrupt anything you already have running.
 
-2.6.38 is working fine on my PowerBook G4 (powerpc) and has none of
-the issues described below.
+The more important input is "was that actually the root cause", rather
+than deciding between the ugly or clean way of fixing it.
 
-Last week I tried 2.6.39-rc2 and it hung on reboot.
-Same thing with 2.6.39-rc3 this week.
+So if the first patch fixes it, then I'm pretty sure the second one
+will too - just in a cleaner manner.
 
-I've tracked this down to the "udevadm settle" in /etc/init.d/udev
-(from Debian squeeze).
-
-If I am patient it does timeout after 180 seconds and continues
-booting.  But after booting finishes udev is still chewing CPU cycles
-and load average is stuck at 1.
-
-After the system is up:
-
-# udevadm monitor
-monitor will print the received events for:
-UDEV - the event which udev sends out after rule processing
-KERNEL - the kernel uevent
-
-KERNEL[1302632376.412055] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.460742] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632376.501101] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.510745] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.560742] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632376.601155] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.610755] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.660744] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632376.701186] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.710751] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.760727] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632376.801135] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.810753] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.860748] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632376.901068] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.910748] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632376.960746] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632377.004023] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.010786] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.210681] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.260749] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632377.301096] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.310749] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.360749] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632377.401136] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.410753] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.460748] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632377.501264] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.510749] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.560730] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-UDEV  [1302632377.601147] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-KERNEL[1302632377.610793] change   /devices/pci0002:24/0002:24:0d.0/ide0/0.1/block/hdb (block)
-^C# 
-# 
-# 
-# dmesg | grep hdb
-hdb: MATSHITADVD-R UJ-846, ATAPI CD/DVD-ROM drive
-hdb: host max PIO4 wanted PIO255(auto-tune) selected PIO4
-hdb: UDMA/66 mode selected
-ide-cd: hdb: ATAPI 24X DVD-ROM DVD-R CD-R/RW drive, 2048kB Cache
-# 
-# dmesg | grep ide
-radeonfb: Using Firmware dividers 0x00040089 from PPLL 0
-ide-pmac 0002:24:0d.0: enabling device (0000 -> 0002)
-ide-pmac: Found Apple UniNorth ATA-6 controller (PCI), bus ID 3, irq 39
-Probing IDE interface ide0...
-ide0 at 0xf106a000-0xf106a070,0xf106a160 on irq 39
-ide-gd driver 1.18
-ide-cd driver 5.00
-ide-cd: hdb: ATAPI 24X DVD-ROM DVD-R CD-R/RW drive, 2048kB Cache
-#
-
-
-I am getting over 1300 interrupts per second for ide0:
-
-# while grep ide /proc/interrupts && sleep 1 ; do : ; done
- 39:     722724   MPIC 1     ide0
- 39:     723042   MPIC 1     ide0
- 39:     723364   MPIC 1     ide0
- 39:     723685   MPIC 1     ide0
- 39:     724012   MPIC 1     ide0
- 39:     724334   MPIC 1     ide0
- 39:     724656   MPIC 1     ide0
- 39:     724978   MPIC 1     ide0
- 39:     725296   MPIC 1     ide0
- 39:     725615   MPIC 1     ide0
- 39:     725936   MPIC 1     ide0
- 39:     726257   MPIC 1     ide0
- 39:     726577   MPIC 1     ide0
- 39:     726901   MPIC 1     ide0
- 39:     727226   MPIC 1     ide0
- 39:     727549   MPIC 1     ide0
- 39:     727868   MPIC 1     ide0
- 39:     728190   MPIC 1     ide0
- 39:     728512   MPIC 1     ide0
- 39:     728833   MPIC 1     ide0
- 39:     729152   MPIC 1     ide0
- 39:     729473   MPIC 1     ide0
- 39:     729800   MPIC 1     ide0
- 39:     730111   MPIC 1     ide0
- 39:     730435   MPIC 1     ide0
- 39:     730755   MPIC 1     ide0
- 39:     731083   MPIC 1     ide0
- 39:     731402   MPIC 1     ide0
- 39:     731720   MPIC 1     ide0
- 39:     732052   MPIC 1     ide0
- 39:     732368   MPIC 1     ide0
- 39:     732689   MPIC 1     ide0
- 39:     733010   MPIC 1     ide0
-^C
-
-
-
-I tried using the CDROM drive and it actually does work (as /dev/hdb).
-So the only real problems are the 180 second hang while booting and
-the interrupt storm and udev event storm that continues.
-
-Any hints?
-
-
-			-Tim Shepard
-			 shep@alum.mit.edu
+                          Linus
