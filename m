@@ -1,126 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab1DLAOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 20:14:23 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46778 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756467Ab1DLAOW (ORCPT
+	id S1756590Ab1DLAOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 20:14:36 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57961 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756568Ab1DLAOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 20:14:22 -0400
+	Mon, 11 Apr 2011 20:14:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=VhU12rO5niKExVh7ZNrha7r5lNvaAWFo8Dw6sODDzzQ1y3lyg2ZiWrsL+MAVSZxDoV
-         4BuCcIGQNsgANXnpQajfbbc8TTKduIrYMKK61GzrXWO4m+iDZe79RLRqCdIKaZL6YDwn
-         dZupVN530a6Uiz/5dIZXzeIGmhe55abx+5xfA=
-From: Timothy Courrejou <timcour@gmail.com>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Timothy Courrejou <timcour@gmail.com>
-Subject: [PATCH] ACPI: ac: fixed indentation, commenting and line length coding style issues
-Date: Mon, 11 Apr 2011 17:14:10 -0700
-Message-Id: <1302567250-6893-1-git-send-email-timcour@gmail.com>
-X-Mailer: git-send-email 1.7.4.2
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qu5Amcpv1smL3wtroWvJXHvFFEFF46U+Qxc8vLAeLFjpexGJU/k75RzrXVOgjEu5bq
+         Csziqafr66YZNjkfaXxqcSPqt44RlYywMZFHvoLoAjBwBKq3AtP3U1XRSMrCvZHZjdtk
+         n+E6+HKtHwbu7zSHe7fiOZCI1YrNwY38if/m8=
+Date: Tue, 12 Apr 2011 09:14:27 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: Strange block/scsi/workqueue issue
+Message-ID: <20110412001427.GH9673@mtj.dyndns.org>
+References: <1302533763.2596.23.camel@dolmen>
+ <20110411171803.GG9673@mtj.dyndns.org>
+ <1302544330.2596.31.camel@dolmen>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302544330.2596.31.camel@dolmen>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issues.
----
- drivers/acpi/ac.c |   36 ++++++++++++++++++------------------
- 1 files changed, 18 insertions(+), 18 deletions(-)
+Hello,
 
-diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
-index 58c3f74..183a035 100644
---- a/drivers/acpi/ac.c
-+++ b/drivers/acpi/ac.c
-@@ -85,7 +85,7 @@ static struct acpi_driver acpi_ac_driver = {
- 
- struct acpi_ac {
- 	struct power_supply charger;
--	struct acpi_device * device;
-+	struct acpi_device *device;
- 	unsigned long long state;
- };
- 
-@@ -101,10 +101,9 @@ static const struct file_operations acpi_ac_fops = {
- };
- #endif
- 
--/* --------------------------------------------------------------------------
--                               AC Adapter Management
--   -------------------------------------------------------------------------- */
--
-+/*
-+ * AC Adapter Management
-+ */
- static int acpi_ac_get_state(struct acpi_ac *ac)
- {
- 	acpi_status status = AE_OK;
-@@ -113,9 +112,11 @@ static int acpi_ac_get_state(struct acpi_ac *ac)
- 	if (!ac)
- 		return -EINVAL;
- 
--	status = acpi_evaluate_integer(ac->device->handle, "_PSR", NULL, &ac->state);
-+	status = acpi_evaluate_integer(ac->device->handle,
-+				       "_PSR", NULL, &ac->state);
- 	if (ACPI_FAILURE(status)) {
--		ACPI_EXCEPTION((AE_INFO, status, "Error reading AC Adapter state"));
-+		ACPI_EXCEPTION((AE_INFO, status,
-+				"Error reading AC Adapter state"));
- 		ac->state = ACPI_AC_STATUS_UNKNOWN;
- 		return -ENODEV;
- 	}
-@@ -123,9 +124,9 @@ static int acpi_ac_get_state(struct acpi_ac *ac)
- 	return 0;
- }
- 
--/* --------------------------------------------------------------------------
--                            sysfs I/F
--   -------------------------------------------------------------------------- */
-+/*
-+ * sysfs I/F
-+ */
- static int get_ac_property(struct power_supply *psy,
- 			   enum power_supply_property psp,
- 			   union power_supply_propval *val)
-@@ -153,10 +154,10 @@ static enum power_supply_property ac_props[] = {
- };
- 
- #ifdef CONFIG_ACPI_PROCFS_POWER
--/* --------------------------------------------------------------------------
--                              FS Interface (/proc)
--   -------------------------------------------------------------------------- */
- 
-+/*
-+ * FS Interface (/proc)
-+ */
- static struct proc_dir_entry *acpi_ac_dir;
- 
- static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
-@@ -229,10 +230,9 @@ static int acpi_ac_remove_fs(struct acpi_device *device)
- }
- #endif
- 
--/* --------------------------------------------------------------------------
--                                   Driver Model
--   -------------------------------------------------------------------------- */
--
-+/*
-+ * Driver Model
-+ */
- static void acpi_ac_notify(struct acpi_device *device, u32 event)
- {
- 	struct acpi_ac *ac = acpi_driver_data(device);
-@@ -298,7 +298,7 @@ static int acpi_ac_add(struct acpi_device *device)
- 	       acpi_device_name(device), acpi_device_bid(device),
- 	       ac->state ? "on-line" : "off-line");
- 
--      end:
-+end:
- 	if (result) {
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 		acpi_ac_remove_fs(device);
+On Mon, Apr 11, 2011 at 06:52:10PM +0100, Steven Whitehouse wrote:
+> WARNING: at lib/kref.c:34 kref_get+0x2d/0x30()
+> Hardware name: PowerEdge R710
+> Modules linked in:
+> Pid: 12, comm: kworker/2:0 Not tainted 2.6.39-rc2+ #188
+> Call Trace:
+>  [<ffffffff8108fa9a>] warn_slowpath_common+0x7a/0xb0
+>  [<ffffffff8108fae5>] warn_slowpath_null+0x15/0x20
+>  [<ffffffff813c97cd>] kref_get+0x2d/0x30
+>  [<ffffffff813c81ca>] kobject_get+0x1a/0x30
+>  [<ffffffff814607f4>] get_device+0x14/0x20
+>  [<ffffffff81478b57>] scsi_request_fn+0x37/0x4a0
+>  [<ffffffff813aff2a>] __blk_run_queue+0x6a/0x110
+>  [<ffffffff813b1f66>] blk_delay_work+0x26/0x40
+>  [<ffffffff810aa9c7>] process_one_work+0x197/0x520
+>  [<ffffffff810acfec>] worker_thread+0x15c/0x330
+>  [<ffffffff810b1f16>] kthread+0xa6/0xb0
+>  [<ffffffff816870e4>] kernel_thread_helper+0x4/0x10
+> ---[ end trace 3681e9da2630a94b ]---
+
+Hmm, it could be that the root cause of the problem is
+premature/double put of scsi_device.  Without the patch, it makes
+scsi_request_fn() call into device destruction path prematurely
+triggering deadlock while after the patch, the deadlock is gone but
+the ref count reaches zero prematurely triggering kref warning on the
+next request.
+
+The problem doesn't seem widespread so something about the setup is
+peculiar.  Steven, can you please detail the setup (and steps needed
+to trigger the problem) and attach the full boot log?  James, any
+ideas?
+
+Thanks.
+
 -- 
-1.7.4.2
-
+tejun
