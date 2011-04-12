@@ -1,91 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab1DLIg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 04:36:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40472 "EHLO mx1.redhat.com"
+	id S1756847Ab1DLIgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 04:36:49 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:60746 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754133Ab1DLIgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 04:36:25 -0400
-Date: Tue, 12 Apr 2011 14:06:13 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>
-Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
-Message-ID: <20110412083613.GI26678@amit-x200.redhat.com>
-References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
- <20110401154327.GA6593@mtj.dyndns.org>
- <20110405065129.GC2872@amit-x200.redhat.com>
- <20110406100620.GA4142@mtj.dyndns.org>
- <BANLkTinpRJHr+293kPzS1=hCWRPamOOGfw@mail.gmail.com>
- <20110408162041.GB3871@mtj.dyndns.org>
- <BANLkTimYBDvcUO9Z2wdk4VFk88NpGJiZJA@mail.gmail.com>
- <20110408165207.GD3871@mtj.dyndns.org>
- <20110412045146.GE26678@amit-x200.redhat.com>
- <BANLkTi=2344xaNM=YjY_GZbyp8yayyM2nA@mail.gmail.com>
+	id S1756817Ab1DLIgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 04:36:32 -0400
+X-ASG-Debug-ID: 1302597391-03d6a5732993e70001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DA40F0E.1070903@fusionio.com>
+Date: Tue, 12 Apr 2011 10:36:30 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=2344xaNM=YjY_GZbyp8yayyM2nA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "hch@infradead.org" <hch@infradead.org>
+CC: NeilBrown <neilb@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <20110411145022.710c30e9@notabene.brown> <4DA2C7BE.6060804@fusionio.com> <20110411205928.13915719@notabene.brown> <4DA2E03A.2080607@fusionio.com> <20110411212635.7959de70@notabene.brown> <4DA2E7F0.9010904@fusionio.com> <20110411220505.1028816e@notabene.brown> <4DA2F00E.6010907@fusionio.com> <20110411223623.4278fad1@notabene.brown> <4DA2F8AD.1060605@fusionio.com> <20110412011255.GA29236@infradead.org>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <20110412011255.GA29236@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1302597391
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60622
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 12 Apr 2011 [09:16:41], Stefan Hajnoczi wrote:
-> On Tue, Apr 12, 2011 at 5:51 AM, Amit Shah <amit.shah@redhat.com> wrote:
-> > On (Fri) 08 Apr 2011 [09:52:07], Tejun Heo wrote:
-> >> Hello,
-> >>
-> >> On Fri, Apr 08, 2011 at 05:43:16PM +0100, Stefan Hajnoczi wrote:
-> >> > >> I think it would make sense to refresh the inode size on media change
-> >> > >> so that even open file descriptors see the new size and a single
-> >> > >> process cannot force a stale value for all other userspace processes
-> >> > >> on the system.
-> >> > >
-> >> > > Hmmm... I don't know.  Maybe we can but I'm not sure whether there's a
-> >> > > good reason for it.  cdrom is locked while opened after all.  Are
-> >> > > there actual problems?
-> >> >
-> >> > Yeah, sorry I didn't explain what the use case was.  With QEMU you can
-> >> > pass through the physical CD-ROM into the virtual machine.
-> >> >
-> >> > QEMU opens /dev/cdrom with O_NONBLOCK | O_RDONLY.  The guest can test
-> >> > if the medium is present and QEMU will do ioctl(fd,
-> >> > CDROM_DRIVE_STATUS, CDSL_CURRENT).  The guest can also lock the tray
-> >> > and eject, again using the respective ioctls.  Read operations are
-> >> > serviced by performing a read on the file descriptor in QEMU.  And
-> >> > finally the medium size is queried by QEMU using lseek(fd, 0,
-> >> > SEEK_END).
-> >> >
-> >> > Today QEMU cannot keep /dev/cdrom open across media change because it
-> >> > will have an outdated inode size returned from lseek(fd, 0, SEEK_END).
-> >> >  But if the cdrom driver (or sr) refresh the inode size on media
-> >> > change then there is no need to work around this from userspace.
-> >>
-> >> Hmmm... ISTR there was some discussion about changing inode size on
-> >> the fly quite a while ago.  I didn't follow the discussion but it
-> >> seemed to have rather nasty/delicate implications.
-> >
-> > I don't necessarily agree with having to modify inode sizes on the
-> > fly, but the main bug here is that the inode doesn't get invalidated
-> > if a CDROM is ejected while a process has an fd to the CDROM device
-> > opened.  So as in the original case, if a CD is swapped with one
-> > having more data, lseek continues to report the original media's size
-> > in the process that keeps the fd open across eject/insert.
-> >
-> > I haven't tried this on physical systems, so can't count out it being
-> > a qemu bug as well.
+On 2011-04-12 03:12, hch@infradead.org wrote:
+> On Mon, Apr 11, 2011 at 02:48:45PM +0200, Jens Axboe wrote:
+>> Great, once you do that and XFS kills the blk_flush_plug() calls too,
+>> then we can remove that export and make it internal only.
 > 
-> Amit,
-> This sounds exactly like the bug that I described and it happens on
-> bare metal without virtualization.
+> Linus pulled the tree, so they are gone now.  Btw, there's still some
+> bits in the area that confuse me:
 
-Oh OK -- just wanted to get the qemu passthrough out of the equation.
+Great!
 
-Thanks.
+>  - what's the point of the queue_sync_plugs?  It has a lot of comment
+>    that seem to pre-data the onstack plugging, but except for that
+>    it's trivial wrapper around blk_flush_plug, with an argument
+>    that is not used.
 
-		Amit
+There's really no point to it anymore. It's existance was due to the
+older revision that had to track write requests for serializaing around
+a barrier. I'll kill it, since we don't do that anymore.
+
+>  - is there a good reason for the existance of __blk_flush_plug?  You'd
+>    get one additional instruction in the inlined version of
+>    blk_flush_plug when opencoding, but avoid the need for chained
+>    function calls.
+>  - Why is having a plug in blk_flush_plug marked unlikely?  Note that
+>    unlikely is the static branch prediction hint to mark the case
+>    extremly unlikely and is even used for hot/cold partitioning.  But
+>    when we call it we usually check beforehand if we actually have
+>    plugs, so it's actually likely to happen.
+
+The existance and out-of-line is for the scheduler() hook. It should be
+an unlikely event to schedule with a plug held, normally the plug should
+have been explicitly unplugged before that happens.
+
+>  - what is the point of blk_finish_plug?  All callers have
+>    the plug on stack, and there's no good reason for adding the NULL
+>    check.  Note that blk_start_plug doesn't have the NULL check either.
+
+That one can probably go, I need to double check that part since some
+things changed.
+
+>  - Why does __blk_flush_plug call __blk_finish_plug which might clear
+>    tsk->plug, just to set it back after the call? When manually inlining
+>    __blk_finish_plug ino __blk_flush_plug it looks like:
+> 
+> void __blk_flush_plug(struct task_struct *tsk, struct blk_plug *plug)
+> {
+> 	flush_plug_list(plug);
+> 	if (plug == tsk->plug)
+> 		tsk->plug = NULL;
+> 	tsk->plug = plug;
+> }
+> 
+>    it would seem much smarted to just call flush_plug_list directly.
+>    In fact it seems like the tsk->plug is not nessecary at all and
+>    all remaining __blk_flush_plug callers could be replaced with
+>    flush_plug_list.
+
+It depends on whether this was an explicit unplug (eg
+blk_finish_plug()), or whether it was an implicit event (eg on
+schedule()). If we do it on schedule(), then we retain the plug after
+the flush. Otherwise we clear it.
+
+>  - and of course the remaining issue of why io_schedule needs an
+>    expliciy blk_flush_plug when schedule() already does one in
+>    case it actually needs to schedule.
+
+Already answered in other email.
+
+-- 
+Jens Axboe
+
