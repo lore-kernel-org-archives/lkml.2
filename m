@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab1DLNdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 09:33:13 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52578 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab1DLNdL (ORCPT
+	id S1755724Ab1DLNgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 09:36:41 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:34664 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751794Ab1DLNgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 09:33:11 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH] r8169: Be verbose when unable to load fw patch
-Date: Tue, 12 Apr 2011 15:32:52 +0200
-Message-Id: <1302615172-1646-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4
+	Tue, 12 Apr 2011 09:36:40 -0400
+Date: Tue, 12 Apr 2011 16:36:35 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org,
+        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] axi: add AXI bus driver
+Message-ID: <20110412133633.GR15130@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Hi,
 
-When the driver fails loading the firmware, it doesn't say which patch
-exactly it is missing. We have three different firmware images depending
-on the hw revision, so mention the exact patch name it is unable to load
-in the warning message.
+On Tue, Apr 12, 2011 at 01:57:07AM +0200, Rafał Miłecki wrote:
+> Cc: Michael Büsch <mb@bu3sch.de>
+> Cc: Larry Finger <Larry.Finger@lwfinger.net>
+> Cc: George Kashperko <george@znau.edu.ua>
+> Cc: Arend van Spriel <arend@broadcom.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: Russell King <rmk@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Andy Botting <andy@andybotting.com>
+> Cc: linuxdriverproject <devel@linuxdriverproject.org>
+> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
+> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+> ---
+> V2: Rename to axi
+>     Use DEFINE_PCI_DEVICE_TABLE in bridge
+>     Make use of pr_fmt and pr_*
+>     Store core class
+>     Rename bridge to not b43 specific
+>     Replace magic 0x1000 with BCMAI_CORE_SIZE
+>     Remove some old "ssb" names and defines
+>     Move BCMAI_ADDR_BASE def
+>     Add drvdata field
+> V3: Fix reloading (kfree issue)
+>     Add 14e4:0x4331
+>     Fix non-initialized struct issue
+>     Drop useless inline functions wrappers for pci core drv
+>     Proper pr_* usage
+> V3.1: Include forgotten changes (pr_* and include related)
+>     Explain why we dare to implement empty release function
 
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- drivers/net/r8169.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+I'm not sure we need this. If you have an IP Core which talks AXI and
+you want to put it on a PCI bus, you will have a PCI Bus wrapper around
+that IP Core, so you should go and let the kernel know about that. See
+[1] for a core IP which talks AXI and [2] for a PCI bus glue layer.
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 493b0de..b068115 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -2248,7 +2248,7 @@ static void rtl8168d_1_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x05, 0x001b);
- 	if ((rtl_readphy(tp, 0x06) != 0xbf00) ||
- 	    (rtl_apply_firmware(tp, FIRMWARE_8168D_1) < 0)) {
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
-+		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch %s\n", FIRMWARE_8168D_1);
- 	}
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
-@@ -2353,7 +2353,7 @@ static void rtl8168d_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x05, 0x001b);
- 	if ((rtl_readphy(tp, 0x06) != 0xb300) ||
- 	    (rtl_apply_firmware(tp, FIRMWARE_8168D_2) < 0)) {
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
-+		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch %s\n", FIRMWARE_8168D_2);
- 	}
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
-@@ -2475,7 +2475,7 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
- 	msleep(100);
- 
- 	if (rtl_apply_firmware(tp, FIRMWARE_8105E_1) < 0)
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
-+		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch %s\n", FIRMWARE_8105E_1);
- 
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
- }
+Besides, if you introduce this bus layer, it'll be more difficult for
+other licensees of the same core to re-use the same driver, since it's
+now talking a PCI emulated on top of AXI. The same can be achieved with
+the platform_bus which is more widely used, specially on ARM SoCs.
+
+[1] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/core.c
+[2] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/dwc3-haps.c
+
 -- 
-1.7.4
-
+balbi
