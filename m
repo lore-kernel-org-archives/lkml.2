@@ -1,118 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab1DLNYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 09:24:33 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36053 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab1DLNYb (ORCPT
+	id S1755537Ab1DLN0M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 09:26:12 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:61716 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754880Ab1DLN0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 09:24:31 -0400
-X-AuditID: b753bd60-a3cafba0000019f4-ea-4da4528c055d
-X-AuditID: b753bd60-a3cafba0000019f4-ea-4da4528c055d
-Message-ID: <4DA4526B.2030609@hitachi.com>
-Date: Tue, 12 Apr 2011 22:23:55 +0900
-From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Tue, 12 Apr 2011 09:26:08 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFJjS0MFZE=
+X-RZG-CLASS-ID: mo00
+Date: Tue, 12 Apr 2011 15:26:03 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Greg KH <greg@kroah.com>
+Cc: Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hv: Reduce indention in vmbus_on_event
+Message-ID: <20110412132603.GA25917@aepfle.de>
+References: <20110322210207.GA17724@aepfle.de>
+ <20110405050848.GA8330@kroah.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Hannes Reinecke <hare@suse.de>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
- in Kernel.
-References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>	 <20110405161400.GA885@kroah.com> <4D9F17DF.5030601@hitachi.com>	 <4D9F1CD1.2020600@suse.de> <1302275652.4090.10.camel@mulgrave.site>
-In-Reply-To: <1302275652.4090.10.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110405050848.GA8330@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, James
+On Mon, Apr 04, Greg KH wrote:
 
-(2011/04/09 0:14), James Bottomley wrote:
-> On Fri, 2011-04-08 at 07:33 -0700, Hannes Reinecke wrote:
->>> The problem I would like to discuss here is that users can not identify
->>> a disk from kernel messages when they DIRECTLY refer to these messages.
->>> For example, a device name is used instead of a symbolic link names in
->>> bootup messages, I/O devices errors and /proc/partitions …etc.
->>>
->>> In particular, users can not identify an appropriate device from a
->>> device name in syslog since different device name may be assigned to it
->>> at each boot time.
->>>
->>> My idea is able to fix this issue with small changes in scsi subsystem.
->>> Also, it is implemented as an option. Therefore, it does not affect
->>> users who do not select this option.
->>>
->> We have been discussing this problem several times in the past, and
->> indeed on these very mailing list.
->>
->> The conclusion we arrived at is that the kernel-provided device node
->> name is inherently unstable and impossible to fix within the existing
->> 'sdX' naming scheme.
->> So the choices have been to either move to a totally different naming
->> scheme or keep the naming scheme and provide the required information
->> by other means.
->> We have decided on the latter, and agreed on using udev to provide
->> persistent device names.
->> We are fully aware that any kernel related messages are subject to
->> chance after reboot, but then most kernel related messages are
->> (PID number, timestamps, login tty etc).
->> And also we are aware that any kernel messages need to be matched
->> against the current system layout to figure out any hardware-related
->> issue.
->>
->> But then basically all products requiring to filter out information
->> from kernel messages already do so I don't see a problem with that.
->>
->> Just adding an in-kernel identifier to the LUN will only be an
->> incomplete solution, as other identifiers will still be volatile.
->>
->> So I would prefer by keeping the in-kernel information as small
->> as possible to reduce memory consumption and rely on out-of-band
->> programs to provide the required mapping.
+> On Tue, Mar 22, 2011 at 10:02:07PM +0100, Olaf Hering wrote:
+> > Reduce indention in vmbus_on_event() by converting two
+> > if (var) to if (!var)
+> > 
+> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
 > 
-> So, while I agree totally with the above: udev and userspace is the way
-> to go, I'm not totally opposed to having a non-invasive mechanism for
-> indicating a user's preferred name for a device.  I think there are a
-> couple of ways to do this:
+> This, and I think your other ones in this series, no longer applies due
+> to changes made by others to this driver.
 > 
->      1. Entirely in userspace: just have udev consult a preferred name
->         file and create say /dev/disk/by-preferred.  Then have all the
->         tools that normally output device information do the same (i.e.
->         since real name to preferred name is 1:1, they could all do a
->         reverse lookup).
->      2. have a writeable sysfs preferred_name field, either in the
->         generic device or just in SCSI.  The preferred name would be
->         used by outbound only (i.e. kernel dev_printk messages and
->         possibly /proc/partitions).  All inbound uses of the device
->         would come via the standard udev mechanisms
->         (i.e. /dev/disk/by-preferred would be the usual symlink).  This
->         means from the kernel point of view, no renaming has happened.
->         We'd just try to print out the preferred name in certain
->         circumstances, which should solve most of the described problem.
-> 
-> James
-> 
-> 
-> 
+> Can you resync off of the next linux-next release and resend the
+> patches?  I'd also like to get an ack or tested-by or something from
+> Hank and the other developers of these drivers before accepting them.
 
-I have a question. Why is in-kernel device name necessary? The kernel
-can identify a device by major/miner number and udev can create a
-device node of a prefer name.
+Yes, I will look at it this in the next days.
 
-Currently, device names are only used to show to users. Therefore I
-think that in-kernel device name is unnecessary if we introduce your
-/dev/disk/by-prefferd idea.
-
-
-thanks,
-
--- 
-Nao NISHIJIMA
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., YOKOHAMA Research  Laboratory
-Email： nao.nishijima.xt@hitachi.com
+Olaf
