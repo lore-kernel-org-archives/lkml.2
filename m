@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab1DLDjp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 23:39:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53452 "EHLO mail.zytor.com"
+	id S1756715Ab1DLDt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 23:49:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:59625 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756386Ab1DLDjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 23:39:43 -0400
-Message-ID: <4DA3C96E.7020502@zytor.com>
-Date: Mon, 11 Apr 2011 20:39:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1756628Ab1DLDt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 23:49:56 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, lguest@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC][PATCH] virtio: 64 bit features
+In-Reply-To: <20110411165525.GA1395@redhat.com>
+References: <20110411165525.GA1395@redhat.com>
+User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Tue, 12 Apr 2011 12:55:42 +0930
+Message-ID: <87ei58cfrd.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: [PATCH 09/34] x86: Allow to override the ROOT_DEV variable
-References: <1302015561-21047-1-git-send-email-mmarek@suse.cz> <1302015561-21047-10-git-send-email-mmarek@suse.cz> <4D9B3581.6080105@zytor.com> <4D9C1AA0.9030008@suse.cz> <20110411150820.GA22004@sepie.suse.cz>
-In-Reply-To: <20110411150820.GA22004@sepie.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 08:08 AM, Michal Marek wrote:
->
-> Like this?
->
-> Subject: [PATCH] x86: Do not set the rood_dev field in bzImage
->
-> This has been obsoleted by the root= commandline for several years.
-> People who still depend on this will surely have a copy of the rdev
-> command around, the rest of the world gets rid of another piece of
-> buildhost-dependent data in the build.
->
+On Mon, 11 Apr 2011 19:55:25 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> Extend features to 64 bit so we can use more
+> transport bits.
+> 
+> Future patches add two new feature bits which would
+> exhaust the supply of transport feature bits,
+> so let's add bit 31 to tell the guest that
+> there are now 64 worth of features.
+> 
+> For PCI this also changes the config layout.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Works for me.  "Several years" is even kind of an understatement ;)
+This was pretty much the way I imagined it would work.  We need a patch
+to the spec and a lot of cross testing...
 
-	-hpa
+Thanks!
+Rusty.
