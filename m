@@ -1,212 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab1DLKck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 06:32:40 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:44694 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757137Ab1DLKci (ORCPT
+	id S1757236Ab1DLKcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 06:32:51 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57189 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757214Ab1DLKcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 06:32:38 -0400
+	Tue, 12 Apr 2011 06:32:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=NQudmIvh2GlwF0kgZRbxR0E5rX8bVmyFyukcB9Mu3XhxDZ/O0JvBKTqgNfLiyE/zJz
+         AQ8bB3FowQmFhaVP6mqdZL2NzdkfvoLNgiqOllCo9ixgoX1UFasGIJW/SKx6EcrHREoh
+         mk38AeUimoqFKx5UNZhE5+pHQ4b/Z3vVAFmW0=
 MIME-Version: 1.0
-Date: Tue, 12 Apr 2011 12:32:38 +0200
-Message-ID: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
-Subject: Processes hang in an unkillable state
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd1512a0f9c4504a0b636f1
+In-Reply-To: <20110412192751.B52B.A69D9226@jp.fujitsu.com>
+References: <20110411170033.0356.A69D9226@jp.fujitsu.com>
+	<BANLkTimPB5e_A3AxS_7kuJmqciRciCm2Sw@mail.gmail.com>
+	<20110412192751.B52B.A69D9226@jp.fujitsu.com>
+Date: Tue, 12 Apr 2011 19:32:49 +0900
+Message-ID: <BANLkTimkOn6f7tntEe2Agi5Mqk5OTfMp8A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm, mem-hotplug: fix section mismatch.
+ setup_per_zone_inactive_ratio() should be __meminit.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd1512a0f9c4504a0b636f1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 12, 2011 at 7:28 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Hi
+>
+>> On Mon, Apr 11, 2011 at 5:00 PM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> > Commit bce7394a3e (page-allocator: reset wmark_min and inactive ratio of
+>> > zone when hotplug happens) introduced invalid section references.
+>> > Now, setup_per_zone_inactive_ratio() is marked __init and then it can't
+>> > be referenced from memory hotplug code.
+>> >
+>> > Then, this patch marks it as __meminit and also marks caller as __ref.
+>> >
+>> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+>>
+>> Just a nitpick.
+>>
+>> As below comment of __ref said, It would be better to add _why_ such
+>> as memory_hotplug.c.
+>>
+>> "so optimally document why the __ref is needed and why it's OK"
+>
+> Hmm...
+> All of memory_hotplug.c function can call __meminit function. It's
+> definition of __meminit.
+>
+> We can put the same comment to every function in memory_hotplug.c.
+> like hotadd_newpgdat().
+>
+> /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
+> static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+> {
+> (snip)
+> }
+>
+> But it has zero information. ;)
 
-Hi, while fuzzing Linux system calls (32bit fuzzer, 64bi linux
-kernel), it happens after some time (10-20mins) that some processes
-enter a state which makes them un-killable. They are either in R or D
-state.
+It does make sense. Never mind. :)
 
-# strace ps wwuax
-...
-...
-open("/proc/450/cmdline", O_RDONLY)     =3D 6
-read(6,  -             hangs....
 
-# kill -9 450
-# kill -9 450 (no ESRCH)
 
-More data in the attachment - I'll keep it in the kdb session for
-further examination.
-
---=20
-Robert =C5=9Awi=C4=99cki
-
---000e0cd1512a0f9c4504a0b636f1
-Content-Type: text/plain; charset=GB2312; name="450.txt"
-Content-Disposition: attachment; filename="450.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gmeoxmf50
-
-cm9vdEBpc2UtdGVzdDovcHJvYy80NTAjIHVuYW1lIC1hCkxpbnV4IGlzZS10ZXN0IDIuNi4zOCAj
-NiBTTVAgUFJFRU1QVCBUdWUgQXByIDEyIDExOjI1OjE5IENFU1QgMjAxMSB4ODZfNjQgR05VL0xp
-bnV4Cgpyb290QGlzZS10ZXN0Oi9wcm9jLzQ1MCMgY2F0IHN0YXR1cwpOYW1lOglpa25vd3RoaXMK
-U3RhdGU6CUQgKGRpc2sgc2xlZXApClRnaWQ6CTQ1MApQaWQ6CTQ1MApQUGlkOgkxClRyYWNlclBp
-ZDoJMApVaWQ6CTEwMDEJMTAwMQkxMDAxCTEwMDEKR2lkOgkxMDAxCTEwMDEJMTAwMQkxMDAxCkZE
-U2l6ZToJNjQKR3JvdXBzOgkxMDAxIApWbVBlYWs6CSAgIDEyMjkyIGtCClZtU2l6ZToJICAgMTEx
-MTYga0IKVm1MY2s6CSAgICAgIDQ0IGtCClZtSFdNOgkgICAgMTkwNCBrQgpWbVJTUzoJICAgIDEz
-MjQga0IKVm1EYXRhOgkgICAgIDcxMiBrQgpWbVN0azoJICAgIDc2MTYga0IKVm1FeGU6CSAgICAg
-MTYwIGtCClZtTGliOgkgICAgMjU1NiBrQgpWbVBURToJICAgICAgMjgga0IKVm1Td2FwOgkgICAg
-ICAgMCBrQgpUaHJlYWRzOgkxClNpZ1E6CTc4NS8xNjM4MgpTaWdQbmQ6CTAwMDAwMDAwMDAwMDAx
-MDAgICA/PyBTSUdLSUxMClNoZFBuZDoJMDAwMDAwMDAwMDAwMDEwMApTaWdCbGs6CTAwMDAwMDAw
-MDAwMDAwMDAKU2lnSWduOgkwMDAwMDAwMDAxMDAxMDAwClNpZ0NndDoJMDAwMDAwMDAwMDAwMDAw
-MApDYXBJbmg6CTAwMDAwMDAwMDAwMDAwMDAKQ2FwUHJtOgkwMDAwMDAwMDAwMDAwMDAwCkNhcEVm
-ZjoJMDAwMDAwMDAwMDAwMDAwMApDYXBCbmQ6CWZmZmZmZmZmZmZmZmZmZmYKQ3B1c19hbGxvd2Vk
-OglmZgpDcHVzX2FsbG93ZWRfbGlzdDoJMC03Ck1lbXNfYWxsb3dlZDoJMDAwMDAwMDAsMDAwMDAw
-MDEKTWVtc19hbGxvd2VkX2xpc3Q6CTAKdm9sdW50YXJ5X2N0eHRfc3dpdGNoZXM6CTIzMDMKbm9u
-dm9sdW50YXJ5X2N0eHRfc3dpdGNoZXM6CTI4NwoKIyBjYXQgd2NoYW4gCmNhbGxfcndzZW1fZG93
-bl93cml0ZV9mYWlsZWQKCnJvb3RAaXNlLXRlc3Q6L3Byb2MvNDUwIyBscyAtbCBmZC8KdG90YWwg
-MApscnd4LS0tLS0tIDEgdGVzdCB0ZXN0IDY0IDIwMTEtMDQtMTIgMTI6MTcgMCAtPiAvZGV2L3B0
-cy8xCmxyd3gtLS0tLS0gMSB0ZXN0IHRlc3QgNjQgMjAxMS0wNC0xMiAxMjoxNyAxIC0+IC9kZXYv
-cHRzLzEKbHIteC0tLS0tLSAxIHRlc3QgdGVzdCA2NCAyMDExLTA0LTEyIDEyOjE3IDEwIC0+IC9k
-ZXYvc2htLz8/KD94Pz/TkGQ/PVIxWSA/P0M/P1w6P2l9PylCPz8/P2QhMD9FP2c/Pz8gKGRlbGV0
-ZWQpCmxyLXgtLS0tLS0gMSB0ZXN0IHRlc3QgNjQgMjAxMS0wNC0xMiAxMjoxNyAxMSAtPiAvaG9t
-ZQpsLXd4LS0tLS0tIDEgdGVzdCB0ZXN0IDY0IDIwMTEtMDQtMTIgMTI6MTcgMTIgLT4gL3Zhci9s
-b2NrLz893b4rPz8/Pzc/Pz8/Pz8/QE4/P2XRtWo/UDXCtD9+P3c/UG9tWUs/P255Xz8/P3Vsdj8K
-bC13eC0tLS0tLSAxIHRlc3QgdGVzdCA2NCAyMDExLTA0LTEyIDEyOjE3IDEzIC0+IC92YXIvbG9j
-ay8pID8/Pz8/Pz8/P2B2Py3SqXVRPz8/Pz9PP+qwiD8/Pz9ObmhjID8/Tj9JP0c/Pz/IqD8/Pz8/
-PyE/e1Y/P3NzaWZzPj8/P04/Pz8/cT9JP9mEPz8hVD4/PzM/P3o/dEk0P0I/WCJUPz/TkyAoZGVs
-ZXRlZCkKbHIteC0tLS0tLSAxIHRlc3QgdGVzdCA2NCAyMDExLTA0LTEyIDEyOjE3IDE0IC0+IC9k
-ZXYvc2htLz8/Pz9dPzE/Pz9CPz9jP1Q/ZXU/Pz8/WD8/Pz8/Pz8/Pz8/P14/Pz9+akY/Pz8tP2U/
-bT91Cmwtd3gtLS0tLS0gMSB0ZXN0IHRlc3QgNjQgMjAxMS0wNC0xMiAxMjoxNyAxNSAtPiAvdmFy
-L2xvY2svP+esicupRj9xP2pBSHU/P28gPz/Hl3U/Pz8/Pz8/Tz87Qj8/UW1TWD8/P3A/34M/Uz8/
-d3s/Pyw/KT8/P0Q/P1Y/Pz9xP8O4Iz8/Cmxyd3gtLS0tLS0gMSB0ZXN0IHRlc3QgNjQgMjAxMS0w
-NC0xMiAxMjoxNyAyIC0+IC9kZXYvcHRzLzEKbHIteC0tLS0tLSAxIHRlc3QgdGVzdCA2NCAyMDEx
-LTA0LTEyIDEyOjE3IDMgLT4gL2Rldi91cmFuZG9tCmxyd3gtLS0tLS0gMSB0ZXN0IHRlc3QgNjQg
-MjAxMS0wNC0xMiAxMjoxNyA0IC0+IGFub25faW5vZGU6W3RpbWVyZmRdCmxyLXgtLS0tLS0gMSB0
-ZXN0IHRlc3QgNjQgMjAxMS0wNC0xMiAxMjoxNyA1IC0+IC9zeXMva2VybmVsL2RlYnVnL2Fzb2Mv
-Y29kZWNzCmxyLXgtLS0tLS0gMSB0ZXN0IHRlc3QgNjQgMjAxMS0wNC0xMiAxMjoxNyA2IC0+IC9w
-cm9jL2kybwpsLXd4LS0tLS0tIDEgdGVzdCB0ZXN0IDY0IDIwMTEtMDQtMTIgMTI6MTcgNyAtPiAv
-ZGV2L3NobS8/Pz8/P3o/dT8/Pz8/Pz8/Wj8/P24iP2Q/aTPHlz8/Pz8/P0U/P14/Pz8/P08/fTcr
-P1s/PyMhPz8/JkE/Un4mPz8/Pz8/KNaJP3c/Pz9cdz9jIkU/Jj8iP+W1vz8pyp0/Kz8tP01fPz9S
-P1k/P1I/Pz82P0ZBaEd1P1I/Nj9rPz8/Pz8/bD9CP3c/P34/1ZE/Xj8/aT8/Pz8/Wy4/IChkZWxl
-dGVkKQpsci14LS0tLS0tIDEgdGVzdCB0ZXN0IDY0IDIwMTEtMDQtMTIgMTI6MTcgOCAtPiAvdmFy
-L2xvY2svP+6chDU/3ZU/Qz8/P1wjXT8/P2ItPz8/Pz8/cT0/Pz8sP3Y/XT8/Pz8/Pz9hP2k/Pz/O
-kD8/XD8/SFRiPz9jP0BcMD9NPz8/Pz8/Pz8/Pz98Pz8/eD9YP1t7Jis/JD9YPz8/Pz8/Pzk/Cmwt
-d3gtLS0tLS0gMSB0ZXN0IHRlc3QgNjQgMjAxMS0wNC0xMiAxMjoxNyA5IC0+IC92YXIvbG9jay9C
-Rn0/Pz9QKD8/YD/PsD8/Lj8/PwoKcm9vdEBpc2UtdGVzdDovcHJvYy80NTAjIGZvciB4IGluIGZk
-aW5mby8qOyBkbyBlY2hvID09ICR4ID09OyBjYXQgIiR4IjsgZG9uZQo9PSBmZGluZm8vMCA9PQpw
-b3M6CTAKZmxhZ3M6CTAxMDAwMDIKPT0gZmRpbmZvLzEgPT0KcG9zOgkwCmZsYWdzOgkwMTAwMDAy
-Cj09IGZkaW5mby8xMCA9PQpwb3M6CTEzNTEyNTYzMDA1OTU0OTQ4ODgKZmxhZ3M6CTAyNDI0MDAw
-NDAwNAo9PSBmZGluZm8vMTEgPT0KcG9zOgkxMDg0Nzg2MDE0CmZsYWdzOgkwNDA0MDYyMDAxMAo9
-PSBmZGluZm8vMTIgPT0KcG9zOgkxODExMDQ0MzYyCmZsYWdzOgkwMTAwMDAxCj09IGZkaW5mby8x
-MyA9PQpwb3M6CTMyMjYwNzMzOTQKZmxhZ3M6CTAxMDAwMDEKPT0gZmRpbmZvLzE0ID09CnBvczoJ
-ODAzMjMwNTM2CmZsYWdzOgkwMjAwMjY3MTAwMjQKPT0gZmRpbmZvLzE1ID09CnBvczoJMTEwMzYw
-NDMxNApmbGFnczoJMDEwMDAwMQo9PSBmZGluZm8vMiA9PQpwb3M6CTAKZmxhZ3M6CTAxMDAwMDIK
-PT0gZmRpbmZvLzMgPT0KcG9zOgkwCmZsYWdzOgkwMAo9PSBmZGluZm8vNCA9PQpwb3M6CTAKZmxh
-Z3M6CTAyCj09IGZkaW5mby81ID09CnBvczoJNzA4MTkxODExMTM2MDc3ODI1MwpmbGFnczoJMDIw
-MjAwMDA0MDQ0Cj09IGZkaW5mby82ID09CnBvczoJMjA3NTUyNTc1NApmbGFnczoJMDIwMDIwMDAw
-MAo9PSBmZGluZm8vNyA9PQpwb3M6CTIxNDUxMjg0NTQKZmxhZ3M6CTAxMDAwMDEKPT0gZmRpbmZv
-LzggPT0KcG9zOgkxMzQzNDkxMjEyCmZsYWdzOgkwMjA0NzEwMTAwMjAKPT0gZmRpbmZvLzkgPT0K
-cG9zOgkxMDczNzQzOTA0CmZsYWdzOgkwMTEwMDAwMQoKKGdkYikgYXR0YWNoIDQ1MApBdHRhY2hp
-bmcgdG8gcHJvY2VzcyA0NTAKW2hhbmdzXQoKcm9vdEBpc2UtdGVzdDp+IyBjZCAvcHJvYy80NTAv
-CnJvb3RAaXNlLXRlc3Q6L3Byb2MvNDUwIyBscwpbaGFuZ3MsIGJ1dCBpdCB3b3JrZWRdCgpyb290
-QGlzZS10ZXN0On4jIGNhdCAvcHJvYy9tb3VudHMKcm9vdGZzIC8gcm9vdGZzIHJ3IDAgMAovZGV2
-L3Jvb3QgLyBleHQ0IHJ3LHJlbGF0aW1lLGVycm9ycz1yZW1vdW50LXJvLGJhcnJpZXI9MSxkYXRh
-PW9yZGVyZWQgMCAwCmRldnRtcGZzIC9kZXYgZGV2dG1wZnMgcncscmVsYXRpbWUsc2l6ZT0xOTgx
-ODI0ayxucl9pbm9kZXM9NDk1NDU2LG1vZGU9NzU1IDAgMApub25lIC9wcm9jIHByb2Mgcncsbm9z
-dWlkLG5vZGV2LG5vZXhlYyxyZWxhdGltZSAwIDAKbm9uZSAvc3lzIHN5c2ZzIHJ3LG5vc3VpZCxu
-b2Rldixub2V4ZWMscmVsYXRpbWUgMCAwCm5vbmUgL3Byb2Mvc3lzL2ZzL2JpbmZtdF9taXNjIGJp
-bmZtdF9taXNjIHJ3LG5vc3VpZCxub2Rldixub2V4ZWMscmVsYXRpbWUgMCAwCm5vbmUgL3N5cy9m
-cy9mdXNlL2Nvbm5lY3Rpb25zIGZ1c2VjdGwgcncscmVsYXRpbWUgMCAwCm5vbmUgL3N5cy9rZXJu
-ZWwvZGVidWcgZGVidWdmcyBydyxyZWxhdGltZSAwIDAKbm9uZSAvc3lzL2tlcm5lbC9zZWN1cml0
-eSBzZWN1cml0eWZzIHJ3LHJlbGF0aW1lIDAgMApub25lIC9kZXYvcHRzIGRldnB0cyBydyxub3N1
-aWQsbm9leGVjLHJlbGF0aW1lLGdpZD01LG1vZGU9NjIwLHB0bXhtb2RlPTAwMCAwIDAKbm9uZSAv
-ZGV2L3NobSB0bXBmcyBydyxub3N1aWQsbm9kZXYscmVsYXRpbWUgMCAwCm5vbmUgL3Zhci9ydW4g
-dG1wZnMgcncsbm9zdWlkLHJlbGF0aW1lLG1vZGU9NzU1IDAgMApub25lIC92YXIvbG9jayB0bXBm
-cyBydyxub3N1aWQsbm9kZXYsbm9leGVjLHJlbGF0aW1lIDAgMAoKcm9vdEBpc2UtdGVzdDp+IyBs
-cyAtbCAvcHJvYy80NTAvcm9vdApscnd4cnd4cnd4IDEgdGVzdCB0ZXN0IDAgMjAxMS0wNC0xMiAx
-MjoxNyAvcHJvYy80NTAvcm9vdCAtPiAvCgpyb290QGlzZS10ZXN0On4jIGNhdCAvcHJvYy80NTAv
-c21hcHMKW2hhbmdzXQoKcm9vdEBpc2UtdGVzdDp+IyBjYXQgL3Byb2MvNDUwL3N5c2NhbGwgCjcg
-MHhhYzQgMHhmZjgwNmQ4OCAweDQwMDAwMDAwIDB4OTYgMHhhYzUgMHhmZjgwNmRhOCAweGZmODA2
-ZDE4IDB4ZmZmZmU0MzAKWzBda2RiPiBidApTdGFjayB0cmFjZWJhY2sgZm9yIHBpZCA0NTAKMHhm
-ZmZmODgwMTE4OTA1Y2MwICAgICAgNDUwICAgICAgICAxICAwICAgIDAgICBEICAweGZmZmY4ODAx
-MTg5MDYxNDAgIGlrbm93dGhpcwo8Yz4gZmZmZjg4MDExZGE4ZmI1ODxjPiAwMDAwMDAwMDAwMDAw
-MDg2PGM+IGZmZmY4ODAxMmJmZmJlMGE8Yz4gMDAwMDAwMDAwMDAwMDAwMTxjPgo8Yz4gZmZmZjg4
-MDEzMjM3MzMzMTxjPiBmZmZmODgwMTFkYThlMDAwPGM+IGZmZmY4ODAxMWRhOGUwMDA8Yz4gZmZm
-Zjg4MDExODkwNWNjMDxjPgo8Yz4gZmZmZjg4MDExZGE4ZTAxMDxjPiBmZmZmODgwMTE4OTA2MDc4
-PGM+IGZmZmY4ODAxMWRhOGZmZDg8Yz4gZmZmZjg4MDExZGE4ZmZkODxjPgpDYWxsIFRyYWNlOgog
-WzxmZmZmZmZmZjgyMjRmNjY1Pl0gcndzZW1fZG93bl9mYWlsZWRfY29tbW9uKzB4YzUvMHgxNjAK
-IFs8ZmZmZmZmZmY4MjI0ZjcxMz5dIHJ3c2VtX2Rvd25fd3JpdGVfZmFpbGVkKzB4MTMvMHgyMAog
-WzxmZmZmZmZmZjgxNTk1NmMzPl0gY2FsbF9yd3NlbV9kb3duX3dyaXRlX2ZhaWxlZCsweDEzLzB4
-MjAKIFs8ZmZmZmZmZmY4MjI0ZTk4NT5dID8gZG93bl93cml0ZSsweDI1LzB4MzAKIFs8ZmZmZmZm
-ZmY4MTFiMDgxOT5dIGRvX2NvcmVkdW1wKzB4MTM5LzB4YmIwCiBbPGZmZmZmZmZmODEwYTRlMDk+
-XSA/IHN1Yl9wcmVlbXB0X2NvdW50KzB4YTkvMHhlMAogWzxmZmZmZmZmZjgxMGNiNDI0Pl0gPyBf
-X2RlcXVldWVfc2lnbmFsKzB4ZjQvMHgxOTAKIFs8ZmZmZmZmZmY4MTBjYmI0Yj5dIGdldF9zaWdu
-YWxfdG9fZGVsaXZlcisweDI5Yi8weDRhMAogWzxmZmZmZmZmZjgxMDRlMzY1Pl0gZG9fc2lnbmFs
-KzB4NzUvMHg3YjAKIFs8ZmZmZmZmZmY4MTBmODY4Nz5dID8gY29tcGF0X3N5c193YWl0NCsweDk3
-LzB4ZTAKIFs8ZmZmZmZmZmY4MTBiNTMyMj5dID8gZG9fZm9yaysweGUyLzB4MzcwCiBbPGZmZmZm
-ZmZmODEwNGViMDU+XSBkb19ub3RpZnlfcmVzdW1lKzB4NjUvMHg5MAogWzxmZmZmZmZmZjgyMjRm
-ODU5Pl0gPyB0cmFjZV9oYXJkaXJxc19vbl90aHVuaysweDNhLzB4M2MKIFs8ZmZmZmZmZmY4MTA0
-ZjM3OD5dIGludF9zaWduYWwrMHgxMi8weDE3CgpbMF1rZGI+IGJ0YyAwClN0YWNrIHRyYWNlYmFj
-ayBmb3IgcGlkIDIzNTkyCjB4ZmZmZjg4MDExMmMwNDU5MCAgICAyMzU5MiAgICAgICAgMSAgMSAg
-ICAwICAgUiAgMHhmZmZmODgwMTEyYzA0YTEwICppa25vd3RoaXMKPGM+IGZmZmY4ODAwY2ZjMDNk
-Yzg8Yz4gMDAwMDAwMDAwMDAwMDAxODxjPgpDYWxsIFRyYWNlOgogPCNEQj4gIDw8RU9FPj4gIDxJ
-UlE+ICBbPGZmZmZmZmZmODE2Y2M2Yjk+XSA/IF9faGFuZGxlX3N5c3JxKzB4MTI5LzB4MTkwCiBb
-PGZmZmZmZmZmODE2Y2M5MjY+XSA/IGhhbmRsZV9zeXNycSsweDI2LzB4MzAKIFs8ZmZmZmZmZmY4
-MTZlNGI4ZD5dID8gc2VyaWFsODI1MF9oYW5kbGVfcG9ydCsweDIxZC8weDMyMAogWzxmZmZmZmZm
-ZjgxNmU0ZDJiPl0gPyBzZXJpYWw4MjUwX2ludGVycnVwdCsweDliLzB4MTQwCiBbPGZmZmZmZmZm
-ODExMWE4Yjg+XSA/IGhhbmRsZV9JUlFfZXZlbnQrMHg2OC8weDFiMAogWzxmZmZmZmZmZjgxMTFl
-N2I1Pl0gPyBtb3ZlX25hdGl2ZV9pcnErMHgxNS8weDcwCiBbPGZmZmZmZmZmODExMWNlYWU+XSA/
-IGhhbmRsZV9lZGdlX2lycSsweGJlLzB4MTcwCiBbPGZmZmZmZmZmODEwNTIzMTk+XSA/IGhhbmRs
-ZV9pcnErMHg0OS8weGEwCiBbPGZmZmZmZmZmODIyNTBkZmQ+XSA/IGRvX0lSUSsweDVkLzB4ZTAK
-IFs8ZmZmZmZmZmY4MjI1MDY5Mz5dID8gcmV0X2Zyb21faW50cisweDAvMHgxYQogPEVPST4gIFs8
-ZmZmZmZmZmY4MTE3YTdiOD5dID8gZG9fbWxvY2tfcGFnZXMrMHg3OC8weDE1MAogWzxmZmZmZmZm
-ZjgxMTdhN2I4Pl0gPyBkb19tbG9ja19wYWdlcysweDc4LzB4MTUwCiBbPGZmZmZmZmZmODExN2Iy
-MWM+XSA/IHN5c19tbG9jaysweDExYy8weDEzMAogWzxmZmZmZmZmZjgxMDlhNjUzPl0gPyBpYTMy
-X3N5c3JldCsweDAvMHg1ClswXWtkYj4gYnRjIDEKU3RhY2sgdHJhY2ViYWNrIGZvciBwaWQgMTUy
-MjMKMHhmZmZmODgwMTFlYmI0NTkwICAgIDE1MjIzICAgICA1NTk0ICAxICAgIDEgICBSICAweGZm
-ZmY4ODAxMWViYjRhMTAgIGlrbm93dGhpcwo8Yz4gZmZmZjg4MDExZTUyOWM0ODxjPiAwMDAwMDAw
-MDAwMDAwMDE4PGM+CkNhbGwgVHJhY2U6CgoKWzBda2RiPiBzdW1tYXJ5CnN5c25hbWUgICAgTGlu
-dXgKcmVsZWFzZSAgICAyLjYuMzgKdmVyc2lvbiAgICAjNiBTTVAgUFJFRU1QVCBUdWUgQXByIDEy
-IDExOjI1OjE5IENFU1QgMjAxMQptYWNoaW5lICAgIHg4Nl82NApub2RlbmFtZSAgIGlzZS10ZXN0
-CmRvbWFpbm5hbWUgKG5vbmUpCmNjdmVyc2lvbiAgQ0NWRVJTSU9OCmRhdGUgICAgICAgMjAxMS0w
-NC0xMiAxMDoyNDo0MiB0el9taW51dGVzd2VzdCAtMTIwCnVwdGltZSAgICAgMDA6NDIKbG9hZCBh
-dmcgICAzOC4xMyAzNS45OCAyOC44MQoKTWVtVG90YWw6ICAgICAgICAgOTkyMTg2IGtCCk1lbUZy
-ZWU6ICAgICAgICAgIDg5OTkyNCBrQgpCdWZmZXJzOiAgICAgICAgICAgIDU0MTEga0IKCgphZnRl
-ciBnbyBpbiBrZGIsIGFuZCBhbm90aGVyIGtkYiBzZXNzaW9uOgoKWzBda2RiPiBidGMgMApTdGFj
-ayB0cmFjZWJhY2sgZm9yIHBpZCAxNTgwMgoweGZmZmY4ODAxMWU4MTgwMDAgICAgMTU4MDIgICAg
-ICAgIDEgIDEgICAgMCAgIFIgIDB4ZmZmZjg4MDExZTgxODQ4MCAqaWtub3d0aGlzCjxjPiBmZmZm
-ODgwMGNmYzAzZGM4PGM+IDAwMDAwMDAwMDAwMDAwMTg8Yz4KQ2FsbCBUcmFjZToKIDwjREI+ICA8
-PEVPRT4+ICA8SVJRPiAgWzxmZmZmZmZmZjgxNmNjNmI5Pl0gPyBfX2hhbmRsZV9zeXNycSsweDEy
-OS8weDE5MAogWzxmZmZmZmZmZjgxNmNjOTI2Pl0gPyBoYW5kbGVfc3lzcnErMHgyNi8weDMwCiBb
-PGZmZmZmZmZmODE2ZTRiOGQ+XSA/IHNlcmlhbDgyNTBfaGFuZGxlX3BvcnQrMHgyMWQvMHgzMjAK
-IFs8ZmZmZmZmZmY4MTZlNGQyYj5dID8gc2VyaWFsODI1MF9pbnRlcnJ1cHQrMHg5Yi8weDE0MAog
-WzxmZmZmZmZmZjgxMTFhOGI4Pl0gPyBoYW5kbGVfSVJRX2V2ZW50KzB4NjgvMHgxYjAKIFs8ZmZm
-ZmZmZmY4MTExZTdiNT5dID8gbW92ZV9uYXRpdmVfaXJxKzB4MTUvMHg3MAogWzxmZmZmZmZmZjgx
-MTFjZWFlPl0gPyBoYW5kbGVfZWRnZV9pcnErMHhiZS8weDE3MAogWzxmZmZmZmZmZjgxMDUyMzE5
-Pl0gPyBoYW5kbGVfaXJxKzB4NDkvMHhhMAogWzxmZmZmZmZmZjgyMjUwZGZkPl0gPyBkb19JUlEr
-MHg1ZC8weGUwCiBbPGZmZmZmZmZmODIyNTA2OTM+XSA/IHJldF9mcm9tX2ludHIrMHgwLzB4MWEK
-IDxFT0k+ICBbPGZmZmZmZmZmODIyNTA3MDU+XSA/IHJlc3RvcmVfYXJncysweDAvMHgzMAogWzxm
-ZmZmZmZmZjgxMTdhNzFkPl0gPyBfX21sb2NrX3ZtYV9wYWdlc19yYW5nZSsweDlkLzB4YzAKIFs8
-ZmZmZmZmZmY4MTE3YTcwMz5dID8gX19tbG9ja192bWFfcGFnZXNfcmFuZ2UrMHg4My8weGMwCiBb
-PGZmZmZmZmZmODExN2E3Yjg+XSA/IGRvX21sb2NrX3BhZ2VzKzB4NzgvMHgxNTAKIFs8ZmZmZmZm
-ZmY4MTE3YjIxYz5dID8gc3lzX21sb2NrKzB4MTFjLzB4MTMwCiBbPGZmZmZmZmZmODEwOWE2NTM+
-XSA/IGlhMzJfc3lzcmV0KzB4MC8weDUKCgphbmQgYW5vdGhlciBnby9rZGI6CgpbMF1rZGI+IGJ0
-YyAwClN0YWNrIHRyYWNlYmFjayBmb3IgcGlkIDE1ODAyCjB4ZmZmZjg4MDExZTgxODAwMCAgICAx
-NTgwMiAgICAgICAgMSAgMSAgICAwICAgUiAgMHhmZmZmODgwMTFlODE4NDgwICppa25vd3RoaXMK
-PGM+IGZmZmY4ODAwY2ZjMDNkYzg8Yz4gMDAwMDAwMDAwMDAwMDAxODxjPgpDYWxsIFRyYWNlOgog
-PCNEQj4gIDw8RU9FPj4gIDxJUlE+ICBbPGZmZmZmZmZmODE2Y2M2Yjk+XSA/IF9faGFuZGxlX3N5
-c3JxKzB4MTI5LzB4MTkwCiBbPGZmZmZmZmZmODE2Y2M5MjY+XSA/IGhhbmRsZV9zeXNycSsweDI2
-LzB4MzAKIFs8ZmZmZmZmZmY4MTZlNGI4ZD5dID8gc2VyaWFsODI1MF9oYW5kbGVfcG9ydCsweDIx
-ZC8weDMyMAogWzxmZmZmZmZmZjgxNmU0ZDJiPl0gPyBzZXJpYWw4MjUwX2ludGVycnVwdCsweDli
-LzB4MTQwCiBbPGZmZmZmZmZmODExMWE4Yjg+XSA/IGhhbmRsZV9JUlFfZXZlbnQrMHg2OC8weDFi
-MAogWzxmZmZmZmZmZjgxMTFlN2I1Pl0gPyBtb3ZlX25hdGl2ZV9pcnErMHgxNS8weDcwCiBbPGZm
-ZmZmZmZmODExMWNlYWU+XSA/IGhhbmRsZV9lZGdlX2lycSsweGJlLzB4MTcwCiBbPGZmZmZmZmZm
-ODEwNTIzMTk+XSA/IGhhbmRsZV9pcnErMHg0OS8weGEwCiBbPGZmZmZmZmZmODIyNTBkZmQ+XSA/
-IGRvX0lSUSsweDVkLzB4ZTAKIFs8ZmZmZmZmZmY4MjI1MDY5Mz5dID8gcmV0X2Zyb21faW50cisw
-eDAvMHgxYQogPEVPST4gIFs8ZmZmZmZmZmY4MTE3YTdkMj5dID8gZG9fbWxvY2tfcGFnZXMrMHg5
-Mi8weDE1MAogWzxmZmZmZmZmZjgxMTdhN2I4Pl0gPyBkb19tbG9ja19wYWdlcysweDc4LzB4MTUw
-CiBbPGZmZmZmZmZmODExN2IyMWM+XSA/IHN5c19tbG9jaysweDExYy8weDEzMAogWzxmZmZmZmZm
-ZjgxMDlhNjUzPl0gPyBpYTMyX3N5c3JldCsweDAvMHg1Cg==
---000e0cd1512a0f9c4504a0b636f1--
+-- 
+Kind regards,
+Minchan Kim
