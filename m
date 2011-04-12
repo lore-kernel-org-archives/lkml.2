@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab1DLQWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:22:40 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:43249 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab1DLQWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:22:39 -0400
-Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-In-Reply-To: <20110412054330.GH26678@amit-x200.redhat.com>
-References: <20110407174325.ED21C82B@kernel>
-	 <20110411110131.GA23123@redhat.com> <1302559871.7286.16749.camel@nimitz>
-	 <20110412054330.GH26678@amit-x200.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 12 Apr 2011 09:22:32 -0700
-Message-ID: <1302625352.8321.2126.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1758151Ab1DLQWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:22:53 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32871 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758133Ab1DLQWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 12:22:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=p1Gm8jQf373YPfr6u1oTsqi5Kv4ad1EsTjcy1MMOyli8z3u4VnByeIYUlbi7xdXbu+
+         5Bifa0DdK8knHhacLXXxXWPoAe+CZ8LSIpBy2aSQ2/5heUXgbE4kK1Zg+Ee/ihwLbTlO
+         qJIH/pDztWlwxHBLd+8zlcixIVyDyKJ1XO0CU=
+Date: Tue, 12 Apr 2011 18:22:47 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: adding trace-cmd's plugins to perf
+Message-ID: <20110412162245.GB2240@nowhere>
+References: <4DA12905.2020806@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA12905.2020806@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 11:13 +0530, Amit Shah wrote:
-> Sure, the only contention was on the commit message, where you stated
-> modern qemus set this... qemu doesn't, and it should.  Care to do a
-> patch for that? 
+On Sat, Apr 09, 2011 at 09:50:29PM -0600, David Ahern wrote:
+> Right now perf script cannot process kvm tracepoints:
+> 
+> perf record -e kvm:* -p 6446 -- sleep 5
+> 
+> perf script
+>   Warning: Error: expected type 4 but read 7
+>   Warning: Error: expected type 5 but read 0
+>   Warning: failed to read event print fmt for kvm_apic
+>   Warning: Error: expected type 4 but read 7
+>   Warning: Error: expected type 5 but read 0
+>   Warning: failed to read event print fmt for kvm_inj_exception
+>   Fatal: bad op token {
+> 
+> trace-cmd can parse the events through the kvm plugin.
+> 
+> As I understand it trace-cmd and perf have a lot of similar code, so I
+> would expect to be able to add the plugin capability to perf somewhat
+> easily. However, that does not seem to be the right thing to do (copying
+> yet more code between the two).
+> 
+> Before I invest a lot of time on this path I figured I should ask what
+> the intentions (roadmap seems to be too formal a word ;-))
 
-If Rusty hasn't pushed the commit out anywhere, we can still amend the
-commit.  Otherwise, we're in a _bit_ of a pickle since you can't patch
-git logs. :)
+Hehe :)
 
-Whatever is easiest for Rusty works for me.  
+> are about merging common code between the two commands. Also, trace-cmd and perf
+> are in separate repositories so a shared lib is going to inconvenience
+> one of the two.
 
-How about this for a replacement log?
+So, we copied the tools/perf/util/trace-event-* files from trace-cmd to perf
+a while go. Then both files took their own path, both pulling fixes/enhancement
+from each others (probably more in the trace-cmd -> perf direction).
 
---
+And perf is indeed a bit backward wrt parsing, because it lacks those plugins
+for example. So now it would be nice to unify that in a common lib so that it
+works well in both.
 
-The virtio balloon driver has a VIRTIO_BALLOON_F_MUST_TELL_HOST
-feature bit.  Whenever the bit is set, we must always tell the
-host before we free pages back to the allocator.  Without this
-feature, we might free a page (and have another user touch it)
-while the hypervisor is unprepared for it.
+Steve proposed a shared tools/trace.so, that perf and trace-cmd could plug
+into, I really would like to see that happening too.
 
-But, if the bit is _not_ set, we are under no obligation to
-reverse the order; we're under no obligation to do _anything_.
-That's the state of affairs in current qemu:
+I think Ingo had some reserves about this, due to potential versioning
+and compatibility that such a dynamic lib would involve.
 
-	#define VIRTIO_BALLOON_F_MUST_TELL_HOST 0
-
-This patch makes the "tell host first" logic the only case.  This
-should make everybody happy, and reduce the amount of untested or
-untestable code in the kernel.
-
-This _also_ means that we don't have to preserve a pfn list
-after the pages are freed, which should let us get rid of some
-temporary storage (vb->pfns) eventually.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-
--- Dave
-
+However, this seems to me a very important and necessary step to unify our
+tools.
