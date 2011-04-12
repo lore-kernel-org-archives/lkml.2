@@ -1,122 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab1DLRyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 13:54:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32890 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab1DLRyg (ORCPT
+	id S1756827Ab1DLRys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 13:54:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38489 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab1DLRyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 13:54:36 -0400
+	Tue, 12 Apr 2011 13:54:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=HBNZ+gxuGAjkuqYGZDmMLeYbi1PmkrjNDPXxskLWx565QHnigiFkw2dh5yeQKaRs7w
-         w4vuM/nE5BNvXaph8qD+fzN3Wxs3F4CYWW11wqa52fuf76MDJEERz4o7re7IUeaMTvXo
-         tFjTTj4rfOGelBe7qqK6gWsjCnf/8gcm6F8os=
-From: "=?UTF-8?q?Stefan=20Br=C3=A4hler?=" <stefan.braehler@googlemail.com>
-To: gregkh@suse.de
-Cc: dilinger@queued.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Stefan=20Br=C3=A4hler?= <Stefan.Braehler@gmail.com>
-Subject: [PATCH] staging: olpc_dcon: fix space and coding issues
-Date: Tue, 12 Apr 2011 19:53:31 +0200
-Message-Id: <1302630811-15750-1-git-send-email-Stefan.Braehler@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Smv36kyptAYXlpHOkgzDtsfNEldZ6qev9yBmgIYIBumHlzkpnm8l68AvweRr1wKUDl
+         BEpu0cgV/6WaQL3WWM+G+0D5P3yiTA6KrNknvLvF9y3DJMU29kz5Cw+xtPM2n2jNRYnj
+         itO6GlUZnHCi3qJNDmEaznwvoyxDIdAiVFyfI=
+Date: Tue, 12 Apr 2011 19:54:41 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prasad <prasad@linux.vnet.ibm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "v2.6.33.." <stable@kernel.org>
+Subject: Re: [PATCH 1/5] ptrace: Prepare to fix racy accesses on task
+ breakpoints
+Message-ID: <20110412175437.GC2240@nowhere>
+References: <1302284067-7860-1-git-send-email-fweisbec@gmail.com>
+ <1302284067-7860-2-git-send-email-fweisbec@gmail.com>
+ <1302518877.24286.34.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302518877.24286.34.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the whitespace and coding style issues in olpc_dcon metioned by
-checkpatch.
+On Mon, Apr 11, 2011 at 11:47:57AM +0100, Will Deacon wrote:
+> Hi Frederic,
+> 
+> On Fri, 2011-04-08 at 18:34 +0100, Frederic Weisbecker wrote:
+> > When a task is traced and is in a stopped state, the tracer
+> > may execute a ptrace request to examine the tracee state and
+> > get its task struct. Right after, the tracee can be killed
+> > and thus its breakpoints released.
+> > This can happen concurrently when the tracer is in the middle
+> > of reading or modifying these breakpoints, leading to dereferencing
+> > a freed pointer.
+> 
+> Oo, that's nasty. Would an alternative solution be to free the
+> breakpoints only when the task_struct usage count is zero?
 
-Signed-off-by: Stefan Brähler <Stefan.Braehler@gmail.com>
----
- drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |    2 +-
- drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |   22 ++++++++++------------
- 2 files changed, 11 insertions(+), 13 deletions(-)
+Yeah my solution may look a bit gross. But the problem is
+that perf events hold a ref on their task context. Thus the
+task_struct usage will never be 0 until you release all the
+perf events attached to it.
 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-index b5d21f6..f4e9747 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-@@ -152,7 +152,7 @@ static void dcon_wiggle_xo_1(void)
- 	 * According to the cs5536 spec, to set GPIO14 to SMB_CLK we must
- 	 * simultaneously set AUX1 IN/OUT to GPIO14; ditto for SMB_DATA and
- 	 * GPIO15.
-- 	 */
-+	 */
- 	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_VAL);
- 	cs5535_gpio_set(OLPC_GPIO_SMB_DATA, GPIO_OUTPUT_VAL);
- 	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_ENABLE);
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-index 7aa9b1a..a6a6cf2 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-@@ -24,9 +24,8 @@
- #include "olpc_dcon.h"
- 
- /* Hardware setup on the XO 1.5:
-- * 	DCONLOAD connects to
-- *		VX855_GPIO1 (not SMBCK2)
-- * 	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused in driver
-+ *	DCONLOAD connects to VX855_GPIO1 (not SMBCK2)
-+ *	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused in driver
-  *	DCONSTAT0 connects to VX855_GPI10 (not SSPISDI)
-  *	DCONSTAT1 connects to VX855_GPI11 (not nSSPISS)
-  *	DCONIRQ connects to VX855_GPIO12
-@@ -34,9 +33,9 @@
-  *	DCONSMBCLK connects to VX855 graphics CRTSPCLK
-  */
- 
--#define VX855_GENL_PURPOSE_OUTPUT 0x44c // PMIO_Rx4c-4f
--#define VX855_GPI_STATUS_CHG 0x450  // PMIO_Rx50
--#define VX855_GPI_SCI_SMI 0x452  // PMIO_Rx52
-+#define VX855_GENL_PURPOSE_OUTPUT 0x44c /* PMIO_Rx4c-4f */
-+#define VX855_GPI_STATUS_CHG 0x450  /* PMIO_Rx50 */
-+#define VX855_GPI_SCI_SMI 0x452  /* PMIO_Rx52 */
- #define BIT_GPIO12 0x40
- 
- #define PREFIX "OLPC DCON:"
-@@ -63,8 +62,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
- 	unsigned int irq;
- 	u_int8_t tmp;
- 	struct pci_dev *pdev;
--	
--	
-+
- 	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
- 			      PCI_DEVICE_ID_VIA_VX855, NULL);
- 	if (!pdev) {
-@@ -149,7 +147,7 @@ static void dcon_wiggle_xo_1_5(void)
- 	 * state machine to reset to a (sane) initial state.  Mitch Bradley
- 	 * did some testing and discovered that holding for 16 SMB_CLK cycles
- 	 * worked a lot more reliably, so that's what we do here.
-- 	 */
-+	 */
- 	set_i2c_line(1, 1);
- 
- 	for (x = 0; x < 16; x++) {
-@@ -172,13 +170,13 @@ static void dcon_set_dconload_xo_1_5(int val)
- static u8 dcon_read_status_xo_1_5(void)
- {
- 	u8 status;
--	
-+
- 	if (!dcon_was_irq())
- 		return -1;
- 
--	// i believe this is the same as "inb(0x44b) & 3"
-+	/* i believe this is the same as "inb(0x44b) & 3" */
- 	status = gpio_get_value(VX855_GPI(10));
--	status |= gpio_get_value(VX855_GPI(11)) << 1; 
-+	status |= gpio_get_value(VX855_GPI(11)) << 1;
- 
- 	dcon_clear_irq();
- 
--- 
-1.7.3.4
+Normal perf events are released in two ways in the exit path:
 
+- explicitly if they are inherited
+- from the file release path if they are a parent
+
+Now breakpoints are a bit specific because neither are they inherited,
+nor do they have a file associated.
+
+So we need to release them explicitly to release the task. And after that
+we also need to ensure nobody will play with the breakpoints, otherwise there
+will be a memory leak because those will never be freed.
+
+So that patch protects against concurrent release of the breakpoints and
+also against the possible memory leak.
+
+May be we can think about a solution that involves not taking a ref
+to the task when we allocate breakpoints, and then finally release
+from the task_struct rcu release. But that may involve many corner
+cases. Perhaps we can think about this later and for now opt for the
+current solution that looks safe and without surprise. This fix needs
+to be backported so it should stay KISS I think.
+
+ 
+> > diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+> > index 0fc1eed..dc7ab65 100644
+> > --- a/kernel/ptrace.c
+> > +++ b/kernel/ptrace.c
+> > @@ -22,6 +22,7 @@
+> >  #include <linux/syscalls.h>
+> >  #include <linux/uaccess.h>
+> >  #include <linux/regset.h>
+> > +#include <linux/hw_breakpoint.h>
+> > 
+> > 
+> >  /*
+> > @@ -879,3 +880,19 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+> >         return ret;
+> >  }
+> >  #endif /* CONFIG_COMPAT */
+> > +
+> > +#ifdef CONFIG_HAVE_HW_BREAKPOINT
+> > +int ptrace_get_breakpoints(struct task_struct *tsk)
+> > +{
+> > +       if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
+> > +               return 0;
+> > +
+> > +       return -1;
+> > +}
+> 
+> 
+> Would it be better to return -ESRCH here instead?
+
+So I'm going to be nitpicking there :)
+The ptrace_get_breakpoints() function tells us whether
+we can take a ref on the breakpoints or not.
+
+Returning -ERSCH there would mean that the task struct doesn't exist,
+or something confusing like this. Which is not true: the task exists.
+
+OTOH, the caller, which is ptrace, needs to take a decision when he
+can't take a reference to the breakpoints. The behaviour is
+to act as if the process does not exist anymore, which is about to
+happen for real but we anticipate because the task has reached a
+state in its exiting path where we can't manipulate the breakpoints
+anymore.
+
+So the rationale behind it is that -ERSCH is an interpretation
+of the caller.
+
+Right?
