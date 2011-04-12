@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab1DLEwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 00:52:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab1DLEwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 00:52:00 -0400
-Date: Tue, 12 Apr 2011 10:21:46 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>
-Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
-Message-ID: <20110412045146.GE26678@amit-x200.redhat.com>
-References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
- <20110401154327.GA6593@mtj.dyndns.org>
- <20110405065129.GC2872@amit-x200.redhat.com>
- <20110406100620.GA4142@mtj.dyndns.org>
- <BANLkTinpRJHr+293kPzS1=hCWRPamOOGfw@mail.gmail.com>
- <20110408162041.GB3871@mtj.dyndns.org>
- <BANLkTimYBDvcUO9Z2wdk4VFk88NpGJiZJA@mail.gmail.com>
- <20110408165207.GD3871@mtj.dyndns.org>
+	id S1752707Ab1DLE5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 00:57:54 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34588 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab1DLE5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 00:57:53 -0400
+Date: Tue, 12 Apr 2011 05:57:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kenneth Heitke <kheitke@codeaurora.org>
+Cc: davidb@codeaurora.org, dwalker@fifo99.com, ben-linux@fluff.org,
+        tsoni@codeaurora.org, linux@arm.linux.org.uk,
+        linus.walleij@stericsson.com, linux-arm-msm@vger.kernel.org,
+        seth.heasley@intel.com, w.sang@pengutronix.de,
+        tomoya-linux@dsn.okisemi.com, arve@android.com,
+        "open list:I2C SUBSYSTEM" <linux-i2c@vger.kernel.org>,
+        swetland@google.com, khali@linux-fr.org,
+        open list <linux-kernel@vger.kernel.org>, bryanh@codeaurora.org,
+        sdharia@codeaurora.org,
+        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        guenter.roeck@ericsson.com
+Subject: Re: [PATCH] i2c: QUP based bus driver for Qualcomm MSM chipsets
+Message-ID: <20110412045733.GA21059@sirena.org.uk>
+References: <1302573749-15647-1-git-send-email-kheitke@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110408165207.GD3871@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1302573749-15647-1-git-send-email-kheitke@codeaurora.org>
+X-Cookie: I will not forget you.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 08 Apr 2011 [09:52:07], Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Apr 08, 2011 at 05:43:16PM +0100, Stefan Hajnoczi wrote:
-> > >> I think it would make sense to refresh the inode size on media change
-> > >> so that even open file descriptors see the new size and a single
-> > >> process cannot force a stale value for all other userspace processes
-> > >> on the system.
-> > >
-> > > Hmmm... I don't know.  Maybe we can but I'm not sure whether there's a
-> > > good reason for it.  cdrom is locked while opened after all.  Are
-> > > there actual problems?
-> > 
-> > Yeah, sorry I didn't explain what the use case was.  With QEMU you can
-> > pass through the physical CD-ROM into the virtual machine.
-> > 
-> > QEMU opens /dev/cdrom with O_NONBLOCK | O_RDONLY.  The guest can test
-> > if the medium is present and QEMU will do ioctl(fd,
-> > CDROM_DRIVE_STATUS, CDSL_CURRENT).  The guest can also lock the tray
-> > and eject, again using the respective ioctls.  Read operations are
-> > serviced by performing a read on the file descriptor in QEMU.  And
-> > finally the medium size is queried by QEMU using lseek(fd, 0,
-> > SEEK_END).
-> > 
-> > Today QEMU cannot keep /dev/cdrom open across media change because it
-> > will have an outdated inode size returned from lseek(fd, 0, SEEK_END).
-> >  But if the cdrom driver (or sr) refresh the inode size on media
-> > change then there is no need to work around this from userspace.
-> 
-> Hmmm... ISTR there was some discussion about changing inode size on
-> the fly quite a while ago.  I didn't follow the discussion but it
-> seemed to have rather nasty/delicate implications.
+On Mon, Apr 11, 2011 at 08:02:27PM -0600, Kenneth Heitke wrote:
 
-I don't necessarily agree with having to modify inode sizes on the
-fly, but the main bug here is that the inode doesn't get invalidated
-if a CDROM is ejected while a process has an fd to the CDROM device
-opened.  So as in the original case, if a CD is swapped with one
-having more data, lseek continues to report the original media's size
-in the process that keeps the fd open across eject/insert.
+> mini-core. The driver supports FIFO mode (for low bandwidth applications)
+> and block mode (interrupt generated for each block-size data transfer).
+> The driver currently does not support DMA transfers.
 
-I haven't tried this on physical systems, so can't count out it being
-a qemu bug as well.
+> +static inline void qup_i2c_pwr_disable(struct qup_i2c_dev *dev)
+> +{
+> +	dev_dbg(dev->dev, "%s\n", __func__);
+> +
+> +	if (pm_runtime_enabled(dev->dev)) {
+> +		pm_runtime_mark_last_busy(dev->dev);
+> +		pm_runtime_put_sync(dev->dev);
+> +	} else
+> +		qup_i2c_clk_disable(dev);
+> +}
 
-		Amit
+What happens if someone changes the pm_runtime configuration in between
+a pwr_disable() and the corresponding enable?
+
+> +static void
+> +qup_issue_read(struct qup_i2c_dev *dev, struct i2c_msg *msg, int *idx,
+> +		uint32_t carry_over)
+> +{
+> +	uint16_t addr = (msg->addr << 1) | 1;
+> +	/*
+> +	 * QUP limit 256 bytes per read. By HW design, 0 in the 8-bit field
+> +	 * is treated as 256 byte read.
+> +	 */
+> +	uint16_t rd_len = ((dev->cnt == 256) ? 0 : dev->cnt);
+
+This is a substantila incompatibility with most I2C ccontrollers i the
+kernel.  Is it possible for the driver to deal with this transparently,
+for example by expanding into a number of continued transfers?  If not
+we should add support to the I2C core for determining transfer limits,
+the 256 bytes limit is pretty low.
+
+> +		/* HW limits Read upto 256 bytes in 1 read without stop */
+> +		if (dev->msg->flags & I2C_M_RD) {
+> +			qup_set_read_mode(dev, dev->cnt);
+> +			if (dev->cnt > 256)
+> +				dev->cnt = 256;
+
+This definitely seems buggy - there's no error returned to the caller?
