@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab1DLKeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 06:34:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45461 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756927Ab1DLKeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 06:34:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/3] mm, mem-hotplug: update pcp->stat_threshold when memory hotplug occur
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
-In-Reply-To: <BANLkTinORojJgOdHeRMLMkKGc-Jitu-unQ@mail.gmail.com>
-References: <20110412183010.B52A.A69D9226@jp.fujitsu.com> <BANLkTinORojJgOdHeRMLMkKGc-Jitu-unQ@mail.gmail.com>
-Message-Id: <20110412193407.B52F.A69D9226@jp.fujitsu.com>
+	id S1757260Ab1DLKe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 06:34:28 -0400
+Received: from mx04.teleca.com ([212.92.145.6]:59254 "EHLO mx04.teleca.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757227Ab1DLKe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 06:34:27 -0400
+X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Apr 2011 06:34:26 EDT
+Message-ID: <4DA4294C.2020609@nokia.com>
+Date: Tue, 12 Apr 2011 14:28:28 +0400
+From: Roman Borisov <ext-roman.borisov@nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Tue, 12 Apr 2011 19:34:14 +0900 (JST)
+To: viro@zeniv.linux.org.uk
+CC: Roman Borisov <ext-roman.borisov@nokia.com>, linux-kernel@vger.kernel.org,
+        vda.linux@googlemail.com, cebbert@redhat.com, virtuoso@slind.org
+Subject: Re: [PATCH] fs: bound mount propagation fix
+References: <201103262243.18031.vda.linux@googlemail.com> <7b9aa806294aadd47704d56ae3e7c757bf0ce6db.1301667509.git.ext-roman.borisov@nokia.com>
+In-Reply-To: <7b9aa806294aadd47704d56ae3e7c757bf0ce6db.1301667509.git.ext-roman.borisov@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Apr 2011 10:26:06.0423 (UTC) FILETIME=[0842BE70:01CBF8FC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > No good stat_threshold might makes performance hurt.
-> 
-> Yes. That's I want it.
-> My intention is that if you write down log fully, it can help much
-> newbies to understand the patch in future and it would be very clear
-> Andrew to merge it.
-> 
-> What I want is following as.
-> ==
-> 
-> Currently, memory hotplug doesn't updates pcp->stat_threashold.
-> Then, It ends up making the wrong stat_threshold and percpu_driftmark.
-> 
-> It could make confusing zoneinfo or overhead by frequent draining.
-> Even when memory is low and kswapd is awake, it can mismatch between
-> the number of real free pages and vmstat NR_FREE_PAGES so that it can
-> result in the livelock. Please look at aa4548403 for more.
-> 
-> This patch solves the issue.
-> ==
+On 04/01/2011 06:48 PM, Roman Borisov wrote:
+> I think MS_SILENT shouldn't be cleared anywhere. I suppose the bug is in
+> MS_SHARED options checking. Please see the patch below.
+>
+> Fixed MS_SHARED, MS_SLAVE, MS_UNBINDABLE option handling;
+> Existing options check doesn't allow to have any options combinations
+> because of integer comparison (not bitwise).
+>
+> Signed-off-by: Roman Borisov<ext-roman.borisov@nokia.com>
+> ---
+>   fs/namespace.c |    2 +-
+>   fs/pnode.c     |    6 +++---
+>   2 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 2beb0fb..e0cf263 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -1434,7 +1434,7 @@ static int do_change_type(struct path *path, int flag)
+>   		return -EINVAL;
+>
+>   	down_write(&namespace_sem);
+> -	if (type == MS_SHARED) {
+> +	if (type&  MS_SHARED) {
+>   		err = invent_group_ids(mnt, recurse);
+>   		if (err)
+>   			goto out_unlock;
+> diff --git a/fs/pnode.c b/fs/pnode.c
+> index 8d5f392..0c9dc54 100644
+> --- a/fs/pnode.c
+> +++ b/fs/pnode.c
+> @@ -128,15 +128,15 @@ static int do_make_slave(struct vfsmount *mnt)
+>
+>   void change_mnt_propagation(struct vfsmount *mnt, int type)
+>   {
+> -	if (type == MS_SHARED) {
+> +	if (type&  MS_SHARED) {
+>   		set_mnt_shared(mnt);
+>   		return;
+>   	}
+>   	do_make_slave(mnt);
+> -	if (type != MS_SLAVE) {
+> +	if (!(type&  MS_SLAVE)) {
+>   		list_del_init(&mnt->mnt_slave);
+>   		mnt->mnt_master = NULL;
+> -		if (type == MS_UNBINDABLE)
+> +		if (type&  MS_UNBINDABLE)
+>   			mnt->mnt_flags |= MNT_UNBINDABLE;
+>   		else
+>   			mnt->mnt_flags&= ~MNT_UNBINDABLE;
 
-Now, wakeup_kswapd() are using zone_watermark_ok_safe(). (ie avoid to use
-per-cpu stat jiffies). Then, I don't think we have livelock chance.
-Am I missing something?
+Al could you comment please on which of the two approaches you prefer: 
+mine or previously Denis's
 
-
-
+--
+Roman
