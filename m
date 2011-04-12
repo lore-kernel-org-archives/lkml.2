@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab1DLKmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 06:42:09 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63488 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756927Ab1DLKmI (ORCPT
+	id S1757065Ab1DLKzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 06:55:22 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60351 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303Ab1DLKzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 06:42:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=I/XfAo8A+NaZP+L7yMKg0RXmVdfcjzQoe83t2ZnvF55N/JadV4UBNWLHf2L1mmWQJG
-         rXSOf8VDFLoNh10Uy0nYnqcwxzhmkMahDvaClz4DbN6YmRZ1BBoalEMS7Eq2RggHm4uV
-         gs8S/CBPLk91MOG7HkhGhp+JBoW57z+lm3NzQ=
-MIME-Version: 1.0
-In-Reply-To: <20110412193407.B52F.A69D9226@jp.fujitsu.com>
-References: <20110412183010.B52A.A69D9226@jp.fujitsu.com>
-	<BANLkTinORojJgOdHeRMLMkKGc-Jitu-unQ@mail.gmail.com>
-	<20110412193407.B52F.A69D9226@jp.fujitsu.com>
-Date: Tue, 12 Apr 2011 19:42:07 +0900
-Message-ID: <BANLkTi=4jV8f23n3rp7Oo8rY_ZVPG1pMbQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm, mem-hotplug: update pcp->stat_threshold when
- memory hotplug occur
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+	Tue, 12 Apr 2011 06:55:20 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/4] vmscan: all_unreclaimable() use zone->all_unreclaimable as a name
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrey Vagin <avagin@openvz.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=UTF-8
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20110411182606.016f9486.akpm@linux-foundation.org>
+References: <20110412100417.43F2.A69D9226@jp.fujitsu.com> <20110411182606.016f9486.akpm@linux-foundation.org>
+Message-Id: <20110412195513.B533.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 12 Apr 2011 19:55:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 7:34 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> > No good stat_threshold might makes performance hurt.
->>
->> Yes. That's I want it.
->> My intention is that if you write down log fully, it can help much
->> newbies to understand the patch in future and it would be very clear
->> Andrew to merge it.
->>
->> What I want is following as.
->> ==
->>
->> Currently, memory hotplug doesn't updates pcp->stat_threashold.
->> Then, It ends up making the wrong stat_threshold and percpu_driftmark.
->>
->> It could make confusing zoneinfo or overhead by frequent draining.
->> Even when memory is low and kswapd is awake, it can mismatch between
->> the number of real free pages and vmstat NR_FREE_PAGES so that it can
->> result in the livelock. Please look at aa4548403 for more.
->>
->> This patch solves the issue.
->> ==
->
-> Now, wakeup_kswapd() are using zone_watermark_ok_safe(). (ie avoid to use
-> per-cpu stat jiffies). Then, I don't think we have livelock chance.
-> Am I missing something?
->
+Hi
 
-I have no idea. I just referenced the description in aa4548403.
-As I look code, zone_watermark_ok_safe works well if percpu_drift_mark
-is set rightly. but if memory hotplug happens, zone->present_pages
-would be changed so that it can affect wmarks. It means it can affect
-percpu_drift_mark, I think.
+> > The above says "Eventually, oom-killer never works". Is this no enough?
+> > The above says
+> >   1) current logic have a race
+> >   2) x86 increase a chance of the race by dma zone
+> >   3) if race is happen, oom killer don't work
+> 
+> And the system hangs up, so it's a local DoS and I guess we should
+> backport the fix into -stable.  I added this:
+> 
+> : This resulted in the kernel hanging up when executing a loop of the form
+> : 
+> : 1. fork
+> : 2. mmap
+> : 3. touch memory
+> : 4. read memory
+> : 5. munmmap
+> : 
+> : as described in
+> : http://www.gossamer-threads.com/lists/linux/kernel/1348725#1348725
+> 
+> And the problems which the other patches in this series address are
+> pretty deadly as well.  Should we backport everything?
 
-My point is to write down the description clear.
+patch [1/4] and [2/4] should be backported because they are regression fix.
+But [3/4] and [4/4] are on borderline to me. they improve a recovery time 
+from oom. some times it is very important, some times not. And it is not
+regression fix. Our oom-killer is very weak from forkbomb attack since
+very old days.
 
--- 
-Kind regards,
-Minchan Kim
+Thanks.
+
+
