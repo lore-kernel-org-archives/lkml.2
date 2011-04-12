@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1DLLtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 07:49:33 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:54155 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1DLLtc convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:8:1>);
-	Tue, 12 Apr 2011 07:49:32 -0400
-Message-Id: <4DA458AB020000780003B107@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 12 Apr 2011 12:50:35 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>
-Cc: <mingo@elte.hu>, <jeremy@goop.org>, <yinghai@kernel.org>,
-        <hpa@linux.intel.com>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH 2/4] x86, xen: introduce
-	 x86_init.mapping.pagetable_reserve
-References: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop>
- <1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753834Ab1DLLyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 07:54:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37932 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096Ab1DLLyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 07:54:32 -0400
+Date: Tue, 12 Apr 2011 13:54:26 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Adam McLaurin <lkml@irotas.net>
+Cc: Will Newton <will.newton@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Loopback and Nagle's algorithm
+In-Reply-To: <1302606246.21782.1440195277@webmail.messagingengine.com>
+Message-ID: <alpine.LRH.2.00.1104121354010.6953@twin.jikos.cz>
+References: <1302575869.13492.1440076201@webmail.messagingengine.com> <BANLkTi=jpdLRc35DkBhLmUr8-P+ggcrgoA@mail.gmail.com> <1302606246.21782.1440195277@webmail.messagingengine.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 12.04.11 at 13:19, <stefano.stabellini@eu.citrix.com> wrote:
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 6b833db..fec8680 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1275,6 +1275,20 @@ static __init void xen_pagetable_setup_start(pgd_t 
-> *base)
->  {
->  }
->  
-> +static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
-> +{
-> +	/* reserve the range used */
-> +	memblock_x86_reserve_range(start, end, "PGTABLE");
+On Tue, 12 Apr 2011, Adam McLaurin wrote:
 
-Wouldn't it be more natural (and involving less future changes) if
-you called native_pagetable_reserve() here?
+> > It may be caused by an increase in context switch rate, as both sender
+> > and receiver are on the same machine.
+> 
+> I'm not sure that's what's happening, since the box where I'm running
+> this test has 8 physical CPU's and 32 cores in total.
 
-Jan
+Have you tried firing up the testcase under perf, to see what it reveals 
+as the bottleneck?
 
-> +
-> +	/* set as RW the rest */
-> +	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
-> +			PFN_PHYS(pgt_buf_top));
-> +	while (end < PFN_PHYS(pgt_buf_top)) {
-> +		make_lowmem_page_readwrite(__va(end));
-> +		end += PAGE_SIZE;
-> +	}
-> +}
-> +
->  static void xen_post_allocator_init(void);
->  
->  static __init void xen_pagetable_setup_done(pgd_t *base)
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
 
