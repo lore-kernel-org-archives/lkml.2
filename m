@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab1DLOhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:37:42 -0400
-Received: from kroah.org ([198.145.64.141]:57420 "EHLO coco.kroah.org"
+	id S932112Ab1DLOhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:37:52 -0400
+Received: from kroah.org ([198.145.64.141]:57459 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756817Ab1DLOhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:49 2011
-Message-Id: <20110412143549.730291946@clark.kroah.org>
+	id S1757158Ab1DLOhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:47 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:50 2011
+Message-Id: <20110412143550.497779074@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:06 -0700
+Date: Tue, 12 Apr 2011 07:34:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Adrian Hoban <adrian.hoban@intel.com>,
-        Aidan OMahony <aidan.o.mahony@intel.com>,
-        Gabriele Paoloni <gabriele.paoloni@intel.com>,
-        Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [017/105] crypto: aesni-intel - fixed problem with packets that are not multiple of 64bytes
+        Dave Chinner <dchinner@redhat.com>
+Subject: [024/105] xfs: register the inode cache shrinker before quotachecks
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,112 +25,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tadeusz Struk <tadeusz.struk@intel.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 60af520cf264ea26b2af3a6871bbd71850522aea upstream.
+commit 704b2907c2d47ceb187c0e25a6bbc2174b198f2f upstream.
 
-This patch fixes problem with packets that are not multiple of 64bytes.
+During mount, we can do a quotacheck that involves a bulkstat pass
+on all inodes. If there are more inodes in the filesystem than can
+be held in memory, we require the inode cache shrinker to run to
+ensure that we don't run out of memory.
 
-Signed-off-by: Adrian Hoban <adrian.hoban@intel.com>
-Signed-off-by: Aidan O'Mahony <aidan.o.mahony@intel.com>
-Signed-off-by: Gabriele Paoloni <gabriele.paoloni@intel.com>
-Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Unfortunately, the inode cache shrinker is not registered until we
+get to the end of the superblock setup process, which is after a
+quotacheck is run if it is needed. Hence we need to register the
+inode cache shrinker earlier in the mount process so that we don't
+OOM during mount. This requires that we also initialise the syncd
+work before we register the shrinker, so we nee dto juggle that
+around as well.
+
+While there, make sure that we have set up the block sizes in the
+VFS superblock correctly before the quotacheck is run so that any
+inodes that are cached as a result of the quotacheck have their
+block size fields set up correctly.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/crypto/aesni-intel_asm.S  |    5 ++++-
- arch/x86/crypto/aesni-intel_glue.c |   14 ++++++++++++--
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ fs/xfs/linux-2.6/xfs_super.c |   34 ++++++++++++++++++++++++----------
+ 1 file changed, 24 insertions(+), 10 deletions(-)
 
---- a/arch/x86/crypto/aesni-intel_asm.S
-+++ b/arch/x86/crypto/aesni-intel_asm.S
-@@ -1612,6 +1612,7 @@ _zero_cipher_left_encrypt:
-         movdqa SHUF_MASK(%rip), %xmm10
- 	PSHUFB_XMM %xmm10, %xmm0
+--- a/fs/xfs/linux-2.6/xfs_super.c
++++ b/fs/xfs/linux-2.6/xfs_super.c
+@@ -1551,10 +1551,14 @@ xfs_fs_fill_super(
+ 	if (error)
+ 		goto out_free_sb;
  
+-	error = xfs_mountfs(mp);
+-	if (error)
+-		goto out_filestream_unmount;
+-
++	/*
++	 * we must configure the block size in the superblock before we run the
++	 * full mount process as the mount process can lookup and cache inodes.
++	 * For the same reason we must also initialise the syncd and register
++	 * the inode cache shrinker so that inodes can be reclaimed during
++	 * operations like a quotacheck that iterate all inodes in the
++	 * filesystem.
++	 */
+ 	sb->s_magic = XFS_SB_MAGIC;
+ 	sb->s_blocksize = mp->m_sb.sb_blocksize;
+ 	sb->s_blocksize_bits = ffs(sb->s_blocksize) - 1;
+@@ -1562,6 +1566,16 @@ xfs_fs_fill_super(
+ 	sb->s_time_gran = 1;
+ 	set_posix_acl_flag(sb);
+ 
++	error = xfs_syncd_init(mp);
++	if (error)
++		goto out_filestream_unmount;
 +
- 	ENCRYPT_SINGLE_BLOCK	%xmm0, %xmm1        # Encrypt(K, Yn)
- 	sub $16, %r11
- 	add %r13, %r11
-@@ -1634,7 +1635,9 @@ _zero_cipher_left_encrypt:
- 	# GHASH computation for the last <16 byte block
- 	sub	%r13, %r11
- 	add	$16, %r11
--	PSHUFB_XMM %xmm10, %xmm1
++	xfs_inode_shrinker_register(mp);
 +
-+	movdqa SHUF_MASK(%rip), %xmm10
-+	PSHUFB_XMM %xmm10, %xmm0
- 
- 	# shuffle xmm0 back to output as ciphertext
- 
---- a/arch/x86/crypto/aesni-intel_glue.c
-+++ b/arch/x86/crypto/aesni-intel_glue.c
-@@ -828,9 +828,15 @@ static int rfc4106_init(struct crypto_tf
- 	struct cryptd_aead *cryptd_tfm;
- 	struct aesni_rfc4106_gcm_ctx *ctx = (struct aesni_rfc4106_gcm_ctx *)
- 		PTR_ALIGN((u8 *)crypto_tfm_ctx(tfm), AESNI_ALIGN);
-+	struct crypto_aead *cryptd_child;
-+	struct aesni_rfc4106_gcm_ctx *child_ctx;
- 	cryptd_tfm = cryptd_alloc_aead("__driver-gcm-aes-aesni", 0, 0);
- 	if (IS_ERR(cryptd_tfm))
- 		return PTR_ERR(cryptd_tfm);
++	error = xfs_mountfs(mp);
++	if (error)
++		goto out_syncd_stop;
 +
-+	cryptd_child = cryptd_aead_child(cryptd_tfm);
-+	child_ctx = aesni_rfc4106_gcm_ctx_get(cryptd_child);
-+	memcpy(child_ctx, ctx, sizeof(*ctx));
- 	ctx->cryptd_tfm = cryptd_tfm;
- 	tfm->crt_aead.reqsize = sizeof(struct aead_request)
- 		+ crypto_aead_reqsize(&cryptd_tfm->base);
-@@ -925,6 +931,9 @@ static int rfc4106_set_key(struct crypto
- 	int ret = 0;
- 	struct crypto_tfm *tfm = crypto_aead_tfm(parent);
- 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(parent);
-+	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
-+	struct aesni_rfc4106_gcm_ctx *child_ctx =
-+                                 aesni_rfc4106_gcm_ctx_get(cryptd_child);
- 	u8 *new_key_mem = NULL;
- 
- 	if (key_len < 4) {
-@@ -968,6 +977,7 @@ static int rfc4106_set_key(struct crypto
- 		goto exit;
+ 	root = igrab(VFS_I(mp->m_rootip));
+ 	if (!root) {
+ 		error = ENOENT;
+@@ -1577,14 +1591,11 @@ xfs_fs_fill_super(
+ 		goto fail_vnrele;
  	}
- 	ret = rfc4106_set_hash_subkey(ctx->hash_subkey, key, key_len);
-+	memcpy(child_ctx, ctx, sizeof(*ctx));
- exit:
- 	kfree(new_key_mem);
- 	return ret;
-@@ -999,7 +1009,6 @@ static int rfc4106_encrypt(struct aead_r
- 	int ret;
- 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
- 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
--	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
  
- 	if (!irq_fpu_usable()) {
- 		struct aead_request *cryptd_req =
-@@ -1008,6 +1017,7 @@ static int rfc4106_encrypt(struct aead_r
- 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
- 		return crypto_aead_encrypt(cryptd_req);
- 	} else {
-+		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
- 		kernel_fpu_begin();
- 		ret = cryptd_child->base.crt_aead.encrypt(req);
- 		kernel_fpu_end();
-@@ -1020,7 +1030,6 @@ static int rfc4106_decrypt(struct aead_r
- 	int ret;
- 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
- 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
--	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
+-	error = xfs_syncd_init(mp);
+-	if (error)
+-		goto fail_vnrele;
+-
+-	xfs_inode_shrinker_register(mp);
+-
+ 	return 0;
  
- 	if (!irq_fpu_usable()) {
- 		struct aead_request *cryptd_req =
-@@ -1029,6 +1038,7 @@ static int rfc4106_decrypt(struct aead_r
- 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
- 		return crypto_aead_decrypt(cryptd_req);
- 	} else {
-+		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
- 		kernel_fpu_begin();
- 		ret = cryptd_child->base.crt_aead.decrypt(req);
- 		kernel_fpu_end();
++ out_syncd_stop:
++	xfs_inode_shrinker_unregister(mp);
++	xfs_syncd_stop(mp);
+  out_filestream_unmount:
+ 	xfs_filestream_unmount(mp);
+  out_free_sb:
+@@ -1608,6 +1619,9 @@ xfs_fs_fill_super(
+ 	}
+ 
+  fail_unmount:
++	xfs_inode_shrinker_unregister(mp);
++	xfs_syncd_stop(mp);
++
+ 	/*
+ 	 * Blow away any referenced inode in the filestreams cache.
+ 	 * This can and will cause log traffic as inodes go inactive
 
 
