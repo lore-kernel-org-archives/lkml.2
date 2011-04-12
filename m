@@ -1,140 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab1DLT1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:27:31 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40843 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519Ab1DLT13 convert rfc822-to-8bit (ORCPT
+	id S1756110Ab1DLT21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:28:27 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:41447 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755698Ab1DLT20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:27:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=G/ysGcJ6pO7ApsfCGoiQc5bwjehuGnLazCmVpYfnFlTPyBQPSV1rzWXsPAU218zwSU
-         IE+HVlRDpMHO65OwtNHolj57yh/8RLq1qUYcL2JkAdQ5uWo8Bp5RApcCMvekBmCJScF+
-         1nxIoXvd6OzWIgpNTEeRaJLoV7ZHLmvyDuE2w=
+	Tue, 12 Apr 2011 15:28:26 -0400
+Date: Tue, 12 Apr 2011 21:28:24 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: kernel 2.6.39-rc3 drm, radeon: device driver tries to free DMA
+ memory it has not allocated
+Message-ID: <20110412192823.GA1634@x4.trippels.de>
+References: <20110412210940.0b3d598b@stein>
 MIME-Version: 1.0
-In-Reply-To: <1302635550.14216.21.camel@dev.znau.edu.ua>
-References: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
-	<20110412133633.GR15130@legolas.emea.dhcp.ti.com>
-	<1302634039.14216.10.camel@dev.znau.edu.ua>
-	<BANLkTi=0sM2+nPYyd09G=Uy9rcEvaFErnA@mail.gmail.com>
-	<1302635550.14216.21.camel@dev.znau.edu.ua>
-Date: Tue, 12 Apr 2011 21:27:27 +0200
-Message-ID: <BANLkTi=8mB9ZDTjF4yds6mkx+PmM+B_6Cg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: George Kashperko <george@znau.edu.ua>
-Cc: balbi@ti.com, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412210940.0b3d598b@stein>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/12 George Kashperko <george@znau.edu.ua>:
->
->> 2011/4/12 George Kashperko <george@znau.edu.ua>:
->> >
->> >> Hi,
->> >>
->> >> On Tue, Apr 12, 2011 at 01:57:07AM +0200, Rafał Miłecki wrote:
->> >> > Cc: Michael Büsch <mb@bu3sch.de>
->> >> > Cc: Larry Finger <Larry.Finger@lwfinger.net>
->> >> > Cc: George Kashperko <george@znau.edu.ua>
->> >> > Cc: Arend van Spriel <arend@broadcom.com>
->> >> > Cc: linux-arm-kernel@lists.infradead.org
->> >> > Cc: Russell King <rmk@arm.linux.org.uk>
->> >> > Cc: Arnd Bergmann <arnd@arndb.de>
->> >> > Cc: Andy Botting <andy@andybotting.com>
->> >> > Cc: linuxdriverproject <devel@linuxdriverproject.org>
->> >> > Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
->> >> > Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
->> >> > ---
->> >> > V2: Rename to axi
->> >> >     Use DEFINE_PCI_DEVICE_TABLE in bridge
->> >> >     Make use of pr_fmt and pr_*
->> >> >     Store core class
->> >> >     Rename bridge to not b43 specific
->> >> >     Replace magic 0x1000 with BCMAI_CORE_SIZE
->> >> >     Remove some old "ssb" names and defines
->> >> >     Move BCMAI_ADDR_BASE def
->> >> >     Add drvdata field
->> >> > V3: Fix reloading (kfree issue)
->> >> >     Add 14e4:0x4331
->> >> >     Fix non-initialized struct issue
->> >> >     Drop useless inline functions wrappers for pci core drv
->> >> >     Proper pr_* usage
->> >> > V3.1: Include forgotten changes (pr_* and include related)
->> >> >     Explain why we dare to implement empty release function
->> >>
->> >> I'm not sure we need this. If you have an IP Core which talks AXI and
->> >> you want to put it on a PCI bus, you will have a PCI Bus wrapper around
->> >> that IP Core, so you should go and let the kernel know about that. See
->> >> [1] for a core IP which talks AXI and [2] for a PCI bus glue layer.
->> >>
->> >> Besides, if you introduce this bus layer, it'll be more difficult for
->> >> other licensees of the same core to re-use the same driver, since it's
->> >> now talking a PCI emulated on top of AXI. The same can be achieved with
->> >> the platform_bus which is more widely used, specially on ARM SoCs.
->> >>
->> >> [1] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/core.c
->> >> [2] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/dwc3-haps.c
->> >>
->> >
->> > Already noticed earlier that AXI isnt really good name for
->> > Broadcom-specific axi bus customization. As of tech docs available from
->> > arm, corelink AXI cores use own identification registers which feature
->> > different format and layout comparing to that we use for Broadcom cores.
->> >
->> > Maybe there is something "standartized" by the DMP specs? If so I'm
->> > curious if that DMP is obligatory for every axi bus ?
->> >
->> > Naming particular Broadcom's implementation just axi limits other
->> > licensees in reusing axi bus name/code or will require hacks/workarounds
->> > from them to fit Broadcom-like core scanning/identificating techniques.
->> > You use bus named AXI to group and manage Broadcom cores, while never
->> > even publish device records for native axi cores Broadcom use to talk to
->> > the interconnect through. Yet again, something like bcmb/bcmai looks
->> > like better name for this bus.
->>
->> I don't know, I'm really tired of this. Earlier I was told to not use
->> anything like bcmai, because it is not Broadcom specific. Now it seems
->> (and I'm afraid I agree) there is quite a lot of Broadcom specific
->> stuff.
-> Well, _if_ that "magic" EROM core layout is arm's "standard" for axi
-> ports identification _and_ _if_ that EROM core is obligatory axi
-> component then sure axi name is good one as soon as you consider
-> registering master port (agent) cores with device subsystem as well.
-> I have no clue here about how resolve those _if_'s, hopefully Broadcom
-> guys can enlighten us on the subject.
+On 2011.04.12 at 21:09 +0200, Stefan Richter wrote:
+> Hi,
+> 
+> I just switched from 2.6.38-rc7 to 2.6.39-rc3 and got this at some point
+> during userland startup:
+> 
+> WARNING: at lib/dma-debug.c:803 check_unmap+0x19a/0x696()
+> Hardware name: System Product Name
+> NULL NULL: DMA-API: device driver tries to free DMA memory it has not allocated [device address=0x00000000ce47b000] [size=4096 bytes]
+> Modules linked in: cpufreq_ondemand powernow_k8 freq_table mperf snd_pcm_oss snd_mixer_oss snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device nfsd lockd it87 hwmon_vid sunrpc ext4 jbd2 crc16 sr_mod cdrom snd_hda_codec_realtek k10temp yenta_socket snd_hda_intel pcmcia_core pcmcia_rsrc snd_hda_codec snd_pcm pata_atiixp snd_timer sg snd snd_page_alloc r8169 mii processor usb_storage
+> Pid: 4397, comm: X Tainted: G        W   2.6.39-rc3 #2
+> Call Trace:
+>  [<ffffffff81031ef9>] warn_slowpath_common+0x80/0x98
+>  [<ffffffff81031fa5>] warn_slowpath_fmt+0x41/0x43
+>  [<ffffffff8134606d>] ? _raw_spin_lock_irqsave+0x49/0x53
+>  [<ffffffff811474e5>] ? check_unmap+0x102/0x696
+>  [<ffffffff8114757d>] check_unmap+0x19a/0x696
+>  [<ffffffff81021810>] ? __change_page_attr_set_clr+0x16d/0x99d
+>  [<ffffffff81147ae5>] debug_dma_free_coherent+0x6c/0x7a
+>  [<ffffffff811ccb00>] ttm_put_pages+0x117/0x255
+>  [<ffffffff811c62cb>] ttm_tt_free_alloced_pages+0xbc/0xe2
+>  [<ffffffff811c6695>] ttm_tt_destroy+0x50/0xda
+>  [<ffffffff811c6f27>] ttm_bo_cleanup_memtype_use+0x29/0x63
+>  [<ffffffff811c96aa>] ttm_bo_release+0x112/0x1df
+>  [<ffffffff811c9598>] ? ttm_bo_create+0xff/0xff
+>  [<ffffffff81139882>] kref_put+0x43/0x4d
+>  [<ffffffff811c7748>] ttm_bo_unref+0x33/0x40
+>  [<ffffffff811f6f66>] radeon_bo_unref+0x3f/0x5e
+>  [<ffffffff811b58f2>] ? drm_gem_handle_delete+0x89/0xab
+>  [<ffffffff811b5779>] ? drm_gem_object_release_handle+0x5a/0x5a
+>  [<ffffffff8120985a>] radeon_gem_object_free+0x1e/0x20
+>  [<ffffffff811b57a1>] drm_gem_object_free+0x28/0x2a
+>  [<ffffffff81139882>] kref_put+0x43/0x4d
+>  [<ffffffff811b5901>] drm_gem_handle_delete+0x98/0xab
+>  [<ffffffff811b5937>] drm_gem_close_ioctl+0x23/0x25
+>  [<ffffffff811b4106>] drm_ioctl+0x277/0x343
+>  [<ffffffff811b5914>] ? drm_gem_handle_delete+0xab/0xab
+>  [<ffffffff8102b65f>] ? get_parent_ip+0x11/0x41
+>  [<ffffffff81058895>] ? trace_hardirqs_on+0xd/0xf
+>  [<ffffffff810b5e8b>] do_vfs_ioctl+0x464/0x4b3
+>  [<ffffffff810953bd>] ? remove_vma+0x69/0x71
+>  [<ffffffff810b5f1c>] sys_ioctl+0x42/0x65
+>  [<ffffffff813472bb>] system_call_fastpath+0x16/0x1b
+> ---[ end trace 6a2f7052e2c76f52 ]---
+> DMA-API: debugging out of memory - disabling
+> 
+> This is an AMD RS780/ ATI Radeon HD 3200 system with Gentoo xorg-server
+> 1.9.4 and xf86-video-ati 6.14.1.
 
-Do you think that in my code only scanning is Broadcom specific? In
-such a case we could keep it "axi", and just s/scan/bcmscan/. This is
-only correct choice if the rest (addressing, core enabling, host
-management) is AXI specific.
+Looks similar to: http://thread.gmane.org/gmane.linux.kernel/1119774
 
-
->> > Also can't figure out how is this implementation supposed to manage
->> > multicore devices.
->>
->> We have got ideas, but let's first find (wait for) such a device ;)
-> bcm4716 usb host ? Don't really know if there are any other multicores.
-
-This is SoC, we do not have any problems supporting multiple cores on
-SoCs. All cores are available at the same time, without any sliding
-windows.
+Try reverting 69a07f0b117a40fcc1a479358d8e1f41793617f2
 
 -- 
-Rafał
+Markus
