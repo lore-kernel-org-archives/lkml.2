@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab1DLR3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 13:29:36 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:35206 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755401Ab1DLR3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 13:29:35 -0400
-X-ASG-Debug-ID: 1302629374-03d6a569fb98300001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DA48BF9.4050304@fusionio.com>
-Date: Tue, 12 Apr 2011 19:29:29 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: "hch@infradead.org" <hch@infradead.org>
-CC: Dave Chinner <david@fromorbit.com>, NeilBrown <neilb@suse.de>,
-        Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-References: <4DA2F00E.6010907@fusionio.com> <20110411223623.4278fad1@notabene.brown> <4DA2F8AD.1060605@fusionio.com> <20110412011255.GA29236@infradead.org> <4DA40F0E.1070903@fusionio.com> <20110412122248.GC31057@dastard> <4DA4456F.3070301@fusionio.com> <20110412124134.GD31057@dastard> <4DA44C86.3090305@fusionio.com> <20110412133117.GE31057@dastard> <20110412165830.GC23764@infradead.org>
-X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <20110412165830.GC23764@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1302629374
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60658
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S932167Ab1DLR3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 13:29:50 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:54244 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932083Ab1DLR3t convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 13:29:49 -0400
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Gabriel Paubert <paubert@iram.es>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Date: Tue, 12 Apr 2011 19:29:22 +0200
+In-Reply-To: <20110412120055.GA7995@iram.es>
+References: <20110404235259.GA30132@iram.es>
+	 <20110406084101.GB13963@pengutronix.de>
+	 <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
+	 <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local>
+	 <20110411133128.GA24344@iram.es> <1302535963.24704.268.camel@thor.local>
+	 <20110412113033.GA16649@iram.es> <1302608770.27054.36.camel@thor.local>
+	 <20110412120055.GA7995@iram.es>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA
+	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.0- 
+Message-ID: <1302629362.15520.25.camel@thor.local>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-12 18:58, hch@infradead.org wrote:
-> On Tue, Apr 12, 2011 at 11:31:17PM +1000, Dave Chinner wrote:
->> I don't think so. e.g. in the XFS allocation path we do btree block
->> readahead, then go do the real work. The real work can end up with a
->> deeper stack before blocking on locks or completions unrelated to
->> the readahead, leading to schedule() being called and an unplug
->> being issued at that point.  You might think it contrived, but if
->> you can't provide a guarantee that it can't happen then I have to
->> assume it will happen.
+On Die, 2011-04-12 at 14:00 +0200, Gabriel Paubert wrote:
+> On Tue, Apr 12, 2011 at 01:46:10PM +0200, Michel Dänzer wrote:
+> > > 
+> > > With no_wb=1 the driver goes a bit further but the X server ends
+> > > up in an infinite ioctl loop and the logs are: 
+> > 
+> > Which ioctl does it loop on? Please provide the Xorg.0.log file as well.
 > 
-> In addition to the stack issue, which is a killer to this also has
-> latency implications.  Before we could submit a synchronous metadata
-> read request inside readpage or writepage and kick it off to the disk
-> immediately, while now it won't get submitted until we block the next
-> time, i.e. have done some more work that could have been used for
-> doing I/O in the background.  With the kblockd offload not only have
-> we spent more time but at the point where we finally kick it we
-> also need another context switch.  It seem like we really need to
-> go through the filesystems and explicitly flush the plugging queue
-> for such cases.  In fact a bio flag marking things as synchronous
-> metadata reads would help, but then again we need to clean up our
-> existing bio flags first..
+> From memory, the code was 0x64, which is DRM_RADEON_GEM_WAIT_IDLE.
 
-I think it would be a good idea to audit the SYNC cases, and if feasible
-let that retain the 'immediate kick off' logic. If not, have some way to
-signal that at least. Essentially allow some fine grained control of
-what goes into the plug and what does not.
+Note that it's normal for this ioctl to be called every time before the
+GPU accessible pixmap memory is accessed by the CPU. Unless the ioctl
+always returns an error, this may not indicate a problem on its own. 
+
+
+> The Xorg.0.log from the previous boot is attached.
+
+I don't see any obvious problems in it. Can you describe the symptoms of
+the problem you're having with X a bit more?
+
+One thing I notice is that the X server/driver are rather oldish. Maybe
+you can try newer versions from testing, sid or even experimental to see
+if that makes any difference. 
+
 
 -- 
-Jens Axboe
-
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
