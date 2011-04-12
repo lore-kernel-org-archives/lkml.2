@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab1DLT21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:28:27 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:41447 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698Ab1DLT20 (ORCPT
+	id S1756424Ab1DLTfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:35:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40343 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989Ab1DLTfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:28:26 -0400
-Date: Tue, 12 Apr 2011 21:28:24 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: kernel 2.6.39-rc3 drm, radeon: device driver tries to free DMA
- memory it has not allocated
-Message-ID: <20110412192823.GA1634@x4.trippels.de>
-References: <20110412210940.0b3d598b@stein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412210940.0b3d598b@stein>
+	Tue, 12 Apr 2011 15:35:20 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: gregkh@suse.de, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 4/5] usb/gadget: don't deploy SS descriptors if SS is not enabled.
+Date: Tue, 12 Apr 2011 21:34:55 +0200
+Message-Id: <1302636896-12717-5-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1302636896-12717-1-git-send-email-bigeasy@linutronix.de>
+References: <20110411175917.GE4018@linutronix.de>
+ <1302636896-12717-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.04.12 at 21:09 +0200, Stefan Richter wrote:
-> Hi,
-> 
-> I just switched from 2.6.38-rc7 to 2.6.39-rc3 and got this at some point
-> during userland startup:
-> 
-> WARNING: at lib/dma-debug.c:803 check_unmap+0x19a/0x696()
-> Hardware name: System Product Name
-> NULL NULL: DMA-API: device driver tries to free DMA memory it has not allocated [device address=0x00000000ce47b000] [size=4096 bytes]
-> Modules linked in: cpufreq_ondemand powernow_k8 freq_table mperf snd_pcm_oss snd_mixer_oss snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device nfsd lockd it87 hwmon_vid sunrpc ext4 jbd2 crc16 sr_mod cdrom snd_hda_codec_realtek k10temp yenta_socket snd_hda_intel pcmcia_core pcmcia_rsrc snd_hda_codec snd_pcm pata_atiixp snd_timer sg snd snd_page_alloc r8169 mii processor usb_storage
-> Pid: 4397, comm: X Tainted: G        W   2.6.39-rc3 #2
-> Call Trace:
->  [<ffffffff81031ef9>] warn_slowpath_common+0x80/0x98
->  [<ffffffff81031fa5>] warn_slowpath_fmt+0x41/0x43
->  [<ffffffff8134606d>] ? _raw_spin_lock_irqsave+0x49/0x53
->  [<ffffffff811474e5>] ? check_unmap+0x102/0x696
->  [<ffffffff8114757d>] check_unmap+0x19a/0x696
->  [<ffffffff81021810>] ? __change_page_attr_set_clr+0x16d/0x99d
->  [<ffffffff81147ae5>] debug_dma_free_coherent+0x6c/0x7a
->  [<ffffffff811ccb00>] ttm_put_pages+0x117/0x255
->  [<ffffffff811c62cb>] ttm_tt_free_alloced_pages+0xbc/0xe2
->  [<ffffffff811c6695>] ttm_tt_destroy+0x50/0xda
->  [<ffffffff811c6f27>] ttm_bo_cleanup_memtype_use+0x29/0x63
->  [<ffffffff811c96aa>] ttm_bo_release+0x112/0x1df
->  [<ffffffff811c9598>] ? ttm_bo_create+0xff/0xff
->  [<ffffffff81139882>] kref_put+0x43/0x4d
->  [<ffffffff811c7748>] ttm_bo_unref+0x33/0x40
->  [<ffffffff811f6f66>] radeon_bo_unref+0x3f/0x5e
->  [<ffffffff811b58f2>] ? drm_gem_handle_delete+0x89/0xab
->  [<ffffffff811b5779>] ? drm_gem_object_release_handle+0x5a/0x5a
->  [<ffffffff8120985a>] radeon_gem_object_free+0x1e/0x20
->  [<ffffffff811b57a1>] drm_gem_object_free+0x28/0x2a
->  [<ffffffff81139882>] kref_put+0x43/0x4d
->  [<ffffffff811b5901>] drm_gem_handle_delete+0x98/0xab
->  [<ffffffff811b5937>] drm_gem_close_ioctl+0x23/0x25
->  [<ffffffff811b4106>] drm_ioctl+0x277/0x343
->  [<ffffffff811b5914>] ? drm_gem_handle_delete+0xab/0xab
->  [<ffffffff8102b65f>] ? get_parent_ip+0x11/0x41
->  [<ffffffff81058895>] ? trace_hardirqs_on+0xd/0xf
->  [<ffffffff810b5e8b>] do_vfs_ioctl+0x464/0x4b3
->  [<ffffffff810953bd>] ? remove_vma+0x69/0x71
->  [<ffffffff810b5f1c>] sys_ioctl+0x42/0x65
->  [<ffffffff813472bb>] system_call_fastpath+0x16/0x1b
-> ---[ end trace 6a2f7052e2c76f52 ]---
-> DMA-API: debugging out of memory - disabling
-> 
-> This is an AMD RS780/ ATI Radeon HD 3200 system with Gentoo xorg-server
-> 1.9.4 and xf86-video-ati 6.14.1.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/usb/gadget/composite.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Looks similar to: http://thread.gmane.org/gmane.linux.kernel/1119774
-
-Try reverting 69a07f0b117a40fcc1a479358d8e1f41793617f2
-
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 92cc238..ac30e2f 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -74,10 +74,12 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
+ static char composite_manufacturer[50];
+ 
+ /* Default endpoint companion descriptor */
++#ifdef CONFIG_USB_GADGET_SUPERSPEED
+ static struct usb_ss_ep_comp_descriptor default_ep_comp_desc = {
+ 		.bDescriptorType = USB_DT_SS_ENDPOINT_COMP,
+ 		.bLength = sizeof(struct usb_ss_ep_comp_descriptor),
+ };
++#endif
+ 
+ /**
+  * usb_create_ss_descriptors() - Generate SuperSpeed descriptors
+@@ -93,6 +95,7 @@ static struct usb_ss_ep_comp_descriptor default_ep_comp_desc = {
+  */
+ void usb_create_ss_descriptors(struct usb_function *f)
+ {
++#ifdef CONFIG_USB_GADGET_SUPERSPEED
+ 	struct usb_ss_ep_comp_descriptor	*ep_comp_desc;
+ 	struct usb_endpoint_descriptor		*ep_desc;
+ 	struct usb_descriptor_header		**src = f->hs_descriptors;
+@@ -185,6 +188,7 @@ void usb_create_ss_descriptors(struct usb_function *f)
+ 	 */
+ 	*tmp = NULL;
+ 	f->ss_desc_allocated = true;
++#endif
+ }
+ 
+ /*-------------------------------------------------------------------------*/
 -- 
-Markus
+1.7.4
+
