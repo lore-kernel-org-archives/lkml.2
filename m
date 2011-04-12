@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab1DLQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:49:57 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:59777 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754684Ab1DLQt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:49:56 -0400
-X-ASG-Debug-ID: 1302626994-01de284cf8135cc0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DA482B1.5000005@fusionio.com>
-Date: Tue, 12 Apr 2011 18:49:53 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: "hch@infradead.org" <hch@infradead.org>
-CC: Dave Chinner <david@fromorbit.com>, NeilBrown <neilb@suse.de>,
-        Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-References: <20110411220505.1028816e@notabene.brown> <4DA2F00E.6010907@fusionio.com> <20110411223623.4278fad1@notabene.brown> <4DA2F8AD.1060605@fusionio.com> <20110412011255.GA29236@infradead.org> <4DA40F0E.1070903@fusionio.com> <20110412122248.GC31057@dastard> <4DA4456F.3070301@fusionio.com> <20110412124134.GD31057@dastard> <4DA44C86.3090305@fusionio.com> <20110412164417.GA13890@infradead.org>
-X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <20110412164417.GA13890@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1302626994
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60654
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1758203Ab1DLQuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:50:05 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:55881 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758093Ab1DLQuD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 12:50:03 -0400
+X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Apr 2011 12:50:03 EDT
+Date: Tue, 12 Apr 2011 18:41:43 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: wzab@ise.pw.edu.pl
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: Screen corrupted in Xorg with KMS on 945GM/GMS, 943/940GML
+ chipset with kernel 2.6.38.2
+Message-ID: <20110412184143.27dbf34f@neptune.home>
+In-Reply-To: <4DA4243A.5030805@ise.pw.edu.pl>
+References: <4DA4243A.5030805@ise.pw.edu.pl>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-12 18:44, hch@infradead.org wrote:
-> On Tue, Apr 12, 2011 at 02:58:46PM +0200, Jens Axboe wrote:
->> Supposedly it's faster to do it inline rather than punt the dispatch.
->> But that may actually not be true, if you have multiple plugs going (and
->> thus multiple contenders for the queue lock on dispatch). So lets play
->> it safe and punt to kblockd, we can always revisit this later.
-> 
-> Note that this can be optimized further by adding a new helper that just
-> queues up work on kblockd without taking the queue lock, e.g. adding a
-> new
-> 
-> void blk_run_queue_async(struct request_queue *q)
-> {
-> 	if (likely(!blk_queue_stopped(q)))
-> 		queue_delayed_work(kblockd_workqueue, &q->delay_work, 0);
-> }
-> 
-> And replacing all
-> 
-> 	__blk_run_queue(q, true);
-> 
-> callers with that, at which point they won't need the queuelock any
-> more.
+[CCing intel-gfx]
 
-I realize that, in fact it's already safe as long as you pass in 'true'
-for __blk_run_queue(). Before I had rewritten it to move the running
-out, so that makes the trick a little difficult. This afternoon I also
-tested it and saw no noticable difference, but I'll probably just do it
-anyway as it makes sense.
+On Tue, 12 April 2011 Wojciech Zabołotny <wzab@ise.pw.edu.pl> wrote:
+> After I've upgraded my kernel to 2.6.38.2, I started to experience very 
+> often screen corruption in X (it happened also earlier with 2.6.37.3,
+> but now is very often.
+> Hardware seems to be OK. I attach  sample screendumps, configuration of 
+> my kernel, log of the X server and output of the lspci command.
 
--- 
-Jens Axboe
+This looks similar to the xchat corruptions I see (on i855).
 
+Have a look at #34980 (also 945 family) and #35460 on bugs.freedesktop.org.
+
+Bruno
