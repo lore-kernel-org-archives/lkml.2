@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab1DLOiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:38:12 -0400
-Received: from kroah.org ([198.145.64.141]:57570 "EHLO coco.kroah.org"
+	id S932333Ab1DLOib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:31 -0400
+Received: from kroah.org ([198.145.64.141]:57627 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757252Ab1DLOiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:05 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:52 2011
-Message-Id: <20110412143552.553555358@clark.kroah.org>
+	id S932306Ab1DLOi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:26 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:54 2011
+Message-Id: <20110412143554.819093370@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:32 -0700
+Date: Tue, 12 Apr 2011 07:34:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [043/105] net: fix ethtool->set_flags not intended -EINVAL return value
+        Hugh Dickins <hughd@google.com>
+Subject: [064/105] mm: avoid wrapping vm_pgoff in mremap()
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,133 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 673e63c688f43104c73aad8ea4237f7ad41fa14d upstream.
+commit 982134ba62618c2d69fbbbd166d0a11ee3b7e3d8 upstream.
 
-After commit d5dbda23804156ae6f35025ade5307a49d1db6d7 "ethtool: Add
-support for vlan accleration.", drivers that have NETIF_F_HW_VLAN_TX,
-and/or NETIF_F_HW_VLAN_RX feature, but do not allow enable/disable vlan
-acceleration via ethtool set_flags, always return -EINVAL from that
-function. Fix by returning -EINVAL only if requested features do not
-match current settings and can not be changed by driver.
+The normal mmap paths all avoid creating a mapping where the pgoff
+inside the mapping could wrap around due to overflow.  However, an
+expanding mremap() can take such a non-wrapping mapping and make it
+bigger and cause a wrapping condition.
 
-Change any driver that define ethtool->set_flags to use
-ethtool_invalid_flags() to avoid similar problems in the future
-(also on drivers that do not have the problem).
+Noticed by Robert Swiecki when running a system call fuzzer, where it
+caused a BUG_ON() due to terminally confusing the vma_prio_tree code.  A
+vma dumping patch by Hugh then pinpointed the crazy wrapped case.
 
-Tested with modified (to reproduce this bug) myri10ge driver.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Robert Swiecki <robert@swiecki.net>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/netxen/netxen_nic_ethtool.c |    2 +-
- drivers/net/qlcnic/qlcnic_ethtool.c     |    2 +-
- drivers/net/s2io.c                      |    2 +-
- drivers/net/vmxnet3/vmxnet3_ethtool.c   |    4 ++--
- drivers/net/vxge/vxge-ethtool.c         |    4 ++--
- include/linux/ethtool.h                 |    1 +
- net/core/ethtool.c                      |   17 ++++++++++++++++-
- 7 files changed, 24 insertions(+), 8 deletions(-)
+ mm/mremap.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/net/netxen/netxen_nic_ethtool.c
-+++ b/drivers/net/netxen/netxen_nic_ethtool.c
-@@ -901,7 +901,7 @@ static int netxen_nic_set_flags(struct n
- 	struct netxen_adapter *adapter = netdev_priv(netdev);
- 	int hw_lro;
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -277,9 +277,16 @@ static struct vm_area_struct *vma_to_res
+ 	if (old_len > vma->vm_end - addr)
+ 		goto Efault;
  
--	if (data & ~ETH_FLAG_LRO)
-+	if (ethtool_invalid_flags(netdev, data, ETH_FLAG_LRO))
- 		return -EINVAL;
- 
- 	if (!(adapter->capabilities & NX_FW_CAPABILITY_HW_LRO))
---- a/drivers/net/qlcnic/qlcnic_ethtool.c
-+++ b/drivers/net/qlcnic/qlcnic_ethtool.c
-@@ -1003,7 +1003,7 @@ static int qlcnic_set_flags(struct net_d
- 	struct qlcnic_adapter *adapter = netdev_priv(netdev);
- 	int hw_lro;
- 
--	if (data & ~ETH_FLAG_LRO)
-+	if (ethtool_invalid_flags(netdev, data, ETH_FLAG_LRO))
- 		return -EINVAL;
- 
- 	if (!(adapter->capabilities & QLCNIC_FW_CAPABILITY_HW_LRO))
---- a/drivers/net/s2io.c
-+++ b/drivers/net/s2io.c
-@@ -6726,7 +6726,7 @@ static int s2io_ethtool_set_flags(struct
- 	int rc = 0;
- 	int changed = 0;
- 
--	if (data & ~ETH_FLAG_LRO)
-+	if (ethtool_invalid_flags(dev, data, ETH_FLAG_LRO))
- 		return -EINVAL;
- 
- 	if (data & ETH_FLAG_LRO) {
---- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
-+++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-@@ -304,8 +304,8 @@ vmxnet3_set_flags(struct net_device *net
- 	u8 lro_present = (netdev->features & NETIF_F_LRO) == 0 ? 0 : 1;
- 	unsigned long flags;
- 
--	if (data & ~ETH_FLAG_LRO)
--		return -EOPNOTSUPP;
-+	if (ethtool_invalid_flags(netdev, data, ETH_FLAG_LRO))
-+		return -EINVAL;
- 
- 	if (lro_requested ^ lro_present) {
- 		/* toggle the LRO feature*/
---- a/drivers/net/vxge/vxge-ethtool.c
-+++ b/drivers/net/vxge/vxge-ethtool.c
-@@ -1117,8 +1117,8 @@ static int vxge_set_flags(struct net_dev
- 	struct vxgedev *vdev = netdev_priv(dev);
- 	enum vxge_hw_status status;
- 
--	if (data & ~ETH_FLAG_RXHASH)
--		return -EOPNOTSUPP;
-+	if (ethtool_invalid_flags(dev, data, ETH_FLAG_RXHASH))
-+		return -EINVAL;
- 
- 	if (!!(data & ETH_FLAG_RXHASH) == vdev->devh->config.rth_en)
- 		return 0;
---- a/include/linux/ethtool.h
-+++ b/include/linux/ethtool.h
-@@ -591,6 +591,7 @@ int ethtool_op_set_ufo(struct net_device
- u32 ethtool_op_get_flags(struct net_device *dev);
- int ethtool_op_set_flags(struct net_device *dev, u32 data, u32 supported);
- void ethtool_ntuple_flush(struct net_device *dev);
-+bool ethtool_invalid_flags(struct net_device *dev, u32 data, u32 supported);
- 
- /**
-  * &ethtool_ops - Alter and report network device settings
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -146,9 +146,24 @@ u32 ethtool_op_get_flags(struct net_devi
- }
- EXPORT_SYMBOL(ethtool_op_get_flags);
- 
-+/* Check if device can enable (or disable) particular feature coded in "data"
-+ * argument. Flags "supported" describe features that can be toggled by device.
-+ * If feature can not be toggled, it state (enabled or disabled) must match
-+ * hardcoded device features state, otherwise flags are marked as invalid.
-+ */
-+bool ethtool_invalid_flags(struct net_device *dev, u32 data, u32 supported)
-+{
-+	u32 features = dev->features & flags_dup_features;
-+	/* "data" can contain only flags_dup_features bits,
-+	 * see __ethtool_set_flags */
+-	if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP)) {
+-		if (new_len > old_len)
++	/* Need to be careful about a growing mapping */
++	if (new_len > old_len) {
++		unsigned long pgoff;
 +
-+	return (features & ~supported) != (data & ~supported);
-+}
-+EXPORT_SYMBOL(ethtool_invalid_flags);
-+
- int ethtool_op_set_flags(struct net_device *dev, u32 data, u32 supported)
- {
--	if (data & ~supported)
-+	if (ethtool_invalid_flags(dev, data, supported))
- 		return -EINVAL;
++		if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP))
+ 			goto Efault;
++		pgoff = (addr - vma->vm_start) >> PAGE_SHIFT;
++		pgoff += vma->vm_pgoff;
++		if (pgoff + (new_len >> PAGE_SHIFT) < pgoff)
++			goto Einval;
+ 	}
  
- 	dev->features = ((dev->features & ~flags_dup_features) |
+ 	if (vma->vm_flags & VM_LOCKED) {
 
 
