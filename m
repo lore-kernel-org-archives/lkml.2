@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab1DLT5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:57:04 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58898 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756920Ab1DLT5C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:57:02 -0400
-Subject: Re: Strange block/scsi/workqueue issue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <1302633208.2661.29.camel@dolmen>
-References: <1302533763.2596.23.camel@dolmen>
-	 <20110411171803.GG9673@mtj.dyndns.org>
-	 <1302569276.2558.9.camel@mulgrave.site>
-	 <20110412025145.GJ9673@mtj.dyndns.org>
-	 <1302583757.2558.21.camel@mulgrave.site>
-	 <1302584571.2558.24.camel@mulgrave.site>  <1302597737.2661.5.camel@dolmen>
-	 <1302615745.2604.6.camel@mulgrave.site>  <1302617212.2661.14.camel@dolmen>
-	 <1302621261.2604.18.camel@mulgrave.site>  <1302624266.2661.21.camel@dolmen>
-	 <1302625621.2604.24.camel@mulgrave.site>  <1302627097.2661.25.camel@dolmen>
-	 <1302630090.2604.30.camel@mulgrave.site>  <1302633208.2661.29.camel@dolmen>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 14:56:56 -0500
-Message-ID: <1302638216.2604.35.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S932164Ab1DLT5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:57:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38342 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932094Ab1DLT5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 15:57:38 -0400
+Date: Tue, 12 Apr 2011 21:57:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com, mstowe@redhat.com,
+        dnelson@redhat.com, tony.luck@intel.com, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH]: mce: don't print "human readable" message for
+ corrected errors
+Message-ID: <20110412195733.GA25123@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+	dzickus@redhat.com, mstowe@redhat.com, dnelson@redhat.com,
+	tony.luck@intel.com, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <20110412174405.26867.65604.sendpatchset@prarit.bos.redhat.com>
+ <20110412185842.GB9891@liondog.tnic>
+ <4DA4A68A.2050604@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4DA4A68A.2050604@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 19:33 +0100, Steven Whitehouse wrote:
-> Hi,
+Adding x86 people.
+
+On Tue, Apr 12, 2011 at 03:22:50PM -0400, Prarit Bhargava wrote:
 > 
-> On Tue, 2011-04-12 at 12:41 -0500, James Bottomley wrote:
-> > On Tue, 2011-04-12 at 17:51 +0100, Steven Whitehouse wrote:
-> > > Still not quite there, but looking more hopeful now,
-> > 
-> > Not sure I share your optimism; but this one
-> > 
-> Neither do I any more :-) Looks like we are back in blk_peek_request()
-> again. 
-[...]
->                 if (!q->elevator->ops || !q->elevator->ops->elevator_dispatch_fn
-> (q, 0))
->     6d62:       49 8b 44 24 18          mov    0x18(%r12),%rax
->     6d67:       48 8b 00                mov    (%rax),%rax
->     6d6a:       48 85 c0                test   %rax,%rax
->     6d6d:       74 0c                   je     6d7b <blk_peek_request+0x11b>
->     6d6f:       31 f6                   xor    %esi,%esi
->     6d71:       4c 89 e7                mov    %r12,%rdi                                <----- here
->     6d74:       ff 50 28                callq  *0x28(%rax)
->     6d77:       85 c0                   test   %eax,%eax
->     6d79:       75 da                   jne    6d55 <blk_peek_request+0xf5>
->     6d7b:       45 31 ed                xor    %r13d,%r13d
+> 
+> On 04/12/2011 02:58 PM, Borislav Petkov wrote:
+> > On Tue, Apr 12, 2011 at 01:44:05PM -0400, Prarit Bhargava wrote:
+> >   
+> >> Don't display the "human readable" warning for correctable errors in mce.
+> >> There is no need for this information to be displayed.
+> >>
+> >> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> >>     
+> > Why not? This way you turn reporting of _ALL_ correctable MCEs
+> > completely off and some users would actually like to run them through
+> > mcelog on Intel.
+> >   
+> 
+> I may be reading the code wrong ... but in the case of the
+> default_decode_mce() callback there is *no* additional output displayed
+> for correctable MCEs -- so the message is AFAICT useless.
+> 
+> ie) all you see on the console log is
+> 
+> [Hardware Error]: Machine check events logged
+> 
+> ^^^ this notifies the user that something happened with MCE
+> 
+> [Hardware Error]: No human readable MCE decoding support on this CPU type.
+> 
+> ^^^ this is purely informational and unnecessary
+> 
+> [Hardware Error]: Run the message through 'mcelog --ascii' to decode.
+> 
+> ^^^ this makes absolutely no sense.  There is no message to decode.
+> 
+> You won't see this in the case of the amd-edac because it has it's own
+> callback.
 
-Hmm, wrong signal for no elevator then.  How about this?
+Right, I see what you're sayin'. This is actually this piece:
 
-James
+		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
+			mce_log(&m);
+			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
+			add_taint(TAINT_MACHINE_CHECK);
+		}
 
----
+in machine_check_poll and the reason I added it at the time was so EDAC
+gets notified about DRAM ECCs. And you're right, when we're not decoding
+in the kernel this message is not helping a lot. I can imagine this
+filling up the logs on a machine spitting lotsa DRAM CECC errors.
 
-Index: BUILD-2.6/block/blk.h
-===================================================================
---- BUILD-2.6.orig/block/blk.h	2011-04-12 14:51:35.000000000 -0500
-+++ BUILD-2.6/block/blk.h	2011-04-12 14:51:53.000000000 -0500
-@@ -62,7 +62,8 @@ static inline struct request *__elv_next
- 			return rq;
- 		}
- 
--		if (!q->elevator->ops || !q->elevator->ops->elevator_dispatch_fn(q, 0))
-+		if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) ||
-+		    !q->elevator->ops->elevator_dispatch_fn(q, 0))
- 			return NULL;
- 	}
- }
+I'm wondering whether dropping the printks completely is also an option
+for I don't see any merit for having them anyway...
 
+Hmmm.
 
+-- 
+Regards/Gruss,
+    Boris.
