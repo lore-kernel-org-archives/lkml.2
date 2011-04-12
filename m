@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab1DLOhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:37:47 -0400
-Received: from kroah.org ([198.145.64.141]:57444 "EHLO coco.kroah.org"
+	id S1757063Ab1DLOhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:37:42 -0400
+Received: from kroah.org ([198.145.64.141]:57420 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757068Ab1DLOho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:44 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:50 2011
-Message-Id: <20110412143550.186620521@clark.kroah.org>
+	id S1756817Ab1DLOhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:40 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:49 2011
+Message-Id: <20110412143549.730291946@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:10 -0700
+Date: Tue, 12 Apr 2011 07:34:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Olaf Hering <olaf@aepfle.de>, Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [021/105] staging: hv: use sync_bitops when interacting with the hypervisor
+        Adrian Hoban <adrian.hoban@intel.com>,
+        Aidan OMahony <aidan.o.mahony@intel.com>,
+        Gabriele Paoloni <gabriele.paoloni@intel.com>,
+        Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [017/105] crypto: aesni-intel - fixed problem with packets that are not multiple of 64bytes
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,103 +29,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olaf Hering <olaf@aepfle.de>
+From: Tadeusz Struk <tadeusz.struk@intel.com>
 
-commit 22356585712d1ff08fbfed152edd8b386873b238 upstream.
+commit 60af520cf264ea26b2af3a6871bbd71850522aea upstream.
 
-Locking is required when tweaking bits located in a shared page, use the
-sync_ version of bitops. Without this change vmbus_on_event() will miss
-events and as a result, vmbus_isr() will not schedule the receive tasklet.
+This patch fixes problem with packets that are not multiple of 64bytes.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
-Acked-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Adrian Hoban <adrian.hoban@intel.com>
+Signed-off-by: Aidan O'Mahony <aidan.o.mahony@intel.com>
+Signed-off-by: Gabriele Paoloni <gabriele.paoloni@intel.com>
+Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/hv/channel.c       |    8 ++++----
- drivers/staging/hv/connection.c    |    4 ++--
- drivers/staging/hv/vmbus_drv.c     |    2 +-
- drivers/staging/hv/vmbus_private.h |    1 +
- 4 files changed, 8 insertions(+), 7 deletions(-)
+ arch/x86/crypto/aesni-intel_asm.S  |    5 ++++-
+ arch/x86/crypto/aesni-intel_glue.c |   14 ++++++++++++--
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/hv/channel.c
-+++ b/drivers/staging/hv/channel.c
-@@ -76,14 +76,14 @@ static void vmbus_setevent(struct vmbus_
+--- a/arch/x86/crypto/aesni-intel_asm.S
++++ b/arch/x86/crypto/aesni-intel_asm.S
+@@ -1612,6 +1612,7 @@ _zero_cipher_left_encrypt:
+         movdqa SHUF_MASK(%rip), %xmm10
+ 	PSHUFB_XMM %xmm10, %xmm0
  
- 	if (channel->offermsg.monitor_allocated) {
- 		/* Each u32 represents 32 channels */
--		set_bit(channel->offermsg.child_relid & 31,
-+		sync_set_bit(channel->offermsg.child_relid & 31,
- 			(unsigned long *) gVmbusConnection.SendInterruptPage +
- 			(channel->offermsg.child_relid >> 5));
++
+ 	ENCRYPT_SINGLE_BLOCK	%xmm0, %xmm1        # Encrypt(K, Yn)
+ 	sub $16, %r11
+ 	add %r13, %r11
+@@ -1634,7 +1635,9 @@ _zero_cipher_left_encrypt:
+ 	# GHASH computation for the last <16 byte block
+ 	sub	%r13, %r11
+ 	add	$16, %r11
+-	PSHUFB_XMM %xmm10, %xmm1
++
++	movdqa SHUF_MASK(%rip), %xmm10
++	PSHUFB_XMM %xmm10, %xmm0
  
- 		monitorpage = gVmbusConnection.MonitorPages;
- 		monitorpage++; /* Get the child to parent monitor page */
+ 	# shuffle xmm0 back to output as ciphertext
  
--		set_bit(channel->monitor_bit,
-+		sync_set_bit(channel->monitor_bit,
- 			(unsigned long *)&monitorpage->trigger_group
- 					[channel->monitor_grp].pending);
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -828,9 +828,15 @@ static int rfc4106_init(struct crypto_tf
+ 	struct cryptd_aead *cryptd_tfm;
+ 	struct aesni_rfc4106_gcm_ctx *ctx = (struct aesni_rfc4106_gcm_ctx *)
+ 		PTR_ALIGN((u8 *)crypto_tfm_ctx(tfm), AESNI_ALIGN);
++	struct crypto_aead *cryptd_child;
++	struct aesni_rfc4106_gcm_ctx *child_ctx;
+ 	cryptd_tfm = cryptd_alloc_aead("__driver-gcm-aes-aesni", 0, 0);
+ 	if (IS_ERR(cryptd_tfm))
+ 		return PTR_ERR(cryptd_tfm);
++
++	cryptd_child = cryptd_aead_child(cryptd_tfm);
++	child_ctx = aesni_rfc4106_gcm_ctx_get(cryptd_child);
++	memcpy(child_ctx, ctx, sizeof(*ctx));
+ 	ctx->cryptd_tfm = cryptd_tfm;
+ 	tfm->crt_aead.reqsize = sizeof(struct aead_request)
+ 		+ crypto_aead_reqsize(&cryptd_tfm->base);
+@@ -925,6 +931,9 @@ static int rfc4106_set_key(struct crypto
+ 	int ret = 0;
+ 	struct crypto_tfm *tfm = crypto_aead_tfm(parent);
+ 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(parent);
++	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
++	struct aesni_rfc4106_gcm_ctx *child_ctx =
++                                 aesni_rfc4106_gcm_ctx_get(cryptd_child);
+ 	u8 *new_key_mem = NULL;
  
-@@ -99,7 +99,7 @@ static void VmbusChannelClearEvent(struc
- 
- 	if (Channel->offermsg.monitor_allocated) {
- 		/* Each u32 represents 32 channels */
--		clear_bit(Channel->offermsg.child_relid & 31,
-+		sync_clear_bit(Channel->offermsg.child_relid & 31,
- 			  (unsigned long *)gVmbusConnection.SendInterruptPage +
- 			  (Channel->offermsg.child_relid >> 5));
- 
-@@ -107,7 +107,7 @@ static void VmbusChannelClearEvent(struc
- 			(struct hv_monitor_page *)gVmbusConnection.MonitorPages;
- 		monitorPage++; /* Get the child to parent monitor page */
- 
--		clear_bit(Channel->monitor_bit,
-+		sync_clear_bit(Channel->monitor_bit,
- 			  (unsigned long *)&monitorPage->trigger_group
- 					[Channel->monitor_grp].Pending);
+ 	if (key_len < 4) {
+@@ -968,6 +977,7 @@ static int rfc4106_set_key(struct crypto
+ 		goto exit;
  	}
---- a/drivers/staging/hv/connection.c
-+++ b/drivers/staging/hv/connection.c
-@@ -281,7 +281,7 @@ void VmbusOnEvents(void)
- 		for (dword = 0; dword < maxdword; dword++) {
- 			if (recvInterruptPage[dword]) {
- 				for (bit = 0; bit < 32; bit++) {
--					if (test_and_clear_bit(bit, (unsigned long *)&recvInterruptPage[dword])) {
-+					if (sync_test_and_clear_bit(bit, (unsigned long *)&recvInterruptPage[dword])) {
- 						relid = (dword << 5) + bit;
- 						DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
+ 	ret = rfc4106_set_hash_subkey(ctx->hash_subkey, key, key_len);
++	memcpy(child_ctx, ctx, sizeof(*ctx));
+ exit:
+ 	kfree(new_key_mem);
+ 	return ret;
+@@ -999,7 +1009,6 @@ static int rfc4106_encrypt(struct aead_r
+ 	int ret;
+ 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
+ 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
+-	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
  
-@@ -320,7 +320,7 @@ int VmbusPostMessage(void *buffer, size_
- int VmbusSetEvent(u32 childRelId)
- {
- 	/* Each u32 represents 32 channels */
--	set_bit(childRelId & 31,
-+	sync_set_bit(childRelId & 31,
- 		(unsigned long *)gVmbusConnection.SendInterruptPage +
- 		(childRelId >> 5));
+ 	if (!irq_fpu_usable()) {
+ 		struct aead_request *cryptd_req =
+@@ -1008,6 +1017,7 @@ static int rfc4106_encrypt(struct aead_r
+ 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
+ 		return crypto_aead_encrypt(cryptd_req);
+ 	} else {
++		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
+ 		kernel_fpu_begin();
+ 		ret = cryptd_child->base.crt_aead.encrypt(req);
+ 		kernel_fpu_end();
+@@ -1020,7 +1030,6 @@ static int rfc4106_decrypt(struct aead_r
+ 	int ret;
+ 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
+ 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
+-	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
  
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -291,7 +291,7 @@ static int vmbus_on_isr(struct hv_driver
- 	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
- 
- 	/* Since we are a child, we only need to check bit 0 */
--	if (test_and_clear_bit(0, (unsigned long *) &event->flags32[0])) {
-+	if (sync_test_and_clear_bit(0, (unsigned long *) &event->flags32[0])) {
- 		DPRINT_DBG(VMBUS, "received event %d", event->flags32[0]);
- 		ret |= 0x2;
- 	}
---- a/drivers/staging/hv/vmbus_private.h
-+++ b/drivers/staging/hv/vmbus_private.h
-@@ -31,6 +31,7 @@
- #include "channel_mgmt.h"
- #include "ring_buffer.h"
- #include <linux/list.h>
-+#include <asm/sync_bitops.h>
- 
- 
- /*
+ 	if (!irq_fpu_usable()) {
+ 		struct aead_request *cryptd_req =
+@@ -1029,6 +1038,7 @@ static int rfc4106_decrypt(struct aead_r
+ 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
+ 		return crypto_aead_decrypt(cryptd_req);
+ 	} else {
++		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
+ 		kernel_fpu_begin();
+ 		ret = cryptd_child->base.crt_aead.decrypt(req);
+ 		kernel_fpu_end();
 
 
