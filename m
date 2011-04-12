@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab1DLHEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 03:04:01 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39075 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756721Ab1DLHEA (ORCPT
+	id S1756745Ab1DLHHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 03:07:54 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.31.39]:59081 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756659Ab1DLHHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 03:04:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=sK9O4b6Us2FJNVisls87x4CtbQBMntXD3x4OrxSQa/CS9Zi+qrOIcytjd5dA+7wMOk
-         6g1//Lp9eeWk0MQzhjgNM9w/cZFcazPkCU5+cQFTDkqV+toLBKB5WlqU4OA8/0o7dhu3
-         0pG7lRXFx8NELyPc66a7aINQHa+35jxADA5VE=
+	Tue, 12 Apr 2011 03:07:53 -0400
+Message-ID: <4DA3FA7E.2080800@ladisch.de>
+Date: Tue, 12 Apr 2011 09:08:46 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <20110411170103.035A.A69D9226@jp.fujitsu.com>
-References: <20110411165957.0352.A69D9226@jp.fujitsu.com>
-	<20110411170103.035A.A69D9226@jp.fujitsu.com>
-Date: Tue, 12 Apr 2011 16:03:59 +0900
-Message-ID: <BANLkTinvANUNE2CVcDCbkR+xNq0bq0RZCQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mm, mem-hotplug: recalculate lowmem_reserve when
- memory hotplug occur
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=UTF-8
+To: Harald Welte <laforge@gnumonks.org>
+CC: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        linux-kernel@vger.kernel.org,
+        Aloisio Almeida <aloisio.almeida@openbossa.org>,
+        Arnd Bergmann <arnd@arndb.de>, Waldemar.Rymarkiewicz@tieto.com
+Subject: Re: [RFC] NFC subsystem prototype
+References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com> <20110409130945.GC3248@prithivi.gnumonks.org> <BANLkTinTXNby_zc7yz29hAdRmNK3rRht9A@mail.gmail.com> <20110412060813.GS9690@prithivi.gnumonks.org>
+In-Reply-To: <20110412060813.GS9690@prithivi.gnumonks.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 5:00 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> Currently, memory hotplug call setup_per_zone_wmarks() and
-> calculate_zone_inactive_ratio(), but don't call setup_per_zone_lowmem_reserve().
->
-> It mean number of reserved pages aren't updated even if memory hot plug
-> occur. This patch fixes it.
->
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Harald Welte wrote:
+> Also, I'm not quite clear what's the situation with regard to the NFC trademark,
 
--- 
-Kind regards,
-Minchan Kim
+As far as I can tell, "NFC" itself isn't trademarked; it's used in the
+ISO standard, and the Wikipedia page mentions several organizations like
+NFC World, NFC Times, NFC Lab, and www.libnfc.org.  (What _is_
+trademarked is the "N-Mark": <http://www.nfc-forum.org/resources/N-Mark>.)
+
+> i.e. if it wise to use the trademark.  There has been one previous case with
+> the 'firewire' situation, where firewire is the trademark and IEEE 1394 the name
+> of the technical specification - and the the Linux subsystem is alled
+> 'ieee1394'...
+
+In recent kernels, the "ieee1394" subsystem has been replaced by the new
+subsystem named "firewire" (and called "Juju").
+
+
+Regards,
+Clemens
