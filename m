@@ -1,120 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab1DLIEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 04:04:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8881 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753508Ab1DLIEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 04:04:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,194,1301900400"; 
-   d="scan'208";a="908410307"
-Subject: [PATCH 3/4]percpu_counter: fix code for 32bit systems
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, cl@linux.com, tj@kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 16:04:04 +0800
-Message-ID: <1302595444.3981.129.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754457Ab1DLIN4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 04:13:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61405 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752434Ab1DLINy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 04:13:54 -0400
+Message-ID: <4DA409E6.7020406@cn.fujitsu.com>
+Date: Tue, 12 Apr 2011 16:14:30 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Chris Mason <chris.mason@oracle.com>
+CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
+Subject: [PATCH 1/2] Btrfs: allocate extent state and check the result properly
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-12 16:14:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-12 16:14:32,
+	Serialize complete at 2011-04-12 16:14:32
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu_counter.counter is a 's64'. Accessing it in 32-bit system is racing.
-we need some locking to protect it otherwise some very wrong value could be
-accessed.
+It doesn't allocate extent_state and check the result properly:
+- in set_extent_bit, it doesn't allocate extent_state if the path is not
+  allowed wait
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+- in clear_extent_bit, it doesn't check the result after atomic-ly allocate,
+  we trigger BUG_ON() if it's fail
+
+- if allocate fail, we trigger BUG_ON instead of returning -ENOMEM since
+  the return value of clear_extent_bit() is ignored by many callers
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- include/linux/percpu_counter.h |   43 +++++++++++++++++++++++++++++++----------
- 1 file changed, 33 insertions(+), 10 deletions(-)
+ fs/btrfs/extent_io.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
-Index: linux/include/linux/percpu_counter.h
-===================================================================
---- linux.orig/include/linux/percpu_counter.h	2011-04-12 15:48:44.000000000 +0800
-+++ linux/include/linux/percpu_counter.h	2011-04-12 15:48:54.000000000 +0800
-@@ -54,7 +54,15 @@ static inline s64 percpu_counter_sum(str
- 
- static inline s64 percpu_counter_read(struct percpu_counter *fbc)
- {
-+#if BITS_PER_LONG == 32
-+	s64 count;
-+	spin_lock(&fbc->lock);
-+	count = fbc->count;
-+	spin_unlock(&fbc->lock);
-+	return count;
-+#else
- 	return fbc->count;
-+#endif
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index 77c65a0..62d5bca 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -439,6 +439,16 @@ static int clear_state_bit(struct extent_io_tree *tree,
+ 	return ret;
  }
  
- static inline int percpu_counter_initialized(struct percpu_counter *fbc)
-@@ -68,9 +76,20 @@ struct percpu_counter {
- 	s64 count;
- };
- 
--static inline int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
-+static inline void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
- {
-+#if BITS_PER_LONG == 32
-+	preempt_disable();
- 	fbc->count = amount;
-+	preempt_enable();
-+#else
-+	fbc->count = amount;
-+#endif
++static struct extent_state *
++alloc_extent_state_atomic(struct extent_state *prealloc)
++{
++	if (!prealloc)
++		prealloc = alloc_extent_state(GFP_ATOMIC);
++
++	BUG_ON(!prealloc);
++	return prealloc;
 +}
 +
-+static inline int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
-+{
-+	percpu_counter_set(fbc, amount);
- 	return 0;
- }
+ /*
+  * clear some bits on a range in the tree.  This may require splitting
+  * or inserting elements in the tree, so the gfp mask is used to
+@@ -476,8 +486,7 @@ int clear_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
+ again:
+ 	if (!prealloc && (mask & __GFP_WAIT)) {
+ 		prealloc = alloc_extent_state(mask);
+-		if (!prealloc)
+-			return -ENOMEM;
++		BUG_ON(!prealloc);
+ 	}
  
-@@ -78,16 +97,25 @@ static inline void percpu_counter_destro
- {
- }
+ 	spin_lock(&tree->lock);
+@@ -529,8 +538,7 @@ hit_next:
+ 	 */
  
--static inline void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
-+static inline s64 percpu_counter_read(struct percpu_counter *fbc)
- {
--	fbc->count = amount;
-+#if BITS_PER_LONG == 32
-+	s64 count;
-+	preempt_disable();
-+	count = fbc->count;
-+	preempt_enable();
-+	return count;
-+#else
-+	return fbc->count;
-+#endif
- }
+ 	if (state->start < start) {
+-		if (!prealloc)
+-			prealloc = alloc_extent_state(GFP_ATOMIC);
++		prealloc = alloc_extent_state_atomic(prealloc);
+ 		err = split_state(tree, state, prealloc, start);
+ 		BUG_ON(err == -EEXIST);
+ 		prealloc = NULL;
+@@ -551,8 +559,7 @@ hit_next:
+ 	 * on the first half
+ 	 */
+ 	if (state->start <= end && state->end > end) {
+-		if (!prealloc)
+-			prealloc = alloc_extent_state(GFP_ATOMIC);
++		prealloc = alloc_extent_state_atomic(prealloc);
+ 		err = split_state(tree, state, prealloc, end + 1);
+ 		BUG_ON(err == -EEXIST);
+ 		if (wake)
+@@ -716,8 +723,7 @@ int set_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
+ again:
+ 	if (!prealloc && (mask & __GFP_WAIT)) {
+ 		prealloc = alloc_extent_state(mask);
+-		if (!prealloc)
+-			return -ENOMEM;
++		BUG_ON(!prealloc);
+ 	}
  
- static inline int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
- {
--	if (fbc->count > rhs)
-+	s64 count = percpu_counter_read(fbc);
-+	if (count > rhs)
- 		return 1;
--	else if (fbc->count < rhs)
-+	else if (count < rhs)
- 		return -1;
- 	else
- 		return 0;
-@@ -107,11 +135,6 @@ __percpu_counter_add(struct percpu_count
- 	percpu_counter_add(fbc, amount);
- }
+ 	spin_lock(&tree->lock);
+@@ -734,6 +740,7 @@ again:
+ 	 */
+ 	node = tree_search(tree, start);
+ 	if (!node) {
++		prealloc = alloc_extent_state_atomic(prealloc);
+ 		err = insert_state(tree, prealloc, start, end, &bits);
+ 		prealloc = NULL;
+ 		BUG_ON(err == -EEXIST);
+@@ -802,6 +809,8 @@ hit_next:
+ 			err = -EEXIST;
+ 			goto out;
+ 		}
++
++		prealloc = alloc_extent_state_atomic(prealloc);
+ 		err = split_state(tree, state, prealloc, start);
+ 		BUG_ON(err == -EEXIST);
+ 		prealloc = NULL;
+@@ -832,6 +841,8 @@ hit_next:
+ 			this_end = end;
+ 		else
+ 			this_end = last_start - 1;
++
++		prealloc = alloc_extent_state_atomic(prealloc);
+ 		err = insert_state(tree, prealloc, start, this_end,
+ 				   &bits);
+ 		BUG_ON(err == -EEXIST);
+@@ -856,6 +867,8 @@ hit_next:
+ 			err = -EEXIST;
+ 			goto out;
+ 		}
++
++		prealloc = alloc_extent_state_atomic(prealloc);
+ 		err = split_state(tree, state, prealloc, end + 1);
+ 		BUG_ON(err == -EEXIST);
  
--static inline s64 percpu_counter_read(struct percpu_counter *fbc)
--{
--	return fbc->count;
--}
--
- static inline s64 percpu_counter_sum(struct percpu_counter *fbc)
- {
- 	return percpu_counter_read(fbc);
-
-
+-- 
+1.7.4
