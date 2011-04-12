@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab1DLGpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 02:45:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47371 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756619Ab1DLGpQ (ORCPT
+	id S932116Ab1DLGsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 02:48:01 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48719 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570Ab1DLGr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 02:45:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 12 Apr 2011 15:38:37 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 1/3] mm, mem-hotplug: fix section mismatch.
- setup_per_zone_inactive_ratio() should be __meminit.
-Message-Id: <20110412153837.ea0f3f04.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110411170033.0356.A69D9226@jp.fujitsu.com>
-References: <20110411165957.0352.A69D9226@jp.fujitsu.com>
-	<20110411170033.0356.A69D9226@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 12 Apr 2011 02:47:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=wENjsW54jKU5vGXoT9PGcnK52ZGgIHO1QyHFgS3F8KejYJCiW8lQEohx8esaZ09akY
+         RV7H4zmGdQShBxA5ctX1l95vTPBNAA5t7UF7HZ205GPSdckJ44hRvm9Z37gve/RrtG7O
+         bgam6+hweLvN6Xqn3vHiNoxkuoVhvOJ5nGG+Y=
+Subject: [PATCH RESEND] Input: twl4030_keypad - fix potential NULL
+ dereference in twl4030_kp_probe()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <balbi@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 14:47:51 +0800
+Message-ID: <1302590871.17965.1.camel@phoenix>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011 17:00:08 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+We should first check whether platform data is NULL or not, before
+dereferencing it to get the keymap.
 
-> Commit bce7394a3e (page-allocator: reset wmark_min and inactive ratio of
-> zone when hotplug happens) introduced invalid section references.
-> Now, setup_per_zone_inactive_ratio() is marked __init and then it can't
-> be referenced from memory hotplug code.
-> 
-> Then, this patch marks it as __meminit and also marks caller as __ref.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Yasunori Goto <y-goto@jp.fujitsu.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/input/keyboard/twl4030_keypad.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+diff --git a/drivers/input/keyboard/twl4030_keypad.c b/drivers/input/keyboard/twl4030_keypad.c
+index cc06c4b..a26922c 100644
+--- a/drivers/input/keyboard/twl4030_keypad.c
++++ b/drivers/input/keyboard/twl4030_keypad.c
+@@ -332,7 +332,7 @@ static int __devinit twl4030_kp_program(struct twl4030_keypad *kp)
+ static int __devinit twl4030_kp_probe(struct platform_device *pdev)
+ {
+ 	struct twl4030_keypad_data *pdata = pdev->dev.platform_data;
+-	const struct matrix_keymap_data *keymap_data = pdata->keymap_data;
++	const struct matrix_keymap_data *keymap_data;
+ 	struct twl4030_keypad *kp;
+ 	struct input_dev *input;
+ 	u8 reg;
+@@ -344,6 +344,8 @@ static int __devinit twl4030_kp_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
++	keymap_data = pdata->keymap_data;
++
+ 	kp = kzalloc(sizeof(*kp), GFP_KERNEL);
+ 	input = input_allocate_device();
+ 	if (!kp || !input) {
+-- 
+1.7.1
+
 
 
