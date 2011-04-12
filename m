@@ -1,76 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab1DLAJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 20:09:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56009 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023Ab1DLAJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 20:09:26 -0400
-Date: Mon, 11 Apr 2011 17:08:09 -0700
-From: Greg KH <gregkh@suse.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Wolfgang Walter <wolfgang.walter@stwm.de>, linux-kernel@vger.kernel.org,
-        Rick Koshi <nfs-bug-report@more-right-rudder.com>,
-        Ivo =?utf-8?Q?P=C5=99ikryl?= <prikryl@eurosat.cz>
-Subject: Re: 2.6.38.2: regression from 2.6.38: kernel BUG at
- fs/nfsd/nfs4state.c:380!
-Message-ID: <20110412000809.GB11110@suse.de>
-References: <201103282223.06191.wolfgang.walter@stwm.de>
- <20110328203207.GA17493@suse.de>
- <201103282300.57903.wolfgang.walter@stwm.de>
- <20110328214122.GA19854@suse.de>
- <20110329031347.GC2695@fieldses.org>
- <20110329031725.GA3665@suse.de>
- <20110411081726.GB31311@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110411081726.GB31311@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756566Ab1DLAOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 20:14:23 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46778 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756467Ab1DLAOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Apr 2011 20:14:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=VhU12rO5niKExVh7ZNrha7r5lNvaAWFo8Dw6sODDzzQ1y3lyg2ZiWrsL+MAVSZxDoV
+         4BuCcIGQNsgANXnpQajfbbc8TTKduIrYMKK61GzrXWO4m+iDZe79RLRqCdIKaZL6YDwn
+         dZupVN530a6Uiz/5dIZXzeIGmhe55abx+5xfA=
+From: Timothy Courrejou <timcour@gmail.com>
+To: lenb@kernel.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Timothy Courrejou <timcour@gmail.com>
+Subject: [PATCH] ACPI: ac: fixed indentation, commenting and line length coding style issues
+Date: Mon, 11 Apr 2011 17:14:10 -0700
+Message-Id: <1302567250-6893-1-git-send-email-timcour@gmail.com>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 04:17:26AM -0400, J. Bruce Fields wrote:
-> On Mon, Mar 28, 2011 at 08:17:25PM -0700, Greg KH wrote:
-> > On Mon, Mar 28, 2011 at 11:13:47PM -0400, J. Bruce Fields wrote:
-> > > Bah, apologies about this, I don't know how it got through my own
-> > > testing.
-> > > 
-> > > On Mon, Mar 28, 2011 at 02:41:22PM -0700, Greg KH wrote:
-> > > > On Mon, Mar 28, 2011 at 11:00:57PM +0200, Wolfgang Walter wrote:
-> > > > > I just searched linux-nfs and found this:
-> > > > > 
-> > > > > http://marc.info/?l=linux-nfs&m=130129644016061&w=4
-> > > > > 
-> > > > > He even seems to have a real fix though I don't want to test it
-> > > > > without blessing.
-> > > > 
-> > > > Well, you aren't going to get that from me, Bruce?
-> > > 
-> > > Good analysis from Mi Jinlong, but I'm not convinced by the patch....
-> > > 
-> > > I'll look closer.
-> > > 
-> > > (Disclaimer: between the sleep deprivation and the UM hospital's dubious
-> > > guest wifi (hey, how's a new dad supposed to keep up with his kernel
-> > > hacking if they block git?), I may be a little slow.)
-> > 
-> > Hey, no rush, you have more important things to deal with, I can always
-> > revert the patch for now :)
-> 
-> Argh, I forgot to stick the "Cc: stable" on this one.  Anyway, should be
-> in Linus's tree soon:
-> 
-> --b.
-> 
-> commit 23fcf2ec93fb8573a653408316af599939ff9a8e
+Fixed coding style issues.
+---
+ drivers/acpi/ac.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
-Now picked up.
+diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
+index 58c3f74..183a035 100644
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -85,7 +85,7 @@ static struct acpi_driver acpi_ac_driver = {
+ 
+ struct acpi_ac {
+ 	struct power_supply charger;
+-	struct acpi_device * device;
++	struct acpi_device *device;
+ 	unsigned long long state;
+ };
+ 
+@@ -101,10 +101,9 @@ static const struct file_operations acpi_ac_fops = {
+ };
+ #endif
+ 
+-/* --------------------------------------------------------------------------
+-                               AC Adapter Management
+-   -------------------------------------------------------------------------- */
+-
++/*
++ * AC Adapter Management
++ */
+ static int acpi_ac_get_state(struct acpi_ac *ac)
+ {
+ 	acpi_status status = AE_OK;
+@@ -113,9 +112,11 @@ static int acpi_ac_get_state(struct acpi_ac *ac)
+ 	if (!ac)
+ 		return -EINVAL;
+ 
+-	status = acpi_evaluate_integer(ac->device->handle, "_PSR", NULL, &ac->state);
++	status = acpi_evaluate_integer(ac->device->handle,
++				       "_PSR", NULL, &ac->state);
+ 	if (ACPI_FAILURE(status)) {
+-		ACPI_EXCEPTION((AE_INFO, status, "Error reading AC Adapter state"));
++		ACPI_EXCEPTION((AE_INFO, status,
++				"Error reading AC Adapter state"));
+ 		ac->state = ACPI_AC_STATUS_UNKNOWN;
+ 		return -ENODEV;
+ 	}
+@@ -123,9 +124,9 @@ static int acpi_ac_get_state(struct acpi_ac *ac)
+ 	return 0;
+ }
+ 
+-/* --------------------------------------------------------------------------
+-                            sysfs I/F
+-   -------------------------------------------------------------------------- */
++/*
++ * sysfs I/F
++ */
+ static int get_ac_property(struct power_supply *psy,
+ 			   enum power_supply_property psp,
+ 			   union power_supply_propval *val)
+@@ -153,10 +154,10 @@ static enum power_supply_property ac_props[] = {
+ };
+ 
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+-/* --------------------------------------------------------------------------
+-                              FS Interface (/proc)
+-   -------------------------------------------------------------------------- */
+ 
++/*
++ * FS Interface (/proc)
++ */
+ static struct proc_dir_entry *acpi_ac_dir;
+ 
+ static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
+@@ -229,10 +230,9 @@ static int acpi_ac_remove_fs(struct acpi_device *device)
+ }
+ #endif
+ 
+-/* --------------------------------------------------------------------------
+-                                   Driver Model
+-   -------------------------------------------------------------------------- */
+-
++/*
++ * Driver Model
++ */
+ static void acpi_ac_notify(struct acpi_device *device, u32 event)
+ {
+ 	struct acpi_ac *ac = acpi_driver_data(device);
+@@ -298,7 +298,7 @@ static int acpi_ac_add(struct acpi_device *device)
+ 	       acpi_device_name(device), acpi_device_bid(device),
+ 	       ac->state ? "on-line" : "off-line");
+ 
+-      end:
++end:
+ 	if (result) {
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 		acpi_ac_remove_fs(device);
+-- 
+1.7.4.2
 
-In the future, at least cc: this email to stable@kernel.org so I don't
-loose it in the wilds that are my suse.de email account...
-
-thanks,
-
-greg k-h
