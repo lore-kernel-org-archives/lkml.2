@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab1DLO45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:56:57 -0400
-Received: from kroah.org ([198.145.64.141]:57449 "EHLO coco.kroah.org"
+	id S1757108Ab1DLOho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:37:44 -0400
+Received: from kroah.org ([198.145.64.141]:57433 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757115Ab1DLOhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:45 -0400
+	id S1757068Ab1DLOhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:42 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:50 2011
-Message-Id: <20110412143550.282452616@clark.kroah.org>
+Message-Id: <20110412143549.958864454@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:11 -0700
+Date: Tue, 12 Apr 2011 07:34:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [022/105] staging: hv: Fix GARP not sent after Quick Migration
+        Arjan Mels <arjan.mels@gmx.net>,
+        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>,
+        Max Vozeler <max@vozeler.com>
+Subject: [019/105] staging: usbip: bugfix add number of packets for isochronous frames
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,90 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
+From: Arjan Mels <arjan.mels@gmx.net>
 
-commit c996edcf1c451b81740abbcca5257ed7e353fcc6 upstream.
+commit 1325f85fa49f57df034869de430f7c302ae23109 upstream.
 
-After Quick Migration, the network is not immediately operational in the
-current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, I added
-another netif_notify_peers() into a scheduled work, otherwise GARP packet will
-not be sent after quick migration, and cause network disconnection.
+The number_of_packets was not transmitted for RET_SUBMIT packets. The
+linux client used the stored number_of_packet from the submitted
+request. The windows userland client does not do this however and needs
+to know the number_of_packets to determine the size of the transmission.
 
-Thanks to Mike Surcouf <mike@surcouf.co.uk> for reporting the bug and
-testing the patch.
-
-Reported-by: Mike Surcouf <mike@surcouf.co.uk>
-Tested-by: Mike Surcouf <mike@surcouf.co.uk>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Arjan Mels <arjan.mels@gmx.net>
+Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+Cc: Max Vozeler <max@vozeler.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/hv/netvsc_drv.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/staging/usbip/usbip_common.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -46,6 +46,7 @@ struct net_device_context {
- 	/* point back to our device context */
- 	struct vm_device *device_ctx;
- 	unsigned long avail;
-+	struct work_struct work;
- };
- 
- struct netvsc_driver_context {
-@@ -225,6 +226,7 @@ static void netvsc_linkstatus_callback(s
- 				       unsigned int status)
- {
- 	struct vm_device *device_ctx = to_vm_device(device_obj);
-+	struct net_device_context *ndev_ctx;
- 	struct net_device *net = dev_get_drvdata(&device_ctx->device);
- 
- 	if (!net) {
-@@ -237,6 +239,8 @@ static void netvsc_linkstatus_callback(s
- 		netif_carrier_on(net);
- 		netif_wake_queue(net);
- 		netif_notify_peers(net);
-+		ndev_ctx = netdev_priv(net);
-+		schedule_work(&ndev_ctx->work);
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -334,10 +334,11 @@ void usbip_dump_header(struct usbip_head
+ 		usbip_udbg("CMD_UNLINK: seq %u\n", pdu->u.cmd_unlink.seqnum);
+ 		break;
+ 	case USBIP_RET_SUBMIT:
+-		usbip_udbg("RET_SUBMIT: st %d al %u sf %d ec %d\n",
++		usbip_udbg("RET_SUBMIT: st %d al %u sf %d #p %d ec %d\n",
+ 				pdu->u.ret_submit.status,
+ 				pdu->u.ret_submit.actual_length,
+ 				pdu->u.ret_submit.start_frame,
++				pdu->u.ret_submit.number_of_packets,
+ 				pdu->u.ret_submit.error_count);
+ 	case USBIP_RET_UNLINK:
+ 		usbip_udbg("RET_UNLINK: status %d\n", pdu->u.ret_unlink.status);
+@@ -625,6 +626,7 @@ static void usbip_pack_ret_submit(struct
+ 		rpdu->status		= urb->status;
+ 		rpdu->actual_length	= urb->actual_length;
+ 		rpdu->start_frame	= urb->start_frame;
++		rpdu->number_of_packets = urb->number_of_packets;
+ 		rpdu->error_count	= urb->error_count;
  	} else {
- 		netif_carrier_off(net);
- 		netif_stop_queue(net);
-@@ -336,6 +340,25 @@ static const struct net_device_ops devic
- 	.ndo_set_mac_address =		eth_mac_addr,
- };
- 
-+/*
-+ * Send GARP packet to network peers after migrations.
-+ * After Quick Migration, the network is not immediately operational in the
-+ * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
-+ * another netif_notify_peers() into a scheduled work, otherwise GARP packet
-+ * will not be sent after quick migration, and cause network disconnection.
-+ */
-+static void netvsc_send_garp(struct work_struct *w)
-+{
-+	struct net_device_context *ndev_ctx;
-+	struct net_device *net;
-+
-+	msleep(20);
-+	ndev_ctx = container_of(w, struct net_device_context, work);
-+	net = dev_get_drvdata(&ndev_ctx->device_ctx->device);
-+	netif_notify_peers(net);
-+}
-+
-+
- static int netvsc_probe(struct device *device)
- {
- 	struct driver_context *driver_ctx =
-@@ -364,6 +387,7 @@ static int netvsc_probe(struct device *d
- 	net_device_ctx->device_ctx = device_ctx;
- 	net_device_ctx->avail = ring_size;
- 	dev_set_drvdata(device, net);
-+	INIT_WORK(&net_device_ctx->work, netvsc_send_garp);
- 
- 	/* Notify the netvsc driver of the new device */
- 	ret = net_drv_obj->base.OnDeviceAdd(device_obj, &device_info);
+ 		/* vhci_rx.c */
+@@ -632,6 +634,7 @@ static void usbip_pack_ret_submit(struct
+ 		urb->status		= rpdu->status;
+ 		urb->actual_length	= rpdu->actual_length;
+ 		urb->start_frame	= rpdu->start_frame;
++		urb->number_of_packets = rpdu->number_of_packets;
+ 		urb->error_count	= rpdu->error_count;
+ 	}
+ }
+@@ -700,11 +703,13 @@ static void correct_endian_ret_submit(st
+ 		cpu_to_be32s(&pdu->status);
+ 		cpu_to_be32s(&pdu->actual_length);
+ 		cpu_to_be32s(&pdu->start_frame);
++		cpu_to_be32s(&pdu->number_of_packets);
+ 		cpu_to_be32s(&pdu->error_count);
+ 	} else {
+ 		be32_to_cpus(&pdu->status);
+ 		be32_to_cpus(&pdu->actual_length);
+ 		be32_to_cpus(&pdu->start_frame);
++		cpu_to_be32s(&pdu->number_of_packets);
+ 		be32_to_cpus(&pdu->error_count);
+ 	}
+ }
 
 
