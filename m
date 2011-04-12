@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab1DLCsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Apr 2011 22:48:08 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:45778 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756061Ab1DLCsG (ORCPT
+	id S1756641Ab1DLCvy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Apr 2011 22:51:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57513 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab1DLCvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Apr 2011 22:48:06 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] uts: Set default hostname to "localhost", rather than "(none)"
-In-Reply-To: Your message of "Sun, 10 Apr 2011 22:01:59 PDT."
-             <20110411050155.GA2507@feather>
-From: Valdis.Kletnieks@vt.edu
-References: <20110411050155.GA2507@feather>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1302576446_5348P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 11 Apr 2011 22:47:26 -0400
-Message-ID: <16567.1302576446@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4DA3BD40.00F2,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 11 Apr 2011 22:51:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=nkf7fCwjOu0EKOngl27bS46DP35Kx6iFMhuArS+VqjZBKcOMGyY9Kux0O+XWXh9NNU
+         6RORVmHL7xSW3QrMmHE0ABSIAXIKdag39FPV4ELUkq1NiaCqigYRfmF7o8ogCcicom/p
+         zNxoTPTy/HE0GCG+g3Uzz+aisZz3VxOnG32DE=
+Date: Tue, 12 Apr 2011 11:51:45 +0900
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: Strange block/scsi/workqueue issue
+Message-ID: <20110412025145.GJ9673@mtj.dyndns.org>
+References: <1302533763.2596.23.camel@dolmen>
+ <20110411171803.GG9673@mtj.dyndns.org>
+ <1302569276.2558.9.camel@mulgrave.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302569276.2558.9.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1302576446_5348P
-Content-Type: text/plain; charset=us-ascii
+Hello, James.
 
-On Sun, 10 Apr 2011 22:01:59 PDT, Josh Triplett said:
+On Mon, Apr 11, 2011 at 07:47:56PM -0500, James Bottomley wrote:
+> Actually, I don't think it's anything to do with the user process stuff.
+> The problem seems to be that the block delay function ends up being the
+> last user of the SCSI device, so it does the final put of the sdev when
+> it's finished processing.  This will trigger queue destruction
+> (blk_cleanup_queue) and so on with your analysis.
 
-> Change the default hostname to "localhost".  This removes the need for
-> the standard fallback, provides a useful default for systems that never
-> call sethostname, and makes minimal systems that much more useful with
-> less configuration.
+Hmm... this I can understand.
 
-Seems sane enough to me.  Only possible objection I can think of is "if you're running
-with 'init=/bin/sh' or similar config too crippled to run /bin/hostname, maybe your
-network config *should* be intentionally toasted so you can't get further surprises".
+> The problem seems to be that with the new workqueue changes, the queue
+> itself may no longer be the last holder of a reference on the sdev
+> because the queue destruction is in the sdev release function and a
+> queue cannot now be destroyed from its own delayed work.  This is a bit
+> contrary to the principles SCSI was using, which was that we drive queue
+> lifetime from the sdev, not vice versa.
 
-I personally don't agree - just saying somebody might hold that position.
+But confused here.  Why does it make any difference whether the
+release operation is in the request_fn context or not?  What makes
+SCSI refcounting different from others?
 
---==_Exmh_1302576446_5348P
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNo70+cC3lWbTT17ARAtxLAJ9BnedAEgl1e2aWREXcwIqbIbH5eQCg2UKG
-JpoAnnWNxvi4EjWolQAk1hw=
-=Mx1t
------END PGP SIGNATURE-----
-
---==_Exmh_1302576446_5348P--
-
+-- 
+tejun
