@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab1DLO4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:56:18 -0400
-Received: from kroah.org ([198.145.64.141]:57470 "EHLO coco.kroah.org"
+	id S1757359Ab1DLO45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:56:57 -0400
+Received: from kroah.org ([198.145.64.141]:57449 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757172Ab1DLOht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:49 -0400
+	id S1757115Ab1DLOhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:45 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:50 2011
-Message-Id: <20110412143550.724467233@clark.kroah.org>
+Message-Id: <20110412143550.282452616@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:15 -0700
+Date: Tue, 12 Apr 2011 07:34:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [026/105] watchdog: s3c2410_wdt.c: Convert release_resource to release_region/release_mem_region
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [022/105] staging: hv: Fix GARP not sent after Quick Migration
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,90 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit f72401e94d159bc4b2beab51d74e956da2c32e0a upstream.
+commit c996edcf1c451b81740abbcca5257ed7e353fcc6 upstream.
 
-Request_mem_region should be used with release_mem_region, not
-release_resource.
+After Quick Migration, the network is not immediately operational in the
+current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, I added
+another netif_notify_peers() into a scheduled work, otherwise GARP packet will
+not be sent after quick migration, and cause network disconnection.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Thanks to Mike Surcouf <mike@surcouf.co.uk> for reporting the bug and
+testing the patch.
 
-// <smpl>
-@@
-expression x,E;
-@@
-*x = request_mem_region(...)
-... when != release_mem_region(x)
-    when != x = E
-* release_resource(x);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Reported-by: Mike Surcouf <mike@surcouf.co.uk>
+Tested-by: Mike Surcouf <mike@surcouf.co.uk>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/watchdog/s3c2410_wdt.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/staging/hv/netvsc_drv.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -402,7 +402,6 @@ static inline void s3c2410wdt_cpufreq_de
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -46,6 +46,7 @@ struct net_device_context {
+ 	/* point back to our device context */
+ 	struct vm_device *device_ctx;
+ 	unsigned long avail;
++	struct work_struct work;
+ };
  
- static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
+ struct netvsc_driver_context {
+@@ -225,6 +226,7 @@ static void netvsc_linkstatus_callback(s
+ 				       unsigned int status)
  {
--	struct resource *res;
- 	struct device *dev;
- 	unsigned int wtcon;
- 	int started = 0;
-@@ -416,20 +415,19 @@ static int __devinit s3c2410wdt_probe(st
+ 	struct vm_device *device_ctx = to_vm_device(device_obj);
++	struct net_device_context *ndev_ctx;
+ 	struct net_device *net = dev_get_drvdata(&device_ctx->device);
  
- 	/* get the memory region for the watchdog timer */
+ 	if (!net) {
+@@ -237,6 +239,8 @@ static void netvsc_linkstatus_callback(s
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
+ 		netif_notify_peers(net);
++		ndev_ctx = netdev_priv(net);
++		schedule_work(&ndev_ctx->work);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
+@@ -336,6 +340,25 @@ static const struct net_device_ops devic
+ 	.ndo_set_mac_address =		eth_mac_addr,
+ };
  
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
-+	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (wdt_mem == NULL) {
- 		dev_err(dev, "no memory resource specified\n");
- 		return -ENOENT;
- 	}
++/*
++ * Send GARP packet to network peers after migrations.
++ * After Quick Migration, the network is not immediately operational in the
++ * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
++ * another netif_notify_peers() into a scheduled work, otherwise GARP packet
++ * will not be sent after quick migration, and cause network disconnection.
++ */
++static void netvsc_send_garp(struct work_struct *w)
++{
++	struct net_device_context *ndev_ctx;
++	struct net_device *net;
++
++	msleep(20);
++	ndev_ctx = container_of(w, struct net_device_context, work);
++	net = dev_get_drvdata(&ndev_ctx->device_ctx->device);
++	netif_notify_peers(net);
++}
++
++
+ static int netvsc_probe(struct device *device)
+ {
+ 	struct driver_context *driver_ctx =
+@@ -364,6 +387,7 @@ static int netvsc_probe(struct device *d
+ 	net_device_ctx->device_ctx = device_ctx;
+ 	net_device_ctx->avail = ring_size;
+ 	dev_set_drvdata(device, net);
++	INIT_WORK(&net_device_ctx->work, netvsc_send_garp);
  
--	size = resource_size(res);
--	wdt_mem = request_mem_region(res->start, size, pdev->name);
--	if (wdt_mem == NULL) {
-+	size = resource_size(wdt_mem);
-+	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
- 		dev_err(dev, "failed to get memory region\n");
- 		return -EBUSY;
- 	}
- 
--	wdt_base = ioremap(res->start, size);
-+	wdt_base = ioremap(wdt_mem->start, size);
- 	if (wdt_base == NULL) {
- 		dev_err(dev, "failed to ioremap() region\n");
- 		ret = -EINVAL;
-@@ -524,8 +522,8 @@ static int __devinit s3c2410wdt_probe(st
- 	iounmap(wdt_base);
- 
-  err_req:
--	release_resource(wdt_mem);
--	kfree(wdt_mem);
-+	release_mem_region(wdt_mem->start, size);
-+	wdt_mem = NULL;
- 
- 	return ret;
- }
-@@ -545,8 +543,7 @@ static int __devexit s3c2410wdt_remove(s
- 
- 	iounmap(wdt_base);
- 
--	release_resource(wdt_mem);
--	kfree(wdt_mem);
-+	release_mem_region(wdt_mem->start, resource_size(wdt_mem));
- 	wdt_mem = NULL;
- 	return 0;
- }
+ 	/* Notify the netvsc driver of the new device */
+ 	ret = net_drv_obj->base.OnDeviceAdd(device_obj, &device_info);
 
 
