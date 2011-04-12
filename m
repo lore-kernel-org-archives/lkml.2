@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab1DLPA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 11:00:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65053 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756774Ab1DLPAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 11:00:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=Ic8JUGRXS3Z3N9oG6422U5Cxb9MKsMBKe4hiIE3DHfJ8XHdlJi6HwSSlppfcAKxZBH
-         5nThXQJuVBi/qG1fD7OFhpb1+VRF4AG2LN+tnH0xR+XyH4dD8qGL8IfeB+0swrPBOABY
-         75q/ZENWO8CekRcHum1mVpcb2ez90AnjGBGUk=
-MIME-Version: 1.0
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Tue, 12 Apr 2011 17:00:03 +0200
-X-Google-Sender-Auth: qa-ZwH1vQMPfzxEW06y4-lr0mIg
-Message-ID: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-Subject: Unionmount status?
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1757431Ab1DLPAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 11:00:53 -0400
+Received: from kroah.org ([198.145.64.141]:57340 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756699Ab1DLOh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:28 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
+Message-Id: <20110412143548.347694176@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 12 Apr 2011 07:33:53 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [004/105] ALSA: vmalloc buffers should use normal mmap
+In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-as some already know the Unionmount VFS union which has been in
-development for some years now is the only True Union (TM) that can be
-accepted into the kernel mainline by the VFS maintainers (for reasons
-of their own which you can surely find if you search the web or ask
-them directly).
+------------------
 
-The current UnionMount version that can be found here:
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-http://git.kernel.org/?p=linux/kernel/git/val/linux-2.6.git;a=shortlog;h=refs/heads/ext2_works
+commit 3674f19dabd15f9541079a588149a370d888f4e6 upstream.
 
-works for me as good as aufs does. That is I can build a live CD using
-this unioning solution and it boots and runs without any apparent
-issues.
+It's a big no-no to use pgprot_noncached() when mmap'ing such buffers
+into userspace since they are mapped cachable in kernel space.
 
-There are probably many possible uses of the union which I did not
-test nor did I test long term stability of using the unioned
-filesystem. As far as ephemeral live systems go it works fine for me,
-though.
+This can cause all sort of interesting things ranging from to garbled
+sound to lockups on various architectures. I've observed that usb-audio
+is broken on powerpc 4xx for example because of that.
 
-The issue is that while the code is (nearly) finished it is not yet
-merged into mainline and as I am not familiar with the details of
-ever-changing Linux VFS layer forward-porting this code to current
-kernels is somewhat challenging.
+Also remove the now unused snd_pcm_lib_mmap_noncached(). It's
+an arch business to know when to use uncached mappings, there's
+already hacks for MIPS inside snd_pcm_default_mmap() and other
+archs are supposed to use dma_mmap_coherent().
 
-What is the plan with unionmount now?
+(See my separate patch that adds dma_mmap_coherent() to powerpc)
 
-What is required  for it to be merged into mainline?
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Thanks
+---
+ include/sound/pcm.h     |    4 +---
+ sound/core/pcm_native.c |    9 ---------
+ 2 files changed, 1 insertion(+), 12 deletions(-)
 
-Michal
+--- a/include/sound/pcm.h
++++ b/include/sound/pcm.h
+@@ -1030,9 +1030,7 @@ int snd_pcm_lib_mmap_iomem(struct snd_pc
+ #define snd_pcm_lib_mmap_iomem	NULL
+ #endif
+ 
+-int snd_pcm_lib_mmap_noncached(struct snd_pcm_substream *substream,
+-			       struct vm_area_struct *area);
+-#define snd_pcm_lib_mmap_vmalloc	snd_pcm_lib_mmap_noncached
++#define snd_pcm_lib_mmap_vmalloc NULL
+ 
+ static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
+ {
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -3201,15 +3201,6 @@ int snd_pcm_lib_mmap_iomem(struct snd_pc
+ EXPORT_SYMBOL(snd_pcm_lib_mmap_iomem);
+ #endif /* SNDRV_PCM_INFO_MMAP */
+ 
+-/* mmap callback with pgprot_noncached */
+-int snd_pcm_lib_mmap_noncached(struct snd_pcm_substream *substream,
+-			       struct vm_area_struct *area)
+-{
+-	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
+-	return snd_pcm_default_mmap(substream, area);
+-}
+-EXPORT_SYMBOL(snd_pcm_lib_mmap_noncached);
+-
+ /*
+  * mmap DMA buffer
+  */
+
+
