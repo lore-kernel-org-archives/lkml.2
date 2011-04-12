@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab1DLUXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 16:23:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34199 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756370Ab1DLUXc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 16:23:32 -0400
+	id S1757172Ab1DLUYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 16:24:53 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:49603 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757062Ab1DLUYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 16:24:51 -0400
+Date: Tue, 12 Apr 2011 22:24:45 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: [PATCH] m68k,m68knommu: Wire up name_to_handle_at, open_by_handle_at,
+ clock_adjtime, syncfs
+Message-ID: <alpine.DEB.2.00.1104122223020.28301@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimBegMUq2fX67o2YnoATWG-NDbKgA@mail.gmail.com>
-References: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
- <BANLkTimJLcfsYAhV+3=-F14YZvX12-yXgA@mail.gmail.com> <20110412182809.GA1218@redhat.com>
- <BANLkTinb1gXcZug5ApmmrudWLY7PwxNf-A@mail.gmail.com> <20110412192059.GA14360@redhat.com>
- <BANLkTimJgx_x=0bpBDWaUkJgZPYs3_iwsg@mail.gmail.com> <BANLkTimBegMUq2fX67o2YnoATWG-NDbKgA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Apr 2011 13:22:39 -0700
-Message-ID: <BANLkTikoDELrA-RtA9BLm64mfoPgdADR0Q@mail.gmail.com>
-Subject: Re: Processes hang in an unkillable state
-To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 1:03 PM, Robert Święcki <robert@swiecki.net> wrote:
->>
->> Ok, applied Linus' patch and got the following (kdb dump in the attachment):
->>
->> It contains references to sys_mlock, but in another process/user that
->> oopsed (there are iknowthis and iknowthis2 processes running under
->> test and test2 users). I think I'll simply disable sys_madvise in the
->> fuzzer; and treat this oops as a separate issue.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+---
+ arch/m68k/include/asm/unistd.h  |    6 +++++-
+ arch/m68k/kernel/entry_mm.S     |    4 ++++
+ arch/m68k/kernel/syscalltable.S |    4 ++++
+ 3 files changed, 13 insertions(+), 1 deletions(-)
 
-This does seem to be something else.
+diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
+index 26d851d..29e1790 100644
+--- a/arch/m68k/include/asm/unistd.h
++++ b/arch/m68k/include/asm/unistd.h
+@@ -343,10 +343,14 @@
+ #define __NR_fanotify_init	337
+ #define __NR_fanotify_mark	338
+ #define __NR_prlimit64		339
++#define __NR_name_to_handle_at	340
++#define __NR_open_by_handle_at	341
++#define __NR_clock_adjtime	342
++#define __NR_syncfs		343
+ 
+ #ifdef __KERNEL__
+ 
+-#define NR_syscalls		340
++#define NR_syscalls		344
+ 
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/m68k/kernel/entry_mm.S b/arch/m68k/kernel/entry_mm.S
+index 1559dea..1359ee6 100644
+--- a/arch/m68k/kernel/entry_mm.S
++++ b/arch/m68k/kernel/entry_mm.S
+@@ -750,4 +750,8 @@ sys_call_table:
+ 	.long sys_fanotify_init
+ 	.long sys_fanotify_mark
+ 	.long sys_prlimit64
++	.long sys_name_to_handle_at	/* 340 */
++	.long sys_open_by_handle_at
++	.long sys_clock_adjtime
++	.long sys_syncfs
+ 
+diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
+index 79b1ed1..9b8393d 100644
+--- a/arch/m68k/kernel/syscalltable.S
++++ b/arch/m68k/kernel/syscalltable.S
+@@ -358,6 +358,10 @@ ENTRY(sys_call_table)
+ 	.long sys_fanotify_init
+ 	.long sys_fanotify_mark
+ 	.long sys_prlimit64
++	.long sys_name_to_handle_at	/* 340 */
++	.long sys_open_by_handle_at
++	.long sys_clock_adjtime
++	.long sys_syncfs
+ 
+ 	.rept NR_syscalls-(.-sys_call_table)/4
+ 		.long sys_ni_syscall
+-- 
+1.7.0.4
 
-It looks like some kind of live-lock situation between two processes
-both doing madvise() and causing vmtruncate_range() calls.
+Gr{oetje,eeting}s,
 
-Miklos wrote this patch for something bad in this area to serialize
-concurrent unmap_mapping_range() calls in order to not restart forever
-on vm_truncate_count. That got merged into 2.6.38, so it's there, but
-I wonder if there is some case it misses.
+						Geert
 
-                           Linus
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
