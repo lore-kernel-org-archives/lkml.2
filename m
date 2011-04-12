@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab1DLOib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:38:31 -0400
-Received: from kroah.org ([198.145.64.141]:57627 "EHLO coco.kroah.org"
+	id S932366Ab1DLOii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:38:38 -0400
+Received: from kroah.org ([198.145.64.141]:57677 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932306Ab1DLOi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:26 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:54 2011
-Message-Id: <20110412143554.819093370@clark.kroah.org>
+	id S932335Ab1DLOic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:32 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:55 2011
+Message-Id: <20110412143555.451487228@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:53 -0700
+Date: Tue, 12 Apr 2011 07:34:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>
-Subject: [064/105] mm: avoid wrapping vm_pgoff in mremap()
+        Luciano Coelho <coelho@ti.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [070/105] wl12xx: fix potential buffer overflow in testmode nvs push
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Luciano Coelho <coelho@ti.com>
 
-commit 982134ba62618c2d69fbbbd166d0a11ee3b7e3d8 upstream.
+commit 09b661b33268698d3b453dceb78cda129ad899b4 upstream.
 
-The normal mmap paths all avoid creating a mapping where the pgoff
-inside the mapping could wrap around due to overflow.  However, an
-expanding mremap() can take such a non-wrapping mapping and make it
-bigger and cause a wrapping condition.
+We were allocating the size of the NVS file struct and not checking
+whether the length of the buffer passed was correct before copying it
+into the allocated memory.  This is a security hole because buffer
+overflows can occur if the userspace passes a bigger file than what is
+expected.
 
-Noticed by Robert Swiecki when running a system call fuzzer, where it
-caused a BUG_ON() due to terminally confusing the vma_prio_tree code.  A
-vma dumping patch by Hugh then pinpointed the crazy wrapped case.
+With this patch, we check if the size of the data passed from
+userspace matches the size required.
 
-Reported-and-tested-by: Robert Swiecki <robert@swiecki.net>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This bug was introduced in 2.6.36.
+
+Reported-by: Ido Yariv <ido@wizery.com>
+Signed-off-by: Luciano Coelho <coelho@ti.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mremap.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/net/wireless/wl12xx/testmode.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -277,9 +277,16 @@ static struct vm_area_struct *vma_to_res
- 	if (old_len > vma->vm_end - addr)
- 		goto Efault;
+--- a/drivers/net/wireless/wl12xx/testmode.c
++++ b/drivers/net/wireless/wl12xx/testmode.c
+@@ -204,7 +204,10 @@ static int wl1271_tm_cmd_nvs_push(struct
  
--	if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP)) {
--		if (new_len > old_len)
-+	/* Need to be careful about a growing mapping */
-+	if (new_len > old_len) {
-+		unsigned long pgoff;
+ 	kfree(wl->nvs);
+ 
+-	wl->nvs = kzalloc(sizeof(struct wl1271_nvs_file), GFP_KERNEL);
++	if (len != sizeof(struct wl1271_nvs_file))
++		return -EINVAL;
 +
-+		if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP))
- 			goto Efault;
-+		pgoff = (addr - vma->vm_start) >> PAGE_SHIFT;
-+		pgoff += vma->vm_pgoff;
-+		if (pgoff + (new_len >> PAGE_SHIFT) < pgoff)
-+			goto Einval;
- 	}
- 
- 	if (vma->vm_flags & VM_LOCKED) {
++	wl->nvs = kzalloc(len, GFP_KERNEL);
+ 	if (!wl->nvs) {
+ 		wl1271_error("could not allocate memory for the nvs file");
+ 		ret = -ENOMEM;
 
 
