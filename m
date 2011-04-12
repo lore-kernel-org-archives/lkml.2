@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab1DLQ6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:58:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42424 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab1DLQ6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:58:33 -0400
-Date: Tue, 12 Apr 2011 12:58:30 -0400
-From: "hch@infradead.org" <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, "hch@infradead.org" <hch@infradead.org>,
-        NeilBrown <neilb@suse.de>, Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110412165830.GC23764@infradead.org>
-References: <4DA2F00E.6010907@fusionio.com>
- <20110411223623.4278fad1@notabene.brown>
- <4DA2F8AD.1060605@fusionio.com>
- <20110412011255.GA29236@infradead.org>
- <4DA40F0E.1070903@fusionio.com>
- <20110412122248.GC31057@dastard>
- <4DA4456F.3070301@fusionio.com>
- <20110412124134.GD31057@dastard>
- <4DA44C86.3090305@fusionio.com>
- <20110412133117.GE31057@dastard>
+	id S1758236Ab1DLQ6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:58:46 -0400
+Received: from void.printf.net ([89.145.121.20]:48441 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758223Ab1DLQ6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 12:58:43 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH -next] mmc quirks: fix truncation warnings
+References: <20110412151408.b80a3afb.sfr@canb.auug.org.au>
+	<20110412091735.f41a3d44.randy.dunlap@oracle.com>
+Date: Tue, 12 Apr 2011 13:03:23 -0400
+In-Reply-To: <20110412091735.f41a3d44.randy.dunlap@oracle.com> (Randy Dunlap's
+	message of "Tue, 12 Apr 2011 09:17:35 -0700")
+Message-ID: <m339ln1jxg.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412133117.GE31057@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 11:31:17PM +1000, Dave Chinner wrote:
-> I don't think so. e.g. in the XFS allocation path we do btree block
-> readahead, then go do the real work. The real work can end up with a
-> deeper stack before blocking on locks or completions unrelated to
-> the readahead, leading to schedule() being called and an unplug
-> being issued at that point.  You might think it contrived, but if
-> you can't provide a guarantee that it can't happen then I have to
-> assume it will happen.
+Hi,
 
-In addition to the stack issue, which is a killer to this also has
-latency implications.  Before we could submit a synchronous metadata
-read request inside readpage or writepage and kick it off to the disk
-immediately, while now it won't get submitted until we block the next
-time, i.e. have done some more work that could have been used for
-doing I/O in the background.  With the kblockd offload not only have
-we spent more time but at the point where we finally kick it we
-also need another context switch.  It seem like we really need to
-go through the filesystems and explicitly flush the plugging queue
-for such cases.  In fact a bio flag marking things as synchronous
-metadata reads would help, but then again we need to clean up our
-existing bio flags first..
+On Tue, Apr 12 2011, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+>
+> Fix data truncation warnings: .manfid is not unsigned long:
+>
+> drivers/mmc/core/quirks.c:36: warning: large integer implicitly truncated to unsigned type
+> drivers/mmc/core/quirks.c:40: warning: large integer implicitly truncated to unsigned type
+> drivers/mmc/core/quirks.c:43: warning: large integer implicitly truncated to unsigned type
+> drivers/mmc/core/quirks.c:46: warning: large integer implicitly truncated to unsigned type
+>
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc:	Chris Ball <cjb@laptop.org>
+> Cc:	linux-mmc@vger.kernel.org
+> ---
+>  include/linux/mmc/card.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> --- linux-next-20110412.orig/include/linux/mmc/card.h
+> +++ linux-next-20110412/include/linux/mmc/card.h
+> @@ -180,7 +180,7 @@ struct mmc_fixup {
+>  	int data;
+>  };
+>  
+> -#define CID_MANFID_ANY (-1ul)
+> +#define CID_MANFID_ANY (-1u)
+>  #define CID_OEMID_ANY ((unsigned short) -1)
+>  #define CID_NAME_ANY (NULL)
+>  
+>
 
+Thanks very much, Randy, I've pushed this to mmc-next.
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
