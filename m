@@ -1,167 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab1DLRlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 13:41:19 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22063 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932093Ab1DLRlR (ORCPT
+	id S932330Ab1DLRli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 13:41:38 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56150 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932259Ab1DLRle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 13:41:17 -0400
-Message-ID: <4DA48EA9.70109@kernel.org>
-Date: Tue, 12 Apr 2011 10:40:57 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: stefano.stabellini@eu.citrix.com
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, jeremy@goop.org, hpa@linux.intel.com,
-        mingo@elte.hu, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 2/4] x86,xen: introduce x86_init.mapping.pagetable_reserve
-References: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop> <1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 12 Apr 2011 13:41:34 -0400
+Subject: Re: Strange block/scsi/workqueue issue
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <1302627097.2661.25.camel@dolmen>
+References: <1302533763.2596.23.camel@dolmen>
+	 <20110411171803.GG9673@mtj.dyndns.org>
+	 <1302569276.2558.9.camel@mulgrave.site>
+	 <20110412025145.GJ9673@mtj.dyndns.org>
+	 <1302583757.2558.21.camel@mulgrave.site>
+	 <1302584571.2558.24.camel@mulgrave.site>  <1302597737.2661.5.camel@dolmen>
+	 <1302615745.2604.6.camel@mulgrave.site>  <1302617212.2661.14.camel@dolmen>
+	 <1302621261.2604.18.camel@mulgrave.site>  <1302624266.2661.21.camel@dolmen>
+	 <1302625621.2604.24.camel@mulgrave.site>  <1302627097.2661.25.camel@dolmen>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 12:41:30 -0500
+Message-ID: <1302630090.2604.30.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DA48EAF.014F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2011 04:19 AM, stefano.stabellini@eu.citrix.com wrote:
-> From: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
->
-> Introduce a new x86_init hook called pagetable_reserve that during the
-> initial memory mapping is used to reserve a range of memory addresses for
-> kernel pagetable usage.
->
-> On native it just calls memblock_x86_reserve_range while on xen it also
-> takes care of setting the spare memory previously allocated
-> for kernel pagetable pages from RO to RW, so that it can be used for
-> other purposes.
->
-> Signed-off-by: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
-> Cc: Yinghai Lu<yinghai@kernel.org>
-> Cc: H. Peter Anvin<hpa@zytor.com>
-> Cc: Ingo Molnar<mingo@elte.hu>
+On Tue, 2011-04-12 at 17:51 +0100, Steven Whitehouse wrote:
+> Still not quite there, but looking more hopeful now,
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Not sure I share your optimism; but this one
 
-> ---
->   arch/x86/include/asm/pgtable_types.h |    1 +
->   arch/x86/include/asm/x86_init.h      |    9 +++++++++
->   arch/x86/kernel/x86_init.c           |    4 ++++
->   arch/x86/mm/init.c                   |    9 +++++++--
->   arch/x86/xen/mmu.c                   |   15 +++++++++++++++
->   5 files changed, 36 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-> index 7db7723..d56187c 100644
-> --- a/arch/x86/include/asm/pgtable_types.h
-> +++ b/arch/x86/include/asm/pgtable_types.h
-> @@ -299,6 +299,7 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
->   /* Install a pte for a particular vaddr in kernel space. */
->   void set_pte_vaddr(unsigned long vaddr, pte_t pte);
->
-> +extern void native_pagetable_reserve(u64 start, u64 end);
->   #ifdef CONFIG_X86_32
->   extern void native_pagetable_setup_start(pgd_t *base);
->   extern void native_pagetable_setup_done(pgd_t *base);
-> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-> index 643ebf2..d66b3a2 100644
-> --- a/arch/x86/include/asm/x86_init.h
-> +++ b/arch/x86/include/asm/x86_init.h
-> @@ -68,6 +68,14 @@ struct x86_init_oem {
->   };
->
->   /**
-> + * struct x86_init_mapping - platform specific initial kernel pagetable setup
-> + * @pagetable_reserve:	reserve a range of addresses for kernel pagetable usage
-> + */
-> +struct x86_init_mapping {
-> +	void (*pagetable_reserve)(u64 start, u64 end);
-> +};
-> +
-> +/**
->    * struct x86_init_paging - platform specific paging functions
->    * @pagetable_setup_start:	platform specific pre paging_init() call
->    * @pagetable_setup_done:	platform specific post paging_init() call
-> @@ -123,6 +131,7 @@ struct x86_init_ops {
->   	struct x86_init_mpparse		mpparse;
->   	struct x86_init_irqs		irqs;
->   	struct x86_init_oem		oem;
-> +	struct x86_init_mapping		mapping;
->   	struct x86_init_paging		paging;
->   	struct x86_init_timers		timers;
->   	struct x86_init_iommu		iommu;
-> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-> index c11514e..75ef4b1 100644
-> --- a/arch/x86/kernel/x86_init.c
-> +++ b/arch/x86/kernel/x86_init.c
-> @@ -61,6 +61,10 @@ struct x86_init_ops x86_init __initdata = {
->   		.banner			= default_banner,
->   	},
->
-> +	.mapping = {
-> +		.pagetable_reserve		= native_pagetable_reserve,
-> +	},
-> +
->   	.paging = {
->   		.pagetable_setup_start	= native_pagetable_setup_start,
->   		.pagetable_setup_done	= native_pagetable_setup_done,
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 286d289..ed0650b 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -81,6 +81,11 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
->   		end, pgt_buf_start<<  PAGE_SHIFT, pgt_buf_top<<  PAGE_SHIFT);
->   }
->
-> +void native_pagetable_reserve(u64 start, u64 end)
-> +{
-> +	memblock_x86_reserve_range(start, end, "PGTABLE");
-> +}
-> +
->   struct map_range {
->   	unsigned long start;
->   	unsigned long end;
-> @@ -273,8 +278,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
->   	__flush_tlb_all();
->
->   	if (!after_bootmem&&  pgt_buf_end>  pgt_buf_start)
-> -		memblock_x86_reserve_range(pgt_buf_start<<  PAGE_SHIFT,
-> -				 pgt_buf_end<<  PAGE_SHIFT, "PGTABLE");
-> +		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
-> +				PFN_PHYS(pgt_buf_end));
->
->   	if (!after_bootmem)
->   		early_memtest(start, end);
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 6b833db..fec8680 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1275,6 +1275,20 @@ static __init void xen_pagetable_setup_start(pgd_t *base)
->   {
->   }
->
-> +static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
-> +{
-> +	/* reserve the range used */
-> +	memblock_x86_reserve_range(start, end, "PGTABLE");
-> +
-> +	/* set as RW the rest */
-> +	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
-> +			PFN_PHYS(pgt_buf_top));
-> +	while (end<  PFN_PHYS(pgt_buf_top)) {
-> +		make_lowmem_page_readwrite(__va(end));
-> +		end += PAGE_SIZE;
-> +	}
-> +}
-> +
+> scsi 0:2:1:0: Direct-Access     DELL     PERC 6/i         1.22 PQ: 0 ANSI: 5
+> scsi: killing requests for dead queue
+> ------------[ cut here ]------------
+> WARNING: at lib/kref.c:34 kref_get+0x2d/0x30()
+> Hardware name: PowerEdge R710
+> Modules linked in:
+> Pid: 386, comm: kworker/6:1 Not tainted 2.6.39-rc2+ #193
+> Call Trace:
+>  [<ffffffff8108fa9a>] warn_slowpath_common+0x7a/0xb0
+>  [<ffffffff8108fae5>] warn_slowpath_null+0x15/0x20
+>  [<ffffffff813c984d>] kref_get+0x2d/0x30
+>  [<ffffffff813c824a>] kobject_get+0x1a/0x30
+>  [<ffffffff81460874>] get_device+0x14/0x20
+>  [<ffffffff81478bd7>] scsi_request_fn+0x37/0x4a0
 
-it would be more cleaner to xen code if you make mark start/end to RO, and not make them all before as RO.
+Is definitely a race between the last put of the SCSI device and the
+block delayed work.  The signal that mediates that race is supposed to
+be the q->queuedata being null, but that doesn't get set until some time
+into the release function (by which time the ref is already zero).
 
-Thanks
+Closing the window completely involves setting this to NULL before we do
+the final put when we know everything else is gone.  So, here's the next
+incremental.
 
-Yinghai Lu
+James
+
+---
+
+Index: linux-2.6/drivers/scsi/scsi_sysfs.c
+===================================================================
+--- linux-2.6.orig/drivers/scsi/scsi_sysfs.c
++++ linux-2.6/drivers/scsi/scsi_sysfs.c
+@@ -323,7 +323,6 @@ static void scsi_device_dev_release_user
+ 	}
+ 
+ 	if (sdev->request_queue) {
+-		sdev->request_queue->queuedata = NULL;
+ 		/* user context needed to free queue */
+ 		scsi_free_queue(sdev->request_queue);
+ 		/* temporary expedient, try to catch use of queue lock
+@@ -937,6 +936,7 @@ void __scsi_remove_device(struct scsi_de
+ 	if (sdev->host->hostt->slave_destroy)
+ 		sdev->host->hostt->slave_destroy(sdev);
+ 	transport_destroy_device(dev);
++	sdev->request_queue->queuedata = NULL;
+ 	put_device(dev);
+ }
+ 
+
 
