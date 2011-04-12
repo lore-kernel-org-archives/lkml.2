@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab1DLOi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:38:57 -0400
-Received: from kroah.org ([198.145.64.141]:57844 "EHLO coco.kroah.org"
+	id S932497Ab1DLOlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:41:42 -0400
+Received: from kroah.org ([198.145.64.141]:57850 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1DLOiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:38:54 -0400
+	id S932449Ab1DLOiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:38:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:58 2011
-Message-Id: <20110412143558.120103212@clark.kroah.org>
+Message-Id: <20110412143558.223802905@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:35:24 -0700
+Date: Tue, 12 Apr 2011 07:35:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Strakh <strakh@ispras.ru>, Huang Shijie <shijie8@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [095/105] [media] drivers/media/video/tlg2300/pd-video.c: Remove second mutex_unlock in pd_vidioc_s_fmt
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Corentin Chary <corentincj@iksaif.net>,
+        =?ISO-8859-15?q?Old=C3=85=C2=99ich=20Jedli=C3=84=C2=8Dka?= 
+	<oldium.pro@seznam.cz>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Chun-Yi Lee <jlee@novell.com>
+Subject: [096/105] acer-wmi: does not set persistence state by rfkill_init_sw_state
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Strakh <cromlehg@gmail.com>
+From: Chun-Yi Lee <joeyli.kernel@gmail.com>
 
-commit a07500ef690fcbec76e879ee2093d7ca69883825 upstream.
+commit 8215af019040ce9182728afee9642d8fdeb17f59 upstream.
 
-Error path in file drivers/media/video/tlg2300/pd-video.c:
-1. First mutex_unlock on &pd->lock in line 767 (in function that
-   called from line 805)
-2. Second in line  806
+Acer BIOS keeps devices state when system reboot, but reset to default
+device states (Wlan on, Bluetooth off, wwan on) if system cold boot.
+That means BIOS's initial state is not always real persistence.
 
- 805        pd_vidioc_s_fmt(pd, &f->fmt.pix);
- 806        mutex_unlock(&pd->lock);
+So, removed rfkill_init_sw_state because it sets initial state to
+persistence then replicate to other new killswitch when rfkill-input
+enabled.
+After removed it, acer-wmi set initial soft-block state after rfkill
+register, and doesn't allow set_block until rfkill initial finished.
 
-Found by Linux Device Drivers Verification Project
+Reference: bko#31002
+	https://bugzilla.kernel.org/show_bug.cgi?id=31002
 
-Signed-off-by: Alexander Strakh <strakh@ispras.ru>
-Acked-by: Huang Shijie <shijie8@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: OldÅich JedliÄka <oldium.pro@seznam.cz>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Chun-Yi Lee <jlee@novell.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/tlg2300/pd-video.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/platform/x86/acer-wmi.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/media/video/tlg2300/pd-video.c
-+++ b/drivers/media/video/tlg2300/pd-video.c
-@@ -764,10 +764,8 @@ static int pd_vidioc_s_fmt(struct poseid
- 	}
- 	ret |= send_set_req(pd, VIDEO_ROSOLU_SEL,
- 				vid_resol, &cmd_status);
--	if (ret || cmd_status) {
--		mutex_unlock(&pd->lock);
-+	if (ret || cmd_status)
- 		return -EBUSY;
--	}
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -222,6 +222,7 @@ struct acer_debug {
+ static struct rfkill *wireless_rfkill;
+ static struct rfkill *bluetooth_rfkill;
+ static struct rfkill *threeg_rfkill;
++static bool rfkill_inited;
  
- 	pix_def->pixelformat = pix->pixelformat; /* save it */
- 	pix->height = (context->tvnormid & V4L2_STD_525_60) ?  480 : 576;
+ /* Each low-level interface must define at least some of the following */
+ struct wmi_interface {
+@@ -1161,9 +1162,13 @@ static int acer_rfkill_set(void *data, b
+ {
+ 	acpi_status status;
+ 	u32 cap = (unsigned long)data;
+-	status = set_u32(!blocked, cap);
+-	if (ACPI_FAILURE(status))
+-		return -ENODEV;
++
++	if (rfkill_inited) {
++		status = set_u32(!blocked, cap);
++		if (ACPI_FAILURE(status))
++			return -ENODEV;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -1187,14 +1192,16 @@ static struct rfkill *acer_rfkill_regist
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	status = get_device_status(&state, cap);
+-	if (ACPI_SUCCESS(status))
+-		rfkill_init_sw_state(rfkill_dev, !state);
+ 
+ 	err = rfkill_register(rfkill_dev);
+ 	if (err) {
+ 		rfkill_destroy(rfkill_dev);
+ 		return ERR_PTR(err);
+ 	}
++
++	if (ACPI_SUCCESS(status))
++		rfkill_set_sw_state(rfkill_dev, !state);
++
+ 	return rfkill_dev;
+ }
+ 
+@@ -1229,6 +1236,8 @@ static int acer_rfkill_init(struct devic
+ 		}
+ 	}
+ 
++	rfkill_inited = true;
++
+ 	schedule_delayed_work(&acer_rfkill_work, round_jiffies_relative(HZ));
+ 
+ 	return 0;
 
 
