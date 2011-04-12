@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab1DLLQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 07:16:04 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:51031 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab1DLLQD (ORCPT
+	id S1753665Ab1DLLTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 07:19:39 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:21414 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab1DLLTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 07:16:03 -0400
-X-IronPort-AV: E=Sophos;i="4.64,194,1301875200"; 
-   d="scan'208";a="5261097"
-Date: Tue, 12 Apr 2011 12:16:20 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: <linux-kernel@vger.kernel.org>
-CC: <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 0/4] xen: critical bug fixes for 2.6.39-rc3
-Message-ID: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 12 Apr 2011 07:19:38 -0400
+X-IronPort-AV: E=Sophos;i="4.64,195,1301889600"; 
+   d="scan'208";a="144559606"
+From: stefano.stabellini@eu.citrix.com
+To: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com, konrad.wilk@oracle.com, jeremy@goop.org,
+        Stefano.Stabellini@eu.citrix.com, yinghai@kernel.org,
+        hpa@linux.intel.com, mingo@elte.hu,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 1/4] xen: mask_rw_pte mark RO all pagetable pages up to pgt_buf_top
+Date: Tue, 12 Apr 2011 12:19:49 +0100
+Message-Id: <1302607192-21355-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop>
+References: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop>
+X-OriginalArrivalTime: 12 Apr 2011 11:19:37.0489 (UTC) FILETIME=[82348810:01CBF903]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this is a small collection of critical xen bug fixes for 2.6.39-rc3:
-the recent changes to the initial kernel pagetable allocation mechanism
-(4b239f458c229de044d6905c2b0f9fe16ed9e01e in particular) caused a number
-of issues on Xen.
-This patch series fixes those issues and it is required just to boot a
-2.6.39 linux kernel as regular xen guest.
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
+mask_rw_pte is currently checking if a pfn is a pagetable page if it
+falls in the range pgt_buf_start - pgt_buf_end but that is incorrect
+because pgt_buf_end is a moving target: pgt_buf_top is the real
+boundary.
 
-The list of patches with a diffstat follows:
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/x86/xen/mmu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Stefano Stabellini (4):
-      xen: mask_rw_pte mark RO all pagetable pages up to pgt_buf_top
-      x86,xen: introduce x86_init.mapping.pagetable_reserve
-      xen: more debugging in the e820 parsing
-      xen: do not create the extra e820 region at an addr lower than 4G
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index c82df6c..6b833db 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1491,7 +1491,7 @@ static __init pte_t mask_rw_pte(pte_t *ptep, pte_t pte)
+ 	 * it is RO.
+ 	 */
+ 	if (((!is_early_ioremap_ptep(ptep) &&
+-			pfn >= pgt_buf_start && pfn < pgt_buf_end)) ||
++			pfn >= pgt_buf_start && pfn < pgt_buf_top)) ||
+ 			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
+ 		pte = pte_wrprotect(pte);
+ 
+-- 
+1.7.2.3
 
- arch/x86/include/asm/pgtable_types.h |    1 +
- arch/x86/include/asm/x86_init.h      |    9 +++++++++
- arch/x86/kernel/x86_init.c           |    4 ++++
- arch/x86/mm/init.c                   |    9 +++++++--
- arch/x86/xen/mmu.c                   |   17 ++++++++++++++++-
- arch/x86/xen/setup.c                 |    6 +++++-
- 6 files changed, 42 insertions(+), 4 deletions(-)
-
-
-The first two commits make sure pagetable pages are marked RO while
-other pages are marked RW.
-
-The third commit adds a couple of useful debugging statements.
-
-The fourth commit fixes a boot crash on xen when booting as initial
-domain: the xen extra memory region shouldn't start below 4G otherwise
-e820_end_of_low_ram_pfn() could return an address above 4G. As a
-consequence init_memory_mapping would end up mapping MMIO regions
-without going through the fixmap.
-
-
-A git branch with this series is available here:
-
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.39-rc3-fixes
-
-
-Comments are welcome.
-
-- Stefano
