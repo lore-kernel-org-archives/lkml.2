@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab1DLWTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 18:19:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34166 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932541Ab1DLWTe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 18:19:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinp6gaPrjQF6eXk4WHa653GShDuYQ@mail.gmail.com>
-References: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
- <BANLkTimJLcfsYAhV+3=-F14YZvX12-yXgA@mail.gmail.com> <20110412182809.GA1218@redhat.com>
- <BANLkTinb1gXcZug5ApmmrudWLY7PwxNf-A@mail.gmail.com> <20110412192059.GA14360@redhat.com>
- <BANLkTimJgx_x=0bpBDWaUkJgZPYs3_iwsg@mail.gmail.com> <BANLkTimBegMUq2fX67o2YnoATWG-NDbKgA@mail.gmail.com>
- <BANLkTikoDELrA-RtA9BLm64mfoPgdADR0Q@mail.gmail.com> <BANLkTi=HyK+8DhJS3db0j2fefdOjwVMN3w@mail.gmail.com>
- <BANLkTinMAGmdEDviRwZ1-mxrAAe_WK5jvg@mail.gmail.com> <BANLkTinjGkbBMUo7MQ2Dg2yDwQ932qJ7rQ@mail.gmail.com>
- <BANLkTikRH0q3RyP_CORXjAX34-br4pqf=A@mail.gmail.com> <BANLkTinp6gaPrjQF6eXk4WHa653GShDuYQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Apr 2011 15:18:41 -0700
-Message-ID: <BANLkTinzz5TuGPAMVY39V3D0x+PgKr7eGg@mail.gmail.com>
-Subject: Re: Processes hang in an unkillable state
-To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756821Ab1DLWav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 18:30:51 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52030
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753953Ab1DLWau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 18:30:50 -0400
+Date: Tue, 12 Apr 2011 15:30:14 -0700 (PDT)
+Message-Id: <20110412.153014.242140030.davem@davemloft.net>
+To: davej@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: fix locking unbalance in irda_sendmsg
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110412221254.GA23906@redhat.com>
+References: <20110412221254.GA23906@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 3:16 PM, Robert Święcki <robert@swiecki.net> wrote:
-> On Wed, Apr 13, 2011 at 12:12 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Tue, Apr 12, 2011 at 2:59 PM, Robert Święcki <robert@swiecki.net> wrote:
->>>
->>> Compiling now with CONFIG_OPTIMIZE_SIZE and vma dump code. Will
->>> probably post some results tomorrow.
->>
->> .. and if you've added my patch to the stack growth case, hopefully
->> there won't _be_ any results ;)
->
-> I can, depending in whether you'd like to see vma dump results for
-> this case or not. Let me know, it's still cooooompiling :).
+From: Dave Jones <davej@redhat.com>
+Date: Tue, 12 Apr 2011 18:12:55 -0400
 
-Please do add it. Since it can take a long time to trigger, it's best
-to just try to fix this issue asap. If it never triggers, and we don't
-see any vma dumps, I won't cry.
+> 5b40964eadea40509d353318d2c82e8b7bf5e8a5 introduced a path where
+> we have a locking unbalance.  If we pass invalid flags, we unlock
+> a socket we never locked, resulting in this...
+ ...
+> Signed-off-by: Dave Jones <davej@redhat.com>
 
-                          Linus
+Applied and queued up for -stable, thanks Dave.
