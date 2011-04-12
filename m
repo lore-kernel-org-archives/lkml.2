@@ -1,136 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab1DLXfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 19:35:43 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:47815 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757052Ab1DLXfm (ORCPT
+	id S1757242Ab1DLXiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 19:38:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40253 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756180Ab1DLXiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 19:35:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmQEAJXgpE15LHHJgWdsb2JhbACmBBUBARYmJYh6u24OgnOCbQQ
-Date: Wed, 13 Apr 2011 09:35:36 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "hch@infradead.org" <hch@infradead.org>, NeilBrown <neilb@suse.de>,
-        Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110412233536.GK31057@dastard>
-References: <20110411220505.1028816e@notabene.brown>
- <4DA2F00E.6010907@fusionio.com>
- <20110411223623.4278fad1@notabene.brown>
- <4DA2F8AD.1060605@fusionio.com>
- <20110412011255.GA29236@infradead.org>
- <4DA40F0E.1070903@fusionio.com>
- <20110412122248.GC31057@dastard>
- <4DA4456F.3070301@fusionio.com>
- <20110412134031.GF31057@dastard>
- <4DA4581A.4090600@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA4581A.4090600@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 12 Apr 2011 19:38:14 -0400
+Date: Tue, 12 Apr 2011 16:37:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv1 3/11] RTC: RTC module of DA9052 PMIC driver
+Message-Id: <20110412163743.1d7353c4.akpm@linux-foundation.org>
+In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B4AC209@KCINPUNHJCMS01.kpit.com>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B4AC209@KCINPUNHJCMS01.kpit.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 03:48:10PM +0200, Jens Axboe wrote:
-> On 2011-04-12 15:40, Dave Chinner wrote:
-> > On Tue, Apr 12, 2011 at 02:28:31PM +0200, Jens Axboe wrote:
-> >> On 2011-04-12 14:22, Dave Chinner wrote:
-> >>> On Tue, Apr 12, 2011 at 10:36:30AM +0200, Jens Axboe wrote:
-> >>>> On 2011-04-12 03:12, hch@infradead.org wrote:
-> >>>>> On Mon, Apr 11, 2011 at 02:48:45PM +0200, Jens Axboe wrote:
-> >>>>>    function calls.
-> >>>>>  - Why is having a plug in blk_flush_plug marked unlikely?  Note that
-> >>>>>    unlikely is the static branch prediction hint to mark the case
-> >>>>>    extremly unlikely and is even used for hot/cold partitioning.  But
-> >>>>>    when we call it we usually check beforehand if we actually have
-> >>>>>    plugs, so it's actually likely to happen.
-> >>>>
-> >>>> The existance and out-of-line is for the scheduler() hook. It should be
-> >>>> an unlikely event to schedule with a plug held, normally the plug should
-> >>>> have been explicitly unplugged before that happens.
-> >>>
-> >>> Though if it does, haven't you just added a significant amount of
-> >>> depth to the worst case stack usage? I'm seeing this sort of thing
-> >>> from io_schedule():
-> >>>
-> >>>         Depth    Size   Location    (40 entries)
-> >>>         -----    ----   --------
-> >>>   0)     4256      16   mempool_alloc_slab+0x15/0x20
-> >>>   1)     4240     144   mempool_alloc+0x63/0x160
-> >>>   2)     4096      16   scsi_sg_alloc+0x4c/0x60
-> >>>   3)     4080     112   __sg_alloc_table+0x66/0x140
-> >>>   4)     3968      32   scsi_init_sgtable+0x33/0x90
-> >>>   5)     3936      48   scsi_init_io+0x31/0xc0
-> >>>   6)     3888      32   scsi_setup_fs_cmnd+0x79/0xe0
-> >>>   7)     3856     112   sd_prep_fn+0x150/0xa90
-> >>>   8)     3744      48   blk_peek_request+0x6a/0x1f0
-> >>>   9)     3696      96   scsi_request_fn+0x60/0x510
-> >>>  10)     3600      32   __blk_run_queue+0x57/0x100
-> >>>  11)     3568      80   flush_plug_list+0x133/0x1d0
-> >>>  12)     3488      32   __blk_flush_plug+0x24/0x50
-> >>>  13)     3456      32   io_schedule+0x79/0x80
-> >>>
-> >>> (This is from a page fault on ext3 that is doing page cache
-> >>> readahead and blocking on a locked buffer.)
-> > 
-> > FYI, the next step in the allocation chain adds >900 bytes to that
-> > stack:
-> > 
-> > $ cat /sys/kernel/debug/tracing/stack_trace
-> >         Depth    Size   Location    (47 entries)
-> >         -----    ----   --------
-> >   0)     5176      40   zone_statistics+0xad/0xc0
-> >   1)     5136     288   get_page_from_freelist+0x2cf/0x840
-> >   2)     4848     304   __alloc_pages_nodemask+0x121/0x930
-> >   3)     4544      48   kmem_getpages+0x62/0x160
-> >   4)     4496      96   cache_grow+0x308/0x330
-> >   5)     4400      80   cache_alloc_refill+0x21c/0x260
-> >   6)     4320      64   kmem_cache_alloc+0x1b7/0x1e0
-> >   7)     4256      16   mempool_alloc_slab+0x15/0x20
-> >   8)     4240     144   mempool_alloc+0x63/0x160
-> >   9)     4096      16   scsi_sg_alloc+0x4c/0x60
-> >  10)     4080     112   __sg_alloc_table+0x66/0x140
-> >  11)     3968      32   scsi_init_sgtable+0x33/0x90
-> >  12)     3936      48   scsi_init_io+0x31/0xc0
-> >  13)     3888      32   scsi_setup_fs_cmnd+0x79/0xe0
-> >  14)     3856     112   sd_prep_fn+0x150/0xa90
-> >  15)     3744      48   blk_peek_request+0x6a/0x1f0
-> >  16)     3696      96   scsi_request_fn+0x60/0x510
-> >  17)     3600      32   __blk_run_queue+0x57/0x100
-> >  18)     3568      80   flush_plug_list+0x133/0x1d0
-> >  19)     3488      32   __blk_flush_plug+0x24/0x50
-> >  20)     3456      32   io_schedule+0x79/0x80
-> > 
-> > That's close to 1800 bytes now, and that's not entering the reclaim
-> > path. If i get one deeper than that, I'll be sure to post it. :)
+On Wed, 6 Apr 2011 18:47:29 +0530
+Ashish Jangam <Ashish.Jangam@kpitcummins.com> wrote:
+
+> Hi Paul,
 > 
-> Do you have traces from 2.6.38, or are you just doing them now?
+> RTC Driver for Dialog Semiconductor DA9052 PMICs.
+> 
+> Changes made since last submission:
+> . read and write operation moved to MFD
+> 
+> Linux Kernel Version: 2.6.37
 
-I do stack checks like this all the time. I generally don't keep
-them around, just pay attention to the path and depth. ext3 is used
-for / on my test VMs, and has never shown up as the worse case stack
-usage when running xfstests. As of the block plugging code, this
-trace is the top stack user for the first ~130 tests, and often for
-the entire test run on XFS....
+The patch looks OK(ish) to me from a quick read.
 
-> The path you quote above should not go into reclaim, it's a GFP_ATOMIC
-> allocation.
+> --- orig_linux-2.6.37/drivers/rtc/Kconfig	2011-01-05 05:50:19.000000000 +0500
+> +++ linux-2.6.37/drivers/rtc/Kconfig	2011-03-31 21:07:39.000000000 +0500
+> @@ -664,6 +664,13 @@
+>  	help
+>  	  If you say yes here you get support for the RTC subsystem of the
+>  	  NUC910/NUC920 used in embedded systems.
+> +
+> +config RTC_DRV_DA9052
+> +	tristate "Dialog DA9052 RTC"
+> +	depends on PMIC_DA9052
+> +	help
+> +	  Say y here to support the RTC driver for
+> +	  Dialog Semiconductor DA9052 PMIC.
 
-Right. I'm still trying to produce a trace that shows more stack
-usage in the block layer. It's random chance as to what pops up most
-of the time. However, some of the stacks that are showing up in
-2.6.39 are quite different from any I've ever seen before...
+But there's not much I can do with it because PMIC_DA9052 does not
+exist in mainline or in linux-next.
 
-Cheers,
+What is a PMIC_DA9052, anyway?  What CPU architectures support it, etc?
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Have you identified a maintainer who will be merging the main patch
+which enables PMIC_DA9052?
+
+
+Please feed all the patches through scritps/checkpatch.pl if you haven't
+already done so, to clean up lots of trivial errors.
+
+For example, "MFD: MFD module of DA9052 PMIC driver":
+
+	total: 449 errors, 832 warnings, 2326 lines checked
+
+
+A couple of minor comments:
+
+> +static int da9052_rtc_enable_alarm(struct da9052 *da9052, unsigned char flag)
+> +{
+> +	int ret = 0;
+> +	if (flag) {
+> +		ret = da9052_set_bits(da9052, DA9052_ALARM_Y_REG,
+> +					DA9052_ALARM_Y_ALARM_ON);
+> +		if (ret != 0)
+> +			dev_err(da9052->dev, "Failed to enable ALM: %d\n", ret);
+> +	} else {
+> +		ret = da9052_clear_bits(da9052, DA9052_ALARM_Y_REG,
+> +					DA9052_ALARM_Y_ALARM_ON);
+> +		if (ret != 0)
+> +			dev_err(da9052->dev, "da9052_rtc_enable_alarm -> \
+> +					da9052_clear_bits error %d\n", ret);
+> +	}
+> +	return ret;
+> +}
+
+"flag" is a poor identifier - it's largely meaningless.  Perhaps
+"enable" would be a better choice in this case.  Making it have the
+bool type wouild make sense also.
+
+> +static irqreturn_t da9052_rtc_irq(int irq, void *data)
+> +{
+> +	struct da9052_rtc *rtc = (struct da9052_rtc *)data;
+
+typecasting a void* like this is unneeded and is in fact undesirable,
+as it will suppress possibly-useful warnings.
+
+
+> +	int ret = 0;
+> +
+> +	ret = da9052_reg_read(rtc->da9052, DA9052_ALARM_MI_REG);
+> +	if (ret < 0) {
+> +		dev_err(rtc->da9052->dev, "da9052_rtc_notifier -> \
+> +					da9052_reg_read error %d\n", ret);
+> +		return IRQ_NONE;
+> +	}
+> +	if (ret & DA9052_ALARMMI_ALARMTYPE)
+> +		da9052_rtc_enable_alarm(rtc->da9052, 0);
+> +
+> +	return IRQ_HANDLED;
+> +}
+
