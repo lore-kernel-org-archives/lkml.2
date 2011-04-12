@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab1DLVQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 17:16:32 -0400
-Received: from void.printf.net ([89.145.121.20]:32944 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932503Ab1DLVQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 17:16:30 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Cyril Hrubis <metan@ucw.cz>
-Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com,
-        linux-mmc@vger.kernel.org
-Subject: Re: zaurus: mmcblk0: error -110
-References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz>
-	<m3aafvz30t.fsf@pullcord.laptop.org>
-	<20110412193944.GC2665@atrey.karlin.mff.cuni.cz>
-	<m3oc4bxne1.fsf@pullcord.laptop.org>
-	<20110412205421.GD2665@atrey.karlin.mff.cuni.cz>
-Date: Tue, 12 Apr 2011 17:21:15 -0400
-In-Reply-To: <20110412205421.GD2665@atrey.karlin.mff.cuni.cz> (Cyril Hrubis's
-	message of "Tue, 12 Apr 2011 22:54:21 +0200")
-Message-ID: <m3fwpnxj1w.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+	id S932603Ab1DLVRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 17:17:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53421 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab1DLVRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 17:17:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NwUakX7Kzp6AbwAeTEYA095ZRIELhBwb1mzuqZjXNBy3gsssEq5L+B7f10g8HxgzgM
+         WlZY84IENKTIophAVaZ/K0LbMXtobsghaXab45JBsJhZKwwKy6cOBal6L2tPtx++0i3/
+         cTX5QnHAXCaehdEOIdlkopuJ9y7um7CnQPh3c=
+Date: Wed, 13 Apr 2011 00:16:58 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        behlendorf1@llnl.gov, oleg@redhat.com
+Subject: Re: [PATCH] remove abs64()
+Message-ID: <20110412211658.GB20135@p183>
+References: <20110412210045.GA19901@p183>
+ <20110412140726.3f4f2a7b.rdunlap@xenotime.net>
+ <20110412141040.a5706346.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412141040.a5706346.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Apr 12, 2011 at 02:10:40PM -0700, Andrew Morton wrote:
+> On Tue, 12 Apr 2011 14:07:26 -0700
+> Randy Dunlap <rdunlap@xenotime.net> wrote:
+> 
+> > > +	__builtin_choose_expr(						\
+> > > +		__builtin_types_compatible_p(typeof(_x), long long),	\
+> > > +		(unsigned long long)({ _x < 0 ? -_x : _x; }),		\
+> > > +	_x)))));							\
+> > > +})
+> > 
+> > that is better?
+> 
+> I think so.
+> 
+> It's a bit concerning that it changes the return type of abs().
 
-On Tue, Apr 12 2011, Cyril Hrubis wrote:
-> Tried 2.6.39-rc3 both with and without CONFIG_MMC_UNSAFE_RESUME and the
-> insert/remove detection works but both with and without unsafe resume, if the
-> card is removed for more than second or two it fails to recognize the card
-> after insertion failing with:
->
-> mmc0: error -95 whilst initialising SD card
-
-That's interesting.  Would you mind trying to bisect?  (Knowing whether
-2.6.38 final does it, for example, would be very helpful.)
-
-There aren't many -EOPNOTSUPP returns in the stack.  I see:
-
-card/block.c: mmc_blk_issue_secdiscard_rq and mmc_blk_issue_discard_rq
-card/core.c: mmc_erase
-core/sd_ops.c: mmc_app_cmd
-
-Mind doing some instrumentation to figure out which it is?
-
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+I haven't read every abs() user, but, yes, sizeof(abs()) silently
+changing is the issue.
