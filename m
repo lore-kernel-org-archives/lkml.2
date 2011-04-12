@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab1DLFCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 01:02:55 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51095 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751078Ab1DLFCy (ORCPT
+	id S1753258Ab1DLFOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 01:14:07 -0400
+Received: from mother.openwall.net ([195.42.179.200]:53176 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751097Ab1DLFOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 01:02:54 -0400
-Subject: Re: Strange block/scsi/workqueue issue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <1302583757.2558.21.camel@mulgrave.site>
-References: <1302533763.2596.23.camel@dolmen>
-	 <20110411171803.GG9673@mtj.dyndns.org>
-	 <1302569276.2558.9.camel@mulgrave.site>
-	 <20110412025145.GJ9673@mtj.dyndns.org>
-	 <1302583757.2558.21.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 00:02:51 -0500
-Message-ID: <1302584571.2558.24.camel@mulgrave.site>
+	Tue, 12 Apr 2011 01:14:05 -0400
+Date: Tue, 12 Apr 2011 09:06:59 +0400
+From: Solar Designer <solar@openwall.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Pavel Kankovsky <peak@argo.troja.mff.cuni.cz>,
+        Kees Cook <kees.cook@canonical.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Eugene Teo <eugene@redhat.com>, Nelson Elhage <nelhage@ksplice.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Pekka Savola <pekkas@netcore.fi>, James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH] net: ipv4: add IPPROTO_ICMP socket kind
+Message-ID: <20110412050659.GA14129@openwall.com>
+References: <20110409101514.GA4262@albatros>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110409101514.GA4262@albatros>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-11 at 23:49 -0500, James Bottomley wrote:
-> The entangled deadlock seems to have been introduced by commit
-> 3cca6dc1c81e2407928dc4c6105252146fd3924f prior to that, there was no
-> synchronous cancel in the destroy path.
-> 
-> A fix might be to shunt more stuff off to workqueues, but that's
-> producing a more complex system which would be prone to entanglements
-> that would be even harder to spot.
-> 
-> Perhaps a better solution is just not to use sync cancellations in
-> block?  As long as the work in the queue holds a queue ref, they can be
-> done asynchronously.
+On Sat, Apr 09, 2011 at 02:15:14PM +0400, Vasiliy Kulikov wrote:
+> This patch adds IPPROTO_ICMP socket kind.  It makes it possible to send
+> ICMP_ECHO messages and receive the corresponding ICMP_ECHOREPLY messages
+> without any special privileges.  In other words, the patch makes it
+> possible to implement setuid-less and CAP_NET_RAW-less /bin/ping.  In
+> order not to increase the kernel's attack surface (in case of
+> vulnerabilities in the newly added code), the new functionality is
+> disabled by default, but is enabled at bootup by supporting Linux
+> distributions, optionally with restriction to a group or a group range
+...
+> For Openwall GNU/*/Linux it is the last step on the road to the
+> setuid-less distro.
 
-So this is a possible implementation, does this fix the problem?
-(compile tested only).
+More correctly, it _was_ the last step - we've already taken it, so a
+revision of the patch (against OpenVZ/RHEL5 kernels) is currently in use.
 
-James
+We would really like this accepted into mainline, which is why Vasiliy
+spends extra effort to keep the patch updated to current mainline
+kernels and re-test it.  If there are any comments/concerns/objections,
+we'd be happy to hear those.
 
----
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 90f22cc..f600f88 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -219,6 +219,7 @@ static void blk_delay_work(struct work_struct *work)
- 	spin_lock_irq(q->queue_lock);
- 	__blk_run_queue(q, false);
- 	spin_unlock_irq(q->queue_lock);
-+	blk_put_queue(q);
- }
- 
- /**
-@@ -233,7 +234,8 @@ static void blk_delay_work(struct work_struct *work)
-  */
- void blk_delay_queue(struct request_queue *q, unsigned long msecs)
- {
--	schedule_delayed_work(&q->delay_work, msecs_to_jiffies(msecs));
-+	if (!blk_get_queue(q))
-+		schedule_delayed_work(&q->delay_work, msecs_to_jiffies(msecs));
- }
- EXPORT_SYMBOL(blk_delay_queue);
- 
-@@ -271,7 +273,8 @@ EXPORT_SYMBOL(blk_start_queue);
-  **/
- void blk_stop_queue(struct request_queue *q)
- {
--	__cancel_delayed_work(&q->delay_work);
-+	if (__cancel_delayed_work(&q->delay_work))
-+		blk_put_queue(q);
- 	queue_flag_set(QUEUE_FLAG_STOPPED, q);
- }
- EXPORT_SYMBOL(blk_stop_queue);
-@@ -297,7 +300,8 @@ EXPORT_SYMBOL(blk_stop_queue);
- void blk_sync_queue(struct request_queue *q)
- {
- 	del_timer_sync(&q->timeout);
--	cancel_delayed_work_sync(&q->delay_work);
-+	if (__cancel_delayed_work(&q->delay_work))
-+		blk_put_queue(q);
- 	queue_sync_plugs(q);
- }
- EXPORT_SYMBOL(blk_sync_queue);
+Acked-by: Solar Designer <solar@openwall.com>
 
+>  include/net/netns/ipv4.h   |    2 +
+>  include/net/ping.h         |   69 ++++
+>  net/ipv4/Kconfig           |   21 +
+>  net/ipv4/Makefile          |    1 +
+>  net/ipv4/af_inet.c         |   36 ++
+>  net/ipv4/icmp.c            |   14 +-
+>  net/ipv4/ping.c            |  933 ++++++++++++++++++++++++++++++++++++++++++++
+>  net/ipv4/sysctl_net_ipv4.c |   90 +++++
+>  8 files changed, 1165 insertions(+), 1 deletions(-)
 
+Thanks,
+
+Alexander
