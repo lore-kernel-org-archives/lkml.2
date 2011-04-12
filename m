@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab1DLTSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:18:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33590 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab1DLTSs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:18:48 -0400
+	id S1754920Ab1DLTT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:19:56 -0400
+Received: from void.printf.net ([89.145.121.20]:49524 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753885Ab1DLTTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 15:19:55 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com,
+        linux-mmc@vger.kernel.org
+Subject: Re: zaurus: mmcblk0: error -110
+References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz>
+Date: Tue, 12 Apr 2011 15:24:34 -0400
+In-Reply-To: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz> (Cyril Hrubis's
+	message of "Tue, 12 Apr 2011 17:15:48 +0200")
+Message-ID: <m3aafvz30t.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110412190804.GB13752@redhat.com>
-References: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
-	<BANLkTimJLcfsYAhV+3=-F14YZvX12-yXgA@mail.gmail.com>
-	<20110412182809.GA1218@redhat.com>
-	<20110412190731.GA13752@redhat.com>
-	<20110412190804.GB13752@redhat.com>
-Date: Tue, 12 Apr 2011 21:18:47 +0200
-Message-ID: <BANLkTinenKYRUtfif_LEXhZByYkKD95UNw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] __mlock_vma_pages_range: stack_guard_page() case
- returns the wrong value
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 9:08 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> __mlock_vma_pages_range() simply changes addr/nr_pages when
-> stack_guard_page(vma, start). But this means that __get_user_pages()
-> returns a number which doesn't match the [start, end) interval and
-> the caller can be confused.
->
-> If we skip the first page, we should return 1 if gup fails, or add
-> 1 to the number it returns.
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->
->  mm/mlock.c |   16 ++++++++++++----
->  1 file changed, 12 insertions(+), 4 deletions(-)
->
-> --- sigprocmask/mm/mlock.c~do_mlock_pages_stack_guard_page      2011-04-06 21:33:50.000000000 +0200
-> +++ sigprocmask/mm/mlock.c      2011-04-12 20:50:30.000000000 +0200
-> @@ -159,9 +159,8 @@ static long __mlock_vma_pages_range(stru
->                                    int *nonblocking)
->  {
->        struct mm_struct *mm = vma->vm_mm;
-> -       unsigned long addr = start;
->        int nr_pages = (end - start) / PAGE_SIZE;
-> -       int gup_flags;
-> +       int gup_flags, skip_page, ret;
->
->        VM_BUG_ON(start & ~PAGE_MASK);
->        VM_BUG_ON(end   & ~PAGE_MASK);
-> @@ -189,13 +188,22 @@ static long __mlock_vma_pages_range(stru
->                gup_flags |= FOLL_MLOCK;
->
->        /* We don't try to access the guard page of a stack vma */
-> +       skip_page = 0;
->        if (stack_guard_page(vma, start)) {
-> -               addr += PAGE_SIZE;
-> +               skip_page = 1;
-> +               start += PAGE_SIZE;
->                nr_pages--;
->        }
->
-> -       return __get_user_pages(current, mm, addr, nr_pages, gup_flags,
-> +       ret = __get_user_pages(current, mm, start, nr_pages, gup_flags,
->                                NULL, NULL, nonblocking);
-> +
-> +       if (ret >= 0)
-> +               ret += skip_page;
-> +       else if (skip_page)
-> +               ret = 1;
-> +
-> +       return ret;
->  }
->
->  /*
+Hi,
 
-Compiling with Linus' new patch now, lemme know if you agree on which
-one might be the more correct one :). Otherwise I'll stick to the
-first choice, and let you know tomorrow if it worked some more
-extensive testing.
+(Adding linux-mmc@.)
 
+On Tue, Apr 12 2011, Cyril Hrubis wrote:
+> Hi!
+> When I insert the mmc card to zaurus, it gets properly detected and prints some
+> info into console. Mounting reading/writing files works fine.
+>
+> However when the card is removed (doesn't need to be mounted before), the
+> removal is most likely not detected, so when I insert it again, no info is
+> printed into console and moreover when I try to mount it zaurus goes into
+> infinite loop printing:
+>
+> Buffer I/O error on device mmcblk0p1, logical block 9
+> mmcblk0: error -110 sending status command
+> mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
+> end_request: I/O error, dev mmcblk0, sector 257
+> Buffer I/O error on device mmcblk0p1, logical block 10
+> ...
+>
+> Related part of the .config:
+>
+> #
+> # OTG and related infrastructure
+> #
+> # CONFIG_USB_GPIO_VBUS is not set
+> # CONFIG_USB_ULPI is not set
+> # CONFIG_NOP_USB_XCEIV is not set
+> CONFIG_MMC=y
+> # CONFIG_MMC_DEBUG is not set
+> CONFIG_MMC_UNSAFE_RESUME=y
+
+Your symptoms match the bug that was fixed by:
+
+bad3babace2ee4d ("mmc: fix CONFIG_MMC_UNSAFE_RESUME regression")
+
+but this fix made it into 2.6.38, so if you're using 2.6.38 final then
+you shouldn't be seeing this.  Could you confirm that you have this
+patch?
+
+If so, could you try building a kernel with CONFIG_MMC_UNSAFE_RESUME=n
+and see if you still have the same problem?
+
+- Chris.
 -- 
-Robert Święcki
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
