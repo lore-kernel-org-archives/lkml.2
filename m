@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1DLO6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:58:25 -0400
-Received: from kroah.org ([198.145.64.141]:57409 "EHLO coco.kroah.org"
+	id S1756948Ab1DLOhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:37:37 -0400
+Received: from kroah.org ([198.145.64.141]:57365 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756968Ab1DLOhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:38 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:49 2011
-Message-Id: <20110412143549.515762436@clark.kroah.org>
+	id S1756637Ab1DLOhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:32 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
+Message-Id: <20110412143548.780832314@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:04 -0700
+Date: Tue, 12 Apr 2011 07:33:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [015/105] eCryptfs: Unlock page in write_begin error path
+        Mohammed Shafi Shajakhan <mshajakhan@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [008/105] ath9k: Fix kernel panic in AR2427
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+From: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
 
-commit 50f198ae16ac66508d4b8d5a40967a8507ad19ee upstream.
+commit 61e1b0b00c793ad5a32fe2181c9f77115fed5dc4 upstream.
 
-Unlock the page in error path of ecryptfs_write_begin(). This may
-happen, for example, if decryption fails while bring the page
-up-to-date.
+Kernel panic occurs just after AR2427 establishes connection with AP.
+Unless aggregation is enabled we don't initialize the TID structure.
+Thus accesing the elements of the TID structure when aggregation is
+disabled, leads to NULL pointer dereferencing.
 
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+[  191.320358] Call Trace:
+[  191.320364]  [<fd250ea7>] ? ath9k_tx+0xa7/0x200 [ath9k]
+[  191.320376]  [<fd1ec7fc>] ? __ieee80211_tx+0x5c/0x1e0 [mac80211]
+[  191.320386]  [<fd1edd2b>] ? ieee80211_tx+0x7b/0x90 [mac80211]
+[  191.320395]  [<fd1edddd>] ? ieee80211_xmit+0x9d/0x1d0 [mac80211]
+[  191.320401]  [<c014218f>] ? wake_up_state+0xf/0x20
+[  191.320405]  [<c015dbc8>] ? signal_wake_up+0x28/0x40
+[  191.320410]  [<c012a578>] ? default_spin_lock_flags+0x8/0x10
+[  191.320420]  [<fd1ee308>] ? ieee80211_subif_start_xmit+0x2e8/0x7c0
+[mac80211]
+[  191.320425]  [<c058f905>] ? do_page_fault+0x295/0x3a0
+[  191.320431]  [<c04c4a3d>] ? dev_hard_start_xmit+0x1ad/0x210
+[  191.320436]  [<c04d96b5>] ? sch_direct_xmit+0x105/0x170
+[  191.320445]  [<fd1f161a>] ? get_sta_flags+0x2a/0x40 [mac80211]
+[  191.320449]  [<c04c780f>] ? dev_queue_xmit+0x37f/0x4b0
+[  191.320452]  [<c04d75b0>] ? eth_header+0x0/0xb0
+[  191.320456]  [<c04cc479>] ? neigh_resolve_output+0xe9/0x310
+[  191.320461]  [<c053d295>] ? ip6_output_finish+0xa5/0x110
+[  191.320464]  [<c053e354>] ? ip6_output2+0x134/0x250
+[  191.320468]  [<c053f7dd>] ? ip6_output+0x6d/0x100
+[  191.320471]  [<c0559665>] ? mld_sendpack+0x395/0x3e0
+[  191.320475]  [<c0557f81>] ? add_grhead+0x31/0xa0
+[  191.320478]  [<c055a83c>] ? mld_send_cr+0x1bc/0x2b0
+[  191.320482]  [<c01535d9>] ? irq_exit+0x39/0x70
+[  191.320485]  [<c055a940>] ? mld_ifc_timer_expire+0x10/0x40
+[  191.320489]  [<c015b92e>] ? run_timer_softirq+0x13e/0x2c0
+[  191.320493]  [<c0103a30>] ? common_interrupt+0x30/0x40
+[  191.320498]  [<c055a930>] ? mld_ifc_timer_expire+0x0/0x40
+[  191.320502]  [<c0153358>] ? __do_softirq+0x98/0x1b0
+[  191.320506]  [<c01534b5>] ? do_softirq+0x45/0x50
+[  191.320509]  [<c0153605>] ? irq_exit+0x65/0x70
+[  191.320513]  [<c05917dc>] ? smp_apic_timer_interrupt+0x5c/0x8b
+[  191.320516]  [<c0103df1>] ? apic_timer_interrupt+0x31/0x40
+[  191.320521]  [<c016007b>] ? k_getrusage+0x12b/0x2f0
+[  191.320525]  [<c039e384>] ? acpi_idle_enter_simple+0x117/0x148
+[  191.320529]  [<c04a20da>] ? cpuidle_idle_call+0x7a/0x100
+[  191.320532]  [<c01021d4>] ? cpu_idle+0x94/0xd0
+[  191.320536]  [<c057ab88>] ? rest_init+0x58/0x60
+[  191.320541]  [<c07a58ec>] ? start_kernel+0x351/0x357
+[  191.320544]  [<c07a53c7>] ? unknown_bootoption+0x0/0x19e
+[  191.320548]  [<c07a50aa>] ? i386_start_kernel+0xaa/0xb1
+[  191.320550] Code: 03 66 3d 00 03 0f 84 7c 02 00 00 83 c3 18 0f b6 03
+8b 4d e0 89 c3 83 e3 0f 6b c3 48 89 5d d8 8d 04 06 8d 50 0c 89 55 d0 8b
+40 20 <8b> 00 3b 01 0f 85 8e 02 00 00 f6 47 20 40 0f 84 29 ff ff ff 8b
+[  191.320634] EIP: [<fd2586d4>] ath_tx_start+0x474/0x770 [ath9k] SS:ESP
+0068:c0761a90
+[  191.320642] CR2: 0000000000000000
+[  191.320647] ---[ end trace 9296ef23b9076ece ]---
+[  191.320650] Kernel panic - not syncing: Fatal exception in interrupt
+
+Signed-off-by: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/mmap.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/wireless/ath/ath9k/xmit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -374,6 +374,11 @@ static int ecryptfs_write_begin(struct f
- 	    && (pos != 0))
- 		zero_user(page, 0, PAGE_CACHE_SIZE);
- out:
-+	if (unlikely(rc)) {
-+		unlock_page(page);
-+		page_cache_release(page);
-+		*pagep = NULL;
-+	}
- 	return rc;
- }
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1699,8 +1699,8 @@ static void ath_tx_start_dma(struct ath_
+ 	u8 tidno;
  
+ 	spin_lock_bh(&txctl->txq->axq_lock);
+-
+-	if (ieee80211_is_data_qos(hdr->frame_control) && txctl->an) {
++	if ((sc->sc_flags & SC_OP_TXAGGR) && txctl->an &&
++		ieee80211_is_data_qos(hdr->frame_control)) {
+ 		tidno = ieee80211_get_qos_ctl(hdr)[0] &
+ 			IEEE80211_QOS_CTL_TID_MASK;
+ 		tid = ATH_AN_2_TID(txctl->an, tidno);
 
 
