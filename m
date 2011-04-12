@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab1DLSw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 14:52:29 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40420 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab1DLSw2 (ORCPT
+	id S1751885Ab1DLSwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 14:52:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58157 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab1DLSww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 14:52:28 -0400
+	Tue, 12 Apr 2011 14:52:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=izcgywgSPvjZZlkdPaVrMXhbOaerYiW1WgzTTWWyWDsiuqt9MHLBdi+mnv3qvx7C5e
-         41xJRGax8fzSrxmhixqosEcC/8T1xwQNOMfc6ACcx0qzFM8DmRE8lyG3KGB52OO9HcJ7
-         VEETzxn1GV2Ap2ViqBU0/X9DjTV7K0vkDOmJI=
-Date: Wed, 13 Apr 2011 03:52:21 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, cl@linux.com
-Subject: Re: [PATCH 2/4]percpu_counter: use correct API
-Message-ID: <20110412185221.GC16342@mtj.dyndns.org>
-References: <1302595441.3981.128.camel@sli10-conroe>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=MS6p72JeCaya+uyI9QLRtyjqT1XV+GnWQjZPUKwgPCw2WbAbwko7MJ24lRgiA9k4cL
+         Wrzg5QZKJtZ3POn6TFrc6anQTQc0zvJrK6GCHnSdB/6U4zJCEAqs/voxStaSju0TJTtX
+         4gmtSjDAYYukHsAyd0qdTUk0mj85y43JTERpo=
+Message-ID: <4DA49F7F.8060005@suse.cz>
+Date: Tue, 12 Apr 2011 20:52:47 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302595441.3981.128.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bryan Schumaker <bjschuma@netapp.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        ML netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz> <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz> <4DA49D3A.7090800@netapp.com>
+In-Reply-To: <4DA49D3A.7090800@netapp.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 04:04:01PM +0800, Shaohua Li wrote:
-> percpu_counter_sum_positive never returns negative, since there
-> is a negative check, I changed it to percpu_counter_sum.
+On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
+> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
+>> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
+>>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
+>>>> inacceptable for automounted NFS dirs.
+>>>
+>>> I'm still confused as to why you are hitting it at all. In the normal
+>>> autonegotiation case, the client should be trying to use AUTH_SYS first
+>>> and then trying rpcsec_gss if and only if that fails.
+>>>
+>>> Are you really exporting a filesystem using AUTH_NULL as the only
+>>> supported flavour?
+>>
+>> I don't know, I connect to a nfs server which is not maintained by me.
+>> It looks like that. How can I find out?
 > 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> 
-> ---
->  fs/ext4/balloc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux/fs/ext4/balloc.c
-> ===================================================================
-> --- linux.orig/fs/ext4/balloc.c	2011-04-12 15:48:42.000000000 +0800
-> +++ linux/fs/ext4/balloc.c	2011-04-12 15:48:50.000000000 +0800
-> @@ -506,7 +506,7 @@ static int ext4_has_free_blocks(struct e
->  	if (free_blocks - (nblocks + root_blocks + dirty_blocks) <
->  						EXT4_FREEBLOCKS_WATERMARK) {
->  		free_blocks  = percpu_counter_sum_positive(fbc);
-> -		dirty_blocks = percpu_counter_sum_positive(dbc);
-> +		dirty_blocks = percpu_counter_sum(dbc);
->  		if (dirty_blocks < 0) {
->  			printk(KERN_CRIT "Dirty block accounting "
->  					"went wrong %lld\n",
+> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
 
-The right thing to do would be removing if (dirty_blocks < 0) and keep
-using _positive.  perpcu_counter_sum() may return a negative number
-spuriously (that's the whole point of _positive functions) and may
-trigger the critial error path when nothing is really wrong.
+I don't have NFS in modules. It's all built-in. And this one is
+unconditionally selected because of CONFIG_NFS_V4.
 
-Thanks.
-
+regards,
 -- 
-tejun
+js
+suse labs
