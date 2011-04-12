@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab1DLGd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 02:33:57 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:55914 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753122Ab1DLGd4 (ORCPT
-	<rfc822;groupwise-jlee@novell.com:4:1>);
-	Tue, 12 Apr 2011 02:33:56 -0400
-Message-Id: <4DA47EF0020000230002B353@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 12 Apr 2011 00:33:52 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <dmitry.torokhov@gmail.com>
-Cc: <smfrench@gmail.com>, <akpm@linux-foundation.org>, <mjg@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: undefined reference to `sparse_keymap_free'
-References: <BANLkTinNm_j_SpjTXKVPXkWFmyjBZAQWyQ@mail.gmail.com>
- <20110411224819.b349025a.akpm@linux-foundation.org>
- <20110412055851.GA1854@core.coreip.homeip.net>
-In-Reply-To: <20110412055851.GA1854@core.coreip.homeip.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932086Ab1DLGe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 02:34:26 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.183]:39857
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755123Ab1DLGeY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 02:34:24 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJJ0V7-02-DOF-02
+X-M-MSG: 
+Date: Tue, 12 Apr 2011 08:33:05 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86/amd-iommu: Add extended feature detection
+Message-ID: <20110412063305.GB20607@amd.com>
+References: <1302514324-14717-1-git-send-email-joerg.roedel@amd.com>
+ <1302514324-14717-2-git-send-email-joerg.roedel@amd.com>
+ <4bd170057af715738bbc818219dffc04.squirrel@webmail.sf-mail.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <4bd170057af715738bbc818219dffc04.squirrel@webmail.sf-mail.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2011-04-11 於 22:58 -0700，Dmitry Torokhov 提到：
-> On Mon, Apr 11, 2011 at 10:48:19PM -0700, Andrew Morton wrote:
-> > (cc's added)
-> > 
-> > On Mon, 11 Apr 2011 23:18:04 -0500 Steve French <smfrench@gmail.com> wrote:
-> > 
-> > > 2.6.38-rc3 build error:
-> > > 
-> > > drivers/built-in.o: In function `msi_laptop_input_destroy':
-> > > msi-laptop.c:(.text+0x1a3be1): undefined reference to `sparse_keymap_free'
-> > > drivers/built-in.o: In function `msi_send_touchpad_key':
-> > > msi-laptop.c:(.text+0x1a3c45): undefined reference to
-> > > `sparse_keymap_report_event'
-> > > drivers/built-in.o: In function `msi_init':
-> > > msi-laptop.c:(.init.text+0xe055): undefined reference to `sparse_keymap_setup'
-> > > msi-laptop.c:(.init.text+0xe07d): undefined reference to `sparse_keymap_free'
-> > > 
-> > 
-> > Either a missing CONFIG_INPUT_SPARSEKMAP dependency, or missing stubs in
-> > include/linux/input/sparse-keymap.h?
-> > 
+On Mon, Apr 11, 2011 at 11:11:44AM -0400, Rolf Eike Beer wrote:
+> > This patch adds detection of the extended features of an
+> > AMD IOMMU. The available features are printed to dmesg on
+> > boot.
 > 
-> No, stubs for sparse keymap do not make sense (either one wants to use
-> this library-like module or she does not), so it must be the missing
-> "select" (sparse keymap should be selectable as long as selecting module
-> depends on CONFIG_INPUT).
+> > diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
+> > index bcf58ea..d609610 100644
+> > --- a/arch/x86/kernel/amd_iommu.c
+> > +++ b/arch/x86/kernel/amd_iommu.c
+> > @@ -29,8 +29,8 @@
+> >  #include <asm/proto.h>
+> >  #include <asm/iommu.h>
+> >  #include <asm/gart.h>
+> > -#include <asm/amd_iommu_proto.h>
+> >  #include <asm/amd_iommu_types.h>
+> > +#include <asm/amd_iommu_proto.h>
+> >  #include <asm/amd_iommu.h>
 > 
-> Thanks.
+> That one (and the second place where this happens later) look suspicious.
+> Do you need that change? Usually those includes tend to be alphabetically
+> sorted (which you destroy here).
 > 
+> When you _need_ that change that means that you probably use some things
+> from amd_iommu_types.h in amd_iommu_proto.h without including that header
+> there (which is a bug in amd_iommu_proto.h and must be fixed there).
+> Otherwise this change is just noise. So either way this change should not
+> happen IMHO.
 
-Randy's patch in platform driver tree's linux-next branch fixed this
-issue:
+Yeah, this is not very good style, I agree with that. In this case the
+amd_iommu_proto.h file got a new inline function which needs the struct
+amd_iommu.
 
-commit d0984225a888a84e44f23671c670a7bb035d1820
-Author: Randy Dunlap <randy.dunlap@oracle.com>
-Date:   Wed Mar 30 15:20:22 2011 -0700
+I have merging of the different include files for the AMD IOMMU driver
+on my cleanup list. There are currently 3 include files which seems a
+bit too much. A single one will do too. Meanwhile I change this patch so
+that amd_iommu_proto.h will include amd_iommu_types.h itself. This
+doesn't make it nice and clean but at least less ugly meanwhile ;)
 
-    msi-laptop: fix config-dependent build error
-    
-    The msi-laptop driver uses input_*() and sparse_keymap_*() interfaces.
-    It should depend on the INPUT subsystem being present and select
-    INPUT_SPARSEKMAP so that those interfaces are present.
-    
-    ERROR: "input_free_device" [drivers/platform/x86/msi-laptop.ko] undefined!
-    ERROR: "input_register_device" [drivers/platform/x86/msi-laptop.ko] undefined!
-    ERROR: "sparse_keymap_setup" [drivers/platform/x86/msi-laptop.ko] undefined!
-    ERROR: "input_allocate_device" [drivers/platform/x86/msi-laptop.ko] undefined!
-    ERROR: "sparse_keymap_report_event" [drivers/platform/x86/msi-laptop.ko] undefined!
-    ERROR: "input_unregister_device" [drivers/platform/x86/msi-laptop.ko] undefined!
-    ERROR: "sparse_keymap_free" [drivers/platform/x86/msi-laptop.ko] undefined!
-    
-    Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-    Cc: Matthew Garrett <mjg@redhat.com>
-    Cc: "Lee, Chun-Yi" <jlee@novell.com>
-    Signed-off-by: Matthew Garrett <mjg@redhat.com>
+	Joerg
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 2ee442c..0485e39 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -187,7 +187,8 @@ config MSI_LAPTOP
-        depends on ACPI
-        depends on BACKLIGHT_CLASS_DEVICE
-        depends on RFKILL
--       depends on SERIO_I8042
-+       depends on INPUT && SERIO_I8042
-+       select INPUT_SPARSEKMAP
-        ---help---
-          This is a driver for laptops built by MSI (MICRO-STAR
-          INTERNATIONAL):
+-- 
+AMD Operating System Research Center
 
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
