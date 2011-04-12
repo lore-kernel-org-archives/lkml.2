@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab1DLRjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 13:39:36 -0400
-Received: from smtp-out-051.synserver.de ([212.40.185.51]:1059 "HELO
+	id S932207Ab1DLRjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 13:39:35 -0400
+Received: from smtp-out-051.synserver.de ([212.40.185.51]:1060 "HELO
 	smtp-out-049.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1755975Ab1DLRje (ORCPT
+	by vger.kernel.org with SMTP id S1756136Ab1DLRje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Apr 2011 13:39:34 -0400
 X-SynServer-TrustedSrc: 1
@@ -15,41 +15,63 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@slimlogic.co.uk>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 1/2] ASoC: codecs: JZ4740: Fix OOPS
-Date: Tue, 12 Apr 2011 19:33:28 +0200
-Message-Id: <1302629609-21537-1-git-send-email-lars@metafoo.de>
+Subject: [PATCH 2/2] ASoC: codecs: JZ4740: Convert to table based controls and DAPM setup
+Date: Tue, 12 Apr 2011 19:33:29 +0200
+Message-Id: <1302629609-21537-2-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1302629609-21537-1-git-send-email-lars@metafoo.de>
+References: <1302629609-21537-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ce6120cc(ASoC: Decouple DAPM from CODECs) changed the signature of
-snd_soc_dapm_widgets_new to take an pointer to a snd_soc_dapm_context instead of
-a snd_soc_codec. The call to snd_soc_dapm_widgets_new in jz4740_codec_dev_probe
-was not updated to reflect this change, which results in a compiletime warning
-and a runtime OOPS.
-
-Since the core code calls snd_soc_dapm_widgets_new after the codec has been
-registered it can be dropped here.
+Use the newly introduced dapm_widgets, dpam_routes and controls fields of the
+snd_soc_dai_driver struct to setup controls and DAPM.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- sound/soc/codecs/jz4740.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ sound/soc/codecs/jz4740.c |   18 +++++++-----------
+ 1 files changed, 7 insertions(+), 11 deletions(-)
 
 diff --git a/sound/soc/codecs/jz4740.c b/sound/soc/codecs/jz4740.c
-index f7cd346..f5ccdbf7 100644
+index f5ccdbf7..e373f8f 100644
 --- a/sound/soc/codecs/jz4740.c
 +++ b/sound/soc/codecs/jz4740.c
-@@ -308,8 +308,6 @@ static int jz4740_codec_dev_probe(struct snd_soc_codec *codec)
- 	snd_soc_dapm_add_routes(dapm, jz4740_codec_dapm_routes,
- 		ARRAY_SIZE(jz4740_codec_dapm_routes));
+@@ -294,20 +294,9 @@ static int jz4740_codec_set_bias_level(struct snd_soc_codec *codec,
  
--	snd_soc_dapm_new_widgets(codec);
+ static int jz4740_codec_dev_probe(struct snd_soc_codec *codec)
+ {
+-	struct snd_soc_dapm_context *dapm = &codec->dapm;
+-
+ 	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+ 			JZ4740_CODEC_1_SW2_ENABLE, JZ4740_CODEC_1_SW2_ENABLE);
+ 
+-	snd_soc_add_controls(codec, jz4740_codec_controls,
+-		ARRAY_SIZE(jz4740_codec_controls));
+-
+-	snd_soc_dapm_new_controls(dapm, jz4740_codec_dapm_widgets,
+-		ARRAY_SIZE(jz4740_codec_dapm_widgets));
+-
+-	snd_soc_dapm_add_routes(dapm, jz4740_codec_dapm_routes,
+-		ARRAY_SIZE(jz4740_codec_dapm_routes));
 -
  	jz4740_codec_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
  
  	return 0;
+@@ -348,6 +337,13 @@ static struct snd_soc_codec_driver soc_codec_dev_jz4740_codec = {
+ 	.reg_cache_default	= jz4740_codec_regs,
+ 	.reg_word_size = sizeof(u32),
+ 	.reg_cache_size	= 2,
++
++	.controls = jz4740_codec_controls,
++	.num_controls = ARRAY_SIZE(jz4740_codec_controls),
++	.dapm_widgets = jz4740_codec_dapm_widgets,
++	.num_dapm_widgets = ARRAY_SIZE(jz4740_codec_dapm_widgets),
++	.dapm_routes = jz4740_codec_dapm_routes,
++	.num_dapm_routes = ARRAY_SIZE(jz4740_codec_dapm_routes),
+ };
+ 
+ static int __devinit jz4740_codec_probe(struct platform_device *pdev)
 -- 
 1.7.2.5
 
