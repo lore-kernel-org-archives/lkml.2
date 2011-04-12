@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1DLQPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:15:45 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:33177 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758099Ab1DLQPn (ORCPT
+	id S1758123Ab1DLQSI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:18:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50903 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757970Ab1DLQSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:15:43 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=E/mJQ0KNkuiaIdDK9tTca6uNEPCqFJIYzXOX9O+PgV4MQZ1FXmEQiQV+AgdSXIOC9LMftGzMUoCk9LuwRKPr+Z07zhDCfbsEP9wVSDLj0YkmA6oeco0whWumxjl5oL9P;
-Date: Tue, 12 Apr 2011 09:15:33 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Hemant Pedanekar <hemantp@ti.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] pci: Add quirk for setting valid class for TI816X
- Endpoint
-Message-ID: <20110412091533.224387a8@jbarnes-desktop>
-In-Reply-To: <1301986970-16482-1-git-send-email-hemantp@ti.com>
-References: <1301986970-16482-1-git-send-email-hemantp@ti.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Tue, 12 Apr 2011 12:18:05 -0400
+Date: Tue, 12 Apr 2011 09:17:35 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Chris Ball <cjb@laptop.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH -next] mmc quirks: fix truncation warnings
+Message-Id: <20110412091735.f41a3d44.randy.dunlap@oracle.com>
+In-Reply-To: <20110412151408.b80a3afb.sfr@canb.auug.org.au>
+References: <20110412151408.b80a3afb.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4DA47B23.011D:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  5 Apr 2011 12:32:50 +0530
-Hemant Pedanekar <hemantp@ti.com> wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> TI816X (common name for DM816x/C6A816x/AM389x family) devices configured to boot
-> as PCIe Endpoint have class code = 0. This makes kernel PCI bus code to skip
-> allocating BARs to these devices resulting into following type of error when
-> trying to enable them:
-> 
-> "Device 0000:01:00.0 not available because of resource collisions"
-> 
-> The device cannot be operated because of the above issue.
-> 
-> This patch adds a ID specific (TI VENDOR ID and 816X DEVICE ID based) 'early'
-> fixup quirk to replace class code with PCI_CLASS_MULTIMEDIA_VIDEO as class.
-> 
-> Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
-> ---
+Fix data truncation warnings: .manfid is not unsigned long:
 
-Applied to my linux-next branch, thanks.
+drivers/mmc/core/quirks.c:36: warning: large integer implicitly truncated to unsigned type
+drivers/mmc/core/quirks.c:40: warning: large integer implicitly truncated to unsigned type
+drivers/mmc/core/quirks.c:43: warning: large integer implicitly truncated to unsigned type
+drivers/mmc/core/quirks.c:46: warning: large integer implicitly truncated to unsigned type
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	Chris Ball <cjb@laptop.org>
+Cc:	linux-mmc@vger.kernel.org
+---
+ include/linux/mmc/card.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next-20110412.orig/include/linux/mmc/card.h
++++ linux-next-20110412/include/linux/mmc/card.h
+@@ -180,7 +180,7 @@ struct mmc_fixup {
+ 	int data;
+ };
+ 
+-#define CID_MANFID_ANY (-1ul)
++#define CID_MANFID_ANY (-1u)
+ #define CID_OEMID_ANY ((unsigned short) -1)
+ #define CID_NAME_ANY (NULL)
+ 
