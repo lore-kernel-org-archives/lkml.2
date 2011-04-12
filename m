@@ -1,115 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab1DLLaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 07:30:46 -0400
-Received: from gra-lx1.iram.es ([150.214.224.41]:41193 "EHLO gra-lx1.iram.es"
+	id S1754838Ab1DLLbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 07:31:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37581 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870Ab1DLLap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 07:30:45 -0400
-Date: Tue, 12 Apr 2011 13:30:34 +0200
-From: Gabriel Paubert <paubert@iram.es>
-To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
-Message-ID: <20110412113033.GA16649@iram.es>
-References: <20110404235259.GA30132@iram.es> <20110406084101.GB13963@pengutronix.de> <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com> <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local> <20110411133128.GA24344@iram.es> <1302535963.24704.268.camel@thor.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302535963.24704.268.camel@thor.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1750881Ab1DLLbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 07:31:40 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [PATCH v2] x86: Do not set the root_dev field in bzImage
+Date: Tue, 12 Apr 2011 13:30:24 +0200
+Message-Id: <1302607824-24699-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20110411150820.GA22004@sepie.suse.cz>
+References: <20110411150820.GA22004@sepie.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Micel,
+This has been obsoleted by the root= commandline for several years.
+People who still depend on this will surely have a copy of the rdev
+command around, the rest of the world gets rid of another piece of
+buildhost-dependent data in the build. Thanks to Paul Bolle for the
+build.c cleanup.
 
-On Mon, Apr 11, 2011 at 05:32:43PM +0200, Michel Dänzer wrote:
-> [ Adding the dri-devel list ]
-> 
-> Have you ruled out any MSI related problems? I think the IRQ not working
-> could explain the symptoms...
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-Booting with MSI disabled does not change anything. Actually on this
-machine the Ethernet (tigon3) uses MSI and everything is fine. OTOH,
-on my home PC (dual code Athlon64 4 1/2 years old), MSI has never worked.
-
-> Make sure this line changes to 'WB disabled' with no_wb=1. There's a
-> writeback endianness bug with modeset=1, see
-> http://lists.freedesktop.org/archives/dri-devel/2011-April/009960.html .
-> 
-
-With no_wb=1 the driver goes a bit further but the X server ends
-up in an infinite ioctl loop and the logs are: 
-
-kernel: [drm] radeon kernel modesetting enabled.
-kernel: checking generic (c0000000 140000) vs hw (c0000000 10000000)
-kernel: fb: conflicting fb hw usage radeondrmfb vs OFfb vga,Displa - removing generic driver
-kernel: [drm] initializing kernel modesetting (RV530 0x1002:0x71C7).
-kernel: radeon 0000:f1:00.0: Using 64-bit DMA iommu bypass
-kernel: [drm] register mmio base: 0xE8000000
-kernel: [drm] register mmio size: 65536
-kernel: radeon 0000:f1:00.0: Invalid ROM contents
-kernel: ATOM BIOS: X1650PRO
-kernel: [drm] Generation 2 PCI interface, using max accessible memory
-kernel: radeon 0000:f1:00.0: VRAM: 512M 0x0000000000000000 - 0x000000001FFFFFFF (512M used)
-kernel: radeon 0000:f1:00.0: GTT: 512M 0x0000000020000000 - 0x000000003FFFFFFF
-kernel: [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-kernel: [drm] Driver supports precise vblank timestamp query.
-kernel: [drm] radeon: irq initialized.
-kernel: [drm] Detected VRAM RAM=512M, BAR=256M
-kernel: [drm] RAM width 128bits DDR
-kernel: [TTM] Zone  kernel: Available graphics memory: 1003018 kiB.
-kernel: [TTM] Initializing pool allocator.
-kernel: [drm] radeon: 512M of VRAM memory ready
-kernel: [drm] radeon: 512M of GTT memory ready.
-kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
-kernel: [drm] radeon: 1 quad pipes, 2 z pipes initialized.
-kernel: [drm] PCIE GART of 512M enabled (table at 0x00040000).
-kernel: radeon 0000:f1:00.0: WB disabled
-kernel: [drm] Loading R500 Microcode
-kernel: [drm] radeon: ring at 0x0000000020001000
-kernel: [drm] ring test succeeded in 6 usecs
-kernel: [drm] radeon: ib pool ready.
-kernel: [drm] ib test succeeded in 0 usecs
-kernel: [drm] Radeon Display Connectors
-kernel: [drm] Connector 0:
-kernel: [drm]   DVI-I
-kernel: [drm]   HPD1
-kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
-kernel: [drm]   Encoders:
-kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-kernel: [drm]     DFP1: INTERNAL_KLDSCP_TMDS1
-kernel: [drm] Connector 1:
-kernel: [drm]   S-video
-kernel: [drm]   Encoders:
-kernel: [drm]     TV1: INTERNAL_KLDSCP_DAC2
-kernel: [drm] Connector 2:
-kernel: [drm]   DVI-I
-kernel: [drm]   HPD2
-kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
-kernel: [drm]   Encoders:
-kernel: [drm]     CRT2: INTERNAL_KLDSCP_DAC2
-kernel: [drm]     DFP3: INTERNAL_LVTM1
-kernel: [drm] Possible lm63 thermal controller at 0x4c
-kernel: [drm] fb mappable at 0xC00C0000
-kernel: [drm] vram apper at 0xC0000000
-kernel: [drm] size 9216000
-kernel: [drm] fb depth is 24
-kernel: [drm]    pitch is 7680
-kernel: checking generic (c0000000 140000) vs hw (c0000000 10000000)
-kernel: fb: conflicting fb hw usage radeondrmfb vs OFfb vga,Displa - removing generic driver
-kernel: fb1: radeondrmfb frame buffer device
-kernel: drm: registered panic notifier
-kernel: [drm] Initialized radeon 2.8.0 20080528 for 0000:f1:00.0 on minor 0
-kernel: [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
-
-There is only one display connected and it is to the first DVI connector, BTW.
-
-	Regards,
-	Gabriel
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index f7cb086..95365a8 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -9,12 +9,6 @@
+ # Changed by many, many contributors over the years.
+ #
+ 
+-# ROOT_DEV specifies the default root-device when making the image.
+-# This can be either FLOPPY, CURRENT, /dev/xxxx or empty, in which case
+-# the default of FLOPPY is used by 'build'.
+-
+-ROOT_DEV	:= CURRENT
+-
+ # If you want to preset the SVGA mode, uncomment the next line and
+ # set SVGA_MODE to whatever number you want.
+ # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
+@@ -75,8 +69,7 @@ GCOV_PROFILE := n
+ $(obj)/bzImage: asflags-y  := $(SVGA_MODE)
+ 
+ quiet_cmd_image = BUILD   $@
+-cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin \
+-	$(ROOT_DEV) > $@
++cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin > $@
+ 
+ $(obj)/bzImage: $(obj)/setup.bin $(obj)/vmlinux.bin $(obj)/tools/build FORCE
+ 	$(call if_changed,image)
+diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+index ee3a4ea..fdc60a0 100644
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -130,7 +130,7 @@ static void die(const char * str, ...)
+ 
+ static void usage(void)
+ {
+-	die("Usage: build setup system [rootdev] [> image]");
++	die("Usage: build setup system [> image]");
+ }
+ 
+ int main(int argc, char ** argv)
+@@ -138,39 +138,14 @@ int main(int argc, char ** argv)
+ 	unsigned int i, sz, setup_sectors;
+ 	int c;
+ 	u32 sys_size;
+-	u8 major_root, minor_root;
+ 	struct stat sb;
+ 	FILE *file;
+ 	int fd;
+ 	void *kernel;
+ 	u32 crc = 0xffffffffUL;
+ 
+-	if ((argc < 3) || (argc > 4))
++	if (argc != 3)
+ 		usage();
+-	if (argc > 3) {
+-		if (!strcmp(argv[3], "CURRENT")) {
+-			if (stat("/", &sb)) {
+-				perror("/");
+-				die("Couldn't stat /");
+-			}
+-			major_root = major(sb.st_dev);
+-			minor_root = minor(sb.st_dev);
+-		} else if (strcmp(argv[3], "FLOPPY")) {
+-			if (stat(argv[3], &sb)) {
+-				perror(argv[3]);
+-				die("Couldn't stat root device.");
+-			}
+-			major_root = major(sb.st_rdev);
+-			minor_root = minor(sb.st_rdev);
+-		} else {
+-			major_root = 0;
+-			minor_root = 0;
+-		}
+-	} else {
+-		major_root = DEFAULT_MAJOR_ROOT;
+-		minor_root = DEFAULT_MINOR_ROOT;
+-	}
+-	fprintf(stderr, "Root device is (%d, %d)\n", major_root, minor_root);
+ 
+ 	/* Copy the setup code */
+ 	file = fopen(argv[1], "r");
+@@ -193,8 +168,8 @@ int main(int argc, char ** argv)
+ 	memset(buf+c, 0, i-c);
+ 
+ 	/* Set the default root device */
+-	buf[508] = minor_root;
+-	buf[509] = major_root;
++	buf[508] = DEFAULT_MINOR_ROOT;
++	buf[509] = DEFAULT_MAJOR_ROOT;
+ 
+ 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
+ 
