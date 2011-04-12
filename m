@@ -1,117 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab1DLN3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 09:29:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42214 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab1DLN3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 09:29:39 -0400
-Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device
- names in Kernel.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Cc: Hannes Reinecke <hare@suse.de>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
-In-Reply-To: <4DA4526B.2030609@hitachi.com>
-References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
-	 <20110405161400.GA885@kroah.com> <4D9F17DF.5030601@hitachi.com>
-	 <4D9F1CD1.2020600@suse.de> <1302275652.4090.10.camel@mulgrave.site>
-	 <4DA4526B.2030609@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Apr 2011 08:29:28 -0500
-Message-ID: <1302614968.2604.2.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8bit
+	id S1755671Ab1DLNb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 09:31:28 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:29007 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754974Ab1DLNb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 09:31:27 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AscDAINQpE15LHHJgWdsb2JhbACmKhUBARYmJYh6uSYOgnOCbQQ
+Date: Tue, 12 Apr 2011 23:31:17 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "hch@infradead.org" <hch@infradead.org>, NeilBrown <neilb@suse.de>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110412133117.GE31057@dastard>
+References: <20110411220505.1028816e@notabene.brown>
+ <4DA2F00E.6010907@fusionio.com>
+ <20110411223623.4278fad1@notabene.brown>
+ <4DA2F8AD.1060605@fusionio.com>
+ <20110412011255.GA29236@infradead.org>
+ <4DA40F0E.1070903@fusionio.com>
+ <20110412122248.GC31057@dastard>
+ <4DA4456F.3070301@fusionio.com>
+ <20110412124134.GD31057@dastard>
+ <4DA44C86.3090305@fusionio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA44C86.3090305@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 22:23 +0900, Nao Nishijima wrote:
-> (2011/04/09 0:14), James Bottomley wrote:
-> > On Fri, 2011-04-08 at 07:33 -0700, Hannes Reinecke wrote:
-> >>> The problem I would like to discuss here is that users can not identify
-> >>> a disk from kernel messages when they DIRECTLY refer to these messages.
-> >>> For example, a device name is used instead of a symbolic link names in
-> >>> bootup messages, I/O devices errors and /proc/partitions …etc.
+On Tue, Apr 12, 2011 at 02:58:46PM +0200, Jens Axboe wrote:
+> On 2011-04-12 14:41, Dave Chinner wrote:
+> > On Tue, Apr 12, 2011 at 02:28:31PM +0200, Jens Axboe wrote:
+> >> On 2011-04-12 14:22, Dave Chinner wrote:
+> >>> On Tue, Apr 12, 2011 at 10:36:30AM +0200, Jens Axboe wrote:
+> >>>> On 2011-04-12 03:12, hch@infradead.org wrote:
+> >>>>> On Mon, Apr 11, 2011 at 02:48:45PM +0200, Jens Axboe wrote:
+> >>>>>> Great, once you do that and XFS kills the blk_flush_plug() calls too,
+> >>>>>> then we can remove that export and make it internal only.
+> >>>>>
+> >>>>> Linus pulled the tree, so they are gone now.  Btw, there's still some
+> >>>>> bits in the area that confuse me:
+> >>>>
+> >>>> Great!
+> >>>>
+> >>>>>  - what's the point of the queue_sync_plugs?  It has a lot of comment
+> >>>>>    that seem to pre-data the onstack plugging, but except for that
+> >>>>>    it's trivial wrapper around blk_flush_plug, with an argument
+> >>>>>    that is not used.
+> >>>>
+> >>>> There's really no point to it anymore. It's existance was due to the
+> >>>> older revision that had to track write requests for serializaing around
+> >>>> a barrier. I'll kill it, since we don't do that anymore.
+> >>>>
+> >>>>>  - is there a good reason for the existance of __blk_flush_plug?  You'd
+> >>>>>    get one additional instruction in the inlined version of
+> >>>>>    blk_flush_plug when opencoding, but avoid the need for chained
+> >>>>>    function calls.
+> >>>>>  - Why is having a plug in blk_flush_plug marked unlikely?  Note that
+> >>>>>    unlikely is the static branch prediction hint to mark the case
+> >>>>>    extremly unlikely and is even used for hot/cold partitioning.  But
+> >>>>>    when we call it we usually check beforehand if we actually have
+> >>>>>    plugs, so it's actually likely to happen.
+> >>>>
+> >>>> The existance and out-of-line is for the scheduler() hook. It should be
+> >>>> an unlikely event to schedule with a plug held, normally the plug should
+> >>>> have been explicitly unplugged before that happens.
 > >>>
-> >>> In particular, users can not identify an appropriate device from a
-> >>> device name in syslog since different device name may be assigned to it
-> >>> at each boot time.
+> >>> Though if it does, haven't you just added a significant amount of
+> >>> depth to the worst case stack usage? I'm seeing this sort of thing
+> >>> from io_schedule():
 > >>>
-> >>> My idea is able to fix this issue with small changes in scsi subsystem.
-> >>> Also, it is implemented as an option. Therefore, it does not affect
-> >>> users who do not select this option.
+> >>>         Depth    Size   Location    (40 entries)
+> >>>         -----    ----   --------
+> >>>   0)     4256      16   mempool_alloc_slab+0x15/0x20
+> >>>   1)     4240     144   mempool_alloc+0x63/0x160
+> >>>   2)     4096      16   scsi_sg_alloc+0x4c/0x60
+> >>>   3)     4080     112   __sg_alloc_table+0x66/0x140
+> >>>   4)     3968      32   scsi_init_sgtable+0x33/0x90
+> >>>   5)     3936      48   scsi_init_io+0x31/0xc0
+> >>>   6)     3888      32   scsi_setup_fs_cmnd+0x79/0xe0
+> >>>   7)     3856     112   sd_prep_fn+0x150/0xa90
+> >>>   8)     3744      48   blk_peek_request+0x6a/0x1f0
+> >>>   9)     3696      96   scsi_request_fn+0x60/0x510
+> >>>  10)     3600      32   __blk_run_queue+0x57/0x100
+> >>>  11)     3568      80   flush_plug_list+0x133/0x1d0
+> >>>  12)     3488      32   __blk_flush_plug+0x24/0x50
+> >>>  13)     3456      32   io_schedule+0x79/0x80
 > >>>
-> >> We have been discussing this problem several times in the past, and
-> >> indeed on these very mailing list.
+> >>> (This is from a page fault on ext3 that is doing page cache
+> >>> readahead and blocking on a locked buffer.)
+> >>>
+> >>> I've seen traces where mempool_alloc_slab enters direct reclaim
+> >>> which adds another 1.5k of stack usage to this path. So I'm
+> >>> extremely concerned that you've just reduced the stack available to
+> >>> every thread by at least 2.5k of space...
 > >>
-> >> The conclusion we arrived at is that the kernel-provided device node
-> >> name is inherently unstable and impossible to fix within the existing
-> >> 'sdX' naming scheme.
-> >> So the choices have been to either move to a totally different naming
-> >> scheme or keep the naming scheme and provide the required information
-> >> by other means.
-> >> We have decided on the latter, and agreed on using udev to provide
-> >> persistent device names.
-> >> We are fully aware that any kernel related messages are subject to
-> >> chance after reboot, but then most kernel related messages are
-> >> (PID number, timestamps, login tty etc).
-> >> And also we are aware that any kernel messages need to be matched
-> >> against the current system layout to figure out any hardware-related
-> >> issue.
+> >> Yeah, that does not look great. If this turns out to be problematic, we
+> >> can turn the queue runs from the unlikely case into out-of-line from
+> >> kblockd.
 > >>
-> >> But then basically all products requiring to filter out information
-> >> from kernel messages already do so I don't see a problem with that.
-> >>
-> >> Just adding an in-kernel identifier to the LUN will only be an
-> >> incomplete solution, as other identifiers will still be volatile.
-> >>
-> >> So I would prefer by keeping the in-kernel information as small
-> >> as possible to reduce memory consumption and rely on out-of-band
-> >> programs to provide the required mapping.
+> >> But this really isn't that new, you could enter the IO dispatch path
+> >> when doing IO already (when submitting it). So we better be able to
+> >> handle that.
 > > 
-> > So, while I agree totally with the above: udev and userspace is the way
-> > to go, I'm not totally opposed to having a non-invasive mechanism for
-> > indicating a user's preferred name for a device.  I think there are a
-> > couple of ways to do this:
-> > 
-> >      1. Entirely in userspace: just have udev consult a preferred name
-> >         file and create say /dev/disk/by-preferred.  Then have all the
-> >         tools that normally output device information do the same (i.e.
-> >         since real name to preferred name is 1:1, they could all do a
-> >         reverse lookup).
-> >      2. have a writeable sysfs preferred_name field, either in the
-> >         generic device or just in SCSI.  The preferred name would be
-> >         used by outbound only (i.e. kernel dev_printk messages and
-> >         possibly /proc/partitions).  All inbound uses of the device
-> >         would come via the standard udev mechanisms
-> >         (i.e. /dev/disk/by-preferred would be the usual symlink).  This
-> >         means from the kernel point of view, no renaming has happened.
-> >         We'd just try to print out the preferred name in certain
-> >         circumstances, which should solve most of the described problem.
-> > 
-> > James
-> > 
-> > 
-> > 
+> > The problem I see is that IO is submitted when there's plenty of
+> > stack available whould have previously been fine. However now it
+> > hits the plug, and then later on after the thread consumes a lot
+> > more stack it, say, waits for a completion. We then schedule, it
+> > unplugs the queue and we add the IO stack to a place where there
+> > isn't much space available.
+> >
+> > So effectively we are moving the places where stack is consumed
+> > about, and it's complete unpredictable where that stack is going to
+> > land now.
 > 
-> I have a question. Why is in-kernel device name necessary? The kernel
-> can identify a device by major/miner number and udev can create a
-> device node of a prefer name.
+> Isn't that example fairly contrived?
 
-Well, that's the inbound vs outbound name I referred to above.  If all
-you care about is inbound, this is true.
+I don't think so. e.g. in the XFS allocation path we do btree block
+readahead, then go do the real work. The real work can end up with a
+deeper stack before blocking on locks or completions unrelated to
+the readahead, leading to schedule() being called and an unplug
+being issued at that point.  You might think it contrived, but if
+you can't provide a guarantee that it can't happen then I have to
+assume it will happen.
 
-> Currently, device names are only used to show to users. Therefore I
-> think that in-kernel device name is unnecessary if we introduce your
-> /dev/disk/by-prefferd idea.
+My concern is that we're already under stack space stress in the
+writeback path, so anything that has the potential to increase it
+significantly is a major worry from my point of view...
 
-So if you have no problem with the kernel still printing out sdX in logs
-and it appearing in /proc/partitions, I'm happy with this.
+> If we ended up doing the IO
+> dispatch before, then the only difference now is the stack usage of
+> schedule() itself. Apart from that, as far as I can tell, there should
+> not be much difference.
 
-James
+There's a difference between IO submission and IO dispatch. IO
+submission is submit_bio thru to the plug; IO dispatch is from the
+plug down to the disk. If they happen at the same place, there's no
+problem. If IO dispatch is moved to schedule() via a plug....
 
+> >> If it's a problem from the schedule()/io_schedule() path, then
+> >> lets ensure that those are truly unlikely events so we can punt
+> >> them to kblockd.
+> > 
+> > Rather than wait for an explosion to be reported before doing this,
+> > why not just punt unplugs to kblockd unconditionally?
+> 
+> Supposedly it's faster to do it inline rather than punt the dispatch.
+> But that may actually not be true, if you have multiple plugs going (and
+> thus multiple contenders for the queue lock on dispatch). So lets play
+> it safe and punt to kblockd, we can always revisit this later.
 
+It's always best to play it safe when it comes to other peoples
+data....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
