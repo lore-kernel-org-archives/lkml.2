@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab1DLOhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:37:37 -0400
-Received: from kroah.org ([198.145.64.141]:57365 "EHLO coco.kroah.org"
+	id S932154Ab1DLO6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:58:40 -0400
+Received: from kroah.org ([198.145.64.141]:57407 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756637Ab1DLOhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:32 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
-Message-Id: <20110412143548.780832314@clark.kroah.org>
+	id S1756637Ab1DLOhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:37 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:49 2011
+Message-Id: <20110412143549.416968403@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:33:57 -0700
+Date: Tue, 12 Apr 2011 07:34:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mohammed Shafi Shajakhan <mshajakhan@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [008/105] ath9k: Fix kernel panic in AR2427
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [014/105] x86-64, mm: Put early page table high
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,85 +26,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 61e1b0b00c793ad5a32fe2181c9f77115fed5dc4 upstream.
+commit 4b239f458c229de044d6905c2b0f9fe16ed9e01e upstream.
 
-Kernel panic occurs just after AR2427 establishes connection with AP.
-Unless aggregation is enabled we don't initialize the TID structure.
-Thus accesing the elements of the TID structure when aggregation is
-disabled, leads to NULL pointer dereferencing.
+While dubug kdump, found current kernel will have problem with crashkernel=512M.
 
-[  191.320358] Call Trace:
-[  191.320364]  [<fd250ea7>] ? ath9k_tx+0xa7/0x200 [ath9k]
-[  191.320376]  [<fd1ec7fc>] ? __ieee80211_tx+0x5c/0x1e0 [mac80211]
-[  191.320386]  [<fd1edd2b>] ? ieee80211_tx+0x7b/0x90 [mac80211]
-[  191.320395]  [<fd1edddd>] ? ieee80211_xmit+0x9d/0x1d0 [mac80211]
-[  191.320401]  [<c014218f>] ? wake_up_state+0xf/0x20
-[  191.320405]  [<c015dbc8>] ? signal_wake_up+0x28/0x40
-[  191.320410]  [<c012a578>] ? default_spin_lock_flags+0x8/0x10
-[  191.320420]  [<fd1ee308>] ? ieee80211_subif_start_xmit+0x2e8/0x7c0
-[mac80211]
-[  191.320425]  [<c058f905>] ? do_page_fault+0x295/0x3a0
-[  191.320431]  [<c04c4a3d>] ? dev_hard_start_xmit+0x1ad/0x210
-[  191.320436]  [<c04d96b5>] ? sch_direct_xmit+0x105/0x170
-[  191.320445]  [<fd1f161a>] ? get_sta_flags+0x2a/0x40 [mac80211]
-[  191.320449]  [<c04c780f>] ? dev_queue_xmit+0x37f/0x4b0
-[  191.320452]  [<c04d75b0>] ? eth_header+0x0/0xb0
-[  191.320456]  [<c04cc479>] ? neigh_resolve_output+0xe9/0x310
-[  191.320461]  [<c053d295>] ? ip6_output_finish+0xa5/0x110
-[  191.320464]  [<c053e354>] ? ip6_output2+0x134/0x250
-[  191.320468]  [<c053f7dd>] ? ip6_output+0x6d/0x100
-[  191.320471]  [<c0559665>] ? mld_sendpack+0x395/0x3e0
-[  191.320475]  [<c0557f81>] ? add_grhead+0x31/0xa0
-[  191.320478]  [<c055a83c>] ? mld_send_cr+0x1bc/0x2b0
-[  191.320482]  [<c01535d9>] ? irq_exit+0x39/0x70
-[  191.320485]  [<c055a940>] ? mld_ifc_timer_expire+0x10/0x40
-[  191.320489]  [<c015b92e>] ? run_timer_softirq+0x13e/0x2c0
-[  191.320493]  [<c0103a30>] ? common_interrupt+0x30/0x40
-[  191.320498]  [<c055a930>] ? mld_ifc_timer_expire+0x0/0x40
-[  191.320502]  [<c0153358>] ? __do_softirq+0x98/0x1b0
-[  191.320506]  [<c01534b5>] ? do_softirq+0x45/0x50
-[  191.320509]  [<c0153605>] ? irq_exit+0x65/0x70
-[  191.320513]  [<c05917dc>] ? smp_apic_timer_interrupt+0x5c/0x8b
-[  191.320516]  [<c0103df1>] ? apic_timer_interrupt+0x31/0x40
-[  191.320521]  [<c016007b>] ? k_getrusage+0x12b/0x2f0
-[  191.320525]  [<c039e384>] ? acpi_idle_enter_simple+0x117/0x148
-[  191.320529]  [<c04a20da>] ? cpuidle_idle_call+0x7a/0x100
-[  191.320532]  [<c01021d4>] ? cpu_idle+0x94/0xd0
-[  191.320536]  [<c057ab88>] ? rest_init+0x58/0x60
-[  191.320541]  [<c07a58ec>] ? start_kernel+0x351/0x357
-[  191.320544]  [<c07a53c7>] ? unknown_bootoption+0x0/0x19e
-[  191.320548]  [<c07a50aa>] ? i386_start_kernel+0xaa/0xb1
-[  191.320550] Code: 03 66 3d 00 03 0f 84 7c 02 00 00 83 c3 18 0f b6 03
-8b 4d e0 89 c3 83 e3 0f 6b c3 48 89 5d d8 8d 04 06 8d 50 0c 89 55 d0 8b
-40 20 <8b> 00 3b 01 0f 85 8e 02 00 00 f6 47 20 40 0f 84 29 ff ff ff 8b
-[  191.320634] EIP: [<fd2586d4>] ath_tx_start+0x474/0x770 [ath9k] SS:ESP
-0068:c0761a90
-[  191.320642] CR2: 0000000000000000
-[  191.320647] ---[ end trace 9296ef23b9076ece ]---
-[  191.320650] Kernel panic - not syncing: Fatal exception in interrupt
+It turns out that initial mapping is to 512M, and later initial mapping to 4G
+(acutally is 2040M in my platform), will put page table near 512M.
+then initial mapping to 128g will be near 2g.
 
-Signed-off-by: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+before this patch:
+[    0.000000] initial memory mapped : 0 - 20000000
+[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
+[    0.000000]  0000000000 - 007f600000 page 2M
+[    0.000000]  007f600000 - 007f750000 page 4k
+[    0.000000] kernel direct mapping tables up to 7f750000 @ [0x1fffc000-0x1fffffff]
+[    0.000000]     memblock_x86_reserve_range: [0x1fffc000-0x1fffdfff]          PGTABLE
+[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
+[    0.000000]  0100000000 - 2080000000 page 2M
+[    0.000000] kernel direct mapping tables up to 2080000000 @ [0x7bc01000-0x7bc83fff]
+[    0.000000]     memblock_x86_reserve_range: [0x7bc01000-0x7bc7efff]          PGTABLE
+[    0.000000] RAMDISK: 7bc84000 - 7f745000
+[    0.000000] crashkernel reservation failed - No suitable area found.
+
+after patch:
+[    0.000000] initial memory mapped : 0 - 20000000
+[    0.000000] init_memory_mapping: [0x00000000000000-0x0000007f74ffff]
+[    0.000000]  0000000000 - 007f600000 page 2M
+[    0.000000]  007f600000 - 007f750000 page 4k
+[    0.000000] kernel direct mapping tables up to 7f750000 @ [0x7f74c000-0x7f74ffff]
+[    0.000000]     memblock_x86_reserve_range: [0x7f74c000-0x7f74dfff]          PGTABLE
+[    0.000000] init_memory_mapping: [0x00000100000000-0x0000207fffffff]
+[    0.000000]  0100000000 - 2080000000 page 2M
+[    0.000000] kernel direct mapping tables up to 2080000000 @ [0x207ff7d000-0x207fffffff]
+[    0.000000]     memblock_x86_reserve_range: [0x207ff7d000-0x207fffafff]          PGTABLE
+[    0.000000] RAMDISK: 7bc84000 - 7f745000
+[    0.000000]     memblock_x86_reserve_range: [0x17000000-0x36ffffff]     CRASH KERNEL
+[    0.000000] Reserving 512MB of memory at 368MB for crashkernel (System RAM: 133120MB)
+
+It means with the patch, page table for [0, 2g) will need 2g, instead of under 512M,
+page table for [4g, 128g) will be near 128g, instead of under 2g.
+
+That would good, if we have lots of memory above 4g, like 1024g, or 2048g or 16T, will not put
+related page table under 2g. that would be have chance to fill the under 2g if 1G or 2M page is
+not used.
+
+the code change will use add map_low_page() and update unmap_low_page() for 64bit, and use them
+to get access the corresponding high memory for page table setting.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <4D0C0734.7060900@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/mm/init.c    |    9 ++-----
+ arch/x86/mm/init_64.c |   63 +++++++++++++++++++++-----------------------------
+ 2 files changed, 30 insertions(+), 42 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1699,8 +1699,8 @@ static void ath_tx_start_dma(struct ath_
- 	u8 tidno;
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -33,7 +33,7 @@ int direct_gbpages
+ static void __init find_early_table_space(unsigned long end, int use_pse,
+ 					  int use_gbpages)
+ {
+-	unsigned long puds, pmds, ptes, tables, start;
++	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
+ 	phys_addr_t base;
  
- 	spin_lock_bh(&txctl->txq->axq_lock);
+ 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
+@@ -73,12 +73,9 @@ static void __init find_early_table_spac
+ 	 * need roughly 0.5KB per GB.
+ 	 */
+ #ifdef CONFIG_X86_32
+-	start = 0x7000;
+-#else
+-	start = 0x8000;
++	good_end = max_pfn_mapped << PAGE_SHIFT;
+ #endif
+-	base = memblock_find_in_range(start, max_pfn_mapped<<PAGE_SHIFT,
+-					tables, PAGE_SIZE);
++	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+ 	if (base == MEMBLOCK_ERROR)
+ 		panic("Cannot find space for the kernel page tables");
+ 
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -334,12 +334,28 @@ static __ref void *alloc_low_page(unsign
+ 	return adr;
+ }
+ 
++static __ref void *map_low_page(void *virt)
++{
++	void *adr;
++	unsigned long phys, left;
++
++	if (after_bootmem)
++		return virt;
++
++	phys = __pa(virt);
++	left = phys & (PAGE_SIZE - 1);
++	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
++	adr = (void *)(((unsigned long)adr) | left);
++
++	return adr;
++}
++
+ static __ref void unmap_low_page(void *adr)
+ {
+ 	if (after_bootmem)
+ 		return;
+ 
+-	early_iounmap(adr, PAGE_SIZE);
++	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
+ }
+ 
+ static unsigned long __meminit
+@@ -387,15 +403,6 @@ phys_pte_init(pte_t *pte_page, unsigned
+ }
+ 
+ static unsigned long __meminit
+-phys_pte_update(pmd_t *pmd, unsigned long address, unsigned long end,
+-		pgprot_t prot)
+-{
+-	pte_t *pte = (pte_t *)pmd_page_vaddr(*pmd);
 -
--	if (ieee80211_is_data_qos(hdr->frame_control) && txctl->an) {
-+	if ((sc->sc_flags & SC_OP_TXAGGR) && txctl->an &&
-+		ieee80211_is_data_qos(hdr->frame_control)) {
- 		tidno = ieee80211_get_qos_ctl(hdr)[0] &
- 			IEEE80211_QOS_CTL_TID_MASK;
- 		tid = ATH_AN_2_TID(txctl->an, tidno);
+-	return phys_pte_init(pte, address, end, prot);
+-}
+-
+-static unsigned long __meminit
+ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 	      unsigned long page_size_mask, pgprot_t prot)
+ {
+@@ -421,8 +428,10 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
+ 		if (pmd_val(*pmd)) {
+ 			if (!pmd_large(*pmd)) {
+ 				spin_lock(&init_mm.page_table_lock);
+-				last_map_addr = phys_pte_update(pmd, address,
++				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
++				last_map_addr = phys_pte_init(pte, address,
+ 								end, prot);
++				unmap_low_page(pte);
+ 				spin_unlock(&init_mm.page_table_lock);
+ 				continue;
+ 			}
+@@ -469,18 +478,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
+ }
+ 
+ static unsigned long __meminit
+-phys_pmd_update(pud_t *pud, unsigned long address, unsigned long end,
+-		unsigned long page_size_mask, pgprot_t prot)
+-{
+-	pmd_t *pmd = pmd_offset(pud, 0);
+-	unsigned long last_map_addr;
+-
+-	last_map_addr = phys_pmd_init(pmd, address, end, page_size_mask, prot);
+-	__flush_tlb_all();
+-	return last_map_addr;
+-}
+-
+-static unsigned long __meminit
+ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 			 unsigned long page_size_mask)
+ {
+@@ -505,8 +502,11 @@ phys_pud_init(pud_t *pud_page, unsigned
+ 
+ 		if (pud_val(*pud)) {
+ 			if (!pud_large(*pud)) {
+-				last_map_addr = phys_pmd_update(pud, addr, end,
++				pmd = map_low_page(pmd_offset(pud, 0));
++				last_map_addr = phys_pmd_init(pmd, addr, end,
+ 							 page_size_mask, prot);
++				unmap_low_page(pmd);
++				__flush_tlb_all();
+ 				continue;
+ 			}
+ 			/*
+@@ -554,17 +554,6 @@ phys_pud_init(pud_t *pud_page, unsigned
+ 	return last_map_addr;
+ }
+ 
+-static unsigned long __meminit
+-phys_pud_update(pgd_t *pgd, unsigned long addr, unsigned long end,
+-		 unsigned long page_size_mask)
+-{
+-	pud_t *pud;
+-
+-	pud = (pud_t *)pgd_page_vaddr(*pgd);
+-
+-	return phys_pud_init(pud, addr, end, page_size_mask);
+-}
+-
+ unsigned long __meminit
+ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+@@ -588,8 +577,10 @@ kernel_physical_mapping_init(unsigned lo
+ 			next = end;
+ 
+ 		if (pgd_val(*pgd)) {
+-			last_map_addr = phys_pud_update(pgd, __pa(start),
++			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
++			last_map_addr = phys_pud_init(pud, __pa(start),
+ 						 __pa(end), page_size_mask);
++			unmap_low_page(pud);
+ 			continue;
+ 		}
+ 
 
 
