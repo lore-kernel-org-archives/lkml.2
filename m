@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab1DLIOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 04:14:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61256 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab1DLIOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 04:14:52 -0400
-Message-ID: <4DA40A1C.9090102@cn.fujitsu.com>
-Date: Tue, 12 Apr 2011 16:15:24 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1756784Ab1DLIQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 04:16:45 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38284 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab1DLIQm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 04:16:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UqeGBETP0GQLvfS4tmreXkBcZ+KgdeSUwv/u5pKmoBpgC0SjnXGrXqCvNL+xcKTF3F
+         B0WXvYzHRMR4rv/75sKvnaKc2o8fVXH5iuk1+vHECNDdL3hO7MlYH0qgBpbvt3KXTkex
+         ZSJ6UrmDeXpeusaHI0U/npNe/YvrjIK0uPErA=
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: LKML <linux-kernel@vger.kernel.org>, BTRFS <linux-btrfs@vger.kernel.org>
-Subject: [PATCH 2/2] Btrfs: fix unsafe usage of merge_state
-References: <4DA409E6.7020406@cn.fujitsu.com>
-In-Reply-To: <4DA409E6.7020406@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-12 16:15:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-12 16:15:24,
-	Serialize complete at 2011-04-12 16:15:24
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110412045146.GE26678@amit-x200.redhat.com>
+References: <8d830b21c0b944d26f29dc1e0c42c0bef8d448c2.1301595169.git.amit.shah@redhat.com>
+	<20110401154327.GA6593@mtj.dyndns.org>
+	<20110405065129.GC2872@amit-x200.redhat.com>
+	<20110406100620.GA4142@mtj.dyndns.org>
+	<BANLkTinpRJHr+293kPzS1=hCWRPamOOGfw@mail.gmail.com>
+	<20110408162041.GB3871@mtj.dyndns.org>
+	<BANLkTimYBDvcUO9Z2wdk4VFk88NpGJiZJA@mail.gmail.com>
+	<20110408165207.GD3871@mtj.dyndns.org>
+	<20110412045146.GE26678@amit-x200.redhat.com>
+Date: Tue, 12 Apr 2011 09:16:41 +0100
+Message-ID: <BANLkTi=2344xaNM=YjY_GZbyp8yayyM2nA@mail.gmail.com>
+Subject: Re: [PATCH] sr: Ensure disk is revalidated when media changes
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, Markus Armbruster <armbru@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merge_state can free the current state if it can be merged with the next node,
-but in set_extent_bit(), after merge_state, we still use the current extent to
-get the next node and cache it into cached_state
+On Tue, Apr 12, 2011 at 5:51 AM, Amit Shah <amit.shah@redhat.com> wrote:
+> On (Fri) 08 Apr 2011 [09:52:07], Tejun Heo wrote:
+>> Hello,
+>>
+>> On Fri, Apr 08, 2011 at 05:43:16PM +0100, Stefan Hajnoczi wrote:
+>> > >> I think it would make sense to refresh the inode size on media change
+>> > >> so that even open file descriptors see the new size and a single
+>> > >> process cannot force a stale value for all other userspace processes
+>> > >> on the system.
+>> > >
+>> > > Hmmm... I don't know.  Maybe we can but I'm not sure whether there's a
+>> > > good reason for it.  cdrom is locked while opened after all.  Are
+>> > > there actual problems?
+>> >
+>> > Yeah, sorry I didn't explain what the use case was.  With QEMU you can
+>> > pass through the physical CD-ROM into the virtual machine.
+>> >
+>> > QEMU opens /dev/cdrom with O_NONBLOCK | O_RDONLY.  The guest can test
+>> > if the medium is present and QEMU will do ioctl(fd,
+>> > CDROM_DRIVE_STATUS, CDSL_CURRENT).  The guest can also lock the tray
+>> > and eject, again using the respective ioctls.  Read operations are
+>> > serviced by performing a read on the file descriptor in QEMU.  And
+>> > finally the medium size is queried by QEMU using lseek(fd, 0,
+>> > SEEK_END).
+>> >
+>> > Today QEMU cannot keep /dev/cdrom open across media change because it
+>> > will have an outdated inode size returned from lseek(fd, 0, SEEK_END).
+>> >  But if the cdrom driver (or sr) refresh the inode size on media
+>> > change then there is no need to work around this from userspace.
+>>
+>> Hmmm... ISTR there was some discussion about changing inode size on
+>> the fly quite a while ago.  I didn't follow the discussion but it
+>> seemed to have rather nasty/delicate implications.
+>
+> I don't necessarily agree with having to modify inode sizes on the
+> fly, but the main bug here is that the inode doesn't get invalidated
+> if a CDROM is ejected while a process has an fd to the CDROM device
+> opened.  So as in the original case, if a CD is swapped with one
+> having more data, lseek continues to report the original media's size
+> in the process that keeps the fd open across eject/insert.
+>
+> I haven't tried this on physical systems, so can't count out it being
+> a qemu bug as well.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- fs/btrfs/extent_io.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+Amit,
+This sounds exactly like the bug that I described and it happens on
+bare metal without virtualization.
 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 62d5bca..40cb450 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -769,20 +769,18 @@ hit_next:
- 		if (err)
- 			goto out;
- 
-+		next_node = rb_next(node);
- 		cache_state(state, cached_state);
- 		merge_state(tree, state);
- 		if (last_end == (u64)-1)
- 			goto out;
- 
- 		start = last_end + 1;
--		if (start < end && prealloc && !need_resched()) {
--			next_node = rb_next(node);
--			if (next_node) {
--				state = rb_entry(next_node, struct extent_state,
--						 rb_node);
--				if (state->start == start)
--					goto hit_next;
--			}
-+		if (next_node && start < end && prealloc && !need_resched()) {
-+			state = rb_entry(next_node, struct extent_state,
-+					 rb_node);
-+			if (state->start == start)
-+				goto hit_next;
- 		}
- 		goto search_again;
- 	}
-@@ -843,14 +841,22 @@ hit_next:
- 			this_end = last_start - 1;
- 
- 		prealloc = alloc_extent_state_atomic(prealloc);
-+
-+		/*
-+		 * Avoid to free 'prealloc' if it can be merged with
-+		 * the later extent.
-+		 */
-+		atomic_inc(&prealloc->refs);
- 		err = insert_state(tree, prealloc, start, this_end,
- 				   &bits);
- 		BUG_ON(err == -EEXIST);
- 		if (err) {
-+			free_extent_state(prealloc);
- 			prealloc = NULL;
- 			goto out;
- 		}
- 		cache_state(prealloc, cached_state);
-+		free_extent_state(prealloc);
- 		prealloc = NULL;
- 		start = this_end + 1;
- 		goto search_again;
--- 
-1.7.4
-
+Stefan
