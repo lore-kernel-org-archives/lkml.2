@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab1DLOhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:37:52 -0400
-Received: from kroah.org ([198.145.64.141]:57459 "EHLO coco.kroah.org"
+	id S1756799Ab1DLOhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:37:31 -0400
+Received: from kroah.org ([198.145.64.141]:57347 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757158Ab1DLOhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:47 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:50 2011
-Message-Id: <20110412143550.497779074@clark.kroah.org>
+	id S1756637Ab1DLOh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:29 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
+Message-Id: <20110412143548.450281756@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:13 -0700
+Date: Tue, 12 Apr 2011 07:33:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Chinner <dchinner@redhat.com>
-Subject: [024/105] xfs: register the inode cache shrinker before quotachecks
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [005/105] perf: Better fit max unprivileged mlock pages for tools needs
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,101 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 704b2907c2d47ceb187c0e25a6bbc2174b198f2f upstream.
+commit 880f57318450dbead6a03f9e31a1468924d6dd88 upstream.
 
-During mount, we can do a quotacheck that involves a bulkstat pass
-on all inodes. If there are more inodes in the filesystem than can
-be held in memory, we require the inode cache shrinker to run to
-ensure that we don't run out of memory.
+The maximum kilobytes of locked memory that an unprivileged user
+can reserve is of 512 kB = 128 pages by default, scaled to the
+number of onlined CPUs, which fits well with the tools that use
+128 data pages by default.
 
-Unfortunately, the inode cache shrinker is not registered until we
-get to the end of the superblock setup process, which is after a
-quotacheck is run if it is needed. Hence we need to register the
-inode cache shrinker earlier in the mount process so that we don't
-OOM during mount. This requires that we also initialise the syncd
-work before we register the shrinker, so we nee dto juggle that
-around as well.
+However tools actually use 129 pages, because they need one more
+for the user control page. Thus the default mlock threshold is
+not sufficient for the default tools needs and we always end up
+to evaluate the constant mlock rlimit policy, which doesn't have
+this scaling with the number of online CPUs.
 
-While there, make sure that we have set up the block sizes in the
-VFS superblock correctly before the quotacheck is run so that any
-inodes that are cached as a result of the quotacheck have their
-block size fields set up correctly.
+Hence, on systems that have more than 16 CPUs, we overlap the
+rlimit threshold and fail to mmap:
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Alex Elder <aelder@sgi.com>
+	$ perf record ls
+	Error: failed to mmap with 1 (Operation not permitted)
+
+Just increase the max unprivileged mlock threshold by one page
+so that it supports well perf tools even after 16 CPUs.
+
+Reported-by: Han Pingtian <phan@redhat.com>
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <1300904979-5508-1-git-send-email-fweisbec@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/linux-2.6/xfs_super.c |   34 ++++++++++++++++++++++++----------
- 1 file changed, 24 insertions(+), 10 deletions(-)
+ kernel/perf_event.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/xfs/linux-2.6/xfs_super.c
-+++ b/fs/xfs/linux-2.6/xfs_super.c
-@@ -1551,10 +1551,14 @@ xfs_fs_fill_super(
- 	if (error)
- 		goto out_free_sb;
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -62,7 +62,8 @@ static struct srcu_struct pmus_srcu;
+  */
+ int sysctl_perf_event_paranoid __read_mostly = 1;
  
--	error = xfs_mountfs(mp);
--	if (error)
--		goto out_filestream_unmount;
--
-+	/*
-+	 * we must configure the block size in the superblock before we run the
-+	 * full mount process as the mount process can lookup and cache inodes.
-+	 * For the same reason we must also initialise the syncd and register
-+	 * the inode cache shrinker so that inodes can be reclaimed during
-+	 * operations like a quotacheck that iterate all inodes in the
-+	 * filesystem.
-+	 */
- 	sb->s_magic = XFS_SB_MAGIC;
- 	sb->s_blocksize = mp->m_sb.sb_blocksize;
- 	sb->s_blocksize_bits = ffs(sb->s_blocksize) - 1;
-@@ -1562,6 +1566,16 @@ xfs_fs_fill_super(
- 	sb->s_time_gran = 1;
- 	set_posix_acl_flag(sb);
+-int sysctl_perf_event_mlock __read_mostly = 512; /* 'free' kb per user */
++/* Minimum for 128 pages + 1 for the user control page */
++int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
  
-+	error = xfs_syncd_init(mp);
-+	if (error)
-+		goto out_filestream_unmount;
-+
-+	xfs_inode_shrinker_register(mp);
-+
-+	error = xfs_mountfs(mp);
-+	if (error)
-+		goto out_syncd_stop;
-+
- 	root = igrab(VFS_I(mp->m_rootip));
- 	if (!root) {
- 		error = ENOENT;
-@@ -1577,14 +1591,11 @@ xfs_fs_fill_super(
- 		goto fail_vnrele;
- 	}
- 
--	error = xfs_syncd_init(mp);
--	if (error)
--		goto fail_vnrele;
--
--	xfs_inode_shrinker_register(mp);
--
- 	return 0;
- 
-+ out_syncd_stop:
-+	xfs_inode_shrinker_unregister(mp);
-+	xfs_syncd_stop(mp);
-  out_filestream_unmount:
- 	xfs_filestream_unmount(mp);
-  out_free_sb:
-@@ -1608,6 +1619,9 @@ xfs_fs_fill_super(
- 	}
- 
-  fail_unmount:
-+	xfs_inode_shrinker_unregister(mp);
-+	xfs_syncd_stop(mp);
-+
- 	/*
- 	 * Blow away any referenced inode in the filestreams cache.
- 	 * This can and will cause log traffic as inodes go inactive
+ /*
+  * max perf event sample rate
 
 
