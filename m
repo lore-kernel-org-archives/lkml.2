@@ -1,145 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab1DLQuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:50:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38132 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab1DLQuo (ORCPT
+	id S1758175Ab1DLQwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:52:36 -0400
+Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:41653 "EHLO
+	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754684Ab1DLQwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:50:44 -0400
-Date: Tue, 12 Apr 2011 12:50:42 -0400
-From: "hch@infradead.org" <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: NeilBrown <neilb@suse.de>, Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110412165042.GA23764@infradead.org>
-References: <20110411205928.13915719@notabene.brown>
- <4DA2E03A.2080607@fusionio.com>
- <20110411212635.7959de70@notabene.brown>
- <4DA2E7F0.9010904@fusionio.com>
- <20110411220505.1028816e@notabene.brown>
- <4DA2F00E.6010907@fusionio.com>
- <20110411223623.4278fad1@notabene.brown>
- <4DA2F8AD.1060605@fusionio.com>
- <20110412011255.GA29236@infradead.org>
- <4DA40F0E.1070903@fusionio.com>
+	Tue, 12 Apr 2011 12:52:35 -0400
+X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
+Message-ID: <4DA4832F.2090600@ise.pw.edu.pl>
+Date: Tue, 12 Apr 2011 18:51:59 +0200
+From: wzab <wzab@ise.pw.edu.pl>
+Reply-To: wzab@ise.pw.edu.pl
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA40F0E.1070903@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+CC: wzab@ise.pw.edu.pl, linux-kernel@vger.kernel.org,
+        intel-gfx@lists.freedesktop.org
+Subject: Re: Screen corrupted in Xorg with KMS on 945GM/GMS, 943/940GML chipset
+ with kernel 2.6.38.2
+References: <4DA4243A.5030805@ise.pw.edu.pl> <20110412184143.27dbf34f@neptune.home>
+In-Reply-To: <20110412184143.27dbf34f@neptune.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 10:36:30AM +0200, Jens Axboe wrote:
-> The existance and out-of-line is for the scheduler() hook. It should be
-> an unlikely event to schedule with a plug held, normally the plug should
-> have been explicitly unplugged before that happens.
+W dniu 12.04.2011 18:41, Bruno Prémont pisze:
+> [CCing intel-gfx]
+>
+> On Tue, 12 April 2011 Wojciech Zabołotny<wzab@ise.pw.edu.pl>  wrote:
+>> After I've upgraded my kernel to 2.6.38.2, I started to experience very
+>> often screen corruption in X (it happened also earlier with 2.6.37.3,
+>> but now is very often.
+>> Hardware seems to be OK. I attach  sample screendumps, configuration of
+>> my kernel, log of the X server and output of the lspci command.
+>
+> This looks similar to the xchat corruptions I see (on i855).
+>
+> Have a look at #34980 (also 945 family) and #35460 on bugs.freedesktop.org.
+>
+> Bruno
 
-I still don't think unlikely() is the right thing to do.  The static
-branch prediction hints cause a real massive slowdown if taken.  For
-things like this that happen during normal operation you're much better
-off leaving the dynamic branch prediction in the CPU predicting what's
-going on.  And I don't think it's all that unlikely - e.g. for all the
-metadata during readpages/writepages schedule/io_schedule will be
-the unplugging point right now.  I'll see if I can run an I/O workload
-with Steve's likely/unlikely profiling turned on.
+Yes, the similar symptoms have also been reported in Ubuntu
 
-> > void __blk_flush_plug(struct task_struct *tsk, struct blk_plug *plug)
-> > {
-> > 	flush_plug_list(plug);
-> > 	if (plug == tsk->plug)
-> > 		tsk->plug = NULL;
-> > 	tsk->plug = plug;
-> > }
-> > 
-> >    it would seem much smarted to just call flush_plug_list directly.
-> >    In fact it seems like the tsk->plug is not nessecary at all and
-> >    all remaining __blk_flush_plug callers could be replaced with
-> >    flush_plug_list.
-> 
-> It depends on whether this was an explicit unplug (eg
-> blk_finish_plug()), or whether it was an implicit event (eg on
-> schedule()). If we do it on schedule(), then we retain the plug after
-> the flush. Otherwise we clear it.
+https://bugs.launchpad.net/ubuntu/+source/xorg/+bug/737900
 
-blk_finish_plug doesn't got through this codepath.
-
-This is an untested patch how the area should look to me:
-
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 90f22cc..6fa5ba1 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2668,7 +2668,7 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
- 	return !(rqa->q <= rqb->q);
- }
- 
--static void flush_plug_list(struct blk_plug *plug)
-+void blk_flush_plug_list(struct blk_plug *plug)
- {
- 	struct request_queue *q;
- 	unsigned long flags;
-@@ -2716,29 +2716,16 @@ static void flush_plug_list(struct blk_plug *plug)
- 	BUG_ON(!list_empty(&plug->list));
- 	local_irq_restore(flags);
- }
--
--static void __blk_finish_plug(struct task_struct *tsk, struct blk_plug *plug)
--{
--	flush_plug_list(plug);
--
--	if (plug == tsk->plug)
--		tsk->plug = NULL;
--}
-+EXPORT_SYMBOL_GPL(blk_flush_plug_list);
- 
- void blk_finish_plug(struct blk_plug *plug)
- {
--	if (plug)
--		__blk_finish_plug(current, plug);
-+	blk_flush_plug_list(plug);
-+	if (plug == current->plug)
-+		current->plug = NULL;
- }
- EXPORT_SYMBOL(blk_finish_plug);
- 
--void __blk_flush_plug(struct task_struct *tsk, struct blk_plug *plug)
--{
--	__blk_finish_plug(tsk, plug);
--	tsk->plug = plug;
--}
--EXPORT_SYMBOL(__blk_flush_plug);
--
- int __init blk_dev_init(void)
- {
- 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 32176cc..fa6a4e1 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -862,14 +862,14 @@ struct blk_plug {
- 
- extern void blk_start_plug(struct blk_plug *);
- extern void blk_finish_plug(struct blk_plug *);
--extern void __blk_flush_plug(struct task_struct *, struct blk_plug *);
-+extern void blk_flush_plug_list(struct blk_plug *);
- 
- static inline void blk_flush_plug(struct task_struct *tsk)
- {
- 	struct blk_plug *plug = tsk->plug;
- 
--	if (unlikely(plug))
--		__blk_flush_plug(tsk, plug);
-+	if (plug)
-+		blk_flush_plug_list(plug);
- }
- 
- static inline bool blk_needs_flush_plug(struct task_struct *tsk)
+I have yet another machine, with an older chipset - VGA compatible 
+controller: Intel Corporation 82865G Integrated Graphics Controller (rev 
+02) no corruptions occur in this machine.
