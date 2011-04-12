@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab1DLQUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 12:20:23 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:43926 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757651Ab1DLQUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 12:20:22 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-References: <20110411093214.GA18215@rainbow> <4DA3350E.2060400@gmail.com>
- <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com> <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com>
- <20110412040420.GB25239@rainbow>
-MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <20110412040420.GB25239@rainbow>
-Thread-Index: Acv4x58AGR54YxbFTl+tMW93j06KfAAZcBDA
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
-Date: Tue, 12 Apr 2011 21:50:05 +0530
-Message-ID: <bcd954a468e6a07bd673b7d0731e9344@mail.gmail.com>
-Subject: RE: [Regression?] Removed regulator support in ehci-omap
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-Cc: Steve Sakoman <sakoman@gmail.com>, Steve Calfee <stevecalfee@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=KOI8-R
+	id S1756242Ab1DLQWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 12:22:40 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:43249 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab1DLQWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 12:22:39 -0400
+Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+In-Reply-To: <20110412054330.GH26678@amit-x200.redhat.com>
+References: <20110407174325.ED21C82B@kernel>
+	 <20110411110131.GA23123@redhat.com> <1302559871.7286.16749.camel@nimitz>
+	 <20110412054330.GH26678@amit-x200.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 12 Apr 2011 09:22:32 -0700
+Message-ID: <1302625352.8321.2126.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dmitry Artamonow [mailto:mad_soft@inbox.ru]
-> Sent: Tuesday, April 12, 2011 9:41 AM
-> To: Keshava Munegowda
-> Cc: Steve Sakoman; Steve Calfee; Felipe Balbi;
-linux-usb@vger.kernel.org; linux-omap@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [Regression?] Removed regulator support in ehci-omap
->
-> On 02:18 Tue 12 Apr     , Keshava Munegowda wrote:
-> >
-> > Sorry guys! I will work on it coming week; currently I am in travel.
-> >
-> > Well, regulator is not removed, its moved to usbhs core driver in
-> > /driver/mfd/omap xx usb xxx host.c
->
-> Ah, so EHCI/OHCI common code was moved into drivers/mfd... Good.
-> But seems regulators support was lost somewhere during transition - the
-> only mentioning about regulators in omap-usb-host.c is "#include" :
->
-> mad@macmini:~/kernel-hack/linux-2.6(master)$ grep -i regulator
-drivers/mfd/omap-usb-host.c
-> #include <linux/regulator/consumer.h>
-> mad@macmini:~/kernel-hack/linux-2.6(master)$
->
-> --
-> Best regards,
-> Dmitry "MAD" Artamonow
+On Tue, 2011-04-12 at 11:13 +0530, Amit Shah wrote:
+> Sure, the only contention was on the commit message, where you stated
+> modern qemus set this... qemu doesn't, and it should.  Care to do a
+> patch for that? 
 
-Thanks ! I will add some time next week!
+If Rusty hasn't pushed the commit out anywhere, we can still amend the
+commit.  Otherwise, we're in a _bit_ of a pickle since you can't patch
+git logs. :)
 
-Keshava Munegowda
+Whatever is easiest for Rusty works for me.  
+
+How about this for a replacement log?
+
+--
+
+The virtio balloon driver has a VIRTIO_BALLOON_F_MUST_TELL_HOST
+feature bit.  Whenever the bit is set, we must always tell the
+host before we free pages back to the allocator.  Without this
+feature, we might free a page (and have another user touch it)
+while the hypervisor is unprepared for it.
+
+But, if the bit is _not_ set, we are under no obligation to
+reverse the order; we're under no obligation to do _anything_.
+That's the state of affairs in current qemu:
+
+	#define VIRTIO_BALLOON_F_MUST_TELL_HOST 0
+
+This patch makes the "tell host first" logic the only case.  This
+should make everybody happy, and reduce the amount of untested or
+untestable code in the kernel.
+
+This _also_ means that we don't have to preserve a pfn list
+after the pages are freed, which should let us get rid of some
+temporary storage (vb->pfns) eventually.
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+
+-- Dave
+
