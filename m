@@ -1,82 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab1DLVAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 17:00:43 -0400
-Received: from mail.academy.zt.ua ([82.207.120.245]:21962 "EHLO
-	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932412Ab1DLVAm (ORCPT
+	id S932534Ab1DLVAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 17:00:53 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49380 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932485Ab1DLVAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 17:00:42 -0400
-X-MDAV-Processed: mail.academy.zt.ua, Wed, 13 Apr 2011 00:00:40 +0300
-X-Spam-Processed: mail.academy.zt.ua, Wed, 13 Apr 2011 00:00:39 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-Return-Path: george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-Subject: Re: [RFC][PATCH] axi: add AXI bus driver
-From: George Kashperko <george@znau.edu.ua>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: balbi@ti.com, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org,
-        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTim8dmTL-BVK3fcWHNBU9Eyz1k_T+Q@mail.gmail.com>
-References: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
-	 <20110412133633.GR15130@legolas.emea.dhcp.ti.com>
-	 <1302634039.14216.10.camel@dev.znau.edu.ua>
-	 <BANLkTi=0sM2+nPYyd09G=Uy9rcEvaFErnA@mail.gmail.com>
-	 <1302635550.14216.21.camel@dev.znau.edu.ua>
-	 <BANLkTi=8mB9ZDTjF4yds6mkx+PmM+B_6Cg@mail.gmail.com>
-	 <4DA4AC4B.90409@hauke-m.de>
-	 <BANLkTiknRYWaDM1ThAxgXcdGqK8jeFaBPA@mail.gmail.com>
-	 <BANLkTikqKtJuDS17mfFvxzMoXuBtJvCgTA@mail.gmail.com>
-	 <1302640546.14216.65.camel@dev.znau.edu.ua>
-	 <BANLkTim8dmTL-BVK3fcWHNBU9Eyz1k_T+Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Date: Tue, 12 Apr 2011 23:57:34 +0300
-Message-Id: <1302641854.14216.77.camel@dev.znau.edu.ua>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 8bit
+	Tue, 12 Apr 2011 17:00:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Ko5vpg1JoOCzrwnOo7CPKvHl2ND/IyYUEhoYydYDPiJzCPnqUMCnloCduOf2LjWi/b
+         EjsZ5CTxoRoQmL2OlEYocJgvp2KR19wI+SrwrpzJsQTmecSDiyIah5J40HwB245CJkmh
+         ur3bNfzo0OfBRf8pEmtRpmb1mdfNqL8V9cuNQ=
+Date: Wed, 13 Apr 2011 00:00:45 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, behlendorf1@llnl.gov, oleg@redhat.com
+Subject: [PATCH] remove abs64()
+Message-ID: <20110412210045.GA19901@p183>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We don't need no stinking abs64() given some GCC extensions
+(especially __builtin_choose_expr()).
 
-> 2011/4/12 George Kashperko <george@znau.edu.ua>:
-> >> 2011/4/12 Rafał Miłecki <zajec5@gmail.com>:
-> >> That way I see really low (or not at all) relation between out
-> >> (not)Broadcom bus and present AMBA bus.
-> >>
-> > Agree.
-> 
-> Ehh, sounds like one more renaming to functions, defines, prefixes.
-> 
-> Let's wait for Arend comments, he was the one voting for not-bcm-specific name.
-> 
-Sounds like good plan :)
+One abs() implementation is better than two abs() implementations.
 
-Btw, while waiting.... Digging the web clearing different things around
-ssb/axi found few broadcom ssb docs some of you maybe find interesting
-to look through.
-http://read.pudn.com/downloads127/doc/fileformat/537112/mips/bcm5836/5836-5836P-PG01-RDS.pdf
-http://www.broadcom.com/collateral/pg/440X-PG02-R.pdf
+New abs() doesn't expand type needlessly.
 
-Also, one more question to Arend:
-could you please ask if there are any plans on lifting UNPUBLISHED
-PROPRIETARY for GMAC core driver sources (etcgmac.c, have this core at
-bcm4716-based ASUS N16, might used at other bcm471X socs as well) or
-possibly Broadcom could publish some doc for the chip?
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-Have nice day,
-George
+ drivers/gpu/drm/drm_irq.c |    4 ++--
+ include/linux/kernel.h    |   43 +++++++++++++++++++++----------------------
+ lib/div64.c               |    2 +-
+ 3 files changed, 24 insertions(+), 25 deletions(-)
 
-
-
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -154,7 +154,7 @@ static void vblank_disable_and_save(struct drm_device *dev, int crtc)
+ 	 * available. In that case we can't account for this and just
+ 	 * hope for the best.
+ 	 */
+-	if ((vblrc > 0) && (abs64(diff_ns) > 1000000)) {
++	if ((vblrc > 0) && (abs(diff_ns) > 1000000)) {
+ 		atomic_inc(&dev->_vblank_count[crtc]);
+ 		smp_mb__after_atomic_inc();
+ 	}
+@@ -1290,7 +1290,7 @@ bool drm_handle_vblank(struct drm_device *dev, int crtc)
+ 	 * e.g., due to spurious vblank interrupts. We need to
+ 	 * ignore those for accounting.
+ 	 */
+-	if (abs64(diff_ns) > DRM_REDUNDANT_VBLIRQ_THRESH_NS) {
++	if (abs(diff_ns) > DRM_REDUNDANT_VBLIRQ_THRESH_NS) {
+ 		/* Store new timestamp in ringbuffer. */
+ 		vblanktimestamp(dev, crtc, vblcount + 1) = tvblank;
+ 
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -143,28 +143,27 @@ extern int _cond_resched(void);
+ 
+ #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
+ 
+-/*
+- * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
+- * input types abs() returns a signed long.
+- * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
+- * for those.
+- */
+-#define abs(x) ({						\
+-		long ret;					\
+-		if (sizeof(x) == sizeof(long)) {		\
+-			long __x = (x);				\
+-			ret = (__x < 0) ? -__x : __x;		\
+-		} else {					\
+-			int __x = (x);				\
+-			ret = (__x < 0) ? -__x : __x;		\
+-		}						\
+-		ret;						\
+-	})
+-
+-#define abs64(x) ({				\
+-		s64 __x = (x);			\
+-		(__x < 0) ? -__x : __x;		\
+-	})
++#define abs(x)								\
++({									\
++	typeof(x) _x = (x);						\
++									\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), signed char),	\
++		(unsigned char)({ _x < 0 ? -_x : _x; }),		\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), short),	\
++		(unsigned short)({ _x < 0 ? -_x : _x; }),		\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), int),		\
++		(unsigned int)({ _x < 0 ? -_x : _x; }),			\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), long),		\
++		(unsigned long)({ _x < 0 ? -_x : _x; }),		\
++	__builtin_choose_expr(						\
++		__builtin_types_compatible_p(typeof(_x), long long),	\
++		(unsigned long long)({ _x < 0 ? -_x : _x; }),		\
++	_x)))));							\
++})
+ 
+ #ifdef CONFIG_PROVE_LOCKING
+ void might_fault(void);
+--- a/lib/div64.c
++++ b/lib/div64.c
+@@ -121,7 +121,7 @@ s64 div64_s64(s64 dividend, s64 divisor)
+ {
+ 	s64 quot, t;
+ 
+-	quot = div64_u64(abs64(dividend), abs64(divisor));
++	quot = div64_u64(abs(dividend), abs(divisor));
+ 	t = (dividend ^ divisor) >> 63;
+ 
+ 	return (quot ^ t) - t;
