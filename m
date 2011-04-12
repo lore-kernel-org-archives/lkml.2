@@ -1,120 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab1DLUjm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 16:39:42 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42313 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab1DLUjl (ORCPT
+	id S1757336Ab1DLUjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 16:39:45 -0400
+Received: from mail.academy.zt.ua ([82.207.120.245]:21758 "EHLO
+	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757198Ab1DLUjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 16:39:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=TTpv8XdfmUthtawgf81u0jtyudJrFL4rbsBuboazd9lucmUs8jNaxrUsIcxM6fWTlf
-         L/DbPXF/riKJAgkz8p4dNmZ7tROu1Bc0pxwf3amqtH34vo+RYgxgu/28EdAVWqFuNjc8
-         i2xISUh3l3xqNhATWWijqNZKF3whRJCN5skUY=
-MIME-Version: 1.0
-In-Reply-To: <20110412193943.GA30089@elf.ucw.cz>
-References: <20110315192111.GA2983@ucw.cz>
-	<AANLkTikJD3+HSoHbq2BxAyYbtGik8QizuRv=rkPEtJXN@mail.gmail.com>
-	<20110412193943.GA30089@elf.ucw.cz>
-Date: Wed, 13 Apr 2011 00:39:40 +0400
-Message-ID: <BANLkTimTmhXYHYOQwh_Q1uohFJdaKecJkA@mail.gmail.com>
-Subject: Re: [Zaurus-devel] 8250 vs pxa_serial (was Re: pxa27x/spitz: serials
- in recent kernels)
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Zaurus PDA developers list <zaurus-devel@www.linuxtogo.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Andrea Adami <andrea.adami@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001636d34fbfff1abc04a0beb02e
+	Tue, 12 Apr 2011 16:39:42 -0400
+X-MDAV-Processed: mail.academy.zt.ua, Tue, 12 Apr 2011 23:39:40 +0300
+X-Spam-Processed: mail.academy.zt.ua, Tue, 12 Apr 2011 23:39:39 +0300
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: george@academy.zt.ua
+X-Return-Path: george@znau.edu.ua
+X-Envelope-From: george@znau.edu.ua
+Subject: Re: [RFC][PATCH] axi: add AXI bus driver
+From: George Kashperko <george@znau.edu.ua>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: balbi@ti.com, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org,
+        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTikqKtJuDS17mfFvxzMoXuBtJvCgTA@mail.gmail.com>
+References: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
+	 <20110412133633.GR15130@legolas.emea.dhcp.ti.com>
+	 <1302634039.14216.10.camel@dev.znau.edu.ua>
+	 <BANLkTi=0sM2+nPYyd09G=Uy9rcEvaFErnA@mail.gmail.com>
+	 <1302635550.14216.21.camel@dev.znau.edu.ua>
+	 <BANLkTi=8mB9ZDTjF4yds6mkx+PmM+B_6Cg@mail.gmail.com>
+	 <4DA4AC4B.90409@hauke-m.de>
+	 <BANLkTiknRYWaDM1ThAxgXcdGqK8jeFaBPA@mail.gmail.com>
+	 <BANLkTikqKtJuDS17mfFvxzMoXuBtJvCgTA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Date: Tue, 12 Apr 2011 23:35:46 +0300
+Message-Id: <1302640546.14216.65.camel@dev.znau.edu.ua>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636d34fbfff1abc04a0beb02e
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-Hello,
+> 2011/4/12 Rafał Miłecki <zajec5@gmail.com>:
+> > 2011/4/12 Hauke Mehrtens <hauke@hauke-m.de>:
+> >> Hi Rafał,
+> >>
+> >> On 04/12/2011 09:27 PM, Rafał Miłecki wrote:
+> >>> 2011/4/12 George Kashperko <george@znau.edu.ua>:
+> >>>>
+> >>>>> 2011/4/12 George Kashperko <george@znau.edu.ua>:
+> >>>>>>
+> >>>>>>> Hi,
+> >>>>>>>
+> >>>>>>> On Tue, Apr 12, 2011 at 01:57:07AM +0200, Rafał Miłecki wrote:
+> >>>>>>>> Cc: Michael Büsch <mb@bu3sch.de>
+> >>>>>>>> Cc: Larry Finger <Larry.Finger@lwfinger.net>
+> >>>>>>>> Cc: George Kashperko <george@znau.edu.ua>
+> >>>>>>>> Cc: Arend van Spriel <arend@broadcom.com>
+> >>>>>>>> Cc: linux-arm-kernel@lists.infradead.org
+> >>>>>>>> Cc: Russell King <rmk@arm.linux.org.uk>
+> >>>>>>>> Cc: Arnd Bergmann <arnd@arndb.de>
+> >>>>>>>> Cc: Andy Botting <andy@andybotting.com>
+> >>>>>>>> Cc: linuxdriverproject <devel@linuxdriverproject.org>
+> >>>>>>>> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
+> >>>>>>>> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+> >>>>>>>> ---
+> >>>>>>>> V2: Rename to axi
+> >>>>>>>>     Use DEFINE_PCI_DEVICE_TABLE in bridge
+> >>>>>>>>     Make use of pr_fmt and pr_*
+> >>>>>>>>     Store core class
+> >>>>>>>>     Rename bridge to not b43 specific
+> >>>>>>>>     Replace magic 0x1000 with BCMAI_CORE_SIZE
+> >>>>>>>>     Remove some old "ssb" names and defines
+> >>>>>>>>     Move BCMAI_ADDR_BASE def
+> >>>>>>>>     Add drvdata field
+> >>>>>>>> V3: Fix reloading (kfree issue)
+> >>>>>>>>     Add 14e4:0x4331
+> >>>>>>>>     Fix non-initialized struct issue
+> >>>>>>>>     Drop useless inline functions wrappers for pci core drv
+> >>>>>>>>     Proper pr_* usage
+> >>>>>>>> V3.1: Include forgotten changes (pr_* and include related)
+> >>>>>>>>     Explain why we dare to implement empty release function
+> >>>>>>>
+> >>>>>>> I'm not sure we need this. If you have an IP Core which talks AXI and
+> >>>>>>> you want to put it on a PCI bus, you will have a PCI Bus wrapper around
+> >>>>>>> that IP Core, so you should go and let the kernel know about that. See
+> >>>>>>> [1] for a core IP which talks AXI and [2] for a PCI bus glue layer.
+> >>>>>>>
+> >>>>>>> Besides, if you introduce this bus layer, it'll be more difficult for
+> >>>>>>> other licensees of the same core to re-use the same driver, since it's
+> >>>>>>> now talking a PCI emulated on top of AXI. The same can be achieved with
+> >>>>>>> the platform_bus which is more widely used, specially on ARM SoCs.
+> >>>>>>>
+> >>>>>>> [1] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/core.c
+> >>>>>>> [2] http://gitorious.org/usb/usb/blobs/dwc3/drivers/usb/dwc3/dwc3-haps.c
+> >>>>>>>
+> >>>>>>
+> >>>>>> Already noticed earlier that AXI isnt really good name for
+> >>>>>> Broadcom-specific axi bus customization. As of tech docs available from
+> >>>>>> arm, corelink AXI cores use own identification registers which feature
+> >>>>>> different format and layout comparing to that we use for Broadcom cores.
+> >>>>>>
+> >>>>>> Maybe there is something "standartized" by the DMP specs? If so I'm
+> >>>>>> curious if that DMP is obligatory for every axi bus ?
+> >>>>>>
+> >>>>>> Naming particular Broadcom's implementation just axi limits other
+> >>>>>> licensees in reusing axi bus name/code or will require hacks/workarounds
+> >>>>>> from them to fit Broadcom-like core scanning/identificating techniques.
+> >>>>>> You use bus named AXI to group and manage Broadcom cores, while never
+> >>>>>> even publish device records for native axi cores Broadcom use to talk to
+> >>>>>> the interconnect through. Yet again, something like bcmb/bcmai looks
+> >>>>>> like better name for this bus.
+> >>>>>
+> >>>>> I don't know, I'm really tired of this. Earlier I was told to not use
+> >>>>> anything like bcmai, because it is not Broadcom specific. Now it seems
+> >>>>> (and I'm afraid I agree) there is quite a lot of Broadcom specific
+> >>>>> stuff.
+> >>>> Well, _if_ that "magic" EROM core layout is arm's "standard" for axi
+> >>>> ports identification _and_ _if_ that EROM core is obligatory axi
+> >>>> component then sure axi name is good one as soon as you consider
+> >>>> registering master port (agent) cores with device subsystem as well.
+> >>>> I have no clue here about how resolve those _if_'s, hopefully Broadcom
+> >>>> guys can enlighten us on the subject.
+> >>>
+> >>> Do you think that in my code only scanning is Broadcom specific? In
+> >>> such a case we could keep it "axi", and just s/scan/bcmscan/. This is
+> >>> only correct choice if the rest (addressing, core enabling, host
+> >>> management) is AXI specific.
+> >>
+> >> The specification for the AMBA AXI Interface is available for free
+> >> download from ARM if you register to their website and accept their license:
+> >> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.set.amba/index.html
+> >> I got it from there without any problems and the license does not look
+> >> too bad for me, by having a quick look at it. I do not know if it will
+> >> help you in any way or if it is completely unrelated.
+> >>
+> >> Why is the existing support for the amba bus not extended or used in any
+> >> way for this? It exists for some time in drivers/amba/. There already
+> >> was a discussion about this in https://lkml.org/lkml/2011/3/30/186 , but
+> >> with no result as I see.
+> >
+> > I can see exactly nothing I could use from whatever driver/amba is.
+> > What does it do from things we need? How do you imagine using that
+> > with out (non)Broadcom buses?
+> 
+> 1) I checked for amba_device_register:
+> http://lxr.free-electrons.com/ident?i=amba_device_register
+> and do not understand that. There are a lot of drivers registering
+> some pre-defined devices. I could not find any driver scanning for
+> amba devices and registering them. Are we going to be the first driver
+> registering devices dynamically or do I get this totally wrong
+> 
+> 2) amba_id contains only some interesting "id". How can we relate this
+> with our core id/rev/manuf/class?
+I guess that id corresponds to corelink-compatible peripheral/component
+4x8bit registers' layout.
 
-On Tue, Apr 12, 2011 at 11:39 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> > I cculd not get serial port to work in recent kernels (2.6.35 was
->> > oldest I tried). I know they are little used but still very useful for
->> > debugging.
->> >
->> > Is there some special config that needs to be done?
->> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
-=A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0Pavel
->>
->> I have output on ttyS0 using the Sharp cable, never had issues.
->> Remember that bootloader is 9600n8 while kernels are usually 115200n8.
->
-> Ok, I know what is going on. I need both PXA_SERIAL and 8250... and
-> these two don't go well together.
->
-> I tried:
->
-> CONFIG_SERIAL_8250=3Dy
-> # CONFIG_SERIAL_8250_CONSOLE is not set
-> CONFIG_SERIAL_8250_CS=3Dy
-> CONFIG_SERIAL_8250_NR_UARTS=3D1
-> CONFIG_SERIAL_8250_RUNTIME_UARTS=3D0
-> # CONFIG_SERIAL_8250_EXTENDED is not set
->
-> #
-> # Non-8250 serial port support
-> #
-> # CONFIG_SERIAL_MAX3100 is not set
-> # CONFIG_SERIAL_MAX3107 is not set
-> CONFIG_SERIAL_PXA=3Dy
-> CONFIG_SERIAL_PXA_CONSOLE=3Dy
-> CONFIG_SERIAL_CORE=3Dy
-> CONFIG_SERIAL_CORE_CONSOLE=3Dy
->
-> (BTW should 8250_RUNTIME_UARTS be called "boottime uarts"? That's what
-> help says).
->
-> ...but no luck. As soon as I enable 8250, pxa serials stop working
-> :-(.
+> 3) There is no code for managing AMBA cores (enable, checking status,
+> disabling, resetting)...
+These could be of interest for DMP core driver if someone decide to
+publish agent cores on amba_bustype.
 
-Please try attached patch (then PXA consoles become ttySA0-3)
+> 
+> That way I see really low (or not at all) relation between out
+> (not)Broadcom bus and present AMBA bus.
+> 
+Agree.
+
+Have nice day,
 
 
-
-
---=20
-With best wishes
-Dmitry
-
---001636d34fbfff1abc04a0beb02e
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-pxa-rename-serials-to-reuse-ttySA-naming.patch"
-Content-Disposition: attachment; 
-	filename="0001-pxa-rename-serials-to-reuse-ttySA-naming.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gmfaoriu0
-
-RnJvbSBhMzI1ZWYzN2FhZTFjMTU1NjcyZjE1MDJiYzk4NjRjMGVlODdjYmQ2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEbWl0cnkgRXJlbWluLVNvbGVuaWtvdiA8ZGJhcnlzaGtvdkBn
-bWFpbC5jb20+CkRhdGU6IFR1ZSwgNCBKYW4gMjAxMSAyMzozMzo0NCArMDMwMApTdWJqZWN0OiBb
-UEFUQ0hdIHB4YTogcmVuYW1lIHNlcmlhbHMgdG8gcmV1c2UgdHR5U0EgbmFtaW5nCgpTaWduZWQt
-b2ZmLWJ5OiBEbWl0cnkgRXJlbWluLVNvbGVuaWtvdiA8ZGJhcnlzaGtvdkBnbWFpbC5jb20+Ci0t
-LQogZHJpdmVycy90dHkvc2VyaWFsL3B4YS5jIHwgICAgNiArKystLS0KIDEgZmlsZXMgY2hhbmdl
-ZCwgMyBpbnNlcnRpb25zKCspLCAzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
-dHR5L3NlcmlhbC9weGEuYyBiL2RyaXZlcnMvdHR5L3NlcmlhbC9weGEuYwppbmRleCAxMTAyYTM5
-Li4xNGZiNTY2IDEwMDY0NAotLS0gYS9kcml2ZXJzL3R0eS9zZXJpYWwvcHhhLmMKKysrIGIvZHJp
-dmVycy90dHkvc2VyaWFsL3B4YS5jCkBAIC02OTIsNyArNjkyLDcgQEAgc2VyaWFsX3B4YV9jb25z
-b2xlX3NldHVwKHN0cnVjdCBjb25zb2xlICpjbywgY2hhciAqb3B0aW9ucykKIH0KIAogc3RhdGlj
-IHN0cnVjdCBjb25zb2xlIHNlcmlhbF9weGFfY29uc29sZSA9IHsKLQkubmFtZQkJPSAidHR5UyIs
-CisJLm5hbWUJCT0gInR0eVNBIiwKIAkud3JpdGUJCT0gc2VyaWFsX3B4YV9jb25zb2xlX3dyaXRl
-LAogCS5kZXZpY2UJCT0gdWFydF9jb25zb2xlX2RldmljZSwKIAkuc2V0dXAJCT0gc2VyaWFsX3B4
-YV9jb25zb2xlX3NldHVwLApAQCAtNzI5LDggKzcyOSw4IEBAIHN0cnVjdCB1YXJ0X29wcyBzZXJp
-YWxfcHhhX3BvcHMgPSB7CiBzdGF0aWMgc3RydWN0IHVhcnRfZHJpdmVyIHNlcmlhbF9weGFfcmVn
-ID0gewogCS5vd25lcgkJPSBUSElTX01PRFVMRSwKIAkuZHJpdmVyX25hbWUJPSAiUFhBIHNlcmlh
-bCIsCi0JLmRldl9uYW1lCT0gInR0eVMiLAotCS5tYWpvcgkJPSBUVFlfTUFKT1IsCisJLmRldl9u
-YW1lCT0gInR0eVNBIiwKKwkubWFqb3IJCT0gMjA0LAogCS5taW5vcgkJPSA2NCwKIAkubnIJCT0g
-NCwKIAkuY29ucwkJPSBQWEFfQ09OU09MRSwKLS0gCjEuNy40LjEKCg==
---001636d34fbfff1abc04a0beb02e--
