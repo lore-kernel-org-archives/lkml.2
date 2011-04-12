@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab1DLJ6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 05:58:39 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53924 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab1DLJ6h convert rfc822-to-8bit (ORCPT
+	id S1757071Ab1DLKMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 06:12:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34677 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756916Ab1DLKMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 05:58:37 -0400
+	Tue, 12 Apr 2011 06:12:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=B2ueWRoJeMpiZjghXu/YxyHpNgiamnQCwyAMHmQez9XbGMqxfAD+itsTP4TfLVpkEV
+         z29tSBInaBNq4v+J/L+P4+qWWM96oZJiu3upcOu0T669xPoI+heUBmesd6bBUX3BiLlZ
+         bkfbbn/3/8mD7HiA5hN+eJ3IeWIvtvDbispbU=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1104070718120.28555@sister.anvils>
-References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
-	<AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
-	<AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
-	<alpine.LSU.2.00.1103182158200.18771@sister.anvils>
-	<BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
-	<AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
-	<BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com>
-	<BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
-	<BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com>
-	<BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
-	<BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com>
-	<BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
-	<BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com>
-	<alpine.LSU.2.00.1104060837590.4909@sister.anvils>
-	<BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com>
-	<BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
-	<BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com>
-	<alpine.LSU.2.00.1104070718120.28555@sister.anvils>
-Date: Tue, 12 Apr 2011 11:58:36 +0200
-Message-ID: <BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <20110412183010.B52A.A69D9226@jp.fujitsu.com>
+References: <20110411170134.035E.A69D9226@jp.fujitsu.com>
+	<BANLkTi=fEejkrPdX27bFi1x+dHpOSGxQaQ@mail.gmail.com>
+	<20110412183010.B52A.A69D9226@jp.fujitsu.com>
+Date: Tue, 12 Apr 2011 19:12:02 +0900
+Message-ID: <BANLkTinORojJgOdHeRMLMkKGc-Jitu-unQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm, mem-hotplug: update pcp->stat_threshold when
+ memory hotplug occur
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Michel Lespinasse <walken@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>
+        Yasunori Goto <y-goto@jp.fujitsu.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 7, 2011 at 4:24 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Thu, 7 Apr 2011, Robert Swiecki wrote:
->> >
->> > Testing with Linus' patch. Will let you know in a few hours.
->>
->> Ok, nothing happened after ~20h. The bug, usually, was triggered within 5-10h.
->>
->> I can add some printk in this condition, and let it run for a few days
->> (I will not have access to my testing machine throughout that time),
->> if you think this will confirm your hypothesis.
+On Tue, Apr 12, 2011 at 6:29 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Hi
 >
-> That's great, thanks Robert.  If the machine has nothing better to do,
-> then it would be nice to let it run a little longer (a few days if that's
-> what suits you), but it does look good so far.  Though I'm afraid you'll
-> now discover something else entirely ;)
+>> Hi, KOSAKI
+>>
+>> On Mon, Apr 11, 2011 at 5:01 PM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> > Currently, cpu hotplug updates pcp->stat_threashold, but memory
+>> > hotplug doesn't. there is no reason.
+>> >
+>> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> > Acked-by: Mel Gorman <mel@csn.ul.ie>
+>> > Acked-by: Christoph Lameter <cl@linux.com>
+>>
+>> I can think it makes sense so I don't oppose the patch merging.
+>> But as you know I am very keen on the description.
+>>
+>> What is the problem if hotplug doesn't do it?
+>> I means the patch solves what's problem?
+>>
+>> Please write down fully for better description.
+>> Thanks.
+>
+> No real world issue. I found the fault by code review.
 
-Ok, I added printk here:
+I don't mean we should solve only real world issue.
+Just finding out code review is much valuable. :)
 
-        if (new_len > old_len) {
-                unsigned long pgoff;
+> No good stat_threshold might makes performance hurt.
 
-                if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP))
-                        goto Efault;
-                pgoff = (addr - vma->vm_start) >> PAGE_SHIFT;
-                pgoff += vma->vm_pgoff;
-                if (pgoff + (new_len >> PAGE_SHIFT) < pgoff) {
-                        printk("VMA_TO_RESIZE: ADDR:%lx OLD_LEN:%lx
-NEW_LEN:%lx PGOFF: %lx VMA->VM_START:%lx VMA->VM_FLAGS:%lx",
-                                addr, old_len, new_len, pgoff,
-vma->vm_start, vma->vm_flags);
+Yes. That's I want it.
+My intention is that if you write down log fully, it can help much
+newbies to understand the patch in future and it would be very clear
+Andrew to merge it.
 
-                        goto Einval;
-                }
-        }
+What I want is following as.
 
+==
 
-and after a few mins of fuzzing I get:
+Currently, memory hotplug doesn't updates pcp->stat_threashold.
+Then, It ends up making the wrong stat_threshold and percpu_driftmark.
 
-[  584.224028] VMA_TO_RESIZE: ADDR:f751f000 OLD_LEN:6000 NEW_LEN:c000
-PGOFF: fffffffffffffffa VMA->VM_START:f751f000 VMA->VM_FLAGS:2321fa
-[  639.777561] VMA_TO_RESIZE: ADDR:f751f000 OLD_LEN:6000 NEW_LEN:b000
-PGOFF: fffffffffffffffa VMA->VM_START:f751f000 VMA->VM_FLAGS:2301f8
+It could make confusing zoneinfo or overhead by frequent draining.
+Even when memory is low and kswapd is awake, it can mismatch between
+the number of real free pages and vmstat NR_FREE_PAGES so that it can
+result in the livelock. Please look at aa4548403 for more.
 
-So, if this case is not caught later on in the code, I guess it solves
-the problem. During the fuzzing I didn't experience any panic's, but
-some other problems arose, i.e. cannot read /proc/<pid>/maps for some
-processes (sys_read hangs, and such process cannot be killed or
-stopped with any signal, still it's running (R state) and using CPU -
-I'll submit another report for that).
+This patch solves the issue.
+==
+
 
 -- 
-Robert Święcki
+Kind regards,
+Minchan Kim
