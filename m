@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1DLTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:02:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40812 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1DLTC6 convert rfc822-to-8bit (ORCPT
+	id S1753877Ab1DLTDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:03:12 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61126 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab1DLTC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Apr 2011 15:02:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hD1cNhdBJJ8yF+a5P+kRw2GMtrErTo1qRkNwGVqtDcsH8mByo7WlIlf3JUgV7BQLHh
+         5ld6R70WfudPo6JqfVAap+Wzg8mty1QrhGO6yXXylycCVXwaljP9bqZEwuRgTGWlkGrf
+         EXKkRCcO2SuHziRXO/Zv03JiRx+G/1dSnQSXs=
+Date: Wed, 13 Apr 2011 04:02:51 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, cl@linux.com
+Subject: Re: [PATCH 3/4]percpu_counter: fix code for 32bit systems
+Message-ID: <20110412190251.GD16342@mtj.dyndns.org>
+References: <1302595444.3981.129.camel@sli10-conroe>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com>
-References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
-	<AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
-	<AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
-	<alpine.LSU.2.00.1103182158200.18771@sister.anvils>
-	<BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
-	<AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
-	<BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com>
-	<BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
-	<BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com>
-	<BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
-	<BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com>
-	<BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
-	<BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com>
-	<alpine.LSU.2.00.1104060837590.4909@sister.anvils>
-	<BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com>
-	<BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
-	<BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com>
-	<alpine.LSU.2.00.1104070718120.28555@sister.anvils>
-	<BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com>
-	<BANLkTiniyAN40p0q+2wxWsRZ5PJFn9zE0Q@mail.gmail.com>
-	<BANLkTik6U21r91DYiUsz9A0P--=5QcsBrA@mail.gmail.com>
-	<BANLkTim6ATGxTiMcfK5-03azgcWuT4wtJA@mail.gmail.com>
-	<BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com>
-Date: Tue, 12 Apr 2011 21:02:57 +0200
-Message-ID: <BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Michel Lespinasse <walken@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302595444.3981.129.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 8:59 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Apr 12, 2011 at 10:19 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> THIS IS A HACKY AND UNTESTED PATCH!
->
-> .. and here is a rather less hacky, but still equally untested patch.
-> It moves the stack guard page handling into __get_user_pages() itself,
-> and thus avoids the whole problem.
->
-> This one I could easily see myself committing. Assuming I get some
-> ack's and testing..
+On Tue, Apr 12, 2011 at 04:04:04PM +0800, Shaohua Li wrote:
+>  static inline s64 percpu_counter_read(struct percpu_counter *fbc)
+>  {
+> +#if BITS_PER_LONG == 32
+> +	s64 count;
+> +	spin_lock(&fbc->lock);
+> +	count = fbc->count;
+> +	spin_unlock(&fbc->lock);
+> +	return count;
+> +#else
+>  	return fbc->count;
+> +#endif
 
-I'm testing currently with the old one, w/o any symptoms of problems
-by now, but it's not a meaningful period of time. I can try with the
-new one, leave it over(European)night, and let you know tomorrow.
+I don't know.  Is there any problem caused by this?  The interface is
+known to be unreliable and already being used in speculative manner.
+I think it's more beneficial to avoid using locks on fast read path.
+
+Thanks.
 
 -- 
-Robert Święcki
+tejun
