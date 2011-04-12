@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab1DLEAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 00:00:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36186 "EHLO smtps.tip.net.au"
+	id S1751392Ab1DLEKt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 00:10:49 -0400
+Received: from smtp10.mail.ru ([94.100.176.152]:43269 "EHLO smtp10.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1749667Ab1DLEAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 00:00:48 -0400
-Date: Tue, 12 Apr 2011 14:00:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: linux-next: build failure after merge of the final tree (tip tree
- related)
-Message-Id: <20110412140040.3020ef55.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1749667Ab1DLEKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 00:10:48 -0400
+Date: Tue, 12 Apr 2011 08:10:45 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: Steve Sakoman <sakoman@gmail.com>, Steve Calfee <stevecalfee@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Regression?] Removed regulator support in ehci-omap
+Message-ID: <20110412040420.GB25239@rainbow>
+References: <20110411093214.GA18215@rainbow>
+ <4DA3350E.2060400@gmail.com>
+ <BANLkTinDMZ+CyGCmzZu8cSz1L_yFXxm+vg@mail.gmail.com>
+ <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <112ef82aebc719ef25cde126f2014ebc@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 02:18 Tue 12 Apr     , Keshava Munegowda wrote:
+> 
+> Sorry guys! I will work on it coming week; currently I am in travel.
+> 
+> Well, regulator is not removed, its moved to usbhs core driver in
+> /driver/mfd/omap xx usb xxx host.c
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+Ah, so EHCI/OHCI common code was moved into drivers/mfd... Good.
+But seems regulators support was lost somewhere during transition - the
+only mentioning about regulators in omap-usb-host.c is "#include" :
 
-kernel/sched.c:7140: error: 'cpu_coregroup_mask' undeclared here (not in a function)
-
-Caused by commit 2c402dc3bb50 ("sched: Unify the sched_domain build
-functions").  On sparc64, cpu_coregroup_mask is a #define, not a function.
-
-I applied tha patch below (idea stolen from s390) whcih could probably be
-better.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 12 Apr 2011 13:51:32 +1000
-Subject: [PATCH] sched: fix sparc64 for sched_domain changes
-
-Fixes this compile error:
-
-kernel/sched.c:7140: error: 'cpu_coregroup_mask' undeclared here (not in a function)
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/sparc/include/asm/topology_64.h |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/arch/sparc/include/asm/topology_64.h b/arch/sparc/include/asm/topology_64.h
-index 1c79f32..16f477d 100644
---- a/arch/sparc/include/asm/topology_64.h
-+++ b/arch/sparc/include/asm/topology_64.h
-@@ -65,6 +65,10 @@ static inline int pcibus_to_node(struct pci_bus *pbus)
- #define smt_capable()				(sparc64_multi_core)
- #endif /* CONFIG_SMP */
- 
--#define cpu_coregroup_mask(cpu)			(&cpu_core_map[cpu])
-+extern cpumask_t cpu_core_map[NR_CPUS];
-+static inline const struct cpumask *cpu_coregroup_mask(int cpu)
-+{
-+        return &cpu_core_map[cpu];
-+}
- 
- #endif /* _ASM_SPARC64_TOPOLOGY_H */
--- 
-1.7.4.1
-
+mad@macmini:~/kernel-hack/linux-2.6(master)$ grep -i regulator drivers/mfd/omap-usb-host.c
+#include <linux/regulator/consumer.h>
+mad@macmini:~/kernel-hack/linux-2.6(master)$ 
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Best regards,
+Dmitry "MAD" Artamonow
+
