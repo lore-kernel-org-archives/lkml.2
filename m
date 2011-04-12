@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab1DLPPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 11:15:51 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:33410 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756503Ab1DLPPt (ORCPT
+	id S1757275Ab1DLPQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 11:16:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60022 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756289Ab1DLPPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 11:15:49 -0400
-Date: Tue, 12 Apr 2011 17:15:48 +0200
-From: Cyril Hrubis <metan@ucw.cz>
-To: pavel@ucw.cz, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com
-Subject: zaurus: mmcblk0: error -110
-Message-ID: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz>
+	Tue, 12 Apr 2011 11:15:46 -0400
+Date: Tue, 12 Apr 2011 08:15:55 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Antonio Ospite <ospite@studenti.unina.it>, linux-wireless@vger.kernel.org,
+        openezx-devel@lists.openezx.org,
+        "John W . Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
+        Guiming Zhuo <gmzhuo@gmail.com>
+Subject: Re: [PATCH v2] rfkill: Regulator consumer driver for rfkill
+Message-ID: <20110412151554.GA20710@opensource.wolfsonmicro.com>
+References: <1302082178.3811.7.camel@jlt3.sipsolutions.net>
+ <1302260395-11872-1-git-send-email-ospite@studenti.unina.it>
+ <1302608488.3639.15.camel@jlt3.sipsolutions.net>
+ <1302608642.3639.17.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1302608642.3639.17.camel@jlt3.sipsolutions.net>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-When I insert the mmc card to zaurus, it gets properly detected and prints some
-info into console. Mounting reading/writing files works fine.
+On Tue, Apr 12, 2011 at 01:44:02PM +0200, Johannes Berg wrote:
+> On Tue, 2011-04-12 at 13:41 +0200, Johannes Berg wrote:
 
-However when the card is removed (doesn't need to be mounted before), the
-removal is most likely not detected, so when I insert it again, no info is
-printed into console and moreover when I try to mount it zaurus goes into
-infinite loop printing:
+> > > +	if (pdata->name == NULL || pdata->type == 0) {
+> > > +		dev_err(&pdev->dev, "invalid name or type in platform data\n");
+> > > +		return -EINVAL;
+> > > +	}
 
-Buffer I/O error on device mmcblk0p1, logical block 9
-mmcblk0: error -110 sending status command
-mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
-end_request: I/O error, dev mmcblk0, sector 257
-Buffer I/O error on device mmcblk0p1, logical block 10
-mmcblk0: error -110 sending status command
-mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
-end_request: I/O error, dev mmcblk0, sector 258
-Buffer I/O error on device mmcblk0p1, logical block 11
-mmcblk0: error -110 sending status command
-mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
-end_request: I/O error, dev mmcblk0, sector 259
-Buffer I/O error on device mmcblk0p1, logical block 12
-mmcblk0: error -110 sending status command
-mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
-...
+> > > +	vcc = regulator_get_exclusive(&pdev->dev, "vrfkill");
 
-Related part of the .config:
+> > Wasn't that supposed to use pdata->supply? Actually, there's no member
+> > "supply" in the struct?
 
-#
-# OTG and related infrastructure
-#
-# CONFIG_USB_GPIO_VBUS is not set
-# CONFIG_USB_ULPI is not set
-# CONFIG_NOP_USB_XCEIV is not set
-CONFIG_MMC=y
-# CONFIG_MMC_DEBUG is not set
-CONFIG_MMC_UNSAFE_RESUME=y
-# CONFIG_MMC_CLKGATE is not set
+No, if you're passing supply names through platform data something has
+gone wrong - that's a big no no.
 
-#
-# MMC/SD/SDIO Card Drivers
-#
-CONFIG_MMC_BLOCK=y
-CONFIG_MMC_BLOCK_MINORS=8
-CONFIG_MMC_BLOCK_BOUNCE=y
-# CONFIG_SDIO_UART is not set
-# CONFIG_MMC_TEST is not set
+> Oh wait, I think I just misunderstood how this works. But if the name is
+> "vrfkill" how does that really work with multiple instances?
 
-#
-# MMC/SD/SDIO Host Controller Drivers
-#
-CONFIG_MMC_PXA=y
-
--- 
-metan
+That's what the struct device is there for.  The names are mapped into
+physical regulators relative to the device.
