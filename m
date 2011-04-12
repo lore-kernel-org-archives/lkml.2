@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab1DLGUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 02:20:21 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60857 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754504Ab1DLGUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 02:20:20 -0400
-Date: Tue, 12 Apr 2011 08:20:02 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-Message-ID: <20110412062002.GA31050@elte.hu>
-References: <20110412140040.3020ef55.sfr@canb.auug.org.au>
+	id S932105Ab1DLGUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 02:20:33 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:38987 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab1DLGUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 02:20:31 -0400
+Date: Tue, 12 Apr 2011 08:19:15 +0200
+From: Harald Welte <laforge@gnumonks.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        linux-kernel@vger.kernel.org,
+        Aloisio Almeida <aloisio.almeida@openbossa.org>,
+        Arnd Bergmann <arnd@arndb.de>, Waldemar.Rymarkiewicz@tieto.com
+Subject: Re: [RFC] NFC subsystem prototype
+Message-ID: <20110412061915.GT9690@prithivi.gnumonks.org>
+References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com>
+ <20110409130945.GC3248@prithivi.gnumonks.org>
+ <20110409184559.41b947af@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110412140040.3020ef55.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110409184559.41b947af@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alan,
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Sat, Apr 09, 2011 at 06:45:59PM +0100, Alan Cox wrote:
+> >    If you're worried about SPI-attached RFID/NFC ASICs, then I think the
+> >    propper approach is to have a generic support for exporting SPI devices to
+> >    userspace (similar to what we have with usb + libusb).
+> 
+> That bit in my experience doesn't work. Most i²c devices for example end
+> up needing an actual kernel driver because you have to manage the
+> transaction flow to stop users breaking things horribly.
 
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
-> 
-> kernel/sched.c:7140: error: 'cpu_coregroup_mask' undeclared here (not in a function)
-> 
-> Caused by commit 2c402dc3bb50 ("sched: Unify the sched_domain build
-> functions").  On sparc64, cpu_coregroup_mask is a #define, not a function.
-> 
-> I applied tha patch below (idea stolen from s390) whcih could probably be
-> better.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 12 Apr 2011 13:51:32 +1000
-> Subject: [PATCH] sched: fix sparc64 for sched_domain changes
-> 
-> Fixes this compile error:
-> 
-> kernel/sched.c:7140: error: 'cpu_coregroup_mask' undeclared here (not in a function)
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/sparc/include/asm/topology_64.h |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/sparc/include/asm/topology_64.h b/arch/sparc/include/asm/topology_64.h
-> index 1c79f32..16f477d 100644
-> --- a/arch/sparc/include/asm/topology_64.h
-> +++ b/arch/sparc/include/asm/topology_64.h
-> @@ -65,6 +65,10 @@ static inline int pcibus_to_node(struct pci_bus *pbus)
->  #define smt_capable()				(sparc64_multi_core)
->  #endif /* CONFIG_SMP */
->  
-> -#define cpu_coregroup_mask(cpu)			(&cpu_core_map[cpu])
-> +extern cpumask_t cpu_core_map[NR_CPUS];
-> +static inline const struct cpumask *cpu_coregroup_mask(int cpu)
-> +{
-> +        return &cpu_core_map[cpu];
-> +}
+luckily the NFC controller landscape is extremely monolithic, i.e. there are
+not many vendors (+ chips) that need support, so it _may_ still be an option
+to have that small 'actual kernel driver'.  But I agree, it is ugly.
 
-Dave, if this change is fine with you i'd like to queue it up in 
-tip:sched/domains.
+> >    I simply do not see the advantage of having this in the kenrel.  There are
+> >    no latency/timing constraints, and the amount of data you are moving is so
+> >    small, that performance considerations also don't really play any role.
+> 
+> The big one is security management - once you've got readers that are
+> needing to report different stuff to different people you need at least
+> the muxing in kernel. 
 
-Thanks,
+I doubt that NFC is envisioned as a 'multiple simultaneous users in a device'
+application - so I'm not sure how valid that argument really ise.  In any case,
+you would also have to have some kind of access control lists or similar in the
+kernel to decide which user can talk to which card UID, or mifare application ID,
+or similar identifier on the respective higher-level protocol.
 
-	Ingo
+> It also separates protocol stacks from apps which is rather important in more
+> complex systems.
+
+The separation can also be had in userspace, i.e. have a shared ISO 14443 stack
+inside the multiplex daemon, and have applications talk at a much higher level
+API.
+
+> > 2) even if you go for an in-kernel subsystem, what is your strategy for the
+> >    many existing CL-RC5xx / CL-RC6xx ASIC based RFID/NFC readers?  For them,
+> >    you typically need your own software implementation of the anti-collision
+> >    procedures of 14443-3 (a+b) and the T=CL (14443-4) code.  All of this has
+> >    been implemented in userspace e.g. librfid - but do you want to port or
+> >    re-implement it all in kernel-land, and then 'glue' it below your current
+> >    NFC subsystem approach?
+> 
+> The obvious thing would be to plug it into the kernel at a higher level
+> than the raw asic interface. We manage that sort of stuff with all sorts
+> of network devices just fine, and in fact we'll need chunks of that
+> anyway for virtualisation of rfid/nfc.
+
+Actually, I'm not sure if we understand each other correctly.
+
+The case that Lauro seems to be implementing right now, is with a RFID
+controller that includes the analog+digital transceiver, as well as runs the
+RFID protocol stack (ISO 14443) inside a 8051 based microcontroller.  This is
+what is on Linux so far mostly used in combination with libnfc in userspace.
+
+The case I was talking about is the opposite: You have a pure SPI/I2C (or often
+through a protocol converter USB) attached RFID transceiver and have to
+implement the protocol stack on the main CPU.  This is what you you would so
+far drive from something like librfid in userspace.
+
+If there is concensus that this all should live in kernel space, I could
+try to find some time to work on an initial librfid-to-kernel port.
+
+What is definitely needed then is some kind of PC/SC integration on the
+userspace side, i.e. an ifdhandler that can plug into pcscd, as most of
+the (non-NFC) ISO 14443 applications today (electronic passports, VISA, ID
+card, ...) simply assume a smart card interface.
+
+Regards,
+	Harald
+-- 
+- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
+============================================================================
+"Privacy in residential applications is a desirable marketing option."
+                                                  (ETSI EN 300 175-7 Ch. A6)
