@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab1DLGUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 02:20:32 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:38982 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932068Ab1DLGUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 02:20:31 -0400
-Date: Tue, 12 Apr 2011 08:08:13 +0200
-From: Harald Welte <laforge@gnumonks.org>
-To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
-Cc: linux-kernel@vger.kernel.org,
-        Aloisio Almeida <aloisio.almeida@openbossa.org>,
-        Arnd Bergmann <arnd@arndb.de>, Waldemar.Rymarkiewicz@tieto.com
-Subject: Re: [RFC] NFC subsystem prototype
-Message-ID: <20110412060813.GS9690@prithivi.gnumonks.org>
-References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com>
- <20110409130945.GC3248@prithivi.gnumonks.org>
- <BANLkTinTXNby_zc7yz29hAdRmNK3rRht9A@mail.gmail.com>
+	id S1756710Ab1DLGUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 02:20:48 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:56759 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756568Ab1DLGUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 02:20:46 -0400
+X-ASG-Debug-ID: 1302589243-01de284cf81322b0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DA3EF3B.9080804@fusionio.com>
+Date: Tue, 12 Apr 2011 08:20:43 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinTXNby_zc7yz29hAdRmNK3rRht9A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "hch@infradead.org" <hch@infradead.org>
+CC: NeilBrown <neilb@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <20110308202100.GA31744@redhat.com> <4D76912C.9040705@fusionio.com> <20110308220526.GA393@redhat.com> <20110310005810.GA17911@redhat.com> <20110405130541.6c2b5f86@notabene.brown> <20110411145022.710c30e9@notabene.brown> <4DA2C7BE.6060804@fusionio.com> <20110411205928.13915719@notabene.brown> <20110411215521.78c87573@notabene.brown> <4DA2F02D.2000903@fusionio.com> <20110411225812.GA32310@infradead.org>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <20110411225812.GA32310@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1302589243
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60613
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lauro,
-
-On Mon, Apr 11, 2011 at 08:31:11PM -0300, Lauro Ramos Venancio wrote:
- 
-> 2011/4/9 Harald Welte <laforge@gnumonks.org>:
->
-> > 0) why not create a general RFID subsystem instead of locking it down to
-> >   NFC?  NFC is sort-of a superset of ISO 14443, so it would make more
-> >   sense to have a generic framework that can support not only Mifare + NFC
-> >   but all types of ISO 14443 (A / B) as well as ISO 15693.  This would mean
-> >   other applications like electronic ID cards and ICAO-compliant passports
-> >   would fit into the picture - even though not being NFC
+On 2011-04-12 00:58, hch@infradead.org wrote:
+> Looking at the patch
+> (http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff;h=761e433f3de6fb8e369af9e5c08beb86286d023f)
 > 
-> The prototype supports ISO 14443 (A/B), MIFARE, Felica and Jewel. It's
-> straightforward to add ISO 15693 support. So I think it is possible to
-> support these applications using the NFC subsystem.
+> I'm not sure it's an optimal design.  The flush callback really
+> is a per-queue thing.  Why isn't it a function pointer in the request
+> queue when doing the blk_run_queue call once we're done with a given
+> queue before moving on to the next one?
 
-Then I suggest renaming the system.  I think it is a bit confusing to call
-something NFC if in fact it is a way more generic RFID system for most common
-13.56MHz based systems.
+I was thinking about this yesterday as well, the design didn't quite
+feel just right. Additionally the user now must track this state too,
+and whether he's plugged on that task or not.
 
-In other words: NFC depends on ISO 14443, but ISO 14443 does not depend on NFC,
-so it would be a bit unconventional or unintuitive to use a NFC subsystem to
-talk with non-NFC ISO 14443 cards/transponders.
+I'll rewrite this.
 
-Also, I'm not quite clear what's the situation with regard to the NFC trademark,
-i.e. if it wise to use the trademark.  There has been one previous case with
-the 'firewire' situation, where firewire is the trademark and IEEE 1394 the name
-of the technical specification - and the the Linux subsystem is alled
-'ieee1394'...
-
-> > 1) do you really think a kernel subsystem is the best idea for this?
-> >   normally, the RFID/NFC ASIC is attached either to USB or serial lines,
-> >   and there are no timing constraints against userspace drivers using libusb,
-> >   like the existing libnfc or librfid.
-> 
-> The advantages appear when you consider the NFC peer-to-peer use case
-> (LLCP). A socket interface for LLCP would fit better for implementing
-> some features, such as OBEX over LLCP and IP over LLCP.
-
-Ok, I fully agree for the case of OBEX and IP.  This did not occur to me when I
-made my earlier comment.
-
-Regards,
-	Harald
 -- 
-- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
-============================================================================
-"Privacy in residential applications is a desirable marketing option."
-                                                  (ETSI EN 300 175-7 Ch. A6)
+Jens Axboe
+
