@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab1DLPSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 11:18:00 -0400
-Received: from kroah.org ([198.145.64.141]:46277 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752380Ab1DLPR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 11:17:59 -0400
-Date: Tue, 12 Apr 2011 08:14:53 -0700
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        b43-dev@lists.infradead.org,
-        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        Andy Botting <andy@andybotting.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [RFC][PATCH V3] axi: add AXI bus driver
-Message-ID: <20110412151453.GA20978@kroah.com>
-References: <20110411210631.GA28559@kroah.com>
- <BANLkTim155YxMUVJ=pmVs-rNhkovGPG6OQ@mail.gmail.com>
- <20110411212513.GA17809@kroah.com>
- <BANLkTingqXAWTeOhcL6ER0UJfEdQF5Bo2A@mail.gmail.com>
- <20110411215619.GA27943@kroah.com>
- <BANLkTimjThXn347+=m98NsBXY84guJjNqA@mail.gmail.com>
- <20110411223632.GB31833@kroah.com>
- <BANLkTinpKKRCrBik6-9C5WqcSDGuEt5yCw@mail.gmail.com>
- <20110411233506.GA13240@kroah.com>
- <BANLkTi=cG3U8yXaQ6PusmNaWcr+AWv3e_w@mail.gmail.com>
+	id S1757402Ab1DLPSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 11:18:11 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46570 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab1DLPSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 11:18:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=Plv1CwLFuknqZjvdX8jA20/JWoonGK2V9aCIWw1n8T3ggDYmGg7JdNX6GxGhv56cNK
+         ghP01N8XaqUTXCiSZSy6SG23EvThFuM2tSQOv0Tq4UX0U1EI+fJZLNKAqv2D6e3sRjtU
+         NrsQQFGE3sPsdrs33iuTpvJgwkzjL3CQbZH00=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=cG3U8yXaQ6PusmNaWcr+AWv3e_w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz>
+References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 12 Apr 2011 23:17:47 +0800
+Message-ID: <BANLkTikNEJEwq4cfr6cmTcHqcRfyGLM6Ww@mail.gmail.com>
+Subject: Re: zaurus: mmcblk0: error -110
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, utx@penguin.cz,
+        zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 07:41:18AM +0200, Rafał Miłecki wrote:
-> > You can't do that, no static struct devices please.  Make these dynamic
-> > and everything will be fine.  The -mm tree used to have a huge warning
-> > if you ever tried to register a statically allocated struct, but that
-> > didn't really work out, but would have saved you a lot of time here,
-> > sorry.
-> >
-> > So dynamically allocate the structures and you will be fine.
-> 
-> Well, I saw that along kernel, I had no idea there is anything wrong
-> about this. It seems more ppl do not know about this:
-> struct radeon_ib	ibs[RADEON_IB_POOL_SIZE];
-> struct radeon_pm_clock_info clock_info[8];
-> struct radeon_pm_profile profiles[PM_PROFILE_MAX];
-> struct radeon_surface_reg surface_regs[RADEON_GEM_MAX_SURFACES];
+Hi Cyril,
 
-Are you sure these are all containing a 'struct device'?
+Which model do you have? And check the corresponding board file if
+card detect GPIO handling is doing right.
 
-> struct radeon_i2c_chan *i2c_bus[RADEON_MAX_I2C_BUS];
+- eric
 
-This is an array of pointers, that's fine.
-
-> struct b43_key key[B43_NR_GROUP_KEYS * 2 + B43_NR_PAIRWISE_KEYS];
-
-This contains a 'struct device'?
-
-> struct ssb_device devices[SSB_MAX_NR_CORES];
-> I guess I could fine more examples by simple grepping .h files.
-
-Then all of the above should be fixed.
-
-> Is there some guide around with things like this we should avoid?
-
-Yes, do not statically allocate a 'struct device'.
-
-> checkpatch does no catch this, so maybe just some manual? Could you
-> point me to it?
-
-It's a structure that has dynamic lifetime rules, you can't statically
-allocate it safely.  It's that simple.
-
-Please fix this.
-
-thanks,
-
-greg k-h
+On Tue, Apr 12, 2011 at 11:15 PM, Cyril Hrubis <metan@ucw.cz> wrote:
+> Hi!
+> When I insert the mmc card to zaurus, it gets properly detected and prints some
+> info into console. Mounting reading/writing files works fine.
+>
+> However when the card is removed (doesn't need to be mounted before), the
+> removal is most likely not detected, so when I insert it again, no info is
+> printed into console and moreover when I try to mount it zaurus goes into
+> infinite loop printing:
+>
+> Buffer I/O error on device mmcblk0p1, logical block 9
+> mmcblk0: error -110 sending status command
+> mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
+> end_request: I/O error, dev mmcblk0, sector 257
+> Buffer I/O error on device mmcblk0p1, logical block 10
+> mmcblk0: error -110 sending status command
+> mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
+> end_request: I/O error, dev mmcblk0, sector 258
+> Buffer I/O error on device mmcblk0p1, logical block 11
+> mmcblk0: error -110 sending status command
+> mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
+> end_request: I/O error, dev mmcblk0, sector 259
+> Buffer I/O error on device mmcblk0p1, logical block 12
+> mmcblk0: error -110 sending status command
+> mmcblk0: error -110 sending read/write command, response 0xb00, card status 0xb00
+> ...
+>
+> Related part of the .config:
+>
+> #
+> # OTG and related infrastructure
+> #
+> # CONFIG_USB_GPIO_VBUS is not set
+> # CONFIG_USB_ULPI is not set
+> # CONFIG_NOP_USB_XCEIV is not set
+> CONFIG_MMC=y
+> # CONFIG_MMC_DEBUG is not set
+> CONFIG_MMC_UNSAFE_RESUME=y
+> # CONFIG_MMC_CLKGATE is not set
+>
+> #
+> # MMC/SD/SDIO Card Drivers
+> #
+> CONFIG_MMC_BLOCK=y
+> CONFIG_MMC_BLOCK_MINORS=8
+> CONFIG_MMC_BLOCK_BOUNCE=y
+> # CONFIG_SDIO_UART is not set
+> # CONFIG_MMC_TEST is not set
+>
+> #
+> # MMC/SD/SDIO Host Controller Drivers
+> #
+> CONFIG_MMC_PXA=y
+>
+> --
+> metan
+>
