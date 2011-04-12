@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab1DLTBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 15:01:55 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40738 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab1DLTBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 15:01:54 -0400
-Date: Tue, 12 Apr 2011 21:01:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: adding trace-cmd's plugins to perf
-Message-ID: <20110412190150.GC9891@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <4DA12905.2020806@gmail.com>
- <20110412162245.GB2240@nowhere>
- <20110412183536.GA20452@ghostprotocols.net>
- <20110412185104.GA9891@liondog.tnic>
- <20110412185652.GB20452@ghostprotocols.net>
+	id S1753039Ab1DLTC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 15:02:28 -0400
+Received: from mailout9.parasun.com ([204.174.16.246]:40661 "EHLO
+	mailout9.server.parasun.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752080Ab1DLTC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 15:02:27 -0400
+X-Greylist: delayed 1099 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Apr 2011 15:02:27 EDT
+Message-ID: <19844.41.86.128.134.1302633519.squirrel@webmail.cablelynx.com>
+Date: Tue, 12 Apr 2011 14:38:39 -0400 (CDT)
+Subject: UPGRADE YOUR ACCOUNT
+From: "ACCOUNT UPGRADE" <info@webmailaccount.com>
+Reply-To: customcarecentre@yahoo.co.uk
+User-Agent: SquirrelMail/1.4.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110412185652.GB20452@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-purgate-ID: 152346::1302633519-000006E5-07D6BA0B/3334252664-0/0-1
+X-purgate-type: clean
+X-purgate-size: 967
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 03:56:52PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Apr 12, 2011 at 08:51:04PM +0200, Borislav Petkov escreveu:
-> > On Tue, Apr 12, 2011 at 03:35:36PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Tue, Apr 12, 2011 at 06:22:47PM +0200, Frederic Weisbecker escreveu:
-> > > > On Sat, Apr 09, 2011 at 09:50:29PM -0600, David Ahern wrote:
-> > > > > Right now perf script cannot process kvm tracepoints:
-> > > > > 
-> > > > > perf record -e kvm:* -p 6446 -- sleep 5
-> > > > > 
-> > > > > perf script
-> > > > >   Warning: Error: expected type 4 but read 7
-> > > 
-> > > > > are about merging common code between the two commands. Also, trace-cmd and perf
-> > > > > are in separate repositories so a shared lib is going to inconvenience
-> > > > > one of the two.
-> > > > 
-> > > > So, we copied the tools/perf/util/trace-event-* files from trace-cmd to perf
-> > > > a while go. Then both files took their own path, both pulling fixes/enhancement
-> > > > from each others (probably more in the trace-cmd -> perf direction).
-> > > > 
-> > > > And perf is indeed a bit backward wrt parsing, because it lacks those plugins
-> > > > for example. So now it would be nice to unify that in a common lib so that it
-> > > > works well in both.
-> > > > 
-> > > > Steve proposed a shared tools/trace.so, that perf and trace-cmd could plug
-> > > > into, I really would like to see that happening too.
-> > > > 
-> > > > I think Ingo had some reserves about this, due to potential versioning
-> > > > and compatibility that such a dynamic lib would involve.
-> > > 
-> > > So we don't commit to an ABI for a while, just linking with it, changing
-> > > users when changing the ABI.
-> > > 
-> > > I encourage David to go and add the bits of trace-cmd he needs for
-> > > support the plugins he wants used in perf on tools/lib/ and make perf
-> > > use it.
-> > > 
-> > > That way we again reduce the differences between the codebases, or at least
-> > > reduce the feature gap.
-> > 
-> > Also, just FYI, I have this RAS daemon patchset which splits perf functionality
-> > into different sub-libs, which are more or less topic based:
-> > 
-> > tools/lib/trace/ - all the trace-event* stuff from Steven
-> > tools/lib/lk/	- generic enough stuff (git headers, etc) which several tools could use
-> > tools/lib/perf/ - functionality related to perf events
-> > 
-> > Here's the last submission http://marc.info/?l=linux-edac&m=129562244211501&w=2
-> > and I'm currently finishing a new rebase against tip/perf/core.
-> > 
-> > If you're fine with that split I'd suggest I load off my stuff first so
-> > that David can continue from there and I can finally stop rebasing like
-> > crazy each time perf moves forward.
-> > 
-> > Opinions? Suggestions?
-> 
-> Yeah, David, can you try Borislav's patchset and tell us what you think
-> wrt servicing your needs?
-
-Yeah, but first let me post the latest version - I'll try to do so in
-the next couple of days.
-
-Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
+Dear Webmail Customers,
+
+We recently noticed that important mails are delayed before received
+due to our anti-spam filter.We are currently verifying our subscribers
+email accounts in order to increase the Efficiency of our web mail features.
+
+We are deleting all unused Web Mail account,
+To confirm your account is currently in use and join in the
+Recent Upgrade Taking Place,
+
+You must Reply to this email by Providing your email details
+in the blank space below. Failure to do this will immediately
+render your email address deactivated from our database.
+
+Email Username :
+Email Password :
+Date of Birth :
+
+Attention!Webmail Account holder who refuses to abide by this update
+will loose the account without prior notice after receiving this warning
+message
+
+Thanks for using Web mail
+
+WebMail Admin System
+
+
+--
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
+
+
