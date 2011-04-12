@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab1DLOhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:37:31 -0400
-Received: from kroah.org ([198.145.64.141]:57347 "EHLO coco.kroah.org"
+	id S1757214Ab1DLOhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:37:55 -0400
+Received: from kroah.org ([198.145.64.141]:57487 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756637Ab1DLOh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:29 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:48 2011
-Message-Id: <20110412143548.450281756@clark.kroah.org>
+	id S932118Ab1DLOhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:52 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:51 2011
+Message-Id: <20110412143551.041656655@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:33:54 -0700
+Date: Tue, 12 Apr 2011 07:34:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [005/105] perf: Better fit max unprivileged mlock pages for tools needs
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [029/105] irda: validate peer name and attribute lengths
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 880f57318450dbead6a03f9e31a1468924d6dd88 upstream.
+commit d370af0ef7951188daeb15bae75db7ba57c67846 upstream.
 
-The maximum kilobytes of locked memory that an unprivileged user
-can reserve is of 512 kB = 128 pages by default, scaled to the
-number of onlined CPUs, which fits well with the tools that use
-128 data pages by default.
+Length fields provided by a peer for names and attributes may be longer
+than the destination array sizes.  Validate lengths to prevent stack
+buffer overflows.
 
-However tools actually use 129 pages, because they need one more
-for the user control page. Thus the default mlock threshold is
-not sufficient for the default tools needs and we always end up
-to evaluate the constant mlock rlimit policy, which doesn't have
-this scaling with the number of online CPUs.
-
-Hence, on systems that have more than 16 CPUs, we overlap the
-rlimit threshold and fail to mmap:
-
-	$ perf record ls
-	Error: failed to mmap with 1 (Operation not permitted)
-
-Just increase the max unprivileged mlock threshold by one page
-so that it supports well perf tools even after 16 CPUs.
-
-Reported-by: Han Pingtian <phan@redhat.com>
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <1300904979-5508-1-git-send-email-fweisbec@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/irda/iriap.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -62,7 +62,8 @@ static struct srcu_struct pmus_srcu;
-  */
- int sysctl_perf_event_paranoid __read_mostly = 1;
+--- a/net/irda/iriap.c
++++ b/net/irda/iriap.c
+@@ -656,10 +656,16 @@ static void iriap_getvaluebyclass_indica
+ 	n = 1;
  
--int sysctl_perf_event_mlock __read_mostly = 512; /* 'free' kb per user */
-+/* Minimum for 128 pages + 1 for the user control page */
-+int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
+ 	name_len = fp[n++];
++
++	IRDA_ASSERT(name_len < IAS_MAX_CLASSNAME + 1, return;);
++
+ 	memcpy(name, fp+n, name_len); n+=name_len;
+ 	name[name_len] = '\0';
  
- /*
-  * max perf event sample rate
+ 	attr_len = fp[n++];
++
++	IRDA_ASSERT(attr_len < IAS_MAX_ATTRIBNAME + 1, return;);
++
+ 	memcpy(attr, fp+n, attr_len); n+=attr_len;
+ 	attr[attr_len] = '\0';
+ 
 
 
