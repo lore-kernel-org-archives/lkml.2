@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab1DLOzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 10:55:08 -0400
-Received: from kroah.org ([198.145.64.141]:57482 "EHLO coco.kroah.org"
+	id S1757278Ab1DLOzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 10:55:42 -0400
+Received: from kroah.org ([198.145.64.141]:57477 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab1DLOhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 10:37:51 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:51 2011
-Message-Id: <20110412143550.930494030@clark.kroah.org>
+	id S932069Ab1DLOhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 10:37:50 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 12 07:35:50 2011
+Message-Id: <20110412143550.829232674@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 12 Apr 2011 07:34:17 -0700
+Date: Tue, 12 Apr 2011 07:34:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, Mike Waychison <mikew@google.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [028/105] watchdog: sp5100_tco.c: Check if firmware has set correct value in tcobase.
+        Julia Lawall <julia@diku.dk>, Wim Van Sebroeck <wim@iguana.be>
+Subject: [027/105] watchdog: Convert release_resource to release_region/release_mem_region
 In-Reply-To: <20110412143613.GA19478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,85 +25,231 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Julia Lawall <julia@diku.dk>
 
-commit 90d241edd13bdeef70f264b569f7e150bf23621e upstream.
+commit f712eacf02ecfbf4f1686addb8c569841549b0b7 upstream.
 
-Stefano found SP5100 TCO watchdog driver using wrong address.
+Request_mem_region should be used with release_mem_region, not
+release_resource.
 
-[    9.148536] SP5100 TCO timer: SP5100 TCO WatchDog Timer Driver v0.01
-[    9.148628] DEBUG __ioremap_caller WARNING address=b8fe00 size=8 valid=1 reserved=1
+In pnx4008_wdt.c, a missing clk_put is added as well.
 
-and e820 said that range is RAM.
+The semantic match that finds the first problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-We should check if we can use that reading out. BIOS could just program wrong address there.
+// <smpl>
+@@
+expression x,E;
+@@
+*x = request_mem_region(...)
+... when != release_mem_region(x)
+    when != x = E
+* release_resource(x);
+// </smpl>
 
-Reported-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by:Yinghai Lu <yinghai@kernel.org>
-Acked-by: Mike Waychison <mikew@google.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Julia Lawall <julia@diku.dk>
 Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/watchdog/sp5100_tco.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/watchdog/davinci_wdt.c |   22 ++++++++++------------
+ drivers/watchdog/max63xx_wdt.c |   20 ++++++++------------
+ drivers/watchdog/pnx4008_wdt.c |   28 +++++++++++++---------------
+ 3 files changed, 31 insertions(+), 39 deletions(-)
 
---- a/drivers/watchdog/sp5100_tco.c
-+++ b/drivers/watchdog/sp5100_tco.c
-@@ -42,6 +42,7 @@
- #define PFX TCO_MODULE_NAME ": "
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -202,7 +202,6 @@ static struct miscdevice davinci_wdt_mis
+ static int __devinit davinci_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0, size;
+-	struct resource *res;
+ 	struct device *dev = &pdev->dev;
  
- /* internal variables */
-+static u32 tcobase_phys;
- static void __iomem *tcobase;
- static unsigned int pm_iobase;
- static DEFINE_SPINLOCK(tco_lock);	/* Guards the hardware */
-@@ -305,10 +306,18 @@ static unsigned char __devinit sp5100_tc
- 	/* Low three bits of BASE0 are reserved. */
- 	val = val << 8 | (inb(SP5100_IO_PM_DATA_REG) & 0xf8);
+ 	wdt_clk = clk_get(dev, NULL);
+@@ -216,31 +215,31 @@ static int __devinit davinci_wdt_probe(s
  
-+	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
-+								"SP5100 TCO")) {
-+		printk(KERN_ERR PFX "mmio address 0x%04x already in use\n",
-+			val);
-+		goto unreg_region;
-+	}
-+	tcobase_phys = val;
-+
- 	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
- 	if (tcobase == 0) {
- 		printk(KERN_ERR PFX "failed to get tcobase address\n");
--		goto unreg_region;
-+		goto unreg_mem_region;
+ 	dev_info(dev, "heartbeat %d sec\n", heartbeat);
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (wdt_mem == NULL) {
+ 		dev_err(dev, "failed to get memory region resource\n");
+ 		return -ENOENT;
  	}
  
- 	/* Enable watchdog decode bit */
-@@ -346,7 +355,8 @@ static unsigned char __devinit sp5100_tc
- 	/* Done */
- 	return 1;
+-	size = resource_size(res);
+-	wdt_mem = request_mem_region(res->start, size, pdev->name);
+-
+-	if (wdt_mem == NULL) {
++	size = resource_size(wdt_mem);
++	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+ 		dev_err(dev, "failed to get memory region\n");
+ 		return -ENOENT;
+ 	}
  
--	iounmap(tcobase);
-+unreg_mem_region:
-+	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
- unreg_region:
- 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
- exit:
-@@ -401,6 +411,7 @@ static int __devinit sp5100_tco_init(str
+-	wdt_base = ioremap(res->start, size);
++	wdt_base = ioremap(wdt_mem->start, size);
+ 	if (!wdt_base) {
+ 		dev_err(dev, "failed to map memory region\n");
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 		return -ENOMEM;
+ 	}
  
- exit:
- 	iounmap(tcobase);
-+	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
- 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ 	ret = misc_register(&davinci_wdt_miscdev);
+ 	if (ret < 0) {
+ 		dev_err(dev, "cannot register misc device\n");
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 	} else {
+ 		set_bit(WDT_DEVICE_INITED, &wdt_status);
+ 	}
+@@ -253,8 +252,7 @@ static int __devexit davinci_wdt_remove(
+ {
+ 	misc_deregister(&davinci_wdt_miscdev);
+ 	if (wdt_mem) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 		wdt_mem = NULL;
+ 	}
+ 
+--- a/drivers/watchdog/max63xx_wdt.c
++++ b/drivers/watchdog/max63xx_wdt.c
+@@ -270,7 +270,6 @@ static int __devinit max63xx_wdt_probe(s
+ {
+ 	int ret = 0;
+ 	int size;
+-	struct resource *res;
+ 	struct device *dev = &pdev->dev;
+ 	struct max63xx_timeout *table;
+ 
+@@ -294,21 +293,19 @@ static int __devinit max63xx_wdt_probe(s
+ 
+ 	max63xx_pdev = pdev;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (wdt_mem == NULL) {
+ 		dev_err(dev, "failed to get memory region resource\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	size = resource_size(res);
+-	wdt_mem = request_mem_region(res->start, size, pdev->name);
+-
+-	if (wdt_mem == NULL) {
++	size = resource_size(wdt_mem);
++	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+ 		dev_err(dev, "failed to get memory region\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	wdt_base = ioremap(res->start, size);
++	wdt_base = ioremap(wdt_mem->start, size);
+ 	if (!wdt_base) {
+ 		dev_err(dev, "failed to map memory region\n");
+ 		ret = -ENOMEM;
+@@ -326,8 +323,8 @@ static int __devinit max63xx_wdt_probe(s
+ out_unmap:
+ 	iounmap(wdt_base);
+ out_request:
+-	release_resource(wdt_mem);
+-	kfree(wdt_mem);
++	release_mem_region(wdt_mem->start, size);
++	wdt_mem = NULL;
+ 
  	return ret;
  }
-@@ -414,6 +425,7 @@ static void __devexit sp5100_tco_cleanup
- 	/* Deregister */
- 	misc_deregister(&sp5100_tco_miscdev);
- 	iounmap(tcobase);
-+	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
- 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
- }
+@@ -336,8 +333,7 @@ static int __devexit max63xx_wdt_remove(
+ {
+ 	misc_deregister(&max63xx_wdt_miscdev);
+ 	if (wdt_mem) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 		wdt_mem = NULL;
+ 	}
  
+--- a/drivers/watchdog/pnx4008_wdt.c
++++ b/drivers/watchdog/pnx4008_wdt.c
+@@ -254,7 +254,6 @@ static struct miscdevice pnx4008_wdt_mis
+ static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0, size;
+-	struct resource *res;
+ 
+ 	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
+ 		heartbeat = DEFAULT_HEARTBEAT;
+@@ -262,42 +261,42 @@ static int __devinit pnx4008_wdt_probe(s
+ 	printk(KERN_INFO MODULE_NAME
+ 		"PNX4008 Watchdog Timer: heartbeat %d sec\n", heartbeat);
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (wdt_mem == NULL) {
+ 		printk(KERN_INFO MODULE_NAME
+ 			"failed to get memory region resouce\n");
+ 		return -ENOENT;
+ 	}
+ 
+-	size = resource_size(res);
+-	wdt_mem = request_mem_region(res->start, size, pdev->name);
++	size = resource_size(wdt_mem);
+ 
+-	if (wdt_mem == NULL) {
++	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+ 		printk(KERN_INFO MODULE_NAME "failed to get memory region\n");
+ 		return -ENOENT;
+ 	}
+-	wdt_base = (void __iomem *)IO_ADDRESS(res->start);
++	wdt_base = (void __iomem *)IO_ADDRESS(wdt_mem->start);
+ 
+ 	wdt_clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(wdt_clk)) {
+ 		ret = PTR_ERR(wdt_clk);
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 		goto out;
+ 	}
+ 
+ 	ret = clk_enable(wdt_clk);
+ 	if (ret) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
++		clk_put(wdt_clk);
+ 		goto out;
+ 	}
+ 
+ 	ret = misc_register(&pnx4008_wdt_miscdev);
+ 	if (ret < 0) {
+ 		printk(KERN_ERR MODULE_NAME "cannot register misc device\n");
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, size);
++		wdt_mem = NULL;
+ 		clk_disable(wdt_clk);
+ 		clk_put(wdt_clk);
+ 	} else {
+@@ -320,8 +319,7 @@ static int __devexit pnx4008_wdt_remove(
+ 	clk_put(wdt_clk);
+ 
+ 	if (wdt_mem) {
+-		release_resource(wdt_mem);
+-		kfree(wdt_mem);
++		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 		wdt_mem = NULL;
+ 	}
+ 	return 0;
 
 
