@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab1DMNwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 09:52:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33865 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868Ab1DMNwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 09:52:43 -0400
-Date: Wed, 13 Apr 2011 14:52:39 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: naveen yadav <yad.naveen@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
-        linux-arm-kernel-request@lists.arm.linux.org.uk,
-        linux newbie <linux.newbie79@gmail.com>
-Subject: Re: [ARM] Issue of memory compaction on kernel 2.6.35.9
-Message-ID: <20110413135239.GA22688@suse.de>
-References: <BANLkTikHzq90xzK5+imnGKtc6mLNz84G-w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikHzq90xzK5+imnGKtc6mLNz84G-w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755673Ab1DMNxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 09:53:52 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:50074 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab1DMNxv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 09:53:51 -0400
+Subject: [GIT PULL] AVR32 fixes and minor updates for 2.6.39
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: AVR32 Linux Kernel <kernel@avr32linux.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Wed, 13 Apr 2011 15:53:36 +0200
+Message-ID: <1302702816.10549.7.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 13 Apr 2011 13:53:38.0387 (UTC) FILETIME=[309F6A30:01CBF9E2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 05:05:33PM +0530, naveen yadav wrote:
-> Dear all,
-> 
-> we want to varify compaction on ARM and we are  using 2.6.25.9 kernel
-> on cortex a9.
-> 
-> Since ARM does not have HUGETLB_PAGE support and compaction is HUGE
-> PAGE independent so I removed from config file
-> 
+Hello Linus,
 
-Bear in mind that if you intend to depend on compaction to allow
-devices to use high-order allocations, you could be in trouble in
-the future. Compaction gives no guarantees that high-order pages will
-be available so a device must still be able to cope with allocation
-failure. In the case of transparent hugepage support and hugetlbfs,
-allocation failure is not a serious problem.
+please pull
 
-> ******************************************************************************************************************************
-> # support for memory compaction
-> config COMPACTION
->         bool "Allow for memory compaction"
->         select MIGRATION
->         #depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
->         depends on EXPERIMENTAL && MMU
->    help
->           Allows the compaction of memory for the allocation of huge pages.	
-> ******************************************************************************************************************************
-> after triggering Memory Compaction by writing any value to
-> /proc/sys/vm/compact_memory†i am getting the SVC†mode crash
-> ******************************************************************************************************************************
-> #echo 1 > /proc/sys/vm/compact_memory
-> Unable to handle kernel paging request at virtual address ee420be4
-> pgd = d9c6c000
-> [ee420be4] *pgd=00000000
-> Internal error: Oops: 805 [#1] PREEMPT
-> last sysfs file:
-> Modules linked in:
-> CPU: 0††† Not tainted† (2.6.35.9 #16)
-> PC is at compact_zone+0x178/0x610
-> LR is at compact_zone+0x138/0x610
-> pc : [<c009f30c>]††† lr : [<c009f2cc>]††† psr: 40000093
-> sp : d9d75e40† ip : c0380978† fp : d9d75e94
-> r10: d9d74000† r9 : c03806c8† r8 : 00069704
-> r7 : 00069800† r6 : 00d2e080† r5 : c04ea080† r4 : d9d75e9c
-> r3 : 60000093† r2 : 00000002† r1 : ee420be4† r0 : ee430b82
-> Flags: nZcv† IRQs off† FIQs on† Mode SVC_32† ISA ARM† Segment us	
-> ******************************************************************************************************************************
-> 
-> 
-> We  tried to narrow down the prob... I found crash is form
-> ?del_page_from_lru_list(zone, page, page_lru(page)); ? function
-> isolate_migratepages
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/egtvedt/avr32-2.6.git for-linus
 
-ARM punches holes in the mem_map structure to save memory and
-memory compaction is not aware of them because it couldn't have been
-configured.  Debug what PFN is failing and see if it is near a memory
-hole. If it's within a memory hole, that's your problem.
+to receive the following fixes and minor updates for 2.6.39
+
+Andreas Bie√ümann (1):
+      avr32: add ATAG_BOARDINFO
+
+Ben Hutchings (1):
+      avr32: Fix .size directive for cpu_enter_idle
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      avr32: At32ap: pio fix typo "))" on gpio_irq_unmask prototype
+
+Matt Fleming (1):
+      avr32: init cannot ignore signals sent by force_sig_info()
+
+Ole Henrik Jahren (1):
+      avr32: fix deadlock when reading clock list in debugfs
+
+Uwe Kleine-K√∂nig (1):
+      don't check platform_get_irq's return value against zero
+
+Wanlong Gao (1):
+      fix the wrong argument of the functions definition
+
+ arch/avr32/include/asm/setup.h         |    9 +++++++++
+ arch/avr32/kernel/setup.c              |   15 +++++++++++++++
+ arch/avr32/kernel/traps.c              |   22 ----------------------
+ arch/avr32/mach-at32ap/clock.c         |   24 ++++++++++++++++--------
+ arch/avr32/mach-at32ap/extint.c        |   22 +++++++++++-----------
+ arch/avr32/mach-at32ap/pio.c           |    2 +-
+ arch/avr32/mach-at32ap/pm-at32ap700x.S |    2 +-
+ 7 files changed, 53 insertions(+), 43 deletions(-)
 
 -- 
-Mel Gorman
-SUSE Labs
+Hans-Christian Egtvedt
+
