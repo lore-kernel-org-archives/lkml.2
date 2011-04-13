@@ -1,44 +1,455 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab1DMJO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 05:14:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51075 "EHLO mx2.suse.de"
+	id S1758017Ab1DMJSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 05:18:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6862 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757966Ab1DMJO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 05:14:56 -0400
-Date: Wed, 13 Apr 2011 11:14:52 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: linux-next: manual merge of the trivial tree with the wireless
- tree
-In-Reply-To: <20110411132844.fa651c08.sfr@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1104131114350.12035@pobox.suse.cz>
-References: <20110411132844.fa651c08.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757928Ab1DMJSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 05:18:04 -0400
+Subject: Re: Strange block/scsi/workqueue issue
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <20110413060651.GA27823@mtj.dyndns.org>
+References: <1302621261.2604.18.camel@mulgrave.site>
+	 <1302624266.2661.21.camel@dolmen> <1302625621.2604.24.camel@mulgrave.site>
+	 <1302627097.2661.25.camel@dolmen> <1302630090.2604.30.camel@mulgrave.site>
+	 <1302633208.2661.29.camel@dolmen> <1302638216.2604.35.camel@mulgrave.site>
+	 <1302640226.2661.34.camel@dolmen> <1302641036.2604.40.camel@mulgrave.site>
+	 <20110413051846.GD24161@mtj.dyndns.org>
+	 <20110413060651.GA27823@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Wed, 13 Apr 2011 10:20:54 +0100
+Message-ID: <1302686454.2613.4.camel@dolmen>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Apr 2011, Stephen Rothwell wrote:
+Hi,
 
-> Today's linux-next merge of the trivial tree got a conflict in
-> drivers/net/wireless/ath/ath9k/phy.h between commit a9b6b2569cf1
-> ("ath9k_hw: turn a few big macros into functions") from the wireless tree
-> and commit 6eab04a87677 ("treewide: remove extra semicolons") from the
-> trivial tree.
+On Wed, 2011-04-13 at 15:06 +0900, Tejun Heo wrote:
+> On Wed, Apr 13, 2011 at 02:18:46PM +0900, Tejun Heo wrote:
+> > Steven, can you be enticed to try the combination?  I'll prep a
+> > combined patch and post it but please beware that I'm currently in a
+> > rather zombish state - sleep deprived, jet lagged and malfunctioning
+> > digestion - so the likelihood of doing something stupid is pretty
+> > high.
 > 
-> The former commit removed the code that the latter changed, so I did that.
+> Does the following completely untested version work?
+> 
+Almost. With one small change (q->queue_lock is already a pointer to a
+spinlock, so it doesn't require an &) it seems to work for me. Let me
+know if you'd like me to do any more tests. I've attached an updated
+patch below,
 
-I have reverted the chunk in question, so the conflict should be gone.
+Steve.
 
-Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 90f22cc..90de9ac 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -359,6 +359,14 @@ void blk_put_queue(struct request_queue *q)
+  */
+ void blk_cleanup_queue(struct request_queue *q)
+ {
++	/* mark @q stopped and dead */
++	mutex_lock(&q->sysfs_lock);
++	spin_lock_irq(q->queue_lock);
++	queue_flag_set(QUEUE_FLAG_STOPPED, q);
++	queue_flag_set(QUEUE_FLAG_DEAD, q);
++	spin_unlock_irq(q->queue_lock);
++	mutex_unlock(&q->sysfs_lock);
++
+ 	/*
+ 	 * We know we have process context here, so we can be a little
+ 	 * cautious and ensure that pending block actions on this device
+@@ -368,9 +376,6 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	blk_sync_queue(q);
+ 
+ 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+-	mutex_lock(&q->sysfs_lock);
+-	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+-	mutex_unlock(&q->sysfs_lock);
+ 
+ 	if (q->elevator)
+ 		elevator_exit(q->elevator);
+@@ -1456,7 +1461,7 @@ static inline int bio_check_eod(struct bio *bio, unsigned int nr_sectors)
+  * generic_make_request and the drivers it calls may use bi_next if this
+  * bio happens to be merged with someone else, and may change bi_dev and
+  * bi_sector for remaps as it sees fit.  So the values of these fields
+- * should NOT be depended on after the call to generic_make_request.
++ * should NOT be depended on after thes call to generic_make_request.
+  */
+ static inline void __generic_make_request(struct bio *bio)
+ {
+diff --git a/block/blk.h b/block/blk.h
+index 6126346..4df474d 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -62,7 +62,8 @@ static inline struct request *__elv_next_request(struct request_queue *q)
+ 			return rq;
+ 		}
+ 
+-		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
++		if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) ||
++		    !q->elevator->ops->elevator_dispatch_fn(q, 0))
+ 			return NULL;
+ 	}
+ }
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 2aeb2e9..12ebcbc 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -70,6 +70,11 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/scsi.h>
+ 
++/*
++ * Utility multithreaded workqueue for SCSI.
++ */
++struct workqueue_struct *scsi_wq;
++
+ static void scsi_done(struct scsi_cmnd *cmd);
+ 
+ /*
+@@ -1306,11 +1311,14 @@ MODULE_PARM_DESC(scsi_logging_level, "a bit mask of logging levels");
+ 
+ static int __init init_scsi(void)
+ {
+-	int error;
++	int error = -ENOMEM;
+ 
++	scsi_wq = alloc_workqueue("scsi", 0, 0);
++	if (!scsi_wq)
++		return error;
+ 	error = scsi_init_queue();
+ 	if (error)
+-		return error;
++		goto cleanup_wq;
+ 	error = scsi_init_procfs();
+ 	if (error)
+ 		goto cleanup_queue;
+@@ -1342,6 +1350,8 @@ cleanup_procfs:
+ 	scsi_exit_procfs();
+ cleanup_queue:
+ 	scsi_exit_queue();
++cleanup_wq:
++	destroy_workqueue(scsi_wq);
+ 	printk(KERN_ERR "SCSI subsystem failed to initialize, error = %d\n",
+ 	       -error);
+ 	return error;
+@@ -1356,6 +1366,7 @@ static void __exit exit_scsi(void)
+ 	scsi_exit_devinfo();
+ 	scsi_exit_procfs();
+ 	scsi_exit_queue();
++	destroy_workqueue(scsi_wq);
+ }
+ 
+ subsys_initcall(init_scsi);
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index 087821f..4222b58 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -362,6 +362,16 @@ int scsi_is_target_device(const struct device *dev)
+ }
+ EXPORT_SYMBOL(scsi_is_target_device);
+ 
++static void scsi_target_reap_usercontext(struct work_struct *work)
++{
++	struct scsi_target *starget =
++		container_of(work, struct scsi_target, reap_work);
++
++	transport_remove_device(&starget->dev);
++	device_del(&starget->dev);
++	scsi_target_destroy(starget);
++}
++
+ static struct scsi_target *__scsi_find_target(struct device *parent,
+ 					      int channel, uint id)
+ {
+@@ -427,6 +437,7 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
+ 	starget->state = STARGET_CREATED;
+ 	starget->scsi_level = SCSI_2;
+ 	starget->max_target_blocked = SCSI_DEFAULT_TARGET_BLOCKED;
++	INIT_WORK(&starget->reap_work, scsi_target_reap_usercontext);
+  retry:
+ 	spin_lock_irqsave(shost->host_lock, flags);
+ 
+@@ -462,21 +473,11 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
+ 	}
+ 	/* Unfortunately, we found a dying target; need to
+ 	 * wait until it's dead before we can get a new one */
++	flush_work(&found_target->reap_work);
+ 	put_device(&found_target->dev);
+-	flush_scheduled_work();
+ 	goto retry;
+ }
+ 
+-static void scsi_target_reap_usercontext(struct work_struct *work)
+-{
+-	struct scsi_target *starget =
+-		container_of(work, struct scsi_target, ew.work);
+-
+-	transport_remove_device(&starget->dev);
+-	device_del(&starget->dev);
+-	scsi_target_destroy(starget);
+-}
+-
+ /**
+  * scsi_target_reap - check to see if target is in use and destroy if not
+  * @starget: target to be checked
+@@ -507,8 +508,7 @@ void scsi_target_reap(struct scsi_target *starget)
+ 	if (state == STARGET_CREATED)
+ 		scsi_target_destroy(starget);
+ 	else
+-		execute_in_process_context(scsi_target_reap_usercontext,
+-					   &starget->ew);
++		queue_work(scsi_wq, &starget->reap_work);
+ }
+ 
+ /**
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index e44ff64..e030091 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -300,7 +300,7 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+ 	struct list_head *this, *tmp;
+ 	unsigned long flags;
+ 
+-	sdev = container_of(work, struct scsi_device, ew.work);
++	sdev = container_of(work, struct scsi_device, release_work);
+ 
+ 	parent = sdev->sdev_gendev.parent;
+ 	starget = to_scsi_target(parent);
+@@ -323,7 +323,6 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+ 	}
+ 
+ 	if (sdev->request_queue) {
+-		sdev->request_queue->queuedata = NULL;
+ 		/* user context needed to free queue */
+ 		scsi_free_queue(sdev->request_queue);
+ 		/* temporary expedient, try to catch use of queue lock
+@@ -343,8 +342,8 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+ static void scsi_device_dev_release(struct device *dev)
+ {
+ 	struct scsi_device *sdp = to_scsi_device(dev);
+-	execute_in_process_context(scsi_device_dev_release_usercontext,
+-				   &sdp->ew);
++
++	queue_work(scsi_wq, &sdp->release_work);
+ }
+ 
+ static struct class sdev_class = {
+@@ -937,6 +936,7 @@ void __scsi_remove_device(struct scsi_device *sdev)
+ 	if (sdev->host->hostt->slave_destroy)
+ 		sdev->host->hostt->slave_destroy(sdev);
+ 	transport_destroy_device(dev);
++	sdev->request_queue->queuedata = NULL;
+ 	put_device(dev);
+ }
+ 
+@@ -1069,6 +1069,8 @@ void scsi_sysfs_device_initialize(struct scsi_device *sdev)
+ 	dev_set_name(&sdev->sdev_dev, "%d:%d:%d:%d",
+ 		     sdev->host->host_no, sdev->channel, sdev->id, sdev->lun);
+ 	sdev->scsi_level = starget->scsi_level;
++	INIT_WORK(&sdev->release_work, scsi_device_dev_release_usercontext);
++
+ 	transport_setup_device(&sdev->sdev_gendev);
+ 	spin_lock_irqsave(shost->host_lock, flags);
+ 	list_add_tail(&sdev->same_target_siblings, &starget->devices);
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index e483108..23eab47 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -545,18 +545,10 @@ static int gfs2_close(struct inode *inode, struct file *file)
+ /**
+  * gfs2_fsync - sync the dirty data for a file (across the cluster)
+  * @file: the file that points to the dentry (we ignore this)
+- * @dentry: the dentry that points to the inode to sync
++ * @datasync: set if we can ignore timestamp changes
+  *
+- * The VFS will flush "normal" data for us. We only need to worry
+- * about metadata here. For journaled data, we just do a log flush
+- * as we can't avoid it. Otherwise we can just bale out if datasync
+- * is set. For stuffed inodes we must flush the log in order to
+- * ensure that all data is on disk.
+- *
+- * The call to write_inode_now() is there to write back metadata and
+- * the inode itself. It does also try and write the data, but thats
+- * (hopefully) a no-op due to the VFS having already called filemap_fdatawrite()
+- * for us.
++ * The VFS will flush data for us. We only need to worry
++ * about metadata here.
+  *
+  * Returns: errno
+  */
+@@ -565,22 +557,20 @@ static int gfs2_fsync(struct file *file, int datasync)
+ {
+ 	struct inode *inode = file->f_mapping->host;
+ 	int sync_state = inode->i_state & (I_DIRTY_SYNC|I_DIRTY_DATASYNC);
+-	int ret = 0;
+-
+-	if (gfs2_is_jdata(GFS2_I(inode))) {
+-		gfs2_log_flush(GFS2_SB(inode), GFS2_I(inode)->i_gl);
+-		return 0;
+-	}
++	struct gfs2_inode *ip = GFS2_I(inode);
++	int ret;
+ 
+-	if (sync_state != 0) {
+-		if (!datasync)
+-			ret = write_inode_now(inode, 0);
++	if (datasync)
++		sync_state &= ~I_DIRTY_SYNC;
+ 
+-		if (gfs2_is_stuffed(GFS2_I(inode)))
+-			gfs2_log_flush(GFS2_SB(inode), GFS2_I(inode)->i_gl);
++	if (sync_state) {
++		ret = sync_inode_metadata(inode, 1);
++		if (ret)
++			return ret;
++		gfs2_ail_flush(ip->i_gl);
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ /**
+diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
+index 25eeb2b..7c1b08f 100644
+--- a/fs/gfs2/glops.c
++++ b/fs/gfs2/glops.c
+@@ -28,33 +28,18 @@
+ #include "trans.h"
+ 
+ /**
+- * ail_empty_gl - remove all buffers for a given lock from the AIL
++ * __gfs2_ail_flush - remove all buffers for a given lock from the AIL
+  * @gl: the glock
+  *
+  * None of the buffers should be dirty, locked, or pinned.
+  */
+ 
+-static void gfs2_ail_empty_gl(struct gfs2_glock *gl)
++static void __gfs2_ail_flush(struct gfs2_glock *gl)
+ {
+ 	struct gfs2_sbd *sdp = gl->gl_sbd;
+ 	struct list_head *head = &gl->gl_ail_list;
+ 	struct gfs2_bufdata *bd;
+ 	struct buffer_head *bh;
+-	struct gfs2_trans tr;
+-
+-	memset(&tr, 0, sizeof(tr));
+-	tr.tr_revokes = atomic_read(&gl->gl_ail_count);
+-
+-	if (!tr.tr_revokes)
+-		return;
+-
+-	/* A shortened, inline version of gfs2_trans_begin() */
+-	tr.tr_reserved = 1 + gfs2_struct2blk(sdp, tr.tr_revokes, sizeof(u64));
+-	tr.tr_ip = (unsigned long)__builtin_return_address(0);
+-	INIT_LIST_HEAD(&tr.tr_list_buf);
+-	gfs2_log_reserve(sdp, tr.tr_reserved);
+-	BUG_ON(current->journal_info);
+-	current->journal_info = &tr;
+ 
+ 	spin_lock(&sdp->sd_ail_lock);
+ 	while (!list_empty(head)) {
+@@ -76,7 +61,47 @@ static void gfs2_ail_empty_gl(struct gfs2_glock *gl)
+ 	}
+ 	gfs2_assert_withdraw(sdp, !atomic_read(&gl->gl_ail_count));
+ 	spin_unlock(&sdp->sd_ail_lock);
++}
++
++
++static void gfs2_ail_empty_gl(struct gfs2_glock *gl)
++{
++	struct gfs2_sbd *sdp = gl->gl_sbd;
++	struct gfs2_trans tr;
++
++	memset(&tr, 0, sizeof(tr));
++	tr.tr_revokes = atomic_read(&gl->gl_ail_count);
++
++	if (!tr.tr_revokes)
++		return;
++
++	/* A shortened, inline version of gfs2_trans_begin() */
++	tr.tr_reserved = 1 + gfs2_struct2blk(sdp, tr.tr_revokes, sizeof(u64));
++	tr.tr_ip = (unsigned long)__builtin_return_address(0);
++	INIT_LIST_HEAD(&tr.tr_list_buf);
++	gfs2_log_reserve(sdp, tr.tr_reserved);
++	BUG_ON(current->journal_info);
++	current->journal_info = &tr;
++
++	__gfs2_ail_flush(gl);
++
++	gfs2_trans_end(sdp);
++	gfs2_log_flush(sdp, NULL);
++}
+ 
++void gfs2_ail_flush(struct gfs2_glock *gl)
++{
++	struct gfs2_sbd *sdp = gl->gl_sbd;
++	unsigned int revokes = atomic_read(&gl->gl_ail_count);
++	int ret;
++
++	if (!revokes)
++		return;
++
++	ret = gfs2_trans_begin(sdp, 0, revokes);
++	if (ret)
++		return;
++	__gfs2_ail_flush(gl);
+ 	gfs2_trans_end(sdp);
+ 	gfs2_log_flush(sdp, NULL);
+ }
+diff --git a/fs/gfs2/glops.h b/fs/gfs2/glops.h
+index b3aa2e3..6fce409 100644
+--- a/fs/gfs2/glops.h
++++ b/fs/gfs2/glops.h
+@@ -23,4 +23,6 @@ extern const struct gfs2_glock_operations gfs2_quota_glops;
+ extern const struct gfs2_glock_operations gfs2_journal_glops;
+ extern const struct gfs2_glock_operations *gfs2_glops_list[];
+ 
++extern void gfs2_ail_flush(struct gfs2_glock *gl);
++
+ #endif /* __GLOPS_DOT_H__ */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 2d3ec50..1d11750 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -168,7 +168,7 @@ struct scsi_device {
+ 	struct device		sdev_gendev,
+ 				sdev_dev;
+ 
+-	struct execute_work	ew; /* used to get process context on put */
++	struct work_struct	release_work; /* for process context on put */
+ 
+ 	struct scsi_dh_data	*scsi_dh_data;
+ 	enum scsi_device_state sdev_state;
+@@ -259,7 +259,7 @@ struct scsi_target {
+ #define SCSI_DEFAULT_TARGET_BLOCKED	3
+ 
+ 	char			scsi_level;
+-	struct execute_work	ew;
++	struct work_struct	reap_work;
+ 	enum scsi_target_state	state;
+ 	void 			*hostdata; /* available to low-level driver */
+ 	unsigned long		starget_data[0]; /* for the transport */
+@@ -277,6 +277,8 @@ static inline struct scsi_target *scsi_target(struct scsi_device *sdev)
+ #define starget_printk(prefix, starget, fmt, a...)	\
+ 	dev_printk(prefix, &(starget)->dev, fmt, ##a)
+ 
++extern struct workqueue_struct *scsi_wq;
++
+ extern struct scsi_device *__scsi_add_device(struct Scsi_Host *,
+ 		uint, uint, uint, void *hostdata);
+ extern int scsi_add_device(struct Scsi_Host *host, uint channel,
+
+
