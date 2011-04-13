@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab1DMOI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:08:59 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:27981 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753556Ab1DMOI6 (ORCPT
+	id S1756358Ab1DMOKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:10:09 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:62700 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756017Ab1DMOKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:08:58 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: iGbeeeEVM1kP5kWJj8ryEEiLvX3i4rbf4TG2jLwX.VJMdTS
- 7o0KfYYTr4g4c4.CGsmL5IonU8g4QFkmTeUamOiTTEQSbV_jiHNC0c2vkQd_
- pdVzA1NTXxItC7n2dlw29CXh6ilXofEGub99OzFqURfbjCIo8ykW.LylyIWW
- _C_SLqI.U3VXTIvbcQm7Nzt4YQp3aa2_RCODH5ibeh4NSqAwbQwSnBpBqodL
- hgCp92f6zL4UGnTqG73a9S2.tQf1mFgM3nNawq8Sj8.rlvmu1uwEmmDfgCX2
- mx.OLm1zsRBLOIsAeXqB0PCfRn2ABl6jgkNQgz1HParqwhyQy
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 13 Apr 2011 09:08:54 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: shaohua.li@intel.com
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, tj@kernel.org,
-        eric.dumazet@gmail.com
-Subject: Re: [patch v2 0/4] percpu_counter: cleanup and fix
-In-Reply-To: <20110413075715.090406229@sli10-conroe.sh.intel.com>
-Message-ID: <alpine.DEB.2.00.1104130907480.16214@router.home>
-References: <20110413075715.090406229@sli10-conroe.sh.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 13 Apr 2011 10:10:07 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAF+upU1Ld/sX/2dsb2JhbAAMhEDUUJEtgSmDTXgElBOGbg
+X-IronPort-AV: E=Sophos;i="4.64,204,1301889600"; 
+   d="scan'208";a="106254056"
+Message-ID: <4DA5AEBE.6060705@teksavvy.com>
+Date: Wed, 13 Apr 2011 10:10:06 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: CONFIG_EXT4_USE_FOR_EXT23:  rootfs shows as ext2 instead of ext4
+References: <4DA48AF4.5080803@teksavvy.com> <20110413004938.GE3682@thunk.org>
+In-Reply-To: <20110413004938.GE3682@thunk.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011, shaohua.li@intel.com wrote:
+On 11-04-12 08:49 PM, Ted Ts'o wrote:
+> On Tue, Apr 12, 2011 at 01:25:08PM -0400, Mark Lord wrote:
+>> Ted et al.
+>>
+>> I've only just noticed this, so I have no idea how long it has been this way.
+>>
+>> When I build a kernel with CONFIG_EXT4_USE_FOR_EXT23=y and boot from it,
+>> the ext4 root filesystem shows up as "ext2" mode, rather than "ext4".
+>>
+>> This looks very wrong to me, and quite dangerous.
+> 
+> It's a cosemtic bug, I agree, but I'm not sure why you consider it
+> dangerous.
 
-> Cleanup percpu_counter code and fix some bugs. The main purpose is to convert
-> percpu_counter to use atomic64, which is useful for workloads which cause
-> percpu_counter->lock contented. In a workload I tested, the atomic method is
-> 50x faster (please see patch 4 for detail).
+It is dangerous if it really has mounted an ext4 as ext2;
+the on-disk formats are not 100% compatible.
 
-Could you post your test and the results please?
+I don't know what it is doing, so it looks quite dangerous.
+Perhaps it really did mount as ext4 though, in which case not.
 
+Thanks.
