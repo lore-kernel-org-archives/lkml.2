@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1DMCYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 22:24:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41333 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751882Ab1DMCYm (ORCPT
+	id S1754773Ab1DMC2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 22:28:43 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49473
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751492Ab1DMC2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 22:24:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110413070827.11b2a71d@notabene.brown>
-References: <20110411223623.4278fad1@notabene.brown> <4DA2F8AD.1060605@fusionio.com>
- <20110412011255.GA29236@infradead.org> <4DA40F0E.1070903@fusionio.com>
- <20110412122248.GC31057@dastard> <4DA4456F.3070301@fusionio.com>
- <20110412124134.GD31057@dastard> <4DA44C86.3090305@fusionio.com>
- <20110412133117.GE31057@dastard> <4DA45790.2010109@fusionio.com>
- <20110412143452.GH31057@dastard> <20110413070827.11b2a71d@notabene.brown>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Apr 2011 19:23:52 -0700
-Message-ID: <BANLkTikBEJa7bJJoLFU7NoiEgOjVHVG08A@mail.gmail.com>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-To: NeilBrown <neilb@suse.de>
-Cc: Dave Chinner <david@fromorbit.com>, Jens Axboe <jaxboe@fusionio.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0022154012fa1cd2bd04a0c38101
+	Tue, 12 Apr 2011 22:28:42 -0400
+Date: Tue, 12 Apr 2011 19:28:04 -0700 (PDT)
+Message-Id: <20110412.192804.226786375.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jpirko@redhat.com
+Subject: Re: linux-next: build failure after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110413120323.36030bcf.sfr@canb.auug.org.au>
+References: <20110413120323.36030bcf.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0022154012fa1cd2bd04a0c38101
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 13 Apr 2011 12:03:23 +1000
 
-On Tue, Apr 12, 2011 at 2:08 PM, NeilBrown <neilb@suse.de> wrote:
-> On Wed, 13 Apr 2011 00:34:52 +1000 Dave Chinner <david@fromorbit.com> wro=
-te:
->>
->> Well, not really - now taking any sleeping lock or waiting on
->> anything can trigger a plug flush where previously you had to
->> explicitly issue them. I'm not saying what we had is better, just
->> that there are implicit flushes with your changes that are
->> inherently uncontrollable...
->
-> It's not just sleeping locks - if preempt is enabled a schedule can happe=
-n at
-> any time - at any depth. =A0I've seen a spin_unlock do it.
+> After merging the net tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/infiniband/ulp/iser/iser_initiator.o: In function `vlan_untag':
+> iser_initiator.c:(.opd+0x0): multiple definition of `vlan_untag'
+> drivers/infiniband/ulp/iser/iser_verbs.o:iser_verbs.c:(.opd+0x0): first defined here
+> drivers/infiniband/ulp/iser/iser_initiator.o: In function `.vlan_untag':
+> iser_initiator.c:(.text+0x0): multiple definition of `.vlan_untag'
+> drivers/infiniband/ulp/iser/iser_verbs.o:iser_verbs.c:(.text+0x0): first defined here
+> 
+> and on and on ... (lota and lots :-()
 
-Hmm. I don't think we should flush IO in the preemption path. That
-smells wrong on many levels, just one of them being the "any time, any
-depth".
+Strange, I wonder why this driver isn't enabled in my allmodconfig builds.
+Let's see.
 
-It also sounds really wrong from an IO pattern standpoint. The process
-is actually still running, and the IO flushing _already_ does the
-"only if it's going to sleep" test, but it actually does it _wrong_.
-The "current->state" check doesn't make sense for a preemption event,
-because it's not actually going to sleep there.
+Oh, this driver depends upon INFINIBAND_ADDR_TRANS which will never be
+enabled if IPV6=m, because of:
 
-So a patch like the attached (UNTESTED!) sounds like the right thing to do.
+config INFINIBAND_ADDR_TRANS
+	bool
+	depends on INET
+	depends on !(INFINIBAND = y && IPV6 = m)
+	default y
 
-Whether it makes any difference for any MD issues, who knows.. But
-considering that the unplugging already used to test for "prev->state
-!=3D TASK_RUNNING", this is absolutely the right thing to do - that old
-test was just broken.
+come on...
 
-                                   Linus
+> Probably caused by commit bcc6d4790361 ("net: vlan: make non-hw-accel rx
+> path similar to hw-accel") which added a "non-static" inline version of
+> vlan_untag() to include/linux/if_vlan.h.
 
---0022154012fa1cd2bd04a0c38101
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gmfmyb2w0
+Yeah, this issue is not specific to this driver and actually is just
+a missing "static" in the vlan disabled case.
 
-IGtlcm5lbC9zY2hlZC5jIHwgICAyMCArKysrKysrKysrLS0tLS0tLS0tLQogMSBmaWxlcyBjaGFu
-Z2VkLCAxMCBpbnNlcnRpb25zKCspLCAxMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9rZXJu
-ZWwvc2NoZWQuYyBiL2tlcm5lbC9zY2hlZC5jCmluZGV4IDQ4MDEzNjMzZDc5Mi4uYTE4N2MzZmUw
-MjdiIDEwMDY0NAotLS0gYS9rZXJuZWwvc2NoZWQuYworKysgYi9rZXJuZWwvc2NoZWQuYwpAQCAt
-NDExMSwyMCArNDExMSwyMCBAQCBuZWVkX3Jlc2NoZWQ6CiAJCQkJCXRyeV90b193YWtlX3VwX2xv
-Y2FsKHRvX3dha2V1cCk7CiAJCQl9CiAJCQlkZWFjdGl2YXRlX3Rhc2socnEsIHByZXYsIERFUVVF
-VUVfU0xFRVApOworCisJCQkvKgorCQkJICogSWYgd2UgYXJlIGdvaW5nIHRvIHNsZWVwIGFuZCB3
-ZSBoYXZlIHBsdWdnZWQgSU8gcXVldWVkLCBtYWtlCisJCQkgKiBzdXJlIHRvIHN1Ym1pdCBpdCB0
-byBhdm9pZCBkZWFkbG9ja3MuCisJCQkgKi8KKwkJCWlmIChibGtfbmVlZHNfZmx1c2hfcGx1Zyhw
-cmV2KSkgeworCQkJCXJhd19zcGluX3VubG9jaygmcnEtPmxvY2spOworCQkJCWJsa19mbHVzaF9w
-bHVnKHByZXYpOworCQkJCXJhd19zcGluX2xvY2soJnJxLT5sb2NrKTsKKwkJCX0KIAkJfQogCQlz
-d2l0Y2hfY291bnQgPSAmcHJldi0+bnZjc3c7CiAJfQogCi0JLyoKLQkgKiBJZiB3ZSBhcmUgZ29p
-bmcgdG8gc2xlZXAgYW5kIHdlIGhhdmUgcGx1Z2dlZCBJTyBxdWV1ZWQsIG1ha2UKLQkgKiBzdXJl
-IHRvIHN1Ym1pdCBpdCB0byBhdm9pZCBkZWFkbG9ja3MuCi0JICovCi0JaWYgKHByZXYtPnN0YXRl
-ICE9IFRBU0tfUlVOTklORyAmJiBibGtfbmVlZHNfZmx1c2hfcGx1ZyhwcmV2KSkgewotCQlyYXdf
-c3Bpbl91bmxvY2soJnJxLT5sb2NrKTsKLQkJYmxrX2ZsdXNoX3BsdWcocHJldik7Ci0JCXJhd19z
-cGluX2xvY2soJnJxLT5sb2NrKTsKLQl9Ci0KIAlwcmVfc2NoZWR1bGUocnEsIHByZXYpOwogCiAJ
-aWYgKHVubGlrZWx5KCFycS0+bnJfcnVubmluZykpCg==
---0022154012fa1cd2bd04a0c38101--
+I'll add the following fix, thanks Stephen.
+
+--------------------
+net: Missing 'inline' in vlan-disabled vlan_untag()
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ include/linux/if_vlan.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
+index 998b299..546d9d3 100644
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -174,7 +174,7 @@ static inline bool vlan_do_receive(struct sk_buff **skb)
+ 	return false;
+ }
+ 
+-inline struct sk_buff *vlan_untag(struct sk_buff *skb)
++static inline struct sk_buff *vlan_untag(struct sk_buff *skb)
+ {
+ 	return skb;
+ }
+-- 
+1.7.4.3
+
