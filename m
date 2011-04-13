@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab1DMQNU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:13:20 -0400
-Received: from kroah.org ([198.145.64.141]:52933 "EHLO coco.kroah.org"
+	id S932792Ab1DMQMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:12:47 -0400
+Received: from kroah.org ([198.145.64.141]:52738 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932867Ab1DMQNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:17 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:47 2011
-Message-Id: <20110413161047.362257214@clark.kroah.org>
+	id S932747Ab1DMQMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:12:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:43 2011
+Message-Id: <20110413161043.610241538@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:09 -0700
+Date: Wed, 13 Apr 2011 09:09:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andy Sharp <andy.sharp@onstor.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [46/71] drivers/rtc/rtc-ds1511.c: world-writable sysfs nvram file
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [11/71] eCryptfs: Unlock page in write_begin error path
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,33 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-commit 49d50fb1c28738ef6bad0c2b87d5355a1653fed5 upstream.
+commit 50f198ae16ac66508d4b8d5a40967a8507ad19ee upstream.
 
-Don't allow everybogy to write to NVRAM.
+Unlock the page in error path of ecryptfs_write_begin(). This may
+happen, for example, if decryption fails while bring the page
+up-to-date.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andy Sharp <andy.sharp@onstor.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-ds1511.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ecryptfs/mmap.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/rtc/rtc-ds1511.c
-+++ b/drivers/rtc/rtc-ds1511.c
-@@ -482,7 +482,7 @@ ds1511_nvram_write(struct kobject *kobj,
- static struct bin_attribute ds1511_nvram_attr = {
- 	.attr = {
- 		.name = "nvram",
--		.mode = S_IRUGO | S_IWUGO,
-+		.mode = S_IRUGO | S_IWUSR,
- 	},
- 	.size = DS1511_RAM_MAX,
- 	.read = ds1511_nvram_read,
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -372,6 +372,11 @@ static int ecryptfs_write_begin(struct f
+ 	    && (pos != 0))
+ 		zero_user(page, 0, PAGE_CACHE_SIZE);
+ out:
++	if (unlikely(rc)) {
++		unlock_page(page);
++		page_cache_release(page);
++		*pagep = NULL;
++	}
+ 	return rc;
+ }
+ 
 
 
