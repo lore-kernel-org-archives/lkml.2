@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab1DMBaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 21:30:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13734 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932737Ab1DMBaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 21:30:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,200,1301900400"; 
-   d="scan'208";a="908805514"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, ming.m.lin@intel.com,
-        peterz@infradead.org, mingo@elte.hu, eranian@gmail.com
-Subject: [PATCH] perf: Add missing user space support for config1/config2 v2
-Date: Tue, 12 Apr 2011 18:30:03 -0700
-Message-Id: <1302658203-4239-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.2
+	id S932773Ab1DMBad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 21:30:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55312 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932763Ab1DMBaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 21:30:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=r8Lc7lBULSOGeF8b4bz4HwY0NWDfPaXMQVEX2+5/yZOctBDVNQM7CtekPMclOemccq
+         C07Uuu4ri3BxA2Y3J437ZD3GmKMnem414/trwwL2S3yESPOZ5J6kL+fF2XMI0UEWZ79l
+         qrrF/scqzMlFfCQ83nalEFPsidxK0c3ERT/lM=
+Message-ID: <4DA4FCAF.8080408@gmail.com>
+Date: Tue, 12 Apr 2011 18:30:23 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Balbir Singh <balbir@in.ibm.com>
+Subject: =?windows-1252?Q?Re=3A_=5BRFC=5DDocumentation=3Aaccounting=3Ag?=
+ =?windows-1252?Q?etdelays=2Ec_Fix=3A_warning=3A_variable_=91i=92?=
+ =?windows-1252?Q?_set_but_not_used?=
+References: <1302019370-7101-1-git-send-email-justinmattock@gmail.com>	<20110412172627.4e9c4339.akpm@linux-foundation.org>	<4DA4F201.9050609@gmail.com> <20110412181821.93a3a17f.akpm@linux-foundation.org>
+In-Reply-To: <20110412181821.93a3a17f.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 04/12/2011 06:18 PM, Andrew Morton wrote:
+> On Tue, 12 Apr 2011 17:44:49 -0700 "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
+>
+>> On 04/12/2011 05:26 PM, Andrew Morton wrote:
+>>> On Tue,  5 Apr 2011 09:02:50 -0700
+>>> "Justin P. Mattock"<justinmattock@gmail.com>   wrote:
+>>>
+>>>> Keep in mind there is another warning with this file, but need am unsure what might be the best solution:
+>>>> Documentation/accounting/getdelays.c: In function ___get_family_id___:
+>>>> Documentation/accounting/getdelays.c:172:14: warning: variable ___rc___ set but not used [-Wunused-but-set-variable]
+>>>
+>>> this?
+>>
+>> there was two warnings with that one..(or atleast that what I am seeing
+>> over here).
+>
+> I don't know what you mean.
+>
+> What command(s) are you using to build getdelays.o, btw?
+>
 
-Updated version that avoids warning/-Werror on some gcc versions
-I didn't test initially. Ceterum censeo -Werror esse delendam.
+the two warnings while building getdelays
+to build the kernel I just do:
+"make"
 
--Andi
+part of the log here:
+http://fpaste.org/eXmq/
 
----
+system is fedora 15. .config is theirs as well
 
-The offcore_msr perf kernel code was merged into 2.6.39-rc*,
-but the user space bits were not. This made it impossible
-to set the extra mask and actually do the OFFCORE profiling
-
-This patch fixes this. It adds a new syntax ':' to raw events
-to specify additional event masks. I also added support
-for setting config2, even though that is not needed currently.
-
-[Note: the original version back in time used , -- but that
-actually conflicted with event lists, so now it's :]
-
-Cc: ming.m.lin@intel.com
-Cc: peterz@infradead.org
-Cc: mingo@elte.hu
-Cc: eranian@gmail.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-list.txt |   11 +++++++++++
- tools/perf/util/parse-events.c         |   18 +++++++++++++++++-
- 2 files changed, 28 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 7a527f7..5a43169 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -61,6 +61,17 @@ raw encoding of 0x1A8 can be used:
- You should refer to the processor specific documentation for getting these
- details. Some of them are referenced in the SEE ALSO section below.
- 
-+Some raw events -- like the Intel OFFCORE events -- support additional 
-+parameters. These can be appended after a ':'.
-+
-+For example on a multi socket Intel Nehalem:
-+
-+ perf stat -e r1b7:20ff -a sleep 1
-+
-+Profile the OFFCORE_RESPONSE.ANY_REQUEST with event mask REMOTE_DRAM_0 
-+that measures any access to DRAM on another socket.  Upto two parameters can 
-+be specified with additional ':'
-+
- OPTIONS
- -------
- 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 952b4ae..783be64 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -688,9 +688,25 @@ parse_raw_event(const char **strp, struct perf_event_attr *attr)
- 		return EVT_FAILED;
- 	n = hex2u64(str + 1, &config);
- 	if (n > 0) {
--		*strp = str + n + 1;
-+		str += n + 1;
- 		attr->type = PERF_TYPE_RAW;
- 		attr->config = config;
-+		if (*str == ':') {
-+			str++;
-+			n = hex2u64(str, &config);
-+			if (n == 0)
-+				return EVT_FAILED;
-+			attr->config1 = config;
-+			str += n;
-+			if (*str == ':') {
-+				str++;
-+				n = hex2u64(str + 1, &config);
-+				if (n == 0)
-+					return EVT_FAILED;
-+				attr->config2 = config;
-+			}
-+		}	
-+		*strp = str;
- 		return EVT_HANDLED;
- 	}
- 	return EVT_FAILED;
--- 
-1.7.4.2
-
+Justin P. Mattock
