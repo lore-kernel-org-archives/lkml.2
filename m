@@ -1,73 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458Ab1DMVPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:15:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39979 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434Ab1DMVPP convert rfc822-to-8bit (ORCPT
+	id S932551Ab1DMVRg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:17:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42020 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932094Ab1DMVRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:15:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=VyiQC+UmqjqKJP9Ly05vLun4sDlY+CiQRzVIOZBVtEoZabUMqaR1fCaHc4w6gUQcIk
-         TGDRzL36giAMjOLwjVuF+CFDlPRK1qDZSAuCslsOgxLAAxHwmcKHH33t2Xr+g9NSAxZb
-         XOQ+LkzcflzEvzH40VE71K33dD99bPM5qNmxE=
-MIME-Version: 1.0
-In-Reply-To: <20110405152728.744338123@chello.nl>
-References: <20110405152338.692966333@chello.nl>
-	<20110405152728.744338123@chello.nl>
-Date: Wed, 13 Apr 2011 14:15:14 -0700
-X-Google-Sender-Auth: dG3yoTMeR2k7YemNVPYrDuS6Qws
-Message-ID: <BANLkTi=+x6+tyHY2uOvE99BXxdreb3Gu=Q@mail.gmail.com>
-Subject: Re: [PATCH 01/21] sched: Provide scheduler_ipi() callback in response
- to smp_send_reschedule()
-From: Tony Luck <tony.luck@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Apr 2011 17:17:35 -0400
+Date: Wed, 13 Apr 2011 14:16:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Changli Gao <xiaosuo@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: Regression from 2.6.36
+Message-Id: <20110413141600.28793661.akpm@linux-foundation.org>
+In-Reply-To: <1302662256.2811.27.camel@edumazet-laptop>
+References: <20110315132527.130FB80018F1@mail1005.cent>
+	<20110317001519.GB18911@kroah.com>
+	<20110407120112.E08DCA03@pobox.sk>
+	<4D9D8FAA.9080405@suse.cz>
+	<BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>
+	<1302177428.3357.25.camel@edumazet-laptop>
+	<1302178426.3357.34.camel@edumazet-laptop>
+	<BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
+	<1302190586.3357.45.camel@edumazet-laptop>
+	<20110412154906.70829d60.akpm@linux-foundation.org>
+	<BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
+	<20110412183132.a854bffc.akpm@linux-foundation.org>
+	<1302662256.2811.27.camel@edumazet-laptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 5, 2011 at 8:23 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> --- linux-2.6.orig/arch/ia64/kernel/irq_ia64.c
-> +++ linux-2.6/arch/ia64/kernel/irq_ia64.c
-> @@ -31,6 +31,7 @@
->  #include <linux/irq.h>
->  #include <linux/ratelimit.h>
->  #include <linux/acpi.h>
-> +#include <linux/sched.h>
->
->  #include <asm/delay.h>
->  #include <asm/intrinsics.h>
-> @@ -496,6 +497,7 @@ ia64_handle_irq (ia64_vector vector, str
->                        smp_local_flush_tlb();
->                        kstat_incr_irqs_this_cpu(irq, desc);
->                } else if (unlikely(IS_RESCHEDULE(vector))) {
-> +                       scheduler_ipi();
->                        kstat_incr_irqs_this_cpu(irq, desc);
->                } else {
->                        ia64_setreg(_IA64_REG_CR_TPR, vector);
+On Wed, 13 Apr 2011 04:37:36 +0200
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-This bit breaks ia64 CONFIG_SMP=n builds in next-20110413 with:
+> Le mardi 12 avril 2011 __ 18:31 -0700, Andrew Morton a __crit :
+> > On Wed, 13 Apr 2011 09:23:11 +0800 Changli Gao <xiaosuo@gmail.com> wrote:
+> > 
+> > > On Wed, Apr 13, 2011 at 6:49 AM, Andrew Morton
+> > > <akpm@linux-foundation.org> wrote:
+> > > >
+> > > > It's somewhat unclear (to me) what caused this regression.
+> > > >
+> > > > Is it because the kernel is now doing large kmalloc()s for the fdtable,
+> > > > and this makes the page allocator go nuts trying to satisfy high-order
+> > > > page allocation requests?
+> > > >
+> > > > Is it because the kernel now will usually free the fdtable
+> > > > synchronously within the rcu callback, rather than deferring this to a
+> > > > workqueue?
+> > > >
+> > > > The latter seems unlikely, so I'm thinking this was a case of
+> > > > high-order-allocations-considered-harmful?
+> > > >
+> > > 
+> > > Maybe, but I am not sure. Maybe my patch causes too many inner
+> > > fragments. For example, when asking for 5 pages, get 8 pages, and 3
+> > > pages are wasted, then memory thrash happens finally.
+> > 
+> > That theory sounds less likely, but could be tested by using
+> > alloc_pages_exact().
+> > 
+> 
+> Very unlikely, since fdtable sizes are powers of two, unless you hit
+> sysctl_nr_open and it was changed (default value being 2^20)
+> 
 
-arch/ia64/kernel/irq_ia64.c: In function ‘ia64_handle_irq’:
-arch/ia64/kernel/irq_ia64.c:500: error: implicit declaration of
-function ‘scheduler_ipi’
+So am I correct in believing that this regression is due to the
+high-order allocations putting excess stress onto page reclaim?
 
--Tony
+If so, then how large _are_ these allocations?  This perhaps can be
+determined from /proc/slabinfo.  They must be pretty huge, because slub
+likes to do excessively-large allocations and the system handles that
+reasonably well.
+
+I suppose that a suitable fix would be
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+
+Azurit reports large increases in system time after 2.6.36 when running
+Apache.  It was bisected down to a892e2d7dcdfa6c76e6 ("vfs: use kmalloc()
+to allocate fdmem if possible").
+
+That patch caused the vfs to use kmalloc() for very large allocations and
+this is causing excessive work (and presumably excessive reclaim) within
+the page allocator.
+
+Fix it by falling back to vmalloc() earlier - when the allocation attempt
+would have been considered "costly" by reclaim.
+
+Reported-by: azurIt <azurit@pobox.sk>
+Cc: Changli Gao <xiaosuo@gmail.com>
+Cc: Americo Wang <xiyou.wangcong@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/file.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
+
+diff -puN fs/file.c~a fs/file.c
+--- a/fs/file.c~a
++++ a/fs/file.c
+@@ -39,14 +39,17 @@ int sysctl_nr_open_max = 1024 * 1024; /*
+  */
+ static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+ 
+-static inline void *alloc_fdmem(unsigned int size)
++static void *alloc_fdmem(unsigned int size)
+ {
+-	void *data;
+-
+-	data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+-	if (data != NULL)
+-		return data;
+-
++	/*
++	 * Very large allocations can stress page reclaim, so fall back to
++	 * vmalloc() if the allocation size will be considered "large" by the VM.
++	 */
++	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) {
++		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
++		if (data != NULL)
++			return data;
++	}
+ 	return vmalloc(size);
+ }
+ 
+_
+
