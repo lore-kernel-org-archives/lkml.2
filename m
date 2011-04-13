@@ -1,137 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab1DMP53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:57:29 -0400
-Received: from kroah.org ([198.145.64.141]:54648 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932348Ab1DMP4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:56:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:50 2011
-Message-Id: <20110413155150.755465795@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:51:36 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>, Moritz Muehlenhoff <jmm@debian.org>
-Subject: [72/74] exec: make argv/envp memory visible to oom-killer
-In-Reply-To: <20110413155406.GA22568@kroah.com>
+	id S932458Ab1DMP5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:57:52 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43693 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932379Ab1DMP5u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:57:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110412143556.085500585@clark.kroah.org>
+References: <20110412143613.GA19478@kroah.com> <20110412143556.085500585@clark.kroah.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 13 Apr 2011 09:57:29 -0600
+X-Google-Sender-Auth: hRpRb9-UbsapUz4cd9PYE9hXiLI
+Message-ID: <BANLkTimkv421jT1n-uuEx_gOSi2BNhBc5Q@mail.gmail.com>
+Subject: Re: [076/105] Bluetooth: add support for Apple MacBook Pro 8,2
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Marc-Antoine Perennou <Marc-Antoine@perennou.com>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Tue, Apr 12, 2011 at 8:35 AM, Greg KH <gregkh@suse.de> wrote:
+> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
+>
+> ------------------
+>
+> From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+>
+> commit 63a8588debd4dc72becb9e27add9343c76301c7d upstream.
+>
+> Just adding the vendor details makes it work fine.
+>
+> Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+> Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-------------------
+Tested-by: Grant Likely <grant.likely@secretlab.ca>
 
-From: Oleg Nesterov <oleg@redhat.com>
-
-commit 3c77f845722158206a7209c45ccddc264d19319c upstream.
-
-Brad Spengler published a local memory-allocation DoS that
-evades the OOM-killer (though not the virtual memory RLIMIT):
-http://www.grsecurity.net/~spender/64bit_dos.c
-
-execve()->copy_strings() can allocate a lot of memory, but
-this is not visible to oom-killer, nobody can see the nascent
-bprm->mm and take it into account.
-
-With this patch get_arg_page() increments current's MM_ANONPAGES
-counter every time we allocate the new page for argv/envp. When
-do_execve() succeds or fails, we change this counter back.
-
-Technically this is not 100% correct, we can't know if the new
-page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
-I don't think this really matters and everything becomes correct
-once exec changes ->mm or fails.
-
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Moritz Muehlenhoff <jmm@debian.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/exec.c               |   28 ++++++++++++++++++++++++++--
- include/linux/binfmts.h |    1 +
- 2 files changed, 27 insertions(+), 2 deletions(-)
-
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -159,6 +159,21 @@ out:
- 
- #ifdef CONFIG_MMU
- 
-+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+	struct mm_struct *mm = current->mm;
-+	long diff = (long)(pages - bprm->vma_pages);
-+
-+	if (!mm || !diff)
-+		return;
-+
-+	bprm->vma_pages = pages;
-+
-+	down_write(&mm->mmap_sem);
-+	mm->total_vm += diff;
-+	up_write(&mm->mmap_sem);
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
-@@ -181,6 +196,8 @@ static struct page *get_arg_page(struct
- 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
- 		struct rlimit *rlim;
- 
-+		acct_arg_size(bprm, size / PAGE_SIZE);
-+
- 		/*
- 		 * We've historically supported up to 32 pages (ARG_MAX)
- 		 * of argument strings even with small stacks
-@@ -274,6 +291,10 @@ static bool valid_arg_len(struct linux_b
- 
- #else
- 
-+static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
-@@ -981,6 +1002,7 @@ int flush_old_exec(struct linux_binprm *
- 	/*
- 	 * Release all of the old mmap stuff
- 	 */
-+	acct_arg_size(bprm, 0);
- 	retval = exec_mmap(bprm->mm);
- 	if (retval)
- 		goto out;
-@@ -1408,8 +1430,10 @@ int do_execve(char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
--		mmput (bprm->mm);
-+	if (bprm->mm) {
-+		acct_arg_size(bprm, 0);
-+		mmput(bprm->mm);
-+	}
- 
- out_file:
- 	if (bprm->file) {
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -29,6 +29,7 @@ struct linux_binprm{
- 	char buf[BINPRM_BUF_SIZE];
- #ifdef CONFIG_MMU
- 	struct vm_area_struct *vma;
-+	unsigned long vma_pages;
- #else
- # define MAX_ARG_PAGES	32
- 	struct page *page[MAX_ARG_PAGES];
+>
+> ---
+>  drivers/bluetooth/btusb.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>
+> --- a/drivers/bluetooth/btusb.c
+> +++ b/drivers/bluetooth/btusb.c
+> @@ -71,6 +71,9 @@ static struct usb_device_id btusb_table[
+>        /* Apple MacBookAir3,1, MacBookAir3,2 */
+>        { USB_DEVICE(0x05ac, 0x821b) },
+>
+> +       /* Apple MacBookPro8,2 */
+> +       { USB_DEVICE(0x05ac, 0x821a) },
+> +
+>        /* AVM BlueFRITZ! USB v2.0 */
+>        { USB_DEVICE(0x057c, 0x3800) },
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
 
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
