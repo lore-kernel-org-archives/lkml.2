@@ -1,130 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab1DMQKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:10:00 -0400
-Received: from kroah.org ([198.145.64.141]:54255 "EHLO coco.kroah.org"
+	id S932451Ab1DMQJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:09:59 -0400
+Received: from kroah.org ([198.145.64.141]:54259 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757695Ab1DMPzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757699Ab1DMPzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Apr 2011 11:55:15 -0400
-Date: Wed, 13 Apr 2011 08:54:06 -0700
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:44 2011
+Message-Id: <20110413155144.687388683@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 13 Apr 2011 08:50:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/74] 2.6.32.37-longterm review
-Message-ID: <20110413155406.GA22568@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Olaf Hering <olaf@aepfle.de>, Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [16/74] staging: hv: use sync_bitops when interacting with the hypervisor
+In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.37 release.
-There are 74 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Friday, Apr 15 2011, 15:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.37-rc1.gz
-and the diffstat can be found below.
+From: Olaf Hering <olaf@aepfle.de>
 
-thanks,
+commit 22356585712d1ff08fbfed152edd8b386873b238 upstream.
 
-greg k-h
+Locking is required when tweaking bits located in a shared page, use the
+sync_ version of bitops. Without this change vmbus_on_event() will miss
+events and as a result, vmbus_isr() will not schedule the receive tasklet.
+
+[Backported to 2.6.32 stable kernel by Haiyang Zhang <haiyangz@microsoft.com>]
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
+Acked-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/hv/Channel.c      |    8 ++++----
+ drivers/staging/hv/Connection.c   |    6 ++++--
+ drivers/staging/hv/Vmbus.c        |    2 +-
+ drivers/staging/hv/VmbusPrivate.h |    1 +
+ 4 files changed, 10 insertions(+), 7 deletions(-)
+
+--- a/drivers/staging/hv/Channel.c
++++ b/drivers/staging/hv/Channel.c
+@@ -75,14 +75,14 @@ static void VmbusChannelSetEvent(struct
+ 
+ 	if (Channel->OfferMsg.MonitorAllocated) {
+ 		/* Each u32 represents 32 channels */
+-		set_bit(Channel->OfferMsg.ChildRelId & 31,
++		sync_set_bit(Channel->OfferMsg.ChildRelId & 31,
+ 			(unsigned long *) gVmbusConnection.SendInterruptPage +
+ 			(Channel->OfferMsg.ChildRelId >> 5));
+ 
+ 		monitorPage = gVmbusConnection.MonitorPages;
+ 		monitorPage++; /* Get the child to parent monitor page */
+ 
+-		set_bit(Channel->MonitorBit,
++		sync_set_bit(Channel->MonitorBit,
+ 			(unsigned long *)&monitorPage->TriggerGroup
+ 					[Channel->MonitorGroup].Pending);
+ 
+@@ -102,7 +102,7 @@ static void VmbusChannelClearEvent(struc
+ 
+ 	if (Channel->OfferMsg.MonitorAllocated) {
+ 		/* Each u32 represents 32 channels */
+-		clear_bit(Channel->OfferMsg.ChildRelId & 31,
++		sync_clear_bit(Channel->OfferMsg.ChildRelId & 31,
+ 			  (unsigned long *)gVmbusConnection.SendInterruptPage +
+ 			  (Channel->OfferMsg.ChildRelId >> 5));
+ 
+@@ -110,7 +110,7 @@ static void VmbusChannelClearEvent(struc
+ 			(struct hv_monitor_page *)gVmbusConnection.MonitorPages;
+ 		monitorPage++; /* Get the child to parent monitor page */
+ 
+-		clear_bit(Channel->MonitorBit,
++		sync_clear_bit(Channel->MonitorBit,
+ 			  (unsigned long *)&monitorPage->TriggerGroup
+ 					[Channel->MonitorGroup].Pending);
+ 	}
+--- a/drivers/staging/hv/Connection.c
++++ b/drivers/staging/hv/Connection.c
+@@ -284,7 +284,9 @@ void VmbusOnEvents(void)
+ 		for (dword = 0; dword < maxdword; dword++) {
+ 			if (recvInterruptPage[dword]) {
+ 				for (bit = 0; bit < 32; bit++) {
+-					if (test_and_clear_bit(bit, (unsigned long *)&recvInterruptPage[dword])) {
++					if (sync_test_and_clear_bit(bit,
++						(unsigned long *)
++						&recvInterruptPage[dword])) {
+ 						relid = (dword << 5) + bit;
+ 						DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
+ 
+@@ -329,7 +331,7 @@ int VmbusSetEvent(u32 childRelId)
+ 	DPRINT_ENTER(VMBUS);
+ 
+ 	/* Each u32 represents 32 channels */
+-	set_bit(childRelId & 31,
++	sync_set_bit(childRelId & 31,
+ 		(unsigned long *)gVmbusConnection.SendInterruptPage +
+ 		(childRelId >> 5));
+ 
+--- a/drivers/staging/hv/Vmbus.c
++++ b/drivers/staging/hv/Vmbus.c
+@@ -254,7 +254,7 @@ static int VmbusOnISR(struct hv_driver *
+ 	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
+ 
+ 	/* Since we are a child, we only need to check bit 0 */
+-	if (test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
++	if (sync_test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
+ 		DPRINT_DBG(VMBUS, "received event %d", event->Flags32[0]);
+ 		ret |= 0x2;
+ 	}
+--- a/drivers/staging/hv/VmbusPrivate.h
++++ b/drivers/staging/hv/VmbusPrivate.h
+@@ -32,6 +32,7 @@
+ #include "ChannelInterface.h"
+ #include "RingBuffer.h"
+ #include <linux/list.h>
++#include <asm/sync_bitops.h>
+ 
+ 
+ /*
 
 
- Makefile                               |    2 +-
- arch/powerpc/kernel/crash.c            |    4 ++
- arch/x86/kernel/cpu/mtrr/main.c        |   20 ++++++--
- arch/x86/kernel/head64.c               |    3 +
- arch/x86/kernel/microcode_amd.c        |   72 +++++++++++++++++++------------
- arch/x86/kernel/setup.c                |    5 --
- arch/x86/mm/init.c                     |   19 ++++++++
- arch/x86/mm/init_64.c                  |   11 ++---
- drivers/atm/solos-pci.c                |    9 +++-
- drivers/block/cciss.h                  |    1 +
- drivers/bluetooth/btusb.c              |    3 +
- drivers/char/tpm/tpm.c                 |    2 +-
- drivers/mfd/ab3100-core.c              |    4 +-
- drivers/misc/ep93xx_pwm.c              |    6 +-
- drivers/net/myri10ge/myri10ge.c        |    1 +
- drivers/net/wireless/ath/ath9k/main.c  |    4 ++
- drivers/net/wireless/b43/dma.c         |    2 +-
- drivers/net/wireless/b43/dma.h         |    2 +-
- drivers/net/wireless/p54/p54usb.c      |    2 +
- drivers/rtc/rtc-ds1511.c               |    2 +-
- drivers/scsi/ses.c                     |    4 +-
- drivers/staging/hv/Channel.c           |    8 ++--
- drivers/staging/hv/Connection.c        |    6 ++-
- drivers/staging/hv/Vmbus.c             |    2 +-
- drivers/staging/hv/VmbusPrivate.h      |    1 +
- drivers/staging/hv/netvsc_drv.c        |   24 ++++++++++
- drivers/staging/usbip/stub_rx.c        |   40 ++++++-----------
- drivers/staging/usbip/stub_tx.c        |   74 ++++++++++++++++++++++++++------
- drivers/staging/usbip/usbip_common.c   |   64 +++++++++++++++++++++++++++-
- drivers/staging/usbip/usbip_common.h   |    2 +
- drivers/staging/usbip/vhci_rx.c        |    3 +
- fs/btrfs/ctree.h                       |    4 ++
- fs/btrfs/disk-io.c                     |    4 +-
- fs/btrfs/ioctl.c                       |    4 ++
- fs/btrfs/root-tree.c                   |   18 ++++++++
- fs/btrfs/transaction.c                 |    1 +
- fs/compat.c                            |   28 ++++++------
- fs/ecryptfs/keystore.c                 |    1 +
- fs/ecryptfs/mmap.c                     |    5 ++
- fs/exec.c                              |   32 ++++++++++++--
- fs/ext4/inode.c                        |   11 ++---
- fs/nfsd/lockd.c                        |    1 -
- fs/nilfs2/file.c                       |   12 +++---
- fs/ocfs2/aops.c                        |    6 +++
- fs/quota/dquot.c                       |   13 ++----
- fs/squashfs/dir.c                      |    9 ++++
- fs/squashfs/namei.c                    |   12 +++++
- fs/ubifs/commit.c                      |    2 +-
- fs/ubifs/debug.c                       |   41 +++++++++++++++--
- fs/ubifs/lpt.c                         |    7 +--
- fs/xfs/xfs_fsops.c                     |    3 +
- include/linux/binfmts.h                |    5 ++
- include/scsi/scsi_device.h             |    2 +-
- include/sound/soc-dapm.h               |   16 +++---
- kernel/kgdb.c                          |    9 +---
- kernel/perf_event.c                    |    3 +-
- kernel/signal.c                        |    4 +-
- mm/mremap.c                            |   11 ++++-
- net/ax25/af_ax25.c                     |    2 +-
- net/bluetooth/bnep/sock.c              |    1 +
- net/bluetooth/sco.c                    |    1 +
- net/bridge/netfilter/ebtables.c        |    2 +
- net/can/bcm.c                          |    4 +-
- net/core/dev.c                         |    2 +
- net/econet/af_econet.c                 |    8 +++-
- net/ipv4/inet_diag.c                   |   27 +++++++-----
- net/ipv4/netfilter/arp_tables.c        |    3 +
- net/ipv4/netfilter/ip_tables.c         |    3 +
- net/ipv4/netfilter/ipt_CLUSTERIP.c     |    5 ++-
- net/ipv6/netfilter/ip6_tables.c        |    3 +
- net/irda/af_irda.c                     |   16 ++++---
- net/irda/iriap.c                       |    6 +++
- net/irda/irnet/irnet_ppp.c             |    3 +
- net/mac80211/sta_info.c                |    1 +
- net/netfilter/nf_conntrack_h323_asn1.c |    2 +-
- net/packet/af_packet.c                 |    3 +-
- net/rds/rdma.c                         |    8 +++
- net/rose/rose_subr.c                   |   18 +++++++-
- net/sctp/sm_make_chunk.c               |   17 ++++---
- net/tipc/socket.c                      |    1 +
- sound/core/init.c                      |    4 ++
- sound/oss/dev_table.h                  |    2 +-
- sound/oss/midi_synth.c                 |   34 +++++++--------
- sound/oss/midi_synth.h                 |    2 +-
- sound/oss/opl3.c                       |   23 ++++++---
- sound/oss/sequencer.c                  |    2 +-
- sound/pci/ens1370.c                    |   23 ++++++++--
- sound/pci/hda/patch_realtek.c          |    2 +-
- 88 files changed, 652 insertions(+), 242 deletions(-)
