@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab1DMBXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 21:23:33 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33291 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757447Ab1DMBXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 21:23:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=Ej2G9zkNTIuZ4U/9Zv21n+rQ08zafhQEVdG5loy7T8q0VRhv1QXJe42GS+aENx4/ZJ
-         ot1mpucuHcNSsz3gvaS92/vPWeFQrVtNxhHuLYRIYvlCp8na8B+20A8FD4aWyUBSrIGE
-         VDvTdrZ1C961BxsGOxem/tmW+5iKE+jmPxuPo=
-MIME-Version: 1.0
-In-Reply-To: <20110412154906.70829d60.akpm@linux-foundation.org>
-References: <20110315132527.130FB80018F1@mail1005.cent> <20110317001519.GB18911@kroah.com>
- <20110407120112.E08DCA03@pobox.sk> <4D9D8FAA.9080405@suse.cz>
- <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com> <1302177428.3357.25.camel@edumazet-laptop>
- <1302178426.3357.34.camel@edumazet-laptop> <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
- <1302190586.3357.45.camel@edumazet-laptop> <20110412154906.70829d60.akpm@linux-foundation.org>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Wed, 13 Apr 2011 09:23:11 +0800
-Message-ID: <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
-Subject: Re: Regression from 2.6.36
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932741Ab1DMBYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 21:24:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:19881 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932158Ab1DMBYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 21:24:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,200,1301900400"; 
+   d="scan'208";a="678295958"
+Subject: Re: [PATCH 1/4]percpu_counter: make API return consistent value
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>
+In-Reply-To: <20110412184927.GB16342@mtj.dyndns.org>
+References: <1302595437.3981.127.camel@sli10-conroe>
+	 <20110412184927.GB16342@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 09:24:15 +0800
+Message-ID: <1302657855.3981.153.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 6:49 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
->
-> It's somewhat unclear (to me) what caused this regression.
->
-> Is it because the kernel is now doing large kmalloc()s for the fdtable,
-> and this makes the page allocator go nuts trying to satisfy high-order
-> page allocation requests?
->
-> Is it because the kernel now will usually free the fdtable
-> synchronously within the rcu callback, rather than deferring this to a
-> workqueue?
->
-> The latter seems unlikely, so I'm thinking this was a case of
-> high-order-allocations-considered-harmful?
->
+On Wed, 2011-04-13 at 02:49 +0800, Tejun Heo wrote:
+> Hello,
+> 
+> First of all, please somehow link patches of the same series.  Either
+> write a head message and make all the patches replies to it
+> (preferred) or chain reply the patches (only when the number of
+> patches is small).
+> 
+> On Tue, Apr 12, 2011 at 04:03:57PM +0800, Shaohua Li wrote:
+> > the percpu_counter_*_positive() API SMP and !SMP aren't consistent. From
+> > the API name, we should return a non-negative value for them.
+> > Also if count < 0, returns 0 instead of 1 for *read_positive().
+> 
+> Ummm, on UP, the counters cannot be positive.
+s/positive/negative?
 
-Maybe, but I am not sure. Maybe my patch causes too many inner
-fragments. For example, when asking for 5 pages, get 8 pages, and 3
-pages are wasted, then memory thrash happens finally.
+>   The _positive interface
+> is there to make it easier to cope with deviations introduced by
+> unsynchronized modifications by different CPUs.  On UP, such
+> deviations don't happen at all so _positive interface is the same as
+> the counterpart without the postfix.
+I'm confused. the counter could be negative, we have *_dec, *_sub.
 
--- 
-Regards,
-Changli Gao(xiaosuo@gmail.com)
+Thanks,
+Shaohua
+
