@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050Ab1DMVLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:11:31 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56475 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932944Ab1DMVLa convert rfc822-to-8bit (ORCPT
+	id S1758458Ab1DMVPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:15:17 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39979 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab1DMVPP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:11:30 -0400
+	Wed, 13 Apr 2011 17:15:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=sJCq4lQw4vc9J92b+gus8hztmSj5XohPzx/+cyos8SauRqub7uWwHsqA8ndG/VOtxo
-         KTdm3JCLgoHPy3E3KjaZBhGonNSGhzwGlCYB/6tZjnCENEggS/nLox6Fmja9YBZX1Wg9
-         kUAGzs9PPvndi025sMxth7d/9UWgkjderbMA8=
+        b=VyiQC+UmqjqKJP9Ly05vLun4sDlY+CiQRzVIOZBVtEoZabUMqaR1fCaHc4w6gUQcIk
+         TGDRzL36giAMjOLwjVuF+CFDlPRK1qDZSAuCslsOgxLAAxHwmcKHH33t2Xr+g9NSAxZb
+         XOQ+LkzcflzEvzH40VE71K33dD99bPM5qNmxE=
 MIME-Version: 1.0
-In-Reply-To: <20110413210546.GC16830@elf.ucw.cz>
-References: <BANLkTi=F-C-vwX4PGGfbkdTBw3OWL-twfg@mail.gmail.com>
- <201104132258.17705.rjw@sisk.pl> <BANLkTiknfeTj6GD0t-ekMoaS1QYQBVyBjQ@mail.gmail.com>
- <20110413210546.GC16830@elf.ucw.cz>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 13 Apr 2011 17:11:10 -0400
-X-Google-Sender-Auth: aY-bqq-vXIUafsFbOHXdRG9HpqA
-Message-ID: <BANLkTinj3y+-VhzFAPz8Gzb5vAbtUFU6Aw@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] freezer: should barriers be smp ?
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110405152728.744338123@chello.nl>
+References: <20110405152338.692966333@chello.nl>
+	<20110405152728.744338123@chello.nl>
+Date: Wed, 13 Apr 2011 14:15:14 -0700
+X-Google-Sender-Auth: dG3yoTMeR2k7YemNVPYrDuS6Qws
+Message-ID: <BANLkTi=+x6+tyHY2uOvE99BXxdreb3Gu=Q@mail.gmail.com>
+Subject: Re: [PATCH 01/21] sched: Provide scheduler_ipi() callback in response
+ to smp_send_reschedule()
+From: Tony Luck <tony.luck@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 17:05, Pavel Machek wrote:
-> On Wed 2011-04-13 17:02:45, Mike Frysinger wrote:
->> On Wed, Apr 13, 2011 at 16:58, Rafael J. Wysocki wrote:
->> > On Wednesday, April 13, 2011, Mike Frysinger wrote:
->> >> when we suspend/resume Blackfin SMP systems, we notice that the
->> >> freezer code runs on multiple cores. Â this is of course what you want
->> >> -- freeze processes in parallel. Â however, the code only uses non-smp
->> >> based barriers which causes us problems ... our cores need software
->> >> support to keep caches in sync, so our smp barriers do just that. Â but
->> >> the non-smp barriers do not, and so the frozen/thawed processes
->> >> randomly get stuck in the wrong task state.
->> >>
->> >> thinking about it, shouldnt the freezer code be using smp barriers ?
->> >
->> > Yes, it should, but rmb() and wmb() are supposed to be SMP barriers.
->> >
->> > Or do you mean something different?
->>
->> then what's the diff between smp_rmb() and rmb() ?
->>
->> this is what i'm proposing:
->> --- a/kernel/freezer.c
->> +++ b/kernel/freezer.c
->> @@ -17,7 +17,7 @@ static inline void frozen_process(void)
->> Â {
->> Â  Â  if (!unlikely(current->flags & PF_NOFREEZE)) {
->> Â  Â  Â  Â  current->flags |= PF_FROZEN;
->> - Â  Â  Â  wmb();
->> + Â  Â  Â  smp_wmb();
->> Â  Â  }
->> Â  Â  clear_freeze_flag(current);
->> Â }
->> @@ -93,7 +93,7 @@ bool freeze_task(struct task_struct *p, bool sig_only)
->> Â  Â  Â * the task as frozen and next clears its TIF_FREEZE.
->> Â  Â  Â */
->> Â  Â  if (!freezing(p)) {
->> - Â  Â  Â  rmb();
->> + Â  Â  Â  smp_rmb();
->> Â  Â  Â  Â  if (frozen(p))
->> Â  Â  Â  Â  Â  Â  return false;
+On Tue, Apr 5, 2011 at 8:23 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> --- linux-2.6.orig/arch/ia64/kernel/irq_ia64.c
+> +++ linux-2.6/arch/ia64/kernel/irq_ia64.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/ratelimit.h>
+>  #include <linux/acpi.h>
+> +#include <linux/sched.h>
 >
-> smp_rmb() is NOP on uniprocessor.
->
-> I believe the code is correct as is.
+>  #include <asm/delay.h>
+>  #include <asm/intrinsics.h>
+> @@ -496,6 +497,7 @@ ia64_handle_irq (ia64_vector vector, str
+>                        smp_local_flush_tlb();
+>                        kstat_incr_irqs_this_cpu(irq, desc);
+>                } else if (unlikely(IS_RESCHEDULE(vector))) {
+> +                       scheduler_ipi();
+>                        kstat_incr_irqs_this_cpu(irq, desc);
+>                } else {
+>                        ia64_setreg(_IA64_REG_CR_TPR, vector);
 
-that isnt what the code / documentation says.  unless i'm reading them
-wrong, both seem to indicate that the proposed patch is what we
-actually want.
+This bit breaks ia64 CONFIG_SMP=n builds in next-20110413 with:
 
-include/linux/compiler-gcc.h:
-#define barrier() __asm__ __volatile__("": : :"memory")
+arch/ia64/kernel/irq_ia64.c: In function ‘ia64_handle_irq’:
+arch/ia64/kernel/irq_ia64.c:500: error: implicit declaration of
+function ‘scheduler_ipi’
 
-include/asm-generic/system.h:
-#define mb()    asm volatile ("": : :"memory")
-#define rmb()   mb()
-#define wmb()   asm volatile ("": : :"memory")
-
-#ifdef CONFIG_SMP
-#define smp_mb()    mb()
-#define smp_rmb()   rmb()
-#define smp_wmb()   wmb()
-#else
-#define smp_mb()    barrier()
-#define smp_rmb()   barrier()
-#define smp_wmb()   barrier()
-#endif
-
-Documentation/memory-barriers.txt:
-SMP memory barriers are reduced to compiler barriers on uniprocessor compiled
-systems because it is assumed that a CPU will appear to be self-consistent,
-and will order overlapping accesses correctly with respect to itself.
-
-[!] Note that SMP memory barriers _must_ be used to control the ordering of
-references to shared memory on SMP systems, though the use of locking instead
-is sufficient.
--mike
+-Tony
