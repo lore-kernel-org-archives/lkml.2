@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab1DMOUL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:20:11 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:64769 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545Ab1DMOUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:20:07 -0400
-Subject: Re: [PATCH 1/2] avr32: At32ap: fix extint irq_chip type from
- irq_chip to irq_data
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice Vilchez <patrice.vilchez@atmel.com>
-In-Reply-To: <1302409040-13791-1-git-send-email-plagnioj@jcrosoft.com>
-References: <1302409040-13791-1-git-send-email-plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Wed, 13 Apr 2011 14:59:56 +0200
-Message-ID: <1302699596.22451.10.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1756471Ab1DMOW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:22:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37520 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754855Ab1DMOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 10:22:56 -0400
+Message-ID: <4DA5B1B1.5090905@redhat.com>
+Date: Wed, 13 Apr 2011 10:22:41 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>,
+        "rja@americas.sgi.com" <rja@americas.sgi.com>
+Subject: Re: [PATCH 2/3] x86, MCE: Drop default decoding notifier
+References: <20110413132409.GB1900@gere.osrc.amd.com> <1302701810-2471-2-git-send-email-bp@amd64.org> <4DA5ACB2.1070505@redhat.com> <20110413141829.GE1987@aftab>
+In-Reply-To: <20110413141829.GE1987@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Apr 2011 13:02:26.0922 (UTC) FILETIME=[09E30CA0:01CBF9DB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-04-10 at 06:17 +0200, Jean-Christophe PLAGNIOL-VILLARD
-wrote: 
-> introduce in commit 7776e233ef
-> 
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Patrice Vilchez <patrice.vilchez@atmel.com>
 
-Thanks, but seems like Andrew already pulled a similar fix [1] into the
--mm tree which I'll send through the AVR32 tree.
 
-<snipp patch>
+On 04/13/2011 10:18 AM, Borislav Petkov wrote:
+> On Wed, Apr 13, 2011 at 10:01:22AM -0400, Prarit Bhargava wrote:
+>   
+>> On 04/13/2011 09:36 AM, Borislav Petkov wrote:
+>>     
+>>> From: Borislav Petkov <borislav.petkov@amd.com>
+>>>
+>>> The default notifier doesn't make a lot of sense to call in the
+>>> correctable errors case. Drop it and emit the mcelog decoding hint only
+>>> in the uncorrectable errors case and when no notifier is registered.
+>>>
+>>> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+>>> ---
+>>>  arch/x86/include/asm/mce.h       |    4 ++--
+>>>  arch/x86/kernel/cpu/mcheck/mce.c |   26 +++++++++-----------------
+>>>  2 files changed, 11 insertions(+), 19 deletions(-)
+>>>
+>>>       
+>>   
+>>     
+>>> +extern atomic_t mce_decoders;
+>>> +
+>>>       
+>> Boris,
+>>
+>> I don't think we need to do this.  I think we can use the existing notifier chain tools to do this check for us ... *untested and uncompiled* patch below.
+>>
+>>   	 * Print out human-readable details about the MCE error,
+>>     
+>>>  	 * (if the CPU has an implementation for that)
+>>>  	 */
+>>> -	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
+>>> +	if (!atomic_read(&mce_decoders)) {
+>>> +		pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
+>>> +		pr_emerg(HW_ERR "Run the above through 'mcelog --ascii' to decode.\n");
+>>>       
+>> I thought we didn't want these lines at all for CE errors?
+>>     
+> This is the UC only case - we call print_mce() before we panic.
+>   
 
-1: http://www.spinics.net/lists/mm-commits/msg83268.html
+.. right ... but we would still see nonsensical messages before the
+panic, which will confuse the end user.  IMO, dump the messages unless
+it's UC.  And we shouldn't print out the human readable message at all.
 
--- 
-Hans-Christian Egtvedt
+I'm installing F14 on  a system that is known to generate CEs @
+boot-time.  I'll test patches+latest upstream to here to see what happens...
 
+P.
+
+>
+>   
