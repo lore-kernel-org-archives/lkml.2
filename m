@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab1DMAtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 20:49:43 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:42599 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756910Ab1DMAtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 20:49:42 -0400
-Date: Tue, 12 Apr 2011 20:49:38 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: CONFIG_EXT4_USE_FOR_EXT23:  rootfs shows as ext2 instead of
- ext4
-Message-ID: <20110413004938.GE3682@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mark Lord <kernel@teksavvy.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <4DA48AF4.5080803@teksavvy.com>
+	id S1757508Ab1DMA4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 20:56:11 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:23633 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab1DMA4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 20:56:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=VhS4XJ5/TusMi3vpcsQjZzdIPG8CDWnlggMbxRf8ouYTaj4bHARlLzp3lRVf3mP+p/
+         mzL6rr5toxrgZ3FHUvrg==
+Date: Tue, 12 Apr 2011 17:56:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Chris McDermott <lcm@linux.vnet.ibm.com>
+Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
+In-Reply-To: <1302655746.8321.4001.camel@nimitz>
+Message-ID: <alpine.DEB.2.00.1104121752400.12609@chino.kir.corp.google.com>
+References: <20110411172004.0361.A69D9226@jp.fujitsu.com> <1302557371.7286.16607.camel@nimitz> <alpine.DEB.2.00.1104121719430.10966@chino.kir.corp.google.com> <1302655746.8321.4001.camel@nimitz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA48AF4.5080803@teksavvy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 01:25:08PM -0400, Mark Lord wrote:
-> Ted et al.
-> 
-> I've only just noticed this, so I have no idea how long it has been this way.
-> 
-> When I build a kernel with CONFIG_EXT4_USE_FOR_EXT23=y and boot from it,
-> the ext4 root filesystem shows up as "ext2" mode, rather than "ext4".
-> 
-> This looks very wrong to me, and quite dangerous.
+On Tue, 12 Apr 2011, Dave Hansen wrote:
 
-It's a cosemtic bug, I agree, but I'm not sure why you consider it
-dangerous.
+> > That doesn't seem like an argument against this patch, it's an improper 
+> > configuration unless the remote memory access has a latency of 2.1x that 
+> > of a local access between those two nodes.  If that's the case, then it's 
+> > accurately following the ACPI spec and the VM has made its policy decision 
+> > to enable zone_reclaim_mode as a result.
+> 
+> Heh, if the kernel broke on every system that didn't follow _some_ spec,
+> it wouldn't boot in very many places.
+> 
+> When you have a hammer, everything looks like a nail.  When you're a
+> BIOS developer, you start thwacking at the kernel with munged ACPI
+> tables instead of boot options.  Folks do this in the real world, and I
+> think if we can't put their names and addresses next to the code that
+> works around this, we might as well put the DMI strings of their
+> hardware. :) 
+> 
 
-CONFIG_EXT4_USE_FOR_EXT23 means that ext4 registers itself as ext2
-and/or ext3, if ext2 and/or ext3 are not configured into the kernel.
-Since the kernel tries to mount the file system as ext2, ext3, and
-then ext4, and uses whichever one works first.
-
-						- Ted
+That's why I suggested doing away with RECLAIM_DISTANCE entirely, 
+otherwise we are relying on the SLIT always being correct when we know 
+it's not; the policy decision in the kernel as it stands now is that we 
+want to enable zone_reclaim_mode when remote memory access takes longer 
+than 2x that of a local access (3x with KOSAKI-san's patch), which is 
+something we can actually measure at boot rather than relying on the BIOS 
+at all.  Then we don't have to bother with DMI strings for specific pieces 
+of hardware and can remove the existing ia64 and powerpc special cases.
