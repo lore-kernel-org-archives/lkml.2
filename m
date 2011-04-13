@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab1DMQYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:24:12 -0400
-Received: from kroah.org ([198.145.64.141]:52854 "EHLO coco.kroah.org"
+	id S932842Ab1DMQM6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:12:58 -0400
+Received: from kroah.org ([198.145.64.141]:52816 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932858Ab1DMQNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:02 -0400
+	id S932829Ab1DMQMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:12:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:45 2011
-Message-Id: <20110413161045.744599695@clark.kroah.org>
+Message-Id: <20110413161045.002911205@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:09:54 -0700
+Date: Wed, 13 Apr 2011 09:09:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>
-Subject: [31/71] quota: Dont write quota info in dquot_commit()
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [24/71] ROSE: prevent heap corruption with bad facilities
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit b03f24567ce7caf2420b8be4c6eb74c191d59a91 upstream.
+commit be20250c13f88375345ad99950190685eda51eb8 upstream.
 
-There's no reason to write quota info in dquot_commit(). The writing is a
-relict from the old days when we didn't have dquot_acquire() and
-dquot_release() and thus dquot_commit() could have created / removed quota
-structures from the file. These days dquot_commit() only updates usage counters
-/ limits in quota structure and thus there's no need to write quota info.
+When parsing the FAC_NATIONAL_DIGIS facilities field, it's possible for
+a remote host to provide more digipeaters than expected, resulting in
+heap corruption.  Check against ROSE_MAX_DIGIS to prevent overflows, and
+abort facilities parsing on failure.
 
-This also fixes an issue with journaling filesystem which didn't reserve
-enough space in the transaction for write of quota info (it could have been
-dirty at the time of dquot_commit() because of a race with other operation
-changing it).
+Additionally, when parsing the FAC_CCITT_DEST_NSAP and
+FAC_CCITT_SRC_NSAP facilities fields, a remote host can provide a length
+of less than 10, resulting in an underflow in a memcpy size, causing a
+kernel panic due to massive heap corruption.  A length of greater than
+20 results in a stack overflow of the callsign array.  Abort facilities
+parsing on these invalid length values.
 
-Reported-and-tested-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/quota/dquot.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ net/rose/rose_subr.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -408,7 +408,7 @@ EXPORT_SYMBOL(dquot_acquire);
-  */
- int dquot_commit(struct dquot *dquot)
- {
--	int ret = 0, ret2 = 0;
-+	int ret = 0;
- 	struct quota_info *dqopt = sb_dqopt(dquot->dq_sb);
+--- a/net/rose/rose_subr.c
++++ b/net/rose/rose_subr.c
+@@ -289,10 +289,15 @@ static int rose_parse_national(unsigned
+ 				facilities->source_ndigis = 0;
+ 				facilities->dest_ndigis   = 0;
+ 				for (pt = p + 2, lg = 0 ; lg < l ; pt += AX25_ADDR_LEN, lg += AX25_ADDR_LEN) {
+-					if (pt[6] & AX25_HBIT)
++					if (pt[6] & AX25_HBIT) {
++						if (facilities->dest_ndigis >= ROSE_MAX_DIGIS)
++							return -1;
+ 						memcpy(&facilities->dest_digis[facilities->dest_ndigis++], pt, AX25_ADDR_LEN);
+-					else
++					} else {
++						if (facilities->source_ndigis >= ROSE_MAX_DIGIS)
++							return -1;
+ 						memcpy(&facilities->source_digis[facilities->source_ndigis++], pt, AX25_ADDR_LEN);
++					}
+ 				}
+ 			}
+ 			p   += l + 2;
+@@ -332,6 +337,11 @@ static int rose_parse_ccitt(unsigned cha
  
- 	mutex_lock(&dqopt->dqio_mutex);
-@@ -420,15 +420,10 @@ int dquot_commit(struct dquot *dquot)
- 	spin_unlock(&dq_list_lock);
- 	/* Inactive dquot can be only if there was error during read/init
- 	 * => we have better not writing it */
--	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
-+	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
- 		ret = dqopt->ops[dquot->dq_type]->commit_dqblk(dquot);
--		if (info_dirty(&dqopt->info[dquot->dq_type])) {
--			ret2 = dqopt->ops[dquot->dq_type]->write_file_info(
--						dquot->dq_sb, dquot->dq_type);
--		}
--		if (ret >= 0)
--			ret = ret2;
--	}
-+	else
-+		ret = -EIO;
- out_sem:
- 	mutex_unlock(&dqopt->dqio_mutex);
- 	return ret;
+ 		case 0xC0:
+ 			l = p[1];
++
++			/* Prevent overflows*/
++			if (l < 10 || l > 20)
++				return -1;
++
+ 			if (*p == FAC_CCITT_DEST_NSAP) {
+ 				memcpy(&facilities->source_addr, p + 7, ROSE_ADDR_LEN);
+ 				memcpy(callsign, p + 12,   l - 10);
+@@ -372,12 +382,16 @@ int rose_parse_facilities(unsigned char
+ 			switch (*p) {
+ 			case FAC_NATIONAL:		/* National */
+ 				len = rose_parse_national(p + 1, facilities, facilities_len - 1);
++				if (len < 0)
++					return 0;
+ 				facilities_len -= len + 1;
+ 				p += len + 1;
+ 				break;
+ 
+ 			case FAC_CCITT:		/* CCITT */
+ 				len = rose_parse_ccitt(p + 1, facilities, facilities_len - 1);
++				if (len < 0)
++					return 0;
+ 				facilities_len -= len + 1;
+ 				p += len + 1;
+ 				break;
 
 
