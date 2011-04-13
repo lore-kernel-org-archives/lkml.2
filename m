@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab1DMQFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:05:40 -0400
-Received: from kroah.org ([198.145.64.141]:54385 "EHLO coco.kroah.org"
+	id S932370Ab1DMQF7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:05:59 -0400
+Received: from kroah.org ([198.145.64.141]:54354 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758044Ab1DMPzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:33 -0400
+	id S1757629Ab1DMPzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:31 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:46 2011
-Message-Id: <20110413155146.709934154@clark.kroah.org>
+Message-Id: <20110413155146.361259407@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:59 -0700
+Date: Wed, 13 Apr 2011 08:50:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: [35/74] Bluetooth: sco: fix information leak to userspace
+        Hugh Dickins <hughd@google.com>
+Subject: [32/74] mm: avoid wrapping vm_pgoff in mremap()
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit c4c896e1471aec3b004a693c689f60be3b17ac86 upstream.
+commit 982134ba62618c2d69fbbbd166d0a11ee3b7e3d8 upstream.
 
-struct sco_conninfo has one padding byte in the end.  Local variable
-cinfo of type sco_conninfo is copied to userspace with this uninizialized
-one byte, leading to old stack contents leak.
+The normal mmap paths all avoid creating a mapping where the pgoff
+inside the mapping could wrap around due to overflow.  However, an
+expanding mremap() can take such a non-wrapping mapping and make it
+bigger and cause a wrapping condition.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+Noticed by Robert Swiecki when running a system call fuzzer, where it
+caused a BUG_ON() due to terminally confusing the vma_prio_tree code.  A
+vma dumping patch by Hugh then pinpointed the crazy wrapped case.
+
+Reported-and-tested-by: Robert Swiecki <robert@swiecki.net>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/bluetooth/sco.c |    1 +
- 1 file changed, 1 insertion(+)
+ mm/mremap.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -700,6 +700,7 @@ static int sco_sock_getsockopt_old(struc
- 			break;
- 		}
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -275,9 +275,16 @@ static struct vm_area_struct *vma_to_res
+ 	if (old_len > vma->vm_end - addr)
+ 		goto Efault;
  
-+		memset(&cinfo, 0, sizeof(cinfo));
- 		cinfo.hci_handle = sco_pi(sk)->conn->hcon->handle;
- 		memcpy(cinfo.dev_class, sco_pi(sk)->conn->hcon->dev_class, 3);
+-	if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP)) {
+-		if (new_len > old_len)
++	/* Need to be careful about a growing mapping */
++	if (new_len > old_len) {
++		unsigned long pgoff;
++
++		if (vma->vm_flags & (VM_DONTEXPAND | VM_PFNMAP))
+ 			goto Efault;
++		pgoff = (addr - vma->vm_start) >> PAGE_SHIFT;
++		pgoff += vma->vm_pgoff;
++		if (pgoff + (new_len >> PAGE_SHIFT) < pgoff)
++			goto Einval;
+ 	}
  
+ 	if (vma->vm_flags & VM_LOCKED) {
 
 
