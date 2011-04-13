@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab1DMORq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:17:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49781 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752901Ab1DMORp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:17:45 -0400
-Date: Wed, 13 Apr 2011 10:17:41 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        <linux-sh@vger.kernel.org>, <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Make power domain callbacks take precedence
- over subsystem ones
-In-Reply-To: <201104130205.26988.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1104130954270.2005-100000@iolanthe.rowland.org>
+	id S1756426Ab1DMOSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:18:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33128 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754173Ab1DMOSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 10:18:46 -0400
+Date: Wed, 13 Apr 2011 16:18:42 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Michal Suchanek <hramrach@centrum.cz>
+Cc: Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        miklos@szeredi.hu, Christoph Hellwig <hch@infradead.org>
+Subject: Re: Unionmount status?
+In-Reply-To: <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011, Rafael J. Wysocki wrote:
+On Tue, 12 Apr 2011, Michal Suchanek wrote:
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Miklos has an overlay file system that has also been posted upstream.
 > 
-> Change the PM core's behavior related to power domains in such a way
-> that, if a power domain is defined for a given device, its callbacks
-> will be executed instead of and not in addition to the device
-> subsystem's PM callbacks.
-> 
-> The idea behind the initial implementation of power domains handling
-> by the PM core was that power domain callbacks would be executed in
-> addition to subsystem callbacks, so that it would be possible to
-> extend the subsystem callbacks by using power domains.  It turns out,
-> however, that this wouldn't be really convenient in some important
-> situations.
-> 
-> For example, there are systems in which power can only be removed
-> from entire power domains.  On those systems it is not desirable to
-> execute device drivers' PM callbacks until it is known that power is
-> going to be removed from the devices in question, which means that
-> they should be executed by power domain callbacks rather then by
-> subsystem (e.g. bus type) PM callbacks, because subsystems generally
-> have no information about what devices belong to which power domain.
-> Thus, for instance, if the bus type in question is the platform bus
-> type, its PM callbacks generally should not be called in addition to
-> power domain callbacks, because they run device drivers' callbacks
-> unconditionally if defined.
+> I have no idea about his other overlay filesystem either.
 
-What about systems where it makes sense to execute the subsystem 
-callbacks even if power isn't going to be removed from the device?  
-It's quite possible that the subsystem could reduce the device's power 
-consumption even when the device isn't powered down completely.
+https://lkml.org/lkml/2011/3/22/222
 
-Is the extra overhead of invoking the subsystem callback really all 
-that troublesome?
-
-Alan Stern
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
 
