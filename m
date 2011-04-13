@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab1DMP4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:56:12 -0400
-Received: from kroah.org ([198.145.64.141]:54610 "EHLO coco.kroah.org"
+	id S932432Ab1DMP4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:56:18 -0400
+Received: from kroah.org ([198.145.64.141]:54617 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932224Ab1DMP4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:56:06 -0400
+	id S932328Ab1DMP4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:56:05 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:50 2011
-Message-Id: <20110413155150.524813146@clark.kroah.org>
+Message-Id: <20110413155150.306533092@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:51:34 -0700
+Date: Wed, 13 Apr 2011 08:51:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Nelson Elhage <nelhage@ksplice.com>, Thomas Graf <tgraf@infradead.org>,
         "David S. Miller" <davem@davemloft.net>,
         Moritz Muehlenhoff <jmm@debian.org>
-Subject: [70/74] irda: prevent integer underflow in IRLMP_ENUMDEVICES
+Subject: [68/74] inet_diag: Make sure we actually run the same bytecode we audited.
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,59 +27,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Nelson Elhage <nelhage@ksplice.com>
 
-commit fdac1e0697356ac212259f2147aa60c72e334861 upstream.
+commit 22e76c849d505d87c5ecf3d3e6742a65f0ff4860 upstream.
 
-If the user-provided len is less than the expected offset, the
-IRLMP_ENUMDEVICES getsockopt will do a copy_to_user() with a very large
-size value.  While this isn't be a security issue on x86 because it will
-get caught by the access_ok() check, it may leak large amounts of kernel
-heap on other architectures.  In any event, this patch fixes it.
+We were using nlmsg_find_attr() to look up the bytecode by attribute when
+auditing, but then just using the first attribute when actually running
+bytecode. So, if we received a message with two attribute elements, where only
+the second had type INET_DIAG_REQ_BYTECODE, we would validate and run different
+bytecode strings.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Fix this by consistently using nlmsg_find_attr everywhere.
+
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+Signed-off-by: Thomas Graf <tgraf@infradead.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[jmm: Slightly adapted to apply against 2.6.32]
 Cc: Moritz Muehlenhoff <jmm@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 
 ---
- net/irda/af_irda.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ net/ipv4/inet_diag.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
---- a/net/irda/af_irda.c
-+++ b/net/irda/af_irda.c
-@@ -2164,6 +2164,14 @@ static int irda_getsockopt(struct socket
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -489,9 +489,11 @@ static int inet_csk_diag_dump(struct soc
+ {
+ 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
  
- 	switch (optname) {
- 	case IRLMP_ENUMDEVICES:
-+
-+		/* Offset to first device entry */
-+		offset = sizeof(struct irda_device_list) -
-+			sizeof(struct irda_device_info);
-+
-+		if (len < offset)
-+			return -EINVAL;
-+
- 		/* Ask lmp for the current discovery log */
- 		discoveries = irlmp_get_discoveries(&list.len, self->mask.word,
- 						    self->nslots);
-@@ -2173,15 +2181,9 @@ static int irda_getsockopt(struct socket
- 		err = 0;
+-	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
++	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
+ 		struct inet_diag_entry entry;
+-		struct rtattr *bc = (struct rtattr *)(r + 1);
++		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
++							  sizeof(*r),
++							  INET_DIAG_REQ_BYTECODE);
+ 		struct inet_sock *inet = inet_sk(sk);
  
- 		/* Write total list length back to client */
--		if (copy_to_user(optval, &list,
--				 sizeof(struct irda_device_list) -
--				 sizeof(struct irda_device_info)))
-+		if (copy_to_user(optval, &list, offset))
- 			err = -EFAULT;
+ 		entry.family = sk->sk_family;
+@@ -511,7 +513,7 @@ static int inet_csk_diag_dump(struct soc
+ 		entry.dport = ntohs(inet->dport);
+ 		entry.userlocks = sk->sk_userlocks;
  
--		/* Offset to first device entry */
--		offset = sizeof(struct irda_device_list) -
--			sizeof(struct irda_device_info);
--
- 		/* Copy the list itself - watch for overflow */
- 		if(list.len > 2048)
- 		{
+-		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
++		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
+ 			return 0;
+ 	}
+ 
+@@ -526,9 +528,11 @@ static int inet_twsk_diag_dump(struct in
+ {
+ 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+ 
+-	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
++	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
+ 		struct inet_diag_entry entry;
+-		struct rtattr *bc = (struct rtattr *)(r + 1);
++		const struct nlattr *bc = nlmsg_find_attr(cb->nlh,
++							  sizeof(*r),
++							  INET_DIAG_REQ_BYTECODE);
+ 
+ 		entry.family = tw->tw_family;
+ #if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
+@@ -547,7 +551,7 @@ static int inet_twsk_diag_dump(struct in
+ 		entry.dport = ntohs(tw->tw_dport);
+ 		entry.userlocks = 0;
+ 
+-		if (!inet_diag_bc_run(RTA_DATA(bc), RTA_PAYLOAD(bc), &entry))
++		if (!inet_diag_bc_run(nla_data(bc), nla_len(bc), &entry))
+ 			return 0;
+ 	}
+ 
+@@ -617,7 +621,7 @@ static int inet_diag_dump_reqs(struct sk
+ 	struct inet_diag_req *r = NLMSG_DATA(cb->nlh);
+ 	struct inet_connection_sock *icsk = inet_csk(sk);
+ 	struct listen_sock *lopt;
+-	struct rtattr *bc = NULL;
++	const struct nlattr *bc = NULL;
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	int j, s_j;
+ 	int reqnum, s_reqnum;
+@@ -637,8 +641,9 @@ static int inet_diag_dump_reqs(struct sk
+ 	if (!lopt || !lopt->qlen)
+ 		goto out;
+ 
+-	if (cb->nlh->nlmsg_len > 4 + NLMSG_SPACE(sizeof(*r))) {
+-		bc = (struct rtattr *)(r + 1);
++	if (nlmsg_attrlen(cb->nlh, sizeof(*r))) {
++		bc = nlmsg_find_attr(cb->nlh, sizeof(*r),
++				     INET_DIAG_REQ_BYTECODE);
+ 		entry.sport = inet->num;
+ 		entry.userlocks = sk->sk_userlocks;
+ 	}
+@@ -671,8 +676,8 @@ static int inet_diag_dump_reqs(struct sk
+ 					&ireq->rmt_addr;
+ 				entry.dport = ntohs(ireq->rmt_port);
+ 
+-				if (!inet_diag_bc_run(RTA_DATA(bc),
+-						    RTA_PAYLOAD(bc), &entry))
++				if (!inet_diag_bc_run(nla_data(bc),
++						      nla_len(bc), &entry))
+ 					continue;
+ 			}
+ 
 
 
