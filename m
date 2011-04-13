@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab1DMWLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 18:11:52 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58406 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933068Ab1DMWLt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 18:11:49 -0400
-Date: Wed, 13 Apr 2011 18:11:48 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Mike Frysinger <vapier@gentoo.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be smp
- ?
-In-Reply-To: <201104132353.09282.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1104131805090.2005-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933294Ab1DMWPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 18:15:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50265 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933068Ab1DMWPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 18:15:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,207,1301900400"; 
+   d="scan'208";a="628194945"
+Date: Wed, 13 Apr 2011 22:58:18 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice Vilchez <patrice.vilchez@atmel.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] atmel_serial: keep the platform_device unchanged
+Message-ID: <20110413225818.39ce5104@bob.linux.org.uk>
+In-Reply-To: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
+References: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011, Rafael J. Wysocki wrote:
+On Wed, 13 Apr 2011 21:47:18 +0200
+Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
 
-> The above means that smp_*mb() are defined as *mb() if CONFIG_SMP is set,
-> which basically means that *mb() are more restrictive than the corresponding
-> smp_*mb().  More precisely, they also cover the cases in which the CPU
-> reorders instructions on uniprocessor, which we definitely want to cover.
+> specify the port num via platform_data this will allow to match the
+> clock with the plaform_dev staticly
 > 
-> IOW, your patch would break things on uniprocessor where the CPU reorders
-> instructions.
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD
+> <plagnioj@jcrosoft.com> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Patrice Vilchez <patrice.vilchez@atmel.com>
+> Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
-How could anything break on a UP system?  CPUs don't reorder 
-instructions that drastically.  For example, no CPU will ever violate
-this assertion:
-
-	x = 0;
-	y = x;
-	x = 1;
-	assert(y == 0);
-
-even if it does reorder the second and third statements internally.  
-This is guaranteed by the C language specification.
-
-> > Documentation/memory-barriers.txt:
-> > SMP memory barriers are reduced to compiler barriers on uniprocessor compiled
-> > systems because it is assumed that a CPU will appear to be self-consistent,
-> > and will order overlapping accesses correctly with respect to itself.
-> 
-> Exactly, which is not guaranteed in general (e.g. on Alpha).  That is, some
-> CPUs can reorder instructions in such a way that a compiler barrier is not
-> sufficient to prevent breakage.
-
-I don't think this is right.  You _can_ assume that Alphas appear to be
-self-consistent.  If they didn't, you wouldn't be able to use them at
-all.
-
-Alan Stern
-
+Ack for the serial side, its really an arch patch though as far as I
+can see..
