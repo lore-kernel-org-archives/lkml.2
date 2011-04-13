@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab1DMQJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:09:59 -0400
-Received: from kroah.org ([198.145.64.141]:54259 "EHLO coco.kroah.org"
+	id S932501Ab1DMQKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:10:45 -0400
+Received: from kroah.org ([198.145.64.141]:54252 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757699Ab1DMPzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:15 -0400
+	id S1757301Ab1DMPzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:14 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:44 2011
-Message-Id: <20110413155144.687388683@clark.kroah.org>
+Message-Id: <20110413155144.576111045@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:40 -0700
+Date: Wed, 13 Apr 2011 08:50:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Olaf Hering <olaf@aepfle.de>, Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [16/74] staging: hv: use sync_bitops when interacting with the hypervisor
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [15/74] staging: hv: Fix GARP not sent after Quick Migration
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,106 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olaf Hering <olaf@aepfle.de>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit 22356585712d1ff08fbfed152edd8b386873b238 upstream.
+commit c996edcf1c451b81740abbcca5257ed7e353fcc6 upstream.
 
-Locking is required when tweaking bits located in a shared page, use the
-sync_ version of bitops. Without this change vmbus_on_event() will miss
-events and as a result, vmbus_isr() will not schedule the receive tasklet.
+After Quick Migration, the network is not immediately operational in the
+current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, I added
+another netif_notify_peers() into a scheduled work, otherwise GARP packet will
+not be sent after quick migration, and cause network disconnection.
 
-[Backported to 2.6.32 stable kernel by Haiyang Zhang <haiyangz@microsoft.com>]
+Thanks to Mike Surcouf <mike@surcouf.co.uk> for reporting the bug and
+testing the patch.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
-Acked-by: Hank Janssen <hjanssen@microsoft.com>
+Reported-by: Mike Surcouf <mike@surcouf.co.uk>
+Tested-by: Mike Surcouf <mike@surcouf.co.uk>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/staging/hv/Channel.c      |    8 ++++----
- drivers/staging/hv/Connection.c   |    6 ++++--
- drivers/staging/hv/Vmbus.c        |    2 +-
- drivers/staging/hv/VmbusPrivate.h |    1 +
- 4 files changed, 10 insertions(+), 7 deletions(-)
 
---- a/drivers/staging/hv/Channel.c
-+++ b/drivers/staging/hv/Channel.c
-@@ -75,14 +75,14 @@ static void VmbusChannelSetEvent(struct
+---
+ drivers/staging/hv/netvsc_drv.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -44,6 +44,7 @@ struct net_device_context {
+ 	/* point back to our device context */
+ 	struct device_context *device_ctx;
+ 	struct net_device_stats stats;
++	struct work_struct work;
+ };
  
- 	if (Channel->OfferMsg.MonitorAllocated) {
- 		/* Each u32 represents 32 channels */
--		set_bit(Channel->OfferMsg.ChildRelId & 31,
-+		sync_set_bit(Channel->OfferMsg.ChildRelId & 31,
- 			(unsigned long *) gVmbusConnection.SendInterruptPage +
- 			(Channel->OfferMsg.ChildRelId >> 5));
+ struct netvsc_driver_context {
+@@ -284,6 +285,7 @@ static void netvsc_linkstatus_callback(s
+ {
+ 	struct device_context *device_ctx = to_device_context(device_obj);
+ 	struct net_device *net = dev_get_drvdata(&device_ctx->device);
++	struct net_device_context *ndev_ctx;
  
- 		monitorPage = gVmbusConnection.MonitorPages;
- 		monitorPage++; /* Get the child to parent monitor page */
+ 	DPRINT_ENTER(NETVSC_DRV);
  
--		set_bit(Channel->MonitorBit,
-+		sync_set_bit(Channel->MonitorBit,
- 			(unsigned long *)&monitorPage->TriggerGroup
- 					[Channel->MonitorGroup].Pending);
+@@ -297,6 +299,8 @@ static void netvsc_linkstatus_callback(s
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
+ 		netif_notify_peers(net);
++		ndev_ctx = netdev_priv(net);
++		schedule_work(&ndev_ctx->work);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
+@@ -398,6 +402,25 @@ static const struct net_device_ops devic
+ 	.ndo_set_mac_address =		eth_mac_addr,
+ };
  
-@@ -102,7 +102,7 @@ static void VmbusChannelClearEvent(struc
++/*
++ * Send GARP packet to network peers after migrations.
++ * After Quick Migration, the network is not immediately operational in the
++ * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
++ * another netif_notify_peers() into a scheduled work, otherwise GARP packet
++ * will not be sent after quick migration, and cause network disconnection.
++ */
++static void netvsc_send_garp(struct work_struct *w)
++{
++	struct net_device_context *ndev_ctx;
++	struct net_device *net;
++
++	msleep(20);
++	ndev_ctx = container_of(w, struct net_device_context, work);
++	net = dev_get_drvdata(&ndev_ctx->device_ctx->device);
++	netif_notify_peers(net);
++}
++
++
+ static int netvsc_probe(struct device *device)
+ {
+ 	struct driver_context *driver_ctx =
+@@ -428,6 +451,7 @@ static int netvsc_probe(struct device *d
+ 	net_device_ctx = netdev_priv(net);
+ 	net_device_ctx->device_ctx = device_ctx;
+ 	dev_set_drvdata(device, net);
++	INIT_WORK(&net_device_ctx->work, netvsc_send_garp);
  
- 	if (Channel->OfferMsg.MonitorAllocated) {
- 		/* Each u32 represents 32 channels */
--		clear_bit(Channel->OfferMsg.ChildRelId & 31,
-+		sync_clear_bit(Channel->OfferMsg.ChildRelId & 31,
- 			  (unsigned long *)gVmbusConnection.SendInterruptPage +
- 			  (Channel->OfferMsg.ChildRelId >> 5));
- 
-@@ -110,7 +110,7 @@ static void VmbusChannelClearEvent(struc
- 			(struct hv_monitor_page *)gVmbusConnection.MonitorPages;
- 		monitorPage++; /* Get the child to parent monitor page */
- 
--		clear_bit(Channel->MonitorBit,
-+		sync_clear_bit(Channel->MonitorBit,
- 			  (unsigned long *)&monitorPage->TriggerGroup
- 					[Channel->MonitorGroup].Pending);
- 	}
---- a/drivers/staging/hv/Connection.c
-+++ b/drivers/staging/hv/Connection.c
-@@ -284,7 +284,9 @@ void VmbusOnEvents(void)
- 		for (dword = 0; dword < maxdword; dword++) {
- 			if (recvInterruptPage[dword]) {
- 				for (bit = 0; bit < 32; bit++) {
--					if (test_and_clear_bit(bit, (unsigned long *)&recvInterruptPage[dword])) {
-+					if (sync_test_and_clear_bit(bit,
-+						(unsigned long *)
-+						&recvInterruptPage[dword])) {
- 						relid = (dword << 5) + bit;
- 						DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
- 
-@@ -329,7 +331,7 @@ int VmbusSetEvent(u32 childRelId)
- 	DPRINT_ENTER(VMBUS);
- 
- 	/* Each u32 represents 32 channels */
--	set_bit(childRelId & 31,
-+	sync_set_bit(childRelId & 31,
- 		(unsigned long *)gVmbusConnection.SendInterruptPage +
- 		(childRelId >> 5));
- 
---- a/drivers/staging/hv/Vmbus.c
-+++ b/drivers/staging/hv/Vmbus.c
-@@ -254,7 +254,7 @@ static int VmbusOnISR(struct hv_driver *
- 	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
- 
- 	/* Since we are a child, we only need to check bit 0 */
--	if (test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
-+	if (sync_test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
- 		DPRINT_DBG(VMBUS, "received event %d", event->Flags32[0]);
- 		ret |= 0x2;
- 	}
---- a/drivers/staging/hv/VmbusPrivate.h
-+++ b/drivers/staging/hv/VmbusPrivate.h
-@@ -32,6 +32,7 @@
- #include "ChannelInterface.h"
- #include "RingBuffer.h"
- #include <linux/list.h>
-+#include <asm/sync_bitops.h>
- 
- 
- /*
+ 	/* Notify the netvsc driver of the new device */
+ 	ret = net_drv_obj->Base.OnDeviceAdd(device_obj, &device_info);
 
 
