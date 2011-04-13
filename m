@@ -1,82 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab1DMGX0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 02:23:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33912 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab1DMGXZ (ORCPT
+	id S1754538Ab1DMGi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 02:38:26 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:13848 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab1DMGiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 02:23:25 -0400
-Date: Wed, 13 Apr 2011 08:23:16 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] leds: provide helper to register "leds-gpio" devices
-Message-ID: <20110413062316.GH18850@pengutronix.de>
-References: <1302097097.22904.41.camel@rex>
- <1302554157-24145-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20110412214848.GI7806@n2100.arm.linux.org.uk>
+	Wed, 13 Apr 2011 02:38:24 -0400
+X-SpamScore: -24
+X-BigFish: VPS-24(zzbb2cK936eK1432N98dKzz1202hzz15d4R8275bhz32i637h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJKVRU-01-2RV-02
+X-M-MSG: 
+Date: Wed, 13 Apr 2011 08:38:16 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Borislav Petkov <bp@alien8.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Xu, Andiry" <Andiry.Xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [PATCH v7] USB host: Fix lockdep warning in AMD PLL quirk
+Message-ID: <20110413063816.GG20607@amd.com>
+References: <20110411163711.GA20607@amd.com>
+ <Pine.LNX.4.44L0.1104111304080.1975-100000@iolanthe.rowland.org>
+ <20110412064128.GC20607@amd.com>
+ <4DA4308F.6060601@ru.mvista.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110412214848.GI7806@n2100.arm.linux.org.uk>
+In-Reply-To: <4DA4308F.6060601@ru.mvista.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Apr 12, 2011 at 06:59:27AM -0400, Sergei Shtylyov wrote:
+> On 12-04-2011 10:41, Roedel, Joerg wrote:
 
-On Tue, Apr 12, 2011 at 10:48:48PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Apr 11, 2011 at 10:35:57PM +0200, Uwe Kleine-König wrote:
-> > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> > index 9bec869..e8e101e 100644
-> > --- a/drivers/leds/Kconfig
-> > +++ b/drivers/leds/Kconfig
-> > @@ -14,6 +14,11 @@ config LEDS_CLASS
-> >  	  This option enables the led sysfs class in /sys/class/leds.  You'll
-> >  	  need this to do anything useful with LEDs.  If unsure, say N.
-> >  
-> > +config LED_REGISTER_GPIO
-> > +	bool
-> > +	help
-> > +	  This option provides the function gpio_led_register_device.
-> > +
-> >  if NEW_LEDS
-> >  
-> >  comment "LED drivers"
-> > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> > index 39c80fc..ca428bd 100644
-> > --- a/drivers/leds/Makefile
-> > +++ b/drivers/leds/Makefile
-> > @@ -3,6 +3,7 @@
-> >  obj-$(CONFIG_NEW_LEDS)			+= led-core.o
-> >  obj-$(CONFIG_LEDS_CLASS)		+= led-class.o
-> >  obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o
-> > +obj-y					+= led-register.o
+> > +	if (nb)
+> > +		pci_dev_put(nb);
+> > +	if (smbus)
+> > +		pci_dev_put(amd_chipset.smbus_dev);
 > 
-> Why not obj-$(CONFIG_LED_REGISTER_GPIO) += led-register.o
-> 
-> rather than wrapping the code of led-register.c with a #ifdef for the
-> same symbol?
-I thought that the registration for other led-devices could go into that
-file, too. That's why I choosed the name led-register and not
-leds-gpio-register.c. Agreed? I don't insist on that.
+>     Here it is. This pointer is NULL, it should be 'smbus' instead.
 
-Best regards
-Uwe
+Ok, this is fixed now too.
+
+>From 7ee4b6274f5e4c1f238e9ff4faa0b9a43f5203e2 Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Wed, 6 Apr 2011 13:07:53 +0200
+Subject: [PATCH] USB host: Fix lockdep warning in AMD PLL quirk
+
+Booting latest kernel on my test machine produces a lockdep
+warning from the usb_amd_find_chipset_info() function:
+
+ WARNING: at /data/lemmy/linux.trees.git/kernel/lockdep.c:2465 lockdep_trace_alloc+0x95/0xc2()
+ Hardware name: Snook
+ Modules linked in:
+ Pid: 959, comm: work_for_cpu Not tainted 2.6.39-rc2+ #22
+ Call Trace:
+  [<ffffffff8103c0d4>] warn_slowpath_common+0x80/0x98
+  [<ffffffff812387e6>] ? T.492+0x24/0x26
+  [<ffffffff8103c101>] warn_slowpath_null+0x15/0x17
+  [<ffffffff81068667>] lockdep_trace_alloc+0x95/0xc2
+  [<ffffffff810ed9ac>] slab_pre_alloc_hook+0x18/0x3b
+  [<ffffffff810ef227>] kmem_cache_alloc_trace+0x25/0xba
+  [<ffffffff812387e6>] T.492+0x24/0x26
+  [<ffffffff81238816>] pci_get_subsys+0x2e/0x73
+  [<ffffffff8123886c>] pci_get_device+0x11/0x13
+  [<ffffffff814082a9>] usb_amd_find_chipset_info+0x3f/0x18a
+...
+
+It turns out that this function calls pci_get_device under a spin_lock
+with irqs disabled, but the pci_get_device function is only allowed in
+preemptible context.
+
+This patch fixes the warning by making all data-structure
+modifications on temporal storage and commiting this back
+into the visible structure at the end. While at it, this
+patch also moves the pci_dev_put calls out of the spinlocks
+because this function might sleep too.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/usb/host/pci-quirks.c |  117 ++++++++++++++++++++++++++---------------
+ 1 files changed, 74 insertions(+), 43 deletions(-)
+
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 1d586d4..9b166d7 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -84,65 +84,92 @@ int usb_amd_find_chipset_info(void)
+ {
+ 	u8 rev = 0;
+ 	unsigned long flags;
++	struct amd_chipset_info info;
++	int ret;
+ 
+ 	spin_lock_irqsave(&amd_lock, flags);
+ 
+-	amd_chipset.probe_count++;
+ 	/* probe only once */
+-	if (amd_chipset.probe_count > 1) {
++	if (amd_chipset.probe_count > 0) {
++		amd_chipset.probe_count++;
+ 		spin_unlock_irqrestore(&amd_lock, flags);
+ 		return amd_chipset.probe_result;
+ 	}
++	memset(&info, 0, sizeof(info));
++	spin_unlock_irqrestore(&amd_lock, flags);
+ 
+-	amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
+-	if (amd_chipset.smbus_dev) {
+-		rev = amd_chipset.smbus_dev->revision;
++	info.smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
++	if (info.smbus_dev) {
++		rev = info.smbus_dev->revision;
+ 		if (rev >= 0x40)
+-			amd_chipset.sb_type = 1;
++			info.sb_type = 1;
+ 		else if (rev >= 0x30 && rev <= 0x3b)
+-			amd_chipset.sb_type = 3;
++			info.sb_type = 3;
+ 	} else {
+-		amd_chipset.smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-							0x780b, NULL);
+-		if (!amd_chipset.smbus_dev) {
+-			spin_unlock_irqrestore(&amd_lock, flags);
+-			return 0;
++		info.smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
++						0x780b, NULL);
++		if (!info.smbus_dev) {
++			ret = 0;
++			goto commit;
+ 		}
+-		rev = amd_chipset.smbus_dev->revision;
++
++		rev = info.smbus_dev->revision;
+ 		if (rev >= 0x11 && rev <= 0x18)
+-			amd_chipset.sb_type = 2;
++			info.sb_type = 2;
+ 	}
+ 
+-	if (amd_chipset.sb_type == 0) {
+-		if (amd_chipset.smbus_dev) {
+-			pci_dev_put(amd_chipset.smbus_dev);
+-			amd_chipset.smbus_dev = NULL;
++	if (info.sb_type == 0) {
++		if (info.smbus_dev) {
++			pci_dev_put(info.smbus_dev);
++			info.smbus_dev = NULL;
+ 		}
+-		spin_unlock_irqrestore(&amd_lock, flags);
+-		return 0;
++		ret = 0;
++		goto commit;
+ 	}
+ 
+-	amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
+-	if (amd_chipset.nb_dev) {
+-		amd_chipset.nb_type = 1;
++	info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x9601, NULL);
++	if (info.nb_dev) {
++		info.nb_type = 1;
+ 	} else {
+-		amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-							0x1510, NULL);
+-		if (amd_chipset.nb_dev) {
+-			amd_chipset.nb_type = 2;
+-		} else  {
+-			amd_chipset.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+-								0x9600, NULL);
+-			if (amd_chipset.nb_dev)
+-				amd_chipset.nb_type = 3;
++		info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
++		if (info.nb_dev) {
++			info.nb_type = 2;
++		} else {
++			info.nb_dev = pci_get_device(PCI_VENDOR_ID_AMD,
++						     0x9600, NULL);
++			if (info.nb_dev)
++				info.nb_type = 3;
+ 		}
+ 	}
+ 
+-	amd_chipset.probe_result = 1;
++	ret = info.probe_result = 1;
+ 	printk(KERN_DEBUG "QUIRK: Enable AMD PLL fix\n");
+ 
+-	spin_unlock_irqrestore(&amd_lock, flags);
+-	return amd_chipset.probe_result;
++commit:
++
++	spin_lock_irqsave(&amd_lock, flags);
++	if (amd_chipset.probe_count > 0) {
++		/* race - someone else was faster - drop devices */
++
++		/* Mark that we where here */
++		amd_chipset.probe_count++;
++		ret = amd_chipset.probe_result;
++
++		spin_unlock_irqrestore(&amd_lock, flags);
++
++		if (info.nb_dev)
++			pci_dev_put(info.nb_dev);
++		if (info.smbus_dev)
++			pci_dev_put(info.smbus_dev);
++
++	} else {
++		/* no race - commit the result */
++		info.probe_count++;
++		amd_chipset = info;
++		spin_unlock_irqrestore(&amd_lock, flags);
++	}
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(usb_amd_find_chipset_info);
+ 
+@@ -284,6 +311,7 @@ EXPORT_SYMBOL_GPL(usb_amd_quirk_pll_enable);
+ 
+ void usb_amd_dev_put(void)
+ {
++	struct pci_dev *nb, *smbus;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&amd_lock, flags);
+@@ -294,20 +322,23 @@ void usb_amd_dev_put(void)
+ 		return;
+ 	}
+ 
+-	if (amd_chipset.nb_dev) {
+-		pci_dev_put(amd_chipset.nb_dev);
+-		amd_chipset.nb_dev = NULL;
+-	}
+-	if (amd_chipset.smbus_dev) {
+-		pci_dev_put(amd_chipset.smbus_dev);
+-		amd_chipset.smbus_dev = NULL;
+-	}
++	/* save them to pci_dev_put outside of spinlock */
++	nb    = amd_chipset.nb_dev;
++	smbus = amd_chipset.smbus_dev;
++
++	amd_chipset.nb_dev = NULL;
++	amd_chipset.smbus_dev = NULL;
+ 	amd_chipset.nb_type = 0;
+ 	amd_chipset.sb_type = 0;
+ 	amd_chipset.isoc_reqs = 0;
+ 	amd_chipset.probe_result = 0;
+ 
+ 	spin_unlock_irqrestore(&amd_lock, flags);
++
++	if (nb)
++		pci_dev_put(nb);
++	if (smbus)
++		pci_dev_put(smbus);
+ }
+ EXPORT_SYMBOL_GPL(usb_amd_dev_put);
+ 
+-- 
+1.7.1
+
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
