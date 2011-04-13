@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab1DMXb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 19:31:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49454 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756705Ab1DMXb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 19:31:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,207,1301900400"; 
-   d="scan'208";a="733035082"
-Date: Thu, 14 Apr 2011 07:31:22 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
- time
-Message-ID: <20110413233122.GA6097@localhost>
-References: <20110413085937.981293444@intel.com>
- <20110413090415.763161169@intel.com>
- <20110413220444.GF4648@quack.suse.cz>
+	id S932321Ab1DMXba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 19:31:30 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:55834 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757391Ab1DMXb2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 19:31:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CYERaXWesq1eH0GnGbP+fBPHnPV0B80KWlQJwrwtL27nW6Py3rdRmsVpax+X5ucyDf
+         x54VuNe5UGTb7XW93ch0SqHOxAZknDybXlCPUHsH5UcTPeKXMprCPVAyiHkt/QLlO+r5
+         aM9TLz5AvyAWGFbk/WPuUy7RwzlFIhD7Avqsw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110413220444.GF4648@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1302726187.7911.11.camel@dev.znau.edu.ua>
+References: <1302566227-23788-1-git-send-email-zajec5@gmail.com>
+	<20110412133633.GR15130@legolas.emea.dhcp.ti.com>
+	<1302634039.14216.10.camel@dev.znau.edu.ua>
+	<BANLkTi=0sM2+nPYyd09G=Uy9rcEvaFErnA@mail.gmail.com>
+	<1302635550.14216.21.camel@dev.znau.edu.ua>
+	<BANLkTi=8mB9ZDTjF4yds6mkx+PmM+B_6Cg@mail.gmail.com>
+	<4DA4AC4B.90409@hauke-m.de>
+	<BANLkTiknRYWaDM1ThAxgXcdGqK8jeFaBPA@mail.gmail.com>
+	<BANLkTikqKtJuDS17mfFvxzMoXuBtJvCgTA@mail.gmail.com>
+	<1302640546.14216.65.camel@dev.znau.edu.ua>
+	<BANLkTim8dmTL-BVK3fcWHNBU9Eyz1k_T+Q@mail.gmail.com>
+	<op.vtvalzu33ri7v4@arend-laptop>
+	<BANLkTik6JZ-n3sVjCFK_x1yNRH3_o3_6rg@mail.gmail.com>
+	<1302726187.7911.11.camel@dev.znau.edu.ua>
+Date: Thu, 14 Apr 2011 01:31:25 +0200
+Message-ID: <BANLkTikR+Y=FwqO15iHhaA57NdfFi6-ykA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] axi: add AXI bus driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: George Kashperko <george@znau.edu.ua>
+Cc: Arend van Spriel <arend@broadcom.com>, "balbi@ti.com" <balbi@ti.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
-> On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
-> > Reduce the dampening for the control system, yielding faster
-> > convergence. The change is a bit conservative, as smaller values may
-> > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
-> > 
-> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > CC: Richard Kennedy <richard@rsk.demon.co.uk>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
->   Well, I have nothing against this change as such but what I don't like is
-> that it just changes magical +2 for similarly magical +0. It's clear that
+2011/4/13 George Kashperko <george@znau.edu.ua>:
+> Look brcm80211/inclue/aidmp.h for those.
 
-The patch tends to make the rampup time a bit more reasonable for
-common desktops. From 100s to 25s (see below).
+Interesting, I found some register defines that hopefully should be
+common/general:
+http://infocenter.arm.com/help/topic/com.arm.doc.ddi0344c/Bgbhedeg.html
+http://infocenter.arm.com/help/topic/com.arm.doc.ddi0344c/Cfacacha.html
 
-> this will lead to more rapid updates of proportions of bdi's share of
-> writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
-
-Yes, it will especially be a problem on _small memory_ JBOD setups.
-Richard actually has requested for a much radical change (decrease by
-6) but that looks too much.
-
-My team has a 12-disk JBOD with only 6G memory. The memory is pretty
-small as a server, but it's a real setup and serves well as the
-reference minimal setup that Linux should be able to run well on.
-
-It will sure create more fluctuations, but still is acceptable in my
-tests. For example,
-
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/10HDD-JBOD-6G/xfs-128dd-1M-16p-5904M-20%25-2.6.38-rc6-dt6+-2011-02-23-19-46/balance_dirty_pages-pages.png
-
-> I'd prefer to get some understanding of why do we need to update the
-> proportion period and why 4-times faster is just the right amount of faster
-> :) If I remember right you had some numbers for this, didn't you?
-
-Even better, I have a graph :)
-
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/vanilla/4G/xfs-1dd-1M-8p-3911M-20%25-2.6.38-rc7+-2011-03-07-21-55/balance_dirty_pages-pages.png
-
-It shows that doing 1 dd on a 4G box, it took more than 100s to
-rampup. The patch will reduce it to 25 seconds for a typical desktop.
-The disk has 50MB/s throughput. Given a modern HDD or SSD, it will
-converge more fast.
-
-Thanks,
-Fengguang
-
-> > ---
-> >  mm/page-writeback.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > --- linux-next.orig/mm/page-writeback.c	2011-03-02 14:52:19.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c	2011-03-02 15:00:17.000000000 +0800
-> > @@ -145,7 +145,7 @@ static int calc_period_shift(void)
-> >  	else
-> >  		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
-> >  				100;
-> > -	return 2 + ilog2(dirty_total - 1);
-> > +	return ilog2(dirty_total - 1);
-> >  }
-> >  
-> >  /*
-> > 
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+-- 
+Rafał
