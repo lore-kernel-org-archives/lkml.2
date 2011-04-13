@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab1DMA4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 20:56:11 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23633 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab1DMA4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 20:56:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=VhS4XJ5/TusMi3vpcsQjZzdIPG8CDWnlggMbxRf8ouYTaj4bHARlLzp3lRVf3mP+p/
-         mzL6rr5toxrgZ3FHUvrg==
-Date: Tue, 12 Apr 2011 17:56:04 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+	id S1757565Ab1DMBBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 21:01:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56032 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757372Ab1DMBBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 21:01:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,200,1301900400"; 
+   d="scan'208";a="418173282"
+Subject: Re: [PATCH 3/4]percpu_counter: fix code for 32bit systems
+From: Shaohua Li <shaohua.li@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Chris McDermott <lcm@linux.vnet.ibm.com>
-Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
-In-Reply-To: <1302655746.8321.4001.camel@nimitz>
-Message-ID: <alpine.DEB.2.00.1104121752400.12609@chino.kir.corp.google.com>
-References: <20110411172004.0361.A69D9226@jp.fujitsu.com> <1302557371.7286.16607.camel@nimitz> <alpine.DEB.2.00.1104121719430.10966@chino.kir.corp.google.com> <1302655746.8321.4001.camel@nimitz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+        "cl@linux.com" <cl@linux.com>, "tj@kernel.org" <tj@kernel.org>
+In-Reply-To: <1302599035.3233.27.camel@edumazet-laptop>
+References: <1302595444.3981.129.camel@sli10-conroe>
+	 <1302599035.3233.27.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 09:01:05 +0800
+Message-ID: <1302656465.3981.133.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Apr 2011, Dave Hansen wrote:
+On Tue, 2011-04-12 at 17:03 +0800, Eric Dumazet wrote:
+> Le mardi 12 avril 2011 à 16:04 +0800, Shaohua Li a écrit :
+> > percpu_counter.counter is a 's64'. Accessing it in 32-bit system is racing.
+> > we need some locking to protect it otherwise some very wrong value could be
+> > accessed.
+> > 
+> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > ---
+> >  include/linux/percpu_counter.h |   43 +++++++++++++++++++++++++++++++----------
+> >  1 file changed, 33 insertions(+), 10 deletions(-)
+> > 
+> > Index: linux/include/linux/percpu_counter.h
+> > ===================================================================
+> > --- linux.orig/include/linux/percpu_counter.h	2011-04-12 15:48:44.000000000 +0800
+> > +++ linux/include/linux/percpu_counter.h	2011-04-12 15:48:54.000000000 +0800
+> > @@ -54,7 +54,15 @@ static inline s64 percpu_counter_sum(str
+> >  
+> >  static inline s64 percpu_counter_read(struct percpu_counter *fbc)
+> >  {
+> > +#if BITS_PER_LONG == 32
+> > +	s64 count;
+> > +	spin_lock(&fbc->lock);
+> > +	count = fbc->count;
+> > +	spin_unlock(&fbc->lock);
+> > +	return count;
+> > +#else
+> >  	return fbc->count;
+> > +#endif
+> >  }
+> >  
+> 
+> Hmm... did you test this with LOCKDEP on ?
+> 
+> You add a possible deadlock here.
+> 
+> Hint : Some percpu_counter are used from irq context.
+there are some places we didn't disable interrupt, for example
+percpu_counter_add. So the API isn't irq safe to me.
 
-> > That doesn't seem like an argument against this patch, it's an improper 
-> > configuration unless the remote memory access has a latency of 2.1x that 
-> > of a local access between those two nodes.  If that's the case, then it's 
-> > accurately following the ACPI spec and the VM has made its policy decision 
-> > to enable zone_reclaim_mode as a result.
-> 
-> Heh, if the kernel broke on every system that didn't follow _some_ spec,
-> it wouldn't boot in very many places.
-> 
-> When you have a hammer, everything looks like a nail.  When you're a
-> BIOS developer, you start thwacking at the kernel with munged ACPI
-> tables instead of boot options.  Folks do this in the real world, and I
-> think if we can't put their names and addresses next to the code that
-> works around this, we might as well put the DMI strings of their
-> hardware. :) 
-> 
+> This interface assumes caller take the appropriate locking.
+no comments say this, and some places we don't hold locking.
+for example, meminfo_proc_show.
 
-That's why I suggested doing away with RECLAIM_DISTANCE entirely, 
-otherwise we are relying on the SLIT always being correct when we know 
-it's not; the policy decision in the kernel as it stands now is that we 
-want to enable zone_reclaim_mode when remote memory access takes longer 
-than 2x that of a local access (3x with KOSAKI-san's patch), which is 
-something we can actually measure at boot rather than relying on the BIOS 
-at all.  Then we don't have to bother with DMI strings for specific pieces 
-of hardware and can remove the existing ia64 and powerpc special cases.
