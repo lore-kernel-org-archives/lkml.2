@@ -1,43 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab1DMTLl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 15:11:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42745 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab1DMTLk convert rfc822-to-8bit (ORCPT
+	id S1757968Ab1DMTLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 15:11:47 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53448 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757713Ab1DMTLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 15:11:40 -0400
-Subject: Re: [PATCH 04/21] sched: Change the ttwu success details
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110413183955.GA3403@mtj.dyndns.org>
-References: <20110405152338.692966333@chello.nl>
-	 <20110405152728.866866929@chello.nl> <1302686630.2388.125.camel@twins>
-	 <1302691703.2035.10.camel@laptop> <1302692799.2035.17.camel@laptop>
-	 <20110413183955.GA3403@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 13 Apr 2011 21:11:09 +0200
-Message-ID: <1302721869.2388.127.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 13 Apr 2011 15:11:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=pMUSemhkiKlC4peE04wX1l7aAd16qbIDwT0XXCdi8v5p240nBBy74Yz9E78ZLle4B6
+         4j6MfjjyJK/E7sEkiXgLw+rpxUgmDE3YnK8kshzbXylLEv1VJkYjTvvisowRB+fvOAKW
+         1sGWYzfnXa9FLlVe9+hUgVp8Zrk3icKQFqWcc=
+Message-ID: <4DA5F569.9020309@gmail.com>
+Date: Wed, 13 Apr 2011 15:11:37 -0400
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Michal Suchanek <hramrach@centrum.cz>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Ian Kent <ikent@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, miklos@szeredi.hu,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: Unionmount status?
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com> <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+In-Reply-To: <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-14 at 03:39 +0900, Tejun Heo wrote:
-> One way to deal with it would be adding an extra worker flag to track
-> sleep state from workqueue side so that it can filter out spurious
-> wakeups; however, I think it would be far better to resolve this from
-> scheduler side.  If the callback name is misleading, rename it to
-> wq_worker_sched_activated() or something and call it only when the
-> task gets activated. 
+On 04/13/2011 02:58 PM, Michal Suchanek wrote:
+> On 13 April 2011 19:26, Ric Wheeler<ricwheeler@gmail.com>  wrote:
+>> On 04/12/2011 05:36 PM, Michal Suchanek wrote:
+>>> On 12 April 2011 22:31, Ric Wheeler<ricwheeler@gmail.com>    wrote:
+>>>> On 04/12/2011 11:00 AM, Michal Suchanek wrote:
+>>>>> Hello,
+>>>>>
+>>>>> as some already know the Unionmount VFS union which has been in
+>>>>> development for some years now is the only True Union (TM) that can be
+>>>>> accepted into the kernel mainline by the VFS maintainers (for reasons
+>>>>> of their own which you can surely find if you search the web or ask
+>>>>> them directly).
+>>>>>
+>>>>> The current UnionMount version that can be found here:
+>>>>>
+>>>>>
+>>>>>
+>>>>> http://git.kernel.org/?p=linux/kernel/git/val/linux-2.6.git;a=shortlog;h=refs/heads/ext2_works
+>>>>>
+>>>>> works for me as good as aufs does. That is I can build a live CD using
+>>>>> this unioning solution and it boots and runs without any apparent
+>>>>> issues.
+>>>>>
+>>>>> There are probably many possible uses of the union which I did not
+>>>>> test nor did I test long term stability of using the unioned
+>>>>> filesystem. As far as ephemeral live systems go it works fine for me,
+>>>>> though.
+>>>>>
+>>>>> The issue is that while the code is (nearly) finished it is not yet
+>>>>> merged into mainline and as I am not familiar with the details of
+>>>>> ever-changing Linux VFS layer forward-porting this code to current
+>>>>> kernels is somewhat challenging.
+>>>>>
+>>>>> What is the plan with unionmount now?
+>>>>>
+>>>>> What is required  for it to be merged into mainline?
+>>>>>
+>>>>> Thanks
+>>>>>
+>>>>> Michal
+>>>> Hi Michal,
+>>>>
+>>>> People are actively looking to see what union mount (or overlayfs)
+>>>> solution
+>>>> to pursue. Val has shifted her focus away from kernel hacking these days,
+>>>> but did refresh her patch set in the last month or so.
+>>> I am not aware of such refreshed patch set, at least it is not
+>>> published in her repo.
+>>>
+>> Val posted the refreshed patches with the title on March 22nd:
+>>
+>> http://lwn.net/Articles/435019/
+>>
+> That article references the same four months old repo which I
+> mentioned at the start of the thread, only a slightly different
+> branch.
+>
+> While it maybe useful for testing unionmount (which I already tried)
+> it is not a patch against current kernel which could be used to build
+> current live images.
+>
+> Thanks
+>
+> Michal
 
-Right, what I did is move the thing near activate_task() instead of
-relying on any passing on of that information.
+She did post the patch series that same date in March - you can probably grab 
+the series from linux-fsdevel, look for this series:
+
+"[PATCH 00/74] Union mounts version something or other"
+
+Al Viro was planning on looking at her refreshed patches (he had reviewed them 
+with her in person), but that is not going to happen any time soon so getting 
+more eyes and testing would be great!
+
+Ric
+
