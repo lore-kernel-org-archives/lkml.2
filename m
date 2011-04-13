@@ -1,73 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab1DMXgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 19:36:49 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59504 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757005Ab1DMXgs convert rfc822-to-8bit (ORCPT
+	id S1757654Ab1DMXjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 19:39:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56679 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757284Ab1DMXjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 19:36:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=avvYIP/4wEGTBJnPE2kfqG+h6lM1YCinNy8TUCKOPuJZFyEmHw5dlbemntR/Wp5jaD
-         bs3KpJIMbGbzEsiZ6LRSZWm9j37EAYwRisUhL466RbAuU4YEQC6yN3kOstYIDBNpGW1O
-         IoL19sV1Se3Kt13TJCpL3G9Y0j1LebE+V6GmU=
+	Wed, 13 Apr 2011 19:39:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinLn4Ug=gX4coHJbSzrkxdSMjgGeg@mail.gmail.com>
-References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
- <20110413163113.GA24015@kroah.com> <BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
- <1302726703.8015.1.camel@dev.znau.edu.ua> <BANLkTimwZOJ0a5kVfaUzEcsMc39H999u0A@mail.gmail.com>
- <1302727516.8015.9.camel@dev.znau.edu.ua> <BANLkTi=wzzzeF-PmqLt9o8arW7nRaFRRJw@mail.gmail.com>
- <1302729243.8479.1.camel@dev.znau.edu.ua> <BANLkTinLn4Ug=gX4coHJbSzrkxdSMjgGeg@mail.gmail.com>
-From: Jonas Gorski <jonas.gorski@gmail.com>
-Date: Thu, 14 Apr 2011 01:36:27 +0200
-Message-ID: <BANLkTimcy16ggC0C66V-fbuaJwg4Sna4Qw@mail.gmail.com>
-Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: George Kashperko <george@znau.edu.ua>, Greg KH <greg@kroah.com>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4DA6145D.9070703@kernel.org>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+ <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
+ <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu>
+ <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org>
+ <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org>
+ <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com> <4DA6145D.9070703@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 13 Apr 2011 16:39:21 -0700
+Message-ID: <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 April 2011 23:19, Rafał Miłecki <zajec5@gmail.com> wrote:
-> 2011/4/13 George Kashperko <george@znau.edu.ua>:
->>> I had no idea what you were referring to. We do not dig into PCIe
->>> functions yet, so I believe for now we need this "if".
->> You are already deep inside. Your host code drives pci function.
+On Wed, Apr 13, 2011 at 2:23 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>> What are all the magic numbers, and why would 0x80000000 be special?
 >
-> But I don't use multiple PCIe functions, do not focus on that at all.
+> that is the old value when kernel was doing bottom-up bootmem allocation.
 
-I think what George meant is the following (please correct me if I
-understood you wrong) and has nothing to do with PCIe functions:
-<http://lxr.free-electrons.com/source/drivers/staging/brcm80211/util/aiutils.c#L522>
+I understand, BUT THAT IS STILL A TOTALLY MAGIC NUMBER!
 
-The chipcommon and PCIe core registers seem to be always available on
-PCIe and no core switching is necessary for them. So as long as you
-only access the core registers of chipcommon, PCIe + one other core,
-you never need to do any switching (except for the initial switch to
-the other core)
+It makes it come out the same ON THAT ONE MACHINE.  So no, it's not
+"the old value". It's a random value that gets the old value in one
+specific case.
 
-But If you need to access the agent registers you do have to do adapt
-the PCIe windows.
+>> Why don't we write code that just works?
+>>
+>> Or absent a "just works" set of patches, why don't we revert to code
+>> that has years of testing?
+>>
+>> This kind of "I broke things, so now I will jiggle things randomly
+>> until they unbreak" is not acceptable.
+>>
+>> Either explain why that fixes a real BUG (and why the magic constants
+>> need to be what they are), or just revert the patch that caused the
+>> problem, and go back to the allocation patters that have years of
+>> experience.
+>>
+>> Guys, we've had this discussion before, in PCI allocation. We don't do
+>> this. We tried switching the PCI region allocations to top-down, and
+>> IT WAS A FAILURE. We reverted it to what we had years of testing with.
+>>
+>> Don't just make random changes. There really are only two acceptable
+>> models of development: "think and analyze" or "years and years of
+>> testing on thousands of machines". Those two really do work.
+>
+> We did do the analyzing, and only difference seems to be:
 
-(This seems to apply also to PCI cards with a PCI core revision >= 13,
-but this is probably only relevant for SSB - unless Arend says there
-are/were also PCI cards with AMBA AXI backplanes ;-).
+No.
 
+Yinghai, we have had this discussion before, and dammit, you need to
+understand the difference between "understanding the problem" and "put
+in random values until it works on one machine".
 
-Jonas
+There was absolutely _zero_ analysis done. You do not actually
+understand WHY the numbers matter. You just look at two random
+numbers, and one works, the other does not. That's not "analyzing".
+That's just "random number games".
+
+If you cannot see and understand the difference between an actual
+analytical solution where you _understand_ what the code is doing and
+why, and "random numbers that happen to work on one machine", I don't
+know what to tell you.
+
+> good one is using 0x80000000
+> and bad one is using 0xa0000000.
+>
+> We try to figure out if it needs low address and it happen to work
+> because kernel was doing bottom up allocation.
+
+No.
+
+Let me repeat my point one more time.
+
+You have TWO choices. Not more, not less:
+
+ - choice #1: go back to the old allocation model. It's tested. It
+doesn't regress. Admittedly we may not know exactly _why_ it works,
+and it might not work on all machines, but it doesn't cause
+regressions (ie the machines it doesn't work on it _never_ worked on).
+
+   And this doesn't mean "old value for that _one_ machine". It means
+"old value for _every_ machine". So it means we revert the whole
+bottom-down thing entirely. Not just "change one random number so that
+the totally different allocation pattern happens to give the same
+result on one particular machine".
+
+   Quite frankly, I don't see the point of doing top-to-bottom anyway,
+so I think we should do this regardless. Just revert the whole
+"allocate from top". It didn't work for PCI, it's not working for this
+case either. Stop doing it.
+
+ - Choice #2: understand exactly _what_ goes wrong, and fix it
+analytically (ie by _understanding_ the problem, and being able to
+solve it exactly, and in a way you can argue about without having to
+resort to "magic happens").
+
+Now, the whole analytic approach (aka "computer sciency" approach),
+where you can actually think about the problem without having any
+pesky "reality" impact the solution is obviously the one we tend to
+prefer. Sadly, it's seldom the one we can use in reality when it comes
+to things like resource allocation, since we end up starting off with
+often buggy approximations of what the actual hardware is all about
+(ie broken firmware tables).
+
+So I'd love to know exactly why one random number works, and why
+another one doesn't. But as long as we do _not_ know the "Why" of it,
+we will have to revert.
+
+It really is that simple. It's _always_ that simple.
+
+So the numbers shouldn't be "magic", they should have real
+explanations. And in the absense of real explanation, the model that
+works is "this is what we've always done". Including, very much, the
+whole allocation order. Not just one random number on one random
+machine.
+
+                        Linus
