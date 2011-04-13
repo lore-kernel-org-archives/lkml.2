@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab1DMNgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 09:36:31 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:41033 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754937Ab1DMNga (ORCPT
+	id S1756044Ab1DMNhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 09:37:18 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42986 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab1DMNhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 09:36:30 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: cqZ0ic8VM1lRAfBXbmXyuICPy2rMNkNWfvmV_7AqfbLh0Yx
- ScsD_AYsCV6FKJJTnF8eKIkgT7abFTQyONt5QjZa3T3zly0YpriYTKSfN4tC
- Uo.ddBM6j4rT63JXPq91YZs984lbOYi2i8epU9E9qzTBFUaNzkGEfn_P97id
- _TO1GXD0adn.Do7xoH.J5QI_42NcSD0C9Sh1UtdKnTeR4XuonJk2x3KN5GAc
- bXejF_OtVtVIgYOwod_ZfD.F3Fhwzf1vGtlorFJYYy5bMo.u5zPn_CiRuzft
- 3tWoXRxypCZFKDFvk9PToU7van1oddhRIRbIO3eqwfefKoKRec6XggWD2sx6
- v1iqJZFMyBSTFISnyvdKeIb2p
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 13 Apr 2011 08:36:25 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Li Zefan <lizf@cn.fujitsu.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] slub: Fix a typo in config name
-In-Reply-To: <alpine.DEB.2.00.1104121913410.15979@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1104130835360.16214@router.home>
-References: <4DA3FDB2.9090100@cn.fujitsu.com> <alpine.DEB.2.00.1104121301430.14692@router.home> <alpine.DEB.2.00.1104121913410.15979@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 13 Apr 2011 09:37:15 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <borislav.petkov@amd.com>, Russ Anderson <rja@sgi.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>,
+        "rja@americas.sgi.com" <rja@americas.sgi.com>
+Subject: [PATCH 1/3] x86, MCE: Do not taint when correctable errors
+Date: Wed, 13 Apr 2011 15:36:48 +0200
+Message-Id: <1302701810-2471-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <20110413132409.GB1900@gere.osrc.amd.com>
+References: <20110413132409.GB1900@gere.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Apr 2011, David Rientjes wrote:
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-> On Tue, 12 Apr 2011, Christoph Lameter wrote:
->
-> > On Tue, 12 Apr 2011, Li Zefan wrote:
-> >
-> > > There's no config named SLAB_DEBUG, and it should be a typo
-> > > of SLUB_DEBUG.
-> > >
-> > > Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> > > ---
-> > >
-> > > not slub expert, don't know how this bug affects slub debugging.
-> >
-> > Affects the bootstrap code.
-> >
->
-> I don't see how, there should be no partial or full slabs for either
-> kmem_cache or kmem_cache_node at this point in the boot sequence.  I think
-> kmem_cache_bootstrap_fixup() should only need to add the cache to the list
-> of slab caches and set the refcount accordingly.
+Correctable errors are considered something rather normal on modern
+hardware these days. Even more importantly, correctable errors mean
+exactly that - they've been corrected by the hardware - and there's no
+need to taint the kernel since execution hasn't been compromised so far.
 
-Hmmm... That depends on the number of objects in a slab page. If that is
-one then we may have an issue.
+Suggested-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 3385ea2..68e2303 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -590,7 +590,6 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
+ 			mce_log(&m);
+ 			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
+-			add_taint(TAINT_MACHINE_CHECK);
+ 		}
+ 
+ 		/*
+-- 
+1.7.4.rc2
 
