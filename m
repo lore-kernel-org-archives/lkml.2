@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab1DMI7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:59:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37422 "EHLO mx1.redhat.com"
+	id S1757988Ab1DMJGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 05:06:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1489 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757863Ab1DMI7g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:59:36 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: Gabriel Paubert <paubert@iram.es>, Greg KH <greg@kroah.com>,
-        linuxppc-dev@lists.ozlabs.org, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>
-Subject: Re: small git lesson [Was: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?]
-References: <20110404235259.GA30132@iram.es>
-	<20110406084101.GB13963@pengutronix.de>
-	<BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
-	<20110406204327.GA11148@iram.es>
-	<1302185075.24704.143.camel@thor.local>
-	<20110411133128.GA24344@iram.es>
-	<1302535963.24704.268.camel@thor.local>
-	<20110412113033.GA16649@iram.es>
-	<1302608770.27054.36.camel@thor.local> <20110413080204.GA3871@iram.es>
-	<20110413081246.GK18850__3180.67204575545$1302682420$gmane$org@pengutronix.de>
-X-Yow: "THE LITTLE PINK FLESH SISTERS," I saw them at th' FLUORESCENT BULB
- MAKERS CONVENTION...
-Date: Wed, 13 Apr 2011 10:59:14 +0200
-In-Reply-To: <20110413081246.GK18850__3180.67204575545$1302682420$gmane$org@pengutronix.de>
-	("Uwe =?utf-8?Q?Kleine-K=C3=B6nig=22's?= message of "Wed, 13 Apr 2011
- 10:12:46 +0200")
-Message-ID: <m339lm8r31.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1757909Ab1DMJGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 05:06:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,203,1301900400"; 
+   d="scan'208";a="678447181"
+Message-Id: <20110413090415.511675208@intel.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 13 Apr 2011 16:59:39 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
+cc: Jan Kara <jack@suse.cz>
+cc: Dave Chinner <david@fromorbit.com>
+cc: Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+cc: Linux Memory Management List <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 2/4] writeback: avoid duplicate balance_dirty_pages_ratelimited() calls
+References: <20110413085937.981293444@intel.com>
+Content-Disposition: inline; filename=writeback-fix-duplicate-bdp-calls.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uwe Kleine-König <u.kleine-koenig@pengutronix.de> writes:
+When dd in 512bytes, balance_dirty_pages_ratelimited() could be called 8
+times for the same page, but obviously the page is only dirtied once.
 
-> $ git name-rev --refs=refs/tags/v2.6\* 69a07f0b117a40fcc1a479358d8e1f41793617f2
-> 69a07f0b117a40fcc1a479358d8e1f41793617f2 tags/v2.6.39-rc2~3^2~43^2~4
->
-> so it was introduced just before -rc2.
+Fix it with a (slightly racy) PageDirty() test.
 
-$ git tag --contains 69a07f0b117a40fcc1a479358d8e1f41793617f2
-v2.6.39-rc1
-v2.6.39-rc2
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/filemap.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Andreas.
+--- linux-next.orig/mm/filemap.c	2011-04-13 16:46:01.000000000 +0800
++++ linux-next/mm/filemap.c	2011-04-13 16:47:26.000000000 +0800
+@@ -2313,6 +2313,7 @@ static ssize_t generic_perform_write(str
+ 	long status = 0;
+ 	ssize_t written = 0;
+ 	unsigned int flags = 0;
++	unsigned int dirty;
+ 
+ 	/*
+ 	 * Copies from kernel address space cannot fail (NFSD is a big user).
+@@ -2361,6 +2362,7 @@ again:
+ 		pagefault_enable();
+ 		flush_dcache_page(page);
+ 
++		dirty = PageDirty(page);
+ 		mark_page_accessed(page);
+ 		status = a_ops->write_end(file, mapping, pos, bytes, copied,
+ 						page, fsdata);
+@@ -2387,7 +2389,8 @@ again:
+ 		pos += copied;
+ 		written += copied;
+ 
+-		balance_dirty_pages_ratelimited(mapping);
++		if (!dirty)
++			balance_dirty_pages_ratelimited(mapping);
+ 
+ 	} while (iov_iter_count(i));
+ 
 
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+
