@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757752Ab1DMIec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:34:32 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:10158 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757692Ab1DMIe3 (ORCPT
+	id S1757811Ab1DMIeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 04:34:46 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59249 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757699Ab1DMIem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:34:29 -0400
-Date: Wed, 13 Apr 2011 10:34:09 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Natarajan Gurumoorthy <natg@google.com>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        Mike Waychison <mikew@google.com>
-Subject: Re: [lm-sensors] [PATCH v5 1/2] Use "request_muxed_region" in it87
-  watchdog drivers
-Message-ID: <20110413103409.47638b72@endymion.delvare>
-In-Reply-To: <BANLkTikfuvvujTi6i2MUGOHgNLZCqcouJQ@mail.gmail.com>
-References: <1302641290-30212-1-git-send-email-natg@google.com>
-	<1302641387-30264-1-git-send-email-natg@google.com>
-	<4DA547CD.60406@redhat.com>
-	<BANLkTikfuvvujTi6i2MUGOHgNLZCqcouJQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Apr 2011 04:34:42 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: mm: convert vma->vm_flags to 64bit
+Cc: kosaki.motohiro@jp.fujitsu.com, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <1302678049.28876.77.camel@pasglop>
+References: <20110413064432.GA4098@p183> <1302678049.28876.77.camel@pasglop>
+Message-Id: <20110413173453.D734.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Wed, 13 Apr 2011 17:34:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011 01:05:33 -0700, Natarajan Gurumoorthy wrote:
-> Hans,
->       Comments below
+> On Wed, 2011-04-13 at 09:44 +0300, Alexey Dobriyan wrote:
+> > > Yes, I take Hugh's version because vm_flags_t is ugly to me. And
+> > arch 
+> > > dependent variable size is problematic.
+> > 
+> > Who said it should have arch-dependent size? 
 > 
-> On Tue, Apr 12, 2011 at 11:50 PM, Hans de Goede <hdegoede@redhat.com> wrote:
-> >
-> > You shouldn't (void) this, there is a reason you get a warning
-> > otherwise! request_muxed_region can still fail if some other driver
-> > has done a none muxed request_region on the same region, and in that
-> > case you should not continue with accessing the io-ports.
-> There are 3 it87 drivers and they all have to do the exact same
-> sequence to put the chip into a mode where they can modify its state.
-> The sequences involve non atomic sequences that write locations 0x2e
-> and 0x2f. When they are done they write a different sequence to these
-> 2 locations. The entry routine is superio_enter and exit is
-> superio_exit. All the it87 drivers reserve these 2 locations before
-> they start manipulating the chip. This macro will hold off requestors
-> if the resource is busy because one of the other drivers is
-> manipulating the chip. Once the  an it87 driver is done it calls
-> superio_exit which will release the reservation on those 2 locations
-> letting any other driver on the wait queue to now gain access two
-> locations.
-> 
-> Please read code in kernel/resource.c function "__request_region".
-> "request_muxed_region" turns on IORESOURCE_MUXED bit and that means
-> that only  way an it87 driver will get back from a call to
-> "request_muxed_region" is when it gets hold of the region.
-> 
-> The scenario you mention above can never happen.
+> Right, it shouldn't. My original patch did that to avoid thinking about
+> archs that manipulated it from asm such as ARM but that wasn't the right
+> thing to do. But that doesn't invalidate having a type.
 
-Let me be straight clear, as apparently you have difficulties
-understanding Hans's simple request:
+type or not type is really cosmetic matter. Then, only if Andrew or Hugh
+or another active MM developers strongly requrest to make a type, I'll do.
+But, now I haven't hear it.
 
-You do not get to (void) the return of request_muxed_region(), period.
-This is _not_ negotiable.
+In short, When both are right code, I prefer to take MM developers preference.
+That's MM code. This is the reason why I taked Hugh's choice.
 
-What other it87 drivers currently in the tree do or don't do is totally
-irrelevant. There can be new it87 drivers added later, there can be
-out-of-tree it87 drivers (including old copies of in-tree ones), and
-there can be non-it87 drivers accessing the I/O ports (or at least
-attempting to.) So the scenario mentioned by Hans can very well happen,
-and you have to deal with it.
+Thanks.
 
-Thanks,
--- 
-Jean Delvare
+
