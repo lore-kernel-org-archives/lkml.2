@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280Ab1DMWLp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 18:11:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34613 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933068Ab1DMWLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 18:11:44 -0400
-Message-ID: <4DA61F8D.3000005@zytor.com>
-Date: Wed, 13 Apr 2011 15:11:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S933292Ab1DMWLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 18:11:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58406 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933068Ab1DMWLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 18:11:49 -0400
+Date: Wed, 13 Apr 2011 18:11:48 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Mike Frysinger <vapier@gentoo.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be smp
+ ?
+In-Reply-To: <201104132353.09282.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1104131805090.2005-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <20110413215025.GA18463@8bytes.org> <4DA61CCF.2080805@kernel.org>
-In-Reply-To: <4DA61CCF.2080805@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2011 02:59 PM, Yinghai Lu wrote:
-> On 04/13/2011 02:50 PM, Joerg Roedel wrote:
->> On Wed, Apr 13, 2011 at 01:48:48PM -0700, Yinghai Lu wrote:
->>> -	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
->>> +	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<21);
->>
->> Btw, while looking at this code I wondered why the 512M goal is enforced
->> by the alignment. Start could be set to 512M instead and the alignment
->> can be aper_size as it should. Any reason for such a big alignment?
->>
+On Wed, 13 Apr 2011, Rafael J. Wysocki wrote:
+
+> The above means that smp_*mb() are defined as *mb() if CONFIG_SMP is set,
+> which basically means that *mb() are more restrictive than the corresponding
+> smp_*mb().  More precisely, they also cover the cases in which the CPU
+> reorders instructions on uniprocessor, which we definitely want to cover.
 > 
-> when using bootmem, try to use big alignment (512M ), so we could avoid take ram range below 512M.
+> IOW, your patch would break things on uniprocessor where the CPU reorders
+> instructions.
+
+How could anything break on a UP system?  CPUs don't reorder 
+instructions that drastically.  For example, no CPU will ever violate
+this assertion:
+
+	x = 0;
+	y = x;
+	x = 1;
+	assert(y == 0);
+
+even if it does reorder the second and third statements internally.  
+This is guaranteed by the C language specification.
+
+> > Documentation/memory-barriers.txt:
+> > SMP memory barriers are reduced to compiler barriers on uniprocessor compiled
+> > systems because it is assumed that a CPU will appear to be self-consistent,
+> > and will order overlapping accesses correctly with respect to itself.
 > 
+> Exactly, which is not guaranteed in general (e.g. on Alpha).  That is, some
+> CPUs can reorder instructions in such a way that a compiler barrier is not
+> sufficient to prevent breakage.
 
-Yes, his question was why on Earth are you using 0 as start if that is
-the purpose.
+I don't think this is right.  You _can_ assume that Alphas appear to be
+self-consistent.  If they didn't, you wouldn't be able to use them at
+all.
 
-On top of that, where the hell does the magic 512 MiB come from?  It
-looks like it is either completly ad hoc, or it has something to do with
-where the kexec kernel was allocated once upon a time.
+Alan Stern
 
-	-hpa
