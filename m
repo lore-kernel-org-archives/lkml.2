@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab1DMBRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 21:17:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9414 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757493Ab1DMBRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 21:17:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,200,1301900400"; 
-   d="scan'208";a="678293623"
-Subject: Re: [PATCH 4/4]percpu_counter: use atomic64 for counter
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>
-In-Reply-To: <20110412191534.GE16342@mtj.dyndns.org>
-References: <1302595446.3981.130.camel@sli10-conroe>
-	 <20110412191534.GE16342@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Apr 2011 09:17:08 +0800
-Message-ID: <1302657428.3981.149.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757607Ab1DMBXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 21:23:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33291 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757447Ab1DMBXb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 21:23:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=Ej2G9zkNTIuZ4U/9Zv21n+rQ08zafhQEVdG5loy7T8q0VRhv1QXJe42GS+aENx4/ZJ
+         ot1mpucuHcNSsz3gvaS92/vPWeFQrVtNxhHuLYRIYvlCp8na8B+20A8FD4aWyUBSrIGE
+         VDvTdrZ1C961BxsGOxem/tmW+5iKE+jmPxuPo=
+MIME-Version: 1.0
+In-Reply-To: <20110412154906.70829d60.akpm@linux-foundation.org>
+References: <20110315132527.130FB80018F1@mail1005.cent> <20110317001519.GB18911@kroah.com>
+ <20110407120112.E08DCA03@pobox.sk> <4D9D8FAA.9080405@suse.cz>
+ <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com> <1302177428.3357.25.camel@edumazet-laptop>
+ <1302178426.3357.34.camel@edumazet-laptop> <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
+ <1302190586.3357.45.camel@edumazet-laptop> <20110412154906.70829d60.akpm@linux-foundation.org>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 13 Apr 2011 09:23:11 +0800
+Message-ID: <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
+Subject: Re: Regression from 2.6.36
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-13 at 03:15 +0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Apr 12, 2011 at 04:04:06PM +0800, Shaohua Li wrote:
-> > should tunning the batch count, but if we can make percpu_counter better, why
-> > not?
-> 
-> First of all, the lock being only in slow paths, it's quite unlikely
-> to get ever contended.  Also, because the lock duration is always
-> extremely short, conversion to atomic_t isn't too likely to gain
-> anything significant, especially in cold paths.
-> 
-> That said, if it's all gains, why not?  I don't know.  Maybe.  Given
-> problems in the previous patches, I don't feel too enthusiastic for
-> this series at this point but I'm quite sleep deprived now so it might
-> just be me not the patch itself.
-yes, we do have something this matters. the vm_committed_as
-percpu_counter could heavily contend the lock. please see
-http://marc.info/?l=linux-kernel&m=130144786026044&w=2
-We should fix vm_committed_as, but the atomic method also gives me very
-good output. When I do mmap/munmap test in a 24 CPU system, the atomic
-method gives me 50x faster.
+On Wed, Apr 13, 2011 at 6:49 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+> It's somewhat unclear (to me) what caused this regression.
+>
+> Is it because the kernel is now doing large kmalloc()s for the fdtable,
+> and this makes the page allocator go nuts trying to satisfy high-order
+> page allocation requests?
+>
+> Is it because the kernel now will usually free the fdtable
+> synchronously within the rcu callback, rather than deferring this to a
+> workqueue?
+>
+> The latter seems unlikely, so I'm thinking this was a case of
+> high-order-allocations-considered-harmful?
+>
 
-Thanks,
-Shaohua
+Maybe, but I am not sure. Maybe my patch causes too many inner
+fragments. For example, when asking for 5 pages, get 8 pages, and 3
+pages are wasted, then memory thrash happens finally.
 
+-- 
+Regards,
+Changli Gao(xiaosuo@gmail.com)
