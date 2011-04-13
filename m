@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab1DMPOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:14:11 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:59695 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757130Ab1DMPOK (ORCPT
+	id S1757424Ab1DMPOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:14:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58517 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757130Ab1DMPOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:14:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=pAcwkJZfFw63W1CfDD6WCHzJb4eCuIFzaQbtLiK+jRODt0fm+5GnhjyPZGYkuGjs37
-         nLVQP3mKK2xLt7I/4M7fqw6Ud5HUcICAZ7ZrlnOresg5VzYpyFbDpGCnWLH4oNuigvNv
-         Sz/XQp8cXPHbeAWirpXGe6oF4zd6xnkrfvkqI=
+	Wed, 13 Apr 2011 11:14:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
- <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
- <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Wed, 13 Apr 2011 17:13:49 +0200
-X-Google-Sender-Auth: sVCPGPR9chEBhZ2nNC_a51osgXE
-Message-ID: <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
-Subject: Re: Unionmount status?
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        miklos@szeredi.hu, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4DA587AF.2040308@fusionio.com>
+References: <20110411223623.4278fad1@notabene.brown> <4DA2F8AD.1060605@fusionio.com>
+ <20110412011255.GA29236@infradead.org> <4DA40F0E.1070903@fusionio.com>
+ <20110412122248.GC31057@dastard> <4DA4456F.3070301@fusionio.com>
+ <20110412124134.GD31057@dastard> <4DA44C86.3090305@fusionio.com>
+ <20110412133117.GE31057@dastard> <4DA45790.2010109@fusionio.com>
+ <20110412143452.GH31057@dastard> <20110413070827.11b2a71d@notabene.brown>
+ <BANLkTikBEJa7bJJoLFU7NoiEgOjVHVG08A@mail.gmail.com> <1302693122.2035.20.camel@laptop>
+ <4DA587AF.2040308@fusionio.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 13 Apr 2011 08:13:28 -0700
+Message-ID: <BANLkTimTGGJjXGX96LqP0YL4dcdGONFyhA@mail.gmail.com>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, NeilBrown <neilb@suse.de>,
+        Dave Chinner <david@fromorbit.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 April 2011 16:18, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Tue, 12 Apr 2011, Michal Suchanek wrote:
+On Wed, Apr 13, 2011 at 4:23 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
 >
->> > Miklos has an overlay file system that has also been posted upstream.
->>
->> I have no idea about his other overlay filesystem either.
->
-> https://lkml.org/lkml/2011/3/22/222
->
+> Linus, I've got a few other things queued up in the area, I'll add this
+> and send them off soon. Or feel free to add this one yourself, since you
+> already did it.
 
-Thanks for pointing out this announcement.
+Ok, I committed it with Peter's and your acks.
 
-However, neither this announcement nor the document
-Documentation/filesystems/overlayfs.txt included in the git tree
-details how to mount the filesystem. Without that it is kind of
-useless.
+And if you already put it in your git tree too, git will merge it.
 
-Thanks
-
-Michal
+                    Linus
