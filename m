@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758240Ab1DMKbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 06:31:51 -0400
-Received: from gra-lx1.iram.es ([150.214.224.41]:49911 "EHLO gra-lx1.iram.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758187Ab1DMKbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 06:31:50 -0400
-Date: Wed, 13 Apr 2011 12:31:44 +0200
-From: Gabriel Paubert <paubert@iram.es>
-To: Andreas Schwab <schwab@redhat.com>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>
-Subject: Re: small git lesson [Was: Re: Revert
-	737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?]
-Message-ID: <20110413103144.GB3066@iram.es>
-References: <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com> <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local> <20110411133128.GA24344@iram.es> <1302535963.24704.268.camel@thor.local> <20110412113033.GA16649@iram.es> <1302608770.27054.36.camel@thor.local> <20110413080204.GA3871@iram.es> <20110413081246.GK18850__3180.67204575545$1302682420$gmane$org@pengutronix.de> <m339lm8r31.fsf@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S1758260Ab1DMKcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 06:32:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64206 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758211Ab1DMKck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 06:32:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Zy5rw4OyIxj+j/TD+9TW1yWuNJ1PW/qsFYgyaQOGmfpsBIp+XjogtuBLONEAk43KZl
+         5d0Abq65738jl6oWXroKxNbjAN1NctfqILH/DlR3BUeBGLdJYtsJ0wRfH6DksnVTqSC0
+         TposWwmRPkUWDqiUtAIoau/0QQnBRRTRObHBM=
+Subject: Re: [PATCH v2 1/2] Kconfig: improve KALLSYMS_ALL documentation
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paulo Marques <pmarques@grupopie.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+In-Reply-To: <1301999098-21412-1-git-send-email-dedekind1@gmail.com>
+References: <1301999098-21412-1-git-send-email-dedekind1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 13:22:52 +0300
+Message-ID: <1302690172.2768.20.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <m339lm8r31.fsf@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 10:59:14AM +0200, Andreas Schwab wrote:
-> Uwe Kleine-K�nig <u.kleine-koenig@pengutronix.de> writes:
+On Tue, 2011-04-05 at 13:24 +0300, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 > 
-> > $ git name-rev --refs=refs/tags/v2.6\* 69a07f0b117a40fcc1a479358d8e1f41793617f2
-> > 69a07f0b117a40fcc1a479358d8e1f41793617f2 tags/v2.6.39-rc2~3^2~43^2~4
-> >
-> > so it was introduced just before -rc2.
+> Dumb users like myself are not able to grasp from the existing KALLSYMS_ALL
+> documentation that this option is not what they need. Improve the help
+> message and make it clearer that KALLSYMS is enough in the majority of
+> use cases, and KALLSYMS_ALL should really be used very rarely.
 > 
-> $ git tag --contains 69a07f0b117a40fcc1a479358d8e1f41793617f2
-> v2.6.39-rc1
-> v2.6.39-rc2
-> 
+> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-So who is right? I think it was before rc1. 
+Michal,
 
-Anyway I'm aware that there are other git commands, although for the option
-details I often have to have a look at the man page.
+what's the fate of these 2 patches? Will you merge them?
 
-However in this case the main reason to fire gitk was to have a quick look 
-at the patch and its context, and simply reported the "Precedes" line 
-in the display, which is 2.6.39-rc1. It also follow v2.6.37-rc2, which means
-that it has been quite a long time outside the main tree.
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-	Gabriel
