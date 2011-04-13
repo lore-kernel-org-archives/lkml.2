@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab1DMQVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:21:39 -0400
-Received: from kroah.org ([198.145.64.141]:52917 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932631Ab1DMQNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933175Ab1DMQVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:21:41 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:27113 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932899Ab1DMQNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Apr 2011 12:13:14 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:47 2011
-Message-Id: <20110413161047.037291885@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:06 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>, Changli Gao <xiaosuo@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [43/71] netfilter: ipt_CLUSTERIP: fix buffer overflow
-In-Reply-To: <20110413161106.GA20405@kroah.com>
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Mark Lord <kernel@teksavvy.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Date: Wed, 13 Apr 2011 17:13:07 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: Acv57PeUZmOXzJy/SmuqNZkglMtp7AAB8a1A
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C772DA253@gretna.indigovision.com>
+References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
+ <4D9CD275.9000002@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
+ <4D9FACC9.7020200@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
+ <4DA5BCF3.5080205@teksavvy.com>
+In-Reply-To: <4DA5BCF3.5080205@teksavvy.com>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3DGLsZj014093
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+> Yeah, I'm suspecting there's a loophole in the logic there somewhere.
+>
+> I dusted off the 6041 reference card I have here, and played with the cables for a while.  Managed to > get one port to stop responding to hot plug fairly quickly, though I'm not sure how/why.
+>
+> Then I added a debug printk() to mv_write_main_irq_mask(), with no other changes, and that appears to > have been enough to change the race timing so that I could no longer produce the problem.
+>
+> Bruce, here's a slightly-ugly patch that should remove all doubt about races in the irq_mask.  Please > apply it, test with it, and let me know here if the issue goes away.
+>
+> Thanks
 
-------------------
+Thanks Mark. I was about to try out some tracing in writelfl because I
+suspected the irq mask was getting clobbered somewhere along the way, but
+I'd been distracted by other work.  I shall try your patch out as soon as
+I can, and report back.
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+Cheers,
 
-commit 961ed183a9fd080cf306c659b8736007e44065a5 upstream.
-
-'buffer' string is copied from userspace.  It is not checked whether it is
-zero terminated.  This may lead to overflow inside of simple_strtoul().
-Changli Gao suggested to copy not more than user supplied 'size' bytes.
-
-It was introduced before the git epoch.  Files "ipt_CLUSTERIP/*" are
-root writable only by default, however, on some setups permissions might be
-relaxed to e.g. network admin user.
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Changli Gao <xiaosuo@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/ipv4/netfilter/ipt_CLUSTERIP.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
-+++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-@@ -666,8 +666,11 @@ static ssize_t clusterip_proc_write(stru
- 	struct clusterip_config *c = pde->data;
- 	unsigned long nodenum;
- 
--	if (copy_from_user(buffer, input, PROC_WRITELEN))
-+	if (size > PROC_WRITELEN)
-+		return -EIO;
-+	if (copy_from_user(buffer, input, size))
- 		return -EFAULT;
-+	buffer[size] = 0;
- 
- 	if (*buffer == '+') {
- 		nodenum = simple_strtoul(buffer+1, NULL, 10);
+Bruce.
 
 
+Bruce Stenning,
+IndigoVision,
+b <dot> stenning <at> indigovision <dot> com
+
+
+Latest News at: http://www.indigovision.com/index.php/en/news.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
