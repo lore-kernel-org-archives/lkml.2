@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab1DMQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:12:58 -0400
-Received: from kroah.org ([198.145.64.141]:52816 "EHLO coco.kroah.org"
+	id S1757734Ab1DMQYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:24:45 -0400
+Received: from kroah.org ([198.145.64.141]:52839 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932829Ab1DMQMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:12:55 -0400
+	id S932829Ab1DMQM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:12:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:45 2011
-Message-Id: <20110413161045.002911205@clark.kroah.org>
+Message-Id: <20110413161045.420421854@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:09:47 -0700
+Date: Wed, 13 Apr 2011 09:09:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [24/71] ROSE: prevent heap corruption with bad facilities
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: [28/71] UBIFS: do not read flash unnecessarily
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,78 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit be20250c13f88375345ad99950190685eda51eb8 upstream.
+commit 8b229c76765816796eec7ccd428f03bd8de8b525 upstream.
 
-When parsing the FAC_NATIONAL_DIGIS facilities field, it's possible for
-a remote host to provide more digipeaters than expected, resulting in
-heap corruption.  Check against ROSE_MAX_DIGIS to prevent overflows, and
-abort facilities parsing on failure.
+This fix makes the 'dbg_check_old_index()' function return
+immediately if debugging is disabled, instead of executing
+incorrect 'goto out' which causes UBIFS to:
 
-Additionally, when parsing the FAC_CCITT_DEST_NSAP and
-FAC_CCITT_SRC_NSAP facilities fields, a remote host can provide a length
-of less than 10, resulting in an underflow in a memcpy size, causing a
-kernel panic due to massive heap corruption.  A length of greater than
-20 results in a stack overflow of the callsign array.  Abort facilities
-parsing on these invalid length values.
+1. Allocate memory
+2. Read the flash
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+On every commit. OK, we do not commit that often, but it is
+still silly to do unneeded I/O anyway.
+
+Credits to coverity for spotting this silly issue.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/rose/rose_subr.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ fs/ubifs/commit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/rose/rose_subr.c
-+++ b/net/rose/rose_subr.c
-@@ -289,10 +289,15 @@ static int rose_parse_national(unsigned
- 				facilities->source_ndigis = 0;
- 				facilities->dest_ndigis   = 0;
- 				for (pt = p + 2, lg = 0 ; lg < l ; pt += AX25_ADDR_LEN, lg += AX25_ADDR_LEN) {
--					if (pt[6] & AX25_HBIT)
-+					if (pt[6] & AX25_HBIT) {
-+						if (facilities->dest_ndigis >= ROSE_MAX_DIGIS)
-+							return -1;
- 						memcpy(&facilities->dest_digis[facilities->dest_ndigis++], pt, AX25_ADDR_LEN);
--					else
-+					} else {
-+						if (facilities->source_ndigis >= ROSE_MAX_DIGIS)
-+							return -1;
- 						memcpy(&facilities->source_digis[facilities->source_ndigis++], pt, AX25_ADDR_LEN);
-+					}
- 				}
- 			}
- 			p   += l + 2;
-@@ -332,6 +337,11 @@ static int rose_parse_ccitt(unsigned cha
+--- a/fs/ubifs/commit.c
++++ b/fs/ubifs/commit.c
+@@ -518,7 +518,7 @@ int dbg_check_old_index(struct ubifs_inf
+ 	size_t sz;
  
- 		case 0xC0:
- 			l = p[1];
-+
-+			/* Prevent overflows*/
-+			if (l < 10 || l > 20)
-+				return -1;
-+
- 			if (*p == FAC_CCITT_DEST_NSAP) {
- 				memcpy(&facilities->source_addr, p + 7, ROSE_ADDR_LEN);
- 				memcpy(callsign, p + 12,   l - 10);
-@@ -372,12 +382,16 @@ int rose_parse_facilities(unsigned char
- 			switch (*p) {
- 			case FAC_NATIONAL:		/* National */
- 				len = rose_parse_national(p + 1, facilities, facilities_len - 1);
-+				if (len < 0)
-+					return 0;
- 				facilities_len -= len + 1;
- 				p += len + 1;
- 				break;
+ 	if (!(ubifs_chk_flags & UBIFS_CHK_OLD_IDX))
+-		goto out;
++		return 0;
  
- 			case FAC_CCITT:		/* CCITT */
- 				len = rose_parse_ccitt(p + 1, facilities, facilities_len - 1);
-+				if (len < 0)
-+					return 0;
- 				facilities_len -= len + 1;
- 				p += len + 1;
- 				break;
+ 	INIT_LIST_HEAD(&list);
+ 
 
 
