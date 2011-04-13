@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab1DMSjt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 14:39:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60709 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756671Ab1DMSjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 14:39:48 -0400
-Message-ID: <4DA5EDE1.3030600@zytor.com>
-Date: Wed, 13 Apr 2011 11:39:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1757582Ab1DMSkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 14:40:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60407 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab1DMSkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 14:40:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NKpVQBs2tAZaebH4TwG9XwefMrStjTvBHAGDaS4NhjccxP9szAzU4U8++0HbBVqjWK
+         gsO5OAPHQZzl7Rmg146fwmly4fFfLJSPJs6Ndm6Q8ZC5qJe3TWX2NKfZoQQtyBgoMjAP
+         CdeH19T2i4s5Li2ltcRn3kpmIK6CYu7YZluIQ=
+Date: Thu, 14 Apr 2011 03:39:55 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/21] sched: Change the ttwu success details
+Message-ID: <20110413183955.GA3403@mtj.dyndns.org>
+References: <20110405152338.692966333@chello.nl>
+ <20110405152728.866866929@chello.nl>
+ <1302686630.2388.125.camel@twins>
+ <1302691703.2035.10.camel@laptop>
+ <1302692799.2035.17.camel@laptop>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org>
-In-Reply-To: <20110413172147.GI19819@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302692799.2035.17.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2011 10:21 AM, Joerg Roedel wrote:
-> On Wed, Apr 13, 2011 at 08:46:09AM +0200, Ingo Molnar wrote:
->> Could you please send the before/after bootlog (in particular all memory init 
->> messages included) and your .config?
->>
->>  before:  f005fe12b90c: x86-64: Move out cleanup higmap [_brk_end, _end) out of init_memory_mapping()
->>   after:  d2137d5af425: Merge branch 'linus' into x86/bootmem
->>
->> I've Cc:-ed more people who might have an idea about it.
+Hello, Peter.
+
+On Wed, Apr 13, 2011 at 01:06:39PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-04-13 at 12:48 +0200, Peter Zijlstra wrote:
+> > Appears to be sufficient to cause the lockup, so somehow the whole
+> > workqueue stuff relies on the fact that waking a TASK_(UN)INTERRUPTIBLE
+> > task that hasn't been dequeued yet isn't a wakeup.
+> > 
+> > Tejun any quick clues as to why and how to cure this?
+> > 
+> > /me goes read that stuff
 > 
-> Okay, I have done some more bisecting and debugging today.
-> 
+> OK, so wq_worker_waking_up() does an atomic_inc() that wants to be
+> balanced against the atomic_dec() in wq_worker_sleeping(), which is only
+> called when we dequeue things.
 
-First of all, *huge* thanks for this effort.  At least we need to track
-down the bits that need to be reverted -- it is past rc3, and it's time
-to see what we should revert and tell the submitter to try again next cycle.
+Yeap, the root cause of the problem is that the change makes
+wq_worker_sleeping() and wq_worker_waking_up() asymmetric and thus
+puts the nr_running counter goes out of sync which hides active worker
+depletion from the workqueue code leading to stall.
 
-This looks to be the same issue as in bugzilla 33012:
+One way to deal with it would be adding an extra worker flag to track
+sleep state from workqueue side so that it can filter out spurious
+wakeups; however, I think it would be far better to resolve this from
+scheduler side.  If the callback name is misleading, rename it to
+wq_worker_sched_activated() or something and call it only when the
+task gets activated.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=33012
+Thanks.
 
-... so it would be good if we could keep the information in there.
-
-	-hpa
+-- 
+tejun
