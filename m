@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab1DMAtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 20:49:12 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:60940 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755518Ab1DMAtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 20:49:10 -0400
-Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Chris McDermott <lcm@linux.vnet.ibm.com>
-In-Reply-To: <alpine.DEB.2.00.1104121719430.10966@chino.kir.corp.google.com>
-References: <20110411172004.0361.A69D9226@jp.fujitsu.com>
-	 <1302557371.7286.16607.camel@nimitz>
-	 <alpine.DEB.2.00.1104121719430.10966@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 12 Apr 2011 17:49:06 -0700
-Message-ID: <1302655746.8321.4001.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757553Ab1DMAtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 20:49:43 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:42599 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756910Ab1DMAtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 20:49:42 -0400
+Date: Tue, 12 Apr 2011 20:49:38 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: CONFIG_EXT4_USE_FOR_EXT23:  rootfs shows as ext2 instead of
+ ext4
+Message-ID: <20110413004938.GE3682@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mark Lord <kernel@teksavvy.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <4DA48AF4.5080803@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA48AF4.5080803@teksavvy.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 17:22 -0700, David Rientjes wrote:
-> On Mon, 11 Apr 2011, Dave Hansen wrote:
-> I know specifically of pieces of x86 hardware that set the information
-> > in the BIOS to '21' *specifically* so they'll get the zone_reclaim_mode
-> > behavior which that implies.
+On Tue, Apr 12, 2011 at 01:25:08PM -0400, Mark Lord wrote:
+> Ted et al.
 > 
-> That doesn't seem like an argument against this patch, it's an improper 
-> configuration unless the remote memory access has a latency of 2.1x that 
-> of a local access between those two nodes.  If that's the case, then it's 
-> accurately following the ACPI spec and the VM has made its policy decision 
-> to enable zone_reclaim_mode as a result.
+> I've only just noticed this, so I have no idea how long it has been this way.
+> 
+> When I build a kernel with CONFIG_EXT4_USE_FOR_EXT23=y and boot from it,
+> the ext4 root filesystem shows up as "ext2" mode, rather than "ext4".
+> 
+> This looks very wrong to me, and quite dangerous.
 
-Heh, if the kernel broke on every system that didn't follow _some_ spec,
-it wouldn't boot in very many places.
+It's a cosemtic bug, I agree, but I'm not sure why you consider it
+dangerous.
 
-When you have a hammer, everything looks like a nail.  When you're a
-BIOS developer, you start thwacking at the kernel with munged ACPI
-tables instead of boot options.  Folks do this in the real world, and I
-think if we can't put their names and addresses next to the code that
-works around this, we might as well put the DMI strings of their
-hardware. :) 
+CONFIG_EXT4_USE_FOR_EXT23 means that ext4 registers itself as ext2
+and/or ext3, if ext2 and/or ext3 are not configured into the kernel.
+Since the kernel tries to mount the file system as ext2, ext3, and
+then ext4, and uses whichever one works first.
 
--- Dave
-
+						- Ted
