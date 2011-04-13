@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab1DMKB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 06:01:59 -0400
-Received: from gra-lx1.iram.es ([150.214.224.41]:46490 "EHLO gra-lx1.iram.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755434Ab1DMKB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 06:01:57 -0400
-Date: Wed, 13 Apr 2011 12:01:51 +0200
-From: Gabriel Paubert <paubert@iram.es>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Dave Airlie <airlied@gmail.com>
-Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
-Message-ID: <20110413100151.GA3066@iram.es>
-References: <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local> <20110411133128.GA24344@iram.es> <1302535963.24704.268.camel@thor.local> <20110412113033.GA16649@iram.es> <1302608770.27054.36.camel@thor.local> <20110412120055.GA7995@iram.es> <1302629362.15520.25.camel@thor.local> <20110413075943.GA27996@iram.es> <1302682573.28876.78.camel@pasglop>
+	id S1758126Ab1DMKCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 06:02:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58201 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456Ab1DMKCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 06:02:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rgnEnTqLODAdLlge7GO1ySfEOI43P/6uSg+VKbS9vBOwqIggCkmg2OkcjY2f0Q5ky5
+         gyr6cjc/IqXupfj2vkzPjgsYSWcx1u85gNib/MouJMXRjig7XPKskcwhz0EAChJUtf3o
+         +LCh2jHaBCDf1QIOu9kIlZADfpwa5MqlgIrxI=
+Message-ID: <4DA574C7.6050904@gmail.com>
+Date: Wed, 13 Apr 2011 12:02:47 +0200
+From: "=?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?=" <andreas.devel@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302682573.28876.78.camel@pasglop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <biessmann@corscience.de>
+CC: kernel@avr32linux.org,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] avr32: add ATAG_BOARDINFO
+References: <1302682057-6244-1-git-send-email-biessmann@corscience.de>
+In-Reply-To: <1302682057-6244-1-git-send-email-biessmann@corscience.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 06:16:13PM +1000, Benjamin Herrenschmidt wrote:
-> On Wed, 2011-04-13 at 09:59 +0200, Gabriel Paubert wrote:
-> > 
-> > Well, X is dead, or rather in an infinite ioctl loop as described
-> > above.
-> > IIRC, the display enters a power-down mode and there is nothing to
-> > see.
+Am 13.04.2011 10:07, schrieb Andreas Bießmann:
+> The ATAG_BOARDINFO is intended to hand over the information
+> bd->bi_board_number from u-boot to the kernel.
 > 
-> So basically the card crashed. There's about an infinite amount of
-> reasons why radeons do so, sometimes it has to do with them not liking
-> what you ate that day...
-> 
-> The only thing I can see that could be of use would be a bisect
+> This piece of information can be used to implement some kind of board
+> identification while booting the kernel. Therefore it is placed in .initdata
+> section and can be accessed via the new symbol board_number only while
+> initializing the kernel.
 
-Bisecting for something which I have never got to work (radeon with
-KMS) on this machine is something I don't know how to do...
+Tested with mainline u-boot plus patch
+http://article.gmane.org/gmane.comp.boot-loaders.u-boot/97573 on atstk1002.
 
-Note that radeon without KMS also always ends up crashing, but it
-may take hours. The only case where the machine works reliably is 
-when glxinfo claims that it is using software rendering.
- 
-	Regards,
-	Gabriel
+regards
+
+Andreas Bießmann
