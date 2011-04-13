@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758454Ab1DMLL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 07:11:29 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:7758 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab1DMLL2 (ORCPT
+	id S1758473Ab1DMLWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 07:22:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54714 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758428Ab1DMLWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 07:11:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6314"; a="85326847"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>
-Cc: <gregkh@suse.de>, <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <20110411175917.GE4018@linutronix.de> <1302636896-12717-1-git-send-email-bigeasy@linutronix.de>
-In-Reply-To: <1302636896-12717-1-git-send-email-bigeasy@linutronix.de>
-Subject: RE: [PATCH 5/5 v5] usb:gadget: Add SuperSpeed support to the Gadget Framework
-Date: Wed, 13 Apr 2011 14:12:25 +0300
-Message-ID: <001801cbf9cb$ad2743a0$0775cae0$@org>
+	Wed, 13 Apr 2011 07:22:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BWTHhPAc9C+/GegAE+fKoAno8784B1ZSDBM6rDxJRmLwuEY4HB2+1+uYlq5YWIdlZb
+         w1nY8zRXhjE5V6mvTO/Ilxn3XK8oDW/znyFxHd415j168RvpvKt2s5A/5ZasmMGLc3Yx
+         oBPhsj15hp9g0C6TDfAm0oFoIylUjtj5id17w=
+Date: Wed, 13 Apr 2011 15:22:10 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: David Miller <davem@davemloft.net>
+Cc: solar@openwall.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        peak@argo.troja.mff.cuni.cz, kees.cook@canonical.com,
+        dan.j.rosenberg@gmail.com, eugene@redhat.com, nelhage@ksplice.com,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net
+Subject: Re: [PATCH] net: ipv4: add IPPROTO_ICMP socket kind
+Message-ID: <20110413112210.GA6948@albatros>
+References: <20110412.142534.183049889.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acv5SMPpdWcq6l6zTpKAakKyWCfv/QAgoeFg
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412.142534.183049889.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian
+On Tue, Apr 12, 2011 at 14:25 -0700, David Miller wrote:
+> I have no fundamental objections to this change and I'll be happy to
+> apply it after we iron out a few details.
 
-Thanks you for your inputs and for taking the time to address them!
-I got several other comments on this patch, one of which was to split it up.
-I'm working on it at the moment and will address your comments as well in
-the new version of this patch.
-Again - thanks you for your time and work.
+Great!
 
-Best regards,
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> First, please get rid of the debug option, we have pr_debug() which can
+> be dynamically turned on and off at run time these days.
 
+OK.
 
-> -----Original Message-----
-> From: Sebastian Andrzej Siewior [mailto:bigeasy@linutronix.de]
-> Sent: Tuesday, April 12, 2011 10:35 PM
-> To: Tatyana Brokhman
-> Cc: gregkh@suse.de; linux-arm-msm@vger.kernel.org; balbi@ti.com;
-> ablay@codeaurora.org; linux-usb@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 5/5 v5] usb:gadget: Add SuperSpeed support to the
-> Gadget Framework
+> Second, if this is a bonafide core facility we'd like everyone to use,
+> let's make it so.  I want it so that every ping binary can expect this
+> facility to be there if the kernel is new enough.
 > 
-> Hi Tatyana,
-> 
-> I tried to fixup this patch according to my review so you can focus on
-> the more imporant things :)
-> 
-> Sebastian
+> So let's get rid of the config option.
+
+OK.
+
+> Finally, longer term, I'd really like to see ipv6 support for this
+> feature as well.
+
+Definitely.
+
+For ICMPv6 we should recognize what message types are OK to send by
+non-root users and what types are privileged.  We just didn't do this
+yet.
 
 
+Thank you for the review,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
