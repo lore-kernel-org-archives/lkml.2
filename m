@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab1DMI5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:57:31 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60388 "EHLO gate.crashing.org"
+	id S1757921Ab1DMI6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 04:58:35 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60402 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757863Ab1DMI5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:57:30 -0400
-Subject: Re: mm: convert vma->vm_flags to 64bit
+	id S1757863Ab1DMI6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 04:58:34 -0400
+Subject: Re: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <20110413072935.GK7806@n2100.arm.linux.org.uk>
-References: <BANLkTinLdWB+ON=TY=KHyzsrC8gC5bXg7Q@mail.gmail.com>
-	 <1302646024.28876.52.camel@pasglop>
-	 <20110413091301.41E1.A69D9226@jp.fujitsu.com> <20110413064432.GA4098@p183>
-	 <1302678049.28876.77.camel@pasglop>
-	 <20110413072935.GK7806@n2100.arm.linux.org.uk>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <19877.23529.745123.819112@pilspetsen.it.uu.se>
+References: <19876.35918.322649.256455@pilspetsen.it.uu.se>
+	 <1302646173.28876.53.camel@pasglop> <1302652502.28876.76.camel@pasglop>
+	 <19877.23529.745123.819112@pilspetsen.it.uu.se>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Apr 2011 18:56:59 +1000
-Message-ID: <1302685019.28876.80.camel@pasglop>
+Date: Wed, 13 Apr 2011 18:58:22 +1000
+Message-ID: <1302685102.28876.81.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -32,24 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-13 at 08:29 +0100, Russell King - ARM Linux wrote:
+On Wed, 2011-04-13 at 10:16 +0200, Mikael Pettersson wrote:
+>  > Ok so on a PowerMac7,3 here (dual 2.5Ghz and mostly same HW or at least
+>  > very similar) I can't reproduce your problem with a g5_defconfig.
+>  > 
+>  > Your config doesn't work well for me (I don't do modules, I netboot),
+>  > but after adding a few things to it, it seems to work fine as well. I
+>  > added radeonfb and the radeon DRM (not KMS) and I added eventfd, timerfd
+>  > and input events.
+>  > 
+>  > So I'm afraid I'm going to need you to bisect that one to find out what
+>  > exact change caused the breakage for you.
 > 
-> > Right, it shouldn't. My original patch did that to avoid thinking
-> about
-> > archs that manipulated it from asm such as ARM but that wasn't the
-> right
-> > thing to do. But that doesn't invalidate having a type.
-> 
-> No, we don't manipulate it.  We only test for VM_EXEC in it in asm. 
+> Thanks for checking.  I'll try a bisect later today. 
 
-Yeah whatever, you did something that I didn't spare the brain cell to
-try to figure out back then :-) Maybe I should have ... I was also
-worried about the embedded folks having a go at me for "bloat they don't
-need". But in the end it was wrong, it should always be 64-bit.
-
-But regardless, I still think it should be a specific type. "unsigned
-long long" really sucks.
+Actually I do get a crash in X later on... something in the radeon DRM
+interrupt code is getting what looks like a NULL dereference. I'll try
+to dig that one later on. I don't know if it's related to your problem
+at all though.
 
 Cheers,
 Ben.
+
 
