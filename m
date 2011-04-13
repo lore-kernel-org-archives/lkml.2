@@ -1,79 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab1DMMRN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 08:17:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54558 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab1DMMRL (ORCPT
+	id S1755989Ab1DMMSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 08:18:44 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16994
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755800Ab1DMMSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 08:17:11 -0400
-Date: Wed, 13 Apr 2011 14:17:00 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Gabriel Paubert <paubert@iram.es>
-Cc: Andreas Schwab <schwab@redhat.com>, Greg KH <greg@kroah.com>,
-        linuxppc-dev@lists.ozlabs.org, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>
-Subject: Re: small git lesson [Was: Re: Revert
- 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?]
-Message-ID: <20110413121700.GQ18850@pengutronix.de>
-References: <20110406204327.GA11148@iram.es>
- <1302185075.24704.143.camel@thor.local>
- <20110411133128.GA24344@iram.es>
- <1302535963.24704.268.camel@thor.local>
- <20110412113033.GA16649@iram.es>
- <1302608770.27054.36.camel@thor.local>
- <20110413080204.GA3871@iram.es>
- <20110413081246.GK18850__3180.67204575545$1302682420$gmane$org@pengutronix.de>
- <m339lm8r31.fsf@redhat.com>
- <20110413103144.GB3066@iram.es>
+	Wed, 13 Apr 2011 08:18:42 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Date: Wed, 13 Apr 2011 17:47:22 +0530
+Subject: [PATCHv1 10/11] LEDS: LED module of DA9052 PMIC driver
+Thread-Topic: [PATCHv1 10/11] LEDS: LED module of DA9052 PMIC driver
+Thread-Index: Acv51L4urrC//oK/RFCb83ENFOB2uQ==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B61976E@KCINPUNHJCMS01.kpit.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110413103144.GB3066@iram.es>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3DCIuhb011284
 
-Hello Gabriel
-On Wed, Apr 13, 2011 at 12:31:44PM +0200, Gabriel Paubert wrote:
-> On Wed, Apr 13, 2011 at 10:59:14AM +0200, Andreas Schwab wrote:
-> > Uwe Kleine-Kˆnig <u.kleine-koenig@pengutronix.de> writes:
-> > 
-> > > $ git name-rev --refs=refs/tags/v2.6\* 69a07f0b117a40fcc1a479358d8e1f41793617f2
-> > > 69a07f0b117a40fcc1a479358d8e1f41793617f2 tags/v2.6.39-rc2~3^2~43^2~4
-> > >
-> > > so it was introduced just before -rc2.
-> > 
-> > $ git tag --contains 69a07f0b117a40fcc1a479358d8e1f41793617f2
-> > v2.6.39-rc1
-> > v2.6.39-rc2
-> > 
-> 
-> So who is right? I think it was before rc1. 
-Yep, correct. I interpreted the output of git name-rev to mean it's not
-included in a tag earlier than v2.6.39-rc2, but actually that's wrong.
-It's just that it's easier (for some definition of easy) to reach the
-commit in question from v2.6.39-rc2 than from v2.6.39-rc1.
+Hi,
 
-> However in this case the main reason to fire gitk was to have a quick look 
-> at the patch and its context, and simply reported the "Precedes" line 
-> in the display, which is 2.6.39-rc1. It also follow v2.6.37-rc2, which means
-> that it has been quite a long time outside the main tree.
-I think this conclusion isn't valid in general. (E.g. in git itself a
-bug-fix is often done on top of the commit that introduced it and than
-merged into master. Still the bugfix might be new.) But looking at the
-AuthorDate of 69a07f0b117a seems to support your statement.
+LED Driver for Dialog Semiconductor DA9052 PMICs.
 
-Best regards
-Uwe
+Changes made since last submission:
+. Modified the platform data structure
+. Ported the driver to Linux kernel 2.6.38.2
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-Kˆnig            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Linux Kernel Version: 2.6.38.2
+
+Signed-off-by: D. Chen <dchen@diasemi.com>
+---
+diff -Naur linux-2.6.38.2/drivers/leds/Kconfig wrk_linux-2.6.38.2/drivers/leds/Kconfig
+--- linux-2.6.38.2/drivers/leds/Kconfig	2011-03-27 23:37:20.000000000 +0500
++++ wrk_linux-2.6.38.2/drivers/leds/Kconfig	2011-04-13 15:24:08.000000000 +0500
+@@ -274,6 +274,14 @@
+ 	  This option enables support for on-chip LED drivers found
+ 	  on Dialog Semiconductor DA9030/DA9034 PMICs.
+
++config LEDS_DA9052
++	tristate "Dialog DA9052 LEDS"
++	depends on LEDS_CLASS
++	depends on PMIC_DA9052
++	help
++	  This option enables support for on-chip LED drivers found
++	  on Dialog Semiconductor DA9052 PMICs
++
+ config LEDS_DAC124S085
+ 	tristate "LED Support for DAC124S085 SPI DAC"
+ 	depends on LEDS_CLASS
+diff -Naur linux-2.6.38.2/drivers/leds/leds-da9052.c wrk_linux-2.6.38.2/drivers/leds/leds-da9052.c
+--- linux-2.6.38.2/drivers/leds/leds-da9052.c	1970-01-01 05:00:00.000000000 +0500
++++ wrk_linux-2.6.38.2/drivers/leds/leds-da9052.c	2011-04-13 15:24:28.000000000 +0500
+@@ -0,0 +1,218 @@
++/*
++ * LED Driver for Dialog DA9052
++ *
++ * Copyright(c) 2009 Dialog Semiconductor Ltd.
++ *
++ * Author: Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/leds.h>
++#include <linux/workqueue.h>
++#include <linux/slab.h>
++
++#include <linux/mfd/da9052/reg.h>
++#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/pdata.h>
++#include <linux/mfd/da9052/gpio.h>
++
++struct da9052_led {
++	struct led_classdev cdev;
++	struct work_struct work;
++	struct da9052 *da9052;
++	u8 led_index;
++	u8 id;
++	int brightness;
++};
++
++u8 led_reg[] = {
++		DA9052_LED_CONT_4_REG,
++		DA9052_LED_CONT_5_REG,
++};
++
++struct da9052_led_platform_data {
++		int led_index[2];
++		struct led_platform_data leds;
++	};
++
++static int da9052_set_led_brightness(struct da9052_led *led)
++{
++	int error;
++
++	error = da9052_reg_write(led->da9052, led_reg[led->led_index],
++				led->brightness | DA9052_LED_CONT_DIM);
++	if (error < 0)
++		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n", error);
++	return error;
++}
++
++static void da9052_led_work(struct work_struct *work)
++{
++	struct da9052_led *led = container_of(work,
++				 struct da9052_led, work);
++
++	da9052_set_led_brightness(led);
++}
++
++static void da9052_led_set(struct led_classdev *led_cdev,
++			   enum led_brightness value)
++{
++	struct da9052_led *led;
++
++	led = container_of(led_cdev, struct da9052_led, cdev);
++	led->brightness = value;
++	schedule_work(&led->work);
++}
++
++
++static int da9052_configure_leds_gpio(struct da9052_led *led)
++{
++	int error;
++	u8 register_value = DA9052_OUTPUT_OPENDRAIN |
++			DA9052_SUPPLY_VDD_IO1 << 2 | 1 << 3;
++
++	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
++				DA9052_GPIO_MASK_LOWER_NIBBLE,
++				register_value);
++
++	if (error < 0) {
++		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
++		return error;
++	}
++
++	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
++				DA9052_GPIO_MASK_UPPER_NIBBLE,
++				register_value << DA9052_GPIO_NIBBLE_SHIFT
++				);
++	if (error < 0)
++		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
++
++	return error;
++}
++
++static int __devinit da9052_led_probe(struct platform_device *pdev)
++{
++	struct da9052_pdata *pdata;
++	struct da9052 *da9052;
++	struct gpio_led_platform_data *pled;
++	struct da9052_led *led;
++	int error, i;
++
++	da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = da9052->dev->platform_data;
++	if (pdata == NULL) {
++		dev_err(&pdev->dev, "No platform data\n");
++		error = -ENODEV;
++		goto err_mem;
++	}
++
++	pled = pdata->pled;
++
++	if (pled == NULL) {
++		dev_err(&pdev->dev, "Failed no platform data for LED\n");
++		return -ENOMEM;
++	}
++
++	led = kzalloc(sizeof(struct da9052_led) * pled->num_leds, GFP_KERNEL);
++	if (led == NULL) {
++		dev_err(&pdev->dev, "Failed to alloc memory\n");
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < pled->num_leds; i++) {
++		led[i].cdev.name = pled->leds[i].name;
++		led[i].cdev.brightness_set = da9052_led_set;
++		led[i].cdev.brightness = LED_OFF;
++		led[i].brightness = 0;
++		led[i].id = i;
++		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
++		INIT_WORK(&led[i].work, da9052_led_work);
++
++		error = led_classdev_register(pdev->dev.parent, &led[i].cdev);
++		if (error) {
++			dev_err(&pdev->dev, "Failed to register led %d\n", led[i].id);
++			goto err_register;
++		}
++
++		error = da9052_set_led_brightness(&led[i]);
++		if (error) {
++			dev_err(&pdev->dev, "Unable to init led %d\n", led[i].led_index);
++			continue;
++		}
++	}
++	error = da9052_configure_leds_gpio(led);
++	if (error) {
++		dev_err(&pdev->dev, "Failed to configure GPIO Led,%d\n", error);
++		goto err_register;
++	}
++
++	platform_set_drvdata(pdev, led);
++
++	return 0;
++
++err_register:
++	for (i = i - 1; i >= 0; i--) {
++		led_classdev_unregister(&led[i].cdev);
++		cancel_work_sync(&led[i].work);
++	}
++err_mem:
++	kfree(led);
++	return error;
++}
++
++static int __devexit da9052_led_remove(struct platform_device *pdev)
++{
++	struct da9052_led *led = NULL;
++	struct da9052 *da9052;
++	struct gpio_led_platform_data *pdata = pdev->dev.platform_data;
++	int i;
++
++	led = platform_get_drvdata(pdev);
++	da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = da9052->dev->platform_data;
++
++	for (i = 0; i < pdata->num_leds; i++) {
++		led[i].brightness = 0;
++		da9052_set_led_brightness(&led[i]);
++		led_classdev_unregister(&led[i].cdev);
++		cancel_work_sync(&led[i].work);
++	}
++
++	kfree(led);
++
++	return 0;
++}
++
++static struct platform_driver da9052_led_driver = {
++	.driver = {
++		.name	= "da9052-leds",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= da9052_led_probe,
++	.remove		= __devexit_p(da9052_led_remove),
++};
++
++static int __init da9052_led_init(void)
++{
++	return platform_driver_register(&da9052_led_driver);
++}
++module_init(da9052_led_init);
++
++static void __exit da9052_led_exit(void)
++{
++	platform_driver_unregister(&da9052_led_driver);
++}
++module_exit(da9052_led_exit);
++
++MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
++MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
++MODULE_LICENSE("GPL v2");
+diff -Naur linux-2.6.38.2/drivers/leds/Makefile wrk_linux-2.6.38.2/drivers/leds/Makefile
+--- linux-2.6.38.2/drivers/leds/Makefile	2011-03-27 23:37:20.000000000 +0500
++++ wrk_linux-2.6.38.2/drivers/leds/Makefile	2011-04-13 15:24:01.000000000 +0500
+@@ -30,6 +30,7 @@
+ obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
+ obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
+ obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
++obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
+ obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
+ obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
+ obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
+
+Regards,
+Ashish J
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
