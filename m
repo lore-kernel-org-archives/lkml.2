@@ -1,259 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116Ab1DMVk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:40:57 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:49997 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932906Ab1DMVkz (ORCPT
+	id S933091Ab1DMVo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:44:26 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:46424 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757777Ab1DMVoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:40:55 -0400
-From: Andreas Gruenbacher <agruen@linbit.com>
-Reply-To: netdev@vger.kernel.org
-Organization: LINBIT
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [RFC][PATCH] Zero-copy receive from socket into bio
-Date: Wed, 13 Apr 2011 23:39:23 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
+	Wed, 13 Apr 2011 17:44:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=MrKAtpYPl8O+onxgeCb/yNNKD3lH61uBA+ss1phe4YiGBeBKMsgvW5WH1m5WJ55l1T
+         Z4HymYP0V86grTTAo1MQ==
+Date: Wed, 13 Apr 2011 14:44:16 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
+        =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
+Subject: Re: Regression from 2.6.36
+In-Reply-To: <20110413141600.28793661.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1104131432460.10702@chino.kir.corp.google.com>
+References: <20110315132527.130FB80018F1@mail1005.cent> <20110317001519.GB18911@kroah.com> <20110407120112.E08DCA03@pobox.sk> <4D9D8FAA.9080405@suse.cz> <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com> <1302177428.3357.25.camel@edumazet-laptop>
+ <1302178426.3357.34.camel@edumazet-laptop> <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com> <1302190586.3357.45.camel@edumazet-laptop> <20110412154906.70829d60.akpm@linux-foundation.org> <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
+ <20110412183132.a854bffc.akpm@linux-foundation.org> <1302662256.2811.27.camel@edumazet-laptop> <20110413141600.28793661.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104132339.24183.agruen@linbit.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 13 Apr 2011, Andrew Morton wrote:
 
-I'm currently looking into supporting zero-copy receive in drbd.
+> Azurit reports large increases in system time after 2.6.36 when running
+> Apache.  It was bisected down to a892e2d7dcdfa6c76e6 ("vfs: use kmalloc()
+> to allocate fdmem if possible").
+> 
+> That patch caused the vfs to use kmalloc() for very large allocations and
+> this is causing excessive work (and presumably excessive reclaim) within
+> the page allocator.
+> 
+> Fix it by falling back to vmalloc() earlier - when the allocation attempt
+> would have been considered "costly" by reclaim.
+> 
+> Reported-by: azurIt <azurit@pobox.sk>
+> Cc: Changli Gao <xiaosuo@gmail.com>
+> Cc: Americo Wang <xiyou.wangcong@gmail.com>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  fs/file.c |   17 ++++++++++-------
+>  1 file changed, 10 insertions(+), 7 deletions(-)
+> 
+> diff -puN fs/file.c~a fs/file.c
+> --- a/fs/file.c~a
+> +++ a/fs/file.c
+> @@ -39,14 +39,17 @@ int sysctl_nr_open_max = 1024 * 1024; /*
+>   */
+>  static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+>  
+> -static inline void *alloc_fdmem(unsigned int size)
+> +static void *alloc_fdmem(unsigned int size)
+>  {
+> -	void *data;
+> -
+> -	data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+> -	if (data != NULL)
+> -		return data;
+> -
+> +	/*
+> +	 * Very large allocations can stress page reclaim, so fall back to
+> +	 * vmalloc() if the allocation size will be considered "large" by the VM.
+> +	 */
+> +	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) {
+> +		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+> +		if (data != NULL)
+> +			return data;
+> +	}
+>  	return vmalloc(size);
+>  }
+>  
 
-The basic idea is this: drbd transmits bios via sockets.  An ideal sender
-sends the packet header and data in separate packets, and the network driver
-supports RX_COPYBREAK and receives them into separate socket buffers.  The
-socket buffers end up aligned properly, and we add them to bios and submit
-them, no copying required.
+It's a shame that we can't at least try kmalloc() with sufficiently large 
+sizes by doing something like
 
-This scenario doesn't seem to be supported by the existing infrastructure, so
-does this patch make sense?
+	gfp_t flags = GFP_NOWAIT | __GFP_NOWARN;
 
-Thanks,
-Andreas
+	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER))
+		flags |= GFP_KERNEL;
+	data = kmalloc(size, flags);
+	if (data)
+		return data;
+	return vmalloc(size);
 
----
-
-[PATCH] Add a generic zero-copy-receive primitive
-
-This requires a network driver which supports header-data split, i.e.,
-receiving small header packets and big data packets into different
-buffers so that the data will end up aligned well enough for consumption
-by the block layer (search for RX_COPYBREAK in the drivers).
-
-diff --git a/tcp_recvbio.c b/tcp_recvbio.c
-new file mode 100644
-index 0000000..38342e9
---- /dev/null
-+++ b/tcp_recvbio.c
-@@ -0,0 +1,185 @@
-+#include <linux/kernel.h>
-+#include <net/tcp.h>
-+#include <linux/bio.h>
-+#include <linux/blkdev.h>
-+#include <linux/fs.h>
-+#include "tcp_recvbio.h"
-+
-+static int tcp_recvbio_add(struct sk_buff *skb, struct bio *bio,
-+			   struct bio_vec *last)
-+{
-+	struct request_queue *q = bio->bi_bdev->bd_disk->queue;
-+	struct sk_buff **frag_list = &skb_shinfo(skb)->frag_list;
-+	int ret;
-+
-+	/*
-+	 * Reject fragmented skbs: there should be no need to support them.  We
-+	 * use frag_list to keep track of the skbs attached to a bio instead.
-+	 */
-+	if (*frag_list && skb != (struct sk_buff *)bio->bi_private)
-+		return false;
-+
-+	if (!blk_rq_aligned(q, last->bv_offset, last->bv_len))
-+		return false;
-+	ret = bio_add_page(bio, last->bv_page, last->bv_len, last->bv_offset);
-+
-+	if (ret && !*frag_list) {
-+		/* Tell the network layer to leave @skb alone.  */
-+		skb_get(skb);
-+
-+		/* Put this skb on the list.  */
-+		*frag_list = (struct sk_buff *)bio->bi_private;
-+		bio->bi_private = skb;
-+	}
-+	return ret;
-+}
-+
-+static int tcp_recvbio_data(read_descriptor_t *rd_desc, struct sk_buff *skb,
-+			    unsigned int offset, size_t len)
-+{
-+	struct bio *bio = rd_desc->arg.data;
-+	struct request_queue *q = bio->bi_bdev->bd_disk->queue;
-+	int start = skb_headlen(skb), consumed = 0, i;
-+	struct bio_vec last = { };
-+
-+	/* Cannot zero-copy from the header.  */
-+	if (offset < start)
-+		goto give_up;
-+
-+	/* Give up if the payload is unaligned.  */
-+	if (!blk_rq_aligned(q, offset - start, 0))
-+		goto give_up;
-+
-+	/* Do not consume more data than we need.  */
-+	if (len > rd_desc->count - rd_desc->written)
-+		len = rd_desc->count - rd_desc->written;
-+
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-+		struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
-+		int end, frag_len;
-+
-+		WARN_ON(start > offset + len);
-+
-+		end = start + frag->size;
-+		frag_len = end - offset;
-+		if (frag_len > 0) {
-+			bool merged = false;
-+			unsigned int page_offset;
-+
-+			if (frag_len > len)
-+				frag_len = len;
-+
-+			page_offset = frag->page_offset + offset - start;
-+			if (last.bv_page == frag->page &&
-+			    last.bv_offset + last.bv_len == page_offset) {
-+				/* Merge with the previous fragment.  */
-+				last.bv_len += frag_len;
-+				merged = true;
-+			}
-+			len -= frag_len;
-+			offset += frag_len;
-+			if (!len || !merged) {
-+				if (last.bv_page) {
-+					if (!tcp_recvbio_add(skb, bio, &last))
-+						goto give_up;
-+					consumed += last.bv_len;
-+				}
-+				if (!len)
-+					goto out;
-+				last.bv_page = frag->page;
-+				last.bv_offset = page_offset;
-+				last.bv_len = frag_len;
-+			}
-+		}
-+		start = end;
-+	}
-+
-+	/*
-+	 * We don't care if there are additional blocks in the skb's frag_list
-+	 * that are zero-copyable: at worst, we end up copying too many blocks.
-+	 * (See skb_copy_bits() for an example of walking the frag_list.)
-+	 */
-+
-+out:
-+	rd_desc->written += consumed;
-+	return consumed;
-+
-+give_up:
-+	rd_desc->count = 0;
-+	goto out;
-+}
-+
-+/**
-+ * tcp_recvbio  -  zero-copy receive a bio from a socket
-+ * @sk: socket to receive from
-+ * @bio: bio to add socket data to
-+ * @size: bytes to receive
-+ * @list: single linked list of skbs added to @bio
-+ *
-+ * Zero-copy receive data from @sk into @bio by directly using the socket
-+ * buffer pages, bypassing the page cache.  To keep the network layer from
-+ * modifying the socket buffers while in use by @bio, we skb_get() them and
-+ * return a list of skbs that @bio now references.  The caller is
-+ * responsible for releasing @list with consume_skbs() once done.
-+ *
-+ * Returns the number of bytes received into @bio.
-+ */
-+int tcp_recvbio(struct sock *sk, struct bio *bio, size_t size,
-+		struct sk_buff **list)
-+{
-+	read_descriptor_t rd_desc = {
-+		.count = size,
-+		.arg = { .data = bio },
-+	};
-+	void *old_bi_private;
-+	int err = 0;
-+
-+	/* Temporarily build referenced skb list in bi_private.  */
-+	old_bi_private = bio->bi_private;
-+	bio->bi_private = NULL;
-+
-+	lock_sock(sk);
-+	while (rd_desc.written < rd_desc.count) {
-+		long timeo = sock_rcvtimeo(sk, 0);
-+
-+		sk_wait_data(sk, &timeo);
-+		if (signal_pending(current)) {
-+			err = sock_intr_errno(timeo);
-+			break;
-+		}
-+		if (!timeo) {
-+			if (!rd_desc.written)
-+				err = -EAGAIN;
-+			break;
-+		}
-+		read_lock(&sk->sk_callback_lock);
-+		err = tcp_read_sock(sk, &rd_desc, tcp_recvbio_data);
-+		read_unlock(&sk->sk_callback_lock);
-+		if (err < 0)
-+			break;
-+	}
-+	release_sock(sk);
-+
-+	*list = (struct sk_buff *)bio->bi_private;
-+	bio->bi_private = old_bi_private;
-+
-+	if (err)
-+		return err;
-+	return rd_desc.written;
-+}
-+
-+/**
-+ * consume_skbs  -  consume a list of skbs
-+ *
-+ * This assumes that the skbs are linked on frag_list, as the @list returned
-+ * from tcp_recvbio().
-+ */
-+void consume_skbs(struct sk_buff **skb)
-+{
-+	while (*skb) {
-+		struct sk_buff *tmp = *skb;
-+		*skb = skb_shinfo(tmp)->frag_list;
-+		skb_shinfo(tmp)->frag_list = NULL;
-+		consume_skb(tmp);
-+	}
-+}
-diff --git a/tcp_recvbio.h b/tcp_recvbio.h
-new file mode 100644
-index 0000000..0ba30ee
---- /dev/null
-+++ b/tcp_recvbio.h
-@@ -0,0 +1,9 @@
-+#ifndef __TCP_RECVBIO_H
-+#define __TCP_RECVBIO_H
-+
-+
-+extern int tcp_recvbio(struct sock *, struct bio *, size_t, struct sk_buff **);
-+extern void consume_skbs(struct sk_buff **);
-+
-+
-+#endif  /* __TCP_RECVBIO_H */
--- 
-1.7.4.1.415.g5e839
+which would at least attempt to use the slab allocator.
