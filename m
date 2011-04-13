@@ -1,119 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab1DMQGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:06:38 -0400
-Received: from kroah.org ([198.145.64.141]:54339 "EHLO coco.kroah.org"
+	id S932517Ab1DMQGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:06:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3136 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757959Ab1DMPz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:29 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:46 2011
-Message-Id: <20110413155146.152470777@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [30/74] UBIFS: fix debugging failure in dbg_check_space_info
-In-Reply-To: <20110413155406.GA22568@kroah.com>
+	id S932478Ab1DMQGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:06:43 -0400
+Message-ID: <4DA5CA0E.8050102@redhat.com>
+Date: Wed, 13 Apr 2011 19:06:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Nelson Elhage <nelhage@ksplice.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: emulator: Handle wraparound in (cs_base + offset)
+ when fetching.
+References: <1302709453-19031-1-git-send-email-nelhage@ksplice.com>
+In-Reply-To: <1302709453-19031-1-git-send-email-nelhage@ksplice.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On 04/13/2011 06:44 PM, Nelson Elhage wrote:
+> Currently, setting a large (i.e. negative) base address for %cs does not work on
+> a 64-bit host. The "JOS" teaching operating system, used by MIT and other
+> universities, relies on such segments while bootstrapping its way to full
+> virtual memory management.
+>
+> Signed-off-by: Nelson Elhage<nelhage@ksplice.com>
+> ---
+>   arch/x86/kvm/emulate.c |    5 ++++-
+>   1 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 0ad47b8..54e84b2 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -505,9 +505,12 @@ static int do_fetch_insn_byte(struct x86_emulate_ctxt *ctxt,
+>   	int size, cur_size;
+>
+>   	if (eip == fc->end) {
+> +		unsigned long linear = eip + ctxt->cs_base;
+> +		if (ctxt->mode != X86EMUL_MODE_PROT64)
+> +			linear&= (u32)-1;
+>   		cur_size = fc->end - fc->start;
+>   		size = min(15UL - cur_size, PAGE_SIZE - offset_in_page(eip));
+> -		rc = ops->fetch(ctxt->cs_base + eip, fc->data + cur_size,
+> +		rc = ops->fetch(linear, fc->data + cur_size,
+>   				size, ctxt->vcpu,&ctxt->exception);
+>   		if (rc != X86EMUL_CONTINUE)
+>   			return rc;
 
-------------------
+A better fix would be to call linearize() here, which does the necessary 
+truncation as well as segment checks.
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+However, this patch is a lot more backportable, so I think it should be 
+applied, and a conversion to linearize() performed afterwards.
 
-commit 7da6443aca9be29c6948dcbd636ad50154d0bc0c upstream.
-
-This patch fixes a debugging failure with which looks like this:
-UBIFS error (pid 32313): dbg_check_space_info: free space changed from 6019344 to 6022654
-
-The reason for this failure is described in the comment this patch adds
-to the code. But in short - 'c->freeable_cnt' may be different before
-and after re-mounting, and this is normal. So the debugging code should
-make sure that free space calculations do not depend on 'c->freeable_cnt'.
-
-A similar issue has been reported here:
-http://lists.infradead.org/pipermail/linux-mtd/2011-April/034647.html
-
-This patch should fix it.
-
-For the -stable guys: this patch is only relevant for kernels 2.6.30
-onwards.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ubifs/debug.c |   41 ++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 36 insertions(+), 5 deletions(-)
-
---- a/fs/ubifs/debug.c
-+++ b/fs/ubifs/debug.c
-@@ -965,11 +965,39 @@ void dbg_dump_index(struct ubifs_info *c
- void dbg_save_space_info(struct ubifs_info *c)
- {
- 	struct ubifs_debug_info *d = c->dbg;
--
--	ubifs_get_lp_stats(c, &d->saved_lst);
-+	int freeable_cnt;
- 
- 	spin_lock(&c->space_lock);
-+	memcpy(&d->saved_lst, &c->lst, sizeof(struct ubifs_lp_stats));
-+
-+	/*
-+	 * We use a dirty hack here and zero out @c->freeable_cnt, because it
-+	 * affects the free space calculations, and UBIFS might not know about
-+	 * all freeable eraseblocks. Indeed, we know about freeable eraseblocks
-+	 * only when we read their lprops, and we do this only lazily, upon the
-+	 * need. So at any given point of time @c->freeable_cnt might be not
-+	 * exactly accurate.
-+	 *
-+	 * Just one example about the issue we hit when we did not zero
-+	 * @c->freeable_cnt.
-+	 * 1. The file-system is mounted R/O, c->freeable_cnt is %0. We save the
-+	 *    amount of free space in @d->saved_free
-+	 * 2. We re-mount R/W, which makes UBIFS to read the "lsave"
-+	 *    information from flash, where we cache LEBs from various
-+	 *    categories ('ubifs_remount_fs()' -> 'ubifs_lpt_init()'
-+	 *    -> 'lpt_init_wr()' -> 'read_lsave()' -> 'ubifs_lpt_lookup()'
-+	 *    -> 'ubifs_get_pnode()' -> 'update_cats()'
-+	 *    -> 'ubifs_add_to_cat()').
-+	 * 3. Lsave contains a freeable eraseblock, and @c->freeable_cnt
-+	 *    becomes %1.
-+	 * 4. We calculate the amount of free space when the re-mount is
-+	 *    finished in 'dbg_check_space_info()' and it does not match
-+	 *    @d->saved_free.
-+	 */
-+	freeable_cnt = c->freeable_cnt;
-+	c->freeable_cnt = 0;
- 	d->saved_free = ubifs_get_free_space_nolock(c);
-+	c->freeable_cnt = freeable_cnt;
- 	spin_unlock(&c->space_lock);
- }
- 
-@@ -986,12 +1014,15 @@ int dbg_check_space_info(struct ubifs_in
- {
- 	struct ubifs_debug_info *d = c->dbg;
- 	struct ubifs_lp_stats lst;
--	long long avail, free;
-+	long long free;
-+	int freeable_cnt;
- 
- 	spin_lock(&c->space_lock);
--	avail = ubifs_calc_available(c, c->min_idx_lebs);
-+	freeable_cnt = c->freeable_cnt;
-+	c->freeable_cnt = 0;
-+	free = ubifs_get_free_space_nolock(c);
-+	c->freeable_cnt = freeable_cnt;
- 	spin_unlock(&c->space_lock);
--	free = ubifs_get_free_space(c);
- 
- 	if (free != d->saved_free) {
- 		ubifs_err("free space changed from %lld to %lld",
-
+-- 
+error compiling committee.c: too many arguments to function
 
