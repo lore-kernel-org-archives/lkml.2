@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932897Ab1DMQNL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:13:11 -0400
-Received: from kroah.org ([198.145.64.141]:52870 "EHLO coco.kroah.org"
+	id S932943Ab1DMQWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:22:25 -0400
+Received: from kroah.org ([198.145.64.141]:52908 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932867Ab1DMQNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:05 -0400
+	id S932200Ab1DMQNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:12 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:46 2011
-Message-Id: <20110413161046.078022774@clark.kroah.org>
+Message-Id: <20110413161046.827489479@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:09:57 -0700
+Date: Wed, 13 Apr 2011 09:10:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [34/71] b43: allocate receive buffers big enough for max frame len + offset
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [41/71] netfilter: ip_tables: fix infoleak to userspace
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John W. Linville <linville@tuxdriver.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit c85ce65ecac078ab1a1835c87c4a6319cf74660a upstream.
+commit 78b79876761b86653df89c48a7010b5cbd41a84a upstream.
 
-Otherwise, skb_put inside of dma_rx can fail...
+Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
+copied from userspace.  Fields of these structs that are
+zero-terminated strings are not checked.  When they are used as argument
+to a format string containing "%s" in request_module(), some sensitive
+information is leaked to userspace via argument of spawned modprobe
+process.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=32042
+The first and the third bugs were introduced before the git epoch; the
+second was introduced in 2722971c (v2.6.17-rc1).  To trigger the bug
+one should have CAP_NET_ADMIN.
 
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/b43/dma.c |    2 +-
- drivers/net/wireless/b43/dma.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/netfilter/ip_tables.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1554,7 +1554,7 @@ static void dma_rx(struct b43_dmaring *r
- 		dmaaddr = meta->dmaaddr;
- 		goto drop_recycle_buffer;
- 	}
--	if (unlikely(len > ring->rx_buffersize)) {
-+	if (unlikely(len + ring->frameoffset > ring->rx_buffersize)) {
- 		/* The data did not fit into one descriptor buffer
- 		 * and is split over multiple buffers.
- 		 * This should never happen, as we try to allocate buffers
---- a/drivers/net/wireless/b43/dma.h
-+++ b/drivers/net/wireless/b43/dma.h
-@@ -163,7 +163,7 @@ struct b43_dmadesc_generic {
- /* DMA engine tuning knobs */
- #define B43_TXRING_SLOTS		256
- #define B43_RXRING_SLOTS		64
--#define B43_DMA0_RX_BUFFERSIZE		IEEE80211_MAX_FRAME_LEN
-+#define B43_DMA0_RX_BUFFERSIZE		(B43_DMA0_RX_FRAMEOFFSET + IEEE80211_MAX_FRAME_LEN)
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -1290,6 +1290,7 @@ do_replace(struct net *net, void __user
+ 	/* overflow check */
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
  
- /* Pointer poison */
- #define B43_DMA_PTR_POISON		((void *)ERR_PTR(-ENOMEM))
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1820,6 +1821,7 @@ compat_do_replace(struct net *net, void
+ 		return -ENOMEM;
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
+ 
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -2044,6 +2046,7 @@ do_ipt_get_ctl(struct sock *sk, int cmd,
+ 			ret = -EFAULT;
+ 			break;
+ 		}
++		rev.name[sizeof(rev.name)-1] = 0;
+ 
+ 		if (cmd == IPT_SO_GET_REVISION_TARGET)
+ 			target = 1;
 
 
