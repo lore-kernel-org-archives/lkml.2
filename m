@@ -1,40 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933317Ab1DMWWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 18:22:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13707 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933125Ab1DMWWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 18:22:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,207,1301900400"; 
-   d="scan'208";a="733009139"
-Date: Wed, 13 Apr 2011 15:22:29 -0700 (PDT)
-From: "Mark A. Allyn" <mark.a.allyn@intel.com>
-X-X-Sender: allyn@allyn-test
-To: Randy Dunlap <randy.dunlap@oracle.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
-        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>
-Subject: Re: Re-send (What else needs to be done to the sep driver
- (staging/sep))
-In-Reply-To: <20110413145607.3257c83b.randy.dunlap@oracle.com>
-Message-ID: <alpine.DEB.2.00.1104131521440.31147@allyn-test>
-References: <alpine.DEB.2.00.1104131427260.31147@allyn-test> <20110413145607.3257c83b.randy.dunlap@oracle.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933324Ab1DMWWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 18:22:51 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38038 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933125Ab1DMWWt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 18:22:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=E60yUO6HTmh3dxiBB5zb1pt17ORC/K1ulK54mGb6BnggXhl9iUZ0QfvCP+LZnyBH1K
+         Md12HhizhgAFfEBFABA0v91gZg9vAM1b1QVlOhpcji9ebbeKmpmIump6lAxK35HqvoRT
+         fOtRzCb+7ObMcOjuMtNKvFZx4y3elSfQvAHxo=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <201104132353.09282.rjw@sisk.pl>
+References: <BANLkTi=F-C-vwX4PGGfbkdTBw3OWL-twfg@mail.gmail.com>
+ <20110413210546.GC16830@elf.ucw.cz> <BANLkTinj3y+-VhzFAPz8Gzb5vAbtUFU6Aw@mail.gmail.com>
+ <201104132353.09282.rjw@sisk.pl>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 13 Apr 2011 18:22:28 -0400
+X-Google-Sender-Auth: KuVFnRRreZ0GXRVUlyjbrmrGcf4
+Message-ID: <BANLkTik1tg2fzFgZmeSCGZxbNPDydotb-w@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] freezer: should barriers be smp ?
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Pavel Machek <pavel@ucw.cz>, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 13, 2011 at 17:53, Rafael J. Wysocki wrote:
+> On Wednesday, April 13, 2011, Mike Frysinger wrote:
+>> On Wed, Apr 13, 2011 at 17:05, Pavel Machek wrote:
+>> > On Wed 2011-04-13 17:02:45, Mike Frysinger wrote:
+>> >> On Wed, Apr 13, 2011 at 16:58, Rafael J. Wysocki wrote:
+>> >> > On Wednesday, April 13, 2011, Mike Frysinger wrote:
+>> >> >> when we suspend/resume Blackfin SMP systems, we notice that the
+>> >> >> freezer code runs on multiple cores.  this is of course what you want
+>> >> >> -- freeze processes in parallel.  however, the code only uses non-smp
+>> >> >> based barriers which causes us problems ... our cores need software
+>> >> >> support to keep caches in sync, so our smp barriers do just that.  but
+>> >> >> the non-smp barriers do not, and so the frozen/thawed processes
+>> >> >> randomly get stuck in the wrong task state.
+>> >> >>
+>> >> >> thinking about it, shouldnt the freezer code be using smp barriers ?
+>> >> >
+>> >> > Yes, it should, but rmb() and wmb() are supposed to be SMP barriers.
+>> >> >
+>> >> > Or do you mean something different?
+>> >>
+>> >> then what's the diff between smp_rmb() and rmb() ?
+>> >>
+>> >> this is what i'm proposing:
+>> >> --- a/kernel/freezer.c
+>> >> +++ b/kernel/freezer.c
+>> >> @@ -17,7 +17,7 @@ static inline void frozen_process(void)
+>> >>  {
+>> >>     if (!unlikely(current->flags & PF_NOFREEZE)) {
+>> >>         current->flags |= PF_FROZEN;
+>> >> -       wmb();
+>> >> +       smp_wmb();
+>> >>     }
+>> >>     clear_freeze_flag(current);
+>> >>  }
+>> >> @@ -93,7 +93,7 @@ bool freeze_task(struct task_struct *p, bool sig_only)
+>> >>      * the task as frozen and next clears its TIF_FREEZE.
+>> >>      */
+>> >>     if (!freezing(p)) {
+>> >> -       rmb();
+>> >> +       smp_rmb();
+>> >>         if (frozen(p))
+>> >>             return false;
+>> >
+>> > smp_rmb() is NOP on uniprocessor.
+>> >
+>> > I believe the code is correct as is.
+>>
+>> that isnt what the code / documentation says.  unless i'm reading them
+>> wrong, both seem to indicate that the proposed patch is what we
+>> actually want.
+>
+> Not really.
+>
+>> include/linux/compiler-gcc.h:
+>> #define barrier() __asm__ __volatile__("": : :"memory")
+>>
+>> include/asm-generic/system.h:
+>> #define mb()    asm volatile ("": : :"memory")
+>> #define rmb()   mb()
+>> #define wmb()   asm volatile ("": : :"memory")
+>>
+>> #ifdef CONFIG_SMP
+>> #define smp_mb()    mb()
+>> #define smp_rmb()   rmb()
+>> #define smp_wmb()   wmb()
+>> #else
+>> #define smp_mb()    barrier()
+>> #define smp_rmb()   barrier()
+>> #define smp_wmb()   barrier()
+>> #endif
+>
+> The above means that smp_*mb() are defined as *mb() if CONFIG_SMP is set,
+> which basically means that *mb() are more restrictive than the corresponding
+> smp_*mb().  More precisely, they also cover the cases in which the CPU
+> reorders instructions on uniprocessor, which we definitely want to cover.
+>
+> IOW, your patch would break things on uniprocessor where the CPU reorders
+> instructions.
+>
+>> Documentation/memory-barriers.txt:
+>> SMP memory barriers are reduced to compiler barriers on uniprocessor compiled
+>> systems because it is assumed that a CPU will appear to be self-consistent,
+>> and will order overlapping accesses correctly with respect to itself.
+>
+> Exactly, which is not guaranteed in general (e.g. on Alpha).  That is, some
+> CPUs can reorder instructions in such a way that a compiler barrier is not
+> sufficient to prevent breakage.
+>
+> The code _may_ be wrong for a different reason, though.  I need to check.
 
-I agree with both Randy's and Joe's patches. Do I need to submit them 
-myself in order for them to be put into what is in staging?
+so the current code is protecting against a UP system swapping in/out
+freezer threads for processes, and the barriers are to make sure that
+the updated flags variable is posted by the time another swapped in
+thread gets to that point.
 
-Thanks
-
-Mark Allyn
-
+i guess the trouble for us is that you have one CPU posting writes to
+task->flags (and doing so by grabbing the task's spinlock), but the
+other CPU is simply reading those flags.  there are no SMP barriers in
+between the read and write steps, nor is the reading CPU grabbing any
+locks which would be an implicit SMP barrier.  since the Blackfin SMP
+port lacks hardware cache coherency, there is no way for us to know
+"we've got to sync the caches before we can do this read".  by using
+the patch i posted above, we have that signal and so things work
+correctly.,
+-mike
