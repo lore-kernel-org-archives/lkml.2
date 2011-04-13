@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab1DMKMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 06:12:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757164Ab1DMKMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 06:12:10 -0400
-Subject: Re: linux-next: manual merge of the gfs2 tree with Linus' tree
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <20110401105545.b2873be4.sfr@canb.auug.org.au>
-References: <20110401105545.b2873be4.sfr@canb.auug.org.au>
+	id S1758178Ab1DMKNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 06:13:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47052 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757164Ab1DMKNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 06:13:24 -0400
+Subject: Re: [PATCH 0/4] trivial writeback fixes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20110413085937.981293444@intel.com>
+References: <20110413085937.981293444@intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Wed, 13 Apr 2011 11:14:57 +0100
-Message-ID: <1302689697.2613.6.camel@dolmen>
+Date: Wed, 13 Apr 2011 12:15:49 +0200
+Message-ID: <1302689749.2035.3.camel@laptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, 2011-04-01 at 10:55 +1100, Stephen Rothwell wrote:
-> Hi Steven,
+On Wed, 2011-04-13 at 16:59 +0800, Wu Fengguang wrote:
+> Andrew,
 > 
-> Today's linux-next merge of the gfs2 tree got a conflict in fs/gfs2/log.c
-> between commit 721a9602e660 ("block: kill off REQ_UNPLUG") from Linus'
-> tree and commit 7ef2a4f51303 ("GFS2: Use filemap_fdatawrite() to write
-> back the AIL") from the gfs2 tree.
-> 
-> The former removed some of the code modified by the latter, so I did that.
+> Here are four trivial writeback fix patches that
+> should work well for the patches from both Jan and me.
 
-Sorry for the delay as I was away last week. That was the correct fix
-and I've updated the tree so that it shouldn't be an issue any more,
-
-Steve.
-
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
