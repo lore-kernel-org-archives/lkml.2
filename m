@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758488Ab1DMLXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 07:23:31 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:58684 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758420Ab1DMLXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 07:23:30 -0400
-X-ASG-Debug-ID: 1302693808-03d6a5652ca12c0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DA587AF.2040308@fusionio.com>
-Date: Wed, 13 Apr 2011 13:23:27 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1758512Ab1DMLcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 07:32:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57385 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758494Ab1DMLcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 07:32:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=WANxgzl8zlaMkSyYhCngz7Wa6wPHfQ6QMCLnl8ba9hqPxk5KWJRtjQgk1wSh87aMGZ
+         9GXOfBCxuggCqkE7/H4a09dlJFhIO5d10Twn4OxaKctwbu22E5DeZ6aKPn+qXNmZxhKV
+         Gy5CQb82AX5KvgO/oKMlcT6862IG2BwFwo5v0=
+Date: Wed, 13 Apr 2011 15:32:04 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Pavel Kankovsky <peak@argo.troja.mff.cuni.cz>,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Eugene Teo <eugene@redhat.com>, Nelson Elhage <nelhage@ksplice.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Pekka Savola <pekkas@netcore.fi>, James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH] net: ipv4: add IPPROTO_ICMP socket kind
+Message-ID: <20110413113204.GB6948@albatros>
+References: <BANLkTi=ogJg_uJqsJFpnwnnr6LS+SFT3Vg@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        Dave Chinner <david@fromorbit.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-References: <20110411223623.4278fad1@notabene.brown>	 <4DA2F8AD.1060605@fusionio.com> <20110412011255.GA29236@infradead.org>	 <4DA40F0E.1070903@fusionio.com> <20110412122248.GC31057@dastard>	 <4DA4456F.3070301@fusionio.com> <20110412124134.GD31057@dastard>	 <4DA44C86.3090305@fusionio.com> <20110412133117.GE31057@dastard>	 <4DA45790.2010109@fusionio.com> <20110412143452.GH31057@dastard>	 <20110413070827.11b2a71d@notabene.brown>	 <BANLkTikBEJa7bJJoLFU7NoiEgOjVHVG08A@mail.gmail.com> <1302693122.2035.20.camel@laptop>
-X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <1302693122.2035.20.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1302693808
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60729
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=ogJg_uJqsJFpnwnnr6LS+SFT3Vg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-13 13:12, Peter Zijlstra wrote:
-> On Tue, 2011-04-12 at 19:23 -0700, Linus Torvalds wrote:
->>  kernel/sched.c |   20 ++++++++++----------
->>  1 files changed, 10 insertions(+), 10 deletions(-)
->>
->> diff --git a/kernel/sched.c b/kernel/sched.c
->> index 48013633d792..a187c3fe027b 100644
->> --- a/kernel/sched.c
->> +++ b/kernel/sched.c
->> @@ -4111,20 +4111,20 @@ need_resched:
->>                                         try_to_wake_up_local(to_wakeup);
->>                         }
->>                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
->> +
->> +                       /*
->> +                        * If we are going to sleep and we have plugged IO queued, make
->> +                        * sure to submit it to avoid deadlocks.
->> +                        */
->> +                       if (blk_needs_flush_plug(prev)) {
->> +                               raw_spin_unlock(&rq->lock);
->> +                               blk_flush_plug(prev);
->> +                               raw_spin_lock(&rq->lock);
->> +                       }
->>                 }
->>                 switch_count = &prev->nvcsw;
->>         }
->>  
->> -       /*
->> -        * If we are going to sleep and we have plugged IO queued, make
->> -        * sure to submit it to avoid deadlocks.
->> -        */
->> -       if (prev->state != TASK_RUNNING && blk_needs_flush_plug(prev)) {
->> -               raw_spin_unlock(&rq->lock);
->> -               blk_flush_plug(prev);
->> -               raw_spin_lock(&rq->lock);
->> -       }
->> -
->>         pre_schedule(rq, prev);
->>  
->>         if (unlikely(!rq->nr_running)) 
+On Wed, Apr 13, 2011 at 13:29 +0300, Alexey Dobriyan wrote:
+> On Sat, Apr 9, 2011 at 1:15 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> > This patch adds IPPROTO_ICMP socket kind.
 > 
-> Right, that cures the preemption problem. The reason I suggested placing
-> it where it was is that I'd like to keep all things that release
-> rq->lock in the middle of schedule() in one place, but I guess we can
-> cure that with some extra comments.
+> > +       seq_printf(f, "%5d: %08X:%04X %08X:%04X"
+> > +               " %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %p %d%n",
+> > +               bucket, src, srcp, dest, destp, sp->sk_state,
+> > +               sk_wmem_alloc_get(sp),
+> > +               sk_rmem_alloc_get(sp),
+> > +               0, 0L, 0, sock_i_uid(sp), 0, sock_i_ino(sp),
+> 
+> These zeroes can be embedded into format string for slightly faster printing.
 
-We definitely only want to do it on going to sleep, not preempt events.
-So if you are fine with this change, then lets please do that.
+Is it really needed?  I mean, it is not a fast path, so such a small
+overhead is not very bad.  But embedding them into the string makes it a
+bit more difficult to read.
 
-Linus, I've got a few other things queued up in the area, I'll add this
-and send them off soon. Or feel free to add this one yourself, since you
-already did it.
+> > +static const struct file_operations ping_seq_fops = {
+> > +       .owner          = THIS_MODULE,
+> 
+> Unnecessary line.
+> ->owner is unused for proc files, this is not documented anywhere, but
+> it's unused.
 
+OK.
+
+> > +static const char ping_proc_name[] = "icmp";
+> 
+> Ewww :-)
+> Does not compiler create only one string?
+
+I used it for better readability as it is used 2 times.
+
+> > +       p = proc_create_data(ping_proc_name, S_IRUGO, net->proc_net,
+> > +                            &ping_seq_fops, NULL);
+> 
+> There is proc_net_fops_create().
+
+OK.
+
+> > +#ifdef CONFIG_IP_PING
+> > +               table[7].data =
+> > +                       &net->ipv4.sysctl_ping_group_range;
+> > +#endif
+> 
+> Now I understand it's not related, but next sysctl will have
+> "table[8].data = ..." line which is off-by-one if CONFIG_IP_PING=n.
+
+Agreed that hardcoded indexes look a bit ugly, especially with
+configurable elements.  But as Dave suggested to completely remove
+CONFIG_IP_PING, it doesn't make sense now.
+
+Thank you,
 
 -- 
-Jens Axboe
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
