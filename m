@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255Ab1DMWEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 18:04:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53235 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932094Ab1DMWEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 18:04:33 -0400
-Date: Wed, 13 Apr 2011 18:04:30 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mike Frysinger <vapier@gentoo.org>
-cc: Pavel Machek <pavel@ucw.cz>, <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be smp
- ?
-In-Reply-To: <BANLkTinj3y+-VhzFAPz8Gzb5vAbtUFU6Aw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1104131757430.2005-100000@iolanthe.rowland.org>
+	id S933276Ab1DMWEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 18:04:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45908 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933257Ab1DMWEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 18:04:46 -0400
+Date: Thu, 14 Apr 2011 00:04:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>, Jan Kara <jack@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+Message-ID: <20110413220444.GF4648@quack.suse.cz>
+References: <20110413085937.981293444@intel.com>
+ <20110413090415.763161169@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110413090415.763161169@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011, Mike Frysinger wrote:
-
-> On Wed, Apr 13, 2011 at 17:05, Pavel Machek wrote:
-> > On Wed 2011-04-13 17:02:45, Mike Frysinger wrote:
+On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
+> Reduce the dampening for the control system, yielding faster
+> convergence. The change is a bit conservative, as smaller values may
+> lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
 > 
-> >> then what's the diff between smp_rmb() and rmb() ?
-> >>
-> >> this is what i'm proposing:
-> >> --- a/kernel/freezer.c
-> >> +++ b/kernel/freezer.c
-> >> @@ -17,7 +17,7 @@ static inline void frozen_process(void)
-> >>  {
-> >>     if (!unlikely(current->flags & PF_NOFREEZE)) {
-> >>         current->flags |= PF_FROZEN;
-> >> -       wmb();
-> >> +       smp_wmb();
-> >>     }
-> >>     clear_freeze_flag(current);
-> >>  }
-> >> @@ -93,7 +93,7 @@ bool freeze_task(struct task_struct *p, bool sig_only)
-> >>      * the task as frozen and next clears its TIF_FREEZE.
-> >>      */
-> >>     if (!freezing(p)) {
-> >> -       rmb();
-> >> +       smp_rmb();
-> >>         if (frozen(p))
-> >>             return false;
-> >
-> > smp_rmb() is NOP on uniprocessor.
-> >
-> > I believe the code is correct as is.
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Richard Kennedy <richard@rsk.demon.co.uk>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+  Well, I have nothing against this change as such but what I don't like is
+that it just changes magical +2 for similarly magical +0. It's clear that
+this will lead to more rapid updates of proportions of bdi's share of
+writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
+I'd prefer to get some understanding of why do we need to update the
+proportion period and why 4-times faster is just the right amount of faster
+:) If I remember right you had some numbers for this, didn't you?
+
+								Honza
+> ---
+>  mm/page-writeback.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> that isnt what the code / documentation says.  unless i'm reading them
-> wrong, both seem to indicate that the proposed patch is what we
-> actually want.
-
-The existing code is correct but it isn't optimal.
-
-wmb() and rmb() are heavy-duty operations, and you don't want to call
-them when they aren't needed.  That's exactly what smp_wmb() and
-smp_rmb() are for -- they call wmb() and rmb(), but only in SMP 
-kernels.
-
-Unless you need to synchronize with another processor (not necessarily 
-a CPU, it could be something embedded within a device), you should 
-always use smp_wmb() and smp_rmb() rather than wmb() and rmb().
-
-Alan Stern
-
+> --- linux-next.orig/mm/page-writeback.c	2011-03-02 14:52:19.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-03-02 15:00:17.000000000 +0800
+> @@ -145,7 +145,7 @@ static int calc_period_shift(void)
+>  	else
+>  		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+>  				100;
+> -	return 2 + ilog2(dirty_total - 1);
+> +	return ilog2(dirty_total - 1);
+>  }
+>  
+>  /*
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
