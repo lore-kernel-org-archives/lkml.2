@@ -1,97 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab1DMPWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:22:10 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:54963 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757130Ab1DMPWI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:22:08 -0400
+	id S1757427Ab1DMPZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:25:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43985 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757012Ab1DMPZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:25:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KYXBhRu4smboM0je4bEso4O56OcmT5PwcsxiKLHuPHWikI+SwDHpvZCx+81McYq5ZR
-         pSFwMgyYF0AXGO3sY3BGiUtAb5hBNUXns3qbQedp+q3UFjX86TGhoIFIU/zHXwOn267q
-         Vo9Trprpae33XOtzIu2UNJJRZ46JGI3I12ifk=
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=DZARCG/Y6FBM4OyG6sM8jTZA6CxGpVtLP2zdW8QKmlpogdceth4B4MBVQk+kMtkf+K
+         aMHDD9XwwB//lrsHewNoVH+tEC+GR2Atq3LoBYDNwelTasJFEW4zu0IyG44SGYUxvfwk
+         p8A9tV8CkNckJZ70hXIE/Jfqvc8Ssh3kXz68E=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: =?utf-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        "Pintu Agarwal" <pintu_agarwal@yahoo.com>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Changli Gao" <xiaosuo@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>,
+        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        "Jiri Slaby" <jirislaby@gmail.com>
+Subject: Re: Regarding memory fragmentation using malloc....
+References: <112566.51053.qm@web162019.mail.bf1.yahoo.com>
+Date: Wed, 13 Apr 2011 17:25:08 +0200
 MIME-Version: 1.0
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C8B3C9F@dbde02.ent.ti.com>
-References: <cover.1302031487.git.bengardiner@nanometrics.ca>
-	<f1ff3f2888725a1e03541e0be5c0880f0591aea2.1302031487.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB593024C8B3C9F@dbde02.ent.ti.com>
-Date: Wed, 13 Apr 2011 11:22:05 -0400
-Message-ID: <BANLkTi=j=Dp015ZsU44DH3p1s_XdxvAX8Q@mail.gmail.com>
-Subject: Re: [PATCH 6/6] da8xx: enable the use of the ICPFUNC in i2c-davinci
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bastian Ruppert <Bastian.Ruppert@sewerin.de>,
-        "Griffis, Brad" <bgriffis@ti.com>,
-        Jon Povey <jon.povey@racelogic.co.uk>,
-        Philby John <pjohn@in.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vtvuf5sk3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <112566.51053.qm@web162019.mail.bf1.yahoo.com>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+On Wed, 13 Apr 2011 15:56:00 +0200, Pintu Agarwal  
+<pintu_agarwal@yahoo.com> wrote:
+> My requirement is, I wanted to measure memory fragmentation level in  
+> linux kernel2.6.29 (ARM cortex A8 without swap).
+> How can I measure fragmentation level(percentage) from /proc/buddyinfo ?
 
-On Wed, Apr 13, 2011 at 11:10 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
-> Hi Ben,
+[...]
+
+> In my linux2.6.29 ARM machine, the initial /proc/buddyinfo shows the  
+> following:
+> Node 0, zone      DMA     17     22      1      1      0      1       
+> 1      0      0      0      0      0
+> Node 1, zone      DMA     15    320    423    225     97     26       
+> 1      0      0      0      0      0
 >
-> On Wed, Apr 06, 2011 at 03:08:09, Ben Gardiner wrote:
->> Both the da850 and da830 have an I2C controller which has the ICPFUNC
->> registers. Indicate this for all da830 and da850 boards by setting the
->> has_pfunc flag true in the da8xx utility setup routine for registering the
->> I2C controller
->>
->> Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
->> Cc: Sekhar Nori <nsekhar@ti.com>
->> Cc: Ben Dooks <ben-linux@fluff.org>
->>
->> ---
->>  arch/arm/mach-davinci/devices-da8xx.c |    6 ++++++
->>  1 files changed, 6 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
->> index beda8a4..da01558 100644
->> --- a/arch/arm/mach-davinci/devices-da8xx.c
->> +++ b/arch/arm/mach-davinci/devices-da8xx.c
->> @@ -324,6 +324,12 @@ int __init da8xx_register_i2c(int instance,
->>       else
->>               return -EINVAL;
->>
->> +     /*
->> +      * Both the DA850 and DA830 have an I2C controller which has the
->> +      * ICPFUNC et. al. registers
->> +      */
->> +     pdata->has_pfunc = 1;
+> After running my sample program (with 16 iterations) the buddyinfo  
+> output is as follows:
+> Requesting <16> blocks of memory of block size <262144>........
+> Node 0, zone      DMA     17     22      1      1      0      1       
+> 1      0      0      0      0      0
+> Node 1, zone      DMA     15    301    419    224     96     27       
+> 1      0      0      0      0      0
+>     nr_free_pages 169
+>     nr_free_pages 6545
+> *****************************************
 >
-> The I2C driver implements a default platform data
-> so it should actually be legal for a DA8x board to
-> pass NULL platform data. In that case this line
-> will crash.
+>
+> Node 0, zone      DMA     17     22      1      1      0      1       
+> 1      0      0      0      0      0
+> Node 1, zone      DMA     18      2    305    226     96     27       
+> 1      0      0      0      0      0
+>     nr_free_pages 169
+>     nr_free_pages 5514
+> -----------------------------------------
+>
+> The requested block size is 64 pages (2^6) for each block.
+> But if we see the output after 16 iterations the buddyinfo allocates  
+> pages only from Node 1 , (2^0, 2^1, 2^2, 2^3).
+> But the actual allocation should happen from (2^6) block in buddyinfo.
 
-Good catch, thanks.
+No.  When you call malloc() only virtual address space is allocated.  The
+actual allocation of physical space occurs when user space accesses the
+memory (either reads or writes) and it happens page at a time.
 
-> [...] You should either check for pdata to
-> be NULL or just let each board choose whether it
-> needs recovery (I think the better option).
+As a matter of fact, if you have limited number of 0-order pages and
+allocates in user space block of 64 pages later accessing the memory,
+what really happens is that kernel allocates the 0-order pages and when
+it runs out of those, splits a 1-order page into two 0-order pages and
+takes one of those.
 
-I understand "check for pdata to be NULL."  If you think it is the
-better option I'd be happy to implement it but I don't understand how
-to implement "let each board choose whether it needs recovery."
+Because of MMU, fragmentation of physical memory is not an issue for
+normal user space programs.
 
-Best Regards,
-Ben Gardiner
+It becomes an issue once you deal with hardware that does not have MMU
+nor support for scatter-getter DMA or with some big kernel structures.
 
----
-Nanometrics Inc.
-http://www.nanometrics.ca
+/proc/buddyinfo tells you how many free pages of given order there are
+in the system.  You may interpret it in such a way that the bigger number
+of the low order pages the bigger fragmentation of physical memory.  If
+there was no fragmentation (for some definition of the term) you'd get only
+the highest order pages and at most one page for each lower order.
+
+Again though, this fragmentation is not an issue for user space programs.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
