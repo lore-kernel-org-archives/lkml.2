@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab1DMM0B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 08:26:01 -0400
+	id S1756481Ab1DMM0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 08:26:07 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:40287 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab1DMMZ7 (ORCPT
+	with ESMTP id S1756197Ab1DMM0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 08:25:59 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6314"; a="85339906"
+	Wed, 13 Apr 2011 08:26:04 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6314"; a="85339931"
 From: Mohan Pallaka <mpallaka@codeaurora.org>
 To: dmitry.torokhov@gmail.com
-Cc: Mohan Pallaka <mpallaka@codeaurora.org>, linux-kernel@vger.kernel.org,
+Cc: Kyungmin Park <kyungmin.park@samsung.com>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.intradead.org,
-        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: [PATCH 1/2] pwm: Add __weak attributed functions for pwm operations
-Date: Wed, 13 Apr 2011 17:55:32 +0530
-Message-Id: <1302697533-20456-2-git-send-email-mpallaka@codeaurora.org>
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Mohan Pallaka <mpallaka@codeaurora.org>
+Subject: [PATCH 2/2] input: misc: Add support for isa1200 chip
+Date: Wed, 13 Apr 2011 17:55:33 +0530
+Message-Id: <1302697533-20456-3-git-send-email-mpallaka@codeaurora.org>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1302697533-20456-1-git-send-email-mpallaka@codeaurora.org>
 References: <1302697533-20456-1-git-send-email-mpallaka@codeaurora.org>
@@ -23,68 +24,573 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For chip drivers that support both pwm and non-pwm modes
-would encounter compilation errors if the platform doesn't
-have support for pwm though the chip is programmed to work
-in non-pwm mode. Add __weak attributed pwm functions to avoid
-compilation issues in these scenarios.
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-Change-Id: Ia507bf659d4d67d71f135012e7d919aca6c45c6c
+isa1200 chip can be used to generate vibrations to indicate
+silent alerts, providing gaming haptic actions or vibrations
+in response to touches. It can operate in two modes, pwm
+generation and pwm input mode. Pwm generation mode requires
+external clock and pwm input mode needs the pwm signal to be
+given as input to the chip.
+
+This patch has been derived based on Kyungmin Park's haptic
+framework patches at http://lkml.org/lkml/2009/10/7/50 . Park's
+isa1200 driver registers to the haptic class, which is also
+introduced as part of the same patch series, and userspace will
+operate the vibrator through exported sysfs entries. This version
+supports only pwm input mode.
+
+This derived patch converts the driver from haptic framework to
+the Linux supported force feeback framework. It also supports the
+chip operation in both pwm input and generation modes.
+
+Change-Id: If253c71e833e629431a35864e33824d8d6dadb35
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Mohan Pallaka <mpallaka@codeaurora.org>
 ---
- include/linux/pwm.h |   21 ++++++++++++++++-----
- 1 files changed, 16 insertions(+), 5 deletions(-)
+ drivers/input/misc/Kconfig    |   12 +
+ drivers/input/misc/Makefile   |    1 +
+ drivers/input/misc/isa1200.c  |  442 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/input/isa1200.h |   46 +++++
+ 4 files changed, 501 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/isa1200.c
+ create mode 100644 include/linux/input/isa1200.h
 
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 7c77575..3a8c3df 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -3,29 +3,40 @@
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index f9cf088..9fd762d 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -302,6 +302,18 @@ config HP_SDC_RTC
+ 	  Say Y here if you want to support the built-in real time clock
+ 	  of the HP SDC controller.
  
- struct pwm_device;
- 
-+/* Add __weak functions to support PWM */
++config INPUT_ISA1200
++	tristate "ISA1200 haptic support"
++	depends on I2C
++	select INPUT_FF_MEMLESS
++	help
++	  ISA1200 is a high performance enhanced haptic chip.
++	  Say Y here if you want to support ISA1200 connected via I2C,
++	  and select N if you are unsure.
 +
- /*
-  * pwm_request - request a PWM device
-  */
--struct pwm_device *pwm_request(int pwm_id, const char *label);
-+struct pwm_device __weak *pwm_request(int pwm_id, const char *label)
++	  To compile this driver as a module, choose M here: the
++	  module will be called isa1200.
++
+ config INPUT_PCF50633_PMU
+ 	tristate "PCF50633 PMU events"
+ 	depends on MFD_PCF50633
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index e3f7984..47f74f7 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -23,6 +23,7 @@ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
+ obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
+ obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+ obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
++obj-$(CONFIG_INPUT_ISA1200)		+= isa1200.o
+ obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
+ obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
+ obj-$(CONFIG_INPUT_M68K_BEEP)		+= m68kspkr.o
+diff --git a/drivers/input/misc/isa1200.c b/drivers/input/misc/isa1200.c
+new file mode 100644
+index 0000000..0f5448a
+--- /dev/null
++++ b/drivers/input/misc/isa1200.c
+@@ -0,0 +1,442 @@
++/*
++ *  Copyright (C) 2009 Samsung Electronics
++ *  Kyungmin Park <kyungmin.park@samsung.com>
++ *
++ *  Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define pr_fmt(fmt) "%s: " fmt, __func__
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <linux/workqueue.h>
++#include <linux/delay.h>
++#include <linux/pwm.h>
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/pm.h>
++#include <linux/input/isa1200.h>
++
++#define ISA1200_HCTRL0			0x30
++#define HCTRL0_MODE_CTRL_BIT		(3)
++#define HCTRL0_OVERDRIVE_HIGH_BIT	(5)
++#define HCTRL0_OVERDRIVE_EN_BIT		(6)
++#define HCTRL0_HAP_EN			(7)
++#define HCTRL0_RESET			0x01
++#define HCTRL1_RESET			0x4B
++
++#define ISA1200_HCTRL1			0x31
++#define HCTRL1_SMART_ENABLE_BIT		(3)
++#define HCTRL1_ERM_BIT			(5)
++#define HCTRL1_EXT_CLK_ENABLE_BIT	(7)
++
++#define ISA1200_HCTRL5			0x35
++#define HCTRL5_VIB_STRT			0xD5
++#define HCTRL5_VIB_STOP			0x6B
++
++#define DIVIDER_128			(128)
++#define DIVIDER_1024			(1024)
++#define DIVIDE_SHIFTER_128		(7)
++
++#define FREQ_22400			(22400)
++#define FREQ_172600			(172600)
++
++#define POR_DELAY_USEC			(250)
++
++struct isa1200_chip {
++	const struct isa1200_platform_data *pdata;
++	struct i2c_client *client;
++	struct input_dev *input_device;
++	struct pwm_device *pwm;
++	unsigned int period_ns;
++	unsigned int state;
++	struct work_struct work;
++};
++
++static void isa1200_vib_set(struct isa1200_chip *haptic, bool enable)
 +{
-+	return NULL;
++	int rc;
++
++	if (enable) {
++		if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE) {
++			rc = pwm_config(haptic->pwm,
++				(haptic->period_ns * haptic->pdata->duty) / 100,
++				haptic->period_ns);
++			if (rc < 0)
++				pr_err("pwm_config fail\n");
++			rc = pwm_enable(haptic->pwm);
++			if (rc < 0)
++				pr_err("pwm_enable fail\n");
++		} else if (haptic->pdata->mode_ctrl == PWM_GEN_MODE) {
++			rc = i2c_smbus_write_byte_data(haptic->client,
++						ISA1200_HCTRL5,
++						HCTRL5_VIB_STRT);
++			if (rc < 0)
++				pr_err("start vibration fail\n");
++		}
++	} else {
++		if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE)
++			pwm_disable(haptic->pwm);
++		else if (haptic->pdata->mode_ctrl == PWM_GEN_MODE) {
++			rc = i2c_smbus_write_byte_data(haptic->client,
++						ISA1200_HCTRL5,
++						HCTRL5_VIB_STOP);
++			if (rc < 0)
++				pr_err("stop vibration fail\n");
++		}
++	}
 +}
- 
- /*
-  * pwm_free - free a PWM device
-  */
--void pwm_free(struct pwm_device *pwm);
-+void __weak pwm_free(struct pwm_device *pwm) { }
- 
- /*
-  * pwm_config - change a PWM device configuration
-  */
--int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
-+int __weak pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
++
++static int isa1200_setup(struct i2c_client *client)
 +{
-+	return -ENODEV;
++	struct isa1200_chip *haptic = i2c_get_clientdata(client);
++	int value, temp, rc;
++
++	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio)
++		gpio_set_value_cansleep(haptic->pdata->hap_len_gpio, 1);
++
++	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 0);
++	udelay(POR_DELAY_USEC);
++	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 1);
++
++	value =	(haptic->pdata->smart_en << HCTRL1_SMART_ENABLE_BIT) |
++		(haptic->pdata->is_erm << HCTRL1_ERM_BIT) |
++		(haptic->pdata->ext_clk_en << HCTRL1_EXT_CLK_ENABLE_BIT);
++
++	rc = i2c_smbus_write_byte_data(client, ISA1200_HCTRL1, value);
++	if (rc < 0) {
++		pr_err("i2c write failure\n");
++		return rc;
++	}
++
++	if (haptic->pdata->mode_ctrl == PWM_GEN_MODE) {
++		temp = haptic->pdata->pwm_fd.pwm_div;
++		if (temp < DIVIDER_128 || temp > DIVIDER_1024 ||
++					temp % DIVIDER_128) {
++			pr_err("Invalid divisor\n");
++			rc = -EINVAL;
++			goto reset_hctrl1;
++		}
++		value = ((temp >> DIVIDE_SHIFTER_128) - 1);
++	} else if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE) {
++		temp = haptic->pdata->pwm_fd.pwm_freq;
++		if (temp < FREQ_22400 || temp > FREQ_172600 ||
++					temp % FREQ_22400) {
++			pr_err("Invalid frequency\n");
++			rc = -EINVAL;
++			goto reset_hctrl1;
++		}
++		value = ((temp / FREQ_22400) - 1);
++		haptic->period_ns = NSEC_PER_SEC / temp;
++	}
++	value |= (haptic->pdata->mode_ctrl << HCTRL0_MODE_CTRL_BIT) |
++		(haptic->pdata->overdrive_high << HCTRL0_OVERDRIVE_HIGH_BIT) |
++		(haptic->pdata->overdrive_en << HCTRL0_OVERDRIVE_EN_BIT) |
++		(haptic->pdata->chip_en << HCTRL0_HAP_EN);
++
++	rc = i2c_smbus_write_byte_data(client, ISA1200_HCTRL0, value);
++	if (rc < 0) {
++		pr_err("i2c write failure\n");
++		goto reset_hctrl1;
++	}
++
++	return 0;
++
++reset_hctrl1:
++	i2c_smbus_write_byte_data(client, ISA1200_HCTRL1,
++				HCTRL1_RESET);
++	return rc;
 +}
- 
- /*
-  * pwm_enable - start a PWM output toggling
-  */
--int pwm_enable(struct pwm_device *pwm);
-+int __weak pwm_enable(struct pwm_device *pwm)
++
++static void isa1200_worker(struct work_struct *work)
 +{
-+	return -EINVAL;
++	struct isa1200_chip *haptic;
++
++	haptic = container_of(work, struct isa1200_chip, work);
++	isa1200_vib_set(haptic, !!haptic->state);
 +}
- 
- /*
-  * pwm_disable - stop a PWM output toggling
-  */
--void pwm_disable(struct pwm_device *pwm);
-+void __weak pwm_disable(struct pwm_device *pwm) { }
- 
- #endif /* __LINUX_PWM_H */
++
++static int isa1200_play_effect(struct input_dev *dev, void *data,
++				struct ff_effect *effect)
++{
++	struct isa1200_chip *haptic = input_get_drvdata(dev);
++
++	/* support basic vibration */
++	haptic->state = effect->u.rumble.strong_magnitude >> 8;
++	if (!haptic->state)
++		haptic->state = effect->u.rumble.weak_magnitude >> 9;
++
++	schedule_work(&haptic->work);
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int isa1200_suspend(struct device *dev)
++{
++	struct isa1200_chip *haptic = dev_get_drvdata(dev);
++	int rc;
++
++	cancel_work_sync(&haptic->work);
++	/* turn-off current vibration */
++	isa1200_vib_set(haptic, false);
++
++	if (haptic->pdata->power_on) {
++		rc = haptic->pdata->power_on(false);
++		if (rc) {
++			pr_err("power-down failed\n");
++			return rc;
++		}
++	}
++	return 0;
++}
++
++static int isa1200_resume(struct device *dev)
++{
++	struct isa1200_chip *haptic = dev_get_drvdata(dev);
++	int rc;
++
++	if (haptic->pdata->power_on) {
++		rc = haptic->pdata->power_on(true);
++		if (rc) {
++			pr_err("power-up failed\n");
++			return rc;
++		}
++	}
++
++	isa1200_setup(haptic->client);
++	return 0;
++}
++#else
++#define isa1200_suspend		NULL
++#define isa1200_resume		NULL
++#endif
++
++static int __devinit isa1200_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct isa1200_chip *haptic;
++	int rc;
++
++	if (!i2c_check_functionality(client->adapter,
++			I2C_FUNC_SMBUS_BYTE_DATA)) {
++		pr_err("i2c is not supported\n");
++		return -EIO;
++	}
++
++	if (!client->dev.platform_data) {
++		pr_err("pdata is not avaiable\n");
++		return -EINVAL;
++	}
++
++	haptic = kzalloc(sizeof(struct isa1200_chip), GFP_KERNEL);
++	if (!haptic) {
++		pr_err("no memory\n");
++		return -ENOMEM;
++	}
++
++	haptic->pdata = client->dev.platform_data;
++	haptic->client = client;
++
++	i2c_set_clientdata(client, haptic);
++
++	/* device setup */
++	if (haptic->pdata->dev_setup) {
++		rc = haptic->pdata->dev_setup(true);
++		if (rc < 0) {
++			pr_err("setup failed!\n");
++			goto err_mem_alloc;
++		}
++	}
++
++	/* power on */
++	if (haptic->pdata->power_on) {
++		rc = haptic->pdata->power_on(true);
++		if (rc < 0) {
++			pr_err("power failed\n");
++			goto err_setup;
++		}
++	}
++
++	/* request gpio */
++	rc = gpio_is_valid(haptic->pdata->hap_en_gpio);
++	if (rc) {
++		rc = gpio_request(haptic->pdata->hap_en_gpio, "haptic_gpio");
++		if (rc) {
++			pr_err("gpio %d request failed\n",
++					haptic->pdata->hap_en_gpio);
++			goto err_power_on;
++		}
++	} else {
++		pr_err("Invalid gpio %d\n",
++					haptic->pdata->hap_en_gpio);
++		goto err_power_on;
++	}
++
++	rc = gpio_direction_output(haptic->pdata->hap_en_gpio, 0);
++	if (rc) {
++		pr_err("gpio %d set direction failed\n",
++					haptic->pdata->hap_en_gpio);
++		goto err_hap_en_gpio_free;
++	}
++
++	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio) {
++		rc = gpio_request(haptic->pdata->hap_len_gpio,
++					"haptic_len_gpio");
++		if (rc) {
++			pr_err("gpio %d request failed\n",
++					haptic->pdata->hap_len_gpio);
++			goto err_hap_en_gpio_free;
++		}
++	}
++
++	/* setup registers */
++	rc = isa1200_setup(haptic->client);
++	if (rc < 0) {
++		pr_err("setup fail %d\n", rc);
++		goto err_ldo_en_gpio_free;
++	}
++
++	if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE) {
++		haptic->pwm = pwm_request(haptic->pdata->pwm_ch_id,
++				haptic->client->driver->id_table->name);
++		if (IS_ERR(haptic->pwm)) {
++			pr_err("pwm request failed\n");
++			rc = PTR_ERR(haptic->pwm);
++			goto err_reset_hctrl0;
++		}
++	}
++
++	/* init workqeueue */
++	INIT_WORK(&haptic->work, isa1200_worker);
++
++	haptic->input_device = input_allocate_device();
++	if (!haptic->input_device) {
++		pr_err("input device alloc failed\n");
++		rc = -ENOMEM;
++		goto err_pwm_free ;
++	}
++
++	input_set_drvdata(haptic->input_device, haptic);
++	haptic->input_device->name = haptic->pdata->name ? :
++					"isa1200-haptic-device";
++
++	haptic->input_device->dev.parent = &client->dev;
++	haptic->input_device->id.bustype = BUS_I2C;
++
++	input_set_capability(haptic->input_device, EV_FF, FF_RUMBLE);
++
++	rc = input_ff_create_memless(haptic->input_device, NULL,
++					isa1200_play_effect);
++	if (rc < 0) {
++		pr_err("unable to register with ff\n");
++		goto err_free_dev;
++	}
++
++	rc = input_register_device(haptic->input_device);
++	if (rc < 0) {
++		pr_err("unable to register input device\n");
++		goto err_ff_destroy;
++	}
++	return 0;
++
++err_ff_destroy:
++	input_ff_destroy(haptic->input_device);
++err_free_dev:
++	input_free_device(haptic->input_device);
++err_pwm_free:
++	if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE)
++		pwm_free(haptic->pwm);
++err_reset_hctrl0:
++	i2c_smbus_write_byte_data(haptic->client, ISA1200_HCTRL0,
++					HCTRL0_RESET);
++err_ldo_en_gpio_free:
++	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio)
++		gpio_free(haptic->pdata->hap_len_gpio);
++err_hap_en_gpio_free:
++	gpio_free(haptic->pdata->hap_en_gpio);
++err_power_on:
++	if (haptic->pdata->power_on)
++		haptic->pdata->power_on(false);
++err_setup:
++	if (haptic->pdata->dev_setup)
++		haptic->pdata->dev_setup(false);
++err_mem_alloc:
++	kfree(haptic);
++	return rc;
++}
++
++static int __devexit isa1200_remove(struct i2c_client *client)
++{
++	struct isa1200_chip *haptic = i2c_get_clientdata(client);
++
++	cancel_work_sync(&haptic->work);
++	/* turn-off current vibration */
++	isa1200_vib_set(haptic, false);
++
++	if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE)
++		pwm_free(haptic->pwm);
++
++	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio)
++		gpio_free(haptic->pdata->hap_len_gpio);
++	gpio_free(haptic->pdata->hap_en_gpio);
++
++	/* reset hardware registers */
++	i2c_smbus_write_byte_data(haptic->client, ISA1200_HCTRL0,
++				HCTRL0_RESET);
++	i2c_smbus_write_byte_data(haptic->client, ISA1200_HCTRL1,
++				HCTRL1_RESET);
++
++	if (haptic->pdata->dev_setup)
++		haptic->pdata->dev_setup(false);
++
++	/* power-off the chip */
++	if (haptic->pdata->power_on)
++		haptic->pdata->power_on(false);
++
++	input_unregister_device(haptic->input_device);
++	kfree(haptic);
++
++	return 0;
++}
++
++static const struct i2c_device_id isa1200_id_table[] = {
++	{"isa1200", 0},
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, isa1200_id_table);
++
++static SIMPLE_DEV_PM_OPS(isa1200_pm_ops, isa1200_suspend, isa1200_resume);
++
++static struct i2c_driver isa1200_driver = {
++	.driver = {
++		.name = "isa1200",
++		.owner = THIS_MODULE,
++		.pm = &isa1200_pm_ops,
++	},
++	.probe = isa1200_probe,
++	.remove = __devexit_p(isa1200_remove),
++	.id_table = isa1200_id_table,
++};
++
++static int __init isa1200_init(void)
++{
++	return i2c_add_driver(&isa1200_driver);
++}
++module_init(isa1200_init);
++
++static void __exit isa1200_exit(void)
++{
++	i2c_del_driver(&isa1200_driver);
++}
++module_exit(isa1200_exit);
++
++MODULE_DESCRIPTION("isa1200 based vibrator chip driver");
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Kyungmin Park <kyungmin.park@samsung.com>");
++MODULE_AUTHOR("Mohan Pallaka <mpallaka@codeaurora.org>");
+diff --git a/include/linux/input/isa1200.h b/include/linux/input/isa1200.h
+new file mode 100644
+index 0000000..a1b43d5
+--- /dev/null
++++ b/include/linux/input/isa1200.h
+@@ -0,0 +1,46 @@
++/*
++ *  Copyright (C) 2009 Samsung Electronics
++ *  Kyungmin Park <kyungmin.park@samsung.com>
++ *
++ *  Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __LINUX_ISA1200_H
++#define __LINUX_ISA1200_H
++
++enum mode_control {
++	POWER_DOWN_MODE = 0,
++	PWM_INPUT_MODE,
++	PWM_GEN_MODE,
++	WAVE_GEN_MODE
++};
++
++union pwm_div_freq {
++	unsigned int pwm_div; /* PWM gen mode */
++	unsigned int pwm_freq; /* PWM input mode */
++};
++
++struct isa1200_platform_data {
++	const char *name;
++	unsigned int pwm_ch_id; /* pwm channel id */
++	unsigned int max_timeout;
++	unsigned int hap_en_gpio;
++	unsigned int hap_len_gpio; /* GPIO to enable the internal LDO */
++	bool overdrive_high; /* high/low overdrive */
++	bool overdrive_en; /* enable/disable overdrive */
++	enum mode_control mode_ctrl; /* input/generation/wave */
++	union pwm_div_freq pwm_fd;
++	bool smart_en; /* smart mode enable/disable */
++	bool is_erm;
++	bool ext_clk_en;
++	unsigned int chip_en;
++	unsigned int duty;
++	int (*power_on)(bool on);
++	int (*dev_setup)(bool on);
++};
++
++#endif /* __LINUX_ISA1200_H */
 -- 
 1.7.1.1
 
