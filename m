@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab1DMQLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:11:24 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33646 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194Ab1DMQLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:11:21 -0400
-From: Frank Arnold <farnold@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: Clean up mwait_play_dead
-Date: Wed, 13 Apr 2011 18:11:13 +0200
-Message-Id: <1302711073-31985-1-git-send-email-farnold@amd64.org>
-X-Mailer: git-send-email 1.7.3.4
+	id S932634Ab1DMQLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:11:42 -0400
+Received: from kroah.org ([198.145.64.141]:54217 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757599Ab1DMPzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:09 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:44 2011
+Message-Id: <20110413155143.916847355@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 13 Apr 2011 08:50:33 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Somasundaram Krishnasamy <Somasundaram.Krishnasamy@lsi.com>,
+        Babu Moger <babu.moger@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [09/74] [SCSI] ses: Avoid kernel panic when lun 0 is not mapped
+In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Arnold <frank.arnold@amd.com>
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Commit 93789b32dbf355e70f18b17a82e8661677a7f7fb introduced
-cpuinfo_x86 *c for brevity. It is used to check for the
-mwait feature flag. The same can be done with a subsequent
-check for clflsh and save us a second per-cpu pointer
-dereference.
+------------------
 
-Signed-off-by: Frank Arnold <frank.arnold@amd.com>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+From: Krishnasamy, Somasundaram <Somasundaram.Krishnasamy@lsi.com>
+
+commit d1e12de804f9d8ad114786ca7c2ce593cba79891 upstream.
+
+During device discovery, scsi mid layer sends INQUIRY command to LUN
+0. If the LUN 0 is not mapped to host, it creates a temporary
+scsi_device with LUN id 0 and sends REPORT_LUNS command to it. After
+the REPORT_LUNS succeeds, it walks through the LUN table and adds each
+LUN found to sysfs. At the end of REPORT_LUNS lun table scan, it will
+delete the temporary scsi_device of LUN 0.
+
+When scsi devices are added to sysfs, it calls add_dev function of all
+the registered class interfaces. If ses driver has been registered,
+ses_intf_add() of ses module will be called. This function calls
+scsi_device_enclosure() to check the inquiry data for EncServ
+bit. Since inquiry was not allocated for temporary LUN 0 scsi_device,
+it will cause NULL pointer exception.
+
+To fix the problem, sdev->inquiry is checked for NULL before reading it.
+
+Signed-off-by: Somasundaram Krishnasamy <Somasundaram.Krishnasamy@lsi.com>
+Signed-off-by: Babu Moger <babu.moger@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/x86/kernel/smpboot.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/scsi/scsi_device.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index c2871d3..93a0066 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1334,7 +1334,7 @@ static inline void mwait_play_dead(void)
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -446,7 +446,7 @@ static inline int scsi_device_qas(struct
+ }
+ static inline int scsi_device_enclosure(struct scsi_device *sdev)
+ {
+-	return sdev->inquiry[6] & (1<<6);
++	return sdev->inquiry ? (sdev->inquiry[6] & (1<<6)) : 1;
+ }
  
- 	if (!(cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)))
- 		return;
--	if (!cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLSH))
-+	if (!cpu_has(c, X86_FEATURE_CLFLSH))
- 		return;
- 	if (__this_cpu_read(cpu_info.cpuid_level) < CPUID_MWAIT_LEAF)
- 		return;
--- 
-1.7.3.4
+ static inline int scsi_device_protection(struct scsi_device *sdev)
+
 
