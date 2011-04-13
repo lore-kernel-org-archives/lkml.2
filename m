@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab1DMO46 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:56:58 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:41531 "EHLO
+	id S1757255Ab1DMO53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:57:29 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:41521 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163Ab1DMO4K (ORCPT
+	with ESMTP id S1757177Ab1DMO4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:56:10 -0400
-X-ASG-Debug-ID: 1302706569-082c4b8d0001-xx1T2L
+	Wed, 13 Apr 2011 10:56:08 -0400
+X-ASG-Debug-ID: 1302706568-082d4b800001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
         linux-kernel@vger.kernel.org
 Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-X-ASG-Orig-Subj: [PATCH 10/13] rtc: avoid to use hardcoding irq number in max8925
-Subject: [PATCH 10/13] rtc: avoid to use hardcoding irq number in max8925
-Date: Wed, 13 Apr 2011 22:51:01 +0800
-X-ASG-Orig-Subj: [PATCH 10/13] rtc: avoid to use hardcoding irq number in max8925
-Message-Id: <1302706264-25815-11-git-send-email-haojian.zhuang@marvell.com>
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+X-ASG-Orig-Subj: [PATCH 09/13] input: get irq from resource in max8925 onkey
+Subject: [PATCH 09/13] input: get irq from resource in max8925 onkey
+Date: Wed, 13 Apr 2011 22:51:00 +0800
+X-ASG-Orig-Subj: [PATCH 09/13] input: get irq from resource in max8925 onkey
+Message-Id: <1302706264-25815-10-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1302706264-25815-10-git-send-email-haojian.zhuang@marvell.com>
+In-Reply-To: <1302706264-25815-9-git-send-email-haojian.zhuang@marvell.com>
 References: <2011041301>
  <1302706264-25815-1-git-send-email-haojian.zhuang@marvell.com>
  <1302706264-25815-2-git-send-email-haojian.zhuang@marvell.com>
@@ -31,9 +31,8 @@ References: <2011041301>
  <1302706264-25815-7-git-send-email-haojian.zhuang@marvell.com>
  <1302706264-25815-8-git-send-email-haojian.zhuang@marvell.com>
  <1302706264-25815-9-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-10-git-send-email-haojian.zhuang@marvell.com>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1302706569
+X-Barracuda-Start-Time: 1302706568
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -41,85 +40,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid to use hardcoding irq number in max8925 rtc driver. Use irq number
+Avoid to use hardcoding irq numbers in max8925 onkey driver. Get irq
 from resources instead.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/rtc/rtc-max8925.c |   22 +++++++++++++---------
- 1 files changed, 13 insertions(+), 9 deletions(-)
+ drivers/input/misc/max8925_onkey.c |   36 ++++++++++++++++--------------------
+ 1 files changed, 16 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/rtc/rtc-max8925.c b/drivers/rtc/rtc-max8925.c
-index 174036d..c460152 100644
---- a/drivers/rtc/rtc-max8925.c
-+++ b/drivers/rtc/rtc-max8925.c
-@@ -69,6 +69,7 @@ struct max8925_rtc_info {
- 	struct max8925_chip	*chip;
- 	struct i2c_client	*rtc;
- 	struct device		*dev;
-+	int			irq;
- };
- 
- static irqreturn_t rtc_update_handler(int irq, void *data)
-@@ -239,7 +240,7 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
+diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
+index 7de0ded..835cc2a 100644
+--- a/drivers/input/misc/max8925_onkey.c
++++ b/drivers/input/misc/max8925_onkey.c
+@@ -69,18 +69,7 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
  {
  	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
- 	struct max8925_rtc_info *info;
--	int irq, ret;
-+	int ret = -EINVAL;
+ 	struct max8925_onkey_info *info;
+-	int irq[2], error;
+-
+-	irq[0] = platform_get_irq(pdev, 0);
+-	if (irq[0] < 0) {
+-		dev_err(&pdev->dev, "No IRQ resource!\n");
+-		return -EINVAL;
+-	}
+-	irq[1] = platform_get_irq(pdev, 1);
+-	if (irq[1] < 0) {
+-		dev_err(&pdev->dev, "No IRQ resource!\n");
+-		return -EINVAL;
+-	}
++	int error = -EINVAL;
  
- 	info = kzalloc(sizeof(struct max8925_rtc_info), GFP_KERNEL);
+ 	info = kzalloc(sizeof(struct max8925_onkey_info), GFP_KERNEL);
  	if (!info)
-@@ -247,16 +248,22 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
- 	info->chip = chip;
- 	info->rtc = chip->rtc;
- 	info->dev = &pdev->dev;
--	irq = chip->irq_base + MAX8925_IRQ_RTC_ALARM0;
-+	info->irq = platform_get_irq(pdev, 0);
-+	if (info->irq < 0) {
-+		dev_err(chip->dev, "Failed to get IRQ resource\n");
-+		goto out_irq;
-+	}
+@@ -88,21 +77,30 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
  
--	ret = request_threaded_irq(irq, NULL, rtc_update_handler,
-+	ret = request_threaded_irq(info->irq, NULL, rtc_update_handler,
- 				   IRQF_ONESHOT, "rtc-alarm0", info);
- 	if (ret < 0) {
+ 	info->i2c = chip->i2c;
+ 	info->dev = &pdev->dev;
+-	irq[0] += chip->irq_base;
+-	irq[1] += chip->irq_base;
+ 
+-	error = request_threaded_irq(irq[0], NULL, max8925_onkey_handler,
++	info->irq[0] = platform_get_irq(pdev, 0);
++	if (info->irq[0] < 0) {
++		dev_err(&pdev->dev, "No IRQ resource!\n");
++		goto out;
++	}
++	info->irq[1] = platform_get_irq(pdev, 1);
++	if (info->irq[1] < 0) {
++		dev_err(&pdev->dev, "No IRQ resource!\n");
++		goto out;
++	}
++
++	error = request_threaded_irq(info->irq[0], NULL, max8925_onkey_handler,
+ 				     IRQF_ONESHOT, "onkey-down", info);
+ 	if (error < 0) {
  		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
--			irq, ret);
-+			info->irq, ret);
+-			irq[0], error);
++			info->irq[0], error);
+ 		goto out;
+ 	}
+-	error = request_threaded_irq(irq[1], NULL, max8925_onkey_handler,
++	error = request_threaded_irq(info->irq[1], NULL, max8925_onkey_handler,
+ 				     IRQF_ONESHOT, "onkey-up", info);
+ 	if (error < 0) {
+ 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
+-			irq[1], error);
++			info->irq[1], error);
  		goto out_irq;
  	}
  
-+	dev_set_drvdata(&pdev->dev, info);
-+	platform_set_drvdata(pdev, info);
- 	info->rtc_dev = rtc_device_register("max8925-rtc", &pdev->dev,
- 					&max8925_rtc_ops, THIS_MODULE);
- 	ret = PTR_ERR(info->rtc_dev);
-@@ -265,12 +272,9 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
- 		goto out_rtc;
- 	}
+@@ -117,8 +115,6 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
+ 	info->idev->phys = "max8925_on/input0";
+ 	info->idev->id.bustype = BUS_I2C;
+ 	info->idev->dev.parent = &pdev->dev;
+-	info->irq[0] = irq[0];
+-	info->irq[1] = irq[1];
+ 	info->idev->evbit[0] = BIT_MASK(EV_KEY);
+ 	info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
  
--	dev_set_drvdata(&pdev->dev, info);
--	platform_set_drvdata(pdev, info);
--
- 	return 0;
- out_rtc:
--	free_irq(chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
-+	free_irq(info->irq, info);
- out_irq:
- 	kfree(info);
- 	return ret;
-@@ -281,7 +285,7 @@ static int __devexit max8925_rtc_remove(struct platform_device *pdev)
- 	struct max8925_rtc_info *info = platform_get_drvdata(pdev);
- 
- 	if (info) {
--		free_irq(info->chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
-+		free_irq(info->irq, info);
- 		rtc_device_unregister(info->rtc_dev);
- 		kfree(info);
- 	}
 -- 
 1.5.6.5
 
