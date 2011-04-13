@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab1DMDuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 23:50:46 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45906 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756834Ab1DMDup (ORCPT
+	id S1757463Ab1DMDxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 23:53:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47176 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756834Ab1DMDxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 23:50:45 -0400
+	Tue, 12 Apr 2011 23:53:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eDMj50jHedfcD0a3Hu8X6TUnNzmrTWp/1yupfX48u/uB8IwyW5C03K6tXEd5Sudg88
-         2pNygqwesDSpHxkEtj+A15YVbaeJv/9eWTVZCxAPz4KkrOVXzsgqNB5YzF6HDNALHdmx
-         9Hk3LqmCINecsksgLiNzPrWyZGNZ0RejRoiOk=
-Date: Wed, 13 Apr 2011 12:50:37 +0900
-From: "tj@kernel.org" <tj@kernel.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vTNOERkBuCASYSAYKBnP5rJp0TcoykVcYsxzJh/6f6bm5UmFLFw3KM8mxfqaSYyY3U
+         R3O3wG8ZaD+vIEV1gTfLou9kCJYay3iq6WElHXw93cofZXGTz8/4JBt3KxN9xEpXZUwQ
+         Z57s4nMFCvZNGecUipBbJ8XF+J4or69fMwU70=
 Subject: Re: [PATCH 3/4]percpu_counter: fix code for 32bit systems
-Message-ID: <20110413035037.GA24161@mtj.dyndns.org>
-References: <1302595444.3981.129.camel@sli10-conroe>
- <1302599035.3233.27.camel@edumazet-laptop>
- <1302656465.3981.133.camel@sli10-conroe>
- <1302661927.2811.18.camel@edumazet-laptop>
- <1302662517.3981.161.camel@sli10-conroe>
- <1302662853.2811.41.camel@edumazet-laptop>
- <1302663781.3981.169.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "tj@kernel.org" <tj@kernel.org>
 In-Reply-To: <1302663781.3981.169.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+References: <1302595444.3981.129.camel@sli10-conroe>
+	 <1302599035.3233.27.camel@edumazet-laptop>
+	 <1302656465.3981.133.camel@sli10-conroe>
+	 <1302661927.2811.18.camel@edumazet-laptop>
+	 <1302662517.3981.161.camel@sli10-conroe>
+	 <1302662853.2811.41.camel@edumazet-laptop>
+	 <1302663781.3981.169.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 05:53:40 +0200
+Message-ID: <1302666820.2811.115.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
-
-On Wed, Apr 13, 2011 at 11:03:01AM +0800, Shaohua Li wrote:
+Le mercredi 13 avril 2011 à 11:03 +0800, Shaohua Li a écrit :
 > I can do this, but please give a reason. If network code is the only
 > place requiring disable irq, why not network code do it?
+> 
 
-This thread is pointless.  The next patch converts it to atomic64_t
-and the lock is removed anyway.  I think Eric's argument makes sense
-given that atomic64_t translates into irqsave spinlock (it has to) in
-generic 32bit implementation.  That said, this is all a moot point.
-We might as well simply drop this patch and directly convert to
-atomic64_t.
+Lot of percpu_counter users dont use full s64 range, but "unsigned long"
+or "unsigned int". Adding a lock on 32bit arches to get the s64, then
+truncate it is not needed.
 
-Thanks.
+This discussion reminds me an old one ;)
 
--- 
-tejun
+http://kerneltrap.org/mailarchive/linux-ext4/2008/12/12/4401894
+
+
+
