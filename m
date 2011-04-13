@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab1DMUAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 16:00:10 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40125 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758470Ab1DMUAG (ORCPT
+	id S1758543Ab1DMUBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 16:01:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42490 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758407Ab1DMUBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 16:00:06 -0400
+	Wed, 13 Apr 2011 16:01:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vxaQYVGazQxUAAltl5VaB8FeUFy99Zg8wwZfjTu451k5BtXjfmXU+m2lMIirAKa81+
-         y0hN8+9YtDwkFkdfpWc5jTNs5wMpML64Q7lO/AXdUYsj5dmVz26wXZ37oCfOlH9qVdMj
-         CgyRAkd6F+AV2Jhl/gLubkxnKGbbRJYMKOE9U=
-Date: Thu, 14 Apr 2011 05:00:00 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
-Message-ID: <20110413200000.GG3987@mtj.dyndns.org>
-References: <20110404211604.GB6133@sucs.org>
- <20110406130423.GE4142@mtj.dyndns.org>
- <20110406212611.GA5131@sucs.org>
- <20110406213718.GA14139@mtj.dyndns.org>
- <20110409093449.GA10016@sucs.org>
- <20110410145920.GA3408@sucs.org>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=qTaAZpT436hIdatdOCzCTtneNaMvpLhASQRwaOd9nC+lybG4SFLH2OHTBXr7VPefuj
+         74Uxnnt1Kfp6xUpPaUB0zKfA8Iq3SEwcrM1gDj2HqoAWXPqpn9mchpzHfvSiJ49bs903
+         tUtKyDzDvZwpgDqfjA1WJelyzAvKljeRXpj4E=
+Message-ID: <4DA6011F.7070405@openvz.org>
+Date: Thu, 14 Apr 2011 00:01:35 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110410145920.GA3408@sucs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: maciej.rutecki@gmail.com, Shaun Ruffell <sruffell@digium.com>,
+        Don Zickus <dzickus@redhat.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read proper
+ MSR register to catch" and NMIs
+References: <20110406223036.GA15721@digium.com> <201104132133.51958.maciej.rutecki@gmail.com>
+In-Reply-To: <201104132133.51958.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Sitsofe.
+On 04/13/2011 11:33 PM, Maciej Rutecki wrote:
+> I created a Bugzilla entry at 
+> https://bugzilla.kernel.org/show_bug.cgi?id=33252
+> for your bug report, please add your address to the CC list in there, thanks!
+> 
 
-Sorry about late replay.  I've been and still am travelling.  :-(
+Here is a patch flying around which I tuned a bit, when all reporters confirm it
+works for them we could close the bug. Thanks.
 
-On Sun, Apr 10, 2011 at 03:59:20PM +0100, Sitsofe Wheeler wrote:
-> Shortly after saying this the problem reappeared by itself. I've found a
-> method to reproduce it too: by running
-> for i in `seq 1 100`; do udevadm trigger --subsystem-match=block ; done
-> and then waiting at the desktop for a five or so minutes (so the
-> requests that are backed up drain away) then running it again etc. the
-> problem will usually trigger. The warning is still here in the most
-> recent 2.6.39-rc2-00120-g94c8a98 kernel too. Applying the patch to the
-> first kernel that showed th problem doesn't fix the issue (although it
-> appears to make the issue a lot more difficult to trigger).
-
-Thanks a lot for finding out the test case.  I'll see whether I can
-reproduce the problem in qemu.
-
-> I will note that by EeePC's onboard "gen-0" SSD mysteriously developed
-> bad blocks after all this so perhaps the above is especially stressful
-> for disks...
-
-Yeah, it probably hammers the same sector over and over again.
-Earlier/cheap SSDs often lack proper wear leveling and writing
-repeatedly to the same sector can easily create bad blocks.  Sorry
-about that.
-
-Thanks.
-
+ Cyrill
 -- 
-tejun
+From: Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] perf, x86: fix unknown NMIs on a Pentium4 box v2
+
+When using perf on a Pentium4 box, lots of unknown NMIs would be generated.
+This is the result of a P4 quirk that is subtle.  The P4 generates an NMI
+when the counter overflow and unlike other arches where the NMI is a one time
+event, the P4 continues to assert its NMI until clear by the OS.
+
+As a side effect to this quirk, the NMI on the apic is masked off to prevent
+a stream of NMIs until the overflow flag is cleared.  During the perf
+re-design, this subtle-ness was overlooked and the apic was unmasked _before_
+the overflow flag was cleared.  As a result, this generated an extra NMI on
+the P4 mchines.
+
+The fix is trivial, wait until the NMI is properly handled before un-masking
+the apic.
+
+Sadly, in the old nmi watchdog there was a note that explained this exact
+behaviour.
+
+v2: Unmask LVT entry iif IRQ being handled by perf subsystem and add a comment.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+
+Don, Shaun, Ming, I've tested it on my non-HT machine, so if you have a chance
+to test it on HT machine -- this would be a great thing!
+
+Don, note the version v2 changes, thanks. I've tuned the former a bit
+but left your From field untouched, are you OK with that?
+
+ arch/x86/kernel/cpu/perf_event.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+@@ -1370,12 +1370,19 @@ perf_event_nmi_handler(struct notifier_b
+ 		return NOTIFY_DONE;
+ 	}
+
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+
+ 	handled = x86_pmu.handle_irq(args->regs);
+ 	if (!handled)
+ 		return NOTIFY_DONE;
+
++	/*
++	 * Unmasking should be done after IRQ handled, otherwise
++	 * there is a race between clearing of counter overflow
++	 * flag and LTV entry unmasking (which might lead to double
++	 * NMIs generation).
++	 */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
++
+ 	this_nmi = percpu_read(irq_stat.__nmi_count);
+ 	if ((handled > 1) ||
+ 		/* the next nmi could be a back-to-back nmi */
