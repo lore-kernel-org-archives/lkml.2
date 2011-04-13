@@ -1,143 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551Ab1DMVRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:17:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42020 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932094Ab1DMVRf (ORCPT
+	id S932569Ab1DMVTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:19:51 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58319 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab1DMVTu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:17:35 -0400
-Date: Wed, 13 Apr 2011 14:16:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Changli Gao <xiaosuo@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Regression from 2.6.36
-Message-Id: <20110413141600.28793661.akpm@linux-foundation.org>
-In-Reply-To: <1302662256.2811.27.camel@edumazet-laptop>
-References: <20110315132527.130FB80018F1@mail1005.cent>
-	<20110317001519.GB18911@kroah.com>
-	<20110407120112.E08DCA03@pobox.sk>
-	<4D9D8FAA.9080405@suse.cz>
-	<BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>
-	<1302177428.3357.25.camel@edumazet-laptop>
-	<1302178426.3357.34.camel@edumazet-laptop>
-	<BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
-	<1302190586.3357.45.camel@edumazet-laptop>
-	<20110412154906.70829d60.akpm@linux-foundation.org>
-	<BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
-	<20110412183132.a854bffc.akpm@linux-foundation.org>
-	<1302662256.2811.27.camel@edumazet-laptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Apr 2011 17:19:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NzLyOdLdqSRDYOrj9wsYCDOCbr4uHtISfa837TQVqlw0Q5iKfiKlAWbFAyA/bX4hJQ
+         9Im0T2EcA6Du+AlrYxiNzzfxu42qOjwf0AJNgB2FMkO3z95VXdQfr046UjBhWMAhx51R
+         pmrs/5I2ssv5Pbb+q4WAelqi13B7jvG1G7xs8=
+MIME-Version: 1.0
+In-Reply-To: <1302729243.8479.1.camel@dev.znau.edu.ua>
+References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
+	<20110413163113.GA24015@kroah.com>
+	<BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
+	<1302726703.8015.1.camel@dev.znau.edu.ua>
+	<BANLkTimwZOJ0a5kVfaUzEcsMc39H999u0A@mail.gmail.com>
+	<1302727516.8015.9.camel@dev.znau.edu.ua>
+	<BANLkTi=wzzzeF-PmqLt9o8arW7nRaFRRJw@mail.gmail.com>
+	<1302729243.8479.1.camel@dev.znau.edu.ua>
+Date: Wed, 13 Apr 2011 23:19:48 +0200
+Message-ID: <BANLkTinLn4Ug=gX4coHJbSzrkxdSMjgGeg@mail.gmail.com>
+Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: George Kashperko <george@znau.edu.ua>
+Cc: Greg KH <greg@kroah.com>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org,
+        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011 04:37:36 +0200
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+2011/4/13 George Kashperko <george@znau.edu.ua>:
+>> I had no idea what you were referring to. We do not dig into PCIe
+>> functions yet, so I believe for now we need this "if".
+> You are already deep inside. Your host code drives pci function.
 
-> Le mardi 12 avril 2011 __ 18:31 -0700, Andrew Morton a __crit :
-> > On Wed, 13 Apr 2011 09:23:11 +0800 Changli Gao <xiaosuo@gmail.com> wrote:
-> > 
-> > > On Wed, Apr 13, 2011 at 6:49 AM, Andrew Morton
-> > > <akpm@linux-foundation.org> wrote:
-> > > >
-> > > > It's somewhat unclear (to me) what caused this regression.
-> > > >
-> > > > Is it because the kernel is now doing large kmalloc()s for the fdtable,
-> > > > and this makes the page allocator go nuts trying to satisfy high-order
-> > > > page allocation requests?
-> > > >
-> > > > Is it because the kernel now will usually free the fdtable
-> > > > synchronously within the rcu callback, rather than deferring this to a
-> > > > workqueue?
-> > > >
-> > > > The latter seems unlikely, so I'm thinking this was a case of
-> > > > high-order-allocations-considered-harmful?
-> > > >
-> > > 
-> > > Maybe, but I am not sure. Maybe my patch causes too many inner
-> > > fragments. For example, when asking for 5 pages, get 8 pages, and 3
-> > > pages are wasted, then memory thrash happens finally.
-> > 
-> > That theory sounds less likely, but could be tested by using
-> > alloc_pages_exact().
-> > 
-> 
-> Very unlikely, since fdtable sizes are powers of two, unless you hit
-> sysctl_nr_open and it was changed (default value being 2^20)
-> 
+But I don't use multiple PCIe functions, do not focus on that at all.
 
-So am I correct in believing that this regression is due to the
-high-order allocations putting excess stress onto page reclaim?
-
-If so, then how large _are_ these allocations?  This perhaps can be
-determined from /proc/slabinfo.  They must be pretty huge, because slub
-likes to do excessively-large allocations and the system handles that
-reasonably well.
-
-I suppose that a suitable fix would be
-
-
-From: Andrew Morton <akpm@linux-foundation.org>
-
-Azurit reports large increases in system time after 2.6.36 when running
-Apache.  It was bisected down to a892e2d7dcdfa6c76e6 ("vfs: use kmalloc()
-to allocate fdmem if possible").
-
-That patch caused the vfs to use kmalloc() for very large allocations and
-this is causing excessive work (and presumably excessive reclaim) within
-the page allocator.
-
-Fix it by falling back to vmalloc() earlier - when the allocation attempt
-would have been considered "costly" by reclaim.
-
-Reported-by: azurIt <azurit@pobox.sk>
-Cc: Changli Gao <xiaosuo@gmail.com>
-Cc: Americo Wang <xiyou.wangcong@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/file.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
-
-diff -puN fs/file.c~a fs/file.c
---- a/fs/file.c~a
-+++ a/fs/file.c
-@@ -39,14 +39,17 @@ int sysctl_nr_open_max = 1024 * 1024; /*
-  */
- static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
- 
--static inline void *alloc_fdmem(unsigned int size)
-+static void *alloc_fdmem(unsigned int size)
- {
--	void *data;
--
--	data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
--	if (data != NULL)
--		return data;
--
-+	/*
-+	 * Very large allocations can stress page reclaim, so fall back to
-+	 * vmalloc() if the allocation size will be considered "large" by the VM.
-+	 */
-+	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) {
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		if (data != NULL)
-+			return data;
-+	}
- 	return vmalloc(size);
- }
- 
-_
-
+-- 
+Rafał
