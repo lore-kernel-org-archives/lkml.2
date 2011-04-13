@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab1DMCDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 22:03:36 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55221 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932802Ab1DMCDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 22:03:35 -0400
-Date: Wed, 13 Apr 2011 12:03:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Pirko <jpirko@redhat.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20110413120323.36030bcf.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__13_Apr_2011_12_03_23_+1000_H_DZn3DE2uRT4Dhe"
+	id S932827Ab1DMCEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 22:04:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59035 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932797Ab1DMCEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 22:04:45 -0400
+Message-ID: <4DA5057E.5000706@cn.fujitsu.com>
+Date: Wed, 13 Apr 2011 10:07:58 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, ebiederm@xmission.com,
+        matthltc@us.ibm.com, menage@google.com, oleg@redhat.com,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH v8.75 0/4] cgroups: implement moving a threadgroup's threads
+ atomically with cgroup.procs
+References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>	<20110406194420.GC10792@ghc17.ghc.andrew.cmu.edu> <20110412162516.4120c441.akpm@linux-foundation.org>
+In-Reply-To: <20110412162516.4120c441.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-13 10:05:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-04-13 10:05:23,
+	Serialize complete at 2011-04-13 10:05:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Apr_2011_12_03_23_+1000_H_DZn3DE2uRT4Dhe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Andrew Morton wrote:
+> On Wed, 6 Apr 2011 15:44:20 -0400
+> Ben Blum <bblum@andrew.cmu.edu> wrote:
+> 
+>> Same as before; using flex_array in attach_proc (thanks Kame).
+>>
+>> -- Ben
+>>
+>> ---
+>>  Documentation/cgroups/cgroups.txt |   39 ++-
+>>  block/blk-cgroup.c                |   18 -
+>>  include/linux/cgroup.h            |   10 
+>>  include/linux/init_task.h         |    9 
+>>  include/linux/sched.h             |   36 ++
+>>  kernel/cgroup.c                   |  489 +++++++++++++++++++++++++++++++++-----
+>>  kernel/cgroup_freezer.c           |   26 --
+>>  kernel/cpuset.c                   |   96 +++----
+>>  kernel/fork.c                     |   10 
+>>  kernel/sched.c                    |   38 --
+>>  mm/memcontrol.c                   |   18 -
+>>  security/device_cgroup.c          |    3 
+>>  12 files changed, 594 insertions(+), 198 deletions(-)
+> 
+> So where are we up to with all this.
+> 
+> I'm surprised that none of the patches had anyone's Acked-by: or
+> Reviewed-by:.  Were they really that mean to you, or have you not been
+> tracking these?
+> 
+> 
 
-Hi all,
+Paul reviewed the patchset and explicitly gave his reviewed-by tag for all
+the 3 pathces.
 
-After merging the net tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-drivers/infiniband/ulp/iser/iser_initiator.o: In function `vlan_untag':
-iser_initiator.c:(.opd+0x0): multiple definition of `vlan_untag'
-drivers/infiniband/ulp/iser/iser_verbs.o:iser_verbs.c:(.opd+0x0): first def=
-ined here
-drivers/infiniband/ulp/iser/iser_initiator.o: In function `.vlan_untag':
-iser_initiator.c:(.text+0x0): multiple definition of `.vlan_untag'
-drivers/infiniband/ulp/iser/iser_verbs.o:iser_verbs.c:(.text+0x0): first de=
-fined here
-
-and on and on ... (lota and lots :-()
-
-Probably caused by commit bcc6d4790361 ("net: vlan: make non-hw-accel rx
-path similar to hw-accel") which added a "non-static" inline version of
-vlan_untag() to include/linux/if_vlan.h.
-
-I have used the net tree from next-20110412 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__13_Apr_2011_12_03_23_+1000_H_DZn3DE2uRT4Dhe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNpQRrAAoJEDMEi1NhKgbsiQAH+gME5MYnISZrQ+ELgP+Dbd5Q
-hAP/vgDcMcOlOTHj02HkOyBvkiUvGytmIxdfSSPCriSW7FxhmP6c5ImV6e/KaC1t
-abmFg2CzMkTx3oSp0kDRTeoi5jd5qv+9gmyJujzS7b/LL66eKHW0JnSang3PtPr3
-oHm99mJzpyWnjJ1DqZt2lrGuGAbnkTE0xrx4X1tUPr1gXmydTAT6cD1cr6/5WBXt
-eaVJxVFPjo/mu6cpSfrt34/byewFLNZkES6CN42oHmk+96gs0LQRJaC+e3dX4Teg
-VGJH1Cx1AmM7dX4eLaqEM9jnSs3+s3tPU+uR5Wo02roNy5n4yeczcQQYapumffE=
-=89rN
------END PGP SIGNATURE-----
-
---Signature=_Wed__13_Apr_2011_12_03_23_+1000_H_DZn3DE2uRT4Dhe--
+And I'm going to do some testing for it.
