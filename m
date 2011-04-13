@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab1DMOP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:15:28 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55529 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752024Ab1DMOP1 (ORCPT
+	id S1756494Ab1DMOQA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:16:00 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:47110 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755952Ab1DMOP6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:15:27 -0400
-Subject: Re: Strange block/scsi/workqueue issue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <20110413051139.GC24161@mtj.dyndns.org>
-References: <1302533763.2596.23.camel@dolmen>
-	 <20110411171803.GG9673@mtj.dyndns.org>
-	 <1302569276.2558.9.camel@mulgrave.site>
-	 <20110412025145.GJ9673@mtj.dyndns.org>
-	 <1302583757.2558.21.camel@mulgrave.site>
-	 <20110412051512.GL9673@mtj.dyndns.org>
-	 <1302621318.2604.19.camel@mulgrave.site>
-	 <20110413051139.GC24161@mtj.dyndns.org>
+	Wed, 13 Apr 2011 10:15:58 -0400
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Gabriel Paubert <paubert@iram.es>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Date: Wed, 13 Apr 2011 16:15:24 +0200
+In-Reply-To: <20110413122751.GA21050@iram.es>
+References: <20110406204327.GA11148@iram.es>
+	 <1302185075.24704.143.camel@thor.local> <20110411133128.GA24344@iram.es>
+	 <1302535963.24704.268.camel@thor.local> <20110412113033.GA16649@iram.es>
+	 <1302608770.27054.36.camel@thor.local> <20110412120055.GA7995@iram.es>
+	 <1302629362.15520.25.camel@thor.local> <20110413075943.GA27996@iram.es>
+	 <1302696736.15520.63.camel@thor.local> <20110413122751.GA21050@iram.es>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA
+	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Apr 2011 09:15:22 -0500
-Message-ID: <1302704122.2597.13.camel@mulgrave.site>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.0- 
+Message-ID: <1302704124.15520.72.camel@thor.local>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-13 at 14:11 +0900, Tejun Heo wrote:
-> > > Hmmm... maybe but at least I prefer doing explicit shutdown/draining
-> > > on destruction even if the base data structure is refcounted.  Things
-> > > become much more predictable that way.
+On Mit, 2011-04-13 at 14:27 +0200, Gabriel Paubert wrote: 
+> On Wed, Apr 13, 2011 at 02:12:16PM +0200, Michel Dänzer wrote:
+> > On Mit, 2011-04-13 at 09:59 +0200, Gabriel Paubert wrote: 
+> > > On Tue, Apr 12, 2011 at 07:29:22PM +0200, Michel Dänzer wrote:
+> > > > On Die, 2011-04-12 at 14:00 +0200, Gabriel Paubert wrote:
+> > > > > On Tue, Apr 12, 2011 at 01:46:10PM +0200, Michel Dänzer wrote:
+> > > > > > > 
+> > > > > > > With no_wb=1 the driver goes a bit further but the X server ends
+> > > > > > > up in an infinite ioctl loop and the logs are: 
+> > > > > > 
+> > > > > > Which ioctl does it loop on? Please provide the Xorg.0.log file as well.
+> > > > > 
+> > > > > From memory, the code was 0x64, which is DRM_RADEON_GEM_WAIT_IDLE.
+> > > > 
+> > > > Note that it's normal for this ioctl to be called every time before the
+> > > > GPU accessible pixmap memory is accessed by the CPU. Unless the ioctl
+> > > > always returns an error, this may not indicate a problem on its own. 
+> > > 
+> > > It seems to be an infinite loop, always returning EINTR because
+> > > of regular SIGALRM delivery.
 > > 
-> > It is pretty much instantaneous.  Unless we're executing, we cancel the
-> > work.  If the work is already running, we just let it complete instead
-> > of waiting for it.
-> > 
-> > Synchronous waits are dangerous because they cause entanglement.
+> > That does sound like the GPU locks up. Do you get any messages in dmesg
+> > about lockups and attempts to reset the GPU at any time?
 > 
-> There are two different types of dangers involved.  One is of getting
-> trapped into deadlock by recursing and ending up waiting for oneself.
-> The other of continuing operation on objects which could be in dubious
-> state.  I guess my point is that I prefer the former by a large
-> margin.
-> 
-> The deadlocks are more reliable in reproducibility.  Lockdep and soft
-> hang check can detect them easily and a single stack dump will point
-> us right to where the problem is.  The latter is much trickier.
+> No.
 
-I agree, but this is a bit of a false dichotomy.  The hang will only
-detect the thread waiting on itself.  Even in the flush model, we still
-have to detect inappropriate object use because others may still have
-references.
-
-So, in the sync model, on blk_cleanup_queue() you flush the pending
-requests and destroy the elevator.  However, because the queue is
-refcounted, you still have to cope with the case where one of the
-reference holders submits more I/O or does anything else with the queue.
-This is what I don't like about the sync then shut down various bits
-before the refcount goes to zero.  Now we don't have a fully functional
-queue so we need state guards on all the entry points to detect this and
-error out (that's some of the QUEUE_FLAG_DEAD checks we put in in the
-patch).
-
-In the async model, you can either do as above (state guards on the
-entry points) and impose a shutting down state, or you can delay
-destruction until final put.  The former is an identical solution to the
-synchronous one, except that you don't have the flush.  The latter loses
-the state guard on entry points requirements (because the queue is
-always fully functional until final put.
-
->   The
-> problem is more difficult to trigger and even when it triggers the
-> effect often wouldn't be obvious.  Auditing for correctness is more
-> difficult too - which fields are safe to access post-mortem? 
-
-But in a refcounted model you always have to expect postmortem
-operations ... you just have to make sure they're properly rejected.
-This is true for both sync or async if you impose a dying or dead state
-on the model.
-
->  Is there
-> any chance that the ongoing operation might reach out to hardware
-> which is already gone or claimed by another software entity?
-
-Yes ... in fact SCSI fully expects this ... that's why they dead queue
-check in the SCSI request function using a NULL ->queuedata signal
-(another thing that wasn't working quite right).
-
-We tear down the device in scsi_remove_device() including destroying the
-queue.  If we go with the sync model for block, I'd actually move
-blk_cleanup_queue() into that function.  There's no real point delaying
-queue destruction to final put of the SCSI object, since we won't accept
-I/O after scsi_remove_device() returns.
-
-> In this particular case, IMHO it's reasonable for block layer to
-> require that the destruction function not to be called directly from
-> request queue path although it definitely could have used better
-> documentation.
-
-I think we've both stated our cases, so it's time for Jens to decide
-what he wants to do.  Given that block already has a state model which
-includes some QUEUE_FLAG_DEAD state guard checks, it probably makes
-sense to enhance that, rather than to delay all destruction until final
-put.
-
-James
+Hmm, I guess the constant SIGALRMs might prevent the lockup detection
+from kicking in... Maybe you can try starting the X server with
+-dumbSched to see if that gets things along any further, but in the end
+there's probably no way around figuring out what causes the lockup and
+fixing that anyway.
 
 
+-- 
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
