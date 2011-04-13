@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab1DMQNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:13:17 -0400
-Received: from kroah.org ([198.145.64.141]:52901 "EHLO coco.kroah.org"
+	id S933115Ab1DMQUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:20:45 -0400
+Received: from kroah.org ([198.145.64.141]:52940 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932867Ab1DMQNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:11 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:46 2011
-Message-Id: <20110413161046.716993870@clark.kroah.org>
+	id S932911Ab1DMQNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:47 2011
+Message-Id: <20110413161047.475520510@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:03 -0700
+Date: Wed, 13 Apr 2011 09:10:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <huewe.external@infineon.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>
-Subject: [40/71] char/tpm: Fix unitialized usage of data buffer
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Hartley Sweeten <hartleys@visionengravers.com>,
+        Matthieu Crapet <mcrapet@gmail.com>
+Subject: [47/71] drivers/misc/ep93xx_pwm.c: world-writable sysfs files
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <huewe.external.infineon@googlemail.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 1309d7afbed112f0e8e90be9af975550caa0076b upstream.
+commit deb187e72470b0382d4f0cb859e76e1ebc3a1082 upstream.
 
-This patch fixes information leakage to the userspace by initializing
-the data buffer to zero.
+Don't allow everybody to change device settings.
 
-Reported-by: Peter Huewe <huewe.external@infineon.com>
-Signed-off-by: Peter Huewe <huewe.external@infineon.com>
-Signed-off-by: Marcel Selhorst <m.selhorst@sirrix.com>
-[ Also removed the silly "* sizeof(u8)".  If that isn't 1, we have way
-  deeper problems than a simple multiplication can fix.   - Linus ]
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Acked-by: Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Matthieu Crapet <mcrapet@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/ep93xx_pwm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -955,7 +955,7 @@ int tpm_open(struct inode *inode, struct
- 		return -EBUSY;
- 	}
+--- a/drivers/misc/ep93xx_pwm.c
++++ b/drivers/misc/ep93xx_pwm.c
+@@ -248,11 +248,11 @@ static ssize_t ep93xx_pwm_set_invert(str
  
--	chip->data_buffer = kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-+	chip->data_buffer = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
- 	if (chip->data_buffer == NULL) {
- 		clear_bit(0, &chip->is_open);
- 		put_device(chip->dev);
+ static DEVICE_ATTR(min_freq, S_IRUGO, ep93xx_pwm_get_min_freq, NULL);
+ static DEVICE_ATTR(max_freq, S_IRUGO, ep93xx_pwm_get_max_freq, NULL);
+-static DEVICE_ATTR(freq, S_IWUGO | S_IRUGO,
++static DEVICE_ATTR(freq, S_IWUSR | S_IRUGO,
+ 		   ep93xx_pwm_get_freq, ep93xx_pwm_set_freq);
+-static DEVICE_ATTR(duty_percent, S_IWUGO | S_IRUGO,
++static DEVICE_ATTR(duty_percent, S_IWUSR | S_IRUGO,
+ 		   ep93xx_pwm_get_duty_percent, ep93xx_pwm_set_duty_percent);
+-static DEVICE_ATTR(invert, S_IWUGO | S_IRUGO,
++static DEVICE_ATTR(invert, S_IWUSR | S_IRUGO,
+ 		   ep93xx_pwm_get_invert, ep93xx_pwm_set_invert);
+ 
+ static struct attribute *ep93xx_pwm_attrs[] = {
 
 
