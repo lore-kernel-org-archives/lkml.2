@@ -1,41 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab1DMOFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:05:30 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:53219 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752024Ab1DMOF3 (ORCPT
+	id S1756180Ab1DMOHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:07:18 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55214 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206Ab1DMOHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:05:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBACmtpU1Ld/sX/2dsb2JhbAAMhEHUVJEtgSmDTXgElBOGbg
-X-IronPort-AV: E=Sophos;i="4.64,204,1301889600"; 
-   d="scan'208";a="106253518"
-Message-ID: <4DA5ADA6.5060301@teksavvy.com>
-Date: Wed, 13 Apr 2011 10:05:26 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: CONFIG_EXT4_USE_FOR_EXT23:  rootfs shows as ext2 instead of ext4
-References: <4DA48AF4.5080803@teksavvy.com> <20110413004938.GE3682@thunk.org>
-In-Reply-To: <20110413004938.GE3682@thunk.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 13 Apr 2011 10:07:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=G2MPLHda0bPc4BxGpY+K3mAtpY7orwnAJo3JY9+hnmOVMlQrf86eWNX33lkfEAnfZe
+         l+F4eiTzbHHx6kORqt+naAI8gGcV+/M3YDIb78ZtCy57oR88VkylVYXq2fA3XLLy4fnB
+         odondU2qN+HFperIbUC0V0rZ50EE1ci8WF4gM=
+Subject: Re: 2.6.38 sbrk regression
+From: raz ben yehuda <raziebe@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: riel@redhat.com, kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20110413125146.GR29444@random.random>
+References: <1302692638.15225.14.camel@raz.scalemp.com>
+	 <20110413125146.GR29444@random.random>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 17:06:19 +0300
+Message-ID: <1302703579.17536.1.camel@raz.scalemp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-12 08:49 PM, Ted Ts'o wrote:
->
-> It's a cosemtic bug, I agree
+ok, managed to build 38-rc3 ( keep forgetting make mrproper ).
+problem is still there:
 
-Great.  Got a patch to fix it for me to try?
+------------------------------------------------------------------------------------------------------------
+ Test        Test        Elapsed  Iteration    Iteration
+Operation
+Number       Name      Time (sec)   Count   Rate (loops/sec)    Rate
+(ops/sec)
+------------------------------------------------------------------------------------------------------------
+     1 page_test            5.02        361   71.91235       122251.00
+System Allocations & Pages/second
+------------------------------------------------------------------------------------------------------------
 
-Since it currently misidentifies the filesystem type,
-some of the disk management tools I have get confused.
-I don't like taking any chances with user data like that.
 
-Thanks.
+while in 2.6.37 rate is 171000.
+ftrace is no good here as it changes the results to greatly.
+any idea ?
+
+
+On Wed, 2011-04-13 at 14:51 +0200, Andrea Arcangeli wrote:
+> Hi,
+> 
+> CC'ing Mel.
+> 
+> On Wed, Apr 13, 2011 at 02:03:58PM +0300, raz ben yehuda wrote:
+> > Andrea Hello
+> > 
+> > I am running the AIM benchmark suite looking for regressions in 2.6.38.
+> > The test page_test tests sbrk(). 2.6.38 is 13% less than 2.6.27 and 11%
+> > less than 2.6.37.
+> > The regression starts somewhere in the THP patch:  
+> > SHA1 4e9f64c42d0ba5eb0c78569435ada4c224332ce4  to
+> > SHA1 152c9ccb75548c027fa3103efa4fa4e19a345449 . 
+> > 
+> > I cannot git bisect it any more as the kernel won't compile.
+> > Even if i disable THP in the kernel I still get a regression. 
+> > I performed the benchmark on Xeon blade 3GHZ. But it also happens in
+> > other types of machines.
+> > 
+> > 2.6.38
+> > Apr 13 13:31:16 2011 AIM Independent Resource Benchmark - Suite IX 5120
+> > page_test 30010 85.0716       144621.79 System Allocations &Pages/second
+> > 
+> > 2.6.37
+> > Apr 13 13:44:39 2011 AIM Independent Resource Benchmark - Suite IX 5120
+> > page_test 5020 100.797       171354.58 System Allocations & Pages/second
+> > 
+> > I am going to profile it hopefully I will have more information.
+> 
+> The compaction kswapd caused regressions in fs benchs like specsfs,
+> it's fixed in 2.6.39-rc. Obviously it will go away if you set
+> CONFIG_COMPACTION=n, but 2.6.39-rc should work best with COMPACTION=y
+> too. Could you try latest 2.6.39 git?
+> 
+> Also please make sure CONFIG_SLUB=n and CONFIG_SLAB=y. We must fix
+> SLUB so it stops allocating with GFP_KERNEL in the higher order alloc,
+> I think it should only do a quick check of the buddy with
+> GFP_ATOMIC. The pageblock types are the thing that prevents
+> fragmentation, no need of special logic for that in slub. It's
+> unlikely that for short lived allocations succeeding the high order
+> allocation provides enough speedup to the code using the memory, in
+> order to at least break even with the cost of compacting the memory to
+> succeed the allocation.
+
 
