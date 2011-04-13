@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab1DMIM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:12:58 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59625 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080Ab1DMIMz (ORCPT
+	id S1756164Ab1DMIPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 04:15:40 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:40531 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab1DMIPh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:12:55 -0400
-Date: Wed, 13 Apr 2011 10:12:46 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Gabriel Paubert <paubert@iram.es>
-Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: small git lesson [Was: Re: Revert
- 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?]
-Message-ID: <20110413081246.GK18850@pengutronix.de>
-References: <20110404235259.GA30132@iram.es>
- <20110406084101.GB13963@pengutronix.de>
- <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
- <20110406204327.GA11148@iram.es>
- <1302185075.24704.143.camel@thor.local>
- <20110411133128.GA24344@iram.es>
- <1302535963.24704.268.camel@thor.local>
- <20110412113033.GA16649@iram.es>
- <1302608770.27054.36.camel@thor.local>
- <20110413080204.GA3871@iram.es>
+	Wed, 13 Apr 2011 04:15:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NHxRYK88nkiPDbZyv1Xqz4oxmQdZwcxPBCwdRg+E0OCILj54adZTMrNKcAnGsJnMJH
+         CnTnq3/Gs7uA5F35H8Jw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110413080204.GA3871@iram.es>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110413070259.GE4070@infomag.iguana.be>
+References: <1302641290-30212-1-git-send-email-natg@google.com>
+	<1302641387-30264-1-git-send-email-natg@google.com>
+	<20110413070259.GE4070@infomag.iguana.be>
+Date: Wed, 13 Apr 2011 01:15:33 -0700
+Message-ID: <BANLkTimE4sNw1it8-te9Hk+earOVd6NeUg@mail.gmail.com>
+Subject: Re: [PATCH v5 1/2] Use "request_muxed_region" in it87 watchdog drivers
+From: Natarajan Gurumoorthy <natg@google.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 10:02:04AM +0200, Gabriel Paubert wrote:
-> On Tue, Apr 12, 2011 at 01:46:10PM +0200, Michel Dänzer wrote:
-> > BTW, if your kernel contains commit
-> > 69a07f0b117a40fcc1a479358d8e1f41793617f2, can you try if reverting that
-> > helps?
-> 
-> My kernel is pristine 2.6.38 and does not include this commit
-> (was introduced before 2.6.39-rc1 according to gitk).
-gitk is not the best tool to find this out.
+Wim,
+      Old habits die hard. I will get rid of it and ship out a new patch.
 
-$ git name-rev --refs=refs/tags/v2.6\* 69a07f0b117a40fcc1a479358d8e1f41793617f2
-69a07f0b117a40fcc1a479358d8e1f41793617f2 tags/v2.6.39-rc2~3^2~43^2~4
+Regards
+Nat
 
-so it was introduced just before -rc2.
 
-Best regards
-Uwe
+On Wed, Apr 13, 2011 at 12:03 AM, Wim Van Sebroeck <wim@iguana.be> wrote:
+> Hi Nat,
+>
+>> +     (void) request_muxed_region(REG, 2, NAME);
+>
+> Why do we need to typecast this? Can't we just use
+> +       request_muxed_region(REG, 2, NAME);
+>
+> Kind regards,
+> Wim.
+>
+>
+>
+
+
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Regards
+Nat Gurumoorthy AB6SJ
