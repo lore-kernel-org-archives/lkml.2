@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933115Ab1DMQUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:20:45 -0400
-Received: from kroah.org ([198.145.64.141]:52940 "EHLO coco.kroah.org"
+	id S933142Ab1DMQU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:20:59 -0400
+Received: from kroah.org ([198.145.64.141]:52929 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932911Ab1DMQNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:18 -0400
+	id S932798Ab1DMQNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:16 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:47 2011
-Message-Id: <20110413161047.475520510@clark.kroah.org>
+Message-Id: <20110413161047.242948580@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:10 -0700
+Date: Wed, 13 Apr 2011 09:10:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Vasiliy Kulikov <segoon@openwall.com>,
-        Hartley Sweeten <hartleys@visionengravers.com>,
-        Matthieu Crapet <mcrapet@gmail.com>
-Subject: [47/71] drivers/misc/ep93xx_pwm.c: world-writable sysfs files
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [45/71] mfd: ab3100: world-writable debugfs *_priv files
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,37 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit deb187e72470b0382d4f0cb859e76e1ebc3a1082 upstream.
+commit f8a0697722d12a201588225999cfc8bfcbc82781 upstream.
 
-Don't allow everybody to change device settings.
+Don't allow everybody to change device hardware registers.
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Matthieu Crapet <mcrapet@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/misc/ep93xx_pwm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/mfd/ab3100-core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/misc/ep93xx_pwm.c
-+++ b/drivers/misc/ep93xx_pwm.c
-@@ -248,11 +248,11 @@ static ssize_t ep93xx_pwm_set_invert(str
- 
- static DEVICE_ATTR(min_freq, S_IRUGO, ep93xx_pwm_get_min_freq, NULL);
- static DEVICE_ATTR(max_freq, S_IRUGO, ep93xx_pwm_get_max_freq, NULL);
--static DEVICE_ATTR(freq, S_IWUGO | S_IRUGO,
-+static DEVICE_ATTR(freq, S_IWUSR | S_IRUGO,
- 		   ep93xx_pwm_get_freq, ep93xx_pwm_set_freq);
--static DEVICE_ATTR(duty_percent, S_IWUGO | S_IRUGO,
-+static DEVICE_ATTR(duty_percent, S_IWUSR | S_IRUGO,
- 		   ep93xx_pwm_get_duty_percent, ep93xx_pwm_set_duty_percent);
--static DEVICE_ATTR(invert, S_IWUGO | S_IRUGO,
-+static DEVICE_ATTR(invert, S_IWUSR | S_IRUGO,
- 		   ep93xx_pwm_get_invert, ep93xx_pwm_set_invert);
- 
- static struct attribute *ep93xx_pwm_attrs[] = {
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -591,7 +591,7 @@ static void ab3100_setup_debugfs(struct
+ 	ab3100_get_priv.ab3100 = ab3100;
+ 	ab3100_get_priv.mode = false;
+ 	ab3100_get_reg_file = debugfs_create_file("get_reg",
+-				S_IWUGO, ab3100_dir, &ab3100_get_priv,
++				S_IWUSR, ab3100_dir, &ab3100_get_priv,
+ 				&ab3100_get_set_reg_fops);
+ 	if (!ab3100_get_reg_file) {
+ 		err = -ENOMEM;
+@@ -601,7 +601,7 @@ static void ab3100_setup_debugfs(struct
+ 	ab3100_set_priv.ab3100 = ab3100;
+ 	ab3100_set_priv.mode = true;
+ 	ab3100_set_reg_file = debugfs_create_file("set_reg",
+-				S_IWUGO, ab3100_dir, &ab3100_set_priv,
++				S_IWUSR, ab3100_dir, &ab3100_set_priv,
+ 				&ab3100_get_set_reg_fops);
+ 	if (!ab3100_set_reg_file) {
+ 		err = -ENOMEM;
 
 
