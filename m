@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab1DMQLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:11:44 -0400
-Received: from nm19.bullet.mail.bf1.yahoo.com ([98.139.212.178]:36624 "HELO
-	nm19.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932563Ab1DMQLl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:11:41 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 794810.25196.bm@omp1040.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Tw2Pt9+ISpeFpE2zOkQZOnIyhNTKikH+UxtLUKXk/pFF4fk9FNeQDqMUvMWTRu2G191A7/gGWfxYPKJdMwjuN96OaQct7IgaKy4UTsvpoVeYwDnrmzT3XIHolZG9L4knP2wolVVx/HWMQDgwxi0k/1lqPFc02wWlgyr8ypM6hZ0=;
-Message-ID: <677552.47001.qm@web161601.mail.bf1.yahoo.com>
-X-YMail-OSG: BLXs2j8VM1lXp8JtBy9oxoYmk_ws_pNu7_5KVaLxKhWg0FX
- tW7Pc7s7uWHCG3Ettf46CzJgagrKYR7_GXO.5BypA4EhZS_1xkuuHVExBjIN
- dQq6J9zRVI4BHOyiWNXiKf2uFn8nCdKbUyJgNh24G6p5E3v_3.y6pXBuuAzh
- 1v8lSksTIRpsDMZ9bQRBMboenLiJweiVb82dovVs9iO2mI0nSB9RE698HTtb
- eK4r3zs3o_HN7PA5z9qplZx_sJjS3k3328Xfjy1NrBWan2DwV4.ODECRYPLw
- j_LDSCmzMaNoa3M8Qtv2aOFkE9qafQUq7AQ7Y77n_YLXjnbAXZPBYECv64WJ
- dAhHH8o3c7Y.fetFhcVFNfqDTHYJqIym9IwmcmlIkkCSn9zlUPJF82A--
-X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.109.295617
-Date: Wed, 13 Apr 2011 09:11:39 -0700 (PDT)
-From: Walter Goldens <goldenstranger@yahoo.com>
-Subject: Re: 2.6.38: rt2800usb: high latency (1000ms)?
-To: Justin Piszcz <jpiszcz@lucidpixels.com>, Ivo Van Doorn <ivdoorn@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTi==Bw6mWWJidLi+ZRzz87ck4DAqVA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932642Ab1DMQMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:12:15 -0400
+Received: from kroah.org ([198.145.64.141]:54214 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757594Ab1DMPzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:08 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:43 2011
+Message-Id: <20110413155143.799888752@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 13 Apr 2011 08:50:32 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [08/74] [SCSI] ses: show devices for enclosures with no page 7
+In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-> > I recall using this driver in staging and it crashing
-> my machine, now thats
-> > its no longer in staging, I thought I'd give it
-> another try..  Using the
-> 
-> The rt2800usb was not in staging but has been inside the
-> main kernel
-> tree for quite
-> some time already, the alternative rt2870sta was in staging
-> and will
-> be removed very soon.
-> 
-> > following wireless usb adapter, I'm seeing very high
-> latency when using
-> > the device in Linux, (with Windows, there are no
-> problems).  Using Debian
-> > Testing + wpa_supplicant, using the following USB
-> adapter:
-> 
-> Can you try disabling powersaving?
-> iwconfig wlan0 power off
-> 
-> Ivo
+------------------
 
-Hi,
+From: John Hughes <john@Calva.COM>
 
-I have exactly the same device /VID/. Ivo's suggestion fixed the problem, to some extent. Latency is fine now but every now and then I'd get (DUP!) duplicated packets and I've isolated the problem only to 54G capable APs. APs with 11n work fine without duplicate packets (or high latency).
+commit 877a55979c189c590e819a61cbbe2b7947875f17 upstream.
 
-My request is, will you please try pinging both G and N APs to see if duplicate packs are occurring at your end.
+enclosure page 7 gives us the "pretty" names of the enclosure slots.
+Without a page 7, we can still use the enclosure code as long as we
+make up numeric names for the slots. Unfortunately, the current code
+fails to add any devices because the check for page 10 is in the wrong
+place if we have no page 7.  Fix it so that devices show up even if
+the enclosure has no page 7.
 
-Walter
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/scsi/ses.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/scsi/ses.c
++++ b/drivers/scsi/ses.c
+@@ -389,9 +389,9 @@ static void ses_enclosure_data_process(s
+ 		len = (desc_ptr[2] << 8) + desc_ptr[3];
+ 		/* skip past overall descriptor */
+ 		desc_ptr += len + 4;
+-		if (ses_dev->page10)
+-			addl_desc_ptr = ses_dev->page10 + 8;
+ 	}
++	if (ses_dev->page10)
++		addl_desc_ptr = ses_dev->page10 + 8;
+ 	type_ptr = ses_dev->page1 + 12 + ses_dev->page1[11];
+ 	components = 0;
+ 	for (i = 0; i < types; i++, type_ptr += 4) {
+
+
