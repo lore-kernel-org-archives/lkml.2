@@ -1,84 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab1DMVZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:25:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56933 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab1DMVZN (ORCPT
+	id S932983Ab1DMVZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:25:30 -0400
+Received: from mail.academy.zt.ua ([82.207.120.245]:61636 "EHLO
+	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932855Ab1DMVZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:25:13 -0400
-Message-ID: <4DA6145D.9070703@kernel.org>
-Date: Wed, 13 Apr 2011 14:23:41 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
-In-Reply-To: <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020201.4DA6149E.00E4,ss=1,fgs=0
+	Wed, 13 Apr 2011 17:25:27 -0400
+X-MDAV-Processed: mail.academy.zt.ua, Thu, 14 Apr 2011 00:17:18 +0300
+X-Spam-Processed: mail.academy.zt.ua, Thu, 14 Apr 2011 00:17:18 +0300
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: george@academy.zt.ua
+X-Return-Path: george@znau.edu.ua
+X-Envelope-From: george@znau.edu.ua
+Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
+From: George Kashperko <george@znau.edu.ua>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org,
+        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTi=wzzzeF-PmqLt9o8arW7nRaFRRJw@mail.gmail.com>
+References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
+	 <20110413163113.GA24015@kroah.com>
+	 <BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
+	 <1302726703.8015.1.camel@dev.znau.edu.ua>
+	 <BANLkTimwZOJ0a5kVfaUzEcsMc39H999u0A@mail.gmail.com>
+	 <1302727516.8015.9.camel@dev.znau.edu.ua>
+	 <BANLkTi=wzzzeF-PmqLt9o8arW7nRaFRRJw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 14 Apr 2011 00:14:03 +0300
+Message-Id: <1302729243.8479.1.camel@dev.znau.edu.ua>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2011 01:54 PM, Linus Torvalds wrote:
-> On Wed, Apr 13, 2011 at 1:48 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>
->> can you try following change ? it will push gart to 0x80000000
->>
->> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
->> index 86d1ad4..3b6a9d5 100644
->> --- a/arch/x86/kernel/aperture_64.c
->> +++ b/arch/x86/kernel/aperture_64.c
->> @@ -83,7 +83,7 @@ static u32 __init allocate_aperture(void)
->>         * so don't use 512M below as gart iommu, leave the space for kernel
->>         * code for safe
->>         */
->> -       addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
->> +       addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<21);
-> 
-> What are all the magic numbers, and why would 0x80000000 be special?
 
-that is the old value when kernel was doing bottom-up bootmem allocation.
+> 2011/4/13 George Kashperko <george@znau.edu.ua>:
+> >
+> >> 2011/4/13 George Kashperko <george@znau.edu.ua>:
+> >> >
+> >> > В Срд, 13/04/2011 в 21:39 +0200, Rafał Miłecki пишет:
+> >> >> 2011/4/13 Greg KH <greg@kroah.com>:
+> >> >> >> diff --git a/drivers/axi/axi_pci_bridge.c b/drivers/axi/axi_pci_bridge.c
+> >> >> >> new file mode 100644
+> >> >> >> index 0000000..17e882c
+> >> >> >> --- /dev/null
+> >> >> >> +++ b/drivers/axi/axi_pci_bridge.c
+> >> >> >> @@ -0,0 +1,33 @@
+> >> >> >> +/*
+> >> >> >> + * AXI PCI bridge module
+> >> >> >> + *
+> >> >> >> + * Licensed under the GNU/GPL. See COPYING for details.
+> >> >> >> + */
+> >> >> >> +
+> >> >> >> +#include "axi_private.h"
+> >> >> >> +
+> >> >> >> +#include <linux/axi/axi.h>
+> >> >> >> +#include <linux/pci.h>
+> >> >> >> +
+> >> >> >> +static DEFINE_PCI_DEVICE_TABLE(axi_pci_bridge_tbl) = {
+> >> >> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4331) },
+> >> >> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4353) },
+> >> >> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4727) },
+> >> >> >> +     { 0, },
+> >> >> >> +};
+> >> >> >> +MODULE_DEVICE_TABLE(pci, axi_pci_bridge_tbl);
+> >> >> >> +
+> >> >> >> +static struct pci_driver axi_pci_bridge_driver = {
+> >> >> >> +     .name = "axi-pci-bridge",
+> >> >> >> +     .id_table = axi_pci_bridge_tbl,
+> >> >> >> +};
+> >> >> >> +
+> >> >> >> +int __init axi_pci_bridge_init(void)
+> >> >> >> +{
+> >> >> >> +     return axi_host_pci_register(&axi_pci_bridge_driver);
+> >> >> >> +}
+> >> >> >> +
+> >> >> >> +void __exit axi_pci_bridge_exit(void)
+> >> >> >> +{
+> >> >> >> +     axi_host_pci_unregister(&axi_pci_bridge_driver);
+> >> >> >> +}
+> >> >> >
+> >> >> > You register a pci driver that does nothing?  That's not right, you need
+> >> >> > to then base your axi bus off of that pci device, so it is hooked up
+> >> >> > correctly in the /sys/devices/ tree.  Otherwise you are somewhere up in
+> >> >> > the virtual location for your axi bus, right?
+> >> >>
+> >> >> Please take a look at:
+> >> >> driver->probe = axi_host_pci_probe;
+> >> >> driver->remove = axi_host_pci_remove;
+> >> >> return pci_register_driver(driver);
+> >> >>
+> >> >>
+> >> >> >> +bool axi_core_is_enabled(struct axi_device *core)
+> >> >> >> +{
+> >> >> >> +     if ((axi_aread32(core, AXI_IOCTL) & (AXI_IOCTL_CLK | AXI_IOCTL_FGC))
+> >> >> >> +         != AXI_IOCTL_CLK)
+> >> >> >> +             return false;
+> >> >> >> +     if (axi_aread32(core, AXI_RESET_CTL) & AXI_RESET_CTL_RESET)
+> >> >> >> +             return false;
+> >> >> >> +     return true;
+> >> >> >> +}
+> >> >> >> +EXPORT_SYMBOL(axi_core_is_enabled);
+> >> >> >
+> >> >> > EXPORT_SYMBOL_GPL()?
+> >> >> >
+> >> >> > What module uses this?  And why would it care?
+> >> >> >
+> >> >> >> +EXPORT_SYMBOL(axi_core_enable);
+> >> >> >
+> >> >> > EXPORT_SYMBOL_GPL()?
+> >> >> >
+> >> >> > Same goes for your other exports, just want you to be sure here.
+> >> >>
+> >> >> Hm, I'm not sure. Using EXPORT_SYMBOL_GPL will forbid closed source
+> >> >> drivers from using our bus driver, right? I'm don't have preferences
+> >> >> on this, if you prefer us to force GPL, I can.
+> >> >>
+> >> >>
+> >> >> >> +u32 xaxi_chipco_gpio_control(struct axi_drv_cc *cc, u32 mask, u32 value)
+> >> >> >> +{
+> >> >> >> +     return axi_cc_write32_masked(cc, AXI_CC_GPIOCTL, mask, value);
+> >> >> >> +}
+> >> >> >> +EXPORT_SYMBOL(xaxi_chipco_gpio_control);
+> >> >> >
+> >> >> > "xaxi"?  Shouldn't that be consistant with the other exports and start
+> >> >> > with "axi"?
+> >> >>
+> >> >> Left from old tests/rewrites/splitting. Thanks.
+> >> >>
+> >> >>
+> >> >> >> +static u8 axi_host_pci_read8(struct axi_device *core, u16 offset)
+> >> >> >> +{
+> >> >> >> +     if (unlikely(core->bus->mapped_core != core))
+> >> >> >
+> >> >> > Are you sure about the use of unlikely in this, and other functions?
+> >> >> > The compiler almost always does a better job than we do for these types
+> >> >> > of calls, just let it do it's job.
+> >> >> >
+> >> >> >> +             axi_host_pci_switch_core(core);
+> >> >> >> +     return ioread8(core->bus->mmio + offset);
+> >> >> >
+> >> >> > I think because of that unlikely, you just slowed down all pci devices,
+> >> >> > right?  That's not very nice :)
+> >> >>
+> >> >> Hm, my logic suggests it is alright, but please consider this once
+> >> >> more with me ;)
+> >> >>
+> >> >> For the most of the time mapped_core (active core) do not change. We
+> >> >> perform few hundreds of operations on one core in a row. This way
+> >> >> mapped_core points to passed core for most of the time. Condition
+> >> >> (mapped_core != core) is unlikely to happen.
+> >> >>
+> >> >> Is there anything wrong in my logic?
+> >> >>
+> >> > Yes, there is. You don't need that "if" at all.
+> >>
+> >> Damn, WHY do you make me ask why, why, why, all the time?! Can't you
+> >> just write word of explanation without being asked for?
+> >>
+> > Errm... Sorry, but I've already explained PCIE host behaviour _several_
+> > times several days ago. Personally I like to ask questions. Have
+> > absolutely nothing agains anyone else asking good questions. Never try
+> > to make people ask me questions I know they would ask anyway. Really you
+> > might missed some my messages earlier or maybe my english is too awful ?
+> >
+> > Yet again, for PCIE cores (not only for them, for some PCI cores as
+> > well) buscommon, buscore and function core are all available
+> > simultaneously. You dont need window sliding when access them.
+> 
+> I had no idea what you were referring to. We do not dig into PCIe
+> functions yet, so I believe for now we need this "if".
+You are already deep inside. Your host code drives pci function.
 
 > 
-> Why don't we write code that just works?
+> I'm getting totally frustrated with that whole situation :|
 > 
-> Or absent a "just works" set of patches, why don't we revert to code
-> that has years of testing?
-> 
-> This kind of "I broke things, so now I will jiggle things randomly
-> until they unbreak" is not acceptable.
-> 
-> Either explain why that fixes a real BUG (and why the magic constants
-> need to be what they are), or just revert the patch that caused the
-> problem, and go back to the allocation patters that have years of
-> experience.
-> 
-> Guys, we've had this discussion before, in PCI allocation. We don't do
-> this. We tried switching the PCI region allocations to top-down, and
-> IT WAS A FAILURE. We reverted it to what we had years of testing with.
-> 
-> Don't just make random changes. There really are only two acceptable
-> models of development: "think and analyze" or "years and years of
-> testing on thousands of machines". Those two really do work.
 
-We did do the analyzing, and only difference seems to be:
-good one is using 0x80000000
-and bad one is using 0xa0000000.
+Have nice day,
+George
 
-We try to figure out if it needs low address and it happen to work 
-because kernel was doing bottom up allocation.
 
-Thanks
-
-Yinghai
