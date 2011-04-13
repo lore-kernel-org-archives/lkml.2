@@ -1,167 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1DMOBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:01:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753370Ab1DMOBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:01:38 -0400
-Message-ID: <4DA5ACB2.1070505@redhat.com>
-Date: Wed, 13 Apr 2011 10:01:22 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+	id S1755162Ab1DMOCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:02:13 -0400
+Received: from nm16-vm0.bullet.mail.bf1.yahoo.com ([98.139.212.253]:43185 "HELO
+	nm16-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756017Ab1DMOCL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 10:02:11 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Apr 2011 10:02:11 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 221617.33173.bm@omp1037.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=j39C9ILpy2J8k2wPV0Q34YgWJOscLUVLFLcNayJIOx+JntsJE0iz4wRc4ln/Rxgkq7nu9xtsn84wb0Joh25+5HOoe7IsnSBbNgs8K+RQimSw1RjqmPFsMGmw5E/QP5crMVPWsPecbUsRzEvKXKFcV0epMPuSKslGfyfmXVS5iWw=;
+Message-ID: <112566.51053.qm@web162019.mail.bf1.yahoo.com>
+X-YMail-OSG: hjdX9awVM1m08Q8S.IKkzo9rJZEd7ONEmAl7QZLgu7eGWmk
+ Au57tbNRUjXJzEt5Y_SgD5BFJPqUJwxrbsSpE3ycVb_GyMR.0nx5iveMhXEB
+ DgVueqMwhNzpXEtVA7EBz6T2pjTFMLKG49oexVW03oCPPrdaSboaRA0GJnyo
+ XG8M3Z_lKJ7O3r9.vlsfqAKRAQeLoSOQl1E80AZu1gClAa3N8z0rr6P1m3Qh
+ ZGG3Mivv0VuTu.H.dikyTmC4TH.Q26LJADCuuiLjUoE9Y.I78FJSu4pb.O5T
+ 4SzD6or81mJmk88JIBmmxfP1pxr44FzJq3jAAq3ici6PJ4Otyuk8B4nAOL6e
+ bKK4ozk8I_Nc5h2y1o4JyzoY_Wv2gH7QU55uj4kEjFUpwvG86aUMZ63FD
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.109.295617
+Date: Wed, 13 Apr 2011 06:56:00 -0700 (PDT)
+From: Pintu Agarwal <pintu_agarwal@yahoo.com>
+Subject: Re: Regarding memory fragmentation using malloc....
+To: =?iso-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+In-Reply-To: <BANLkTi=7KHMA_JOwQcMQj5M+XU=qO07s2g@mail.gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
-        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mstowe@redhat.com" <mstowe@redhat.com>,
-        "dnelson@redhat.com" <dnelson@redhat.com>,
-        "rja@americas.sgi.com" <rja@americas.sgi.com>
-Subject: Re: [PATCH 2/3] x86, MCE: Drop default decoding notifier
-References: <20110413132409.GB1900@gere.osrc.amd.com> <1302701810-2471-2-git-send-email-bp@amd64.org>
-In-Reply-To: <1302701810-2471-2-git-send-email-bp@amd64.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2011 09:36 AM, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+Hi,
+
+My requirement is, I wanted to measure memory fragmentation level in linux kernel2.6.29 (ARM cortex A8 without swap).
+How can I measure fragmentation level(percentage) from /proc/buddyinfo ?
+
+Example : After each page allocation operation, I need to measure fragmentation level. If the level is above 80%, I will trigger a OOM or something to the user.
+How can I reproduce this memory fragmentation scenario using a sample program?
+
+Here is my sample program: (to check page allocation using malloc)
+----------------------------------------------
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<errno.h>
+#include<unistd.h>
+
+
+#define PAGE_SIZE       (4*1024)
+
+#define MEM_BLOCK       (64*PAGE_SIZE)
+
+
+#define MAX_LIMIT       (16)
+
+int main()
+{
+        char *ptr[MAX_LIMIT+1] = {NULL,};
+        int i = 0;
+
+        printf("Requesting <%d> blocks of memory of block size <%d>........\n",MAX_LIMIT,MEM_BLOCK);
+        system("cat /proc/buddyinfo");
+        system("cat /proc/zoneinfo | grep free_pages");
+        printf("*****************************************\n\n\n");
+        for(i=0; i<MAX_LIMIT; i++)
+        {
+                ptr[i] = (char *)malloc(sizeof(char)*MEM_BLOCK);
+                if(ptr[i] == NULL)
+                {
+                        printf("ERROR : malloc failed(counter %d) <%s>\n",i,strerror(errno));
+                        system("cat /proc/buddyinfo");
+                        system("cat /proc/zoneinfo | grep free_pages");
+                        printf("press any key to terminate......");
+                        getchar();
+                        exit(0);
+                }
+                memset(ptr[i],1,MEM_BLOCK);
+                sleep(1);
+                //system("cat /proc/buddyinfo");
+                //system("cat /proc/zoneinfo | grep free_pages");
+                //printf("-----------------------------------------\n");
+        }
+
+        sleep(1);
+        system("cat /proc/buddyinfo");
+        system("cat /proc/zoneinfo | grep free_pages");
+        printf("-----------------------------------------\n");
+
+        printf("press any key to end......");
+        getchar();
+
+        for(i=0; i<MAX_LIMIT; i++)
+        {
+                if(ptr[i] != NULL)
+                {
+                        free(ptr[i]);
+                }
+        }
+
+        printf("DONE !!!\n");
+
+        return 0;
+}
+EACH BLOCK SIZE = 64 Pages ==> (64 * 4 * 1024)
+TOTAL BLOCKS = 16
+----------------------------------------------
+In my linux2.6.29 ARM machine, the initial /proc/buddyinfo shows the following:
+Node 0, zone      DMA     17     22      1      1      0      1      1      0      0      0      0      0
+Node 1, zone      DMA     15    320    423    225     97     26      1      0      0      0      0      0
+
+After running my sample program (with 16 iterations) the buddyinfo output is as follows:
+Requesting <16> blocks of memory of block size <262144>........
+Node 0, zone      DMA     17     22      1      1      0      1      1      0      0      0      0      0
+Node 1, zone      DMA     15    301    419    224     96     27      1      0      0      0      0      0
+    nr_free_pages 169
+    nr_free_pages 6545
+*****************************************
+
+
+Node 0, zone      DMA     17     22      1      1      0      1      1      0      0      0      0      0
+Node 1, zone      DMA     18      2    305    226     96     27      1      0      0      0      0      0
+    nr_free_pages 169
+    nr_free_pages 5514
+-----------------------------------------
+
+The requested block size is 64 pages (2^6) for each block. 
+But if we see the output after 16 iterations the buddyinfo allocates pages only from Node 1 , (2^0, 2^1, 2^2, 2^3).
+But the actual allocation should happen from (2^6) block in buddyinfo.
+
+Questions:
+1) How to analyse buddyinfo based on each page block size?
+2) How and in what scenario the buddyinfo changes?
+3) Can we rely completely on buddyinfo information for measuring the level of fragmentation?
+
+Can somebody through some more lights on this???
+
+Thanks,
+Pintu
+
+--- On Wed, 4/13/11, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+
+> From: Américo Wang <xiyou.wangcong@gmail.com>
+> Subject: Re: Regarding memory fragmentation using malloc....
+> To: "Pintu Agarwal" <pintu_agarwal@yahoo.com>
+> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "Eric Dumazet" <eric.dumazet@gmail.com>, "Changli Gao" <xiaosuo@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, "azurIt" <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>
+> Date: Wednesday, April 13, 2011, 6:44 AM
+> On Wed, Apr 13, 2011 at 2:54 PM,
+> Pintu Agarwal <pintu_agarwal@yahoo.com>
+> wrote:
+> > Dear All,
+> >
+> > I am trying to understand how memory fragmentation
+> occurs in linux using many malloc calls.
+> > I am trying to reproduce the page fragmentation
+> problem in linux 2.6.29.x on a linux mobile(without Swap)
+> using a small malloc(in loop) test program of BLOCK_SIZE
+> (64*(4*K)).
+> > And then monitoring the page changes in
+> /proc/buddyinfo after each operation.
+> > From the output I can see that the page values under
+> buddyinfo keeps changing. But I am not able to relate these
+> changes with my malloc BLOCK_SIZE.
+> > I mean with my BLOCK_SIZE of (2^6 x 4K ==> 2^6
+> PAGES) the 2^6 th block under /proc/buddyinfo should change.
+> But this is not the actual behaviour.
+> > Whatever is the blocksize, the buddyinfo changes only
+> for 2^0 or 2^1 or 2^2 or 2^3.
+> >
+> > I am trying to measure the level of fragmentation
+> after each page allocation.
+> > Can somebody explain me in detail, how actually
+> /proc/buddyinfo changes after each allocation and
+> deallocation.
+> >
 > 
-> The default notifier doesn't make a lot of sense to call in the
-> correctable errors case. Drop it and emit the mcelog decoding hint only
-> in the uncorrectable errors case and when no notifier is registered.
+> What malloc() sees is virtual memory of the process, while
+> buddyinfo
+> shows physical memory pages.
 > 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/include/asm/mce.h       |    4 ++--
->  arch/x86/kernel/cpu/mcheck/mce.c |   26 +++++++++-----------------
->  2 files changed, 11 insertions(+), 19 deletions(-)
+> When you malloc() 64K memory, the kernel may not allocate a
+> 64K
+> physical memory at one time
+> for you.
 > 
-  
-> +extern atomic_t mce_decoders;
-> +
+> Thanks.
+> 
 
-Boris,
 
-I don't think we need to do this.  I think we can use the existing notifier chain tools to do this check for us ... *untested and uncompiled* patch below.
-
-  	 * Print out human-readable details about the MCE error,
->  	 * (if the CPU has an implementation for that)
->  	 */
-> -	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-> +	if (!atomic_read(&mce_decoders)) {
-> +		pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
-> +		pr_emerg(HW_ERR "Run the above through 'mcelog --ascii' to decode.\n");
-
-I thought we didn't want these lines at all for CE errors?
-
-> +	} else
-> +		atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
->  }
->  
->  #define PANIC_TIMEOUT 5 /* 5 seconds */
-> @@ -589,7 +582,8 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->  		 */
->  		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
->  			mce_log(&m);
-> -			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
-> +			if (atomic_read(&mce_decoders))
-> +				atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
->  		}
->  
->  		/*
-> @@ -1721,8 +1715,6 @@ __setup("mce", mcheck_enable);
->  
->  int __init mcheck_init(void)
->  {
-> -	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
-> -
->  	mcheck_intel_therm_init();
->  
->  	return 0;
-
-Again, this patch has not been tested or compiled against latest upstream.  I
-have quickly tested it against RHEL6 (2.6.32,33,34,35,36,38,39 based) and
-confirmed that I don't see the messages for CEs.  I have NOT fully tested to see what happens when I add in a "dummy" notifier to see if the messages are not printed.
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 3385ea2..b10a1f4 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -100,25 +100,12 @@ static int			cpu_missing;
- 
- /*
-  * CPU/chipset specific EDAC code can register a notifier call here to print
-- * MCE errors in a human-readable form.
-+ * MCE errors in a human-readable form.  Notifiers must return NOTIFY_STOP
-+ * upon completion.
-  */
- ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
- EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
- 
--static int default_decode_mce(struct notifier_block *nb, unsigned long val,
--			       void *data)
--{
--	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
--	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
--
--	return NOTIFY_STOP;
--}
--
--static struct notifier_block mce_dec_nb = {
--	.notifier_call = default_decode_mce,
--	.priority      = -1,
--};
--
- /* MCA banks polled by the period polling timer for corrected events */
- DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
-@@ -212,6 +199,8 @@ void mce_log(struct mce *mce)
- 
- static void print_mce(struct mce *m)
- {
-+	int ret;
-+
- 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
- 	       m->extcpu, m->mcgstatus, m->bank, m->status);
- 
-@@ -236,10 +225,13 @@ static void print_mce(struct mce *m)
- 		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
- 
- 	/*
--	 * Print out human-readable details about the MCE error,
--	 * (if the CPU has an implementation for that)
-+	 * Output a message if the CPU has human-readable information for
-+	 * unhandled UC errors
- 	 */
--	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
-+	if ((ret != NOTIFY_STOP) && (m->status & MCI_STATUS_UC))
-+		pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' "
-+			 "to decode.\n");
- }
- 
- #define PANIC_TIMEOUT 5 /* 5 seconds */
-@@ -589,8 +581,8 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		 */
- 		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
- 			mce_log(&m);
--			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
--			add_taint(TAINT_MACHINE_CHECK);
-+			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0,
-+						   &m);
- 		}
- 
- 		/*
-@@ -1722,8 +1714,6 @@ __setup("mce", mcheck_enable);
- 
- int __init mcheck_init(void)
- {
--	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
--
- 	mcheck_intel_therm_init();
- 
- 	return 0;
+      
