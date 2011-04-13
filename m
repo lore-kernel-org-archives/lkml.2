@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758371Ab1DMK6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 06:58:37 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:30781
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751155Ab1DMK6g (ORCPT
+	id S1758382Ab1DMK7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 06:59:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44388 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab1DMK7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 06:58:36 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJL7TD-02-3CX-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <hpa@zytor.com>, <mingo@elte.hu>
-CC: <brgerst@gmail.com>, <tglx@linutronix.de>, <suresh.b.siddha@intel.com>,
-        <eranian@google.com>, <robert.richter@amd.com>,
-        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH] x86, xsave: fix non-lazy allocation of the xsave area
-Date: Wed, 13 Apr 2011 12:58:21 +0200
-Message-ID: <1302692301-695807-1-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20110407153029.GU13@escobedo.osrc.amd.com>
-References: <20110407153029.GU13@escobedo.osrc.amd.com>
+	Wed, 13 Apr 2011 06:59:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=BeY6lVDnSnDRUGesWLZDDDrGvktu5A7hXLvejnvQg1x7bOJlrhkSzrTvPqvVJW1Mne
+         AsD3VokXbgirIPIi4uefeVuLd1u6Gcr4QjVL3P6DXanPvbac9mw7VCfBwFe5ssfpY6u3
+         yt7hQ5esPrruSfktgcLSCaoTd3Mi2V7FjX+wk=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Sergei Shtylyov" <sshtylyov@mvista.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>
+Cc: "Tatyana Brokhman" <tlinder@codeaurora.org>, gregkh@suse.de,
+        linux-arm-msm@vger.kernel.org, balbi@ti.com, ablay@codeaurora.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] usb/gadget: don't deploy SS descriptors if SS is not
+ enabled.
+References: <20110411175917.GE4018@linutronix.de>
+ <1302636896-12717-1-git-send-email-bigeasy@linutronix.de>
+ <1302636896-12717-5-git-send-email-bigeasy@linutronix.de>
+ <4DA57F0F.1090609@ru.mvista.com> <4DA58179.40004@linutronix.de>
+Date: Wed, 13 Apr 2011 12:59:39 +0200
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vtvh5phh3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <4DA58179.40004@linutronix.de>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A single static xsave area just for init is not enough, since there are
-more user processes that are directly executed by kernel threads. Use
-fpu_alloc(), and SIGKILL the process if that fails.
+On Wed, 13 Apr 2011 12:56:57 +0200, Sebastian Andrzej Siewior  
+<bigeasy@linutronix.de> wrote:
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
----
- arch/x86/include/asm/i387.h |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+> Sergei Shtylyov wrote:
+>> Hello.
+>
+> Hello Sergei,
+>
+>> Cleaned-up example:
+>>  (in header)
+>>     #ifndef CONFIG_NET_FUNKINESS
+>>     static inline void init_funky_net (struct net_device *d) {}
+>>     #endif
+>>  (in the code itself)
+>>     dev = alloc_etherdev (sizeof(struct funky_private));
+>>     if (!dev)
+>>         return -ENODEV;
+>>     init_funky_net(dev);
+>
+> The problem here is that the code is included via
+>
+>    #include "composite.c
+>
+> so we don't really use header files. The alternative would be to use the
+> gadget_is_super_speed() function but that one takes a gadget as argument.
+> Preferences?
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 989c0ac..833b6f1 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -329,15 +329,12 @@ static inline void fpu_copy(struct fpu *dst, struct fpu *src)
- }
- 
- extern void fpu_finit(struct fpu *fpu);
--static union thread_xstate __init_xstate, *init_xstate = &__init_xstate;
- 
- static inline void fpu_clear(struct fpu *fpu)
- {
--	if (!fpu_allocated(fpu)) {
--		BUG_ON(init_xstate == NULL);
--		fpu->state = init_xstate;
--		init_xstate = NULL;
--	}
-+	if (!fpu_allocated(fpu) && fpu_alloc(fpu))
-+		do_group_exit(SIGKILL);
-+
- 	memset(fpu->state, 0, xstate_size);
- 	fpu_finit(fpu);
- 	set_used_math();
+#ifdef CONFIG_USB_GADGET_SUPERSPEED
+void usb_create_ss_descriptors(struct usb_function *f)
+{
+	/* ... */
+}
+#else
+static inline void usb_create_ss_descriptors(struct usb_function *f) { }
+#endif
+
+Is usually preferred.
+
 -- 
-1.5.6.5
-
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
