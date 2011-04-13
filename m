@@ -1,80 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab1DMUmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 16:42:44 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:21145 "EHLO mx2.netapp.com"
+	id S932737Ab1DMUrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 16:47:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58750 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379Ab1DMUmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 16:42:43 -0400
+	id S932320Ab1DMUrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 16:47:07 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,206,1301900400"; 
-   d="scan'208";a="541172596"
-Message-ID: <4DA60AB9.1050104@netapp.com>
-Date: Wed, 13 Apr 2011 16:42:33 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Lightning/1.0b2 Lanikai/3.1.9
+   d="scan'208";a="628155117"
+Message-ID: <4DA60BBE.6000500@intel.com>
+Date: Wed, 13 Apr 2011 13:46:54 -0700
+From: Joseph Cihula <joseph.cihula@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        ML netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
-References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz> <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz> <4DA49D3A.7090800@netapp.com> <4DA49F7F.8060005@suse.cz>
-In-Reply-To: <4DA49F7F.8060005@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Wei, Gang" <gang.wei@intel.com>
+Subject: [PATCH RESEND] intel_iommu: disable all VT-d PMRs when TXT launched
+References: <4D879328.1080006@intel.com>
+In-Reply-To: <4D879328.1080006@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2011 02:52 PM, Jiri Slaby wrote:
-> On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
->> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
->>> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
->>>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
->>>>> inacceptable for automounted NFS dirs.
->>>>
->>>> I'm still confused as to why you are hitting it at all. In the normal
->>>> autonegotiation case, the client should be trying to use AUTH_SYS first
->>>> and then trying rpcsec_gss if and only if that fails.
->>>>
->>>> Are you really exporting a filesystem using AUTH_NULL as the only
->>>> supported flavour?
->>>
->>> I don't know, I connect to a nfs server which is not maintained by me.
->>> It looks like that. How can I find out?
->>
->> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
-> 
-> I don't have NFS in modules. It's all built-in. And this one is
-> unconditionally selected because of CONFIG_NFS_V4.
+Intel VT-d Protected Memory Regions (PMRs) are supposed to be disabled,
+on each VT-d engine, after DMA remapping is enabled on the engines.
+This is because the behavior of having both enabled is not deterministic
+and because, if TXT has been used to launch the kernel, the PMRs may be
+programmed to cover memory regions that will be used for DMA.
 
-Does this patch help?
+Under some circumstances (certain quirks detected, lack of multiple
+devices, etc.), the current code does not set up DMA remapping on some
+VT-d engines.  In such cases it also skips disabling the PMRs.  This
+causes failures when the kernel is launched with TXT (most often this
+occurs on the graphics engine and results in colored vertical bars on
+the display).
 
-- Bryan
+This patch detects when the kernel has been launched with TXT and then
+disables the PMRs on all VT-d engines.  In some cases where the reason
+that remapping is not being enabled is due to possible ACPI DMAR table
+errors, the VT-d engine addresses may not be correct and thus not able
+to be safely programmed even to disable PMRs.  Because part of the TXT
+launch process is the verification of these addresses, it will always be
+safe to disable PMRs if the TXT launch has succeeded and hence only
+doing this in such cases.
 
-We should attempt an AUTH_NULL style mount before
-trying gss flavors.  This should prevent a hang if
-gss modules are loaded but the userspace program
-isn't running.
+Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 9bf41ea..4e3c16b 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2218,8 +2218,8 @@ static int nfs4_proc_get_root(struct nfs_server *server, struct nfs_fh *fhandle,
- 	rpc_authflavor_t flav_array[NFS_MAX_SECFLAVORS + 2];
- 
- 	flav_array[0] = RPC_AUTH_UNIX;
--	len = gss_mech_list_pseudoflavors(&flav_array[1]);
--	flav_array[1+len] = RPC_AUTH_NULL;
-+	flav_array[1] = RPC_AUTH_NULL;
-+	len = gss_mech_list_pseudoflavors(&flav_array[2]);
- 	len += 2;
- 
- 	for (i = 0; i < len; i++) {
+diff -uprN -X linux-2.6.38-rc3/Documentation/dontdiff
+linux-2.6.38-rc3/drivers/pci/intel-iommu.c
+linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c
+--- linux-2.6.38-rc3/drivers/pci/intel-iommu.c	2011-01-31
+19:05:49.000000000 -0800
++++ linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c	2011-02-18
+15:42:36.778301210 -0800
+@@ -1299,7 +1299,7 @@ static void iommu_detach_domain(struct d
+ static struct iova_domain reserved_iova_list;
+ static struct lock_class_key reserved_rbtree_key;
 
+-static void dmar_init_reserved_ranges(void)
++static int dmar_init_reserved_ranges(void)
+ {
+ 	struct pci_dev *pdev = NULL;
+ 	struct iova *iova;
+@@ -1313,8 +1313,10 @@ static void dmar_init_reserved_ranges(vo
+ 	/* IOAPIC ranges shouldn't be accessed by DMA */
+ 	iova = reserve_iova(&reserved_iova_list, IOVA_PFN(IOAPIC_RANGE_START),
+ 		IOVA_PFN(IOAPIC_RANGE_END));
+-	if (!iova)
++	if (!iova) {
+ 		printk(KERN_ERR "Reserve IOAPIC range failed\n");
++		return -ENODEV;
++	}
 
-> 
-> regards,
+ 	/* Reserve all PCI MMIO to avoid peer-to-peer access */
+ 	for_each_pci_dev(pdev) {
+@@ -1327,11 +1329,13 @@ static void dmar_init_reserved_ranges(vo
+ 			iova = reserve_iova(&reserved_iova_list,
+ 					    IOVA_PFN(r->start),
+ 					    IOVA_PFN(r->end));
+-			if (!iova)
++			if (!iova) {
+ 				printk(KERN_ERR "Reserve iova failed\n");
++				return -ENODEV;
++			}
+ 		}
+ 	}
+-
++	return 0;
+ }
 
+ static void domain_reserve_special_ranges(struct dmar_domain *domain)
+@@ -2213,7 +2217,7 @@ static int __init iommu_prepare_static_i
+ 	return 0;
+ }
+
+-int __init init_dmars(void)
++static int __init init_dmars(int force_on)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	struct dmar_rmrr_unit *rmrr;
+@@ -2393,8 +2397,15 @@ int __init init_dmars(void)
+ 	 *   enable translation
+ 	 */
+ 	for_each_drhd_unit(drhd) {
+-		if (drhd->ignored)
++		if (drhd->ignored) {
++			/*
++			 * we always have to disable PMRs or DMA may fail on
++			 * this device
++			 */
++			if (force_on)
++				iommu_disable_protect_mem_regions(drhd->iommu);
+ 			continue;
++		}
+ 		iommu = drhd->iommu;
+
+ 		iommu_flush_write_buffer(iommu);
+@@ -3297,12 +3308,21 @@ int __init intel_iommu_init(void)
+ 	if (no_iommu || dmar_disabled)
+ 		return -ENODEV;
+
+-	iommu_init_mempool();
+-	dmar_init_reserved_ranges();
++	if (iommu_init_mempool()) {
++		if (force_on)
++			panic("tboot: Failed to initialize iommu memory\n");
++		return 	-ENODEV;
++	}
++
++	if (dmar_init_reserved_ranges()) {
++		if (force_on)
++			panic("tboot: Failed to reserve iommu ranges\n");
++		return 	-ENODEV;
++	}
+
+ 	init_no_remapping_devices();
+
+-	ret = init_dmars();
++	ret = init_dmars(force_on);
+ 	if (ret) {
+ 		if (force_on)
+ 			panic("tboot: Failed to initialize DMARs\n");
