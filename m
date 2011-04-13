@@ -1,188 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab1DMOfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:35:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35265 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756638Ab1DMOfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:35:42 -0400
-Date: Wed, 13 Apr 2011 16:35:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jack Steiner <steiner@sgi.com>, Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: cpusets: randomize node rotor used in cpuset_mem_spread_node()
-Message-ID: <20110413143539.GB11051@tiehlicka.suse.cz>
+	id S1756806Ab1DMOhG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:37:06 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49782 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756638Ab1DMOhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 10:37:04 -0400
+Date: Wed, 13 Apr 2011 16:36:42 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>,
+        "rja@americas.sgi.com" <rja@americas.sgi.com>
+Subject: [PATCH -v2] x86, MCE: Drop default decoding notifier
+Message-ID: <20110413143642.GC2791@aftab>
+References: <20110413132409.GB1900@gere.osrc.amd.com>
+ <1302701810-2471-2-git-send-email-bp@amd64.org>
+ <4DA5ACB2.1070505@redhat.com>
+ <20110413141829.GE1987@aftab>
+ <4DA5B1B1.5090905@redhat.com>
+ <20110413142648.GB2791@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110413142648.GB2791@aftab>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I have revisited and fixed the following patch. I am keeping Jack's and
-Lee's s-o-b and all others are CCed because I am not exactly sure who
-worked on the patch originally.
-Can we consider it for re-inclusion?
+
+The default notifier doesn't make a lot of sense to call in the
+correctable errors case. Drop it and emit the mcelog decoding hint only
+in the uncorrectable errors case and when no notifier is registered.
+
+While at it, remove unused old x86_mce_decode_callback from the header.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
->From 4a2cfbdcfeae9d49ae9ff3486150bec2e4c6107e Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 13 Apr 2011 16:29:36 +0200
-Subject: [PATCH] cpusets: randomize node rotor used in cpuset_mem_spread_node()
+ arch/x86/include/asm/mce.h       |    2 --
+ arch/x86/kernel/cpu/mcheck/mce.c |   22 +++++-----------------
+ 2 files changed, 5 insertions(+), 19 deletions(-)
 
-[This patch has already been accepted as 0ac0c0d but later reverted
-(35926ff) because it itroduced arch specific __node_random which was
-defined only for x86 code so it broke other archs.
-This is a followup without any arch specific code. Other than that there
-are no functional changes.]
-
-Some workloads that create a large number of small files tend to assign
-too many pages to node 0 (multi-node systems).  Part of the reason is that
-the rotor (in cpuset_mem_spread_node()) used to assign nodes starts at
-node 0 for newly created tasks.
-
-This patch changes the rotor to be initialized to a random node number of
-the cpuset.
-
-[akpm@linux-foundation.org: fix layout]
-[Lee.Schermerhorn@hp.com: Define stub numa_random() for !NUMA configuration]
-[mhocko@suse.cz: Make it arch independent]
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Paul Menage <menage@google.com>
-Cc: Jack Steiner <steiner@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
----
- include/linux/bitmap.h   |    1 +
- include/linux/nodemask.h |    7 +++++++
- kernel/fork.c            |    4 ++++
- lib/bitmap.c             |    2 +-
- mm/mempolicy.c           |   16 ++++++++++++++++
- 5 files changed, 29 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index daf8c48..6fb2720 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -141,6 +141,7 @@ extern int bitmap_find_free_region(unsigned long *bitmap, int bits, int order);
- extern void bitmap_release_region(unsigned long *bitmap, int pos, int order);
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
-+extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int bits);
- 
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
-diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
-index dba35e4..66ccda9 100644
---- a/include/linux/nodemask.h
-+++ b/include/linux/nodemask.h
-@@ -66,6 +66,8 @@
-  * int num_online_nodes()		Number of online Nodes
-  * int num_possible_nodes()		Number of all possible Nodes
-  *
-+ * int node_random(mask)		Random node with set bit in mask
-+ *
-  * int node_online(node)		Is some node online?
-  * int node_possible(node)		Is some node possible?
-  *
-@@ -430,6 +432,9 @@ static inline void node_set_offline(int nid)
- 	node_clear_state(nid, N_ONLINE);
- 	nr_online_nodes = num_node_state(N_ONLINE);
- }
-+
-+extern int node_random(const nodemask_t *maskp);
-+
- #else
- 
- static inline int node_state(int node, enum node_states state)
-@@ -460,6 +465,8 @@ static inline int num_node_state(enum node_states state)
- 
- #define node_set_online(node)	   node_set_state((node), N_ONLINE)
- #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
-+
-+static inline int node_random(const nodemask_t *mask) { return 0; }
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index eb16e94..021979a 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
+ static inline void enable_p5_mce(void) {}
  #endif
  
- #define node_online_map 	node_states[N_ONLINE]
-diff --git a/kernel/fork.c b/kernel/fork.c
-index e7548de..f59c686 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1119,6 +1119,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
-  	}
- 	mpol_fix_fork_child_flag(p);
- #endif
-+#ifdef CONFIG_CPUSETS
-+	p->cpuset_mem_spread_rotor = node_random(&p->mems_allowed);
-+	p->cpuset_slab_spread_rotor = node_random(&p->mems_allowed);
-+#endif
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	p->irq_events = 0;
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 91e0ccf..a4b5217 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -671,7 +671,7 @@ static int bitmap_pos_to_ord(const unsigned long *buf, int pos, int bits)
-  *
-  * The bit positions 0 through @bits are valid positions in @buf.
-  */
--static int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
-+int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
+-extern void (*x86_mce_decode_callback)(struct mce *m);
+-
+ void mce_setup(struct mce *m);
+ void mce_log(struct mce *m);
+ DECLARE_PER_CPU(struct sys_device, mce_dev);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68e2303..33714e8 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -105,20 +105,6 @@ static int			cpu_missing;
+ ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
+ EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
+ 
+-static int default_decode_mce(struct notifier_block *nb, unsigned long val,
+-			       void *data)
+-{
+-	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
+-	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
+-
+-	return NOTIFY_STOP;
+-}
+-
+-static struct notifier_block mce_dec_nb = {
+-	.notifier_call = default_decode_mce,
+-	.priority      = -1,
+-};
+-
+ /* MCA banks polled by the period polling timer for corrected events */
+ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+ 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
+@@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
+ 
+ static void print_mce(struct mce *m)
  {
- 	int pos = 0;
++	int ret = 0;
++
+ 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
+ 	       m->extcpu, m->mcgstatus, m->bank, m->status);
  
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 959a8b8..8e57a72 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -93,6 +93,7 @@
- 
- #include <asm/tlbflush.h>
- #include <asm/uaccess.h>
-+#include <linux/random.h>
- 
- #include "internal.h"
- 
-@@ -1649,6 +1650,21 @@ static inline unsigned interleave_nid(struct mempolicy *pol,
- 		return interleave_nodes(pol);
+@@ -239,7 +227,9 @@ static void print_mce(struct mce *m)
+ 	 * Print out human-readable details about the MCE error,
+ 	 * (if the CPU has an implementation for that)
+ 	 */
+-	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	if (ret != NOTIFY_STOP)
++		pr_emerg(HW_ERR "Run the above through 'mcelog --ascii' to decode.\n");
  }
  
-+/*
-+ * Return the bit number of a random bit set in the nodemask.
-+ * (returns -1 if nodemask is empty)
-+ */
-+int node_random(const nodemask_t *maskp)
-+{
-+	int w, bit = -1;
-+
-+	w = nodes_weight(*maskp);
-+	if (w)
-+		bit = bitmap_ord_to_pos(maskp->bits,
-+			get_random_int() % w, MAX_NUMNODES);
-+	return bit;
-+}
-+
- #ifdef CONFIG_HUGETLBFS
- /*
-  * huge_zonelist(@vma, @addr, @gfp_flags, @mpol)
+ #define PANIC_TIMEOUT 5 /* 5 seconds */
+@@ -1721,8 +1711,6 @@ __setup("mce", mcheck_enable);
+ 
+ int __init mcheck_init(void)
+ {
+-	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
+-
+ 	mcheck_intel_therm_init();
+ 
+ 	return 0;
 -- 
-1.7.4.1
+1.7.4.rc2
+
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
