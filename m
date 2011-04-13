@@ -1,141 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab1DMWWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 18:22:51 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38038 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933125Ab1DMWWt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 18:22:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=E60yUO6HTmh3dxiBB5zb1pt17ORC/K1ulK54mGb6BnggXhl9iUZ0QfvCP+LZnyBH1K
-         Md12HhizhgAFfEBFABA0v91gZg9vAM1b1QVlOhpcji9ebbeKmpmIump6lAxK35HqvoRT
-         fOtRzCb+7ObMcOjuMtNKvFZx4y3elSfQvAHxo=
+	id S933328Ab1DMWYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 18:24:25 -0400
+Received: from kroah.org ([198.145.64.141]:39074 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933296Ab1DMWYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 18:24:22 -0400
+Date: Wed, 13 Apr 2011 15:23:32 -0700
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: "Mark A. Allyn" <mark.a.allyn@intel.com>, linux-kernel@vger.kernel.org,
+        alan@linux.intel.com, jayant.mangalampalli@intel.com,
+        venkat.r.gokulrangan@intel.com
+Subject: Re: Re-send (What else needs to be done to the sep driver
+ (staging/sep))
+Message-ID: <20110413222332.GA32013@kroah.com>
+References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
+ <1302731811.11415.38.camel@Joe-Laptop>
 MIME-Version: 1.0
-In-Reply-To: <201104132353.09282.rjw@sisk.pl>
-References: <BANLkTi=F-C-vwX4PGGfbkdTBw3OWL-twfg@mail.gmail.com>
- <20110413210546.GC16830@elf.ucw.cz> <BANLkTinj3y+-VhzFAPz8Gzb5vAbtUFU6Aw@mail.gmail.com>
- <201104132353.09282.rjw@sisk.pl>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 13 Apr 2011 18:22:28 -0400
-X-Google-Sender-Auth: KuVFnRRreZ0GXRVUlyjbrmrGcf4
-Message-ID: <BANLkTik1tg2fzFgZmeSCGZxbNPDydotb-w@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] freezer: should barriers be smp ?
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Pavel Machek <pavel@ucw.cz>, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302731811.11415.38.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 17:53, Rafael J. Wysocki wrote:
-> On Wednesday, April 13, 2011, Mike Frysinger wrote:
->> On Wed, Apr 13, 2011 at 17:05, Pavel Machek wrote:
->> > On Wed 2011-04-13 17:02:45, Mike Frysinger wrote:
->> >> On Wed, Apr 13, 2011 at 16:58, Rafael J. Wysocki wrote:
->> >> > On Wednesday, April 13, 2011, Mike Frysinger wrote:
->> >> >> when we suspend/resume Blackfin SMP systems, we notice that the
->> >> >> freezer code runs on multiple cores.  this is of course what you want
->> >> >> -- freeze processes in parallel.  however, the code only uses non-smp
->> >> >> based barriers which causes us problems ... our cores need software
->> >> >> support to keep caches in sync, so our smp barriers do just that.  but
->> >> >> the non-smp barriers do not, and so the frozen/thawed processes
->> >> >> randomly get stuck in the wrong task state.
->> >> >>
->> >> >> thinking about it, shouldnt the freezer code be using smp barriers ?
->> >> >
->> >> > Yes, it should, but rmb() and wmb() are supposed to be SMP barriers.
->> >> >
->> >> > Or do you mean something different?
->> >>
->> >> then what's the diff between smp_rmb() and rmb() ?
->> >>
->> >> this is what i'm proposing:
->> >> --- a/kernel/freezer.c
->> >> +++ b/kernel/freezer.c
->> >> @@ -17,7 +17,7 @@ static inline void frozen_process(void)
->> >>  {
->> >>     if (!unlikely(current->flags & PF_NOFREEZE)) {
->> >>         current->flags |= PF_FROZEN;
->> >> -       wmb();
->> >> +       smp_wmb();
->> >>     }
->> >>     clear_freeze_flag(current);
->> >>  }
->> >> @@ -93,7 +93,7 @@ bool freeze_task(struct task_struct *p, bool sig_only)
->> >>      * the task as frozen and next clears its TIF_FREEZE.
->> >>      */
->> >>     if (!freezing(p)) {
->> >> -       rmb();
->> >> +       smp_rmb();
->> >>         if (frozen(p))
->> >>             return false;
->> >
->> > smp_rmb() is NOP on uniprocessor.
->> >
->> > I believe the code is correct as is.
->>
->> that isnt what the code / documentation says.  unless i'm reading them
->> wrong, both seem to indicate that the proposed patch is what we
->> actually want.
->
-> Not really.
->
->> include/linux/compiler-gcc.h:
->> #define barrier() __asm__ __volatile__("": : :"memory")
->>
->> include/asm-generic/system.h:
->> #define mb()    asm volatile ("": : :"memory")
->> #define rmb()   mb()
->> #define wmb()   asm volatile ("": : :"memory")
->>
->> #ifdef CONFIG_SMP
->> #define smp_mb()    mb()
->> #define smp_rmb()   rmb()
->> #define smp_wmb()   wmb()
->> #else
->> #define smp_mb()    barrier()
->> #define smp_rmb()   barrier()
->> #define smp_wmb()   barrier()
->> #endif
->
-> The above means that smp_*mb() are defined as *mb() if CONFIG_SMP is set,
-> which basically means that *mb() are more restrictive than the corresponding
-> smp_*mb().  More precisely, they also cover the cases in which the CPU
-> reorders instructions on uniprocessor, which we definitely want to cover.
->
-> IOW, your patch would break things on uniprocessor where the CPU reorders
-> instructions.
->
->> Documentation/memory-barriers.txt:
->> SMP memory barriers are reduced to compiler barriers on uniprocessor compiled
->> systems because it is assumed that a CPU will appear to be self-consistent,
->> and will order overlapping accesses correctly with respect to itself.
->
-> Exactly, which is not guaranteed in general (e.g. on Alpha).  That is, some
-> CPUs can reorder instructions in such a way that a compiler barrier is not
-> sufficient to prevent breakage.
->
-> The code _may_ be wrong for a different reason, though.  I need to check.
+On Wed, Apr 13, 2011 at 02:56:51PM -0700, Joe Perches wrote:
+> On Wed, 2011-04-13 at 14:29 -0700, Mark A. Allyn wrote:
+> > What else needs to be done to the sep driver in order for it to be moved 
+> > to the kernel from staging?
+> 
+> Maybe a patch from you to move it?
+> It seems pretty clean to me.
+> Are you going to keep all the _dbg statements?
+> 
+> You might add a Kconfig CONFIG_SEP_DEBUG block with a
+> Makefile entry of:
+> ccflags-$(CONFIG_SEP_DEBUG) := -DDEBUG
+> to specifically enable DEBUG without dynamic debug.
+> 
+> Here's a Kconfig typo fix and a suggestion to rename the
+> uses of dev_dbg and dev_warn to sep_<level> to make the
+> code a bit shorter and more compact.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> 
+> ---
+> 
+>  drivers/staging/sep/Kconfig      |    2 +-
+>  drivers/staging/sep/sep_driver.c |  340 +++++++++++++++++---------------------
+>  2 files changed, 152 insertions(+), 190 deletions(-)
+> 
+> diff --git a/drivers/staging/sep/Kconfig b/drivers/staging/sep/Kconfig
+> index 92bf166..84c1b2b 100644
+> --- a/drivers/staging/sep/Kconfig
+> +++ b/drivers/staging/sep/Kconfig
+> @@ -3,7 +3,7 @@ config DX_SEP
+>  	depends on PCI
+>  	help
+>  	  Discretix SEP driver; used for the security processor subsystem
+> -	  on bard the Intel Mobile Internet Device.
+> +	  on board the Intel Mobile Internet Device.
+>  
+>  	  The driver's name is sep_driver.
+>  
+> diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+> index 890eede..d0537ca 100644
+> --- a/drivers/staging/sep/sep_driver.c
+> +++ b/drivers/staging/sep/sep_driver.c
+> @@ -66,6 +66,11 @@
+>  
+>  #define SEP_RAR_IO_MEM_REGION_SIZE 0x40000
+>  
+> +#define sep_dbg(sep, fmt, ...)				\
+> +	dev_dbg(&sep->pdev->dev, fmt, ##__VA_ARGS__)
+> +#define sep_warn(sep, fmt, ...)				\
+> +	dev_warn(&sep->pdev->dev, fmt, ##__VA_ARGS__)
 
-so the current code is protecting against a UP system swapping in/out
-freezer threads for processes, and the barriers are to make sure that
-the updated flags variable is posted by the time another swapped in
-thread gets to that point.
 
-i guess the trouble for us is that you have one CPU posting writes to
-task->flags (and doing so by grabbing the task's spinlock), but the
-other CPU is simply reading those flags.  there are no SMP barriers in
-between the read and write steps, nor is the reading CPU grabbing any
-locks which would be an implicit SMP barrier.  since the Blackfin SMP
-port lacks hardware cache coherency, there is no way for us to know
-"we've got to sync the caches before we can do this read".  by using
-the patch i posted above, we have that signal and so things work
-correctly.,
--mike
+Ick, no, never use your own macros, just use the "real" things like is
+done in this driver.  If it's a pain to get to that pointer, then use a
+temporary variable in the code and then use it.
+
+Otherwise, no, I don't like this patch at all, sorry.
+
+thanks,
+
+greg k-h
