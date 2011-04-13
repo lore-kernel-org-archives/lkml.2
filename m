@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab1DMKh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 06:37:26 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58440 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758202Ab1DMKhZ (ORCPT
+	id S1758299Ab1DMKqB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 06:46:01 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45536 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757455Ab1DMKqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 06:37:25 -0400
-Date: Wed, 13 Apr 2011 12:37:55 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alan Cox <alan@linux.jf.intel.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] gma500: Add a gtt allocator
-Message-ID: <20110413103755.GA14017@avionic-0098.adnet.avionic-design.de>
-References: <20110413093519.28527.36552.stgit@localhost.localdomain>
- <20110413093624.28527.33558.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <20110413093624.28527.33558.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:n91OCLwKJYGcAZzYvSsDqTqvsXjTCPcH8nHkNK2+HBP
- 9CzjZ+vWydGZy7JaNtu61T6Z9yfYqJnPllraFd+NpuMCtuVIDm
- YHow0zIV5XTTr5DVweu7GXiRCUtw/+kNAjtGDmOPnk02EKwa6f
- pT+5X8nP8Ahr1/oIookyXKuFOqNwu3+RAvYQknSdUDKEt5If94
- HcGlzsHTH1c6hnXBp3UhdwvPqmOg722xizf57OsDktXzKSv4d6
- zUzl79PQY2yOz
+	Wed, 13 Apr 2011 06:46:00 -0400
+Subject: Re: [PATCH 04/21] sched: Change the ttwu success details
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+In-Reply-To: <1302686630.2388.125.camel@twins>
+References: <20110405152338.692966333@chello.nl>
+	 <20110405152728.866866929@chello.nl>  <1302686630.2388.125.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 12:48:23 +0200
+Message-ID: <1302691703.2035.10.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-04-13 at 11:23 +0200, Peter Zijlstra wrote:
+> and workqueue wakeups, and I doubt extra wakeups will cause lockups. 
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Damn assumptions ;-)
 
-* Alan Cox wrote:
-> At the moment we don't do any page backing for the GTT so only the stolen
-> area pages will actually work. That is fine for our initial framebuffer a=
-nd
-> a bit of testing but will need resolution (including alternate mmap metho=
-ds
-> and the like for s/g areas) eventually.
->=20
-> Rather than use some of the overcomplex stuff in the DRM we use the exist=
-ing
-> Linux resource allocators to hand out framebuffers and the like. This als=
-o has
-> the nice result that /proc/iomem shows the allocations.
->=20
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
->=20
->  drivers/staging/gma500/psb_drv.h |   16 +++-
->  drivers/staging/gma500/psb_fb.c  |   32 +++++---
->  drivers/staging/gma500/psb_fb.h  |   13 +--
->  drivers/staging/gma500/psb_gtt.c |  155 ++++++++++++++++++++++++++++++++=
-++++++
->  drivers/staging/gma500/psb_gtt.h |   30 ++++++-
->  5 files changed, 217 insertions(+), 29 deletions(-)
->=20
-> diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/ps=
-b_drv.h
-> index c3609e0..7a0506a 100644
-> --- a/drivers/staging/gma500/psb_drv.h
-> +++ b/drivers/staging/gma500/psb_drv.h
-> @@ -21,6 +21,7 @@
->  #define _PSB_DRV_H_
-> =20
->  #include <linux/version.h>
-> +#include <linux/kref.h>
-> =20
->  #include <drm/drmP.h>
->  #include "drm_global.h"
-> @@ -228,6 +229,7 @@ struct psb_intel_opregion {
->  	int enabled;
->  };
-> =20
-> +
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -2447,7 +2447,7 @@ static inline void ttwu_post_activation(
+ 	}
+ #endif
+ 	/* if a worker is waking up, notify workqueue */
+-	if ((p->flags & PF_WQ_WORKER) && success)
++	if (p->flags & PF_WQ_WORKER)
+ 		wq_worker_waking_up(p, cpu_of(rq));
+ }
+ 
 
-Gratuitous newline?
+Appears to be sufficient to cause the lockup, so somehow the whole
+workqueue stuff relies on the fact that waking a TASK_(UN)INTERRUPTIBLE
+task that hasn't been dequeued yet isn't a wakeup.
 
-Thierry
+Tejun any quick clues as to why and how to cure this?
 
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature
+/me goes read that stuff
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk2lfQMACgkQZ+BJyKLjJp/77ACeIDz9wrzxzFAjO2HHBlFnzrQz
-DRsAn17i3qBvDi+f2yJunfA95U+0YD9i
-=cgzP
------END PGP SIGNATURE-----
-
---AqsLC8rIMeq19msA--
