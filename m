@@ -1,81 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab1DMIFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:05:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:36362 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757603Ab1DMIFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:05:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=q+PhqUfSe2Yo90xrFKxjxBoO9LuKV/BndSBxMxX8H3MfZth29T9GF8azeL9r9H+aK/
-         o+tRzBQ0vM6qJ0oFmo3w==
-MIME-Version: 1.0
-In-Reply-To: <4DA547CD.60406@redhat.com>
-References: <1302641290-30212-1-git-send-email-natg@google.com>
-	<1302641387-30264-1-git-send-email-natg@google.com>
-	<4DA547CD.60406@redhat.com>
-Date: Wed, 13 Apr 2011 01:05:33 -0700
-Message-ID: <BANLkTikfuvvujTi6i2MUGOHgNLZCqcouJQ@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH v5 1/2] Use "request_muxed_region" in it87
- watchdog drivers
-From: Natarajan Gurumoorthy <natg@google.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        Mike Waychison <mikew@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1757652Ab1DMIGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 04:06:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31567 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757300Ab1DMIFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 04:05:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,203,1301900400"; 
+   d="scan'208";a="627830151"
+Message-Id: <20110413080517.901701497@sli10-conroe.sh.intel.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 13 Apr 2011 15:57:19 +0800
+From: shaohua.li@intel.com
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, cl@linux.com, tj@kernel.org,
+        eric.dumazet@gmail.com, Shaohua Li <shaohua.li@intel.com>
+Subject: [patch v2 4/4] percpu_counter: use atomic64 for counter
+References: <20110413075715.090406229@sli10-conroe.sh.intel.com>
+Content-Disposition: inline; filename=percpu-counter-atomic.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans,
-      Comments below
+Uses atomic64 for percpu_counter, because it is cheaper than spinlock. This
+doesn't slow fast path (percpu_counter_read). atomic64_read equals to fbc->count
+for 64-bit system, or equals to spin_lock-read-spin_unlock for 32-bit system.
 
-On Tue, Apr 12, 2011 at 11:50 PM, Hans de Goede <hdegoede@redhat.com> wrote:
->
-> You shouldn't (void) this, there is a reason you get a warning
-> otherwise! request_muxed_region can still fail if some other driver
-> has done a none muxed request_region on the same region, and in that
-> case you should not continue with accessing the io-ports.
-There are 3 it87 drivers and they all have to do the exact same
-sequence to put the chip into a mode where they can modify its state.
-The sequences involve non atomic sequences that write locations 0x2e
-and 0x2f. When they are done they write a different sequence to these
-2 locations. The entry routine is superio_enter and exit is
-superio_exit. All the it87 drivers reserve these 2 locations before
-they start manipulating the chip. This macro will hold off requestors
-if the resource is busy because one of the other drivers is
-manipulating the chip. Once the  an it87 driver is done it calls
-superio_exit which will release the reservation on those 2 locations
-letting any other driver on the wait queue to now gain access two
-locations.
+This can improve some workloads with percpu_counter->lock heavily contented.
+For example, vm_committed_as sometimes causes the contention. We should tune
+the batch count, but if we can make percpu_counter better, why not? In a 24
+CPUs system, 24 processes run stress mmap()/mmunmap(), the atomic method
+gives 50x faster.
 
-Please read code in kernel/resource.c function "__request_region".
-"request_muxed_region" turns on IORESOURCE_MUXED bit and that means
-that only  way an it87 driver will get back from a call to
-"request_muxed_region" is when it gets hold of the region.
+In percpu_counter_set() and __percpu_counter_sum(), there will be no lock
+protecting. This means we might get inprecise count, but we have the same issue
+even with lock protecting, because __percpu_counter_add doesn't hold locking
+to update cpu local count.
 
-The scenario you mention above can never happen.
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ include/linux/percpu_counter.h |   25 +++----------------------
+ lib/percpu_counter.c           |   40 ++++++++++++++++++++--------------------
+ 2 files changed, 23 insertions(+), 42 deletions(-)
 
-Regards
-Nat
+Index: linux/include/linux/percpu_counter.h
+===================================================================
+--- linux.orig/include/linux/percpu_counter.h	2011-04-13 13:27:22.000000000 +0800
++++ linux/include/linux/percpu_counter.h	2011-04-13 13:47:15.000000000 +0800
+@@ -16,8 +16,7 @@
+ #ifdef CONFIG_SMP
+ 
+ struct percpu_counter {
+-	spinlock_t lock;
+-	s64 count;
++	atomic64_t count;
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	struct list_head list;	/* All percpu_counters are on a list */
+ #endif
+@@ -26,16 +25,7 @@ struct percpu_counter {
+ 
+ extern int percpu_counter_batch;
+ 
+-int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+-			  struct lock_class_key *key);
+-
+-#define percpu_counter_init(fbc, value)					\
+-	({								\
+-		static struct lock_class_key __key;			\
+-									\
+-		__percpu_counter_init(fbc, value, &__key);		\
+-	})
+-
++int percpu_counter_init(struct percpu_counter *fbc, s64 amount);
+ void percpu_counter_destroy(struct percpu_counter *fbc);
+ void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
+ void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
+@@ -60,16 +50,7 @@ static inline s64 percpu_counter_sum(str
+ 
+ static inline s64 percpu_counter_read(struct percpu_counter *fbc)
+ {
+-#if BITS_PER_LONG == 32
+-	s64 count;
+-	unsigned long flags;
+-	spin_lock_irqsave(&fbc->lock, flags);
+-	count = fbc->count;
+-	spin_unlock_irqrestore(&fbc->lock, flags);
+-	return count;
+-#else
+-	return fbc->count;
+-#endif
++	return atomic64_read(&fbc->count);
+ }
+ 
+ /*
+Index: linux/lib/percpu_counter.c
+===================================================================
+--- linux.orig/lib/percpu_counter.c	2011-04-12 16:22:59.000000000 +0800
++++ linux/lib/percpu_counter.c	2011-04-13 13:38:02.000000000 +0800
+@@ -59,13 +59,17 @@ void percpu_counter_set(struct percpu_co
+ {
+ 	int cpu;
+ 
+-	spin_lock(&fbc->lock);
++	/*
++	 * Don't really need to disable preempt here, just make sure this is no
++	 * big latency because of preemption
++	 */
++	preempt_disable();
+ 	for_each_possible_cpu(cpu) {
+ 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		*pcount = 0;
+ 	}
+-	fbc->count = amount;
+-	spin_unlock(&fbc->lock);
++	atomic64_set(&fbc->count, amount);
++	preempt_enable();
+ }
+ EXPORT_SYMBOL(percpu_counter_set);
+ 
+@@ -76,10 +80,8 @@ void __percpu_counter_add(struct percpu_
+ 	preempt_disable();
+ 	count = __this_cpu_read(*fbc->counters) + amount;
+ 	if (count >= batch || count <= -batch) {
+-		spin_lock(&fbc->lock);
+-		fbc->count += count;
++		atomic64_add(count, &fbc->count);
+ 		__this_cpu_write(*fbc->counters, 0);
+-		spin_unlock(&fbc->lock);
+ 	} else {
+ 		__this_cpu_write(*fbc->counters, count);
+ 	}
+@@ -93,26 +95,27 @@ EXPORT_SYMBOL(__percpu_counter_add);
+  */
+ s64 __percpu_counter_sum(struct percpu_counter *fbc)
+ {
+-	s64 ret;
++	s64 ret = 0;
+ 	int cpu;
+ 
+-	spin_lock(&fbc->lock);
+-	ret = fbc->count;
++	/*
++	 * Don't really need to disable preempt here, just make sure this is no
++	 * big latency because of preemption
++	 */
++	preempt_disable();
+ 	for_each_online_cpu(cpu) {
+ 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		ret += *pcount;
+ 	}
+-	spin_unlock(&fbc->lock);
++	ret += atomic64_read(&fbc->count);
++	preempt_enable();
+ 	return ret;
+ }
+ EXPORT_SYMBOL(__percpu_counter_sum);
+ 
+-int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+-			  struct lock_class_key *key)
++int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
+ {
+-	spin_lock_init(&fbc->lock);
+-	lockdep_set_class(&fbc->lock, key);
+-	fbc->count = amount;
++	atomic64_set(&fbc->count, amount);
+ 	fbc->counters = alloc_percpu(s32);
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
+@@ -127,7 +130,7 @@ int __percpu_counter_init(struct percpu_
+ #endif
+ 	return 0;
+ }
+-EXPORT_SYMBOL(__percpu_counter_init);
++EXPORT_SYMBOL(percpu_counter_init);
+ 
+ void percpu_counter_destroy(struct percpu_counter *fbc)
+ {
+@@ -171,13 +174,10 @@ static int __cpuinit percpu_counter_hotc
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_for_each_entry(fbc, &percpu_counters, list) {
+ 		s32 *pcount;
+-		unsigned long flags;
+ 
+-		spin_lock_irqsave(&fbc->lock, flags);
+ 		pcount = per_cpu_ptr(fbc->counters, cpu);
+-		fbc->count += *pcount;
++		atomic64_add(*pcount, &fbc->count);
+ 		*pcount = 0;
+-		spin_unlock_irqrestore(&fbc->lock, flags);
+ 	}
+ 	mutex_unlock(&percpu_counters_lock);
+ #endif
 
-
->
-> Regards,
->
-> Hans
->
-
-
-
--- 
-Regards
-Nat Gurumoorthy AB6SJ
