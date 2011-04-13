@@ -1,168 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab1DMUkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 16:40:09 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39448 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476Ab1DMUkH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 16:40:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lTvdOS70WKHCGb8aJBiINF9/E2wERRUaBprL2DNrQGDsrrS0KexlnRUbKWdHrYDfDj
-         F6fchuG55bRpu+HuCmaTt04zEXW2PGPSqBQ3xLVQkVhLOTwIQPGWdo+JwGwy0rr/1atL
-         OwxwRgfWvvefVSACCJu98kCmlHS1hryxOEfYE=
+	id S932718Ab1DMUmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 16:42:44 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:21145 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932379Ab1DMUmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 16:42:43 -0400
+X-IronPort-AV: E=Sophos;i="4.64,206,1301900400"; 
+   d="scan'208";a="541172596"
+Message-ID: <4DA60AB9.1050104@netapp.com>
+Date: Wed, 13 Apr 2011 16:42:33 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Lightning/1.0b2 Lanikai/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1302726703.8015.1.camel@dev.znau.edu.ua>
-References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
-	<20110413163113.GA24015@kroah.com>
-	<BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
-	<1302726703.8015.1.camel@dev.znau.edu.ua>
-Date: Wed, 13 Apr 2011 22:40:05 +0200
-Message-ID: <BANLkTimwZOJ0a5kVfaUzEcsMc39H999u0A@mail.gmail.com>
-Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: George Kashperko <george@znau.edu.ua>
-Cc: Greg KH <greg@kroah.com>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        ML netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz> <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz> <4DA49D3A.7090800@netapp.com> <4DA49F7F.8060005@suse.cz>
+In-Reply-To: <4DA49F7F.8060005@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/13 George Kashperko <george@znau.edu.ua>:
->
-> В Срд, 13/04/2011 в 21:39 +0200, Rafał Miłecki пишет:
->> 2011/4/13 Greg KH <greg@kroah.com>:
->> >> diff --git a/drivers/axi/axi_pci_bridge.c b/drivers/axi/axi_pci_bridge.c
->> >> new file mode 100644
->> >> index 0000000..17e882c
->> >> --- /dev/null
->> >> +++ b/drivers/axi/axi_pci_bridge.c
->> >> @@ -0,0 +1,33 @@
->> >> +/*
->> >> + * AXI PCI bridge module
->> >> + *
->> >> + * Licensed under the GNU/GPL. See COPYING for details.
->> >> + */
->> >> +
->> >> +#include "axi_private.h"
->> >> +
->> >> +#include <linux/axi/axi.h>
->> >> +#include <linux/pci.h>
->> >> +
->> >> +static DEFINE_PCI_DEVICE_TABLE(axi_pci_bridge_tbl) = {
->> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4331) },
->> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4353) },
->> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4727) },
->> >> +     { 0, },
->> >> +};
->> >> +MODULE_DEVICE_TABLE(pci, axi_pci_bridge_tbl);
->> >> +
->> >> +static struct pci_driver axi_pci_bridge_driver = {
->> >> +     .name = "axi-pci-bridge",
->> >> +     .id_table = axi_pci_bridge_tbl,
->> >> +};
->> >> +
->> >> +int __init axi_pci_bridge_init(void)
->> >> +{
->> >> +     return axi_host_pci_register(&axi_pci_bridge_driver);
->> >> +}
->> >> +
->> >> +void __exit axi_pci_bridge_exit(void)
->> >> +{
->> >> +     axi_host_pci_unregister(&axi_pci_bridge_driver);
->> >> +}
->> >
->> > You register a pci driver that does nothing?  That's not right, you need
->> > to then base your axi bus off of that pci device, so it is hooked up
->> > correctly in the /sys/devices/ tree.  Otherwise you are somewhere up in
->> > the virtual location for your axi bus, right?
+On 04/12/2011 02:52 PM, Jiri Slaby wrote:
+> On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
+>> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
+>>> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
+>>>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
+>>>>> inacceptable for automounted NFS dirs.
+>>>>
+>>>> I'm still confused as to why you are hitting it at all. In the normal
+>>>> autonegotiation case, the client should be trying to use AUTH_SYS first
+>>>> and then trying rpcsec_gss if and only if that fails.
+>>>>
+>>>> Are you really exporting a filesystem using AUTH_NULL as the only
+>>>> supported flavour?
+>>>
+>>> I don't know, I connect to a nfs server which is not maintained by me.
+>>> It looks like that. How can I find out?
 >>
->> Please take a look at:
->> driver->probe = axi_host_pci_probe;
->> driver->remove = axi_host_pci_remove;
->> return pci_register_driver(driver);
->>
->>
->> >> +bool axi_core_is_enabled(struct axi_device *core)
->> >> +{
->> >> +     if ((axi_aread32(core, AXI_IOCTL) & (AXI_IOCTL_CLK | AXI_IOCTL_FGC))
->> >> +         != AXI_IOCTL_CLK)
->> >> +             return false;
->> >> +     if (axi_aread32(core, AXI_RESET_CTL) & AXI_RESET_CTL_RESET)
->> >> +             return false;
->> >> +     return true;
->> >> +}
->> >> +EXPORT_SYMBOL(axi_core_is_enabled);
->> >
->> > EXPORT_SYMBOL_GPL()?
->> >
->> > What module uses this?  And why would it care?
->> >
->> >> +EXPORT_SYMBOL(axi_core_enable);
->> >
->> > EXPORT_SYMBOL_GPL()?
->> >
->> > Same goes for your other exports, just want you to be sure here.
->>
->> Hm, I'm not sure. Using EXPORT_SYMBOL_GPL will forbid closed source
->> drivers from using our bus driver, right? I'm don't have preferences
->> on this, if you prefer us to force GPL, I can.
->>
->>
->> >> +u32 xaxi_chipco_gpio_control(struct axi_drv_cc *cc, u32 mask, u32 value)
->> >> +{
->> >> +     return axi_cc_write32_masked(cc, AXI_CC_GPIOCTL, mask, value);
->> >> +}
->> >> +EXPORT_SYMBOL(xaxi_chipco_gpio_control);
->> >
->> > "xaxi"?  Shouldn't that be consistant with the other exports and start
->> > with "axi"?
->>
->> Left from old tests/rewrites/splitting. Thanks.
->>
->>
->> >> +static u8 axi_host_pci_read8(struct axi_device *core, u16 offset)
->> >> +{
->> >> +     if (unlikely(core->bus->mapped_core != core))
->> >
->> > Are you sure about the use of unlikely in this, and other functions?
->> > The compiler almost always does a better job than we do for these types
->> > of calls, just let it do it's job.
->> >
->> >> +             axi_host_pci_switch_core(core);
->> >> +     return ioread8(core->bus->mmio + offset);
->> >
->> > I think because of that unlikely, you just slowed down all pci devices,
->> > right?  That's not very nice :)
->>
->> Hm, my logic suggests it is alright, but please consider this once
->> more with me ;)
->>
->> For the most of the time mapped_core (active core) do not change. We
->> perform few hundreds of operations on one core in a row. This way
->> mapped_core points to passed core for most of the time. Condition
->> (mapped_core != core) is unlikely to happen.
->>
->> Is there anything wrong in my logic?
->>
-> Yes, there is. You don't need that "if" at all.
+>> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
+> 
+> I don't have NFS in modules. It's all built-in. And this one is
+> unconditionally selected because of CONFIG_NFS_V4.
 
-Damn, WHY do you make me ask why, why, why, all the time?! Can't you
-just write word of explanation without being asked for?
+Does this patch help?
 
--- 
-Rafał
+- Bryan
+
+We should attempt an AUTH_NULL style mount before
+trying gss flavors.  This should prevent a hang if
+gss modules are loaded but the userspace program
+isn't running.
+
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 9bf41ea..4e3c16b 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2218,8 +2218,8 @@ static int nfs4_proc_get_root(struct nfs_server *server, struct nfs_fh *fhandle,
+ 	rpc_authflavor_t flav_array[NFS_MAX_SECFLAVORS + 2];
+ 
+ 	flav_array[0] = RPC_AUTH_UNIX;
+-	len = gss_mech_list_pseudoflavors(&flav_array[1]);
+-	flav_array[1+len] = RPC_AUTH_NULL;
++	flav_array[1] = RPC_AUTH_NULL;
++	len = gss_mech_list_pseudoflavors(&flav_array[2]);
+ 	len += 2;
+ 
+ 	for (i = 0; i < len; i++) {
+
+
+> 
+> regards,
+
