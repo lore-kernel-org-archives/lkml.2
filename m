@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab1DMXlc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 19:41:32 -0400
-Received: from mail.perches.com ([173.55.12.10]:4700 "EHLO mail.perches.com"
+	id S932448Ab1DMXlv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 19:41:51 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:42638 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757056Ab1DMXlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 19:41:31 -0400
-Subject: Re: Re-send (What else needs to be done to the sep driver
- (staging/sep))
-From: Joe Perches <joe@perches.com>
-To: "Mark A. Allyn" <mark.a.allyn@intel.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
-        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>
-In-Reply-To: <alpine.DEB.2.00.1104131521440.31147@allyn-test>
-References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
-	 <20110413145607.3257c83b.randy.dunlap@oracle.com>
-	 <alpine.DEB.2.00.1104131521440.31147@allyn-test>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Apr 2011 16:41:29 -0700
-Message-ID: <1302738089.11415.58.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932372Ab1DMXlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 19:41:50 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] asm-generic/system.h: drop useless __KERNEL__
+Date: Wed, 13 Apr 2011 19:41:50 -0400
+Message-Id: <1302738110-22344-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.5.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-13 at 15:22 -0700, Mark A. Allyn wrote:
-> I agree with both Randy's and Joe's patches. Do I need to submit them 
-> myself in order for them to be put into what is in staging?
+This header isn't exported to user-space, and even if it was, the
+__KERNEL__ check covers the entire file, so we'd get a useless stub
+in the first place.  So punt it.
 
-I'll resend mine after sep is moved out of staging.
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ include/asm-generic/system.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/include/asm-generic/system.h b/include/asm-generic/system.h
+index 4b0b9cb..215efa7 100644
+--- a/include/asm-generic/system.h
++++ b/include/asm-generic/system.h
+@@ -14,7 +14,6 @@
+ #ifndef __ASM_GENERIC_SYSTEM_H
+ #define __ASM_GENERIC_SYSTEM_H
+ 
+-#ifdef __KERNEL__
+ #ifndef __ASSEMBLY__
+ 
+ #include <linux/types.h>
+@@ -139,5 +138,4 @@ unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
+ 
+ #endif /* !__ASSEMBLY__ */
+ 
+-#endif /* __KERNEL__ */
+ #endif /* __ASM_GENERIC_SYSTEM_H */
+-- 
+1.7.5.rc1
 
