@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab1DMSwr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 14:52:47 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:51213 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757647Ab1DMSwq convert rfc822-to-8bit (ORCPT
+	id S1757903Ab1DMS54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 14:57:56 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31059 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab1DMS5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 14:52:46 -0400
-Subject: Re: [GIT PULL] AVR32 fixes and minor updates for 2.6.39
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Andreas =?ISO-8859-1?Q?Bie=DFmann?= <andreas.devel@googlemail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        AVR32 Linux Kernel <kernel@avr32linux.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4DA5AC40.9070307@gmail.com>
-References: <1302702816.10549.7.camel@hcegtvedt>
-	 <4DA5AC40.9070307@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Wed, 13 Apr 2011 16:02:16 +0200
-Message-ID: <1302703336.10549.8.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 13 Apr 2011 14:02:19.0100 (UTC) FILETIME=[66FDE9C0:01CBF9E3]
+	Wed, 13 Apr 2011 14:57:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=yoPc9hH05+cFmGyI47R4GptlJX6Sk8G0zye9mH22W7yQyzmVWYzojoyh2+cO2UY53c
+         WksoQEAMXO7nv2pWL35w==
+Date: Wed, 13 Apr 2011 11:57:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Haicheng Li <haicheng.li@linux.intel.com>, lethal@linux-sh.org,
+        Andi Kleen <andi.kleen@intel.com>, dave@linux.vnet.ibm.com,
+        Greg KH <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Xin Li <xin.li@intel.com>
+Subject: Re: [0/7,v10] NUMA Hotplug Emulator (v10)
+In-Reply-To: <749B9D3DBF0F054390025D9EAFF47F224A3D6C35@shsmsx501.ccr.corp.intel.com>
+Message-ID: <alpine.DEB.2.00.1104131151280.5563@chino.kir.corp.google.com>
+References: <749B9D3DBF0F054390025D9EAFF47F224A3D6C35@shsmsx501.ccr.corp.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-13 at 15:59 +0200, Andreas Bießmann wrote: 
-> Am 13.04.2011 15:53, schrieb Hans-Christian Egtvedt:
-> > Jean-Christophe PLAGNIOL-VILLARD (1):
-> >       avr32: At32ap: pio fix typo "))" on gpio_irq_unmask prototype
+On Thu, 31 Mar 2011, Zhang, Yang Z wrote:
+
+> * PATCHSET INTRODUCTION
 > 
-> You may have missed
+> patch 1: Documentation.
+> patch 2: Adds a numa=possible=<N> command line option to set an additional N nodes
+>                  as being possible for memory hotplug.
 > 
-> Jean-Christophe PLAGNIOL-VILLARD:
-> 	avr32: At32ap: fix extint irq_chip type from irq_chip to irq_data
+> patch 3: Add node hotplug emulation, introduce debugfs node/add_node interface
 > 
-> It is required for extint.c to compile.
+> patch 4: Abstract cpu register functions, make these interface friend for cpu
+>                  hotplug emulation
+> patch 5: Support cpu probe/release in x86, it provide a software method to hot
+>                  add/remove cpu with sysfs interface.
+> patch 6: Fake CPU socket with logical CPU on x86, to prevent the scheduling
+>                  domain to build the incorrect hierarchy.
+> patch 7: Implement per-node add_memory debugfs interface
+> 
 
-Fixed by
+I think it would probably be better to separate these into the x86 support 
+(patch 2, part of 3, 4, 5, and patch 7) and the generic memory hotplug, 
+cpu, and documentation (patch 1, most of 3, wiring up in 4 and 5, patch 
+7).  In each changelog you can talk about the entire scope of the feature 
+and what each patch is leading to, but this separation will help to get it 
+merged first by the x86 maintainers and then the generic bits through the 
+-mm tree.
 
-Wanlong Gao (1):
-      fix the wrong argument of the functions definition
-
-Which was pulled in by Andrew.
-
--- 
-Hans-Christian Egtvedt
-
+Thanks for following up on this!
