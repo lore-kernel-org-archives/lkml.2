@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758184Ab1DMT0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 15:26:31 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:45599 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757978Ab1DMT0a (ORCPT
+	id S932176Ab1DMT0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 15:26:49 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34320 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758188Ab1DMT0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 15:26:30 -0400
-Message-ID: <4DA5F8FE.6000105@metafoo.de>
-Date: Wed, 13 Apr 2011 21:26:54 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	Wed, 13 Apr 2011 15:26:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=nugP6X9ISDzmVJeIHan95yaT1n0m6XRAquar1V8XmGPJmMm1fdALXXfOgo/zQWJpO5
+         3SIG5+uMbRdeLlm3ppm9A/v8v85nYj1NpEhb2n8+28HmZOUz/SGjxz9dO3J4GeJYeEu5
+         jDYkijbEJ8iZw4gr23tm0Lq7j+IxJoH9KgvEM=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Nick Bowler <nbowler@elliptictech.com>
+Subject: Re: Lockdep splat in autofs with 2.6.39-rc2
+Date: Wed, 13 Apr 2011 21:26:41 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.38; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org,
+        Ian Kent <raven@themaw.net>
+References: <20110407194403.GA29404@elliptictech.com>
+In-Reply-To: <20110407194403.GA29404@elliptictech.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] ASoC: Call snd_soc_new_widgets() after registering
- cards DAPM widgets
-References: <1302629465-21315-1-git-send-email-lars@metafoo.de> <1302629465-21315-2-git-send-email-lars@metafoo.de> <20110413003847.GC24267@opensource.wolfsonmicro.com> <4DA597E3.807@metafoo.de> <20110413173249.GC18008@opensource.wolfsonmicro.com>
-In-Reply-To: <20110413173249.GC18008@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104132126.42050.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2011 07:32 PM, Mark Brown wrote:
-> On Wed, Apr 13, 2011 at 02:32:35PM +0200, Lars-Peter Clausen wrote:
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=33242
+for your bug report, please add your address to the CC list in there, thanks!
+
+
+On czwartek, 7 kwietnia 2011 o 21:44:03 Nick Bowler wrote:
+> Just saw this on 2.6.39-rc2 after half a day or so of uptime.  I've
+> never seen it before today so it may be a regression from 2.6.38.
+> Nothing seems have failed as a result.  Please let me know if you
+> need any more info.
 > 
->> But snd_soc_dapm_new_widgets also calls dapm_power_widgets which operates on
->> the passed dapm_context, will it be without any effect on the DAPM context,
->> when it is called on a newly allocated context?
+>   =============================================
+>   [ INFO: possible recursive locking detected ]
+>   2.6.39-rc2 #177
+>   ---------------------------------------------
+>   automount/23324 is trying to acquire lock:
+>    (&(&dentry->d_lock)->rlock/1){+.+...}, at: [<ffffffffa034ea28>]
+> autofs4_expire_indirect+0x307/0x484 [autofs4]
 > 
-> Yup.
-
-Ok. I'll add a snd_soc_dapm_init_widgets(struct snd_soc_card *card) which will
-basically do what snd_soc_dapm_new_widgets does except for calling
-dapm_power_widgets.
-
-
+>   but task is already holding lock:
+>    (&(&dentry->d_lock)->rlock/1){+.+...}, at: [<ffffffffa034ea28>]
+> autofs4_expire_indirect+0x307/0x484 [autofs4]
 > 
->> Otherwise I would say call snd_soc_dapm_new_widgets once for the cards
->> dapm_context and snd_soc_dapm_sync for each codec context.
+>   other info that might help us debug this:
+>   2 locks held by automount/23324:
+>    #0:  (&(&sbi->lookup_lock)->rlock){+.+...}, at: [<ffffffffa034e9aa>]
+> autofs4_expire_indirect+0x289/0x484 [autofs4] #1: 
+> (&(&dentry->d_lock)->rlock/1){+.+...}, at: [<ffffffffa034ea28>]
+> autofs4_expire_indirect+0x307/0x484 [autofs4]
 > 
-> There's no point in repeatedly syncing - it may cause audible issues if
-> we power things off due to incomplete information.  If the sync isn't
-> propagating over the entire system we should fix that.
+>   stack backtrace:
+>   Pid: 23324, comm: automount Not tainted 2.6.39-rc2 #177
+>   Call Trace:
+>    [<ffffffff81061dc7>] __lock_acquire+0xc83/0xcfa
+>    [<ffffffff8105f200>] ? static_obj+0x3d/0x4d
+>    [<ffffffff81062073>] ? lock_release_non_nested+0x1c8/0x227
+>    [<ffffffffa034ea28>] ? autofs4_expire_indirect+0x307/0x484 [autofs4]
+>    [<ffffffffa034ea28>] ? autofs4_expire_indirect+0x307/0x484 [autofs4]
+>    [<ffffffff81061e95>] lock_acquire+0x57/0x6d
+>    [<ffffffffa034ea28>] ? autofs4_expire_indirect+0x307/0x484 [autofs4]
+>    [<ffffffff8131f4e3>] _raw_spin_lock_nested+0x39/0x48
+>    [<ffffffffa034ea28>] ? autofs4_expire_indirect+0x307/0x484 [autofs4]
+>    [<ffffffff8131fb10>] ? _raw_spin_unlock+0x3e/0x4b
+>    [<ffffffffa034ea28>] autofs4_expire_indirect+0x307/0x484 [autofs4]
+>    [<ffffffffa034f184>] ? autofs_dev_ioctl_askumount+0x2d/0x2d [autofs4]
+>    [<ffffffffa034edbd>] autofs4_do_expire_multi+0x30/0xe9 [autofs4]
+>    [<ffffffffa034f184>] ? autofs_dev_ioctl_askumount+0x2d/0x2d [autofs4]
+>    [<ffffffffa034f184>] ? autofs_dev_ioctl_askumount+0x2d/0x2d [autofs4]
+>    [<ffffffffa034f19e>] autofs_dev_ioctl_expire+0x1a/0x1c [autofs4]
+>    [<ffffffffa034f738>] _autofs_dev_ioctl+0x2a3/0x348 [autofs4]
+>    [<ffffffffa034f7eb>] autofs_dev_ioctl+0xe/0x12 [autofs4]
+>    [<ffffffff810c750d>] do_vfs_ioctl+0x45f/0x4ae
+>    [<ffffffff810bab4e>] ? rcu_read_unlock+0x21/0x23
+>    [<ffffffff810c759e>] sys_ioctl+0x42/0x65
+>    [<ffffffff8132463b>] system_call_fastpath+0x16/0x1b
 
-The dapm context is really only used to see if it is widget-less context. In
-which case the event type is used to see whether it should be powered or not.
-But I wonder if that shouldn't really be done for all widget less contexts.
-Since widget-less contexts dev_power is not set to 0 at the beginning of
-dapm_power_widgets and all dapm contexts are forced into the same power state,
-effectively that cause a system with a widget-less context to be stuck in a
-powered state.
-Since right now the cards dapm context is almost always widget-less this would
-affect almost all systems.
-This is what happens on such a system:
-Playback starts, codec is powered up, card dapm context is forced to on,
-playback stops, codec is powered down but card context is still on and will
-force the codec on again.
-
-And it is also used for passing the update struct around. But is there any
-reason as to why to pass as a member of the dapm context instead of as a simple
-parameter for dapm_power_widgets()? If not I would like to change it to the latter.
-
-- Lars
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
