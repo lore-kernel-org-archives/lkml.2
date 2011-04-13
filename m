@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab1DMPAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:00:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36119 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab1DMPAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:00:09 -0400
-Date: Wed, 13 Apr 2011 07:55:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: Petr =?utf-8?B?UMOtc2HFmQ==?= <ppisar@redhat.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: Clean console safely
-Message-ID: <20110413145554.GA4774@suse.de>
-References: <1302705170-15712-1-git-send-email-ppisar@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302705170-15712-1-git-send-email-ppisar@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757017Ab1DMPAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:00:21 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48875 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756939Ab1DMPAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:00:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wjWEh8tKwAeFjXgv7VuqSJBDLnk18XtPE2Ptmqp3N2HQbxRAxtG7db0eV1c1yjKD2+
+         doDP0VNrgMlOcwglq1O+gT3oke5eaEtGIhTIvu5//LLC5wBtJ6kIbnuTDwq9jcJB1iB/
+         2XJGCiOkvwdBZM77dhNGBYFVaw5WiSEXA0jto=
+From: Liu Yuan <namei.unix@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] block, blk-sysfs: Use the variable directly instead of a function call
+Date: Wed, 13 Apr 2011 22:59:57 +0800
+Message-Id: <1302706797-15980-1-git-send-email-namei.unix@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 04:32:49PM +0200, Petr Písař wrote:
-> Hello,
-> 
-> I've posted following patch to linux-kernel already and Alan Cox liked it
-> (http://thread.gmane.org/gmane.linux.kernel/1117336). I'd like to ask you,
-> a TTY maintainer, to apply it to next Linux tree if it's acceptable.
+From: Liu Yuan <tailai.ly@taobao.com>
 
-Ok, but care to resend it with a signed-off-by line so that I can apply
-it?
+In the function blk_register_queue(), var _dev_ is already assigned by
+disk_to_dev().So use it directly instead of calling disk_to_dev() again.
 
-thanks,
+Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
+---
+ block/blk-sysfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-greg k-h
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 261c75c..cb52393 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -521,7 +521,7 @@ int blk_register_queue(struct gendisk *disk)
+ 	if (ret) {
+ 		kobject_uevent(&q->kobj, KOBJ_REMOVE);
+ 		kobject_del(&q->kobj);
+-		blk_trace_remove_sysfs(disk_to_dev(disk));
++		blk_trace_remove_sysfs(dev);
+ 		kobject_put(&dev->kobj);
+ 		return ret;
+ 	}
+-- 
+1.7.1
+
