@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab1DMVTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:19:51 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58319 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1DMVTu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:19:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NzLyOdLdqSRDYOrj9wsYCDOCbr4uHtISfa837TQVqlw0Q5iKfiKlAWbFAyA/bX4hJQ
-         9Im0T2EcA6Du+AlrYxiNzzfxu42qOjwf0AJNgB2FMkO3z95VXdQfr046UjBhWMAhx51R
-         pmrs/5I2ssv5Pbb+q4WAelqi13B7jvG1G7xs8=
+	id S932722Ab1DMVWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:22:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20104 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932156Ab1DMVWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 17:22:19 -0400
+Date: Wed, 13 Apr 2011 17:22:08 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Shaun Ruffell <sruffell@digium.com>, maciej.rutecki@gmail.com,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
+ proper MSR register to catch" and NMIs
+Message-ID: <20110413212208.GJ16939@redhat.com>
+References: <20110406223036.GA15721@digium.com>
+ <201104132133.51958.maciej.rutecki@gmail.com>
+ <4DA6011F.7070405@openvz.org>
+ <20110413203501.GA10744@digium.com>
+ <4DA60B03.30603@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <1302729243.8479.1.camel@dev.znau.edu.ua>
-References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
-	<20110413163113.GA24015@kroah.com>
-	<BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
-	<1302726703.8015.1.camel@dev.znau.edu.ua>
-	<BANLkTimwZOJ0a5kVfaUzEcsMc39H999u0A@mail.gmail.com>
-	<1302727516.8015.9.camel@dev.znau.edu.ua>
-	<BANLkTi=wzzzeF-PmqLt9o8arW7nRaFRRJw@mail.gmail.com>
-	<1302729243.8479.1.camel@dev.znau.edu.ua>
-Date: Wed, 13 Apr 2011 23:19:48 +0200
-Message-ID: <BANLkTinLn4Ug=gX4coHJbSzrkxdSMjgGeg@mail.gmail.com>
-Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: George Kashperko <george@znau.edu.ua>
-Cc: Greg KH <greg@kroah.com>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA60B03.30603@openvz.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/13 George Kashperko <george@znau.edu.ua>:
->> I had no idea what you were referring to. We do not dig into PCIe
->> functions yet, so I believe for now we need this "if".
-> You are already deep inside. Your host code drives pci function.
+On Thu, Apr 14, 2011 at 12:43:47AM +0400, Cyrill Gorcunov wrote:
+> On 04/14/2011 12:35 AM, Shaun Ruffell wrote:
+> ...
+> > 
+> > I had the first version of the patch running the test builds all night without
+> > any NMIs. I installed this one and ran it through the case where I would
+> > reliably get early NMIs and it still no NMIs.
+> > 
+> > So for v2:
+> > Tested-by: Shaun Ruffell <sruffell@digium.com>
+> > 
+> > Thanks!
+> 
+> Thanks a huge Shaun. The thing is (if only I don't miss something) at moment there is
+> no much difference in which patch to pick up. But as only kgdb dives in or any other
+> subsystem (which say would use same manner of nmi delivery) we might be unmasking
+> lvt entry even if nothing were handled at all, so I bias to a second version.
 
-But I don't use multiple PCIe functions, do not focus on that at all.
+I agree with the second version.  Initially I wanted to enable it in the
+case of the !handled path.  But your reasoning makes sense to me, don't
+enable it in the !handled case because you might accidentally do something
+bad.
 
--- 
-Rafał
+Cheers,
+Don
