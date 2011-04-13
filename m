@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab1DMP4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:56:11 -0400
-Received: from kroah.org ([198.145.64.141]:54642 "EHLO coco.kroah.org"
+	id S932424Ab1DMP4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:56:53 -0400
+Received: from kroah.org ([198.145.64.141]:54664 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932343Ab1DMP4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:56:07 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:50 2011
-Message-Id: <20110413155150.638980872@clark.kroah.org>
+	id S932370Ab1DMP4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:56:11 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:51 2011
+Message-Id: <20110413155150.984826556@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:51:35 -0700
+Date: Wed, 13 Apr 2011 08:51:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Moritz Muehlenhoff <jmm@debian.org>
-Subject: [71/74] CAN: Use inode instead of kernel address for /proc file
+        Andy Grover <andy.grover@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [74/74] net: fix rds_iovec page count overflow
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 9f260e0efa4766e56d0ac14f1aeea6ee5eb8fe83 upstream.
+commit 1b1f693d7ad6d193862dcb1118540a030c5e761f upstream.
 
-Since the socket address is just being used as a unique identifier, its
-inode number is an alternative that does not leak potentially sensitive
-information.
+As reported by Thomas Pollet, the rdma page counting can overflow.  We
+get the rdma sizes in 64-bit unsigned entities, but then limit it to
+UINT_MAX bytes and shift them down to pages (so with a possible "+1" for
+an unaligned address).
 
-CC-ing stable because MITRE has assigned CVE-2010-4565 to the issue.
+So each individual page count fits comfortably in an 'unsigned int' (not
+even close to overflowing into signed), but as they are added up, they
+might end up resulting in a signed return value. Which would be wrong.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Catch the case of tot_pages turning negative, and return the appropriate
+error code.
+
+Reported-by: Thomas Pollet <thomas.pollet@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andy Grover <andy.grover@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Moritz Muehlenhoff <jmm@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/can/bcm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/rds/rdma.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -124,7 +124,7 @@ struct bcm_sock {
- 	struct list_head tx_ops;
- 	unsigned long dropped_usr_msgs;
- 	struct proc_dir_entry *bcm_proc_read;
--	char procname [20]; /* pointer printed in ASCII with \0 */
-+	char procname [32]; /* inode number in decimal with \0 */
- };
+--- a/net/rds/rdma.c
++++ b/net/rds/rdma.c
+@@ -473,6 +473,14 @@ static struct rds_rdma_op *rds_rdma_prep
  
- static inline struct bcm_sock *bcm_sk(const struct sock *sk)
-@@ -1519,7 +1519,7 @@ static int bcm_connect(struct socket *so
+ 		max_pages = max(nr, max_pages);
+ 		nr_pages += nr;
++
++		/*
++		 * nr_pages for one entry is limited to (UINT_MAX>>PAGE_SHIFT)+1,
++		 * so tot_pages cannot overflow without first going negative.
++		 */
++		if ((int)nr_pages < 0)
++			ret = -EINVAL;
++			goto out;
+ 	}
  
- 	if (proc_dir) {
- 		/* unique socket address as filename */
--		sprintf(bo->procname, "%p", sock);
-+		sprintf(bo->procname, "%lu", sock_i_ino(sk));
- 		bo->bcm_proc_read = proc_create_data(bo->procname, 0644,
- 						     proc_dir,
- 						     &bcm_proc_fops, sk);
+ 	pages = kcalloc(max_pages, sizeof(struct page *), GFP_KERNEL);
 
 
