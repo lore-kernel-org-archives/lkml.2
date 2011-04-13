@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab1DMPzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:55:47 -0400
-Received: from kroah.org ([198.145.64.141]:54432 "EHLO coco.kroah.org"
+	id S1758309Ab1DMQCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:02:52 -0400
+Received: from kroah.org ([198.145.64.141]:54464 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757415Ab1DMPzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:42 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:47 2011
-Message-Id: <20110413155147.651880116@clark.kroah.org>
+	id S1758174Ab1DMPzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:47 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:48 2011
+Message-Id: <20110413155148.210947709@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:51:08 -0700
+Date: Wed, 13 Apr 2011 08:51:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [44/74] ipv6: netfilter: ip6_tables: fix infoleak to userspace
+        David Sterba <dsterba@suse.cz>, Patrick McHardy <kaber@trash.net>
+Subject: [49/74] netfilter: h323: bug in parsing of ASN1 SEQOF field
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: David Sterba <dsterba@suse.cz>
 
-commit 6a8ab060779779de8aea92ce3337ca348f973f54 upstream.
+commit b4232a22776aa5d063f890d21ca69870dbbe431b upstream.
 
-Structures ip6t_replace, compat_ip6t_replace, and xt_get_revision are
-copied from userspace.  Fields of these structs that are
-zero-terminated strings are not checked.  When they are used as argument
-to a format string containing "%s" in request_module(), some sensitive
-information is leaked to userspace via argument of spawned modprobe
-process.
+Static analyzer of clang found a dead store which appears to be a bug in
+reading count of items in SEQOF field, only the lower byte of word is
+stored. This may lead to corrupted read and communication shutdown.
 
-The first bug was introduced before the git epoch;  the second was
-introduced in 3bc3fe5e (v2.6.25-rc1);  the third is introduced by
-6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
-CAP_NET_ADMIN.
+The bug has been in the module since it's first inclusion into linux
+kernel.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+[Patrick: the bug is real, but without practical consequence since the
+ largest amount of sequence-of members we parse is 30.]
+
+Signed-off-by: David Sterba <dsterba@suse.cz>
 Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv6/netfilter/ip6_tables.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/netfilter/nf_conntrack_h323_asn1.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1323,6 +1323,7 @@ do_replace(struct net *net, void __user
- 	/* overflow check */
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
- 
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -1855,6 +1856,7 @@ compat_do_replace(struct net *net, void
- 		return -ENOMEM;
- 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
- 		return -ENOMEM;
-+	tmp.name[sizeof(tmp.name)-1] = 0;
- 
- 	newinfo = xt_alloc_table_info(tmp.size);
- 	if (!newinfo)
-@@ -2079,6 +2081,7 @@ do_ip6t_get_ctl(struct sock *sk, int cmd
- 			ret = -EFAULT;
- 			break;
- 		}
-+		rev.name[sizeof(rev.name)-1] = 0;
- 
- 		if (cmd == IP6T_SO_GET_REVISION_TARGET)
- 			target = 1;
+--- a/net/netfilter/nf_conntrack_h323_asn1.c
++++ b/net/netfilter/nf_conntrack_h323_asn1.c
+@@ -631,7 +631,7 @@ static int decode_seqof(bitstr_t *bs, co
+ 		CHECK_BOUND(bs, 2);
+ 		count = *bs->cur++;
+ 		count <<= 8;
+-		count = *bs->cur++;
++		count += *bs->cur++;
+ 		break;
+ 	case SEMI:
+ 		BYTE_ALIGN(bs);
 
 
