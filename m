@@ -1,66 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab1DMBad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 21:30:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55312 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932763Ab1DMBaa (ORCPT
+	id S932766Ab1DMBcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 21:32:31 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:16778 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932737Ab1DMBca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 21:30:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=r8Lc7lBULSOGeF8b4bz4HwY0NWDfPaXMQVEX2+5/yZOctBDVNQM7CtekPMclOemccq
-         C07Uuu4ri3BxA2Y3J437ZD3GmKMnem414/trwwL2S3yESPOZ5J6kL+fF2XMI0UEWZ79l
-         qrrF/scqzMlFfCQ83nalEFPsidxK0c3ERT/lM=
-Message-ID: <4DA4FCAF.8080408@gmail.com>
-Date: Tue, 12 Apr 2011 18:30:23 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	Tue, 12 Apr 2011 21:32:30 -0400
+X-VirusChecked: Checked
+X-Env-Sender: mailling@hope1glory.biz
+X-Msg-Ref: server-13.tower-131.messagelabs.com!1302658345!21304190!2
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.98]
+Reply-To: <un352ng@aol.com>
+From: UNITED NATIONS <mailling@hope1glory.biz>
+Subject: PAYMENT NOTIFICATION
+Date: Tue, 12 Apr 2011 18:32:24 -0700
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Balbir Singh <balbir@in.ibm.com>
-Subject: =?windows-1252?Q?Re=3A_=5BRFC=5DDocumentation=3Aaccounting=3Ag?=
- =?windows-1252?Q?etdelays=2Ec_Fix=3A_warning=3A_variable_=91i=92?=
- =?windows-1252?Q?_set_but_not_used?=
-References: <1302019370-7101-1-git-send-email-justinmattock@gmail.com>	<20110412172627.4e9c4339.akpm@linux-foundation.org>	<4DA4F201.9050609@gmail.com> <20110412181821.93a3a17f.akpm@linux-foundation.org>
-In-Reply-To: <20110412181821.93a3a17f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00E5_01C2A9A6.3205CFA8"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <b300d814-eb24-4938-8409-7be5277cfc6a@AUSP01MHUB07.collaborationhost.net>
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2011 06:18 PM, Andrew Morton wrote:
-> On Tue, 12 Apr 2011 17:44:49 -0700 "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
->
->> On 04/12/2011 05:26 PM, Andrew Morton wrote:
->>> On Tue,  5 Apr 2011 09:02:50 -0700
->>> "Justin P. Mattock"<justinmattock@gmail.com>   wrote:
->>>
->>>> Keep in mind there is another warning with this file, but need am unsure what might be the best solution:
->>>> Documentation/accounting/getdelays.c: In function ___get_family_id___:
->>>> Documentation/accounting/getdelays.c:172:14: warning: variable ___rc___ set but not used [-Wunused-but-set-variable]
->>>
->>> this?
->>
->> there was two warnings with that one..(or atleast that what I am seeing
->> over here).
->
-> I don't know what you mean.
->
-> What command(s) are you using to build getdelays.o, btw?
->
+------=_NextPart_000_00E5_01C2A9A6.3205CFA8
+Content-Type: text/plain; charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-the two warnings while building getdelays
-to build the kernel I just do:
-"make"
+We want to use this medium to inform you that your interest has been approved for payment.
 
-part of the log here:
-http://fpaste.org/eXmq/
+see attached mssage for details
 
-system is fedora 15. .config is theirs as well
+------=_NextPart_000_00E5_01C2A9A6.3205CFA8
+Content-Type: application/octet-stream; name="DETAILS.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="DETAILS.rtf"
 
-Justin P. Mattock
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
+cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA4O31cdmlld2tpbmQ0XHVjMVxw
+YXJkXGJcZjBcZnMyMCBVTklURUQgTkFUSU9OUyBPRkZJQ0UgT0YgSU5URVJO
+QUwgT1ZFUlNJR0hUIFNFUlZJQ0VTIFxiMFxwYXINClxwYXINCkludGVybmFs
+IEF1ZGl0IHx8TW9uaXRvcmluZyB8fCBDb25zdWx0aW5nIGFuZCBJbnZlc3Rp
+Z2F0aW9ucyBEaXZpc2lvbiBccGFyDQpccGFyDQogIFxwYXINClxwYXINCkZy
+b206IFJldi4gRnIgTGF1cmllciBBLiBMYWJyZWNoZSBKUC4gXHBhcg0KXHBh
+cg0KIFxwYXINClxwYXINCkZvciBZb3VyIFVyZ2VudCBBdHRlbnRpb24sXHBh
+cg0KXHBhcg0KICBccGFyDQpccGFyDQpSZTogSW1tZWRpYXRlIFJlbGVhc2Ug
+b2YgeW91ciBBY2N1bXVsYXRlZCBGdW5kIEludGVyZXN0IFBheW1lbnQgdmlh
+IEludGVybmF0aW9uYWwgQ2VydGlmaWVkIEFUTSBDYXJkLiAgIFxwYXINClxw
+YXINCiAgXHBhcg0KXHBhcg0KIFxwYXINClxwYXINCk15IG5hbWUgaXMgXGIg
+UkVWLiBGUiBMQVVSSUVSIEEuIExBQlJFQ0hFIEpQXGIwICwgYSBDb25zdWx0
+YW50IHdpdGggdGhlIFVuaXRlZCBOYXRpb25zLCB3ZSBtYW5hZ2VtZW50IG9m
+IFVuaXRlZCBOYXRpb24gdGhyb3VnaCBJbnRlcm5hdGlvbmFsIENvbGxhYm9y
+YXRpb24vTmV0d29ya2luZyBEZXBvc2l0IEluc3VyYW5jZSBDb3Jwb3JhdGlv
+biAoTkRJQyksIHdpc2hlcyB0byBpbmZvcm0geW91IGFib3V0IHlvdXIgaW50
+ZXJlc3Qgc3VtIG9mIFVTJDEsIDg3MCwwMDAuMDAgdGhhdCB3YXMgYWNjcnVl
+ZCBmcm9tIHlvdXIgY2FwaXRhbCBzdW0gd2hpY2ggeW91IGFyZSBhYm91dCB0
+byByZWNlaXZlLCB3ZSBoYXZlIGJlZW4gbm90aWZ5IGJ5IHRoZSBJbnRlcm5h
+dGlvbmFsIEFzc29jaWF0aW9uIG9mIERlcG9zaXQgSW5zdXJlcnMgKElBREkp
+IG9mIFdvcmxkIEJhbmsgYWJvdXQgdGhlIHJlbGVhc2Ugb2YgdGhpcyBhcHBy
+b3ZlZCBmdW5kIHRvIHlvdS4gXHBhcg0KXHBhcg0KICBccGFyDQpccGFyDQpX
+ZSB3YW50IHRvIHVzZSB0aGlzIG1lZGl1bSB0byBpbmZvcm0geW91IHRoYXQg
+dGhlIGFib3ZlIGludGVyZXN0IGhhcyBiZWVuIGFwcHJvdmVkIGZvciBwYXlt
+ZW50IHRvIHlvdXIgdGhyb3VnaCBJbnRlcm5hdGlvbmFsIENlcnRpZmllZCBB
+VE0gQ2FyZCBiYXNlZCBvbiB5b3VyIGNob2ljZSBhbmQgYmUgaW5mb3JtZWQg
+dGhhdCB3ZSBoYXZlIGNvbmNsdWRlZCBldmVyeSBsZWdhbCBhcnJhbmdlbWVu
+dCBwZW5kaW5nIHlvdXIgYWNrbm93bGVkZ2VtZW50IG9mIHRoaXMgb2ZmaWNp
+YWwgbm90aWNlIHdoaWxlIHlvdSBwcm92aWRlIHRvIHVzIHdpdGggeW91ciBm
+dWxsIGluZm9ybWF0aW9uIGFuZCBjdXJyZW50IGNvbnRhY3QgYWRkcmVzcyB0
+b2dldGhlciB3aXRoIHlvdXIgZGlyZWN0IHRlbGVwaG9uZSBudW1iZXIgaWYg
+ZGlmZmVyZW50IGZyb20gd2hhdCB3ZSBoYXZlLiBccGFyDQpccGFyDQogIFxw
+YXINClxwYXINCk1lYW53aGlsZSwgYmUgaW5mb3JtZWQgdGhhdCB3ZSBzaGFs
+bCBiZSBkZWxpdmVyaW5nIHRoaXMgSW50ZXJuYXRpb25hbCBDZXJ0aWZpZWQg
+QVRNIENhcmQgdG8geW91IHRocm91Z2ggRmVkRXggRXhwcmVzcyBEZWxpdmVy
+eSB0byB5b3VyIGhvdXNlIGFkZHJlc3MgZm9yIGluc3RhbnQgY2FzaCBhY2Nl
+c3MuIFRoZSBJTUYgc2VjcmV0YXJ5IGdlbmVyYWwgaGFzIGRpcmVjdGVkIHRo
+YXQgd2Ugd29yayBpbiBjb2xsYWJvcmF0aW9ucyB3aXRoIHRoZSBOaWdlcmlh
+biBFY29ub21pYyBhbmQgRmluYW5jaWFsIENyaW1lIENvbW1pc3Npb24gYW5k
+IGhhdmUgZGVjaWRlZCB0byB3YWl2ZSBhd2F5IGFsbCBjbGVhcmFuY2UgZmVl
+cy9DaGFyZ2VzIGFuZCBhdXRob3JpemUgdXMgdG8gZWZmZWN0IHBheW1lbnRz
+IHdpdGhvdXQgcHJlanVkaWNlIHRvIHRoZSBhcHByb3ZlZCBiZW5lZmljaWFy
+eSB3aXRoIGltbWVkaWF0ZSBlZmZlY3QuIFxwYXINClxwYXINCiAgXHBhcg0K
+XHBhcg0KXGIgWW91ciBmdWxsIG5hbWUuLi4uLi4uLi4uLi4gXHBhcg0KXHBh
+cg0KQWRkcmVzcy4uLi4uLi4uLi4uLi4uLi4uLi4gXHBhcg0KXHBhcg0KRGly
+ZWN0IHBob25lIG51bWJlci4uLi4uLi4gXHBhcg0KXHBhcg0KTW9iaWxlIE51
+bWJlci4uLi4uLi4uLi4uLi4gXHBhcg0KXHBhcg0KU2NhbiBDb3B5IG9mIElk
+ZW50aXR5Li4uLi4gXHBhcg0KXHBhcg0KT2NjdXBhdGlvbi4uLi4uLi4uLi4u
+Li4uLi4gXGIwXHBhcg0KXHBhcg0KICBccGFyDQpccGFyDQpUaGUgb25seSB0
+aGluZyB5b3UgbmVlZCB0byByZWNlaXZlIHlvdXIgZnVuZCBpcyB0aGUgVU4g
+Tm90YXJpemF0aW9uIG9mIFVOIEJpbGwgb2YgUmlnaHQsIGFmdGVyIHdoaWNo
+IHRoZSBcbGRibHF1b3RlIFVOIEJpbGwgb2YgUmlnaHRccmRibHF1b3RlICBD
+ZXJ0aWZpY2F0ZSB3aWxsIGJlIGlzc3VlZCB0byB5b3UgdGhhdCB3aWxsIHN1
+cGVyc2VkZSBhbnkgaW5qdW5jdGlvbiB3aGF0c29ldmVyIGFuZCBieSB0aGVu
+IHlvdXIgZnVuZCBtdXN0IGhhdmUgYmVlbiBndWFyYW50ZWVkLiBccGFyDQpc
+cGFyDQogIFxwYXINClxwYXINCkluIHZpZXcgb2YgdGhhdCwgdGhlIGFib3Zl
+IG9mZmljZXMgd2lsbCBub3QgYmUgaGVsZCByZXNwb25zaWJsZSBmb3IgeW91
+ciBpbmFiaWxpdHkgdG8gcmVzcG9uZCB0byB0aGlzIG9mZmljaWFsIGxldHRl
+ciB3aXRoaW4gMiBiYW5raW5nIGRheXMsIGJlY2F1c2UgdGhlIFdvcmxkIGJh
+bmsgaGFzIGdpdmVuIHVzIGEgNDggd29ya2luZyBob3VycyBtYW5kYXRlIHRv
+IGNvbmNsdWRlIHdpdGggdGhpcyB0cmFuc2FjdGlvbiBhbmQgZm9yIHlvdXIg
+b3duIGdvb2QgaW50ZXJlc3QgeW91IHNob3VsZCBrZWVwIHRoaXMgdmVyeSBj
+b25maWRlbnRpYWwgdGlsbCB5b3UgaGF2ZSBhY2Nlc3MgdG8gdGhpcyBmdW5k
+LiAgIFxwYXINClxwYXINCkluIGNhc2UgaWYgeW91IG5lZWQgYW55IGNsYXJp
+ZmljYXRpb24sIGRvIG5vdCBoZXNpdGF0ZSB0byBhc2ssIHdlIGFyZSBhbHdh
+eXMgdGhlcmUgdG8gbWVldCB5b3VyIG5lZWRzIGFuZCBhcyBhIG1hdHRlciBv
+ZiBmYWN0cyBhbmQgdXJnZW5jeSB5b3UgdXJnZW50bHkgbmVlZCB0byBjYWxs
+IHVzIHNvb25lc3QgcmVjZWl2aW5nIHJlYWRpbmcgdGhpcyBtYWlsIGZvciBi
+ZXR0ZXIgZXhwbGFuYXRpb25zIGFuZCB1bmRlcnN0YW5kaW5ncyBvZiB5b3Vy
+cy4gQXR0YWNoZWQgaXMgYSBzY2FuIGNvcHkgb2YgbXkgaWRlbnRpdHkgZm9y
+IHlvdXIgb3duIHZlcmlmaWNhdGlvbiBpbiBvcmRlciB0byBhc2NlcnRhaW4g
+d2hvIHlvdSBhcmUgZGVhbGluZyB3aXRoLCBzbyB0aGF0IHlvdSB3aWxsIGJl
+IHJlc3QgYXNzdXJlZCBccGFyDQpccGFyDQogIFxwYXINClxwYXINCllvdXJz
+IGluIHNlcnZpY2UsIFxwYXINClxwYXINCiAgXHBhcg0KXHBhcg0KUmV2LiBM
+YXVyaWVyIEEuIExhYnJlY2hlIEpQLiBccGFyDQpccGFyDQpVbml0ZWQgTmF0
+aW9ucyBVbmRlci1TZWNyZXRhcnktIEdlbmVyYWwgZm9yIEludGVybmFsIE92
+ZXJzaWdodC4gXHBhcg0KcmV4bGFicmVjaGVAYW9sLmNvbVxwYXINClRlbGVw
+aG9uZSBOdW1iZXI6ICsyMzQgODA4MjEwODkzNFxwYXINCn0NCgA=
+
+------=_NextPart_000_00E5_01C2A9A6.3205CFA8--
