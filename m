@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757712Ab1DMIRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:17:41 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:37099 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752016Ab1DMIRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:17:37 -0400
-Date: Wed, 13 Apr 2011 11:17:33 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>, gregkh@suse.de,
-        linux-arm-msm@vger.kernel.org, balbi@ti.com, ablay@codeaurora.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] usb/gadget: cleanup of "Add SuperSpeed support to
- the Gadget Framework"
-Message-ID: <20110413081732.GV15130@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110411175917.GE4018@linutronix.de>
- <1302636896-12717-1-git-send-email-bigeasy@linutronix.de>
- <1302636896-12717-2-git-send-email-bigeasy@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302636896-12717-2-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757748Ab1DMISB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 04:18:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43437 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146Ab1DMIQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 04:16:47 -0400
+Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Gabriel Paubert <paubert@iram.es>
+Cc: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
+        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Dave Airlie <airlied@gmail.com>
+In-Reply-To: <20110413075943.GA27996@iram.es>
+References: <20110406084101.GB13963@pengutronix.de>
+	 <BANLkTimAJ-s_3A3L1YGfoFLmd4bpu2jWVA@mail.gmail.com>
+	 <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local>
+	 <20110411133128.GA24344@iram.es> <1302535963.24704.268.camel@thor.local>
+	 <20110412113033.GA16649@iram.es> <1302608770.27054.36.camel@thor.local>
+	 <20110412120055.GA7995@iram.es> <1302629362.15520.25.camel@thor.local>
+	 <20110413075943.GA27996@iram.es>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 18:16:13 +1000
+Message-ID: <1302682573.28876.78.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Apr 12, 2011 at 09:34:52PM +0200, Sebastian Andrzej Siewior wrote:
-> style, some endianess fixups
+On Wed, 2011-04-13 at 09:59 +0200, Gabriel Paubert wrote:
 > 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/usb/gadget/Kconfig     |    1 -
->  drivers/usb/gadget/composite.c |   62 +++++++++++++++++----------------------
->  include/linux/usb/gadget.h     |    2 +-
->  3 files changed, 28 insertions(+), 37 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> index b4130bc..21429c7 100644
-> --- a/drivers/usb/gadget/Kconfig
-> +++ b/drivers/usb/gadget/Kconfig
-> @@ -609,7 +609,6 @@ config USB_GADGET_SUPERSPEED
->  	boolean "Gadget operating in Super Speed"
->  	depends on USB_GADGET
->  	depends on USB_GADGET_DUALSPEED
-> -	default n
->  	help
->  	  Enabling this feature enables Super Speed support in the Gadget
->  	  driver. It means that gadget drivers should provide extra (SuperSpeed)
-> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-> index d5fe1c2..a94b7b7 100644
-> --- a/drivers/usb/gadget/composite.c
-> +++ b/drivers/usb/gadget/composite.c
-> @@ -76,10 +76,7 @@ static char composite_manufacturer[50];
->  /* Default endpoint companion descriptor */
->  static struct usb_ss_ep_comp_descriptor default_ep_comp_desc = {
->  		.bDescriptorType = USB_DT_SS_ENDPOINT_COMP,
-> -		.bLength = 0x06,
-> -		.bMaxBurst = 0, /* the default is we don't support bursting */
-> -		.bmAttributes = 0, /* 2^0 streams supported */
-> -		.wBytesPerInterval = 0,
-> +		.bLength = sizeof(struct usb_ss_ep_comp_descriptor),
+> Well, X is dead, or rather in an infinite ioctl loop as described
+> above.
+> IIRC, the display enters a power-down mode and there is nothing to
+> see.
 
-actually, there's a define:
+So basically the card crashed. There's about an infinite amount of
+reasons why radeons do so, sometimes it has to do with them not liking
+what you ate that day...
 
-#define USB_DT_SS_EP_COMP_SIZE		6
+The only thing I can see that could be of use would be a bisect
 
--- 
-balbi
+Cheers,
+Ben.
+
+
