@@ -1,306 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab1DMMSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 08:18:44 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16994
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755800Ab1DMMSm (ORCPT
+	id S1756091Ab1DMMTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 08:19:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50140 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755673Ab1DMMTL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 08:18:42 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Date: Wed, 13 Apr 2011 17:47:22 +0530
-Subject: [PATCHv1 10/11] LEDS: LED module of DA9052 PMIC driver
-Thread-Topic: [PATCHv1 10/11] LEDS: LED module of DA9052 PMIC driver
-Thread-Index: Acv51L4urrC//oK/RFCb83ENFOB2uQ==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B61976E@KCINPUNHJCMS01.kpit.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 13 Apr 2011 08:19:11 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+In-Reply-To: <BANLkTim8BKz5suhbS9CdV8EKESiC-=+J7g@mail.gmail.com>
+References: <BANLkTin3gtiBk8nvsWEiJetKHq2+9HTi4w@mail.gmail.com>
+	<BANLkTimJLcfsYAhV+3=-F14YZvX12-yXgA@mail.gmail.com>
+	<20110412182809.GA1218@redhat.com>
+	<BANLkTinb1gXcZug5ApmmrudWLY7PwxNf-A@mail.gmail.com>
+	<20110412192059.GA14360@redhat.com>
+	<BANLkTimJgx_x=0bpBDWaUkJgZPYs3_iwsg@mail.gmail.com>
+	<BANLkTimBegMUq2fX67o2YnoATWG-NDbKgA@mail.gmail.com>
+	<BANLkTikoDELrA-RtA9BLm64mfoPgdADR0Q@mail.gmail.com>
+	<BANLkTi=HyK+8DhJS3db0j2fefdOjwVMN3w@mail.gmail.com>
+	<BANLkTinMAGmdEDviRwZ1-mxrAAe_WK5jvg@mail.gmail.com>
+	<BANLkTinjGkbBMUo7MQ2Dg2yDwQ932qJ7rQ@mail.gmail.com>
+	<BANLkTikRH0q3RyP_CORXjAX34-br4pqf=A@mail.gmail.com>
+	<BANLkTinp6gaPrjQF6eXk4WHa653GShDuYQ@mail.gmail.com>
+	<BANLkTinzz5TuGPAMVY39V3D0x+PgKr7eGg@mail.gmail.com>
+	<BANLkTimfRrFTkZqqekgs3e6OgqSc2AH9NQ@mail.gmail.com>
+	<BANLkTim8BKz5suhbS9CdV8EKESiC-=+J7g@mail.gmail.com>
+Date: Wed, 13 Apr 2011 14:19:10 +0200
+Message-ID: <BANLkTikbsxDD5shY+9GxWSMSv=G2NfBFAw@mail.gmail.com>
+Subject: Re: Processes hang in an unkillable state
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3DCIuhb011284
 
-Hi,
+On Wed, Apr 13, 2011 at 12:43 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>> btw, here might be another path which hits this (at least I think so).
+>
+> So both mprotect and mlock will do the same "split/merge vma's as
+> necessary", but neither of them should actually ever _expand_ a
+> mapping or change the vm_pgoff of a vma (except to fix up the pgoff as
+> a vma is split).
+>
+> So what I think is happening is that a previous vma operation (like
+> the mremap or the stack expansion) did the expand and created a vma
+> with a wrapping vm_pgoff. But nothing bad happened, because nobody
+> really _cares_ about the wrapping until later, when we split the vma.
+>
+> So I think (and hope) that your mprotect issue is exactly the same as
+> your mlock issue, and that the deeper problem was the earlier stack
+> expansion.
 
-LED Driver for Dialog Semiconductor DA9052 PMICs.
+So, after ~12h of testing I don't see any crashes. Currently, I'm
+testing with 2.6.39-rc3 with 2 of your patches applied (1st patching
+mlock.c/memory.c, 2nd: mmap.c).
 
-Changes made since last submission:
-. Modified the platform data structure
-. Ported the driver to Linux kernel 2.6.38.2
+It's still crashing with sys_madvise (as reported earlier), and I'm
+going to re-enable all syscalls now (madvise, getdents(64), readdir),
+which were disabled before. If something unrelated to the problems
+discussed in this thread happens, I'll report it in another thread.
 
-Linux Kernel Version: 2.6.38.2
-
-Signed-off-by: D. Chen <dchen@diasemi.com>
----
-diff -Naur linux-2.6.38.2/drivers/leds/Kconfig wrk_linux-2.6.38.2/drivers/leds/Kconfig
---- linux-2.6.38.2/drivers/leds/Kconfig	2011-03-27 23:37:20.000000000 +0500
-+++ wrk_linux-2.6.38.2/drivers/leds/Kconfig	2011-04-13 15:24:08.000000000 +0500
-@@ -274,6 +274,14 @@
- 	  This option enables support for on-chip LED drivers found
- 	  on Dialog Semiconductor DA9030/DA9034 PMICs.
-
-+config LEDS_DA9052
-+	tristate "Dialog DA9052 LEDS"
-+	depends on LEDS_CLASS
-+	depends on PMIC_DA9052
-+	help
-+	  This option enables support for on-chip LED drivers found
-+	  on Dialog Semiconductor DA9052 PMICs
-+
- config LEDS_DAC124S085
- 	tristate "LED Support for DAC124S085 SPI DAC"
- 	depends on LEDS_CLASS
-diff -Naur linux-2.6.38.2/drivers/leds/leds-da9052.c wrk_linux-2.6.38.2/drivers/leds/leds-da9052.c
---- linux-2.6.38.2/drivers/leds/leds-da9052.c	1970-01-01 05:00:00.000000000 +0500
-+++ wrk_linux-2.6.38.2/drivers/leds/leds-da9052.c	2011-04-13 15:24:28.000000000 +0500
-@@ -0,0 +1,218 @@
-+/*
-+ * LED Driver for Dialog DA9052
-+ *
-+ * Copyright(c) 2009 Dialog Semiconductor Ltd.
-+ *
-+ * Author: Dajun Chen <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/leds.h>
-+#include <linux/workqueue.h>
-+#include <linux/slab.h>
-+
-+#include <linux/mfd/da9052/reg.h>
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/pdata.h>
-+#include <linux/mfd/da9052/gpio.h>
-+
-+struct da9052_led {
-+	struct led_classdev cdev;
-+	struct work_struct work;
-+	struct da9052 *da9052;
-+	u8 led_index;
-+	u8 id;
-+	int brightness;
-+};
-+
-+u8 led_reg[] = {
-+		DA9052_LED_CONT_4_REG,
-+		DA9052_LED_CONT_5_REG,
-+};
-+
-+struct da9052_led_platform_data {
-+		int led_index[2];
-+		struct led_platform_data leds;
-+	};
-+
-+static int da9052_set_led_brightness(struct da9052_led *led)
-+{
-+	int error;
-+
-+	error = da9052_reg_write(led->da9052, led_reg[led->led_index],
-+				led->brightness | DA9052_LED_CONT_DIM);
-+	if (error < 0)
-+		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n", error);
-+	return error;
-+}
-+
-+static void da9052_led_work(struct work_struct *work)
-+{
-+	struct da9052_led *led = container_of(work,
-+				 struct da9052_led, work);
-+
-+	da9052_set_led_brightness(led);
-+}
-+
-+static void da9052_led_set(struct led_classdev *led_cdev,
-+			   enum led_brightness value)
-+{
-+	struct da9052_led *led;
-+
-+	led = container_of(led_cdev, struct da9052_led, cdev);
-+	led->brightness = value;
-+	schedule_work(&led->work);
-+}
-+
-+
-+static int da9052_configure_leds_gpio(struct da9052_led *led)
-+{
-+	int error;
-+	u8 register_value = DA9052_OUTPUT_OPENDRAIN |
-+			DA9052_SUPPLY_VDD_IO1 << 2 | 1 << 3;
-+
-+	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
-+				DA9052_GPIO_MASK_LOWER_NIBBLE,
-+				register_value);
-+
-+	if (error < 0) {
-+		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
-+		return error;
-+	}
-+
-+	error = da9052_reg_update(led->da9052, DA9052_GPIO_14_15_REG,
-+				DA9052_GPIO_MASK_UPPER_NIBBLE,
-+				register_value << DA9052_GPIO_NIBBLE_SHIFT
-+				);
-+	if (error < 0)
-+		dev_err(led->da9052->dev, "Failed to write GPIO 14-15 reg, %d\n", error);
-+
-+	return error;
-+}
-+
-+static int __devinit da9052_led_probe(struct platform_device *pdev)
-+{
-+	struct da9052_pdata *pdata;
-+	struct da9052 *da9052;
-+	struct gpio_led_platform_data *pled;
-+	struct da9052_led *led;
-+	int error, i;
-+
-+	da9052 = dev_get_drvdata(pdev->dev.parent);
-+	pdata = da9052->dev->platform_data;
-+	if (pdata == NULL) {
-+		dev_err(&pdev->dev, "No platform data\n");
-+		error = -ENODEV;
-+		goto err_mem;
-+	}
-+
-+	pled = pdata->pled;
-+
-+	if (pled == NULL) {
-+		dev_err(&pdev->dev, "Failed no platform data for LED\n");
-+		return -ENOMEM;
-+	}
-+
-+	led = kzalloc(sizeof(struct da9052_led) * pled->num_leds, GFP_KERNEL);
-+	if (led == NULL) {
-+		dev_err(&pdev->dev, "Failed to alloc memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < pled->num_leds; i++) {
-+		led[i].cdev.name = pled->leds[i].name;
-+		led[i].cdev.brightness_set = da9052_led_set;
-+		led[i].cdev.brightness = LED_OFF;
-+		led[i].brightness = 0;
-+		led[i].id = i;
-+		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
-+		INIT_WORK(&led[i].work, da9052_led_work);
-+
-+		error = led_classdev_register(pdev->dev.parent, &led[i].cdev);
-+		if (error) {
-+			dev_err(&pdev->dev, "Failed to register led %d\n", led[i].id);
-+			goto err_register;
-+		}
-+
-+		error = da9052_set_led_brightness(&led[i]);
-+		if (error) {
-+			dev_err(&pdev->dev, "Unable to init led %d\n", led[i].led_index);
-+			continue;
-+		}
-+	}
-+	error = da9052_configure_leds_gpio(led);
-+	if (error) {
-+		dev_err(&pdev->dev, "Failed to configure GPIO Led,%d\n", error);
-+		goto err_register;
-+	}
-+
-+	platform_set_drvdata(pdev, led);
-+
-+	return 0;
-+
-+err_register:
-+	for (i = i - 1; i >= 0; i--) {
-+		led_classdev_unregister(&led[i].cdev);
-+		cancel_work_sync(&led[i].work);
-+	}
-+err_mem:
-+	kfree(led);
-+	return error;
-+}
-+
-+static int __devexit da9052_led_remove(struct platform_device *pdev)
-+{
-+	struct da9052_led *led = NULL;
-+	struct da9052 *da9052;
-+	struct gpio_led_platform_data *pdata = pdev->dev.platform_data;
-+	int i;
-+
-+	led = platform_get_drvdata(pdev);
-+	da9052 = dev_get_drvdata(pdev->dev.parent);
-+	pdata = da9052->dev->platform_data;
-+
-+	for (i = 0; i < pdata->num_leds; i++) {
-+		led[i].brightness = 0;
-+		da9052_set_led_brightness(&led[i]);
-+		led_classdev_unregister(&led[i].cdev);
-+		cancel_work_sync(&led[i].work);
-+	}
-+
-+	kfree(led);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9052_led_driver = {
-+	.driver = {
-+		.name	= "da9052-leds",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= da9052_led_probe,
-+	.remove		= __devexit_p(da9052_led_remove),
-+};
-+
-+static int __init da9052_led_init(void)
-+{
-+	return platform_driver_register(&da9052_led_driver);
-+}
-+module_init(da9052_led_init);
-+
-+static void __exit da9052_led_exit(void)
-+{
-+	platform_driver_unregister(&da9052_led_driver);
-+}
-+module_exit(da9052_led_exit);
-+
-+MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL v2");
-diff -Naur linux-2.6.38.2/drivers/leds/Makefile wrk_linux-2.6.38.2/drivers/leds/Makefile
---- linux-2.6.38.2/drivers/leds/Makefile	2011-03-27 23:37:20.000000000 +0500
-+++ wrk_linux-2.6.38.2/drivers/leds/Makefile	2011-04-13 15:24:01.000000000 +0500
-@@ -30,6 +30,7 @@
- obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
- obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
- obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
-+obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
- obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
- obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
- obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
-
-Regards,
-Ashish J
-
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+Robert ≈öwiƒôcki
