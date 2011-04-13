@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab1DMQCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:02:52 -0400
-Received: from kroah.org ([198.145.64.141]:54464 "EHLO coco.kroah.org"
+	id S1758369Ab1DMQDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:03:12 -0400
+Received: from kroah.org ([198.145.64.141]:54456 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758174Ab1DMPzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:47 -0400
+	id S1757913Ab1DMPzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:46 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:48 2011
-Message-Id: <20110413155148.210947709@clark.kroah.org>
+Message-Id: <20110413155148.107364076@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:51:13 -0700
+Date: Wed, 13 Apr 2011 08:51:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Sterba <dsterba@suse.cz>, Patrick McHardy <kaber@trash.net>
-Subject: [49/74] netfilter: h323: bug in parsing of ASN1 SEQOF field
+        Vasiliy Kulikov <segoon@openwall.com>, Phil Blundell <philb@gnu.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [48/74] econet: 4 byte infoleak to the network
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Sterba <dsterba@suse.cz>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit b4232a22776aa5d063f890d21ca69870dbbe431b upstream.
+commit 67c5c6cb8129c595f21e88254a3fc6b3b841ae8e upstream.
 
-Static analyzer of clang found a dead store which appears to be a bug in
-reading count of items in SEQOF field, only the lower byte of word is
-stored. This may lead to corrupted read and communication shutdown.
+struct aunhdr has 4 padding bytes between 'pad' and 'handle' fields on
+x86_64.  These bytes are not initialized in the variable 'ah' before
+sending 'ah' to the network.  This leads to 4 bytes kernel stack
+infoleak.
 
-The bug has been in the module since it's first inclusion into linux
-kernel.
+This bug was introduced before the git epoch.
 
-[Patrick: the bug is real, but without practical consequence since the
- largest amount of sequence-of members we parse is 30.]
-
-Signed-off-by: David Sterba <dsterba@suse.cz>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Acked-by: Phil Blundell <philb@gnu.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/nf_conntrack_h323_asn1.c |    2 +-
+ net/econet/af_econet.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netfilter/nf_conntrack_h323_asn1.c
-+++ b/net/netfilter/nf_conntrack_h323_asn1.c
-@@ -631,7 +631,7 @@ static int decode_seqof(bitstr_t *bs, co
- 		CHECK_BOUND(bs, 2);
- 		count = *bs->cur++;
- 		count <<= 8;
--		count = *bs->cur++;
-+		count += *bs->cur++;
- 		break;
- 	case SEMI:
- 		BYTE_ALIGN(bs);
+--- a/net/econet/af_econet.c
++++ b/net/econet/af_econet.c
+@@ -428,10 +428,10 @@ static int econet_sendmsg(struct kiocb *
+ 		udpdest.sin_addr.s_addr = htonl(network | addr.station);
+ 	}
+ 
++	memset(&ah, 0, sizeof(ah));
+ 	ah.port = port;
+ 	ah.cb = cb & 0x7f;
+ 	ah.code = 2;		/* magic */
+-	ah.pad = 0;
+ 
+ 	/* tack our header on the front of the iovec */
+ 	size = sizeof(struct aunhdr);
 
 
