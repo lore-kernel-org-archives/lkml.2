@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab1DMPzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:55:23 -0400
-Received: from kroah.org ([198.145.64.141]:54285 "EHLO coco.kroah.org"
+	id S932527Ab1DMQIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:08:14 -0400
+Received: from kroah.org ([198.145.64.141]:54299 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757807Ab1DMPzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:21 -0400
+	id S1757881Ab1DMPzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:23 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:45 2011
-Message-Id: <20110413155145.303748648@clark.kroah.org>
+Message-Id: <20110413155145.542291931@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:46 -0700
+Date: Wed, 13 Apr 2011 08:50:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [22/74] ASoC: Explicitly say registerless widgets have no register
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [24/74] ROSE: prevent heap corruption with bad facilities
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 0ca03cd7d0fa3bfbd56958136a10f19733c4ce12 upstream.
+commit be20250c13f88375345ad99950190685eda51eb8 upstream.
 
-This stops code that handles widgets generically from attempting to access
-registers for these widgets.
+When parsing the FAC_NATIONAL_DIGIS facilities field, it's possible for
+a remote host to provide more digipeaters than expected, resulting in
+heap corruption.  Check against ROSE_MAX_DIGIS to prevent overflows, and
+abort facilities parsing on failure.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
+Additionally, when parsing the FAC_CCITT_DEST_NSAP and
+FAC_CCITT_SRC_NSAP facilities fields, a remote host can provide a length
+of less than 10, resulting in an underflow in a memcpy size, causing a
+kernel panic due to massive heap corruption.  A length of greater than
+20 results in a stack overflow of the callsign array.  Abort facilities
+parsing on these invalid length values.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/sound/soc-dapm.h |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ net/rose/rose_subr.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/include/sound/soc-dapm.h
-+++ b/include/sound/soc-dapm.h
-@@ -46,25 +46,25 @@
- /* platform domain */
- #define SND_SOC_DAPM_INPUT(wname) \
- {	.id = snd_soc_dapm_input, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0}
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM }
- #define SND_SOC_DAPM_OUTPUT(wname) \
- {	.id = snd_soc_dapm_output, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0}
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM }
- #define SND_SOC_DAPM_MIC(wname, wevent) \
- {	.id = snd_soc_dapm_mic, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0, .event = wevent, \
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM, .event = wevent, \
- 	.event_flags = SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD}
- #define SND_SOC_DAPM_HP(wname, wevent) \
- {	.id = snd_soc_dapm_hp, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0, .event = wevent, \
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM, .event = wevent, \
- 	.event_flags = SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD}
- #define SND_SOC_DAPM_SPK(wname, wevent) \
- {	.id = snd_soc_dapm_spk, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0, .event = wevent, \
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM, .event = wevent, \
- 	.event_flags = SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD}
- #define SND_SOC_DAPM_LINE(wname, wevent) \
- {	.id = snd_soc_dapm_line, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0, .event = wevent, \
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM, .event = wevent, \
- 	.event_flags = SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD}
+--- a/net/rose/rose_subr.c
++++ b/net/rose/rose_subr.c
+@@ -289,10 +289,15 @@ static int rose_parse_national(unsigned
+ 				facilities->source_ndigis = 0;
+ 				facilities->dest_ndigis   = 0;
+ 				for (pt = p + 2, lg = 0 ; lg < l ; pt += AX25_ADDR_LEN, lg += AX25_ADDR_LEN) {
+-					if (pt[6] & AX25_HBIT)
++					if (pt[6] & AX25_HBIT) {
++						if (facilities->dest_ndigis >= ROSE_MAX_DIGIS)
++							return -1;
+ 						memcpy(&facilities->dest_digis[facilities->dest_ndigis++], pt, AX25_ADDR_LEN);
+-					else
++					} else {
++						if (facilities->source_ndigis >= ROSE_MAX_DIGIS)
++							return -1;
+ 						memcpy(&facilities->source_digis[facilities->source_ndigis++], pt, AX25_ADDR_LEN);
++					}
+ 				}
+ 			}
+ 			p   += l + 2;
+@@ -332,6 +337,11 @@ static int rose_parse_ccitt(unsigned cha
  
- /* path domain */
-@@ -129,11 +129,11 @@
- /* events that are pre and post DAPM */
- #define SND_SOC_DAPM_PRE(wname, wevent) \
- {	.id = snd_soc_dapm_pre, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0, .event = wevent, \
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM, .event = wevent, \
- 	.event_flags = SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD}
- #define SND_SOC_DAPM_POST(wname, wevent) \
- {	.id = snd_soc_dapm_post, .name = wname, .kcontrols = NULL, \
--	.num_kcontrols = 0, .event = wevent, \
-+	.num_kcontrols = 0, .reg = SND_SOC_NOPM, .event = wevent, \
- 	.event_flags = SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD}
+ 		case 0xC0:
+ 			l = p[1];
++
++			/* Prevent overflows*/
++			if (l < 10 || l > 20)
++				return -1;
++
+ 			if (*p == FAC_CCITT_DEST_NSAP) {
+ 				memcpy(&facilities->source_addr, p + 7, ROSE_ADDR_LEN);
+ 				memcpy(callsign, p + 12,   l - 10);
+@@ -372,12 +382,16 @@ int rose_parse_facilities(unsigned char
+ 			switch (*p) {
+ 			case FAC_NATIONAL:		/* National */
+ 				len = rose_parse_national(p + 1, facilities, facilities_len - 1);
++				if (len < 0)
++					return 0;
+ 				facilities_len -= len + 1;
+ 				p += len + 1;
+ 				break;
  
- /* stream domain */
+ 			case FAC_CCITT:		/* CCITT */
+ 				len = rose_parse_ccitt(p + 1, facilities, facilities_len - 1);
++				if (len < 0)
++					return 0;
+ 				facilities_len -= len + 1;
+ 				p += len + 1;
+ 				break;
 
 
