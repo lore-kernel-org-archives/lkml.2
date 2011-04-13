@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab1DMUrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 16:47:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58750 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab1DMUrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 16:47:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,206,1301900400"; 
-   d="scan'208";a="628155117"
-Message-ID: <4DA60BBE.6000500@intel.com>
-Date: Wed, 13 Apr 2011 13:46:54 -0700
-From: Joseph Cihula <joseph.cihula@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+	id S932754Ab1DMUtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 16:49:49 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:50598 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094Ab1DMUts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 16:49:48 -0400
+Date: Wed, 13 Apr 2011 16:49:24 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        George Kashperko <george@znau.edu.ua>, "balbi@ti.com" <balbi@ti.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        Michael =?iso-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Wei, Gang" <gang.wei@intel.com>
-Subject: [PATCH RESEND] intel_iommu: disable all VT-d PMRs when TXT launched
-References: <4D879328.1080006@intel.com>
-In-Reply-To: <4D879328.1080006@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC][PATCH] axi: add AXI bus driver
+Message-ID: <20110413204924.GA1063@elliptictech.com>
+References: <BANLkTi=0sM2+nPYyd09G=Uy9rcEvaFErnA@mail.gmail.com>
+ <1302635550.14216.21.camel@dev.znau.edu.ua>
+ <BANLkTi=8mB9ZDTjF4yds6mkx+PmM+B_6Cg@mail.gmail.com>
+ <4DA4AC4B.90409@hauke-m.de>
+ <BANLkTiknRYWaDM1ThAxgXcdGqK8jeFaBPA@mail.gmail.com>
+ <BANLkTikqKtJuDS17mfFvxzMoXuBtJvCgTA@mail.gmail.com>
+ <1302640546.14216.65.camel@dev.znau.edu.ua>
+ <BANLkTim8dmTL-BVK3fcWHNBU9Eyz1k_T+Q@mail.gmail.com>
+ <op.vtvalzu33ri7v4@arend-laptop>
+ <BANLkTik6JZ-n3sVjCFK_x1yNRH3_o3_6rg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTik6JZ-n3sVjCFK_x1yNRH3_o3_6rg@mail.gmail.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel VT-d Protected Memory Regions (PMRs) are supposed to be disabled,
-on each VT-d engine, after DMA remapping is enabled on the engines.
-This is because the behavior of having both enabled is not deterministic
-and because, if TXT has been used to launch the kernel, the PMRs may be
-programmed to cover memory regions that will be used for DMA.
+On 2011-04-13 21:50 +0200, Rafał Miłecki wrote:
+> Note for not involved: AMBA is family with few buses/interfaces
+> possible: AXI, AHB, ASB, APB, ATB [1].
+> 
+> So what are you saying is that drivers/amba/ is for AMBA APB? OK, I
+> can accept such a explanation and it makes me even more sure we need
+> another AMBA driver (this time: AMBA AXI).
 
-Under some circumstances (certain quirks detected, lack of multiple
-devices, etc.), the current code does not set up DMA remapping on some
-VT-d engines.  In such cases it also skips disabling the PMRs.  This
-causes failures when the kernel is launched with TXT (most often this
-occurs on the graphics engine and results in colored vertical bars on
-the display).
+I believe the drivers/amba code is mainly (only?) for ARM PrimeCell
+cores which all include identification information at the end of their
+memory maps.  There are PrimeCell cores available for most if not all
+AMBA bus interfaces.
 
-This patch detects when the kernel has been launched with TXT and then
-disables the PMRs on all VT-d engines.  In some cases where the reason
-that remapping is not being enabled is due to possible ACPI DMAR table
-errors, the VT-d engine addresses may not be correct and thus not able
-to be safely programmed even to disable PMRs.  Because part of the TXT
-launch process is the verification of these addresses, it will always be
-safe to disable PMRs if the TXT launch has succeeded and hence only
-doing this in such cases.
+Non-primecell cores might not have such identification, and therefore
+would not be usable with drivers/amba.  They are generally used with
+the platform bus.
 
-Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
+> The left question is: how much of the implemented code is AMBA AXI
+> specific and how much is Broadcom specific?
+> 1) Does AMBA AXI identify cores by manuf, id, rev and class? Is this
+> really AMBA AXI specific and a evolution from simple "id" in AMBA APB?
+> 2) Is this standard for AMBA AXI to keep list of available cores in
+> some specific memory (is this always EPROM like in case of Bcm?)?
 
-diff -uprN -X linux-2.6.38-rc3/Documentation/dontdiff
-linux-2.6.38-rc3/drivers/pci/intel-iommu.c
-linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c
---- linux-2.6.38-rc3/drivers/pci/intel-iommu.c	2011-01-31
-19:05:49.000000000 -0800
-+++ linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c	2011-02-18
-15:42:36.778301210 -0800
-@@ -1299,7 +1299,7 @@ static void iommu_detach_domain(struct d
- static struct iova_domain reserved_iova_list;
- static struct lock_class_key reserved_rbtree_key;
+I don't believe AXI (the physical bus) nor any other AMBA bus interface
+provides any mechanism whatsoever for device identification or
+enumeration.
 
--static void dmar_init_reserved_ranges(void)
-+static int dmar_init_reserved_ranges(void)
- {
- 	struct pci_dev *pdev = NULL;
- 	struct iova *iova;
-@@ -1313,8 +1313,10 @@ static void dmar_init_reserved_ranges(vo
- 	/* IOAPIC ranges shouldn't be accessed by DMA */
- 	iova = reserve_iova(&reserved_iova_list, IOVA_PFN(IOAPIC_RANGE_START),
- 		IOVA_PFN(IOAPIC_RANGE_END));
--	if (!iova)
-+	if (!iova) {
- 		printk(KERN_ERR "Reserve IOAPIC range failed\n");
-+		return -ENODEV;
-+	}
-
- 	/* Reserve all PCI MMIO to avoid peer-to-peer access */
- 	for_each_pci_dev(pdev) {
-@@ -1327,11 +1329,13 @@ static void dmar_init_reserved_ranges(vo
- 			iova = reserve_iova(&reserved_iova_list,
- 					    IOVA_PFN(r->start),
- 					    IOVA_PFN(r->end));
--			if (!iova)
-+			if (!iova) {
- 				printk(KERN_ERR "Reserve iova failed\n");
-+				return -ENODEV;
-+			}
- 		}
- 	}
--
-+	return 0;
- }
-
- static void domain_reserve_special_ranges(struct dmar_domain *domain)
-@@ -2213,7 +2217,7 @@ static int __init iommu_prepare_static_i
- 	return 0;
- }
-
--int __init init_dmars(void)
-+static int __init init_dmars(int force_on)
- {
- 	struct dmar_drhd_unit *drhd;
- 	struct dmar_rmrr_unit *rmrr;
-@@ -2393,8 +2397,15 @@ int __init init_dmars(void)
- 	 *   enable translation
- 	 */
- 	for_each_drhd_unit(drhd) {
--		if (drhd->ignored)
-+		if (drhd->ignored) {
-+			/*
-+			 * we always have to disable PMRs or DMA may fail on
-+			 * this device
-+			 */
-+			if (force_on)
-+				iommu_disable_protect_mem_regions(drhd->iommu);
- 			continue;
-+		}
- 		iommu = drhd->iommu;
-
- 		iommu_flush_write_buffer(iommu);
-@@ -3297,12 +3308,21 @@ int __init intel_iommu_init(void)
- 	if (no_iommu || dmar_disabled)
- 		return -ENODEV;
-
--	iommu_init_mempool();
--	dmar_init_reserved_ranges();
-+	if (iommu_init_mempool()) {
-+		if (force_on)
-+			panic("tboot: Failed to initialize iommu memory\n");
-+		return 	-ENODEV;
-+	}
-+
-+	if (dmar_init_reserved_ranges()) {
-+		if (force_on)
-+			panic("tboot: Failed to reserve iommu ranges\n");
-+		return 	-ENODEV;
-+	}
-
- 	init_no_remapping_devices();
-
--	ret = init_dmars();
-+	ret = init_dmars(force_on);
- 	if (ret) {
- 		if (force_on)
- 			panic("tboot: Failed to initialize DMARs\n");
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
