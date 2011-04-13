@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab1DMP2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:28:15 -0400
-Received: from 30.mail-out.ovh.net ([213.186.62.213]:48385 "HELO
-	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757340Ab1DMP2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:28:13 -0400
-Date: Wed, 13 Apr 2011 17:18:51 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] genalloc: add support to specify the physical
- address
-Message-ID: <20110413151851.GF4709@game.jcrosoft.org>
-References: <1302192197-2248-1-git-send-email-plagnioj@jcrosoft.com>
- <1302192197-2248-2-git-send-email-plagnioj@jcrosoft.com>
- <20110412153758.c570b09a.akpm@linux-foundation.org>
+	id S1757485Ab1DMP2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:28:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757340Ab1DMP2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:28:49 -0400
+Date: Wed, 13 Apr 2011 17:28:29 +0200
+From: Petr Pisar <ppisar@redhat.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: [PATCH] Clean console safely
+Message-ID: <20110413152829.GB2993@dhcp-0-146.brq.redhat.com>
+Mail-Followup-To: Chris Ball <cjb@laptop.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+	Artem Bityutskiy <dedekind1@gmail.com>
+References: <1302705651.2768.21.camel@localhost>
+ <1302706473-16519-1-git-send-email-ppisar@redhat.com>
+ <m38vvew577.fsf@pullcord.laptop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110412153758.c570b09a.akpm@linux-foundation.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13893323375880874996
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m38vvew577.fsf@pullcord.laptop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 13, 2011 at 11:18:04AM -0400, Chris Ball wrote:
 > 
-> But this documentation is incorrect.  @addr is not "the starting
-> address of memory".
+> On Wed, Apr 13 2011, Petr Písař wrote:
+> > Traditional \E[2J sequence erases console display but scroll-back
+> > buffer and underlying device (frame) buffer keep data that can be
+> > accessed by scrolling console back.
+> >
+> > This patch introduce new \E[J parameter 3 that allows to scramble
+> > scroll-back buffer explicitly. Session locking programs (screen,
+> > vlock) can use it to prevent attacker to browse locked console
+> > history.
+> >
+> > Signed-off-by: Petr Písař <ppisar@redhat.com>
+> > ---
+> >  drivers/tty/vt/vt.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> > index 4bea1ef..fe96a1f 100644
+> > --- a/drivers/tty/vt/vt.c
+> > +++ b/drivers/tty/vt/vt.c
+> > @@ -1197,6 +1197,12 @@ static void csi_J(struct vc_data *vc, int vpar)
+> >  					      vc->vc_x + 1);
+> >  			}
+> >  			break;
+> > +		case 3: /* erase scroll-back buffer (and whole display) */
+> > +			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
+> > +				    vc->vc_screenbuf_size >> 1);
+> > +			set_origin(vc);
+> > +			if (CON_IS_VISIBLE(vc))
+> > +				update_screen(vc);
+> >  		case 2: /* erase whole display */
+> >  			count = vc->vc_cols * vc->vc_rows;
+> >  			start = (unsigned short *)vc->vc_origin;
 > 
-> > +unsigned long gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
-> > +{
-> > +	struct list_head *_chunk;
-> > +	struct gen_pool_chunk *chunk;
-> > +
-> > +	read_lock(&pool->lock);
-> > +	list_for_each(_chunk, &pool->chunks) {
-> > +		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-> > +
-> > +		if (addr >= chunk->start_addr && addr < chunk->end_addr)
-> > +			return chunk->phys_addr + addr - chunk->start_addr;
+> Nitpick: the cases were ordered before -- 3 should go after 2.
 > 
-> It is in fact "some address within one of the chunks".
-yes
-do you want a v2 or you fix it in your patch?
-> 
-> 
-> > +	}
-> > +	read_unlock(&pool->lock);
-> > +
-> > +	return ~0UL;
-> > +}
-> > +EXPORT_SYMBOL(gen_pool_virt_to_phys);
-> 
-> Was that intentional?  If so, what is the reasoning?
-yes as 0 can be a valid physical address
-and the export as the drivers can be compiled as module
-> 
-> 
-> Please review...
-> 
-> Subject: lib/genpool.c: document return values, fix gen_pool_add_virt() return value
-> From: Andrew Morton <akpm@linux-foundation.org>
-> 
-> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Cc: Jes Sorensen <jes@wildopensource.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Patrice VILCHEZ <patrice.vilchez@atmel.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  include/linux/genalloc.h |    2 ++
->  lib/genalloc.c           |    6 +++++-
->  2 files changed, 7 insertions(+), 1 deletion(-)
-> 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+This is on purpose to continue with code for case 2 as it prepares variables
+for cleaning visible part of display after the switch block.
 
-Best Regards,
-J.
+-- Petr
