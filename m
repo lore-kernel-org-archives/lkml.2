@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab1DMQNe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:13:34 -0400
-Received: from kroah.org ([198.145.64.141]:53014 "EHLO coco.kroah.org"
+	id S932951Ab1DMQNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:13:31 -0400
+Received: from kroah.org ([198.145.64.141]:52986 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932867Ab1DMQN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:27 -0400
+	id S932938Ab1DMQNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:25 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:48 2011
-Message-Id: <20110413161048.418764968@clark.kroah.org>
+Message-Id: <20110413161048.201621221@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:19 -0700
+Date: Wed, 13 Apr 2011 09:10:17 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        debian-release@lists.debian.org,
-        "Adam D. Barratt" <adam@adam-barratt.org.uk>,
-        paulmck@linux.vnet.ibm.com, mikey@neuling.org,
-        benh@kernel.crashing.org, anton@samba.org,
-        dann frazier <dannf@dannf.org>, galak@kernel.crashing.org,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Subject: [56/71] powerpc: Fix default_machine_crash_shutdown #ifdef botch
+        Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Brandon Philips <bphilips@suse.de>
+Subject: [54/71] gro: reset skb_iif on reuse
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,38 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+From: Andy Gospodarek <andy@greyhouse.net>
 
-powerpc: Fix default_machine_crash_shutdown #ifdef botch
+commit 6d152e23ad1a7a5b40fef1f42e017d66e6115159 upstream.
 
-Commit: c2be05481f6125254c45b78f334d4dd09c701c82 upstream
+Like Herbert's change from a few days ago:
 
-crash_kexec_wait_realmode() is defined only if CONFIG_PPC_STD_MMU_64
-and CONFIG_SMP, but is called if CONFIG_PPC_STD_MMU_64 even if !CONFIG_SMP.
-Fix the conditional compilation around the invocation.
+66c46d741e2e60f0e8b625b80edb0ab820c46d7a gro: Reset dev pointer on reuse
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-cc: Anton Blanchard <anton@samba.org>
+this may not be necessary at this point, but we should still clean up
+the skb->skb_iif.  If not we may end up with an invalid valid for
+skb->skb_iif when the skb is reused and the check is done in
+__netif_receive_skb.
+
+Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Brandon Philips <bphilips@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/crash.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/kernel/crash.c
-+++ b/arch/powerpc/kernel/crash.c
-@@ -447,7 +447,7 @@ void default_machine_crash_shutdown(stru
- 	crash_kexec_prepare_cpus(crashing_cpu);
- 	cpu_set(crashing_cpu, cpus_in_crash);
- 	crash_kexec_stop_spus();
--#ifdef CONFIG_PPC_STD_MMU_64
-+#if defined(CONFIG_PPC_STD_MMU_64) && defined(CONFIG_SMP)
- 	crash_kexec_wait_realmode(crashing_cpu);
- #endif
- 	if (ppc_md.kexec_cpu_down)
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2747,6 +2747,7 @@ void napi_reuse_skb(struct napi_struct *
+ 	__skb_pull(skb, skb_headlen(skb));
+ 	skb_reserve(skb, NET_IP_ALIGN - skb_headroom(skb));
+ 	skb->dev = napi->dev;
++	skb->skb_iif = 0;
+ 
+ 	napi->skb = skb;
+ }
 
 
