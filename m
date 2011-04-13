@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab1DMOQA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:16:00 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:47110 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755952Ab1DMOP6 convert rfc822-to-8bit (ORCPT
+	id S1756302Ab1DMORq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:17:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49781 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752901Ab1DMORp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:15:58 -0400
-Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Gabriel Paubert <paubert@iram.es>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Date: Wed, 13 Apr 2011 16:15:24 +0200
-In-Reply-To: <20110413122751.GA21050@iram.es>
-References: <20110406204327.GA11148@iram.es>
-	 <1302185075.24704.143.camel@thor.local> <20110411133128.GA24344@iram.es>
-	 <1302535963.24704.268.camel@thor.local> <20110412113033.GA16649@iram.es>
-	 <1302608770.27054.36.camel@thor.local> <20110412120055.GA7995@iram.es>
-	 <1302629362.15520.25.camel@thor.local> <20110413075943.GA27996@iram.es>
-	 <1302696736.15520.63.camel@thor.local> <20110413122751.GA21050@iram.es>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA
-	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.0- 
-Message-ID: <1302704124.15520.72.camel@thor.local>
-Mime-Version: 1.0
+	Wed, 13 Apr 2011 10:17:45 -0400
+Date: Wed, 13 Apr 2011 10:17:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        <linux-sh@vger.kernel.org>, <lethal@linux-sh.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Make power domain callbacks take precedence
+ over subsystem ones
+In-Reply-To: <201104130205.26988.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1104130954270.2005-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2011-04-13 at 14:27 +0200, Gabriel Paubert wrote: 
-> On Wed, Apr 13, 2011 at 02:12:16PM +0200, Michel Dänzer wrote:
-> > On Mit, 2011-04-13 at 09:59 +0200, Gabriel Paubert wrote: 
-> > > On Tue, Apr 12, 2011 at 07:29:22PM +0200, Michel Dänzer wrote:
-> > > > On Die, 2011-04-12 at 14:00 +0200, Gabriel Paubert wrote:
-> > > > > On Tue, Apr 12, 2011 at 01:46:10PM +0200, Michel Dänzer wrote:
-> > > > > > > 
-> > > > > > > With no_wb=1 the driver goes a bit further but the X server ends
-> > > > > > > up in an infinite ioctl loop and the logs are: 
-> > > > > > 
-> > > > > > Which ioctl does it loop on? Please provide the Xorg.0.log file as well.
-> > > > > 
-> > > > > From memory, the code was 0x64, which is DRM_RADEON_GEM_WAIT_IDLE.
-> > > > 
-> > > > Note that it's normal for this ioctl to be called every time before the
-> > > > GPU accessible pixmap memory is accessed by the CPU. Unless the ioctl
-> > > > always returns an error, this may not indicate a problem on its own. 
-> > > 
-> > > It seems to be an infinite loop, always returning EINTR because
-> > > of regular SIGALRM delivery.
-> > 
-> > That does sound like the GPU locks up. Do you get any messages in dmesg
-> > about lockups and attempts to reset the GPU at any time?
+On Wed, 13 Apr 2011, Rafael J. Wysocki wrote:
+
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> No.
+> Change the PM core's behavior related to power domains in such a way
+> that, if a power domain is defined for a given device, its callbacks
+> will be executed instead of and not in addition to the device
+> subsystem's PM callbacks.
+> 
+> The idea behind the initial implementation of power domains handling
+> by the PM core was that power domain callbacks would be executed in
+> addition to subsystem callbacks, so that it would be possible to
+> extend the subsystem callbacks by using power domains.  It turns out,
+> however, that this wouldn't be really convenient in some important
+> situations.
+> 
+> For example, there are systems in which power can only be removed
+> from entire power domains.  On those systems it is not desirable to
+> execute device drivers' PM callbacks until it is known that power is
+> going to be removed from the devices in question, which means that
+> they should be executed by power domain callbacks rather then by
+> subsystem (e.g. bus type) PM callbacks, because subsystems generally
+> have no information about what devices belong to which power domain.
+> Thus, for instance, if the bus type in question is the platform bus
+> type, its PM callbacks generally should not be called in addition to
+> power domain callbacks, because they run device drivers' callbacks
+> unconditionally if defined.
 
-Hmm, I guess the constant SIGALRMs might prevent the lockup detection
-from kicking in... Maybe you can try starting the X server with
--dumbSched to see if that gets things along any further, but in the end
-there's probably no way around figuring out what causes the lockup and
-fixing that anyway.
+What about systems where it makes sense to execute the subsystem 
+callbacks even if power isn't going to be removed from the device?  
+It's quite possible that the subsystem could reduce the device's power 
+consumption even when the device isn't powered down completely.
 
+Is the extra overhead of invoking the subsystem callback really all 
+that troublesome?
 
--- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+Alan Stern
+
