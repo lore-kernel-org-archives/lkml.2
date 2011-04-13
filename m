@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab1DMPzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:55:06 -0400
-Received: from kroah.org ([198.145.64.141]:54197 "EHLO coco.kroah.org"
+	id S1757628Ab1DMPzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:55:10 -0400
+Received: from kroah.org ([198.145.64.141]:54206 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757301Ab1DMPzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:05 -0400
+	id S1757301Ab1DMPzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:07 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:43 2011
-Message-Id: <20110413155143.501084443@clark.kroah.org>
+Message-Id: <20110413155143.696043145@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:29 -0700
+Date: Wed, 13 Apr 2011 08:50:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [05/74] cciss: fix lost command issue
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [07/74] mac80211: initialize sta->last_rx in sta_info_alloc
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bud Brown <bud.brown@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 1ddd5049545e0aa1a0ed19bca4d9c9c3ce1ac8a2 upstream.
+commit 8bc8aecdc5e26cfda12dbd6867af4aa67836da6a upstream.
 
-Under certain workloads a command may seem to get lost. IOW, the Smart Array
-thinks all commands have been completed but we still have commands in our
-completion queue. This may lead to system instability, filesystems going
-read-only, or even panics depending on the affected filesystem. We add an
-extra read to force the write to complete.
+This field is used to determine the inactivity time. When in AP mode,
+hostapd uses it for kicking out inactive clients after a while. Without this
+patch, hostapd immediately deauthenticates a new client if it checks the
+inactivity time before the client sends its first data frame.
 
-Testing shows this extra read avoids the problem.
-
-Signed-off-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/cciss.h |    1 +
+ net/mac80211/sta_info.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/block/cciss.h
-+++ b/drivers/block/cciss.h
-@@ -165,6 +165,7 @@ static void SA5_submit_command( ctlr_inf
- 	 printk("Sending %x - down to controller\n", c->busaddr );
- #endif /* CCISS_DEBUG */ 
-          writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
-+	readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
- 	 h->commands_outstanding++;
- 	 if ( h->commands_outstanding > h->max_outstanding)
- 		h->max_outstanding = h->commands_outstanding;
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -276,6 +276,7 @@ struct sta_info *sta_info_alloc(struct i
+ 	memcpy(sta->sta.addr, addr, ETH_ALEN);
+ 	sta->local = local;
+ 	sta->sdata = sdata;
++	sta->last_rx = jiffies;
+ 
+ 	sta->rate_ctrl = rate_control_get(local->rate_ctrl);
+ 	sta->rate_ctrl_priv = rate_control_alloc_sta(sta->rate_ctrl,
 
 
