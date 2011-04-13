@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab1DMQR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:17:59 -0400
-Received: from kroah.org ([198.145.64.141]:53031 "EHLO coco.kroah.org"
+	id S933025Ab1DMQSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:18:18 -0400
+Received: from kroah.org ([198.145.64.141]:53021 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932942Ab1DMQN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:29 -0400
+	id S932940Ab1DMQN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:48 2011
-Message-Id: <20110413161048.631406365@clark.kroah.org>
+Message-Id: <20110413161048.542907250@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:21 -0700
+Date: Wed, 13 Apr 2011 09:10:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Phillip Lougher <phillip@lougher.demon.co.uk>
-Subject: [58/71] Squashfs: handle corruption of directory structure
+        Yinghai Lu <yinghai@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [57/71] [PATCH] Revert "x86: Cleanup highmap after brk is concluded"
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,91 +27,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
+This reverts upstream commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e
 
-commit 44cff8a9ee8a974f9e931df910688e7fc1f0b0f9 upstream.
+It caused problems in the stable tree and should not have been there.
 
-Handle the rare case where a directory metadata block is uncompressed and
-corrupted, leading to a kernel oops in directory scanning (memcpy).
-Normally corruption is detected at the decompression stage and dealt with
-then, however, this will not happen if:
-
-- metadata isn't compressed (users can optionally request no metadata
-  compression), or
-- the compressed metadata block was larger than the original, in which
-  case the uncompressed version was used, or
-- the data was corrupt after decompression
-
-This patch fixes this by adding some sanity checks against known maximum
-values.
-
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/squashfs/dir.c   |    9 +++++++++
- fs/squashfs/namei.c |   12 ++++++++++++
- 2 files changed, 21 insertions(+)
+ arch/x86/kernel/head64.c |    3 +++
+ arch/x86/kernel/setup.c  |    5 -----
+ arch/x86/mm/init.c       |   19 +++++++++++++++++++
+ arch/x86/mm/init_64.c    |   11 +++++------
+ 4 files changed, 27 insertions(+), 11 deletions(-)
 
---- a/fs/squashfs/dir.c
-+++ b/fs/squashfs/dir.c
-@@ -173,6 +173,11 @@ static int squashfs_readdir(struct file
- 		length += sizeof(dirh);
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -76,6 +76,9 @@ void __init x86_64_start_kernel(char * r
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
  
- 		dir_count = le32_to_cpu(dirh.count) + 1;
++	/* Cleanup the over mapped high alias */
++	cleanup_highmap();
 +
-+		/* dir_count should never be larger than 256 */
-+		if (dir_count > 256)
-+			goto failed_read;
-+
- 		while (dir_count--) {
- 			/*
- 			 * Read directory entry.
-@@ -184,6 +189,10 @@ static int squashfs_readdir(struct file
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+ #ifdef CONFIG_EARLY_PRINTK
+ 		set_intr_gate(i, &early_idt_handlers[i]);
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -295,9 +295,6 @@ static void __init init_gbpages(void)
+ static inline void init_gbpages(void)
+ {
+ }
+-static void __init cleanup_highmap(void)
+-{
+-}
+ #endif
  
- 			size = le16_to_cpu(dire->size) + 1;
+ static void __init reserve_brk(void)
+@@ -898,8 +895,6 @@ void __init setup_arch(char **cmdline_p)
  
-+			/* size should never be larger than SQUASHFS_NAME_LEN */
-+			if (size > SQUASHFS_NAME_LEN)
-+				goto failed_read;
-+
- 			err = squashfs_read_metadata(inode->i_sb, dire->name,
- 					&block, &offset, size);
- 			if (err < 0)
---- a/fs/squashfs/namei.c
-+++ b/fs/squashfs/namei.c
-@@ -175,6 +175,11 @@ static struct dentry *squashfs_lookup(st
- 		length += sizeof(dirh);
+ 	reserve_brk();
  
- 		dir_count = le32_to_cpu(dirh.count) + 1;
-+
-+		/* dir_count should never be larger than 256 */
-+		if (dir_count > 256)
-+			goto data_error;
-+
- 		while (dir_count--) {
- 			/*
- 			 * Read directory entry.
-@@ -186,6 +191,10 @@ static struct dentry *squashfs_lookup(st
+-	cleanup_highmap();
+-
+ 	/*
+ 	 * Find and reserve possible boot-time SMP configuration:
+ 	 */
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -283,6 +283,25 @@ unsigned long __init_refok init_memory_m
+ 	load_cr3(swapper_pg_dir);
+ #endif
  
- 			size = le16_to_cpu(dire->size) + 1;
- 
-+			/* size should never be larger than SQUASHFS_NAME_LEN */
-+			if (size > SQUASHFS_NAME_LEN)
-+				goto data_error;
++#ifdef CONFIG_X86_64
++	if (!after_bootmem && !start) {
++		pud_t *pud;
++		pmd_t *pmd;
 +
- 			err = squashfs_read_metadata(dir->i_sb, dire->name,
- 					&block, &offset, size);
- 			if (err < 0)
-@@ -227,6 +236,9 @@ exit_lookup:
- 	d_add(dentry, inode);
- 	return ERR_PTR(0);
- 
-+data_error:
-+	err = -EIO;
++		mmu_cr4_features = read_cr4();
 +
- read_failure:
- 	ERROR("Unable to read directory block [%llx:%x]\n",
- 		squashfs_i(dir)->start + msblk->directory_table,
++		/*
++		 * _brk_end cannot change anymore, but it and _end may be
++		 * located on different 2M pages. cleanup_highmap(), however,
++		 * can only consider _end when it runs, so destroy any
++		 * mappings beyond _brk_end here.
++		 */
++		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
++		pmd = pmd_offset(pud, _brk_end - 1);
++		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
++			pmd_clear(pmd);
++	}
++#endif
+ 	__flush_tlb_all();
+ 
+ 	if (!after_bootmem && e820_table_end > e820_table_start)
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -49,7 +49,6 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
+-#include <asm/setup.h>
+ #include <linux/bootmem.h>
+ 
+ static unsigned long dma_reserve __initdata;
+@@ -258,18 +257,18 @@ void __init init_extra_mapping_uc(unsign
+  * to the compile time generated pmds. This results in invalid pmds up
+  * to the point where we hit the physaddr 0 mapping.
+  *
+- * We limit the mappings to the region from _text to _brk_end.  _brk_end
+- * is rounded up to the 2MB boundary. This catches the invalid pmds as
++ * We limit the mappings to the region from _text to _end.  _end is
++ * rounded up to the 2MB boundary. This catches the invalid pmds as
+  * well, as they are located before _text:
+  */
+ void __init cleanup_highmap(void)
+ {
+ 	unsigned long vaddr = __START_KERNEL_map;
+-	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
+-	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
++	unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
+ 	pmd_t *pmd = level2_kernel_pgt;
++	pmd_t *last_pmd = pmd + PTRS_PER_PMD;
+ 
+-	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
++	for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
+ 		if (pmd_none(*pmd))
+ 			continue;
+ 		if (vaddr < (unsigned long) _text || vaddr > end)
 
 
