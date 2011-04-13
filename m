@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab1DMOzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:55:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab1DMOzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:55:35 -0400
-From: =?UTF-8?q?Petr=20P=C3=ADsa=C5=99?= <ppisar@redhat.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        =?UTF-8?q?Petr=20P=C3=ADsa=C5=99?= <ppisar@redhat.com>
-Subject: [PATCH] Clean console safely
-Date: Wed, 13 Apr 2011 16:54:33 +0200
-Message-Id: <1302706473-16519-1-git-send-email-ppisar@redhat.com>
-In-Reply-To: <1302705651.2768.21.camel@localhost>
-References: <1302705651.2768.21.camel@localhost>
+	id S1756930Ab1DMOzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:55:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51313 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756897Ab1DMOzk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 10:55:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110413043246.24974.qmail@science.horizon.com>
+References: <20110413043246.24974.qmail@science.horizon.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 13 Apr 2011 07:54:50 -0700
+Message-ID: <BANLkTi=owU+pg299PPNryhL2DbEpBTDEoQ@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+To: George Spelvin <linux@horizon.com>
+Cc: davej@redhat.com, linux-kernel@vger.kernel.org, joro@8bytes.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Traditional \E[2J sequence erases console display but scroll-back
-buffer and underlying device (frame) buffer keep data that can be
-accessed by scrolling console back.
+On Tue, Apr 12, 2011 at 9:32 PM, George Spelvin <linux@horizon.com> wrote:
+>
+> Note that the discussion on the libmount mailing list revealed a possible
+> kernel workaround: escape the hyphens as \055. �Damn hard to read for
+> a human, but it does parse correctly, and the workaround can be fixed
+> once the library updates have propagated.
 
-This patch introduce new \E[J parameter 3 that allows to scramble
-scroll-back buffer explicitly. Session locking programs (screen,
-vlock) can use it to prevent attacker to browse locked console
-history.
+I'd rather replace it with some non-dash character that is
+human-readable, like '+' or some utf-8 sequence that _looks_ like a
+dash.
 
-Signed-off-by: Petr Písař <ppisar@redhat.com>
----
- drivers/tty/vt/vt.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+So it wouldn't parse as a uuid to some code - big deal. Clearly
+neither does the correct dash. Using \055 would be just ugly.
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 4bea1ef..fe96a1f 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -1197,6 +1197,12 @@ static void csi_J(struct vc_data *vc, int vpar)
- 					      vc->vc_x + 1);
- 			}
- 			break;
-+		case 3: /* erase scroll-back buffer (and whole display) */
-+			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
-+				    vc->vc_screenbuf_size >> 1);
-+			set_origin(vc);
-+			if (CON_IS_VISIBLE(vc))
-+				update_screen(vc);
- 		case 2: /* erase whole display */
- 			count = vc->vc_cols * vc->vc_rows;
- 			start = (unsigned short *)vc->vc_origin;
--- 
-1.7.4.4
+Of course, not exposing it at all is also a reasonable strategy.
 
+Who uses /proc/self/mountinfo? I see the problem on my alpha Fedora-15
+test-machine, but Fedora-14 doesn't seem to do it. Ubuntu? SuSE? Do we
+know how widespread the breakage is?
+
+If it is _just_ Fedora-15, then I presume that pushing out the
+util-linux fix and waiting a few weeks will fix it (since anybody
+using F-15 right now lives on the edge anyway, and a real release
+hasn't happened). But if we have real releases using it, then we may
+need to look at workarounds using non-'-' characters if people really
+want the uuid showing up any time soon.
+
+                      Linus
