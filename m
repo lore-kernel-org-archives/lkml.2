@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab1DMNSn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 09:18:43 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50330 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab1DMNSm (ORCPT
+	id S1754525Ab1DMNUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 09:20:10 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35191 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753370Ab1DMNUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 09:18:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=I6AaF0PGUJ7yZuABXsvvTH9Gf6CxUrZ/MQymJWvINO98a9zSa8Vh7gGROp9c9ekiDO
-         KIpsxsa65taPXzRc6pMJhS2HZyDuxH67LMvUnMgg3qn102M1MNzSigEFjlDvH+apNgP3
-         qir01bM47TRIPYbdRfp6VEoI1u0YFsJJuVHJc=
-Message-ID: <4DA5A298.9060609@gmail.com>
-Date: Wed, 13 Apr 2011 21:18:16 +0800
-From: Wanlong Gao <wanlong.gao@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-CC: chris@zankel.net, steiner@sgi.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, hch@lst.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] fix the wrong argument of the functions definition
-References: <1302416084-13372-1-git-send-email-wanlong.gao@gmail.com>	 <1302416084-13372-2-git-send-email-wanlong.gao@gmail.com> <1302700440.10549.1.camel@hcegtvedt>
-In-Reply-To: <1302700440.10549.1.camel@hcegtvedt>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 13 Apr 2011 09:20:09 -0400
+Date: Wed, 13 Apr 2011 14:20:22 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Cox <alan@linux.jf.intel.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] gma500: backlight warning
+Message-ID: <20110413142022.56ebe93f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110413131714.GA17918@srcf.ucam.org>
+References: <20110413093519.28527.36552.stgit@localhost.localdomain>
+	<20110413093555.28527.30662.stgit@localhost.localdomain>
+	<20110413131714.GA17918@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011-4-13 21:14, Hans-Christian Egtvedt 写道:
-> On Sun, 2011-04-10 at 14:14 +0800, wanlong.gao@gmail.com wrote:
->> From: Wanlong Gao<wanlong.gao@gmail.com>
->>
->> The functions of eic_chip's memebers use the wrong argument .
->>
->> Signed-off-by: Wanlong Gao<wanlong.gao@gmail.com>
->
-> Thanks for this fix, added to the AVR32 tree.
->
-Thanks for your hard work to the open-source .
-> Signed-off-by: Hans-Christian Egtvedt<hans-christian.egtvedt@atmel.com>
->
-> <snipp patch>
->
+On Wed, 13 Apr 2011 14:17:14 +0100
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 
+> On Wed, Apr 13, 2011 at 10:36:19AM +0100, Alan Cox wrote:
+> >  	props.max_brightness = 100;
+> > +	props.type = BACKLIGHT_PLATFORM;
+> 
+> No, this should be BACKLIGHT_RAW - it's hitting the control registers 
+> directly rather than going via a platform interface.
+
+Ah ok - I figured it *was* the platform backlight. I'll send Greg a new
+version of that changeset.
+
+Alan
