@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab1DMXlv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 19:41:51 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:42638 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932372Ab1DMXlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 19:41:50 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] asm-generic/system.h: drop useless __KERNEL__
-Date: Wed, 13 Apr 2011 19:41:50 -0400
-Message-Id: <1302738110-22344-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.5.rc1
+	id S932413Ab1DMXnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 19:43:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45781 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150Ab1DMXnO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 19:43:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=S7GMHOkKByjybkhIPShsN7YJlMZjfYg/Jn7lgL363us5t4mzB1DyhUuZOB6ayUpbDz
+         ooWeO1i/o4bNi7p5YJyFtLM/8z9UQw6FlbEZSHZJk1qzCHHBkOUsTl6e5HCsPppXVyWZ
+         r69/3nPuWKt7yxn+HKWMFYcdtEhKLPsvJyDnE=
+MIME-Version: 1.0
+In-Reply-To: <1302736869.28876.91.camel@pasglop>
+References: <19876.35918.322649.256455@pilspetsen.it.uu.se>
+	<1302646173.28876.53.camel@pasglop>
+	<1302652502.28876.76.camel@pasglop>
+	<19877.23529.745123.819112@pilspetsen.it.uu.se>
+	<1302685102.28876.81.camel@pasglop>
+	<BANLkTimc84A8kddarnhvrcab3iKZc0HZAg@mail.gmail.com>
+	<1302736869.28876.91.camel@pasglop>
+Date: Wed, 13 Apr 2011 18:43:13 -0500
+Message-ID: <BANLkTika8FY1dD_hOQ4wMhHzuQ2Qt8fg7A@mail.gmail.com>
+Subject: Re: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
+From: kevin diggs <diggskevin38@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This header isn't exported to user-space, and even if it was, the
-__KERNEL__ check covers the entire file, so we'd get a useless stub
-in the first place.  So punt it.
+Hi,
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- include/asm-generic/system.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+On Wed, Apr 13, 2011 at 6:21 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Wed, 2011-04-13 at 12:52 -0500, kevin diggs wrote:
+>> > Actually I do get a crash in X later on... something in the radeon
+>> DRM
+>> > interrupt code is getting what looks like a NULL dereference. I'll
+>> try
+>> > to dig that one later on. I don't know if it's related to your
+>> problem
+>> > at all though.
+>> >
+>> In this context, what does 'crash' mean? The X thingy goes down? Or
+>> the whole OS?
+>
+> Depends, with xmon enabled you get into xmon :-) Dunno if the oops is
+> fatal but it could be.
+>
+> Cheers,
+> Ben.
+>
+>
 
-diff --git a/include/asm-generic/system.h b/include/asm-generic/system.h
-index 4b0b9cb..215efa7 100644
---- a/include/asm-generic/system.h
-+++ b/include/asm-generic/system.h
-@@ -14,7 +14,6 @@
- #ifndef __ASM_GENERIC_SYSTEM_H
- #define __ASM_GENERIC_SYSTEM_H
- 
--#ifdef __KERNEL__
- #ifndef __ASSEMBLY__
- 
- #include <linux/types.h>
-@@ -139,5 +138,4 @@ unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
- 
- #endif /* !__ASSEMBLY__ */
- 
--#endif /* __KERNEL__ */
- #endif /* __ASM_GENERIC_SYSTEM_H */
--- 
-1.7.5.rc1
+As I think I have the same hardware as you (7,3, radeon 9600) If you
+can tell me how to reproduce it maybe I can poke around a little.
+Thus, at least temporarily, freeing you up for other stuff.
 
+I kinda need a break from fighting with GCC.
+
+kevin
