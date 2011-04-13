@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933101Ab1DMQRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:17:47 -0400
-Received: from kroah.org ([198.145.64.141]:53039 "EHLO coco.kroah.org"
+	id S933097Ab1DMQRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:17:01 -0400
+Received: from kroah.org ([198.145.64.141]:53043 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932945Ab1DMQNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:31 -0400
+	id S932953Ab1DMQNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:48 2011
-Message-Id: <20110413161048.761247993@clark.kroah.org>
+Message-Id: <20110413161048.867865857@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:22 -0700
+Date: Wed, 13 Apr 2011 09:10:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Philip Prindeville <philipp@redfish-solutions.com>,
+        Vasiliy Kulikov <segooon@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [59/71] atm/solos-pci: Dont include frame pseudo-header on transmit hex-dump
+Subject: [60/71] net: ax25: fix information leak to userland
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philip A. Prindeville <philipp@redfish-solutions.com>
+From: Vasiliy Kulikov <segooon@gmail.com>
 
-commit 18b429e74eeafe42e947b1b0f9a760c7153a0b5c upstream.
+commit fe10ae53384e48c51996941b7720ee16995cbcb7 upstream.
 
-Omit pkt_hdr preamble when dumping transmitted packet as hex-dump;
-we can pull this up because the frame has already been sent, and
-dumping it is the last thing we do with it before freeing it.
+Sometimes ax25_getname() doesn't initialize all members of fsa_digipeater
+field of fsa struct, also the struct has padding bytes between
+sax25_call and sax25_ndigis fields.  This structure is then copied to
+userland.  It leads to leaking of contents of kernel stack memory.
 
-Also include the size, vpi, and vci in the debug as is done on
-receive.
-
-Use "port" consistently instead of "device" intermittently.
-
-Signed-off-by: Philip Prindeville <philipp@redfish-solutions.com>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/atm/solos-pci.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ net/ax25/af_ax25.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -694,7 +694,7 @@ void solos_bh(unsigned long card_arg)
- 					      size);
- 			}
- 			if (atmdebug) {
--				dev_info(&card->dev->dev, "Received: device %d\n", port);
-+				dev_info(&card->dev->dev, "Received: port %d\n", port);
- 				dev_info(&card->dev->dev, "size: %d VPI: %d VCI: %d\n",
- 					 size, le16_to_cpu(header->vpi),
- 					 le16_to_cpu(header->vci));
-@@ -1009,8 +1009,15 @@ static uint32_t fpga_tx(struct solos_car
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1391,6 +1391,7 @@ static int ax25_getname(struct socket *s
+ 	ax25_cb *ax25;
+ 	int err = 0;
  
- 			/* Clean up and free oldskb now it's gone */
- 			if (atmdebug) {
-+				struct pkt_hdr *header = (void *)oldskb->data;
-+				int size = le16_to_cpu(header->size);
-+
-+				skb_pull(oldskb, sizeof(*header));
- 				dev_info(&card->dev->dev, "Transmitted: port %d\n",
- 					 port);
-+				dev_info(&card->dev->dev, "size: %d VPI: %d VCI: %d\n",
-+					 size, le16_to_cpu(header->vpi),
-+					 le16_to_cpu(header->vci));
- 				print_buffer(oldskb);
- 			}
++	memset(fsa, 0, sizeof(fsa));
+ 	lock_sock(sk);
+ 	ax25 = ax25_sk(sk);
  
+@@ -1402,7 +1403,6 @@ static int ax25_getname(struct socket *s
+ 
+ 		fsa->fsa_ax25.sax25_family = AF_AX25;
+ 		fsa->fsa_ax25.sax25_call   = ax25->dest_addr;
+-		fsa->fsa_ax25.sax25_ndigis = 0;
+ 
+ 		if (ax25->digipeat != NULL) {
+ 			ndigi = ax25->digipeat->ndigi;
 
 
