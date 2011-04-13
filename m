@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757999Ab1DMRBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 13:01:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48961 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757952Ab1DMRBX (ORCPT
+	id S1758018Ab1DMRK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 13:10:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44988 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757890Ab1DMRK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 13:01:23 -0400
-Subject: Re: Strange block/scsi/workqueue issue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <1302703208.2613.18.camel@dolmen>
-References: <1302621261.2604.18.camel@mulgrave.site>
-	 <1302624266.2661.21.camel@dolmen> <1302625621.2604.24.camel@mulgrave.site>
-	 <1302627097.2661.25.camel@dolmen> <1302630090.2604.30.camel@mulgrave.site>
-	 <1302633208.2661.29.camel@dolmen> <1302638216.2604.35.camel@mulgrave.site>
-	 <1302640226.2661.34.camel@dolmen> <1302641036.2604.40.camel@mulgrave.site>
-	 <20110413051846.GD24161@mtj.dyndns.org>
-	 <20110413060651.GA27823@mtj.dyndns.org>  <1302686454.2613.4.camel@dolmen>
-	 <1302703208.2613.18.camel@dolmen>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Apr 2011 12:01:20 -0500
-Message-ID: <1302714080.2597.29.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Wed, 13 Apr 2011 13:10:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=jnHVgvw9Cw0RF4Y1o9nkjyWgxVLpuHH1wlFdMdHXgpEA6+TAnsLpwTwYaRT6xcN00O
+         sNLHNDpWxj+vrYkeffQG9IskBMURCANG1uZy7SFDoeieyL5W3WF5GLZryRhwIShJOTTS
+         OGTfH2xX1OQklkx1+3aZ7djS0lhwEY5kKwjW8=
+From: Marek Vasut <marek.vasut@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: zaurus: mmcblk0: error -110
+Date: Wed, 13 Apr 2011 19:10:53 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-1-amd64; KDE/4.6.1; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, Cyril Hrubis <metan@ucw.cz>,
+        Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
+References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz> <20110412155217.GA982@atrey.karlin.mff.cuni.cz> <20110412180414.GA26916@elf.ucw.cz>
+In-Reply-To: <20110412180414.GA26916@elf.ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104131910.53824.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While you still have the problematic system, can you try this patch?  It
-avoids changing anything in block (other than to add a missing state
-guard for the elv_next_request).  If it works, we can defer the sync vs
-async discussion and use it for a -stable fix.
+On Tuesday, April 12, 2011 08:04:14 PM Pavel Machek wrote:
+> On Tue 2011-04-12 17:52:17, Cyril Hrubis wrote:
+> > Hi!
+> > 
+> > > > Which model do you have? And check the corresponding board file if
+> > > > card detect GPIO handling is doing right.
+> > > 
+> > > I've got spitz (SL-3200).
+> > > 
+> > > So I suppose the board file is arch/arm/mach-pxa/spitz.c, I'll have a
+> > > look.
+> > 
+> > Hmm, besides cleanup by Marek Vasut there were no changes in the code.
+> > And it seems that it was just cleanup in spitz_card_pwr_ctrl().
+> 
+> With vanilla 2.6.38, I observe similar problem. MMC removal is not
+> detected; I get "error -110 whilst initalising SD card" on reinsert.
+> 									Pavel
 
-Thanks,
+I don't observe this problem with my tree (.38-rc8+). I'll have to check 
+properly though. (On SL-C1000)
 
-James
+Cyril, can you bisect between .37 and .38? I suspect some change in mmc subsys.
 
----
-
-diff --git a/block/blk.h b/block/blk.h
-index c8db371..11d0d25 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -62,7 +62,8 @@ static inline struct request *__elv_next_request(struct request_queue *q)
- 			return rq;
- 		}
- 
--		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
-+		if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) ||
-+		    !q->elevator->ops->elevator_dispatch_fn(q, 0))
- 			return NULL;
- 	}
- }
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index e44ff64..5aa4246 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -322,14 +322,9 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- 		kfree(evt);
- 	}
- 
--	if (sdev->request_queue) {
--		sdev->request_queue->queuedata = NULL;
--		/* user context needed to free queue */
--		scsi_free_queue(sdev->request_queue);
--		/* temporary expedient, try to catch use of queue lock
--		 * after free of sdev */
--		sdev->request_queue = NULL;
--	}
-+	/* temporary expedient, try to catch use of queue lock after
-+	 * free of sdev */
-+	sdev->request_queue = NULL;
- 
- 	scsi_target_reap(scsi_target(sdev));
- 
-@@ -937,6 +932,11 @@ void __scsi_remove_device(struct scsi_device *sdev)
- 	if (sdev->host->hostt->slave_destroy)
- 		sdev->host->hostt->slave_destroy(sdev);
- 	transport_destroy_device(dev);
-+	/* Setting this to NULL causes the request function to reject
-+	 * any I/O requests */
-+	sdev->request_queue->queuedata = NULL;
-+	/* Freeing the queue signals to block that we're done */
-+	scsi_free_queue(sdev->request_queue);
- 	put_device(dev);
- }
- 
-
-
+Cheers
