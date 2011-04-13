@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab1DMB3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 21:29:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52867 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932722Ab1DMB3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 21:29:36 -0400
-Date: Tue, 12 Apr 2011 18:31:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: Regression from 2.6.36
-Message-Id: <20110412183132.a854bffc.akpm@linux-foundation.org>
-In-Reply-To: <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
-References: <20110315132527.130FB80018F1@mail1005.cent>
-	<20110317001519.GB18911@kroah.com>
-	<20110407120112.E08DCA03@pobox.sk>
-	<4D9D8FAA.9080405@suse.cz>
-	<BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>
-	<1302177428.3357.25.camel@edumazet-laptop>
-	<1302178426.3357.34.camel@edumazet-laptop>
-	<BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
-	<1302190586.3357.45.camel@edumazet-laptop>
-	<20110412154906.70829d60.akpm@linux-foundation.org>
-	<BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932760Ab1DMBaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 21:30:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13734 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932737Ab1DMBaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 21:30:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,200,1301900400"; 
+   d="scan'208";a="908805514"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, ming.m.lin@intel.com,
+        peterz@infradead.org, mingo@elte.hu, eranian@gmail.com
+Subject: [PATCH] perf: Add missing user space support for config1/config2 v2
+Date: Tue, 12 Apr 2011 18:30:03 -0700
+Message-Id: <1302658203-4239-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011 09:23:11 +0800 Changli Gao <xiaosuo@gmail.com> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> On Wed, Apr 13, 2011 at 6:49 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> >
-> > It's somewhat unclear (to me) what caused this regression.
-> >
-> > Is it because the kernel is now doing large kmalloc()s for the fdtable,
-> > and this makes the page allocator go nuts trying to satisfy high-order
-> > page allocation requests?
-> >
-> > Is it because the kernel now will usually free the fdtable
-> > synchronously within the rcu callback, rather than deferring this to a
-> > workqueue?
-> >
-> > The latter seems unlikely, so I'm thinking this was a case of
-> > high-order-allocations-considered-harmful?
-> >
-> 
-> Maybe, but I am not sure. Maybe my patch causes too many inner
-> fragments. For example, when asking for 5 pages, get 8 pages, and 3
-> pages are wasted, then memory thrash happens finally.
+Updated version that avoids warning/-Werror on some gcc versions
+I didn't test initially. Ceterum censeo -Werror esse delendam.
 
-That theory sounds less likely, but could be tested by using
-alloc_pages_exact().
+-Andi
+
+---
+
+The offcore_msr perf kernel code was merged into 2.6.39-rc*,
+but the user space bits were not. This made it impossible
+to set the extra mask and actually do the OFFCORE profiling
+
+This patch fixes this. It adds a new syntax ':' to raw events
+to specify additional event masks. I also added support
+for setting config2, even though that is not needed currently.
+
+[Note: the original version back in time used , -- but that
+actually conflicted with event lists, so now it's :]
+
+Cc: ming.m.lin@intel.com
+Cc: peterz@infradead.org
+Cc: mingo@elte.hu
+Cc: eranian@gmail.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-list.txt |   11 +++++++++++
+ tools/perf/util/parse-events.c         |   18 +++++++++++++++++-
+ 2 files changed, 28 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 7a527f7..5a43169 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -61,6 +61,17 @@ raw encoding of 0x1A8 can be used:
+ You should refer to the processor specific documentation for getting these
+ details. Some of them are referenced in the SEE ALSO section below.
+ 
++Some raw events -- like the Intel OFFCORE events -- support additional 
++parameters. These can be appended after a ':'.
++
++For example on a multi socket Intel Nehalem:
++
++ perf stat -e r1b7:20ff -a sleep 1
++
++Profile the OFFCORE_RESPONSE.ANY_REQUEST with event mask REMOTE_DRAM_0 
++that measures any access to DRAM on another socket.  Upto two parameters can 
++be specified with additional ':'
++
+ OPTIONS
+ -------
+ 
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 952b4ae..783be64 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -688,9 +688,25 @@ parse_raw_event(const char **strp, struct perf_event_attr *attr)
+ 		return EVT_FAILED;
+ 	n = hex2u64(str + 1, &config);
+ 	if (n > 0) {
+-		*strp = str + n + 1;
++		str += n + 1;
+ 		attr->type = PERF_TYPE_RAW;
+ 		attr->config = config;
++		if (*str == ':') {
++			str++;
++			n = hex2u64(str, &config);
++			if (n == 0)
++				return EVT_FAILED;
++			attr->config1 = config;
++			str += n;
++			if (*str == ':') {
++				str++;
++				n = hex2u64(str + 1, &config);
++				if (n == 0)
++					return EVT_FAILED;
++				attr->config2 = config;
++			}
++		}	
++		*strp = str;
+ 		return EVT_HANDLED;
+ 	}
+ 	return EVT_FAILED;
+-- 
+1.7.4.2
 
