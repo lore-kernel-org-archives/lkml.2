@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab1DMO1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:27:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14966 "EHLO mx1.redhat.com"
+	id S1756692Ab1DMOcs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:32:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43112 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756638Ab1DMO1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:27:39 -0400
-Date: Wed, 13 Apr 2011 16:27:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        behlendorf1@llnl.gov
-Subject: Re: [PATCH] remove abs64()
-Message-ID: <20110413142703.GA1511@redhat.com>
-References: <20110412210045.GA19901@p183>
+	id S1756435Ab1DMOcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 10:32:47 -0400
+Message-ID: <4DA5B403.2010203@redhat.com>
+Date: Wed, 13 Apr 2011 10:32:35 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412210045.GA19901@p183>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>,
+        "rja@americas.sgi.com" <rja@americas.sgi.com>
+Subject: Re: [PATCH 2/3] x86, MCE: Drop default decoding notifier
+References: <20110413132409.GB1900@gere.osrc.amd.com> <1302701810-2471-2-git-send-email-bp@amd64.org> <4DA5ACB2.1070505@redhat.com> <20110413141829.GE1987@aftab> <4DA5B1B1.5090905@redhat.com> <20110413142648.GB2791@aftab>
+In-Reply-To: <20110413142648.GB2791@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13, Alexey Dobriyan wrote:
+
+>> .. right ... but we would still see nonsensical messages before the
+>> panic, which will confuse the end user.  IMO, dump the messages unless
+>> it's UC.  And we shouldn't print out the human readable message at all.
+>>     
+> I'd still leave the "mcelog ... " line though as a hint.
 >
-> +#define abs(x)								\
-> +({									\
-> +	typeof(x) _x = (x);						\
-> +									\
-> +	__builtin_choose_expr(						\
-> +		__builtin_types_compatible_p(typeof(_x), signed char),	\
-> +		(unsigned char)({ _x < 0 ? -_x : _x; }),		\
-> +	__builtin_choose_expr(						\
-> +		__builtin_types_compatible_p(typeof(_x), short),	\
-> +		(unsigned short)({ _x < 0 ? -_x : _x; }),		\
-> +	__builtin_choose_expr(						\
-> +		__builtin_types_compatible_p(typeof(_x), int),		\
-> +		(unsigned int)({ _x < 0 ? -_x : _x; }),			\
-> +	__builtin_choose_expr(						\
-> +		__builtin_types_compatible_p(typeof(_x), long),		\
-> +		(unsigned long)({ _x < 0 ? -_x : _x; }),		\
-> +	__builtin_choose_expr(						\
-> +		__builtin_types_compatible_p(typeof(_x), long long),	\
-> +		(unsigned long long)({ _x < 0 ? -_x : _x; }),		\
-> +	_x)))));							\
-> +})
+>   
 
-Personally I agree.
+:)
 
-But, we have some stupid users which do something like abs(u32_value)
-and expecting that abs() should treat this value as "signed".
+There are no messages -- that's part of the problem.  We're asking a
+user to do something for a message that doesn't exist ...
 
-Oleg.
+P.
 
