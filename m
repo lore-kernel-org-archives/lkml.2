@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824Ab1DMXZL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 19:25:11 -0400
-Received: from kroah.org ([198.145.64.141]:39799 "EHLO coco.kroah.org"
+	id S1757471Ab1DMXb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 19:31:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49454 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964781Ab1DMXZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 19:25:10 -0400
-Date: Wed, 13 Apr 2011 16:23:15 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Chris Wright <chrisw@sous-sol.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] usb: core: Change usb_create_sysfs_intf_files()'
- return type to void
-Message-ID: <20110413232315.GA9949@kroah.com>
-References: <531a6364dd1220278e76479423ce697e32bf4082.1301003830.git.mina86@mina86.com>
- <Pine.LNX.4.44L0.1103251302410.2047-100000@iolanthe.rowland.org>
+	id S1756705Ab1DMXb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 19:31:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,207,1301900400"; 
+   d="scan'208";a="733035082"
+Date: Thu, 14 Apr 2011 07:31:22 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+Message-ID: <20110413233122.GA6097@localhost>
+References: <20110413085937.981293444@intel.com>
+ <20110413090415.763161169@intel.com>
+ <20110413220444.GF4648@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1103251302410.2047-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110413220444.GF4648@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 25, 2011 at 01:03:12PM -0400, Alan Stern wrote:
-> On Fri, 25 Mar 2011, Michal Nazarewicz wrote:
-> 
-> > The usb_create_sysfs_intf_files() function always returned zero even
-> > if it failed to create sysfs fails.  Since this is a desired behaviour
-> > there is no need to return return code at all.  This commit changes
-> > function's return type (form int) to void.
+On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
+> On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
+> > Reduce the dampening for the control system, yielding faster
+> > convergence. The change is a bit conservative, as smaller values may
+> > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
 > > 
-> > Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> > Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > CC: Richard Kennedy <richard@rsk.demon.co.uk>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+>   Well, I have nothing against this change as such but what I don't like is
+> that it just changes magical +2 for similarly magical +0. It's clear that
+
+The patch tends to make the rampup time a bit more reasonable for
+common desktops. From 100s to 25s (see below).
+
+> this will lead to more rapid updates of proportions of bdi's share of
+> writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
+
+Yes, it will especially be a problem on _small memory_ JBOD setups.
+Richard actually has requested for a much radical change (decrease by
+6) but that looks too much.
+
+My team has a 12-disk JBOD with only 6G memory. The memory is pretty
+small as a server, but it's a real setup and serves well as the
+reference minimal setup that Linux should be able to run well on.
+
+It will sure create more fluctuations, but still is acceptable in my
+tests. For example,
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/10HDD-JBOD-6G/xfs-128dd-1M-16p-5904M-20%25-2.6.38-rc6-dt6+-2011-02-23-19-46/balance_dirty_pages-pages.png
+
+> I'd prefer to get some understanding of why do we need to update the
+> proportion period and why 4-times faster is just the right amount of faster
+> :) If I remember right you had some numbers for this, didn't you?
+
+Even better, I have a graph :)
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/vanilla/4G/xfs-1dd-1M-8p-3911M-20%25-2.6.38-rc7+-2011-03-07-21-55/balance_dirty_pages-pages.png
+
+It shows that doing 1 dd on a 4G box, it took more than 100s to
+rampup. The patch will reduce it to 25 seconds for a typical desktop.
+The disk has 50MB/s throughput. Given a modern HDD or SSD, it will
+converge more fast.
+
+Thanks,
+Fengguang
+
 > > ---
-> >  drivers/usb/core/sysfs.c |   13 +++++--------
-> >  drivers/usb/core/usb.c   |    3 +--
-> >  drivers/usb/core/usb.h   |    2 +-
-> >  3 files changed, 7 insertions(+), 11 deletions(-)
+> >  mm/page-writeback.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > > 
-> > On Fri, 25 Mar 2011 16:33:12 +0100, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > > My style preference is to put the empty statement before the comment.
-> > > It's unusual to have a comment appearing before a statement on the same
-> > > line.  For example:
-> > >		;	/* We don't care if the function fails */
+> > --- linux-next.orig/mm/page-writeback.c	2011-03-02 14:52:19.000000000 +0800
+> > +++ linux-next/mm/page-writeback.c	2011-03-02 15:00:17.000000000 +0800
+> > @@ -145,7 +145,7 @@ static int calc_period_shift(void)
+> >  	else
+> >  		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+> >  				100;
+> > -	return 2 + ilog2(dirty_total - 1);
+> > +	return ilog2(dirty_total - 1);
+> >  }
+> >  
+> >  /*
 > > 
-> > Changed.  And I agree, it looks better now. :)
-> 
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-I can't find this version of the patch in my email archive anywhere.
-
-Michal, can you resend it so I can apply it?
-
-thanks,
-
-greg k-h
+> > 
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
