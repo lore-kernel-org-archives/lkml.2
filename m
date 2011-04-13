@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab1DMBcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 21:32:31 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:16778 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932737Ab1DMBca (ORCPT
+	id S932780Ab1DMBeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 21:34:22 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:48325 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932750Ab1DMBeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 21:32:30 -0400
-X-VirusChecked: Checked
-X-Env-Sender: mailling@hope1glory.biz
-X-Msg-Ref: server-13.tower-131.messagelabs.com!1302658345!21304190!2
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.98]
-Reply-To: <un352ng@aol.com>
-From: UNITED NATIONS <mailling@hope1glory.biz>
-Subject: PAYMENT NOTIFICATION
-Date: Tue, 12 Apr 2011 18:32:24 -0700
+	Tue, 12 Apr 2011 21:34:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=FV4PVgy2qyTHQn7OtoAAFh2/CmHf7XUxYVjQG1kLYI1jyA4aJJjCK6XEwbmhL8EE5X
+         Fe+6Ah2XtbHFzsysQmpg==
+Date: Tue, 12 Apr 2011 18:34:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Peter Kruse <pk@q-leap.de>, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: I have a blaze of 353 page allocation failures, all alike
+In-Reply-To: <alpine.DEB.2.00.1104121306581.14692@router.home>
+Message-ID: <alpine.DEB.2.00.1104121830030.14956@chino.kir.corp.google.com>
+References: <4D53FE43.8030106@q-leap.com>    <alpine.DEB.2.00.1102141046170.26158@router.home>    <4D5A2EDB.8060603@q-leap.com>    <alpine.DEB.2.00.1102151040560.10511@router.home>    <4D5BC16A.2090205@q-leap.com>    <alpine.DEB.2.00.1102160956250.27814@router.home>
+ <4D5BF56F.1000504@q-leap.com>    <alpine.DEB.2.00.1102161010330.27814@router.home>    <4D5CCEED.3010501@q-leap.com>    <alpine.DEB.2.00.1102171102520.11140@router.home> <272bf0cc51439a2ab31ee2f06317dd9f.squirrel@www.q-leap.de> <4D6648B5.1090306@q-leap.com>
+ <4DA4692D.7080207@q-leap.de> <alpine.DEB.2.00.1104121306581.14692@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_00E5_01C2A9A6.3205CFA8"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <b300d814-eb24-4938-8409-7be5277cfc6a@AUSP01MHUB07.collaborationhost.net>
-To: Undisclosed recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_NextPart_000_00E5_01C2A9A6.3205CFA8
-Content-Type: text/plain; charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+On Tue, 12 Apr 2011, Christoph Lameter wrote:
 
-We want to use this medium to inform you that your interest has been approved for payment.
+> > > it took a while to find a date for a reboot... Unfortunately
+> > > it was not possible to get the early boot messages with the
+> > > kernel 2.6.32.23 since the compiled in log buffer is too
+> > > small. So we installed as you suggested a more recent kernel
+> > > 2.6.32.29 with a bigger log buffer, I attach the dmesg
+> > > of that, and hope that the information in there is useful.
+> > > We will keep an eye on that server with the newer kernel
+> > > to see if the allocation failures appear again.
+> > 
+> > the server was running for a few without any more allocation
+> > failures with kernel 2.6.32.29 but at one point the server
+> > stopped responding, it was still possible for a while to
+> > get a login, and trying to kill some processes but that
+> > didn't succeed.  But after that even login was
+> > no longer possible so we had to reset it.
+> > I attach the call trace, I hope you can find out what is
+> > the problem.
+> 
+> The problem maybe that you have lots and lots of SCSI devices which
+> consume ZONE_DMA memory for their control structures. I guess that is
+> oversubscribing the 16M zone.
+> 
 
-see attached mssage for details
+You can try to get more memory reserves specifically for lowmem in 
+ZONE_DMA by changing /proc/sys/vm/lowmem_reserve_ratio.  The values are 
+ratios, so lowering the numbers will yield larger amounts of memory 
+reserves in ZONE_DMA for GFP_DMA allocations.  Try lowering the non-zero 
+entries to 1 to reserve the entire zone for lowmem, assuming your system 
+has enough RAM for everything else you're running.
 
-------=_NextPart_000_00E5_01C2A9A6.3205CFA8
-Content-Type: application/octet-stream; name="DETAILS.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="DETAILS.rtf"
-
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA4O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGJcZjBcZnMyMCBVTklURUQgTkFUSU9OUyBPRkZJQ0UgT0YgSU5URVJO
-QUwgT1ZFUlNJR0hUIFNFUlZJQ0VTIFxiMFxwYXINClxwYXINCkludGVybmFs
-IEF1ZGl0IHx8TW9uaXRvcmluZyB8fCBDb25zdWx0aW5nIGFuZCBJbnZlc3Rp
-Z2F0aW9ucyBEaXZpc2lvbiBccGFyDQpccGFyDQogIFxwYXINClxwYXINCkZy
-b206IFJldi4gRnIgTGF1cmllciBBLiBMYWJyZWNoZSBKUC4gXHBhcg0KXHBh
-cg0KIFxwYXINClxwYXINCkZvciBZb3VyIFVyZ2VudCBBdHRlbnRpb24sXHBh
-cg0KXHBhcg0KICBccGFyDQpccGFyDQpSZTogSW1tZWRpYXRlIFJlbGVhc2Ug
-b2YgeW91ciBBY2N1bXVsYXRlZCBGdW5kIEludGVyZXN0IFBheW1lbnQgdmlh
-IEludGVybmF0aW9uYWwgQ2VydGlmaWVkIEFUTSBDYXJkLiAgIFxwYXINClxw
-YXINCiAgXHBhcg0KXHBhcg0KIFxwYXINClxwYXINCk15IG5hbWUgaXMgXGIg
-UkVWLiBGUiBMQVVSSUVSIEEuIExBQlJFQ0hFIEpQXGIwICwgYSBDb25zdWx0
-YW50IHdpdGggdGhlIFVuaXRlZCBOYXRpb25zLCB3ZSBtYW5hZ2VtZW50IG9m
-IFVuaXRlZCBOYXRpb24gdGhyb3VnaCBJbnRlcm5hdGlvbmFsIENvbGxhYm9y
-YXRpb24vTmV0d29ya2luZyBEZXBvc2l0IEluc3VyYW5jZSBDb3Jwb3JhdGlv
-biAoTkRJQyksIHdpc2hlcyB0byBpbmZvcm0geW91IGFib3V0IHlvdXIgaW50
-ZXJlc3Qgc3VtIG9mIFVTJDEsIDg3MCwwMDAuMDAgdGhhdCB3YXMgYWNjcnVl
-ZCBmcm9tIHlvdXIgY2FwaXRhbCBzdW0gd2hpY2ggeW91IGFyZSBhYm91dCB0
-byByZWNlaXZlLCB3ZSBoYXZlIGJlZW4gbm90aWZ5IGJ5IHRoZSBJbnRlcm5h
-dGlvbmFsIEFzc29jaWF0aW9uIG9mIERlcG9zaXQgSW5zdXJlcnMgKElBREkp
-IG9mIFdvcmxkIEJhbmsgYWJvdXQgdGhlIHJlbGVhc2Ugb2YgdGhpcyBhcHBy
-b3ZlZCBmdW5kIHRvIHlvdS4gXHBhcg0KXHBhcg0KICBccGFyDQpccGFyDQpX
-ZSB3YW50IHRvIHVzZSB0aGlzIG1lZGl1bSB0byBpbmZvcm0geW91IHRoYXQg
-dGhlIGFib3ZlIGludGVyZXN0IGhhcyBiZWVuIGFwcHJvdmVkIGZvciBwYXlt
-ZW50IHRvIHlvdXIgdGhyb3VnaCBJbnRlcm5hdGlvbmFsIENlcnRpZmllZCBB
-VE0gQ2FyZCBiYXNlZCBvbiB5b3VyIGNob2ljZSBhbmQgYmUgaW5mb3JtZWQg
-dGhhdCB3ZSBoYXZlIGNvbmNsdWRlZCBldmVyeSBsZWdhbCBhcnJhbmdlbWVu
-dCBwZW5kaW5nIHlvdXIgYWNrbm93bGVkZ2VtZW50IG9mIHRoaXMgb2ZmaWNp
-YWwgbm90aWNlIHdoaWxlIHlvdSBwcm92aWRlIHRvIHVzIHdpdGggeW91ciBm
-dWxsIGluZm9ybWF0aW9uIGFuZCBjdXJyZW50IGNvbnRhY3QgYWRkcmVzcyB0
-b2dldGhlciB3aXRoIHlvdXIgZGlyZWN0IHRlbGVwaG9uZSBudW1iZXIgaWYg
-ZGlmZmVyZW50IGZyb20gd2hhdCB3ZSBoYXZlLiBccGFyDQpccGFyDQogIFxw
-YXINClxwYXINCk1lYW53aGlsZSwgYmUgaW5mb3JtZWQgdGhhdCB3ZSBzaGFs
-bCBiZSBkZWxpdmVyaW5nIHRoaXMgSW50ZXJuYXRpb25hbCBDZXJ0aWZpZWQg
-QVRNIENhcmQgdG8geW91IHRocm91Z2ggRmVkRXggRXhwcmVzcyBEZWxpdmVy
-eSB0byB5b3VyIGhvdXNlIGFkZHJlc3MgZm9yIGluc3RhbnQgY2FzaCBhY2Nl
-c3MuIFRoZSBJTUYgc2VjcmV0YXJ5IGdlbmVyYWwgaGFzIGRpcmVjdGVkIHRo
-YXQgd2Ugd29yayBpbiBjb2xsYWJvcmF0aW9ucyB3aXRoIHRoZSBOaWdlcmlh
-biBFY29ub21pYyBhbmQgRmluYW5jaWFsIENyaW1lIENvbW1pc3Npb24gYW5k
-IGhhdmUgZGVjaWRlZCB0byB3YWl2ZSBhd2F5IGFsbCBjbGVhcmFuY2UgZmVl
-cy9DaGFyZ2VzIGFuZCBhdXRob3JpemUgdXMgdG8gZWZmZWN0IHBheW1lbnRz
-IHdpdGhvdXQgcHJlanVkaWNlIHRvIHRoZSBhcHByb3ZlZCBiZW5lZmljaWFy
-eSB3aXRoIGltbWVkaWF0ZSBlZmZlY3QuIFxwYXINClxwYXINCiAgXHBhcg0K
-XHBhcg0KXGIgWW91ciBmdWxsIG5hbWUuLi4uLi4uLi4uLi4gXHBhcg0KXHBh
-cg0KQWRkcmVzcy4uLi4uLi4uLi4uLi4uLi4uLi4gXHBhcg0KXHBhcg0KRGly
-ZWN0IHBob25lIG51bWJlci4uLi4uLi4gXHBhcg0KXHBhcg0KTW9iaWxlIE51
-bWJlci4uLi4uLi4uLi4uLi4gXHBhcg0KXHBhcg0KU2NhbiBDb3B5IG9mIElk
-ZW50aXR5Li4uLi4gXHBhcg0KXHBhcg0KT2NjdXBhdGlvbi4uLi4uLi4uLi4u
-Li4uLi4gXGIwXHBhcg0KXHBhcg0KICBccGFyDQpccGFyDQpUaGUgb25seSB0
-aGluZyB5b3UgbmVlZCB0byByZWNlaXZlIHlvdXIgZnVuZCBpcyB0aGUgVU4g
-Tm90YXJpemF0aW9uIG9mIFVOIEJpbGwgb2YgUmlnaHQsIGFmdGVyIHdoaWNo
-IHRoZSBcbGRibHF1b3RlIFVOIEJpbGwgb2YgUmlnaHRccmRibHF1b3RlICBD
-ZXJ0aWZpY2F0ZSB3aWxsIGJlIGlzc3VlZCB0byB5b3UgdGhhdCB3aWxsIHN1
-cGVyc2VkZSBhbnkgaW5qdW5jdGlvbiB3aGF0c29ldmVyIGFuZCBieSB0aGVu
-IHlvdXIgZnVuZCBtdXN0IGhhdmUgYmVlbiBndWFyYW50ZWVkLiBccGFyDQpc
-cGFyDQogIFxwYXINClxwYXINCkluIHZpZXcgb2YgdGhhdCwgdGhlIGFib3Zl
-IG9mZmljZXMgd2lsbCBub3QgYmUgaGVsZCByZXNwb25zaWJsZSBmb3IgeW91
-ciBpbmFiaWxpdHkgdG8gcmVzcG9uZCB0byB0aGlzIG9mZmljaWFsIGxldHRl
-ciB3aXRoaW4gMiBiYW5raW5nIGRheXMsIGJlY2F1c2UgdGhlIFdvcmxkIGJh
-bmsgaGFzIGdpdmVuIHVzIGEgNDggd29ya2luZyBob3VycyBtYW5kYXRlIHRv
-IGNvbmNsdWRlIHdpdGggdGhpcyB0cmFuc2FjdGlvbiBhbmQgZm9yIHlvdXIg
-b3duIGdvb2QgaW50ZXJlc3QgeW91IHNob3VsZCBrZWVwIHRoaXMgdmVyeSBj
-b25maWRlbnRpYWwgdGlsbCB5b3UgaGF2ZSBhY2Nlc3MgdG8gdGhpcyBmdW5k
-LiAgIFxwYXINClxwYXINCkluIGNhc2UgaWYgeW91IG5lZWQgYW55IGNsYXJp
-ZmljYXRpb24sIGRvIG5vdCBoZXNpdGF0ZSB0byBhc2ssIHdlIGFyZSBhbHdh
-eXMgdGhlcmUgdG8gbWVldCB5b3VyIG5lZWRzIGFuZCBhcyBhIG1hdHRlciBv
-ZiBmYWN0cyBhbmQgdXJnZW5jeSB5b3UgdXJnZW50bHkgbmVlZCB0byBjYWxs
-IHVzIHNvb25lc3QgcmVjZWl2aW5nIHJlYWRpbmcgdGhpcyBtYWlsIGZvciBi
-ZXR0ZXIgZXhwbGFuYXRpb25zIGFuZCB1bmRlcnN0YW5kaW5ncyBvZiB5b3Vy
-cy4gQXR0YWNoZWQgaXMgYSBzY2FuIGNvcHkgb2YgbXkgaWRlbnRpdHkgZm9y
-IHlvdXIgb3duIHZlcmlmaWNhdGlvbiBpbiBvcmRlciB0byBhc2NlcnRhaW4g
-d2hvIHlvdSBhcmUgZGVhbGluZyB3aXRoLCBzbyB0aGF0IHlvdSB3aWxsIGJl
-IHJlc3QgYXNzdXJlZCBccGFyDQpccGFyDQogIFxwYXINClxwYXINCllvdXJz
-IGluIHNlcnZpY2UsIFxwYXINClxwYXINCiAgXHBhcg0KXHBhcg0KUmV2LiBM
-YXVyaWVyIEEuIExhYnJlY2hlIEpQLiBccGFyDQpccGFyDQpVbml0ZWQgTmF0
-aW9ucyBVbmRlci1TZWNyZXRhcnktIEdlbmVyYWwgZm9yIEludGVybmFsIE92
-ZXJzaWdodC4gXHBhcg0KcmV4bGFicmVjaGVAYW9sLmNvbVxwYXINClRlbGVw
-aG9uZSBOdW1iZXI6ICsyMzQgODA4MjEwODkzNFxwYXINCn0NCgA=
-
-------=_NextPart_000_00E5_01C2A9A6.3205CFA8--
+This will verify if ZONE_DMA is being depleted from the larger number of 
+SCSI devices.  If you don't get any additional page allocation failures, 
+then check how much memory in ZONE_DMA is used at peak and that would be a 
+sane reserve ratio to use next time you restart the system.
