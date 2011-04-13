@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab1DMQMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:12:37 -0400
-Received: from kroah.org ([198.145.64.141]:52646 "EHLO coco.kroah.org"
+	id S932809Ab1DMQMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:12:51 -0400
+Received: from kroah.org ([198.145.64.141]:52776 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932661Ab1DMQMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:12:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:42 2011
-Message-Id: <20110413161042.674361363@clark.kroah.org>
+	id S932747Ab1DMQMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:12:48 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:44 2011
+Message-Id: <20110413161044.259827632@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:09:25 -0700
+Date: Wed, 13 Apr 2011 09:09:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [02/71] ALSA: hda - Fix SPDIF out regression on ALC889
+        Julien Tinnes <jln@google.com>, Roland Dreier <roland@purestorage.com>
+Subject: [17/71] Relax si_code check in rt_sigqueueinfo and rt_tgsigqueueinfo
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 20b67dddcc5f29d3d0c900225d85e0ac655bc69d upstream.
+commit 243b422af9ea9af4ead07a8ad54c90d4f9b6081a upstream.
 
-The commit 5a8cfb4e8ae317d283f84122ed20faa069c5e0c4
-    ALSA: hda - Use ALC_INIT_DEFAULT for really default initialization
-changed to use the default initialization method for ALC889, but
-this caused a regression on SPDIF output on some machines.
-This seems due to the COEF setup included in the default init procedure.
-For making SPDIF working again, the COEF-setup has to be avoided for
-the id 0889.
+Commit da48524eb206 ("Prevent rt_sigqueueinfo and rt_tgsigqueueinfo
+from spoofing the signal code") made the check on si_code too strict.
+There are several legitimate places where glibc wants to queue a
+negative si_code different from SI_QUEUE:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=24342
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+ - This was first noticed with glibc's aio implementation, which wants
+   to queue a signal with si_code SI_ASYNCIO; the current kernel
+   causes glibc's tst-aio4 test to fail because rt_sigqueueinfo()
+   fails with EPERM.
+
+ - Further examination of the glibc source shows that getaddrinfo_a()
+   wants to use SI_ASYNCNL (which the kernel does not even define).
+   The timer_create() fallback code wants to queue signals with SI_TIMER.
+
+As suggested by Oleg Nesterov <oleg@redhat.com>, loosen the check to
+forbid only the problematic SI_TKILL case.
+
+Reported-by: Klaus Dittrich <kladit@arcor.de>
+Acked-by: Julien Tinnes <jln@google.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/signal.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1160,7 +1160,7 @@ static void alc_auto_init_amp(struct hda
- 		case 0x10ec0883:
- 		case 0x10ec0885:
- 		case 0x10ec0887:
--		case 0x10ec0889:
-+		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
- 			alc889_coef_init(codec);
- 			break;
- 		case 0x10ec0888:
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2408,7 +2408,7 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t,
+ 	/* Not even root can pretend to send signals from the kernel.
+ 	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
+ 	 */
+-	if (info.si_code != SI_QUEUE) {
++	if (info.si_code >= 0 || info.si_code == SI_TKILL) {
+ 		/* We used to allow any < 0 si_code */
+ 		WARN_ON_ONCE(info.si_code < 0);
+ 		return -EPERM;
+@@ -2428,7 +2428,7 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pi
+ 	/* Not even root can pretend to send signals from the kernel.
+ 	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
+ 	 */
+-	if (info->si_code != SI_QUEUE) {
++	if (info->si_code >= 0 || info->si_code == SI_TKILL) {
+ 		/* We used to allow any < 0 si_code */
+ 		WARN_ON_ONCE(info->si_code < 0);
+ 		return -EPERM;
 
 
