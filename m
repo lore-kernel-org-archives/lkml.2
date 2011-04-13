@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758512Ab1DMLcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 07:32:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57385 "EHLO
+	id S1758531Ab1DMLff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 07:35:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64845 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758494Ab1DMLcK (ORCPT
+	with ESMTP id S1758504Ab1DMLfe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 07:32:10 -0400
+	Wed, 13 Apr 2011 07:35:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=WANxgzl8zlaMkSyYhCngz7Wa6wPHfQ6QMCLnl8ba9hqPxk5KWJRtjQgk1wSh87aMGZ
-         9GXOfBCxuggCqkE7/H4a09dlJFhIO5d10Twn4OxaKctwbu22E5DeZ6aKPn+qXNmZxhKV
-         Gy5CQb82AX5KvgO/oKMlcT6862IG2BwFwo5v0=
-Date: Wed, 13 Apr 2011 15:32:04 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Pavel Kankovsky <peak@argo.troja.mff.cuni.cz>,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Eugene Teo <eugene@redhat.com>, Nelson Elhage <nelhage@ksplice.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Pekka Savola <pekkas@netcore.fi>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] net: ipv4: add IPPROTO_ICMP socket kind
-Message-ID: <20110413113204.GB6948@albatros>
-References: <BANLkTi=ogJg_uJqsJFpnwnnr6LS+SFT3Vg@mail.gmail.com>
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=I2F0xQthTmqkwi/3x2RwkwHEcTobFdQXwBcljMbvnMgG1hF3yAcH4z7IBtprVfgyb0
+         ElwIIDrbKTlwXlFkBfahV0tXEvkWJS1F8AxkXJV1q7g3x9hG8FjDNwt3aBRW9yzEbjzZ
+         25LmzE/UXri+uNsxKXhtX3utC7mBUBnlR01kI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=ogJg_uJqsJFpnwnnr6LS+SFT3Vg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 13 Apr 2011 17:05:33 +0530
+Message-ID: <BANLkTikHzq90xzK5+imnGKtc6mLNz84G-w@mail.gmail.com>
+Subject: [ARM] Issue of memory compaction on kernel 2.6.35.9
+From: naveen yadav <yad.naveen@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
+        linux-arm-kernel-request@lists.arm.linux.org.uk,
+        linux newbie <linux.newbie79@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 13:29 +0300, Alexey Dobriyan wrote:
-> On Sat, Apr 9, 2011 at 1:15 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> > This patch adds IPPROTO_ICMP socket kind.
-> 
-> > +       seq_printf(f, "%5d: %08X:%04X %08X:%04X"
-> > +               " %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %p %d%n",
-> > +               bucket, src, srcp, dest, destp, sp->sk_state,
-> > +               sk_wmem_alloc_get(sp),
-> > +               sk_rmem_alloc_get(sp),
-> > +               0, 0L, 0, sock_i_uid(sp), 0, sock_i_ino(sp),
-> 
-> These zeroes can be embedded into format string for slightly faster printing.
+Dear all,
 
-Is it really needed?  I mean, it is not a fast path, so such a small
-overhead is not very bad.  But embedding them into the string makes it a
-bit more difficult to read.
+we want to varify compaction on ARM and we are  using 2.6.25.9 kernel
+on cortex a9.
 
-> > +static const struct file_operations ping_seq_fops = {
-> > +       .owner          = THIS_MODULE,
-> 
-> Unnecessary line.
-> ->owner is unused for proc files, this is not documented anywhere, but
-> it's unused.
+Since ARM does not have HUGETLB_PAGE support and compaction is HUGE
+PAGE independent so I removed from config file
 
-OK.
+******************************************************************************************************************************
+# support for memory compaction
+config COMPACTION
+        bool "Allow for memory compaction"
+        select MIGRATION
+        #depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
+        depends on EXPERIMENTAL && MMU
+   help
+          Allows the compaction of memory for the allocation of huge pages.	
+******************************************************************************************************************************
+after triggering Memory Compaction by writing any value to
+/proc/sys/vm/compact_memory i am getting the SVC mode crash
+******************************************************************************************************************************
+#echo 1 > /proc/sys/vm/compact_memory
+Unable to handle kernel paging request at virtual address ee420be4
+pgd = d9c6c000
+[ee420be4] *pgd=00000000
+Internal error: Oops: 805 [#1] PREEMPT
+last sysfs file:
+Modules linked in:
+CPU: 0    Not tainted  (2.6.35.9 #16)
+PC is at compact_zone+0x178/0x610
+LR is at compact_zone+0x138/0x610
+pc : [<c009f30c>]    lr : [<c009f2cc>]    psr: 40000093
+sp : d9d75e40  ip : c0380978  fp : d9d75e94
+r10: d9d74000  r9 : c03806c8  r8 : 00069704
+r7 : 00069800  r6 : 00d2e080  r5 : c04ea080  r4 : d9d75e9c
+r3 : 60000093  r2 : 00000002  r1 : ee420be4  r0 : ee430b82
+Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment us	
+******************************************************************************************************************************
 
-> > +static const char ping_proc_name[] = "icmp";
-> 
-> Ewww :-)
-> Does not compiler create only one string?
 
-I used it for better readability as it is used 2 times.
+We  tried to narrow down the prob... I found crash is form
+“del_page_from_lru_list(zone, page, page_lru(page)); ” function
+isolate_migratepages
 
-> > +       p = proc_create_data(ping_proc_name, S_IRUGO, net->proc_net,
-> > +                            &ping_seq_fops, NULL);
-> 
-> There is proc_net_fops_create().
+{
+-----------
+/* Successfully isolated */
+		del_page_from_lru_list(zone, page, page_lru(page));
 
-OK.
+	--------------------------------------------------
+}
 
-> > +#ifdef CONFIG_IP_PING
-> > +               table[7].data =
-> > +                       &net->ipv4.sysctl_ping_group_range;
-> > +#endif
-> 
-> Now I understand it's not related, but next sysctl will have
-> "table[8].data = ..." line which is off-by-one if CONFIG_IP_PING=n.
+In my ARM board have only one zone (Node 0, zone   Normal)
 
-Agreed that hardcoded indexes look a bit ugly, especially with
-configurable elements.  But as Dave suggested to completely remove
-CONFIG_IP_PING, it doesn't make sense now.
+******************************************************************************************************************************
+VDLinux#> cat /proc/buddyinfo
+Node 0, zone   Normal      5      4      4      2      1      3      0
+     2       3      4      2      1      7
+******************************************************************************************************************************
 
-Thank you,
+Can some one guide why I am geeting the crash and how to debugg this problem
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+
+Thanks
