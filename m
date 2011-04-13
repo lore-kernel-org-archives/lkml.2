@@ -1,32 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab1DMIyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:54:11 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6209 "EHLO mga01.intel.com"
+	id S1757907Ab1DMIyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 04:54:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41334 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757907Ab1DMIyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:54:05 -0400
+	id S1757909Ab1DMIyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 04:54:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,203,1301900400"; 
-   d="scan'208";a="678439337"
+   d="scan'208";a="678439395"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
-        Mikael Starvik <starvik@axis.com>, David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Chen Liqin <liqin.chen@sunplusct.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Chris Zankel <chris@zankel.net>
-Subject: [PATCH -v3 1/4] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
-Date: Wed, 13 Apr 2011 16:53:52 +0800
-Message-Id: <1302684835-14133-2-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org
+Subject: [PATCH -v3 4/4] ACPI, APEI, GHES, printk support for recoverable error via NMI
+Date: Wed, 13 Apr 2011 16:53:55 +0800
+Message-Id: <1302684835-14133-5-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1302684835-14133-1-git-send-email-ying.huang@intel.com>
 References: <1302684835-14133-1-git-send-email-ying.huang@intel.com>
@@ -34,183 +24,379 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cmpxchg() is widely used by lockless code, including NMI-safe lockless
-code.  But on some architectures, the cmpxchg() implementation is not
-NMI-safe, on these architectures the lockless code may need to a
-spin_trylock_irqsave() based implementation.
+Some APEI GHES recoverable errors are reported via NMI, but printk is
+not safe in NMI context.
 
-This patch adds a Kconfig option: ARCH_HAVE_NMI_SAFE_CMPXCHG, so that
-NMI-safe lockless code can depend on it or provide different
-implementation according to it.
-
-On many architectures, cmpxchg is only NMI-safe for several specific
-operand sizes. So, ARCH_HAVE_NMI_SAFE_CMPXCHG define in this patch
-only guarantees cmpxchg is NMI-safe for sizeof(unsigned long).
+To solve the issue, a lock-less memory allocator is used to allocate
+memory in NMI handler, save the error record into the allocated
+memory, put the error record into a lock-less list.  On the other
+hand, a irq_work is used to delay the operation from NMI context to
+IRQ context.  The irq_work IRQ handler will remove nodes from
+lock-less list, printk the error record and do some further processing
+include recovery operation, then free the memory.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-Acked-by: Paul Mundt <lethal@linux-sh.org>
-Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-CC: Richard Henderson <rth@twiddle.net>
-CC: Mikael Starvik <starvik@axis.com>
-CC: David Howells <dhowells@redhat.com>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>
-CC: Tony Luck <tony.luck@intel.com>
-CC: Hirokazu Takata <takata@linux-m32r.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Michal Simek <monstr@monstr.eu>
-CC: Ralf Baechle <ralf@linux-mips.org>
-CC: Kyle McMartin <kyle@mcmartin.ca>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Chen Liqin <liqin.chen@sunplusct.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Chris Zankel <chris@zankel.net>
 ---
- arch/Kconfig         |    3 +++
- arch/alpha/Kconfig   |    1 +
- arch/avr32/Kconfig   |    1 +
- arch/frv/Kconfig     |    1 +
- arch/ia64/Kconfig    |    1 +
- arch/m68k/Kconfig    |    1 +
- arch/parisc/Kconfig  |    1 +
- arch/powerpc/Kconfig |    1 +
- arch/s390/Kconfig    |    1 +
- arch/sh/Kconfig      |    1 +
- arch/sparc/Kconfig   |    1 +
- arch/tile/Kconfig    |    1 +
- arch/x86/Kconfig     |    1 +
- 13 files changed, 15 insertions(+)
+ drivers/acpi/apei/Kconfig |    2 
+ drivers/acpi/apei/ghes.c  |  188 ++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 176 insertions(+), 14 deletions(-)
 
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -178,4 +178,7 @@ config HAVE_ARCH_JUMP_LABEL
- config HAVE_ARCH_MUTEX_CPU_RELAX
- 	bool
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -12,6 +12,8 @@ config ACPI_APEI_GHES
+ 	tristate "APEI Generic Hardware Error Source"
+ 	depends on ACPI_APEI && X86
+ 	select ACPI_HED
++	select LLIST
++	select GENERIC_ALLOCATOR
+ 	help
+ 	  Generic Hardware Error Source provides a way to report
+ 	  platform hardware errors (such as that from chipset). It
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -12,7 +12,7 @@
+  * For more information about Generic Hardware Error Source, please
+  * refer to ACPI Specification version 4.0, section 17.3.2.6
+  *
+- * Copyright 2010 Intel Corp.
++ * Copyright 2010,2011 Intel Corp.
+  *   Author: Huang Ying <ying.huang@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+@@ -42,6 +42,9 @@
+ #include <linux/mutex.h>
+ #include <linux/ratelimit.h>
+ #include <linux/vmalloc.h>
++#include <linux/irq_work.h>
++#include <linux/llist.h>
++#include <linux/genalloc.h>
+ #include <acpi/apei.h>
+ #include <acpi/atomicio.h>
+ #include <acpi/hed.h>
+@@ -53,6 +56,15 @@
+ #define GHES_PFX	"GHES: "
  
-+config ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	bool
+ #define GHES_ESTATUS_MAX_SIZE		65536
++#define GHES_ESOURCE_PREALLOC_MAX_SIZE	65536
 +
- source "kernel/gcov/Kconfig"
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -12,6 +12,7 @@ config ALPHA
- 	select GENERIC_IRQ_PROBE
- 	select AUTO_IRQ_AFFINITY if SMP
- 	select GENERIC_IRQ_SHOW
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	help
- 	  The Alpha is a 64-bit general-purpose processor designed and
- 	  marketed by the Digital Equipment Corporation of blessed memory,
---- a/arch/avr32/Kconfig
-+++ b/arch/avr32/Kconfig
-@@ -10,6 +10,7 @@ config AVR32
- 	select GENERIC_IRQ_PROBE
- 	select HARDIRQS_SW_RESEND
- 	select GENERIC_IRQ_SHOW
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	help
- 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
- 	  designed for cost-sensitive embedded applications, with particular
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -7,6 +7,7 @@ config FRV
- 	select HAVE_PERF_EVENTS
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_SHOW
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++#define GHES_ESTATUS_POOL_MIN_ALLOC_ORDER	3
++
++#define GHES_ESTATUS_NODE_LEN(estatus_len)			\
++	(sizeof(struct ghes_estatus_node) + (estatus_len))
++#define GHES_ESTATUS_FROM_NODE(estatus_node)				\
++	((struct acpi_hest_generic_status *)				\
++	 ((struct ghes_estatus_node *)(estatus_node) + 1))
  
- config ZONE_DMA
- 	bool
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -27,6 +27,7 @@ config IA64
- 	select GENERIC_PENDING_IRQ if SMP
- 	select IRQ_PER_CPU
- 	select GENERIC_IRQ_SHOW
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	default y
- 	help
- 	  The Itanium Processor Family is Intel's 64-bit successor to
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -5,6 +5,7 @@ config M68K
- 	select HAVE_AOUT if MMU
- 	select GENERIC_ATOMIC64 if MMU
- 	select HAVE_GENERIC_HARDIRQS if !MMU
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+ /*
+  * One struct ghes is created for each generic hardware error source.
+@@ -77,6 +89,11 @@ struct ghes {
+ 	};
+ };
  
- config RWSEM_GENERIC_SPINLOCK
- 	bool
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -15,6 +15,7 @@ config PARISC
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select IRQ_PER_CPU
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++struct ghes_estatus_node {
++	struct llist_node llnode;
++	struct acpi_hest_generic *generic;
++};
++
+ static int ghes_panic_timeout	__read_mostly = 30;
  
- 	help
- 	  The PA-RISC microprocessor is designed by Hewlett-Packard and used
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -140,6 +140,7 @@ config PPC
- 	select IRQ_PER_CPU
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_IRQ_SHOW_LEVEL
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ /*
+@@ -121,6 +138,19 @@ static struct vm_struct *ghes_ioremap_ar
+ static DEFINE_RAW_SPINLOCK(ghes_ioremap_lock_nmi);
+ static DEFINE_SPINLOCK(ghes_ioremap_lock_irq);
  
- config EARLY_PRINTK
- 	bool
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -81,6 +81,7 @@ config S390
- 	select INIT_ALL_POSSIBLE
- 	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_BZIP2
- 	select HAVE_KERNEL_LZMA
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -11,6 +11,7 @@ config SUPERH
- 	select HAVE_DMA_ATTRS
- 	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if (GUSA_RB || CPU_SH4A)
- 	select PERF_USE_VMALLOC
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_BZIP2
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -53,6 +53,7 @@ config SPARC64
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_SHOW
- 	select IRQ_PREFLOW_FASTEOI
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++/*
++ * printk is not safe in NMI context.  So in NMI handler, we allocate
++ * required memory from lock-less memory allocator
++ * (ghes_estatus_pool), save estatus into it, put them into lock-less
++ * list (ghes_estatus_llist), then delay printk into IRQ context via
++ * irq_work (ghes_proc_irq_work).  ghes_estatus_size_request record
++ * required pool size by all NMI error source.
++ */
++static struct gen_pool *ghes_estatus_pool;
++static unsigned long ghes_estatus_pool_size_request;
++static struct llist_head ghes_estatus_llist;
++static struct irq_work ghes_proc_irq_work;
++
+ static int ghes_ioremap_init(void)
+ {
+ 	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
+@@ -180,6 +210,50 @@ static void ghes_iounmap_irq(void __iome
+ 	__flush_tlb_one(vaddr);
+ }
  
- config ARCH_DEFCONFIG
- 	string
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -12,6 +12,7 @@ config TILE
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select GENERIC_IRQ_SHOW
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if !M386
++static int ghes_estatus_pool_init(void)
++{
++	ghes_estatus_pool = gen_pool_create(GHES_ESTATUS_POOL_MIN_ALLOC_ORDER, -1);
++	if (!ghes_estatus_pool)
++		return -ENOMEM;
++	return 0;
++}
++
++static void ghes_estatus_pool_exit(void)
++{
++	struct gen_pool_chunk *chunk;
++
++	gen_pool_for_each_chunk(chunk, ghes_estatus_pool)
++		free_page(chunk->start_addr);
++	gen_pool_destroy(ghes_estatus_pool);
++}
++
++static int ghes_estatus_pool_expand(unsigned long len)
++{
++	unsigned long i, pages, size, addr;
++	int ret;
++
++	ghes_estatus_pool_size_request += PAGE_ALIGN(len);
++	size = gen_pool_size(ghes_estatus_pool);
++	if (size >= ghes_estatus_pool_size_request)
++		return 0;
++	pages = (ghes_estatus_pool_size_request - size) / PAGE_SIZE;
++	for (i = 0; i < pages; i++) {
++		addr = __get_free_page(GFP_KERNEL);
++		if (!addr)
++			return -ENOMEM;
++		ret = gen_pool_add(ghes_estatus_pool, addr, PAGE_SIZE, -1);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
++static void ghes_estatus_pool_shrink(unsigned long len)
++{
++	ghes_estatus_pool_size_request -= PAGE_ALIGN(len);
++}
++
+ static struct ghes *ghes_new(struct acpi_hest_generic *generic)
+ {
+ 	struct ghes *ghes;
+@@ -341,13 +415,13 @@ static void ghes_clear_estatus(struct gh
+ 	ghes->flags &= ~GHES_TO_CLEAR;
+ }
  
- # FIXME: investigate whether we need/want these options.
- #	select HAVE_IOREMAP_PROT
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -72,6 +72,7 @@ config X86
- 	select IRQ_FORCED_THREADING
- 	select USE_GENERIC_SMP_HELPERS if SMP
- 	select ARCH_NO_SYSDEV_OPS
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+-static void ghes_do_proc(struct ghes *ghes)
++static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+ {
+ 	int sev, processed = 0;
+ 	struct acpi_hest_generic_data *gdata;
  
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
+-	sev = ghes_severity(ghes->estatus->error_severity);
+-	apei_estatus_for_each_section(ghes->estatus, gdata) {
++	sev = ghes_severity(estatus->error_severity);
++	apei_estatus_for_each_section(estatus, gdata) {
+ #ifdef CONFIG_X86_MCE
+ 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
+ 				 CPER_SEC_PLATFORM_MEM)) {
+@@ -360,13 +434,15 @@ static void ghes_do_proc(struct ghes *gh
+ 	}
+ }
+ 
+-static void ghes_print_estatus(const char *pfx, struct ghes *ghes)
++static void ghes_print_estatus(const char *pfx,
++			       const struct acpi_hest_generic *generic,
++			       const struct acpi_hest_generic_status *estatus)
+ {
+ 	/* Not more than 2 messages every 5 seconds */
+ 	static DEFINE_RATELIMIT_STATE(ratelimit, 5*HZ, 2);
+ 
+ 	if (pfx == NULL) {
+-		if (ghes_severity(ghes->estatus->error_severity) <=
++		if (ghes_severity(estatus->error_severity) <=
+ 		    GHES_SEV_CORRECTED)
+ 			pfx = KERN_WARNING HW_ERR;
+ 		else
+@@ -375,8 +451,8 @@ static void ghes_print_estatus(const cha
+ 	if (__ratelimit(&ratelimit)) {
+ 		printk(
+ 	"%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
+-	pfx, ghes->generic->header.source_id);
+-		apei_estatus_print(pfx, ghes->estatus);
++	pfx, generic->header.source_id);
++		apei_estatus_print(pfx, estatus);
+ 	}
+ }
+ 
+@@ -387,8 +463,8 @@ static int ghes_proc(struct ghes *ghes)
+ 	rc = ghes_read_estatus(ghes, 0);
+ 	if (rc)
+ 		goto out;
+-	ghes_print_estatus(NULL, ghes);
+-	ghes_do_proc(ghes);
++	ghes_print_estatus(NULL, ghes->generic, ghes->estatus);
++	ghes_do_proc(ghes->estatus);
+ 
+ out:
+ 	ghes_clear_estatus(ghes);
+@@ -447,6 +523,40 @@ static int ghes_notify_sci(struct notifi
+ 	return ret;
+ }
+ 
++static void ghes_proc_in_irq(struct irq_work *irq_work)
++{
++	struct llist_node *llnode, *next, *tail = NULL;
++	struct ghes_estatus_node *estatus_node;
++	struct acpi_hest_generic_status *estatus;
++	u32 len, node_len;
++
++	/*
++	 * Because the time order of estatus in list is reversed,
++	 * revert it back to proper order.
++	 */
++	llnode = llist_del_all(&ghes_estatus_llist);
++	while (llnode) {
++		next = llnode->next;
++		llnode->next = tail;
++		tail = llnode;
++		llnode = next;
++	}
++	llnode = tail;
++	while (llnode) {
++		next = llnode->next;
++		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
++					   llnode);
++		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
++		len = apei_estatus_len(estatus);
++		node_len = GHES_ESTATUS_NODE_LEN(len);
++		ghes_do_proc(estatus);
++		ghes_print_estatus(NULL, estatus_node->generic, estatus);
++		gen_pool_free(ghes_estatus_pool, (unsigned long)estatus_node,
++			      node_len);
++		llnode = next;
++	}
++}
++
+ static int ghes_notify_nmi(struct notifier_block *this,
+ 				  unsigned long cmd, void *data)
+ {
+@@ -476,7 +586,8 @@ static int ghes_notify_nmi(struct notifi
+ 
+ 	if (sev_global >= GHES_SEV_PANIC) {
+ 		oops_begin();
+-		ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global);
++		ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global->generic,
++				   ghes_global->estatus);
+ 		/* reboot to log the error! */
+ 		if (panic_timeout == 0)
+ 			panic_timeout = ghes_panic_timeout;
+@@ -484,12 +595,31 @@ static int ghes_notify_nmi(struct notifi
+ 	}
+ 
+ 	list_for_each_entry_rcu(ghes, &ghes_nmi, list) {
++#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++		u32 len, node_len;
++		struct ghes_estatus_node *estatus_node;
++		struct acpi_hest_generic_status *estatus;
++#endif
+ 		if (!(ghes->flags & GHES_TO_CLEAR))
+ 			continue;
+-		/* Do not print estatus because printk is not NMI safe */
+-		ghes_do_proc(ghes);
++#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++		/* Save estatus for further processing in IRQ context */
++		len = apei_estatus_len(ghes->estatus);
++		node_len = GHES_ESTATUS_NODE_LEN(len);
++		estatus_node = (void *)gen_pool_alloc(ghes_estatus_pool,
++						      node_len);
++		if (estatus_node) {
++			estatus_node->generic = ghes->generic;
++			estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
++			memcpy(estatus, ghes->estatus, len);
++			llist_add(&estatus_node->llnode, &ghes_estatus_llist);
++		}
++#endif
+ 		ghes_clear_estatus(ghes);
+ 	}
++#ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	irq_work_queue(&ghes_proc_irq_work);
++#endif
+ 
+ out:
+ 	raw_spin_unlock(&ghes_nmi_lock);
+@@ -504,10 +634,26 @@ static struct notifier_block ghes_notifi
+ 	.notifier_call = ghes_notify_nmi,
+ };
+ 
++static unsigned long ghes_esource_prealloc_size(
++	const struct acpi_hest_generic *generic)
++{
++	unsigned long block_length, prealloc_records, prealloc_size;
++
++	block_length = min_t(unsigned long, generic->error_block_length,
++			     GHES_ESTATUS_MAX_SIZE);
++	prealloc_records = max_t(unsigned long,
++				 generic->records_to_preallocate, 1);
++	prealloc_size = min_t(unsigned long, block_length * prealloc_records,
++			      GHES_ESOURCE_PREALLOC_MAX_SIZE);
++
++	return prealloc_size;
++}
++
+ static int __devinit ghes_probe(struct platform_device *ghes_dev)
+ {
+ 	struct acpi_hest_generic *generic;
+ 	struct ghes *ghes = NULL;
++	unsigned long len;
+ 	int rc = -EINVAL;
+ 
+ 	generic = *(struct acpi_hest_generic **)ghes_dev->dev.platform_data;
+@@ -573,6 +719,8 @@ static int __devinit ghes_probe(struct p
+ 		mutex_unlock(&ghes_list_mutex);
+ 		break;
+ 	case ACPI_HEST_NOTIFY_NMI:
++		len = ghes_esource_prealloc_size(generic);
++		ghes_estatus_pool_expand(len);
+ 		mutex_lock(&ghes_list_mutex);
+ 		if (list_empty(&ghes_nmi))
+ 			register_die_notifier(&ghes_notifier_nmi);
+@@ -597,6 +745,7 @@ static int __devexit ghes_remove(struct
+ {
+ 	struct ghes *ghes;
+ 	struct acpi_hest_generic *generic;
++	unsigned long len;
+ 
+ 	ghes = platform_get_drvdata(ghes_dev);
+ 	generic = ghes->generic;
+@@ -627,6 +776,8 @@ static int __devexit ghes_remove(struct
+ 		 * freed after NMI handler finishes.
+ 		 */
+ 		synchronize_rcu();
++		len = ghes_esource_prealloc_size(generic);
++		ghes_estatus_pool_shrink(len);
+ 		break;
+ 	default:
+ 		BUG();
+@@ -662,15 +813,23 @@ static int __init ghes_init(void)
+ 		return -EINVAL;
+ 	}
+ 
++	init_irq_work(&ghes_proc_irq_work, ghes_proc_in_irq);
++
+ 	rc = ghes_ioremap_init();
+ 	if (rc)
+ 		goto err;
+ 
+-	rc = platform_driver_register(&ghes_platform_driver);
++	rc = ghes_estatus_pool_init();
+ 	if (rc)
+ 		goto err_ioremap_exit;
+ 
++	rc = platform_driver_register(&ghes_platform_driver);
++	if (rc)
++		goto err_pool_exit;
++
+ 	return 0;
++err_pool_exit:
++	ghes_estatus_pool_exit();
+ err_ioremap_exit:
+ 	ghes_ioremap_exit();
+ err:
+@@ -680,6 +839,7 @@ err:
+ static void __exit ghes_exit(void)
+ {
+ 	platform_driver_unregister(&ghes_platform_driver);
++	ghes_estatus_pool_exit();
+ 	ghes_ioremap_exit();
+ }
+ 
