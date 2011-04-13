@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab1DMN25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 09:28:57 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:58831 "EHLO
+	id S1755248Ab1DMNcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 09:32:41 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:50112 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751402Ab1DMN24 (ORCPT
+	by vger.kernel.org with ESMTP id S1752581Ab1DMNck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 09:28:56 -0400
-Date: Wed, 13 Apr 2011 15:28:21 +0200
+	Wed, 13 Apr 2011 09:32:40 -0400
+Date: Wed, 13 Apr 2011 15:30:35 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Zaurus PDA developers list <zaurus-devel@www.linuxtogo.org>,
-        Andrea Adami <andrea.adami@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [Zaurus-devel] 8250 vs pxa_serial (was Re: pxa27x/spitz:
- serials in recent kernels)
-Message-ID: <20110413132821.GA1874@ucw.cz>
-References: <20110315192111.GA2983@ucw.cz>
- <AANLkTikJD3+HSoHbq2BxAyYbtGik8QizuRv=rkPEtJXN@mail.gmail.com>
- <20110412193943.GA30089@elf.ucw.cz>
- <BANLkTimTmhXYHYOQwh_Q1uohFJdaKecJkA@mail.gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        x86@kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] x86 APM: delete Linux kernel APM support
+Message-ID: <20110413133034.GB1874@ucw.cz>
+References: <alpine.LFD.2.02.1103232321070.3848@x980>
+ <alpine.LFD.2.02.1103241929450.16085@x980>
+ <20110325113048.GC29521@elte.hu>
+ <201103252333.23880.rjw@sisk.pl>
+ <20110408062506.GB1596@ucw.cz>
+ <4D9F7630.1090503@zytor.com>
+ <20110411130505.GA3301@ucw.cz>
+ <4DA34619.6010708@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimTmhXYHYOQwh_Q1uohFJdaKecJkA@mail.gmail.com>
+In-Reply-To: <4DA34619.6010708@zytor.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> >> > I cculd not get serial port to work in recent kernels (2.6.35 was
-> >> > oldest I tried). I know they are little used but still very useful for
-> >> > debugging.
-> >> >
-> >> > Is there some special config that needs to be done?
-> >> >                                                        Pavel
-> >>
-> >> I have output on ttyS0 using the Sharp cable, never had issues.
-> >> Remember that bootloader is 9600n8 while kernels are usually 115200n8.
-> >
-> > Ok, I know what is going on. I need both PXA_SERIAL and 8250... and
-> > these two don't go well together.
+On Mon 2011-04-11 11:19:05, H. Peter Anvin wrote:
+> On 04/11/2011 06:05 AM, Pavel Machek wrote:
+> > Hi!
 ...
-> > ...but no luck. As soon as I enable 8250, pxa serials stop working
-> > :-(.
+> >> What aspects of it did you test, and on what platform?
+> > 
+> > thinkpad 560X.
+> > 
+> > I tested basic boot, IIRC it did turn backlight off properly in
+> > screensaver and even suspend worked.
 > 
-> Please try attached patch (then PXA consoles become ttySA0-3)
+> OK, but I presume runtime power management wasn't on the list at least
+> on what matters.
 
-Thanks, this works for me. Can we get it into the tree?
-									Pavel
+No, I was not measuring with the multimeter. (This machine still
+has 2nd, good battery, I could...). I'd notice if it broke horribly.
+
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
