@@ -1,107 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab1DMUfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 16:35:20 -0400
-Received: from mail.digium.com ([216.207.245.2]:37140 "EHLO mail.digium.com"
+	id S932395Ab1DMUgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 16:36:09 -0400
+Received: from lucidpixels.com ([75.144.35.66]:46168 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757636Ab1DMUfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 16:35:14 -0400
-Date: Wed, 13 Apr 2011 15:35:01 -0500
-From: Shaun Ruffell <sruffell@digium.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: maciej.rutecki@gmail.com, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
-	proper MSR register to catch" and NMIs
-Message-ID: <20110413203501.GA10744@digium.com>
-References: <20110406223036.GA15721@digium.com> <201104132133.51958.maciej.rutecki@gmail.com> <4DA6011F.7070405@openvz.org>
+	id S932094Ab1DMUgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 16:36:06 -0400
+Date: Wed, 13 Apr 2011 16:36:02 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Daniel Halperin <dhalperi@cs.washington.edu>
+cc: Ivo Van Doorn <ivdoorn@gmail.com>, linux-usb@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38: rt2800usb: high latency (1000ms)?
+In-Reply-To: <BANLkTin5VwUryoMK=jYpbNTudPLufZ+RDw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1104131634040.10727@p34.internal.lan>
+References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <BANLkTi==Bw6mWWJidLi+ZRzz87ck4DAqVA@mail.gmail.com> <alpine.DEB.2.02.1104131200220.2954@p34.internal.lan> <BANLkTinxkXi6WnAyXoZLDR+uyL+TmevuPw@mail.gmail.com> <BANLkTin6mgFqrGQJz=zNG_buRiLKHOU_BA@mail.gmail.com>
+ <alpine.DEB.2.02.1104131348530.16793@p34.internal.lan> <BANLkTinLRVyKwBA7ZbEXKqa18V=+a6+cZg@mail.gmail.com> <alpine.DEB.2.02.1104131605010.10727@p34.internal.lan> <BANLkTin5VwUryoMK=jYpbNTudPLufZ+RDw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA6011F.7070405@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: MULTIPART/MIXED; BOUNDARY="655872-1456179645-1302726962=:10727"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 12:01:35AM +0400, Cyrill Gorcunov wrote:
-> On 04/13/2011 11:33 PM, Maciej Rutecki wrote:
->> I created a Bugzilla entry at 
->> https://bugzilla.kernel.org/show_bug.cgi?id=33252
->> for your bug report, please add your address to the CC list in there, thanks!
-> 
-> Here is a patch flying around which I tuned a bit, when all reporters confirm it
-> works for them we could close the bug. Thanks.
-> 
->  Cyrill
-> -- 
-> From: Don Zickus <dzickus@redhat.com>
-> Subject: [PATCH] perf, x86: fix unknown NMIs on a Pentium4 box v2
-> 
-> When using perf on a Pentium4 box, lots of unknown NMIs would be generated.
-> This is the result of a P4 quirk that is subtle.  The P4 generates an NMI
-> when the counter overflow and unlike other arches where the NMI is a one time
-> event, the P4 continues to assert its NMI until clear by the OS.
-> 
-> As a side effect to this quirk, the NMI on the apic is masked off to prevent
-> a stream of NMIs until the overflow flag is cleared.  During the perf
-> re-design, this subtle-ness was overlooked and the apic was unmasked _before_
-> the overflow flag was cleared.  As a result, this generated an extra NMI on
-> the P4 mchines.
-> 
-> The fix is trivial, wait until the NMI is properly handled before un-masking
-> the apic.
-> 
-> Sadly, in the old nmi watchdog there was a note that explained this exact
-> behaviour.
-> 
-> v2: Unmask LVT entry iif IRQ being handled by perf subsystem and add a comment.
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
-> 
-> Don, Shaun, Ming, I've tested it on my non-HT machine, so if you have a chance
-> to test it on HT machine -- this would be a great thing!
-> 
-> Don, note the version v2 changes, thanks. I've tuned the former a bit
-> but left your From field untouched, are you OK with that?
-> 
->  arch/x86/kernel/cpu/perf_event.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-> =====================================================================
-> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
-> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-> @@ -1370,12 +1370,19 @@ perf_event_nmi_handler(struct notifier_b
->  		return NOTIFY_DONE;
->  	}
-> 
-> -	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> 
->  	handled = x86_pmu.handle_irq(args->regs);
->  	if (!handled)
->  		return NOTIFY_DONE;
-> 
-> +	/*
-> +	 * Unmasking should be done after IRQ handled, otherwise
-> +	 * there is a race between clearing of counter overflow
-> +	 * flag and LTV entry unmasking (which might lead to double
-> +	 * NMIs generation).
-> +	 */
-> +	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> +
->  	this_nmi = percpu_read(irq_stat.__nmi_count);
->  	if ((handled > 1) ||
->  		/* the next nmi could be a back-to-back nmi */
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I had the first version of the patch running the test builds all night without
-any NMIs. I installed this one and ran it through the case where I would
-reliably get early NMIs and it still no NMIs.
+--655872-1456179645-1302726962=:10727
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-So for v2:
-Tested-by: Shaun Ruffell <sruffell@digium.com>
 
-Thanks!
+
+On Wed, 13 Apr 2011, Daniel Halperin wrote:
+
+> On Wed, Apr 13, 2011 at 1:13 PM, Justin Piszcz <jpiszcz@lucidpixels.com> =
+wrote:
+>>> (1) What is the AP's beacon period and DTIM? Typical values are 100
+>>> TUs for beacons (102.4 ms) and 2 for DTIM (2 beacons per power-save
+>>> wakeup) which should imply a mean of 100 and max of 200 ms delay even
+>>> on pings.
+>>
+>> I am using a WNDR3700 with default settings in terms of beacons/etc. =A0=
+No
+>> issues with any device (laptop, computer, etc (in windows)), I have two
+>> wireless USB adapters (bought two) and in Windows, no problems, I don't
+>> think
+>> it is the WNDR3700. =A0As far as linux/wpa-supplicant, using default set=
+tings.
+>
+> Not enough info. What does "iw dev wlan1 scan dump"  (it might not be
+> wlan1 for you) say for "beacon interval"?
+
+# iw dev wlan0 scan dump
+
+BSS (hidden) (on wlan0) -- associated
+         TSF: 103430650682 usec (1d, 04:43:50)
+         freq: 2417
+         beacon interval: 100
+         capability: ESS Privacy ShortPreamble ShortSlotTime (0x0431)
+         signal: -59.00 dBm
+         last seen: 1345742 ms ago
+         SSID: (hidden)
+         Supported rates: 1.0* 2.0* 5.5* 11.0* 6.0 9.0 12.0 18.0
+         DS Parameter set: channel 2
+         RSN:     * Version: 1
+                  * Group cipher: TKIP
+                  * Pairwise ciphers: CCMP TKIP
+                  * Authentication suites: PSK
+                  * Capabilities: (0x0000)
+         WPA:     * Version: 1
+                  * Group cipher: TKIP
+                  * Pairwise ciphers: CCMP TKIP
+                  * Authentication suites: PSK
+         ERP: <no flags>
+         Extended supported rates: 24.0 36.0 48.0 54.0
+         WMM:     * Parameter version 1
+                  * u-APSD
+                  * BE: CW 15-1023, AIFSN 3
+                  * BK: CW 15-1023, AIFSN 7
+                  * VI: CW 7-15, AIFSN 2, TXOP 3008 usec
+                  * VO: acm CW 3-7, AIFSN 2, TXOP 1504 usec
+         HT capabilities:
+                 Capabilities: 0x11ce
+                         HT20/HT40
+                         SM Power Save disabled
+                         RX HT40 SGI
+                         TX STBC
+                         RX STBC 1-stream
+                         Max AMSDU length: 7935 bytes
+                         DSSS/CCK HT40
+                 Maximum RX AMPDU length 65535 bytes (exponent: 0x003)
+                 Minimum RX AMPDU time spacing: 1/2 usec (0x02)
+                 HT RX MCS rate indexes supported: 0-15
+                 HT TX MCS rate indexes are undefined
+         WPS:     * Version: 1.0
+                  * Manufacturer: Netgear, Inc.
+                  * Model: WNDR3700
+                  * Device name: (hidden)
+                  * Config methods: Ethernet, Label, PBC
+>
+> Does anyone know how to get the DTIM period out of iw?
+>
+>>> (2) How long does the client wait after waking up to go back to sleep?
+>>> It should be at least a few seconds. For ssh, then, you should see
+>>> something like a 100-200 ms delay for the first key and then nothing
+>>> at all unless you stop typing for a bit.
+>>
+>> It lags with each word I type, it is terrible. =A0If I run something lik=
+e
+>> dmesg or ps auxww, the entire session freezes for 5-10 seconds before it
+>> comes back.
+>
+> Sorry; I meant what is the software stack configured to do? Do some
+> looking around.
+>
+>>> I'm SSHing over a Wi-Fi link that uses power save right this second,
+>>> and have for years. It's not generally an issue, I suspect something
+>>> worse is going on.
+>>
+>> Maybe the wireless usb adapters do not function well in Linux with power
+>> save
+>> on.
+>>
+>> I bought them awhile ago, they had the highest reviews, and in Windows,
+>> they did do 10-15MiB/s, in Linux, I see ~4.6MiB/s (but that was with pow=
+er
+>> save on) about the same, 4.5MiB/s.
+>> http://www.amazon.com/Medialink-Wireless-Adapter-802-11n-Compatible/dp/B=
+002RM08RE
+>
+> Yeah, these might indicate a fairly sizable problem in the Linux drivers =
+IMO.
+>
+> Dan
+>
+--655872-1456179645-1302726962=:10727--
