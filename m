@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126Ab1DMKCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 06:02:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58201 "EHLO
+	id S1758139Ab1DMKFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 06:05:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40720 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755456Ab1DMKCx (ORCPT
+	with ESMTP id S1751753Ab1DMKFd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 06:02:53 -0400
+	Wed, 13 Apr 2011 06:05:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=rgnEnTqLODAdLlge7GO1ySfEOI43P/6uSg+VKbS9vBOwqIggCkmg2OkcjY2f0Q5ky5
-         gyr6cjc/IqXupfj2vkzPjgsYSWcx1u85gNib/MouJMXRjig7XPKskcwhz0EAChJUtf3o
-         +LCh2jHaBCDf1QIOu9kIlZADfpwa5MqlgIrxI=
-Message-ID: <4DA574C7.6050904@gmail.com>
-Date: Wed, 13 Apr 2011 12:02:47 +0200
-From: "=?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?=" <andreas.devel@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=bMIl0e2bu/hJJOe58Jw/kN08ccD2WOwBKwe26Z/XOzKZO77FetoJR+qJYDyguJSDvy
+         QNTzMHiC7Jwc0IXcpJEta1DvvBu0fbj3ApzzKvLeuLDiKT+A8clX6uytawQzl7nmkavn
+         rb7Z/VIndrCvkle/FgVQXzkselH5avr2F9ixI=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>,
+        "Tanya Brokhman" <tlinder@codeaurora.org>
+Cc: gregkh@suse.de, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RESEND 3/5 v4] usb: Configure endpoint according to gadget
+ speed.
+References: <1300867445-20911-1-git-send-email-tlinder@codeaurora.org>
+ <20110411141404.GC4018@linutronix.de> <001701cbf9c1$11875fc0$34961f40$@org>
+Date: Wed, 13 Apr 2011 12:05:29 +0200
 MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <biessmann@corscience.de>
-CC: kernel@avr32linux.org,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] avr32: add ATAG_BOARDINFO
-References: <1302682057-6244-1-git-send-email-biessmann@corscience.de>
-In-Reply-To: <1302682057-6244-1-git-send-email-biessmann@corscience.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vtvfnf1t3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <001701cbf9c1$11875fc0$34961f40$@org>
+User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.04.2011 10:07, schrieb Andreas Bießmann:
-> The ATAG_BOARDINFO is intended to hand over the information
-> bd->bi_board_number from u-boot to the kernel.
-> 
-> This piece of information can be used to implement some kind of board
-> identification while booting the kernel. Therefore it is placed in .initdata
-> section and can be accessed via the new symbol board_number only while
-> initializing the kernel.
+On Wed, 13 Apr 2011 11:56:27 +0200, Tanya Brokhman  
+<tlinder@codeaurora.org> wrote:
 
-Tested with mainline u-boot plus patch
-http://article.gmane.org/gmane.comp.boot-loaders.u-boot/97573 on atstk1002.
+>> >+	/* find descriptors */
+>> >+	for (d_spd = next_ep_desc(speed_desc); d_spd;
+>> >+	      d_spd = next_ep_desc(d_spd+1)) {
+>>
+>> this might look better if you would something like the list_for_each()
+>> macro.
+>
+> The function next_ep_desc() goes over the endpoint descriptors (struct
+> usb_descriptor_header). It's not a list so I don't see how the
+> list_for_each() macro can be used here. Am I missing something?
 
-regards
+What op[1] meant was to create a for_each_ep_desc() macro, eg. (not  
+tested):
 
-Andreas Bießmann
+#define for_each_ep_desc(it, start) \
+         for (it = (start); (it = next_ep_desc(it)); ++it)
+
+>> > /**
+>> >+ * config_ep_by_speed() - configures the given endpoint
+>> >+ * according to gadget speed.
+>> >+ * @g: pointer to the gadget
+>> >+ * @f: usb function
+>> >+ * @_ep: the endpoint to configure
+>> >+ *
+>> >+ * Return: error code, 0 on success
+>> >+ *
+>> >+ * This function chooses the right descriptors for a given
+>> >+ * endpoint according to gadget speed and saves in in the
+>> >+ * endpoint desc field. If the endpoint already has a descriptor
+>> >+ * assigned to it - overwrites it with currently corresponding
+>> >+ * descriptor. The endpoint maxpacket field is updated according
+>> >+ * to the choosen descriptor.
+>> >+ * Note: the supplied function should hold all the descriptors
+>> >+ * for supported speeds
+>> >+ */
+>>
+>> You have the same comment (including the same typo) here and in the .c.
+>> Please use only on (in the .c file) as they will go async.
+>
+> Thanks for noticing that!
+> What do you mean by "they will go async"? Is there some sort of  
+> automation
+> that updates the comments for functions from c files to the headers?
+
+There's none.  That's the problem.  Someone will modify comment in one of  
+them
+and will forget to modify it in the other.  That's why it's better to keep
+comments in one place only.
+
+[1] Also, please leave the attribution lines (the “On ... someone wrote:”
+     lines) in replies.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
