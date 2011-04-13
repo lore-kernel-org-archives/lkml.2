@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab1DMPZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:25:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43985 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012Ab1DMPZM (ORCPT
+	id S1757447Ab1DMP2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:28:15 -0400
+Received: from 30.mail-out.ovh.net ([213.186.62.213]:48385 "HELO
+	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757340Ab1DMP2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:25:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=DZARCG/Y6FBM4OyG6sM8jTZA6CxGpVtLP2zdW8QKmlpogdceth4B4MBVQk+kMtkf+K
-         aMHDD9XwwB//lrsHewNoVH+tEC+GR2Atq3LoBYDNwelTasJFEW4zu0IyG44SGYUxvfwk
-         p8A9tV8CkNckJZ70hXIE/Jfqvc8Ssh3kXz68E=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: =?utf-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        "Pintu Agarwal" <pintu_agarwal@yahoo.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Changli Gao" <xiaosuo@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>,
-        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        "Jiri Slaby" <jirislaby@gmail.com>
-Subject: Re: Regarding memory fragmentation using malloc....
-References: <112566.51053.qm@web162019.mail.bf1.yahoo.com>
-Date: Wed, 13 Apr 2011 17:25:08 +0200
+	Wed, 13 Apr 2011 11:28:13 -0400
+Date: Wed, 13 Apr 2011 17:18:51 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] genalloc: add support to specify the physical
+ address
+Message-ID: <20110413151851.GF4709@game.jcrosoft.org>
+References: <1302192197-2248-1-git-send-email-plagnioj@jcrosoft.com>
+ <1302192197-2248-2-git-send-email-plagnioj@jcrosoft.com>
+ <20110412153758.c570b09a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vtvuf5sk3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <112566.51053.qm@web162019.mail.bf1.yahoo.com>
-User-Agent: Opera Mail/11.01 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412153758.c570b09a.akpm@linux-foundation.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13893323375880874996
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011 15:56:00 +0200, Pintu Agarwal  
-<pintu_agarwal@yahoo.com> wrote:
-> My requirement is, I wanted to measure memory fragmentation level in  
-> linux kernel2.6.29 (ARM cortex A8 without swap).
-> How can I measure fragmentation level(percentage) from /proc/buddyinfo ?
+> 
+> But this documentation is incorrect.  @addr is not "the starting
+> address of memory".
+> 
+> > +unsigned long gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
+> > +{
+> > +	struct list_head *_chunk;
+> > +	struct gen_pool_chunk *chunk;
+> > +
+> > +	read_lock(&pool->lock);
+> > +	list_for_each(_chunk, &pool->chunks) {
+> > +		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+> > +
+> > +		if (addr >= chunk->start_addr && addr < chunk->end_addr)
+> > +			return chunk->phys_addr + addr - chunk->start_addr;
+> 
+> It is in fact "some address within one of the chunks".
+yes
+do you want a v2 or you fix it in your patch?
+> 
+> 
+> > +	}
+> > +	read_unlock(&pool->lock);
+> > +
+> > +	return ~0UL;
+> > +}
+> > +EXPORT_SYMBOL(gen_pool_virt_to_phys);
+> 
+> Was that intentional?  If so, what is the reasoning?
+yes as 0 can be a valid physical address
+and the export as the drivers can be compiled as module
+> 
+> 
+> Please review...
+> 
+> Subject: lib/genpool.c: document return values, fix gen_pool_add_virt() return value
+> From: Andrew Morton <akpm@linux-foundation.org>
+> 
+> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Cc: Jes Sorensen <jes@wildopensource.com>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Patrice VILCHEZ <patrice.vilchez@atmel.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  include/linux/genalloc.h |    2 ++
+>  lib/genalloc.c           |    6 +++++-
+>  2 files changed, 7 insertions(+), 1 deletion(-)
+> 
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-[...]
-
-> In my linux2.6.29 ARM machine, the initial /proc/buddyinfo shows the  
-> following:
-> Node 0, zone      DMA     17     22      1      1      0      1       
-> 1      0      0      0      0      0
-> Node 1, zone      DMA     15    320    423    225     97     26       
-> 1      0      0      0      0      0
->
-> After running my sample program (with 16 iterations) the buddyinfo  
-> output is as follows:
-> Requesting <16> blocks of memory of block size <262144>........
-> Node 0, zone      DMA     17     22      1      1      0      1       
-> 1      0      0      0      0      0
-> Node 1, zone      DMA     15    301    419    224     96     27       
-> 1      0      0      0      0      0
->     nr_free_pages 169
->     nr_free_pages 6545
-> *****************************************
->
->
-> Node 0, zone      DMA     17     22      1      1      0      1       
-> 1      0      0      0      0      0
-> Node 1, zone      DMA     18      2    305    226     96     27       
-> 1      0      0      0      0      0
->     nr_free_pages 169
->     nr_free_pages 5514
-> -----------------------------------------
->
-> The requested block size is 64 pages (2^6) for each block.
-> But if we see the output after 16 iterations the buddyinfo allocates  
-> pages only from Node 1 , (2^0, 2^1, 2^2, 2^3).
-> But the actual allocation should happen from (2^6) block in buddyinfo.
-
-No.  When you call malloc() only virtual address space is allocated.  The
-actual allocation of physical space occurs when user space accesses the
-memory (either reads or writes) and it happens page at a time.
-
-As a matter of fact, if you have limited number of 0-order pages and
-allocates in user space block of 64 pages later accessing the memory,
-what really happens is that kernel allocates the 0-order pages and when
-it runs out of those, splits a 1-order page into two 0-order pages and
-takes one of those.
-
-Because of MMU, fragmentation of physical memory is not an issue for
-normal user space programs.
-
-It becomes an issue once you deal with hardware that does not have MMU
-nor support for scatter-getter DMA or with some big kernel structures.
-
-/proc/buddyinfo tells you how many free pages of given order there are
-in the system.  You may interpret it in such a way that the bigger number
-of the low order pages the bigger fragmentation of physical memory.  If
-there was no fragmentation (for some definition of the term) you'd get only
-the highest order pages and at most one page for each lower order.
-
-Again though, this fragmentation is not an issue for user space programs.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Best Regards,
+J.
