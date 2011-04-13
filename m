@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab1DMLff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 07:35:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64845 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758504Ab1DMLfe convert rfc822-to-8bit (ORCPT
+	id S1758534Ab1DMLin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 07:38:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60814 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758439Ab1DMLim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 07:35:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=I2F0xQthTmqkwi/3x2RwkwHEcTobFdQXwBcljMbvnMgG1hF3yAcH4z7IBtprVfgyb0
-         ElwIIDrbKTlwXlFkBfahV0tXEvkWJS1F8AxkXJV1q7g3x9hG8FjDNwt3aBRW9yzEbjzZ
-         25LmzE/UXri+uNsxKXhtX3utC7mBUBnlR01kI=
-MIME-Version: 1.0
-Date: Wed, 13 Apr 2011 17:05:33 +0530
-Message-ID: <BANLkTikHzq90xzK5+imnGKtc6mLNz84G-w@mail.gmail.com>
-Subject: [ARM] Issue of memory compaction on kernel 2.6.35.9
-From: naveen yadav <yad.naveen@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
-        linux-arm-kernel-request@lists.arm.linux.org.uk,
-        linux newbie <linux.newbie79@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Apr 2011 07:38:42 -0400
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        Dave Chinner <david@fromorbit.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+In-Reply-To: <4DA587AF.2040308@fusionio.com>
+References: <20110411223623.4278fad1@notabene.brown>
+	 <4DA2F8AD.1060605@fusionio.com> <20110412011255.GA29236@infradead.org>
+	 <4DA40F0E.1070903@fusionio.com> <20110412122248.GC31057@dastard>
+	 <4DA4456F.3070301@fusionio.com> <20110412124134.GD31057@dastard>
+	 <4DA44C86.3090305@fusionio.com> <20110412133117.GE31057@dastard>
+	 <4DA45790.2010109@fusionio.com> <20110412143452.GH31057@dastard>
+	 <20110413070827.11b2a71d@notabene.brown>
+	 <BANLkTikBEJa7bJJoLFU7NoiEgOjVHVG08A@mail.gmail.com>
+	 <1302693122.2035.20.camel@laptop>  <4DA587AF.2040308@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 13:41:06 +0200
+Message-ID: <1302694866.2035.22.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Wed, 2011-04-13 at 13:23 +0200, Jens Axboe wrote:
+> We definitely only want to do it on going to sleep, not preempt events.
+> So if you are fine with this change, then lets please do that.
 
-we want to varify compaction on ARM and we are  using 2.6.25.9 kernel
-on cortex a9.
+Here's the Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>, that goes
+with it ;-)
 
-Since ARM does not have HUGETLB_PAGE support and compaction is HUGE
-PAGE independent so I removed from config file
+> Linus, I've got a few other things queued up in the area, I'll add this
+> and send them off soon. Or feel free to add this one yourself, since you
+> already did it. 
 
-******************************************************************************************************************************
-# support for memory compaction
-config COMPACTION
-        bool "Allow for memory compaction"
-        select MIGRATION
-        #depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
-        depends on EXPERIMENTAL && MMU
-   help
-          Allows the compaction of memory for the allocation of huge pages.	
-******************************************************************************************************************************
-after triggering Memory Compaction by writing any value to
-/proc/sys/vm/compact_memory i am getting the SVC mode crash
-******************************************************************************************************************************
-#echo 1 > /proc/sys/vm/compact_memory
-Unable to handle kernel paging request at virtual address ee420be4
-pgd = d9c6c000
-[ee420be4] *pgd=00000000
-Internal error: Oops: 805 [#1] PREEMPT
-last sysfs file:
-Modules linked in:
-CPU: 0    Not tainted  (2.6.35.9 #16)
-PC is at compact_zone+0x178/0x610
-LR is at compact_zone+0x138/0x610
-pc : [<c009f30c>]    lr : [<c009f2cc>]    psr: 40000093
-sp : d9d75e40  ip : c0380978  fp : d9d75e94
-r10: d9d74000  r9 : c03806c8  r8 : 00069704
-r7 : 00069800  r6 : 00d2e080  r5 : c04ea080  r4 : d9d75e9c
-r3 : 60000093  r2 : 00000002  r1 : ee420be4  r0 : ee430b82
-Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment us	
-******************************************************************************************************************************
+Right, please send it onwards or have Linus commit it himself and I'll
+cook up a patch clarifying the rq->lock'ing mess around there.
 
-
-We  tried to narrow down the prob... I found crash is form
-“del_page_from_lru_list(zone, page, page_lru(page)); ” function
-isolate_migratepages
-
-{
------------
-/* Successfully isolated */
-		del_page_from_lru_list(zone, page, page_lru(page));
-
-	--------------------------------------------------
-}
-
-In my ARM board have only one zone (Node 0, zone   Normal)
-
-******************************************************************************************************************************
-VDLinux#> cat /proc/buddyinfo
-Node 0, zone   Normal      5      4      4      2      1      3      0
-     2       3      4      2      1      7
-******************************************************************************************************************************
-
-Can some one guide why I am geeting the crash and how to debugg this problem
-
-
-Thanks
