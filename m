@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab1DLX7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 19:59:42 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.61]:41875 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab1DLX7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 19:59:41 -0400
-Date: Tue, 12 Apr 2011 19:59:11 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
+	id S932687Ab1DMACT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 20:02:19 -0400
+Received: from mail.perches.com ([173.55.12.10]:4665 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932282Ab1DMACS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 20:02:18 -0400
+Subject: Re: [PATCHv1 3/11] RTC: RTC module of DA9052 PMIC driver
+From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, ebiederm@xmission.com,
-        lizf@cn.fujitsu.com, matthltc@us.ibm.com, menage@google.com,
-        oleg@redhat.com, David Rientjes <rientjes@google.com>,
-        Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH v8.75 0/4] cgroups: implement moving a threadgroup's
- threads atomically with cgroup.procs
-Message-ID: <20110412235911.GB3804@ghc17.ghc.andrew.cmu.edu>
-References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
- <20110406194420.GC10792@ghc17.ghc.andrew.cmu.edu>
- <20110412162516.4120c441.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412162516.4120c441.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.3.18.170322
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1300_1399 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+Cc: Ashish Jangam <Ashish.Jangam@kpitcummins.com>,
+        Paul Gortmaker <p_gortmaker@yahoo.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110412163743.1d7353c4.akpm@linux-foundation.org>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B4AC209@KCINPUNHJCMS01.kpit.com>
+	 <20110412163743.1d7353c4.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Apr 2011 17:02:16 -0700
+Message-ID: <1302652936.1664.13.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 04:25:16PM -0700, Andrew Morton wrote:
-> On Wed, 6 Apr 2011 15:44:20 -0400
-> Ben Blum <bblum@andrew.cmu.edu> wrote:
-> 
-> > Same as before; using flex_array in attach_proc (thanks Kame).
-> > 
-> > -- Ben
-> > 
-> > ---
-> >  Documentation/cgroups/cgroups.txt |   39 ++-
-> >  block/blk-cgroup.c                |   18 -
-> >  include/linux/cgroup.h            |   10 
-> >  include/linux/init_task.h         |    9 
-> >  include/linux/sched.h             |   36 ++
-> >  kernel/cgroup.c                   |  489 +++++++++++++++++++++++++++++++++-----
-> >  kernel/cgroup_freezer.c           |   26 --
-> >  kernel/cpuset.c                   |   96 +++----
-> >  kernel/fork.c                     |   10 
-> >  kernel/sched.c                    |   38 --
-> >  mm/memcontrol.c                   |   18 -
-> >  security/device_cgroup.c          |    3 
-> >  12 files changed, 594 insertions(+), 198 deletions(-)
-> 
-> So where are we up to with all this.
+On Tue, 2011-04-12 at 16:37 -0700, Andrew Morton wrote:
+> On Wed, 6 Apr 2011 18:47:29 +0530
+> Ashish Jangam <Ashish.Jangam@kpitcummins.com> wrote:
+> Please feed all the patches through scritps/checkpatch.pl if you haven't
+> already done so, to clean up lots of trivial errors.
+> For example, "MFD: MFD module of DA9052 PMIC driver":
+> 	total: 449 errors, 832 warnings, 2326 lines checked
 
-done and good to go, hopefully? :O
+And a couple of more comments...
 
-> 
-> I'm surprised that none of the patches had anyone's Acked-by: or
-> Reviewed-by:.  Were they really that mean to you, or have you not been
-> tracking these?
-> 
-> 
+> > +static int da9052_rtc_enable_alarm(struct da9052 *da9052, unsigned char flag)
+[]
+> > +		if (ret != 0)
+> > +			dev_err(da9052->dev, "da9052_rtc_enable_alarm -> \
+> > +					da9052_clear_bits error %d\n", ret);
+[]
+> > +	ret = da9052_reg_read(rtc->da9052, DA9052_ALARM_MI_REG);
+> > +	if (ret < 0) {
+> > +		dev_err(rtc->da9052->dev, "da9052_rtc_notifier -> \
+> > +					da9052_reg_read error %d\n", ret);
 
-Oh, eep. I didn't think to put them there myself; I guess I was assuming
-they'd either be implicit or that my reviewers would have something more
-to say.
+Line continuations in the middle a format string are very
+error prone to whitespace errors, just like these introduce
+bad whitespace after the ->.
 
-Thanks!
+These are better as:
 
--- Ben
+		dev_err(rtc->da9052->dev, "%s: da9052_reg_read error: %d\n",
+			__func__, ret);
+
+Or maybe use some new macro/function(s) like
+
+#define rtc_err(rtc, fmt, ...)	\
+	dev_err((rtc)->da9052->dev, "%s: " fmt, __func__, ##__VA_ARGS__)
+
+so these can be:
+
+		rtc_err(rtc, "da9052_reg_read error: %d\n, ret);
+
+
