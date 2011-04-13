@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758484Ab1DMUNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 16:13:08 -0400
-Received: from lucidpixels.com ([75.144.35.66]:59483 "EHLO lucidpixels.com"
+	id S1758558Ab1DMUNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 16:13:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7821 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757196Ab1DMUNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 16:13:06 -0400
-Date: Wed, 13 Apr 2011 16:13:02 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Daniel Halperin <dhalperi@cs.washington.edu>
-cc: Ivo Van Doorn <ivdoorn@gmail.com>, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38: rt2800usb: high latency (1000ms)?
-In-Reply-To: <BANLkTinLRVyKwBA7ZbEXKqa18V=+a6+cZg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1104131605010.10727@p34.internal.lan>
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <BANLkTi==Bw6mWWJidLi+ZRzz87ck4DAqVA@mail.gmail.com> <alpine.DEB.2.02.1104131200220.2954@p34.internal.lan> <BANLkTinxkXi6WnAyXoZLDR+uyL+TmevuPw@mail.gmail.com> <BANLkTin6mgFqrGQJz=zNG_buRiLKHOU_BA@mail.gmail.com>
- <alpine.DEB.2.02.1104131348530.16793@p34.internal.lan> <BANLkTinLRVyKwBA7ZbEXKqa18V=+a6+cZg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758525Ab1DMUNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 16:13:11 -0400
+Date: Wed, 13 Apr 2011 22:12:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [RFC][PATCH 5/5] signals: Don't hold shared siglock across
+	signal delivery
+Message-ID: <20110413201219.GB15330@redhat.com>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-6-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="655872-585702368-1302725582=:10727"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302031310-1765-6-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---655872-585702368-1302725582=:10727
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-
-
-On Wed, 13 Apr 2011, Daniel Halperin wrote:
-
-> On Wed, Apr 13, 2011 at 10:57 AM, Justin Piszcz <jpiszcz@lucidpixels.com>=
- wrote:
->> Hi,
->>
->> When powersave is enabled, it is very jumpy, I've used satellite comms
->> before
->> and (~600ms-1200ms was more smooth) as it did not jump around as much. =
-=A0The
->> application is just a standalone desktop with minimal activity for the
->> majority
->> of the time, maybe thats why..
->>
->> With powersave disabled, I now see 0% packet loss (802.11n) and low ping
->> times, this looks like the proper solution for the wireless USB device I
->> am using. =A0By the way, is it possible/are there wireless USB devices o=
-ut
->> there
->> that support wake on wireless lan (WOWL?
->>
->> Your ping command with power off:
->> 1408 bytes from server (192.168.1.2): icmp_req=3D539 ttl=3D64 time=3D1.0=
-7 ms
->> 1408 bytes from server (192.168.1.2): icmp_req=3D540 ttl=3D64 time=3D1.3=
-1 ms
->> 1408 bytes from server (192.168.1.2): icmp_req=3D541 ttl=3D64 time=3D1.0=
-7 ms
->> 1408 bytes from server (192.168.1.2): icmp_req=3D542 ttl=3D64 time=3D1.2=
-6 ms
->>
->> Your ping command with power on:
->> 1408 bytes from server (192.168.1.2): icmp_req=3D649 ttl=3D64 time=3D1.8=
-0 ms
->> 1408 bytes from server (192.168.1.2): icmp_req=3D650 ttl=3D64 time=3D1.8=
-5 ms
->> 1408 bytes from server (192.168.1.2): icmp_req=3D651 ttl=3D64 time=3D2.8=
-6 ms
->> 1408 bytes from server (192.168.1.2): icmp_req=3D652 ttl=3D64 time=3D1.4=
-6 ms
->>
->> You are correct, if there is a lot of traffic, its good, but if the syst=
-em
->> is relatively idle and all that's going on is an SSH session, there is
->> horrible
->> latency.
+On 04/05, Matt Fleming wrote:
 >
-> Gotcha. I might still look around in the network stack and/or driver
-> and see what the time constants are. For instance:
->
-> (1) What is the AP's beacon period and DTIM? Typical values are 100
-> TUs for beacons (102.4 ms) and 2 for DTIM (2 beacons per power-save
-> wakeup) which should imply a mean of 100 and max of 200 ms delay even
-> on pings.
-I am using a WNDR3700 with default settings in terms of beacons/etc.  No
-issues with any device (laptop, computer, etc (in windows)), I have two
-wireless USB adapters (bought two) and in Windows, no problems, I don't thi=
-nk
-it is the WNDR3700.  As far as linux/wpa-supplicant, using default settings=
-=2E
+> To reduce the contention on the shared siglock this patch pushes the
+> responsibility of acquiring and releasing the shared siglock down into
+> the functions that need it. That way, if we don't call a function that
+> needs to be run under the shared siglock, we can run without acquiring
+> it at all.
 
+This adds new races. And this time I do not even understand the intent.
+I mean, it is not clear to me why this change can really help to speed
+up get_signal_to_deliver().
 
->
-> (2) How long does the client wait after waking up to go back to sleep?
-> It should be at least a few seconds. For ssh, then, you should see
-> something like a 100-200 ms delay for the first key and then nothing
-> at all unless you stop typing for a bit.
-It lags with each word I type, it is terrible.  If I run something like
-dmesg or ps auxww, the entire session freezes for 5-10 seconds before it
-comes back.
+> Note that this does not make signal delivery lockless. A signal must
+> still be dequeued from either the shared or private signal
+> queues. However, in the private signal case we can now get by with
+> just acquiring the per-thread siglock
 
+OK, we can dequeue the signal. But dequeue_signal()->recalc_sigpending()
+becomes even more wrong. We do not hold any lock, we can race with both
+shared/private signal sending.
 
->
-> I'm SSHing over a Wi-Fi link that uses power save right this second,
-> and have for years. It's not generally an issue, I suspect something
-> worse is going on.
-Maybe the wireless usb adapters do not function well in Linux with power sa=
-ve
-on.
+> Also update tracehook.h to indicate it's not called with siglock held
+> anymore.
 
-I bought them awhile ago, they had the highest reviews, and in Windows,
-they did do 10-15MiB/s, in Linux, I see ~4.6MiB/s (but that was with power=
-=20
-save on) about the same, 4.5MiB/s.
-http://www.amazon.com/Medialink-Wireless-Adapter-802-11n-Compatible/dp/B002=
-RM08RE
+Heh. This breaks this tracehook completely ;) OK, nobody cares about
+the out-of-tree users, forget.
 
-100+0 records in
-100+0 records out
-104857600 bytes (105 MB) copied, 23.2803 s, 4.5 MB/s
+Also. get_signal_to_deliver() does
 
-Justin.
+		signr = dequeue_signal(current, &current->blocked,
+					       info);
+		...
 
---655872-585702368-1302725582=:10727--
+		ka = &sighand->action[signr-1];
+
+		...
+
+		if (ka->sa.sa_handler != SIG_DFL) {
+			/* Run the handler.  */
+			*return_ka = *ka;
+
+This memcpy() can race with sys_rt_sigaction(), we can't read *ka
+atomically.
+
+Actually, even SIG_DFL/SIG_IGN checks can race, although this is minor...
+But still not correct.
+
+			if (ka->sa.sa_flags & SA_ONESHOT) {
+				write_lock(&sighand->action_lock);
+				ka->sa.sa_handler = SIG_DFL;
+				write_unlock(&sighand->action_lock);
+
+We should check SA_ONESHOT under ->action_lock. But even then this
+will bw racy, although we can probably ignore this... Suppose that
+SA_ONESHOT was set after we dequeued the signal.
+
+Oleg.
+
