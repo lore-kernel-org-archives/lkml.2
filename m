@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab1DMQJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:09:45 -0400
-Received: from kroah.org ([198.145.64.141]:54261 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757633Ab1DMPzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757707Ab1DMPzQ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 13 Apr 2011 11:55:16 -0400
+Received: from kroah.org ([198.145.64.141]:54242 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757633Ab1DMPzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:12 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:44 2011
-Message-Id: <20110413155144.799029367@clark.kroah.org>
+Message-Id: <20110413155144.343505813@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:41 -0700
+Date: Wed, 13 Apr 2011 08:50:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julien Tinnes <jln@google.com>, Roland Dreier <roland@purestorage.com>
-Subject: [17/74] Relax si_code check in rt_sigqueueinfo and rt_tgsigqueueinfo
+        Arjan Mels <arjan.mels@gmx.net>,
+        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>,
+        Max Vozeler <max@vozeler.com>
+Subject: [13/74] staging: usbip: bugfix add number of packets for isochronous frames
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Arjan Mels <arjan.mels@gmx.net>
 
-commit 243b422af9ea9af4ead07a8ad54c90d4f9b6081a upstream.
+commit 1325f85fa49f57df034869de430f7c302ae23109 upstream.
 
-Commit da48524eb206 ("Prevent rt_sigqueueinfo and rt_tgsigqueueinfo
-from spoofing the signal code") made the check on si_code too strict.
-There are several legitimate places where glibc wants to queue a
-negative si_code different from SI_QUEUE:
+The number_of_packets was not transmitted for RET_SUBMIT packets. The
+linux client used the stored number_of_packet from the submitted
+request. The windows userland client does not do this however and needs
+to know the number_of_packets to determine the size of the transmission.
 
- - This was first noticed with glibc's aio implementation, which wants
-   to queue a signal with si_code SI_ASYNCIO; the current kernel
-   causes glibc's tst-aio4 test to fail because rt_sigqueueinfo()
-   fails with EPERM.
-
- - Further examination of the glibc source shows that getaddrinfo_a()
-   wants to use SI_ASYNCNL (which the kernel does not even define).
-   The timer_create() fallback code wants to queue signals with SI_TIMER.
-
-As suggested by Oleg Nesterov <oleg@redhat.com>, loosen the check to
-forbid only the problematic SI_TKILL case.
-
-Reported-by: Klaus Dittrich <kladit@arcor.de>
-Acked-by: Julien Tinnes <jln@google.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Arjan Mels <arjan.mels@gmx.net>
+Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+Cc: Max Vozeler <max@vozeler.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/signal.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/usbip/usbip_common.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2353,7 +2353,7 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t,
- 	/* Not even root can pretend to send signals from the kernel.
- 	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
- 	 */
--	if (info.si_code != SI_QUEUE) {
-+	if (info.si_code >= 0 || info.si_code == SI_TKILL) {
- 		/* We used to allow any < 0 si_code */
- 		WARN_ON_ONCE(info.si_code < 0);
- 		return -EPERM;
-@@ -2373,7 +2373,7 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pi
- 	/* Not even root can pretend to send signals from the kernel.
- 	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
- 	 */
--	if (info->si_code != SI_QUEUE) {
-+	if (info->si_code >= 0 || info->si_code == SI_TKILL) {
- 		/* We used to allow any < 0 si_code */
- 		WARN_ON_ONCE(info->si_code < 0);
- 		return -EPERM;
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -361,10 +361,11 @@ void usbip_dump_header(struct usbip_head
+ 		usbip_udbg("CMD_UNLINK: seq %u\n", pdu->u.cmd_unlink.seqnum);
+ 		break;
+ 	case USBIP_RET_SUBMIT:
+-		usbip_udbg("RET_SUBMIT: st %d al %u sf %d ec %d\n",
++		usbip_udbg("RET_SUBMIT: st %d al %u sf %d #p %d ec %d\n",
+ 				pdu->u.ret_submit.status,
+ 				pdu->u.ret_submit.actual_length,
+ 				pdu->u.ret_submit.start_frame,
++				pdu->u.ret_submit.number_of_packets,
+ 				pdu->u.ret_submit.error_count);
+ 	case USBIP_RET_UNLINK:
+ 		usbip_udbg("RET_UNLINK: status %d\n", pdu->u.ret_unlink.status);
+@@ -686,6 +687,7 @@ static void usbip_pack_ret_submit(struct
+ 		rpdu->status		= urb->status;
+ 		rpdu->actual_length	= urb->actual_length;
+ 		rpdu->start_frame	= urb->start_frame;
++		rpdu->number_of_packets = urb->number_of_packets;
+ 		rpdu->error_count	= urb->error_count;
+ 	} else {
+ 		/* vhci_rx.c */
+@@ -693,6 +695,7 @@ static void usbip_pack_ret_submit(struct
+ 		urb->status		= rpdu->status;
+ 		urb->actual_length	= rpdu->actual_length;
+ 		urb->start_frame	= rpdu->start_frame;
++		urb->number_of_packets = rpdu->number_of_packets;
+ 		urb->error_count	= rpdu->error_count;
+ 	}
+ }
+@@ -761,11 +764,13 @@ static void correct_endian_ret_submit(st
+ 		cpu_to_be32s(&pdu->status);
+ 		cpu_to_be32s(&pdu->actual_length);
+ 		cpu_to_be32s(&pdu->start_frame);
++		cpu_to_be32s(&pdu->number_of_packets);
+ 		cpu_to_be32s(&pdu->error_count);
+ 	} else {
+ 		be32_to_cpus(&pdu->status);
+ 		be32_to_cpus(&pdu->actual_length);
+ 		be32_to_cpus(&pdu->start_frame);
++		cpu_to_be32s(&pdu->number_of_packets);
+ 		be32_to_cpus(&pdu->error_count);
+ 	}
+ }
 
 
