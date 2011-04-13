@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab1DMXp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 19:45:28 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:60309 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932150Ab1DMXp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 19:45:27 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] asm-generic/cacheflush.h: flush icache when copying to user pages
-Date: Wed, 13 Apr 2011 19:45:28 -0400
-Message-Id: <1302738328-22693-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.5.rc1
+	id S1757689Ab1DMXwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 19:52:18 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:63132 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932269Ab1DMXwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 19:52:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AukDALM1pk15LHHJgWdsb2JhbACmIxUBARYmJcMCDoVgBA
+Date: Thu, 14 Apr 2011 09:52:11 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+Message-ID: <20110413235211.GN31057@dastard>
+References: <20110413085937.981293444@intel.com>
+ <20110413090415.763161169@intel.com>
+ <20110413220444.GF4648@quack.suse.cz>
+ <20110413233122.GA6097@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110413233122.GA6097@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The copy_to_user_page() function is supposed to flush the icache on the
-memory that was written, but the current asm-generic version lacks that
-logic.  While normally it isn't a big deal as the asm-generic version of
-icache flushing is a stub, it is a deal for ports that want to use the
-asm-generic version as a baseline and then overlay its own specific parts
-(like icache flushing).
+On Thu, Apr 14, 2011 at 07:31:22AM +0800, Wu Fengguang wrote:
+> On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
+> > On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
+> > > Reduce the dampening for the control system, yielding faster
+> > > convergence. The change is a bit conservative, as smaller values may
+> > > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
+> > > 
+> > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > CC: Richard Kennedy <richard@rsk.demon.co.uk>
+> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> >   Well, I have nothing against this change as such but what I don't like is
+> > that it just changes magical +2 for similarly magical +0. It's clear that
+> 
+> The patch tends to make the rampup time a bit more reasonable for
+> common desktops. From 100s to 25s (see below).
+> 
+> > this will lead to more rapid updates of proportions of bdi's share of
+> > writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
+> 
+> Yes, it will especially be a problem on _small memory_ JBOD setups.
+> Richard actually has requested for a much radical change (decrease by
+> 6) but that looks too much.
+> 
+> My team has a 12-disk JBOD with only 6G memory. The memory is pretty
+> small as a server, but it's a real setup and serves well as the
+> reference minimal setup that Linux should be able to run well on.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- include/asm-generic/cacheflush.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+FWIW, linux runs on a lot of low power NAS boxes with jbod and/or
+raid setups that have <= 1GB of RAM (many of them run XFS), so even
+your setup could be considered large by a significant fraction of
+the storage world. Hence you need to be careful of optimising for
+what you think is a "normal" server, because there simply isn't such
+a thing....
 
-diff --git a/include/asm-generic/cacheflush.h b/include/asm-generic/cacheflush.h
-index 57b5c3c..87bc536 100644
---- a/include/asm-generic/cacheflush.h
-+++ b/include/asm-generic/cacheflush.h
-@@ -24,7 +24,10 @@
- #define flush_cache_vunmap(start, end)		do { } while (0)
- 
- #define copy_to_user_page(vma, page, vaddr, dst, src, len) \
--	memcpy(dst, src, len)
-+	do { \
-+		memcpy(dst, src, len); \
-+		flush_icache_user_range(vma, page, vaddr, len); \
-+	} while (0)
- #define copy_from_user_page(vma, page, vaddr, dst, src, len) \
- 	memcpy(dst, src, len)
- 
+Cheers,
+
+Dave.
 -- 
-1.7.5.rc1
-
+Dave Chinner
+david@fromorbit.com
