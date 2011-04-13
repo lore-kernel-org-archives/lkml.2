@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab1DMQIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:08:14 -0400
-Received: from kroah.org ([198.145.64.141]:54299 "EHLO coco.kroah.org"
+	id S932545Ab1DMQIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:08:35 -0400
+Received: from kroah.org ([198.145.64.141]:54290 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757881Ab1DMPzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:23 -0400
+	id S1757832Ab1DMPzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:22 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:45 2011
-Message-Id: <20110413155145.542291931@clark.kroah.org>
+Message-Id: <20110413155145.435461624@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:48 -0700
+Date: Wed, 13 Apr 2011 08:50:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [24/74] ROSE: prevent heap corruption with bad facilities
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [23/74] ALSA: ens1371: fix Creative Ectiva support
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,78 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit be20250c13f88375345ad99950190685eda51eb8 upstream.
+commit 6ebb8a4a43e34f999ab36f27f972f3cd751cda4f upstream.
 
-When parsing the FAC_NATIONAL_DIGIS facilities field, it's possible for
-a remote host to provide more digipeaters than expected, resulting in
-heap corruption.  Check against ROSE_MAX_DIGIS to prevent overflows, and
-abort facilities parsing on failure.
+To make the EV1938 chip work, add a magic bit and an extra delay.
 
-Additionally, when parsing the FAC_CCITT_DEST_NSAP and
-FAC_CCITT_SRC_NSAP facilities fields, a remote host can provide a length
-of less than 10, resulting in an underflow in a memcpy size, causing a
-kernel panic due to massive heap corruption.  A length of greater than
-20 results in a stack overflow of the callsign array.  Abort facilities
-parsing on these invalid length values.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Tino Schmidt <mailtinoshomepage@gmx.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/rose/rose_subr.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ sound/pci/ens1370.c |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
---- a/net/rose/rose_subr.c
-+++ b/net/rose/rose_subr.c
-@@ -289,10 +289,15 @@ static int rose_parse_national(unsigned
- 				facilities->source_ndigis = 0;
- 				facilities->dest_ndigis   = 0;
- 				for (pt = p + 2, lg = 0 ; lg < l ; pt += AX25_ADDR_LEN, lg += AX25_ADDR_LEN) {
--					if (pt[6] & AX25_HBIT)
-+					if (pt[6] & AX25_HBIT) {
-+						if (facilities->dest_ndigis >= ROSE_MAX_DIGIS)
-+							return -1;
- 						memcpy(&facilities->dest_digis[facilities->dest_ndigis++], pt, AX25_ADDR_LEN);
--					else
-+					} else {
-+						if (facilities->source_ndigis >= ROSE_MAX_DIGIS)
-+							return -1;
- 						memcpy(&facilities->source_digis[facilities->source_ndigis++], pt, AX25_ADDR_LEN);
-+					}
- 				}
+--- a/sound/pci/ens1370.c
++++ b/sound/pci/ens1370.c
+@@ -229,6 +229,7 @@ MODULE_PARM_DESC(lineio, "Line In to Rea
+ #define ES_REG_1371_CODEC 0x14	/* W/R: Codec Read/Write register address */
+ #define   ES_1371_CODEC_RDY	   (1<<31)	/* codec ready */
+ #define   ES_1371_CODEC_WIP	   (1<<30)	/* codec register access in progress */
++#define   EV_1938_CODEC_MAGIC	   (1<<26)
+ #define   ES_1371_CODEC_PIRD	   (1<<23)	/* codec read/write select register */
+ #define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x7f)<<16)|(((d)&0xffff)<<0))
+ #define   ES_1371_CODEC_READS(a)   ((((a)&0x7f)<<16)|ES_1371_CODEC_PIRD)
+@@ -603,12 +604,18 @@ static void snd_es1370_codec_write(struc
+ 
+ #ifdef CHIP1371
+ 
++static inline bool is_ev1938(struct ensoniq *ensoniq)
++{
++	return ensoniq->pci->device == 0x8938;
++}
++
+ static void snd_es1371_codec_write(struct snd_ac97 *ac97,
+ 				   unsigned short reg, unsigned short val)
+ {
+ 	struct ensoniq *ensoniq = ac97->private_data;
+-	unsigned int t, x;
++	unsigned int t, x, flag;
+ 
++	flag = is_ev1938(ensoniq) ? EV_1938_CODEC_MAGIC : 0;
+ 	mutex_lock(&ensoniq->src_mutex);
+ 	for (t = 0; t < POLL_COUNT; t++) {
+ 		if (!(inl(ES_REG(ensoniq, 1371_CODEC)) & ES_1371_CODEC_WIP)) {
+@@ -630,7 +637,8 @@ static void snd_es1371_codec_write(struc
+ 				    0x00010000)
+ 					break;
  			}
- 			p   += l + 2;
-@@ -332,6 +337,11 @@ static int rose_parse_ccitt(unsigned cha
+-			outl(ES_1371_CODEC_WRITE(reg, val), ES_REG(ensoniq, 1371_CODEC));
++			outl(ES_1371_CODEC_WRITE(reg, val) | flag,
++			     ES_REG(ensoniq, 1371_CODEC));
+ 			/* restore SRC reg */
+ 			snd_es1371_wait_src_ready(ensoniq);
+ 			outl(x, ES_REG(ensoniq, 1371_SMPRATE));
+@@ -647,8 +655,9 @@ static unsigned short snd_es1371_codec_r
+ 					    unsigned short reg)
+ {
+ 	struct ensoniq *ensoniq = ac97->private_data;
+-	unsigned int t, x, fail = 0;
++	unsigned int t, x, flag, fail = 0;
  
- 		case 0xC0:
- 			l = p[1];
-+
-+			/* Prevent overflows*/
-+			if (l < 10 || l > 20)
-+				return -1;
-+
- 			if (*p == FAC_CCITT_DEST_NSAP) {
- 				memcpy(&facilities->source_addr, p + 7, ROSE_ADDR_LEN);
- 				memcpy(callsign, p + 12,   l - 10);
-@@ -372,12 +382,16 @@ int rose_parse_facilities(unsigned char
- 			switch (*p) {
- 			case FAC_NATIONAL:		/* National */
- 				len = rose_parse_national(p + 1, facilities, facilities_len - 1);
-+				if (len < 0)
-+					return 0;
- 				facilities_len -= len + 1;
- 				p += len + 1;
- 				break;
- 
- 			case FAC_CCITT:		/* CCITT */
- 				len = rose_parse_ccitt(p + 1, facilities, facilities_len - 1);
-+				if (len < 0)
-+					return 0;
- 				facilities_len -= len + 1;
- 				p += len + 1;
- 				break;
++	flag = is_ev1938(ensoniq) ? EV_1938_CODEC_MAGIC : 0;
+       __again:
+ 	mutex_lock(&ensoniq->src_mutex);
+ 	for (t = 0; t < POLL_COUNT; t++) {
+@@ -671,7 +680,8 @@ static unsigned short snd_es1371_codec_r
+ 				    0x00010000)
+ 					break;
+ 			}
+-			outl(ES_1371_CODEC_READS(reg), ES_REG(ensoniq, 1371_CODEC));
++			outl(ES_1371_CODEC_READS(reg) | flag,
++			     ES_REG(ensoniq, 1371_CODEC));
+ 			/* restore SRC reg */
+ 			snd_es1371_wait_src_ready(ensoniq);
+ 			outl(x, ES_REG(ensoniq, 1371_SMPRATE));
+@@ -683,6 +693,11 @@ static unsigned short snd_es1371_codec_r
+ 			/* now wait for the stinkin' data (RDY) */
+ 			for (t = 0; t < POLL_COUNT; t++) {
+ 				if ((x = inl(ES_REG(ensoniq, 1371_CODEC))) & ES_1371_CODEC_RDY) {
++					if (is_ev1938(ensoniq)) {
++						for (t = 0; t < 100; t++)
++							inl(ES_REG(ensoniq, CONTROL));
++						x = inl(ES_REG(ensoniq, 1371_CODEC));
++					}
+ 					mutex_unlock(&ensoniq->src_mutex);
+ 					return ES_1371_CODEC_READ(x);
+ 				}
 
 
