@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab1DMTH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 15:07:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37351 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757105Ab1DMTHy (ORCPT
+	id S1757418Ab1DMTLl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 15:11:41 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42745 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab1DMTLk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 15:07:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=L2jAlQdMvXiUMzWMSQZMU02PCvly4QLCXh5XbXW+d96SLKmt3dfwEJD1707Ig6BPCA
-         hzXZN/61gErYT96i/zWXjvR+3wu6M5O5FFA8FeWVa3tP5hAFaqzydmUB0fIr52FQih9D
-         DWmO5J8bq9x4Sr3WhhraxQ7aFr6kvpNWPd404=
-Date: Thu, 14 Apr 2011 04:07:47 +0900
-From: Tejun Heo <tj@kernel.org>
-To: shaohua.li@intel.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, cl@linux.com,
-        eric.dumazet@gmail.com
-Subject: Re: [patch v2 4/4] percpu_counter: use atomic64 for counter
-Message-ID: <20110413190747.GE3987@mtj.dyndns.org>
-References: <20110413075715.090406229@sli10-conroe.sh.intel.com>
- <20110413080517.901701497@sli10-conroe.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110413080517.901701497@sli10-conroe.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 13 Apr 2011 15:11:40 -0400
+Subject: Re: [PATCH 04/21] sched: Change the ttwu success details
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110413183955.GA3403@mtj.dyndns.org>
+References: <20110405152338.692966333@chello.nl>
+	 <20110405152728.866866929@chello.nl> <1302686630.2388.125.camel@twins>
+	 <1302691703.2035.10.camel@laptop> <1302692799.2035.17.camel@laptop>
+	 <20110413183955.GA3403@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 13 Apr 2011 21:11:09 +0200
+Message-ID: <1302721869.2388.127.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 03:57:19PM +0800, shaohua.li@intel.com wrote:
-> This can improve some workloads with percpu_counter->lock heavily contented.
-> For example, vm_committed_as sometimes causes the contention. We should tune
-> the batch count, but if we can make percpu_counter better, why not? In a 24
-> CPUs system, 24 processes run stress mmap()/mmunmap(), the atomic method
-> gives 50x faster.
+On Thu, 2011-04-14 at 03:39 +0900, Tejun Heo wrote:
+> One way to deal with it would be adding an extra worker flag to track
+> sleep state from workqueue side so that it can filter out spurious
+> wakeups; however, I think it would be far better to resolve this from
+> scheduler side.  If the callback name is misleading, rename it to
+> wq_worker_sched_activated() or something and call it only when the
+> task gets activated. 
 
-Christoph already raised the issue but I'd also love to know a bit
-more detail on the test than "50x faster".
-
-Thanks.
-
--- 
-tejun
+Right, what I did is move the thing near activate_task() instead of
+relying on any passing on of that information.
