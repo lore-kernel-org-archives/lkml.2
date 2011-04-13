@@ -1,165 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758569Ab1DMUfC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 16:35:02 -0400
-Received: from mail.academy.zt.ua ([82.207.120.245]:58332 "EHLO
-	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758253Ab1DMUfA (ORCPT
+	id S1758594Ab1DMUfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 16:35:09 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:3083 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758253Ab1DMUfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 16:35:00 -0400
-X-MDAV-Processed: mail.academy.zt.ua, Wed, 13 Apr 2011 23:34:59 +0300
-X-Spam-Processed: mail.academy.zt.ua, Wed, 13 Apr 2011 23:34:57 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-Return-Path: george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
-From: George Kashperko <george@znau.edu.ua>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Greg KH <greg@kroah.com>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org,
-        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
-References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
-	 <20110413163113.GA24015@kroah.com>
-	 <BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Date: Wed, 13 Apr 2011 23:31:43 +0300
-Message-Id: <1302726703.8015.1.camel@dev.znau.edu.ua>
+	Wed, 13 Apr 2011 16:35:04 -0400
+Date: Wed, 13 Apr 2011 22:34:49 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Natarajan Gurumoorthy <natg@google.com>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        Mike Waychison <mikew@google.com>
+Subject: Re: [lm-sensors] [PATCH v5 1/2] Use "request_muxed_region" in it87
+  watchdog drivers
+Message-ID: <20110413223449.1ddf7bc8@endymion.delvare>
+In-Reply-To: <BANLkTimhUd9+QmLh-fSjwDO5c_vRH+kktA@mail.gmail.com>
+References: <1302641290-30212-1-git-send-email-natg@google.com>
+	<1302641387-30264-1-git-send-email-natg@google.com>
+	<4DA547CD.60406@redhat.com>
+	<BANLkTikfuvvujTi6i2MUGOHgNLZCqcouJQ@mail.gmail.com>
+	<20110413103409.47638b72@endymion.delvare>
+	<BANLkTimhUd9+QmLh-fSjwDO5c_vRH+kktA@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Nat,
 
-В Срд, 13/04/2011 в 21:39 +0200, Rafał Miłecki пишет:
-> 2011/4/13 Greg KH <greg@kroah.com>:
-> >> diff --git a/drivers/axi/axi_pci_bridge.c b/drivers/axi/axi_pci_bridge.c
-> >> new file mode 100644
-> >> index 0000000..17e882c
-> >> --- /dev/null
-> >> +++ b/drivers/axi/axi_pci_bridge.c
-> >> @@ -0,0 +1,33 @@
-> >> +/*
-> >> + * AXI PCI bridge module
-> >> + *
-> >> + * Licensed under the GNU/GPL. See COPYING for details.
-> >> + */
-> >> +
-> >> +#include "axi_private.h"
-> >> +
-> >> +#include <linux/axi/axi.h>
-> >> +#include <linux/pci.h>
-> >> +
-> >> +static DEFINE_PCI_DEVICE_TABLE(axi_pci_bridge_tbl) = {
-> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4331) },
-> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4353) },
-> >> +     { PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4727) },
-> >> +     { 0, },
-> >> +};
-> >> +MODULE_DEVICE_TABLE(pci, axi_pci_bridge_tbl);
-> >> +
-> >> +static struct pci_driver axi_pci_bridge_driver = {
-> >> +     .name = "axi-pci-bridge",
-> >> +     .id_table = axi_pci_bridge_tbl,
-> >> +};
-> >> +
-> >> +int __init axi_pci_bridge_init(void)
-> >> +{
-> >> +     return axi_host_pci_register(&axi_pci_bridge_driver);
-> >> +}
-> >> +
-> >> +void __exit axi_pci_bridge_exit(void)
-> >> +{
-> >> +     axi_host_pci_unregister(&axi_pci_bridge_driver);
-> >> +}
-> >
-> > You register a pci driver that does nothing?  That's not right, you need
-> > to then base your axi bus off of that pci device, so it is hooked up
-> > correctly in the /sys/devices/ tree.  Otherwise you are somewhere up in
-> > the virtual location for your axi bus, right?
-> 
-> Please take a look at:
-> driver->probe = axi_host_pci_probe;
-> driver->remove = axi_host_pci_remove;
-> return pci_register_driver(driver);
-> 
-> 
-> >> +bool axi_core_is_enabled(struct axi_device *core)
-> >> +{
-> >> +     if ((axi_aread32(core, AXI_IOCTL) & (AXI_IOCTL_CLK | AXI_IOCTL_FGC))
-> >> +         != AXI_IOCTL_CLK)
-> >> +             return false;
-> >> +     if (axi_aread32(core, AXI_RESET_CTL) & AXI_RESET_CTL_RESET)
-> >> +             return false;
-> >> +     return true;
-> >> +}
-> >> +EXPORT_SYMBOL(axi_core_is_enabled);
-> >
-> > EXPORT_SYMBOL_GPL()?
-> >
-> > What module uses this?  And why would it care?
-> >
-> >> +EXPORT_SYMBOL(axi_core_enable);
-> >
-> > EXPORT_SYMBOL_GPL()?
-> >
-> > Same goes for your other exports, just want you to be sure here.
-> 
-> Hm, I'm not sure. Using EXPORT_SYMBOL_GPL will forbid closed source
-> drivers from using our bus driver, right? I'm don't have preferences
-> on this, if you prefer us to force GPL, I can.
-> 
-> 
-> >> +u32 xaxi_chipco_gpio_control(struct axi_drv_cc *cc, u32 mask, u32 value)
-> >> +{
-> >> +     return axi_cc_write32_masked(cc, AXI_CC_GPIOCTL, mask, value);
-> >> +}
-> >> +EXPORT_SYMBOL(xaxi_chipco_gpio_control);
-> >
-> > "xaxi"?  Shouldn't that be consistant with the other exports and start
-> > with "axi"?
-> 
-> Left from old tests/rewrites/splitting. Thanks.
-> 
-> 
-> >> +static u8 axi_host_pci_read8(struct axi_device *core, u16 offset)
-> >> +{
-> >> +     if (unlikely(core->bus->mapped_core != core))
-> >
-> > Are you sure about the use of unlikely in this, and other functions?
-> > The compiler almost always does a better job than we do for these types
-> > of calls, just let it do it's job.
-> >
-> >> +             axi_host_pci_switch_core(core);
-> >> +     return ioread8(core->bus->mmio + offset);
-> >
-> > I think because of that unlikely, you just slowed down all pci devices,
-> > right?  That's not very nice :)
-> 
-> Hm, my logic suggests it is alright, but please consider this once
-> more with me ;)
-> 
-> For the most of the time mapped_core (active core) do not change. We
-> perform few hundreds of operations on one core in a row. This way
-> mapped_core points to passed core for most of the time. Condition
-> (mapped_core != core) is unlikely to happen.
-> 
-> Is there anything wrong in my logic?
-> 
-Yes, there is. You don't need that "if" at all.
+Please don't top-post.
 
-Have nice day,
-George
+On Wed, 13 Apr 2011 10:59:45 -0700, Natarajan Gurumoorthy wrote:
+> John,
+>       Unfortunately you are right. After grepping though drivers/hwmon
+> and drivers/watchdog I realize the ugliness is fairly deep rooted. All
+> of the following drivers need to be cleaned up as far as the
+> "superio_enter" "superio_exit" operation is concerned if we want this
+> stuff to be SMP clean and allow multiple drivers to coexist.
+> 
+> drivers/watchdog
+> f71808e_wdt.c
+> it8712f_wdt.c
+> it87_wdt.c
+> sch311x_wdt.c
+> iTCO_vendor_support.c
+> ibmasr.c
+> w83697hf_wdt.c
+> w83697ug_wdt.c:
+> 
+> 
+> drivers/hwmon
+> dme1737.c:1935:static inline void dme1737_sio_enter(int sio_cip)
+> f71805f.c:100:superio_enter(int base)
+> f71882fg.c:196:static inline int superio_enter(int base);
+> it87.c:112:superio_enter(void)
+> pc87360.c:1009:	/* No superio_enter */
+> sch5627.c:118:static inline int superio_enter(int base)
+> smsc47b397.c:75:static inline void superio_enter(void)
+> smsc47m1.c:77:superio_enter(void)
+> vt1211.c:223:static inline void superio_enter(int sio_cip)
+> w83627ehf.c:135:superio_enter(int ioreg)
+> w83627hf.c:134:superio_enter(struct w83627hf_sio_data *sio)
+> 
+> Have I missed any other drivers that also need to be cleaned.
 
+f71882fg and sch5627 already call request_muxed_region() so I think
+these are safe. OTOH you missed pc87427 at least. And there are
+probably a few non-watchdog, non-hwmon drivers which need the same fix
+(for example drivers/parport/parport_pc.c and
+drivers/net/irda/via-ircc.h are suspect.)
 
+> Even if
+> I got my boss to sign up to clean this I can only test the it8712f
+> drivers and thats it.
+
+For one thing, you don't have to. Converting just a subset is already a
+welcomed step in the right direction. But anyway the changes should be
+fairly easy and not too risky so I wouldn't mind you doing them without
+testing them all. And we can find testers for most hwmon drivers, I'm
+sure (I can personally test f71805f and w83627ehf, maybe w83627hf).
+
+-- 
+Jean Delvare
