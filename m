@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab1DMPN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:13:28 -0400
-Received: from void.printf.net ([89.145.121.20]:53223 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757112Ab1DMPN1 convert rfc822-to-8bit (ORCPT
+	id S1757357Ab1DMPOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:14:11 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:59695 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757130Ab1DMPOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:13:27 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Petr =?utf-8?B?UMOtc2HFmQ==?= <ppisar@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: [PATCH] Clean console safely
-References: <1302705651.2768.21.camel@localhost>
-	<1302706473-16519-1-git-send-email-ppisar@redhat.com>
-Date: Wed, 13 Apr 2011 11:18:04 -0400
-In-Reply-To: <1302706473-16519-1-git-send-email-ppisar@redhat.com> ("Petr
-	=?utf-8?B?UMOtc2HFmSIncw==?= message of "Wed, 13 Apr 2011 16:54:33 +0200")
-Message-ID: <m38vvew577.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+	Wed, 13 Apr 2011 11:14:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=pAcwkJZfFw63W1CfDD6WCHzJb4eCuIFzaQbtLiK+jRODt0fm+5GnhjyPZGYkuGjs37
+         nLVQP3mKK2xLt7I/4M7fqw6Ud5HUcICAZ7ZrlnOresg5VzYpyFbDpGCnWLH4oNuigvNv
+         Sz/XQp8cXPHbeAWirpXGe6oF4zd6xnkrfvkqI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Wed, 13 Apr 2011 17:13:49 +0200
+X-Google-Sender-Auth: sVCPGPR9chEBhZ2nNC_a51osgXE
+Message-ID: <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+Subject: Re: Unionmount status?
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        miklos@szeredi.hu, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Apr 13 2011, Petr Písař wrote:
-> Traditional \E[2J sequence erases console display but scroll-back
-> buffer and underlying device (frame) buffer keep data that can be
-> accessed by scrolling console back.
+On 13 April 2011 16:18, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 12 Apr 2011, Michal Suchanek wrote:
 >
-> This patch introduce new \E[J parameter 3 that allows to scramble
-> scroll-back buffer explicitly. Session locking programs (screen,
-> vlock) can use it to prevent attacker to browse locked console
-> history.
+>> > Miklos has an overlay file system that has also been posted upstream.
+>>
+>> I have no idea about his other overlay filesystem either.
 >
-> Signed-off-by: Petr Písař <ppisar@redhat.com>
-> ---
->  drivers/tty/vt/vt.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+> https://lkml.org/lkml/2011/3/22/222
 >
-> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> index 4bea1ef..fe96a1f 100644
-> --- a/drivers/tty/vt/vt.c
-> +++ b/drivers/tty/vt/vt.c
-> @@ -1197,6 +1197,12 @@ static void csi_J(struct vc_data *vc, int vpar)
->  					      vc->vc_x + 1);
->  			}
->  			break;
-> +		case 3: /* erase scroll-back buffer (and whole display) */
-> +			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
-> +				    vc->vc_screenbuf_size >> 1);
-> +			set_origin(vc);
-> +			if (CON_IS_VISIBLE(vc))
-> +				update_screen(vc);
->  		case 2: /* erase whole display */
->  			count = vc->vc_cols * vc->vc_rows;
->  			start = (unsigned short *)vc->vc_origin;
 
-Nitpick: the cases were ordered before -- 3 should go after 2.
+Thanks for pointing out this announcement.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+However, neither this announcement nor the document
+Documentation/filesystems/overlayfs.txt included in the git tree
+details how to mount the filesystem. Without that it is kind of
+useless.
+
+Thanks
+
+Michal
