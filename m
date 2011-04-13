@@ -1,118 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab1DMC6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 22:58:49 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37089 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755975Ab1DMC6s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 22:58:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ARS+JsxePjWnRzyKG40skmEzyfz7+FoqLpfWzPv7VXPXrvk722l9g/TMyXOdhxN36v
-         UZydLqs1Z5vqaOjEZ/bLuLo8zKhCjb5zyCd0WE9wD+1ebDG2AOlrM24j9PixZOMrJ7jL
-         XRlQu+8U0+sfLR5FWVFPv9nw8e/juVkaKDNRY=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinpQdbyTRY0m+UL7EKF3jAOv=aU1A@mail.gmail.com>
-References: <BANLkTinpQdbyTRY0m+UL7EKF3jAOv=aU1A@mail.gmail.com>
-Date: Wed, 13 Apr 2011 10:58:47 +0800
-Message-ID: <BANLkTi=jEHOVO9v5aaREzCHC5rGBOFcotA@mail.gmail.com>
-Subject: Re: Kprobe
-From: Lin Ming <minggr@gmail.com>
-To: Artur Baruchi <mail.baruchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756536Ab1DMDAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 23:00:36 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:50914 "HELO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1756330Ab1DMDAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 23:00:35 -0400
+Date: Tue, 12 Apr 2011 22:00:34 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Borislav Petkov <bp@alien8.de>, Prarit Bhargava <prarit@redhat.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>
+Cc: rja@americas.sgi.com
+Subject: Re: [PATCH]: mce: don't print "human readable" message for corrected errors
+Message-ID: <20110413030033.GB31652@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20110412174405.26867.65604.sendpatchset@prarit.bos.redhat.com> <20110412185842.GB9891@liondog.tnic> <987664A83D2D224EAE907B061CE93D5301A9629BD5@orsmsx505.amr.corp.intel.com> <4DA4B2EA.5050303@redhat.com> <20110412202854.GA32200@liondog.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110412202854.GA32200@liondog.tnic>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 10, 2011 at 10:28 PM, Artur Baruchi <mail.baruchi@gmail.com> wrote:
-> Hi Guys.
->
-> Im using kprobe to probe a kernel function (find_get_page) and I would
-> like to know more details, like which function is calling it, but I
-> couldnt figure out a way to do that. Is it possible to use kprobe or
-> other kind of probe to detect which function is calling find_get_page
-> ?
+On Tue, Apr 12, 2011 at 10:28:54PM +0200, Borislav Petkov wrote:
+> 
+> Yeah, there's the TAINT thing too, good point Tony. Well, we definitely
+> don't want to get tainted for correctable errors - they're too "normal"
+> to do so, IMHO.
 
-Do you know the cool "perf" tool.
-Its sub command "perf probe" is exactly what you want.
+I agreed.
 
-# cd linux-2.6/tools/perf
-# make
-# ./perf probe -k ~/vmlinux -s ~/linux-2.6/  find_get_page
-# ./perf record -e probe:find_get_page -f -g -a
-# ./perf report
+> I'm thinking remove the TAINT for CEs and don't call the default
+> notifier if it is the only notifier call registered. Maybe something like
+> 
+> 	if (num_notifiers(&x86_mce_decoder_chain) > 1)
+> 		atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
+> 
+> or since the notifiers are priority sorted, don't call notifiers with -1
+> prio.
+> 
+> Or something to that effect.
 
-# Events: 81K
-#
-# Overhead  Command      Shared Object         Symbol
-# ........  .......  .................  .............
-#
-   100.00%     perf  [kernel.kallsyms]  [k] find_get_page
-               |
-               --- find_get_page
-                  |
-                  |--94.84%-- grab_cache_page_write_begin
-                  |          ext3_write_begin
-                  |          generic_file_buffered_write
-                  |          __generic_file_aio_write
-                  |          generic_file_aio_write
-                  |          do_sync_write
-                  |          vfs_write
-                  |          sys_write
-                  |          system_call_fastpath
-                  |          __libc_write
-                  |          |
-                  |          |--68.98%-- mmap_read_all
-                  |          |          __cmd_record
-                  |          |          cmd_record
-                  |          |          run_builtin
-                  |          |          handle_internal_command
-                  |          |          run_argv
-                  |          |          main
-                  |          |          __libc_start_main
-                  |          |
-                  |          |--29.30%-- mmap_read
-                  |          |          mmap_read_all
-                  |          |          __cmd_record
-                  |          |          cmd_record
-                  |          |          run_builtin
-                  |          |          handle_internal_command
-                  |          |          run_argv
-                  |          |          main
-                  |          |          __libc_start_main
-                  |          |
-                  |           --1.72%-- process_synthesized_event
-                  |                     |
-                  |                     |--87.99%--
-perf_event__synthesize_mmap_events
-                  |                     |          __event__synthesize_thread
-                  |                     |
-perf_event__synthesize_threads
-                  |                     |          __cmd_record
-                  |                     |          cmd_record
-                  |                     |          run_builtin
-                  |                     |          handle_internal_command
-                  |                     |          run_argv
-                  |                     |          main
-                  |                     |          __libc_start_main
+What is the point of having a default notifier if it doesn't get called?
 
-Have a try and you'll like it!
+Any consideration of adding thresholding (ie only log the first X number
+of corrected errors) as is done on IA64?  (see arch/ia64/kernel/mca.c)
 
-Lin Ming
-
->
-> Thanks in advance.
->
-> Att.
-> Artur Baruchi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks,
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
