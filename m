@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758452Ab1DMQDq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:03:46 -0400
-Received: from stinky.trash.net ([213.144.137.162]:43513 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758403Ab1DMQDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758430Ab1DMQDp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:03:45 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:47836 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758198Ab1DMQDm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Apr 2011 12:03:42 -0400
-Message-ID: <4DA5C95B.6000706@trash.net>
-Date: Wed, 13 Apr 2011 18:03:39 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=nanometrics.ca; s=google;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dUMt/1R7vbpGXffltoy9IVpzqpA2n028P7Ii11BJGdgQOdktS53DEvS7HKwxjfZhwQ
+         RFeAuqBB2aKePAK3hOs2pmoYoo2jddy+elxZULGwdNar0F/2I37PXQwl/GyTSUGIFlju
+         B3CyM3BQ9gUEPTLADrctIRqtNmgnUiqznfSQg=
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Sterba <dsterba@suse.cz>
-Subject: Re: [49/74] netfilter: h323: bug in parsing of ASN1 SEQOF field
-References: <20110413155148.210947709@clark.kroah.org>
-In-Reply-To: <20110413155148.210947709@clark.kroah.org>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C8B3CBD@dbde02.ent.ti.com>
+References: <cover.1302031487.git.bengardiner@nanometrics.ca>
+	<f1ff3f2888725a1e03541e0be5c0880f0591aea2.1302031487.git.bengardiner@nanometrics.ca>
+	<B85A65D85D7EB246BE421B3FB0FBB593024C8B3C9F@dbde02.ent.ti.com>
+	<BANLkTi=j=Dp015ZsU44DH3p1s_XdxvAX8Q@mail.gmail.com>
+	<B85A65D85D7EB246BE421B3FB0FBB593024C8B3CBD@dbde02.ent.ti.com>
+Date: Wed, 13 Apr 2011 12:03:39 -0400
+Message-ID: <BANLkTi=OCqFTFMyfA3iF_yqQi2Pmxm5V+Q@mail.gmail.com>
+Subject: Re: [PATCH 6/6] da8xx: enable the use of the ICPFUNC in i2c-davinci
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bastian Ruppert <Bastian.Ruppert@sewerin.de>,
+        "Griffis, Brad" <bgriffis@ti.com>,
+        Jon Povey <jon.povey@racelogic.co.uk>,
+        Philby John <pjohn@in.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.04.2011 17:51, schrieb Greg KH:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
-> 
-> ------------------
-> 
-> From: David Sterba <dsterba@suse.cz>
-> 
-> commit b4232a22776aa5d063f890d21ca69870dbbe431b upstream.
-> 
-> Static analyzer of clang found a dead store which appears to be a bug in
-> reading count of items in SEQOF field, only the lower byte of word is
-> stored. This may lead to corrupted read and communication shutdown.
-> 
-> The bug has been in the module since it's first inclusion into linux
-> kernel.
-> 
-> [Patrick: the bug is real, but without practical consequence since the
->  largest amount of sequence-of members we parse is 30.]
+On Wed, Apr 13, 2011 at 11:42 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
+> On Wed, Apr 13, 2011 at 20:52:05, Ben Gardiner wrote:
+>> I understand "check for pdata to be NULL."  If you think it is the
+>> better option I'd be happy to implement it but I don't understand how
+>> to implement "let each board choose whether it needs recovery."
+>
+> This is done by just setting has_pfunc = 1 in the
+> davinci_i2c_platform_data defined in the board file.
 
-As mentioned in the changelog, I don't think this patch is of any
-relevance for -stable since its a purely theoretical problem.
+Ok -- now I get it, thanks. I spin a V2 shortly.
+
+Best Regards,
+Ben Gardiner
+
+---
+Nanometrics Inc.
+http://www.nanometrics.ca
