@@ -1,80 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933225Ab1DMVxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:53:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45666 "EHLO mx2.suse.de"
+	id S933219Ab1DMVxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:53:39 -0400
+Received: from mail.digium.com ([216.207.245.2]:47176 "EHLO mail.digium.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933068Ab1DMVxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:53:09 -0400
-Date: Wed, 13 Apr 2011 23:53:07 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 2/4] writeback: avoid duplicate
- balance_dirty_pages_ratelimited() calls
-Message-ID: <20110413215307.GD4648@quack.suse.cz>
-References: <20110413085937.981293444@intel.com>
- <20110413090415.511675208@intel.com>
+	id S933068Ab1DMVxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 17:53:38 -0400
+Date: Wed, 13 Apr 2011 16:53:22 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Don Zickus <dzickus@redhat.com>, maciej.rutecki@gmail.com,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
+	proper MSR register to catch" and NMIs
+Message-ID: <20110413215322.GA11670@digium.com>
+References: <20110406223036.GA15721@digium.com> <201104132133.51958.maciej.rutecki@gmail.com> <4DA6011F.7070405@openvz.org> <20110413203501.GA10744@digium.com> <4DA60B03.30603@openvz.org> <20110413212208.GJ16939@redhat.com> <4DA614DF.5090304@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110413090415.511675208@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DA614DF.5090304@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-04-11 16:59:39, Wu Fengguang wrote:
-> When dd in 512bytes, balance_dirty_pages_ratelimited() could be called 8
-> times for the same page, but obviously the page is only dirtied once.
-> 
-> Fix it with a (slightly racy) PageDirty() test.
-> 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/filemap.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> --- linux-next.orig/mm/filemap.c	2011-04-13 16:46:01.000000000 +0800
-> +++ linux-next/mm/filemap.c	2011-04-13 16:47:26.000000000 +0800
-> @@ -2313,6 +2313,7 @@ static ssize_t generic_perform_write(str
->  	long status = 0;
->  	ssize_t written = 0;
->  	unsigned int flags = 0;
-> +	unsigned int dirty;
->  
->  	/*
->  	 * Copies from kernel address space cannot fail (NFSD is a big user).
-> @@ -2361,6 +2362,7 @@ again:
->  		pagefault_enable();
->  		flush_dcache_page(page);
->  
-> +		dirty = PageDirty(page);
-  This isn't completely right as we sometimes dirty the page in
-->write_begin() (see e.g. block_write_begin() when we allocate blocks under
-an already uptodate page) and in such cases we would not call
-balance_dirty_pages(). So I'm not sure we can really do this
-optimization (although it's sad)...
+On Thu, Apr 14, 2011 at 01:25:51AM +0400, Cyrill Gorcunov wrote:
+...
+> OK, thanks for review! Shaun please continue testing it, if all will be fine until tomorrow
+> we will ask Ingo to pick it up then. Sounds OK for everyone?
 
->  		mark_page_accessed(page);
->  		status = a_ops->write_end(file, mapping, pos, bytes, copied,
->  						page, fsdata);
-> @@ -2387,7 +2389,8 @@ again:
->  		pos += copied;
->  		written += copied;
->  
-> -		balance_dirty_pages_ratelimited(mapping);
-> +		if (!dirty)
-> +			balance_dirty_pages_ratelimited(mapping);
->  
->  	} while (iov_iter_count(i));
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Sounds good. I'll let it run tonight with v2 tonight.
