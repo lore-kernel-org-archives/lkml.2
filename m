@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab1DMGPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 02:15:01 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50094 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab1DMGPA (ORCPT
+	id S1751805Ab1DMGWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 02:22:35 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:37498
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751126Ab1DMGWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 02:15:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:cc:content-type;
-        b=u0VT/m9gr4lEQcnJgHk2FJzNq2EkApdqxIITQpL2ZfhHyYOT1B6SODUnFqO3KdFejw
-         SJCs+TspRJLnJmZouCJavOWkPkqv4iJzZ3qZl5lA8aKaeJH1gzc8Aw0nQ5VlFcc13ulA
-         RQECLV0kZVm2O3SPsbHuG8tua5uKm7ShKsWao=
+	Wed, 13 Apr 2011 02:22:33 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 13 Apr 2011 14:26:06 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Chris Ball <cjb@laptop.org>
+CC: Wolfram Sang <w.sang@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <linaro-dev@lists.linaro.org>, <patches@linaro.org>
+Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
+ self registered
+Message-ID: <20110413062605.GA1310@S2100-06.ap.freescale.net>
+References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+ <m38vvvz1p6.fsf@pullcord.laptop.org>
 MIME-Version: 1.0
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 13 Apr 2011 02:14:39 -0400
-X-Google-Sender-Auth: IzoE41DVCgXQfYzLXaaTWkjS-qM
-Message-ID: <BANLkTi=F-C-vwX4PGGfbkdTBw3OWL-twfg@mail.gmail.com>
-Subject: freezer: should barriers be smp ?
-To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <m38vvvz1p6.fsf@pullcord.laptop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when we suspend/resume Blackfin SMP systems, we notice that the
-freezer code runs on multiple cores.  this is of course what you want
--- freeze processes in parallel.  however, the code only uses non-smp
-based barriers which causes us problems ... our cores need software
-support to keep caches in sync, so our smp barriers do just that.  but
-the non-smp barriers do not, and so the frozen/thawed processes
-randomly get stuck in the wrong task state.
+Hi Wolfram,
 
-thinking about it, shouldnt the freezer code be using smp barriers ?
-the point is to make sure that the updates are seen across all cores
-are not just the current one ?
--mike
+On Thu, Mar 31, 2011 at 12:36:53PM -0400, Chris Ball wrote:
+> Hi Wolfram,
+> 
+> On Fri, Mar 25 2011, Shawn Guo wrote:
+> > Here are what the patch set does.
+> >
+> > * Remove .probe and .remove hooks from sdhci-pltfm.c and make it be
+> >   a pure common helper function providers.
+> > * Add .probe and .remove hooks for sdhci pltfm drivers sdhci-cns3xxx,
+> >   sdhci-dove, sdhci-tegra, and sdhci-esdhc-imx to make them self
+> >   registered with calling helper functions created above.
+> > * Migrate the use of sdhci_of_host and sdhci_of_data to
+> >   sdhci_pltfm_host and sdhci_pltfm_data, so that OF version host and
+> >   data structure works can be saved, and pltfm version works for both
+> >   cases.
+> > * Add OF common helper stuff into sdhci-pltfm.c, and make OF version
+> >   sdhci drivers sdhci-of-esdhc and sdhci-of-hlwd become self
+> >   registered as well, so that sdhci-of-core.c and sdhci-of.h can be
+> >   removed.
+> > * Consolidate the OF and pltfm esdhc drivers into one with sharing
+> >   the same pair of .probe and .remove hooks.  As a result,
+> >   sdhci-esdhc-imx.c and sdhci-of-esdhc.c go away, while
+> >   sdhci-esdhc.c comes in and works for both MPCxxx and i.MX.
+> > * Eliminate include/linux/mmc/sdhci-pltfm.h with moving stuff into
+> >   drivers/mmc/host/sdhci-pltfm.h.
+> 
+> If you get time, would appreciate getting an ACK from you on the patch
+> changes (including Grant's review).  Thanks very much!
+> 
+Can you please take some time to help review?  I know you are on ELC
+this week :)  What about next couple of weeks?
+
+-- 
+Regards,
+Shawn
+
