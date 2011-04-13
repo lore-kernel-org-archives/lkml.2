@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab1DMW5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 18:57:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33343 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758606Ab1DMW5d convert rfc822-to-8bit (ORCPT
+	id S933392Ab1DMXFP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 19:05:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56190 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758613Ab1DMXE4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 18:57:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=DecnQOq9QPEJcSwt4khobC6uQbFE4oym561Ww+QzDx26IJlHiQm6bCjVWO4mBKWuuE
-         y2su9NKQGL90a508bjBSkYCk7+Ih7e0Rik57g6kI4zmhIlsSFk5f/DDrT6p8tP3gT5DJ
-         v5BpWlFmSBWiSb+aXuebo/fOFlrHA+FhE59xs=
+	Wed, 13 Apr 2011 19:04:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <201104140049.23344.rjw@sisk.pl>
-References: <BANLkTi=F-C-vwX4PGGfbkdTBw3OWL-twfg@mail.gmail.com>
- <201104132353.09282.rjw@sisk.pl> <BANLkTik1tg2fzFgZmeSCGZxbNPDydotb-w@mail.gmail.com>
- <201104140049.23344.rjw@sisk.pl>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 13 Apr 2011 18:57:13 -0400
-X-Google-Sender-Auth: bd4BP5_DhanvddW_KhevMDRCapQ
-Message-ID: <BANLkTi=_+kYvs3_dsXifd_rkxfmFzJLttA@mail.gmail.com>
-Subject: Re: freezer: should barriers be smp ?
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Pavel Machek <pavel@ucw.cz>, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C8B3C9F@dbde02.ent.ti.com>
+References: <cover.1302031487.git.bengardiner@nanometrics.ca>
+ <f1ff3f2888725a1e03541e0be5c0880f0591aea2.1302031487.git.bengardiner@nanometrics.ca>
+ <B85A65D85D7EB246BE421B3FB0FBB593024C8B3C9F@dbde02.ent.ti.com>
+From: Mike Williamson <michael.williamson@criticallink.com>
+Date: Wed, 13 Apr 2011 19:04:34 -0400
+Message-ID: <BANLkTikskhqNk3NihqJ5kZhFqn1YpJEN9A@mail.gmail.com>
+Subject: Re: [PATCH 6/6] da8xx: enable the use of the ICPFUNC in i2c-davinci
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Ben Gardiner <bengardiner@nanometrics.ca>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bastian Ruppert <Bastian.Ruppert@sewerin.de>,
+        Philby John <pjohn@in.mvista.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 18:49, Rafael J. Wysocki wrote:
-> On Thursday, April 14, 2011, Mike Frysinger wrote:
->> i guess the trouble for us is that you have one CPU posting writes to
->> task->flags (and doing so by grabbing the task's spinlock), but the
->> other CPU is simply reading those flags.  there are no SMP barriers in
->> between the read and write steps, nor is the reading CPU grabbing any
->> locks which would be an implicit SMP barrier.  since the Blackfin SMP
->> port lacks hardware cache coherency, there is no way for us to know
->> "we've got to sync the caches before we can do this read".  by using
->> the patch i posted above, we have that signal and so things work
->> correctly.,
+On Wed, Apr 13, 2011 at 11:10 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
 >
-> In theory I wouldn't expect the patch to work correctly, because it replaces
-> _stronger_ memory barriers with _weaker_ SMP barriers.  However, looking at
-> the blackfin's definitions of SMP barriers I see that it uses extra stuff that
-> should _also_ be used in the definitions of the mandatory barriers.
+> Hi Ben,
 >
-> In my opinion is an architecture problem, not the freezer code problem.
+> On Wed, Apr 06, 2011 at 03:08:09, Ben Gardiner wrote:
+> > Both the da850 and da830 have an I2C controller which has the ICPFUNC
+> > registers. Indicate this for all da830 and da850 boards by setting the
+> > has_pfunc flag true in the da8xx utility setup routine for registering the
+> > I2C controller
+> >
+> > Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+> > Cc: Sekhar Nori <nsekhar@ti.com>
+> > Cc: Ben Dooks <ben-linux@fluff.org>
+> >
+> > ---
+> >  arch/arm/mach-davinci/devices-da8xx.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+> > index beda8a4..da01558 100644
+> > --- a/arch/arm/mach-davinci/devices-da8xx.c
+> > +++ b/arch/arm/mach-davinci/devices-da8xx.c
+> > @@ -324,6 +324,12 @@ int __init da8xx_register_i2c(int instance,
+> >       else
+> >               return -EINVAL;
+> >
+> > +     /*
+> > +      * Both the DA850 and DA830 have an I2C controller which has the
+> > +      * ICPFUNC et. al. registers
+> > +      */
+> > +     pdata->has_pfunc = 1;
+>
+> The I2C driver implements a default platform data
+> so it should actually be legal for a DA8x board to
+> pass NULL platform data. In that case this line
+> will crash. You should either check for pdata to
+> be NULL or just let each board choose whether it
+> needs recovery (I think the better option).
+>
 
-OK, we have a patch pending locally which populates all barriers with
-this logic, but based on my understanding of things, that didnt seem
-correct.  i guess i'm reading too much into the names ... i'd expect
-the opposite behavior where "rmb" is only for UP needs while "smp_rmb"
-is a rmb which additionally covers SMP.
--mike
+I actually had a problem with using NULL for pdata with davinci I2C
+and had submitted a patch here that sort of fell on the floor.  The
+problem was that the i2c_davinci_calc_clk_dividers is using
+platform_data without a check as described above.  So at the moment
+using NULL doesn't really work, best as I can tell...
+
+https://lkml.org/lkml/2010/9/4/119
+
+FWIW.
+
+-Mike
