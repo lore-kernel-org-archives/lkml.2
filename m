@@ -1,132 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab1DMR7y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 13:59:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8865 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755436Ab1DMR7x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 13:59:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=M5kxr34foP/O8K6rpuGu9rtesjg+izzN+DG1zrGRulTpBnjPI/Sy3B/+2hrWKwwXo+
-         9vshK1UQkZuvcLBjRQLA==
+	id S1756157Ab1DMSEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 14:04:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32416 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754959Ab1DMSEK (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 13 Apr 2011 14:04:10 -0400
+Date: Wed, 13 Apr 2011 14:03:48 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: hpa@zytor.com
+Cc: stefano.stabellini@eu.citrix.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, jeremy@goop.org, mingo@elte.hu,
+        yinghai@kernel.org
+Subject: Re: [PATCH 2/4] x86,xen: introduce
+ x86_init.mapping.pagetable_reserve
+Message-ID: <20110413180348.GB19390@dumpdata.com>
+References: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop>
+ <1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com>
+ <4DA48EA9.70109@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20110413103409.47638b72@endymion.delvare>
-References: <1302641290-30212-1-git-send-email-natg@google.com>
-	<1302641387-30264-1-git-send-email-natg@google.com>
-	<4DA547CD.60406@redhat.com>
-	<BANLkTikfuvvujTi6i2MUGOHgNLZCqcouJQ@mail.gmail.com>
-	<20110413103409.47638b72@endymion.delvare>
-Date: Wed, 13 Apr 2011 10:59:45 -0700
-Message-ID: <BANLkTimhUd9+QmLh-fSjwDO5c_vRH+kktA@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH v5 1/2] Use "request_muxed_region" in it87
- watchdog drivers
-From: Natarajan Gurumoorthy <natg@google.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        Mike Waychison <mikew@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA48EA9.70109@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DA5E587.0110:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John,
-      Unfortunately you are right. After grepping though drivers/hwmon
-and drivers/watchdog I realize the ugliness is fairly deep rooted. All
-of the following drivers need to be cleaned up as far as the
-"superio_enter" "superio_exit" operation is concerned if we want this
-stuff to be SMP clean and allow multiple drivers to coexist.
+On Tue, Apr 12, 2011 at 10:40:57AM -0700, Yinghai Lu wrote:
+> On 04/12/2011 04:19 AM, stefano.stabellini@eu.citrix.com wrote:
+> >From: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
+> >
+> >Introduce a new x86_init hook called pagetable_reserve that during the
+> >initial memory mapping is used to reserve a range of memory addresses for
+> >kernel pagetable usage.
+> >
+> >On native it just calls memblock_x86_reserve_range while on xen it also
+> >takes care of setting the spare memory previously allocated
+> >for kernel pagetable pages from RO to RW, so that it can be used for
+> >other purposes.
+> >
+> >Signed-off-by: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
+> >Cc: Yinghai Lu<yinghai@kernel.org>
+> >Cc: H. Peter Anvin<hpa@zytor.com>
+> >Cc: Ingo Molnar<mingo@elte.hu>
+> 
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-drivers/watchdog
-f71808e_wdt.c
-it8712f_wdt.c
-it87_wdt.c
-sch311x_wdt.c
-iTCO_vendor_support.c
-ibmasr.c
-w83697hf_wdt.c
-w83697ug_wdt.c:
+Peter,
 
+I stuck this and some of the other in this thread on 'stable/bug-fixes-rc3'
+(git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git). But before
+I send them to Linus to pull I need your OK? Would it be OK if I stuck
+your Ack on the patch?
 
-drivers/hwmon
-dme1737.c:1935:static inline void dme1737_sio_enter(int sio_cip)
-f71805f.c:100:superio_enter(int base)
-f71882fg.c:196:static inline int superio_enter(int base);
-it87.c:112:superio_enter(void)
-pc87360.c:1009:	/* No superio_enter */
-sch5627.c:118:static inline int superio_enter(int base)
-smsc47b397.c:75:static inline void superio_enter(void)
-smsc47m1.c:77:superio_enter(void)
-vt1211.c:223:static inline void superio_enter(int sio_cip)
-w83627ehf.c:135:superio_enter(int ioreg)
-w83627hf.c:134:superio_enter(struct w83627hf_sio_data *sio)
+Or you could take this patch (the one I stuck in my tree has the description
+a bit modified so I recommend that one).
 
-Have I missed any other drivers that also need to be cleaned. Even if
-I got my boss to sign up to clean this I can only test the it8712f
-drivers and thats it.
-
-Regards
-Nat
-
-On Wed, Apr 13, 2011 at 1:34 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> On Wed, 13 Apr 2011 01:05:33 -0700, Natarajan Gurumoorthy wrote:
->> Hans,
->>       Comments below
->>
->> On Tue, Apr 12, 2011 at 11:50 PM, Hans de Goede <hdegoede@redhat.com> wrote:
->> >
->> > You shouldn't (void) this, there is a reason you get a warning
->> > otherwise! request_muxed_region can still fail if some other driver
->> > has done a none muxed request_region on the same region, and in that
->> > case you should not continue with accessing the io-ports.
->> There are 3 it87 drivers and they all have to do the exact same
->> sequence to put the chip into a mode where they can modify its state.
->> The sequences involve non atomic sequences that write locations 0x2e
->> and 0x2f. When they are done they write a different sequence to these
->> 2 locations. The entry routine is superio_enter and exit is
->> superio_exit. All the it87 drivers reserve these 2 locations before
->> they start manipulating the chip. This macro will hold off requestors
->> if the resource is busy because one of the other drivers is
->> manipulating the chip. Once the  an it87 driver is done it calls
->> superio_exit which will release the reservation on those 2 locations
->> letting any other driver on the wait queue to now gain access two
->> locations.
->>
->> Please read code in kernel/resource.c function "__request_region".
->> "request_muxed_region" turns on IORESOURCE_MUXED bit and that means
->> that only  way an it87 driver will get back from a call to
->> "request_muxed_region" is when it gets hold of the region.
->>
->> The scenario you mention above can never happen.
->
-> Let me be straight clear, as apparently you have difficulties
-> understanding Hans's simple request:
->
-> You do not get to (void) the return of request_muxed_region(), period.
-> This is _not_ negotiable.
->
-> What other it87 drivers currently in the tree do or don't do is totally
-> irrelevant. There can be new it87 drivers added later, there can be
-> out-of-tree it87 drivers (including old copies of in-tree ones), and
-> there can be non-it87 drivers accessing the I/O ports (or at least
-> attempting to.) So the scenario mentioned by Hans can very well happen,
-> and you have to deal with it.
->
-> Thanks,
-> --
-> Jean Delvare
->
-
-
-
--- 
-Regards
-Nat Gurumoorthy AB6SJ
+Thanks,
+Konrad
