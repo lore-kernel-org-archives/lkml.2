@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab1DMIoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 04:44:37 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:56174 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757107Ab1DMIof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 04:44:35 -0400
-Date: Wed, 13 Apr 2011 10:44:02 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: linux-wireless@vger.kernel.org, openezx-devel@lists.openezx.org,
-        "John W . Linville" <linville@tuxdriver.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
-        Guiming Zhuo <gmzhuo@gmail.com>
-Subject: Re: [PATCH v2] rfkill: Regulator consumer driver for rfkill
-Message-Id: <20110413104402.d0115659.ospite@studenti.unina.it>
-In-Reply-To: <1302608642.3639.17.camel@jlt3.sipsolutions.net>
-References: <1302082178.3811.7.camel@jlt3.sipsolutions.net>
-	<1302260395-11872-1-git-send-email-ospite@studenti.unina.it>
-	<1302608488.3639.15.camel@jlt3.sipsolutions.net>
-	<1302608642.3639.17.camel@jlt3.sipsolutions.net>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-unknown-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__13_Apr_2011_10_44_02_+0200_3ahMGlXs2nCEJT5K"
+	id S1757835Ab1DMIpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 04:45:41 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40596 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757735Ab1DMIpj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 04:45:39 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.163.109]
+In-Reply-To: <4DA4A44D.5020208@linaro.org>
+References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org>
+ <201104121946.01618.arnd@arndb.de> <4DA4A44D.5020208@linaro.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 13 Apr 2011 11:45:19 +0300
+Message-ID: <BANLkTi=UnOdSskB5_+2bNH9B6MT=LDEOEQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality V2
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lee.jones@linaro.org,
+        patches@linaro.org, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Apr_2011_10_44_02_+0200_3ahMGlXs2nCEJT5K
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 12, 2011 at 10:13 PM, Mathieu Poirier
+<mathieu.poirier@linaro.org> wrote:
+>>> +struct u8500_hsem {
+>>> +       struct hwspinlock lock;
+>>> +       void __iomem *addr;
+>>> +};
+>>
+>> It seems inconsistent to name it sem instead of spinlock.
+>>
+> This is a good point and I've been going back and forth on that one.  TI's
+> implementation is based on 'spinlock' but in this case there is not a single
+> mention of a 'spinlock' in the CPU's reference manual, leaving potential
+> users to wonder if spinlock == hsem.
 
-On Tue, 12 Apr 2011 13:44:02 +0200
-Johannes Berg <johannes@sipsolutions.net> wrote:
+I figured out this was your line of thought.
 
-> On Tue, 2011-04-12 at 13:41 +0200, Johannes Berg wrote:
->=20
-> > > + * static struct regulator_consumer_supply pcap_regulator_V6_consume=
-rs [] =3D {
-> > > + * 	{ .dev_name =3D "rfkill-regulator.0", supply =3D "vrfkill" },
-> > > + * };
-> >=20
-> > It's a comment, but it should be .supply =3D (missing the .)
-> >
+Looking forward, though, we have some design decisions to do which are
+related to this spinlock vs. semaphore issue - it's much more than
+just names.
 
-well spotted, I'll fix this.
+While the OMAP hardware currently has only these hwspinlocks modules,
+which require the host to spin until they become free, we now have two
+other systems (the u8500 and TI's C6474) which also support additional
+semaphore-like functionality of queuing, owner semantics and interrupt
+notification (so the host wouldn't have to spin, and the lock can be
+used for a wider range of non-atomic use cases).
 
-> > > +	if (pdata->name =3D=3D NULL || pdata->type =3D=3D 0) {
-> > > +		dev_err(&pdev->dev, "invalid name or type in platform data\n");
-> > > +		return -EINVAL;
-> > > +	}
-> > > +
-> > > +	vcc =3D regulator_get_exclusive(&pdev->dev, "vrfkill");
-> >=20
-> > Wasn't that supposed to use pdata->supply? Actually, there's no member
-> > "supply" in the struct?
->=20
-> Oh wait, I think I just misunderstood how this works. But if the name is
-> "vrfkill" how does that really work with multiple instances?
->
+Sadly, the specs of the u8500 are closed, which makes it somewhat hard
+to start any reasonable design discussions.
 
-That's how the regulator framework works, I know Mark already replied to
-you but I try to elaborate more for the records and to organize my=20
-thoughts about that:
-
- - In the consumers for the regulator we choose the virtual supply,
-   "vrfkill" in this case, and which driver is going to use it.
-
- - Wrt. to multiple instances, they are distinguished using device ids.
-
-   When we set consumers for a physical regulator we can tell: device
-   "rfkill-regulator.1" will call this regulator "vrfkill" and we
-   declare the relative rfkill-regulator platform device with .id=3D1,
-   this way the regulator framework knows what physical regulator to
-   return when asked for vrfkill _from_ a rfkill-regulator platform
-   device instance with .id=3D=3D1
-
-I hope I am not introducing any inaccuracies :)
-
-A v3 of the patch is on its way.
-
-Thanks,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Wed__13_Apr_2011_10_44_02_+0200_3ahMGlXs2nCEJT5K
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk2lYlIACgkQ5xr2akVTsAEHgwCeLoQn+4pdfzjNybhGqkO/UQsZ
-2roAn30ToYZp7oaoPNBIotE9FXiybPpv
-=AUSS
------END PGP SIGNATURE-----
-
---Signature=_Wed__13_Apr_2011_10_44_02_+0200_3ahMGlXs2nCEJT5K--
+Btw, last I heard, mainline c6x support is coming. but it's not there yet.
