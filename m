@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1DMNRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 09:17:19 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:14174 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab1DMNRS convert rfc822-to-8bit (ORCPT
+	id S1753973Ab1DMNRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 09:17:23 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45649 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab1DMNRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 09:17:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=XiugyLLbXbS4aTt5mPQ6TX0Ge/AU3BffWe/Y34E7MxJ/oxKxpJq8HLg6ElA8RRZxGW
-         zyk0WVrPVg/M08tunOqQ==
+	Wed, 13 Apr 2011 09:17:21 -0400
+Date: Wed, 13 Apr 2011 14:17:14 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@linux.jf.intel.com>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] gma500: backlight warning
+Message-ID: <20110413131714.GA17918@srcf.ucam.org>
+References: <20110413093519.28527.36552.stgit@localhost.localdomain>
+ <20110413093555.28527.30662.stgit@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <1302664313.7407.29.camel@marge.simson.net>
-References: <1302170153.12304.31.camel@marge.simson.net> <4DA50430.8020701@cn.fujitsu.com>
- <1302664313.7407.29.camel@marge.simson.net>
-From: Paul Menage <menage@google.com>
-Date: Wed, 13 Apr 2011 15:16:55 +0200
-Message-ID: <BANLkTikqvP90Etu=L24DPWbckrawM-6n=Q@mail.gmail.com>
-Subject: Re: query: [PATCH 2/2] cgroup: Remove call to synchronize_rcu in cgroup_attach_task
-To: Mike Galbraith <efault@gmx.de>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@android.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110413093555.28527.30662.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 5:11 AM, Mike Galbraith <efault@gmx.de> wrote:
-> If the user _does_ that rmdir(), it's more or less back to square one.
-> RCU grace periods should not impact userland, but if you try to do
-> create/attach/detach/destroy, you run into the same bottleneck, as does
-> any asynchronous GC, though that's not such a poke in the eye.  I tried
-> a straight forward move to schedule_work(), and it seems to work just
-> fine.  rmdir() no longer takes ~30ms on my box, but closer to 20us.
+On Wed, Apr 13, 2011 at 10:36:19AM +0100, Alan Cox wrote:
+>  	props.max_brightness = 100;
+> +	props.type = BACKLIGHT_PLATFORM;
 
-> +       /*
-> +        * Release the subsystem state objects.
-> +        */
-> +       for_each_subsys(cgrp->root, ss)
-> +               ss->destroy(ss, cgrp);
-> +
-> +       cgrp->root->number_of_cgroups--;
-> +       mutex_unlock(&cgroup_mutex);
-> +
-> +       /*
-> +        * Drop the active superblock reference that we took when we
-> +        * created the cgroup
-> +        */
-> +       deactivate_super(cgrp->root->sb);
-> +
-> +       /*
-> +        * if we're getting rid of the cgroup, refcount should ensure
-> +        * that there are no pidlists left.
-> +        */
-> +       BUG_ON(!list_empty(&cgrp->pidlists));
-> +
-> +       kfree(cgrp);
+No, this should be BACKLIGHT_RAW - it's hitting the control registers 
+directly rather than going via a platform interface.
 
-We might want to punt this through RCU again, in case the subsystem
-destroy() callbacks left anything around that was previously depending
-on the RCU barrier.
-
-Also, I'd be concerned that subsystems might get confused by the fact
-that a new group called 'foo' could be created before the old 'foo'
-has been cleaned up? (And do any subsystems rely on being able to
-access the cgroup dentry up until the point when destroy() is called?
-
-Paul
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
