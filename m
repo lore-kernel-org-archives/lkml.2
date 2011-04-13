@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab1DMWBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 18:01:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50719 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab1DMWBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 18:01:37 -0400
-Message-ID: <4DA61D26.8050500@zytor.com>
-Date: Wed, 13 Apr 2011 15:01:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S933273Ab1DMWBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 18:01:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46661 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab1DMWBj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 18:01:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JsPxqH2Aj3aR0eyXN8N/U2jIwISkW72z7Z4cynNeIBgqRSQtTVChjMInV8qhmKT/Vf
+         hbYuRJtX8EBcDxN0ocZIpMmWigoYKWhRmkwrWG7Ex94wbq1Y31VCO5/QAHZhyclPZSou
+         17988uNQRZP3MOR3siUpjh/9WAisOKWRe9Zl4=
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <20110413215025.GA18463@8bytes.org>
-In-Reply-To: <20110413215025.GA18463@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110413131054.8771d855.rdunlap@xenotime.net>
+References: <BANLkTikAqz5xBRfpxBuwxVujE--Qam2FsQ@mail.gmail.com>
+	<20110413131054.8771d855.rdunlap@xenotime.net>
+Date: Wed, 13 Apr 2011 17:01:38 -0500
+Message-ID: <BANLkTi=KvxPNuvZnL90SAmkQna=ARE6xyQ@mail.gmail.com>
+Subject: Re: Disable PCI while CONFIG_PCI=y
+From: Xianghua Xiao <xiaoxianghua@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2011 02:50 PM, Joerg Roedel wrote:
-> On Wed, Apr 13, 2011 at 01:48:48PM -0700, Yinghai Lu wrote:
->> -	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
->> +	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<21);
-> 
-> Btw, while looking at this code I wondered why the 512M goal is enforced
-> by the alignment. Start could be set to 512M instead and the alignment
-> can be aper_size as it should. Any reason for such a big alignment?
-> 
-> 	Joerg
-> 
-> P.S.: The box is still in the office, I will try this debug-patch
->       tomorrow.
+Yes I read that but my ARCH is arm.
 
-The only reason that I can think of is that the aperture itself can be
-huge, and perhaps 512 MiB is the biggest such known.  512ULL<<21 is of
-course a particularly moronic way to write 1 GiB, but it was a debug patch.
+Thanks,
 
-The value 512 MiB apparently comes from
-7677b2ef6c0c4fddc84f6473f3863f40eb71821b, which is apparently totally ad
-hoc; effectively it tries to prevent a collision with kexec by
-hardcoding the kdump allocation as it sat at that point in time in the
-GART assignment rules.
-
-Yeah.  Brilliant.
-
-	-hpa
-
+On Wed, Apr 13, 2011 at 3:10 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Wed, 13 Apr 2011 15:05:59 -0500 Xianghua Xiao wrote:
+>
+>> Is it possible to do something like 'pci=off' to have the same effect
+>> as turning of CONFIG_PCI during menuconfig?
+>> I want to build one image for both PCIE RC and PCIE EP(endpoint), for
+>> EP I do not need PCI to be enabled at all.
+>>
+>> looking at drivers/pci/pci.c I don't see such option exists, am I
+>> missing something?
+>
+> Hm. Documentation/kernel-parameters.txt says:
+>
+>
+>        pci=option[,option...]  [PCI] various PCI subsystem options:
+>                earlydump       [X86] dump PCI config space before the kernel
+>                                changes anything
+>                off             [X86] don't probe for the PCI bus
+>
+> What $ARCH are you using?
+>
+> See arch/x86/pci/common.c::pcibios_setup() for code that handles
+>        pci=off
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
