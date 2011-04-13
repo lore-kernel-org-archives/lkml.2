@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab1DMRck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 13:32:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46745 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750748Ab1DMRcj (ORCPT
+	id S1751783Ab1DMRdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 13:33:09 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45866
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751096Ab1DMRdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 13:32:39 -0400
-Date: Wed, 13 Apr 2011 10:32:49 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] ASoC: Call snd_soc_new_widgets() after registering
- cards DAPM widgets
-Message-ID: <20110413173249.GC18008@opensource.wolfsonmicro.com>
-References: <1302629465-21315-1-git-send-email-lars@metafoo.de>
- <1302629465-21315-2-git-send-email-lars@metafoo.de>
- <20110413003847.GC24267@opensource.wolfsonmicro.com>
- <4DA597E3.807@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA597E3.807@metafoo.de>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Apr 2011 13:33:08 -0400
+Date: Wed, 13 Apr 2011 10:32:33 -0700 (PDT)
+Message-Id: <20110413.103233.193707113.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v2.6.39-rc3
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.00.1104131835280.32045@ayla.of.borg>
+References: <alpine.DEB.2.00.1104131835280.32045@ayla.of.borg>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 02:32:35PM +0200, Lars-Peter Clausen wrote:
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Wed, 13 Apr 2011 18:35:45 +0200 (CEST)
 
-> But snd_soc_dapm_new_widgets also calls dapm_power_widgets which operates on
-> the passed dapm_context, will it be without any effect on the DAPM context,
-> when it is called on a newly allocated context?
+> 47 regressions:
+>   + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/ethtool.h: error: expected specifier-qualifier-list before '__u32': 104, 90, 21, 282, 389, 460, 521, 444, 96, 297, 82, 57, 291, 258, 231, 482, 209, 510, 265, 113 => 104, 538, 90, 21, 523, 552, 266, 445, 292, 96, 82, 512, 563, 57, 259, 283, 298, 484, 390, 231, 209, 462, 574, 113
 
-Yup.
+I do allmodconfig builds on sparc64 systems every single day using
+various versions of gcc-4.4, gcc-4.5, and gcc-4.6
 
-> Otherwise I would say call snd_soc_dapm_new_widgets once for the cards
-> dapm_context and snd_soc_dapm_sync for each codec context.
+And I never ever see this build error.  Never.
 
-There's no point in repeatedly syncing - it may cause audible issues if
-we power things off due to incomplete information.  If the sync isn't
-propagating over the entire system we should fix that.
+If you're using a cross build environment, maybe something isn't quite
+right with that?
