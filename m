@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab1DMQTn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:19:43 -0400
-Received: from kroah.org ([198.145.64.141]:52948 "EHLO coco.kroah.org"
+	id S933149Ab1DMQTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:19:41 -0400
+Received: from kroah.org ([198.145.64.141]:52962 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932918Ab1DMQNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:19 -0400
+	id S932922Ab1DMQNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:21 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:47 2011
-Message-Id: <20110413161047.571107899@clark.kroah.org>
+Message-Id: <20110413161047.760546929@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:11 -0700
+Date: Wed, 13 Apr 2011 09:10:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>, Phil Blundell <philb@gnu.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [48/71] econet: 4 byte infoleak to the network
+        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [50/71] sound/oss: remove offset from load_patch callbacks
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +25,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 67c5c6cb8129c595f21e88254a3fc6b3b841ae8e upstream.
+commit b769f49463711205d57286e64cf535ed4daf59e9 upstream.
 
-struct aunhdr has 4 padding bytes between 'pad' and 'handle' fields on
-x86_64.  These bytes are not initialized in the variable 'ah' before
-sending 'ah' to the network.  This leads to 4 bytes kernel stack
-infoleak.
+Was: [PATCH] sound/oss/midi_synth: prevent underflow, use of
+uninitialized value, and signedness issue
 
-This bug was introduced before the git epoch.
+The offset passed to midi_synth_load_patch() can be essentially
+arbitrary.  If it's greater than the header length, this will result in
+a copy_from_user(dst, src, negative_val).  While this will just return
+-EFAULT on x86, on other architectures this may cause memory corruption.
+Additionally, the length field of the sysex_info structure may not be
+initialized prior to its use.  Finally, a signed comparison may result
+in an unintentionally large loop.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Phil Blundell <philb@gnu.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+On suggestion by Takashi Iwai, version two removes the offset argument
+from the load_patch callbacks entirely, which also resolves similar
+issues in opl3.  Compile tested only.
+
+v3 adjusts comments and hopefully gets copy offsets right.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/econet/af_econet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/oss/dev_table.h  |    2 +-
+ sound/oss/midi_synth.c |   30 +++++++++++++-----------------
+ sound/oss/midi_synth.h |    2 +-
+ sound/oss/opl3.c       |    8 ++------
+ sound/oss/sequencer.c  |    2 +-
+ 5 files changed, 18 insertions(+), 26 deletions(-)
 
---- a/net/econet/af_econet.c
-+++ b/net/econet/af_econet.c
-@@ -434,10 +434,10 @@ static int econet_sendmsg(struct kiocb *
- 		udpdest.sin_addr.s_addr = htonl(network | addr.station);
+--- a/sound/oss/dev_table.h
++++ b/sound/oss/dev_table.h
+@@ -271,7 +271,7 @@ struct synth_operations
+ 	void (*reset) (int dev);
+ 	void (*hw_control) (int dev, unsigned char *event);
+ 	int (*load_patch) (int dev, int format, const char __user *addr,
+-	     int offs, int count, int pmgr_flag);
++	     int count, int pmgr_flag);
+ 	void (*aftertouch) (int dev, int voice, int pressure);
+ 	void (*controller) (int dev, int voice, int ctrl_num, int value);
+ 	void (*panning) (int dev, int voice, int value);
+--- a/sound/oss/midi_synth.c
++++ b/sound/oss/midi_synth.c
+@@ -476,7 +476,7 @@ EXPORT_SYMBOL(midi_synth_hw_control);
+ 
+ int
+ midi_synth_load_patch(int dev, int format, const char __user *addr,
+-		      int offs, int count, int pmgr_flag)
++		      int count, int pmgr_flag)
+ {
+ 	int             orig_dev = synth_devs[dev]->midi_dev;
+ 
+@@ -491,33 +491,29 @@ midi_synth_load_patch(int dev, int forma
+ 	if (!prefix_cmd(orig_dev, 0xf0))
+ 		return 0;
+ 
++	/* Invalid patch format */
+ 	if (format != SYSEX_PATCH)
+-	{
+-/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
+ 		  return -EINVAL;
+-	}
++
++	/* Patch header too short */
+ 	if (count < hdr_size)
+-	{
+-/*		printk("MIDI Error: Patch header too short\n");*/
+ 		return -EINVAL;
+-	}
++
+ 	count -= hdr_size;
+ 
+ 	/*
+-	 * Copy the header from user space but ignore the first bytes which have
+-	 * been transferred already.
++	 * Copy the header from user space
+ 	 */
+ 
+-	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
++	if (copy_from_user(&sysex, addr, hdr_size))
+ 		return -EFAULT;
+- 
+- 	if (count < sysex.len)
+-	{
+-/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
++
++	/* Sysex record too short */
++	if ((unsigned)count < (unsigned)sysex.len)
+ 		sysex.len = count;
+-	}
+-  	left = sysex.len;
+-  	src_offs = 0;
++
++	left = sysex.len;
++	src_offs = 0;
+ 
+ 	for (i = 0; i < left && !signal_pending(current); i++)
+ 	{
+--- a/sound/oss/midi_synth.h
++++ b/sound/oss/midi_synth.h
+@@ -8,7 +8,7 @@ int midi_synth_open (int dev, int mode);
+ void midi_synth_close (int dev);
+ void midi_synth_hw_control (int dev, unsigned char *event);
+ int midi_synth_load_patch (int dev, int format, const char __user * addr,
+-		 int offs, int count, int pmgr_flag);
++		 int count, int pmgr_flag);
+ void midi_synth_panning (int dev, int channel, int pressure);
+ void midi_synth_aftertouch (int dev, int channel, int pressure);
+ void midi_synth_controller (int dev, int channel, int ctrl_num, int value);
+--- a/sound/oss/opl3.c
++++ b/sound/oss/opl3.c
+@@ -819,7 +819,7 @@ static void opl3_hw_control(int dev, uns
+ }
+ 
+ static int opl3_load_patch(int dev, int format, const char __user *addr,
+-		int offs, int count, int pmgr_flag)
++		int count, int pmgr_flag)
+ {
+ 	struct sbi_instrument ins;
+ 
+@@ -829,11 +829,7 @@ static int opl3_load_patch(int dev, int
+ 		return -EINVAL;
  	}
  
-+	memset(&ah, 0, sizeof(ah));
- 	ah.port = port;
- 	ah.cb = cb & 0x7f;
- 	ah.code = 2;		/* magic */
--	ah.pad = 0;
+-	/*
+-	 * What the fuck is going on here?  We leave junk in the beginning
+-	 * of ins and then check the field pretty close to that beginning?
+-	 */
+-	if(copy_from_user(&((char *) &ins)[offs], addr + offs, sizeof(ins) - offs))
++	if (copy_from_user(&ins, addr, sizeof(ins)))
+ 		return -EFAULT;
  
- 	/* tack our header on the front of the iovec */
- 	size = sizeof(struct aunhdr);
+ 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
+--- a/sound/oss/sequencer.c
++++ b/sound/oss/sequencer.c
+@@ -241,7 +241,7 @@ int sequencer_write(int dev, struct file
+ 				return -ENXIO;
+ 
+ 			fmt = (*(short *) &event_rec[0]) & 0xffff;
+-			err = synth_devs[dev]->load_patch(dev, fmt, buf, p + 4, c, 0);
++			err = synth_devs[dev]->load_patch(dev, fmt, buf + p, c, 0);
+ 			if (err < 0)
+ 				return err;
+ 
 
 
