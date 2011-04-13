@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1DMCWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 22:22:05 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43765 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab1DMCWD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 22:22:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 3/3] procfs: convert vm_flags to unsigned long long
-Cc: kosaki.motohiro@jp.fujitsu.com, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>
-In-Reply-To: <20110413112002.41E8.A69D9226@jp.fujitsu.com>
-References: <20110413084047.41DD.A69D9226@jp.fujitsu.com> <20110413112002.41E8.A69D9226@jp.fujitsu.com>
-Message-Id: <20110413112120.41F0.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Wed, 13 Apr 2011 11:21:58 +0900 (JST)
+	id S1754025Ab1DMCYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 22:24:08 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36228 "HELO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751882Ab1DMCYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 22:24:07 -0400
+Date: Tue, 12 Apr 2011 21:24:03 -0500
+From: Russ Anderson <rja@sgi.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, Prarit Bhargava <prarit@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>, rja@americas.sgi.com
+Subject: Re: [PATCH]: mce: don't print "human readable" message for corrected errors
+Message-ID: <20110413022402.GA31652@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20110412174405.26867.65604.sendpatchset@prarit.bos.redhat.com> <20110412185842.GB9891@liondog.tnic> <987664A83D2D224EAE907B061CE93D5301A9629BD5@orsmsx505.amr.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301A9629BD5@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From d8bbb29c55e449a8f7e87e2b6ef529b1162aeba0 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Wed, 13 Apr 2011 09:39:13 +0900
-Subject: [PATCH 3/3] procfs: convert vm_flags to unsigned long long
+On Tue, Apr 12, 2011 at 01:02:21PM -0700, Luck, Tony wrote:
+> > Why not? This way you turn reporting of _ALL_ correctable MCEs
+> > completely off and some users would actually like to run them through
+> > mcelog on Intel.
+> 
+> pr_emerg() is rather overkill for a corrected error - on large systems
+> corrected errors are going to be a routine occurrence (my personal estimation
+> is "one soft error per gigabyte per month" ... which is pretty much the
+> same as "one per terabyte per hour" for the people with the really cool
+> toys.
 
-int is crazy mistake. ;-)
+Good point.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- fs/proc/task_mmu.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+> We are also setting TAINT_MACHINE_CHECK for corrected errors - perhaps
+> this made sense when systems were small and machine checks were rare and
+> scary.  But I think we need to start working with the reality that
+> corrected errors are normal events.
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 8caf687..51b9d98 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -211,7 +211,7 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct file *file = vma->vm_file;
--	int flags = vma->vm_flags;
-+	unsigned long long vm_flags = vma->vm_flags;
- 	unsigned long ino = 0;
- 	unsigned long long pgoff = 0;
- 	unsigned long start;
-@@ -234,10 +234,10 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
- 			start,
- 			vma->vm_end,
--			flags & VM_READ ? 'r' : '-',
--			flags & VM_WRITE ? 'w' : '-',
--			flags & VM_EXEC ? 'x' : '-',
--			flags & VM_MAYSHARE ? 's' : 'p',
-+			vm_flags & VM_READ ? 'r' : '-',
-+			vm_flags & VM_WRITE ? 'w' : '-',
-+			vm_flags & VM_EXEC ? 'x' : '-',
-+			vm_flags & VM_MAYSHARE ? 's' : 'p',
- 			pgoff,
- 			MAJOR(dev), MINOR(dev), ino, &len);
- 
+I agree.  Corrected errors - by definition - have hardware corrected data.
+There is no corruption so there is no reason for kernel taint.  It would
+be like setting taint when one hard drive of a RAID file system goes bad.
+
+It's worth noting that linux does not set taint when it recovers from 
+_uncorrected_ memory errors on IA64 (by killing the application
+that consumed the bad data and discarding the bad page).  Modern hardware
+has enough error detection/correction code to avoid undetected data 
+corruption from memory errors.
+
+
 -- 
-1.7.3.1
-
-
-
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
