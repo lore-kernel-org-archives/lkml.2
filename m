@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab1DMRyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 13:54:44 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34018 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab1DMRyn (ORCPT
+	id S1755563Ab1DMRzW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 13:55:22 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42973
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753177Ab1DMRzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 13:54:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=UFCQm4DfczBE0trXRKCgShZ9NFcLBCTr2erzU4e8UdF/m39961lS+vQAftxb6Lq2j2
-         VXyt9ecfwRbz86sj5e66GVr6UIY/CuVaGWgMP9z/+bgRgSxUxnJyQqvPiqlVpe3A/xvu
-         oI3EVpVukGLweDtvzr9OWtXzrTyVCGaBsb2Bs=
-Message-ID: <4DA5E20E.4070904@gmail.com>
-Date: Wed, 13 Apr 2011 19:49:02 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Secure file deletion option question
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Wed, 13 Apr 2011 13:55:21 -0400
+Date: Wed, 13 Apr 2011 10:54:46 -0700 (PDT)
+Message-Id: <20110413.105446.183041592.davem@davemloft.net>
+To: venki@google.com
+Cc: kaber@trash.net, zbr@ioremap.net, linux-kernel@vger.kernel.org
+Subject: Re: System crash, bisect points to "connector: convert to
+ synchronous netlink message processing"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <BANLkTin5kWej_pThqBvL7dypVB_JGYU7=A@mail.gmail.com>
+References: <BANLkTin5kWej_pThqBvL7dypVB_JGYU7=A@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Venkatesh Pallipadi <venki@google.com>
+Date: Wed, 13 Apr 2011 10:25:39 -0700
 
-I don't see any fs implements that feature. The flag FS_SECRM_FL seems 
-never used with the exception of some define in some fs. Is there a 
-motivation for this? It seems a good option to me.
+> I started seeing crashes with linus git recently. The failure
+> signature is something like:
 
-Marco
+There is a fix in net-2.6 for this already:
+
+--------------------
+commit 0e08785845093ef4ed220463a739bc8d0db95de7
+Author: Patrick McHardy <kaber@trash.net>
+Date:   Tue Apr 12 05:39:51 2011 +0000
+
+    connector: fix skb double free in cn_rx_skb()
+    
+    When a skb is delivered to a registered callback, cn_call_callback()
+    incorrectly returns -ENODEV after freeing the skb, causing cn_rx_skb()
+    to free the skb a second time.
+    
+    Reported-by: Eric B Munson <emunson@mgebm.net>
+    Signed-off-by: Patrick McHardy <kaber@trash.net>
+    Tested-by: Eric B Munson <emunson@mgebm.net>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/drivers/connector/connector.c b/drivers/connector/connector.c
+index d770058..219d88a 100644
+--- a/drivers/connector/connector.c
++++ b/drivers/connector/connector.c
+@@ -142,6 +142,7 @@ static int cn_call_callback(struct sk_buff *skb)
+ 		cbq->callback(msg, nsp);
+ 		kfree_skb(skb);
+ 		cn_queue_release_callback(cbq);
++		err = 0;
+ 	}
+ 
+ 	return err;
