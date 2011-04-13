@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab1DMQEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:04:43 -0400
-Received: from kroah.org ([198.145.64.141]:54402 "EHLO coco.kroah.org"
+	id S1758071Ab1DMPze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:55:34 -0400
+Received: from kroah.org ([198.145.64.141]:54369 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758098Ab1DMPzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:36 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:47 2011
-Message-Id: <20110413155147.036721737@clark.kroah.org>
+	id S1757920Ab1DMPzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:33 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:46 2011
+Message-Id: <20110413155146.598604960@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:51:02 -0700
+Date: Wed, 13 Apr 2011 08:50:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marc-Antoine Perennou <Marc-Antoine@Perennou.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: [38/74] Bluetooth: add support for Apple MacBook Pro 8,2
+        "John W. Linville" <linville@tuxdriver.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [34/74] b43: allocate receive buffers big enough for max frame len + offset
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+From: John W. Linville <linville@tuxdriver.com>
 
-commit 63a8588debd4dc72becb9e27add9343c76301c7d upstream.
+commit c85ce65ecac078ab1a1835c87c4a6319cf74660a upstream.
 
-Just adding the vendor details makes it work fine.
+Otherwise, skb_put inside of dma_rx can fail...
 
-Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+	https://bugzilla.kernel.org/show_bug.cgi?id=32042
+
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/b43/dma.c |    2 +-
+ drivers/net/wireless/b43/dma.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -62,6 +62,9 @@ static struct usb_device_id btusb_table[
- 	/* Apple iMac11,1 */
- 	{ USB_DEVICE(0x05ac, 0x8215) },
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1521,7 +1521,7 @@ static void dma_rx(struct b43_dmaring *r
+ 		dmaaddr = meta->dmaaddr;
+ 		goto drop_recycle_buffer;
+ 	}
+-	if (unlikely(len > ring->rx_buffersize)) {
++	if (unlikely(len + ring->frameoffset > ring->rx_buffersize)) {
+ 		/* The data did not fit into one descriptor buffer
+ 		 * and is split over multiple buffers.
+ 		 * This should never happen, as we try to allocate buffers
+--- a/drivers/net/wireless/b43/dma.h
++++ b/drivers/net/wireless/b43/dma.h
+@@ -163,7 +163,7 @@ struct b43_dmadesc_generic {
+ /* DMA engine tuning knobs */
+ #define B43_TXRING_SLOTS		256
+ #define B43_RXRING_SLOTS		64
+-#define B43_DMA0_RX_BUFFERSIZE		IEEE80211_MAX_FRAME_LEN
++#define B43_DMA0_RX_BUFFERSIZE		(B43_DMA0_RX_FRAMEOFFSET + IEEE80211_MAX_FRAME_LEN)
  
-+	/* Apple MacBookPro8,2 */
-+	{ USB_DEVICE(0x05ac, 0x821a) },
-+
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
  
+ struct sk_buff;
 
 
