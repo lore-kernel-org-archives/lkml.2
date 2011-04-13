@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab1DMVWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:22:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932156Ab1DMVWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:22:19 -0400
-Date: Wed, 13 Apr 2011 17:22:08 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Shaun Ruffell <sruffell@digium.com>, maciej.rutecki@gmail.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
- proper MSR register to catch" and NMIs
-Message-ID: <20110413212208.GJ16939@redhat.com>
-References: <20110406223036.GA15721@digium.com>
- <201104132133.51958.maciej.rutecki@gmail.com>
- <4DA6011F.7070405@openvz.org>
- <20110413203501.GA10744@digium.com>
- <4DA60B03.30603@openvz.org>
+	id S932841Ab1DMVZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:25:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56933 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094Ab1DMVZN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 17:25:13 -0400
+Message-ID: <4DA6145D.9070703@kernel.org>
+Date: Wed, 13 Apr 2011 14:23:41 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA60B03.30603@openvz.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
+In-Reply-To: <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020201.4DA6149E.00E4,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 12:43:47AM +0400, Cyrill Gorcunov wrote:
-> On 04/14/2011 12:35 AM, Shaun Ruffell wrote:
-> ...
-> > 
-> > I had the first version of the patch running the test builds all night without
-> > any NMIs. I installed this one and ran it through the case where I would
-> > reliably get early NMIs and it still no NMIs.
-> > 
-> > So for v2:
-> > Tested-by: Shaun Ruffell <sruffell@digium.com>
-> > 
-> > Thanks!
+On 04/13/2011 01:54 PM, Linus Torvalds wrote:
+> On Wed, Apr 13, 2011 at 1:48 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>> can you try following change ? it will push gart to 0x80000000
+>>
+>> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+>> index 86d1ad4..3b6a9d5 100644
+>> --- a/arch/x86/kernel/aperture_64.c
+>> +++ b/arch/x86/kernel/aperture_64.c
+>> @@ -83,7 +83,7 @@ static u32 __init allocate_aperture(void)
+>>         * so don't use 512M below as gart iommu, leave the space for kernel
+>>         * code for safe
+>>         */
+>> -       addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
+>> +       addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<21);
 > 
-> Thanks a huge Shaun. The thing is (if only I don't miss something) at moment there is
-> no much difference in which patch to pick up. But as only kgdb dives in or any other
-> subsystem (which say would use same manner of nmi delivery) we might be unmasking
-> lvt entry even if nothing were handled at all, so I bias to a second version.
+> What are all the magic numbers, and why would 0x80000000 be special?
 
-I agree with the second version.  Initially I wanted to enable it in the
-case of the !handled path.  But your reasoning makes sense to me, don't
-enable it in the !handled case because you might accidentally do something
-bad.
+that is the old value when kernel was doing bottom-up bootmem allocation.
 
-Cheers,
-Don
+> 
+> Why don't we write code that just works?
+> 
+> Or absent a "just works" set of patches, why don't we revert to code
+> that has years of testing?
+> 
+> This kind of "I broke things, so now I will jiggle things randomly
+> until they unbreak" is not acceptable.
+> 
+> Either explain why that fixes a real BUG (and why the magic constants
+> need to be what they are), or just revert the patch that caused the
+> problem, and go back to the allocation patters that have years of
+> experience.
+> 
+> Guys, we've had this discussion before, in PCI allocation. We don't do
+> this. We tried switching the PCI region allocations to top-down, and
+> IT WAS A FAILURE. We reverted it to what we had years of testing with.
+> 
+> Don't just make random changes. There really are only two acceptable
+> models of development: "think and analyze" or "years and years of
+> testing on thousands of machines". Those two really do work.
+
+We did do the analyzing, and only difference seems to be:
+good one is using 0x80000000
+and bad one is using 0xa0000000.
+
+We try to figure out if it needs low address and it happen to work 
+because kernel was doing bottom up allocation.
+
+Thanks
+
+Yinghai
