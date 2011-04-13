@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134Ab1DMVrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:47:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45540 "EHLO mx2.suse.de"
+	id S933173Ab1DMVu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:50:28 -0400
+Received: from 8bytes.org ([88.198.83.132]:60469 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932094Ab1DMVry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:47:54 -0400
-Date: Wed, 13 Apr 2011 23:47:51 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/4] writeback: add bdi_dirty_limit() kernel-doc
-Message-ID: <20110413214751.GC4648@quack.suse.cz>
-References: <20110413085937.981293444@intel.com>
- <20110413090415.389888354@intel.com>
+	id S933068Ab1DMVu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 17:50:27 -0400
+Date: Wed, 13 Apr 2011 23:50:25 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Alex Deucher <alexdeucher@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+Message-ID: <20110413215025.GA18463@8bytes.org>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110413090415.389888354@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DA60C30.4060606@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-04-11 16:59:38, Wu Fengguang wrote:
-> Clarify the bdi_dirty_limit() comment.
-> 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-  Looks fine.
+On Wed, Apr 13, 2011 at 01:48:48PM -0700, Yinghai Lu wrote:
+> -	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
+> +	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<21);
 
-  Acked-by: Jan Kara <jack@suse.cz>
+Btw, while looking at this code I wondered why the 512M goal is enforced
+by the alignment. Start could be set to 512M instead and the alignment
+can be aper_size as it should. Any reason for such a big alignment?
 
-							Honza
-> ---
->  mm/page-writeback.c |   11 +++++++++--
->  1 file changed, 9 insertions(+), 2 deletions(-)
-> 
-> --- linux-next.orig/mm/page-writeback.c	2011-03-03 14:38:12.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2011-03-03 14:40:52.000000000 +0800
-> @@ -437,10 +437,17 @@ void global_dirty_limits(unsigned long *
->  	*pdirty = dirty;
->  }
->  
-> -/*
-> +/**
->   * bdi_dirty_limit - @bdi's share of dirty throttling threshold
-> + * @bdi: the backing_dev_info to query
-> + * @dirty: global dirty limit in pages
-> + *
-> + * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
-> + * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
-> + * And the "limit" in the name is not seriously taken as hard limit in
-> + * balance_dirty_pages().
->   *
-> - * Allocate high/low dirty limits to fast/slow devices, in order to prevent
-> + * It allocates high/low dirty limits to fast/slow devices, in order to prevent
->   * - starving fast devices
->   * - piling up dirty pages (that will take long time to sync) on slow devices
->   *
-> 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	Joerg
+
+P.S.: The box is still in the office, I will try this debug-patch
+      tomorrow.
+
