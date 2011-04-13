@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1DMJ53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 05:57:29 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48626 "EHLO
+	id S1756354Ab1DMJ55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 05:57:57 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48632 "EHLO
 	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754878Ab1DMJ51 (ORCPT
+	with ESMTP id S1751964Ab1DMJ54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 05:57:27 -0400
+	Wed, 13 Apr 2011 05:57:56 -0400
 From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH 2/5] gma500: prepare to do some actual memory management
+Subject: [PATCH 3/5] gma500: backlight warning
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Wed, 13 Apr 2011 10:35:50 +0100
-Message-ID: <20110413093546.28527.84724.stgit@localhost.localdomain>
+Date: Wed, 13 Apr 2011 10:36:19 +0100
+Message-ID: <20110413093555.28527.30662.stgit@localhost.localdomain>
 In-Reply-To: <20110413093519.28527.36552.stgit@localhost.localdomain>
 References: <20110413093519.28527.36552.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,29 +22,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The current bl code checks for backlight types and warns if they are not
+properly set. Set ours to avoid the warning spew
+
+(This one alone is probably 2.6.39 candidate)
+
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_drv.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/staging/gma500/psb_bl.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index df50553..d87e00d 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -1425,12 +1425,8 @@ static struct drm_driver driver = {
- 	.lastclose = psb_lastclose,
- 	.open = psb_driver_open,
- 	.postclose = psb_driver_close,
--#if 0	/* ACFIXME */
--	.get_map_ofs = drm_core_get_map_ofs,
--	.get_reg_ofs = drm_core_get_reg_ofs,
--	.proc_init = psb_proc_init,
--	.proc_cleanup = psb_proc_cleanup,
--#endif
-+	.reclaim_buffers = drm_core_reclaim_buffers,
-+
- 	.preclose = psb_driver_preclose,
- 	.fops = {
- 		 .owner = THIS_MODULE,
+diff --git a/drivers/staging/gma500/psb_bl.c b/drivers/staging/gma500/psb_bl.c
+index 57b9a5e..5dffc71 100644
+--- a/drivers/staging/gma500/psb_bl.c
++++ b/drivers/staging/gma500/psb_bl.c
+@@ -194,6 +194,7 @@ int psb_backlight_init(struct drm_device *dev)
+ 	struct backlight_properties props;
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+ 	props.max_brightness = 100;
++	props.type = BACKLIGHT_PLATFORM;
+ 
+ 	psb_backlight_device = backlight_device_register("psb-bl", NULL,
+ 						(void *)dev, &psb_ops, &props);
 
