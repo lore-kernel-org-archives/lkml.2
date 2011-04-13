@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab1DMPzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:55:04 -0400
-Received: from kroah.org ([198.145.64.141]:54174 "EHLO coco.kroah.org"
+	id S933145Ab1DMQcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:32:39 -0400
+Received: from kroah.org ([198.145.64.141]:54183 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757250Ab1DMPzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:01 -0400
+	id S1757352Ab1DMPzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:03 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:43 2011
-Message-Id: <20110413155143.080898621@clark.kroah.org>
+Message-Id: <20110413155143.299227658@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:25 -0700
+Date: Wed, 13 Apr 2011 08:50:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [01/74] ALSA: hda - Fix SPDIF out regression on ALC889
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [03/74] perf: Better fit max unprivileged mlock pages for tools needs
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 20b67dddcc5f29d3d0c900225d85e0ac655bc69d upstream.
+commit 880f57318450dbead6a03f9e31a1468924d6dd88 upstream.
 
-The commit 5a8cfb4e8ae317d283f84122ed20faa069c5e0c4
-    ALSA: hda - Use ALC_INIT_DEFAULT for really default initialization
-changed to use the default initialization method for ALC889, but
-this caused a regression on SPDIF output on some machines.
-This seems due to the COEF setup included in the default init procedure.
-For making SPDIF working again, the COEF-setup has to be avoided for
-the id 0889.
+The maximum kilobytes of locked memory that an unprivileged user
+can reserve is of 512 kB = 128 pages by default, scaled to the
+number of onlined CPUs, which fits well with the tools that use
+128 data pages by default.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=24342
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+However tools actually use 129 pages, because they need one more
+for the user control page. Thus the default mlock threshold is
+not sufficient for the default tools needs and we always end up
+to evaluate the constant mlock rlimit policy, which doesn't have
+this scaling with the number of online CPUs.
+
+Hence, on systems that have more than 16 CPUs, we overlap the
+rlimit threshold and fail to mmap:
+
+	$ perf record ls
+	Error: failed to mmap with 1 (Operation not permitted)
+
+Just increase the max unprivileged mlock threshold by one page
+so that it supports well perf tools even after 16 CPUs.
+
+Reported-by: Han Pingtian <phan@redhat.com>
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <1300904979-5508-1-git-send-email-fweisbec@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/perf_event.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1153,7 +1153,7 @@ static void alc_auto_init_amp(struct hda
- 		case 0x10ec0883:
- 		case 0x10ec0885:
- 		case 0x10ec0887:
--		case 0x10ec0889:
-+		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
- 			alc889_coef_init(codec);
- 			break;
- 		case 0x10ec0888:
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -69,7 +69,8 @@ static inline bool perf_paranoid_kernel(
+ 	return sysctl_perf_event_paranoid > 1;
+ }
+ 
+-int sysctl_perf_event_mlock __read_mostly = 512; /* 'free' kb per user */
++/* Minimum for 128 pages + 1 for the user control page */
++int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
+ 
+ /*
+  * max perf event sample rate
 
 
