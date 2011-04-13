@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab1DMQVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:21:41 -0400
-Received: from gretna.indigovision.com ([62.7.85.227]:27113 "EHLO
-	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932899Ab1DMQNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:14 -0400
-From: Bruce Stenning <b.stenning@indigovision.com>
-To: Mark Lord <kernel@teksavvy.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Date: Wed, 13 Apr 2011 17:13:07 +0100
-Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Index: Acv57PeUZmOXzJy/SmuqNZkglMtp7AAB8a1A
-Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C772DA253@gretna.indigovision.com>
-References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
- <4D9CD275.9000002@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
- <4D9FACC9.7020200@teksavvy.com>
- <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
- <4DA5BCF3.5080205@teksavvy.com>
-In-Reply-To: <4DA5BCF3.5080205@teksavvy.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S932926Ab1DMQWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:22:05 -0400
+Received: from kroah.org ([198.145.64.141]:52913 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932902Ab1DMQNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:47 2011
+Message-Id: <20110413161046.943813239@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 13 Apr 2011 09:10:05 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [42/71] netfilter: arp_tables: fix infoleak to userspace
+In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3DGLsZj014093
 
-> Yeah, I'm suspecting there's a loophole in the logic there somewhere.
->
-> I dusted off the 6041 reference card I have here, and played with the cables for a while.  Managed to > get one port to stop responding to hot plug fairly quickly, though I'm not sure how/why.
->
-> Then I added a debug printk() to mv_write_main_irq_mask(), with no other changes, and that appears to > have been enough to change the race timing so that I could no longer produce the problem.
->
-> Bruce, here's a slightly-ugly patch that should remove all doubt about races in the irq_mask.  Please > apply it, test with it, and let me know here if the issue goes away.
->
-> Thanks
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
-Thanks Mark. I was about to try out some tracing in writelfl because I
-suspected the irq mask was getting clobbered somewhere along the way, but
-I'd been distracted by other work.  I shall try your patch out as soon as
-I can, and report back.
+------------------
 
-Cheers,
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-Bruce.
+commit 42eab94fff18cb1091d3501cd284d6bd6cc9c143 upstream.
+
+Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
+copied from userspace.  Fields of these structs that are
+zero-terminated strings are not checked.  When they are used as argument
+to a format string containing "%s" in request_module(), some sensitive
+information is leaked to userspace via argument of spawned modprobe
+process.
+
+The first bug was introduced before the git epoch;  the second is
+introduced by 6b7d31fc (v2.6.15-rc1);  the third is introduced by
+6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
+CAP_NET_ADMIN.
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/ipv4/netfilter/arp_tables.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/net/ipv4/netfilter/arp_tables.c
++++ b/net/ipv4/netfilter/arp_tables.c
+@@ -1086,6 +1086,7 @@ static int do_replace(struct net *net, v
+ 	/* overflow check */
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
+ 
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1508,6 +1509,7 @@ static int compat_do_replace(struct net
+ 		return -ENOMEM;
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
+ 
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1763,6 +1765,7 @@ static int do_arpt_get_ctl(struct sock *
+ 			ret = -EFAULT;
+ 			break;
+ 		}
++		rev.name[sizeof(rev.name)-1] = 0;
+ 
+ 		try_then_request_module(xt_find_revision(NFPROTO_ARP, rev.name,
+ 							 rev.revision, 1, &ret),
 
 
-Bruce Stenning,
-IndigoVision,
-b <dot> stenning <at> indigovision <dot> com
-
-
-Latest News at: http://www.indigovision.com/index.php/en/news.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
