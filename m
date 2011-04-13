@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab1DMQNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:13:14 -0400
-Received: from kroah.org ([198.145.64.141]:52890 "EHLO coco.kroah.org"
+	id S932529Ab1DMQVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:21:39 -0400
+Received: from kroah.org ([198.145.64.141]:52917 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932747Ab1DMQNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 12:13:09 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:46 2011
-Message-Id: <20110413161046.488638500@clark.kroah.org>
+	id S932631Ab1DMQNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 12:13:14 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 09:10:47 2011
+Message-Id: <20110413161047.037291885@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 09:10:01 -0700
+Date: Wed, 13 Apr 2011 09:10:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marc-Antoine Perennou <Marc-Antoine@Perennou.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: [38/71] Bluetooth: add support for Apple MacBook Pro 8,2
+        Vasiliy Kulikov <segoon@openwall.com>, Changli Gao <xiaosuo@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [43/71] netfilter: ipt_CLUSTERIP: fix buffer overflow
 In-Reply-To: <20110413161106.GA20405@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 63a8588debd4dc72becb9e27add9343c76301c7d upstream.
+commit 961ed183a9fd080cf306c659b8736007e44065a5 upstream.
 
-Just adding the vendor details makes it work fine.
+'buffer' string is copied from userspace.  It is not checked whether it is
+zero terminated.  This may lead to overflow inside of simple_strtoul().
+Changli Gao suggested to copy not more than user supplied 'size' bytes.
 
-Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+It was introduced before the git epoch.  Files "ipt_CLUSTERIP/*" are
+root writable only by default, however, on some setups permissions might be
+relaxed to e.g. network admin user.
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Acked-by: Changli Gao <xiaosuo@gmail.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/netfilter/ipt_CLUSTERIP.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -59,6 +59,9 @@ static struct usb_device_id btusb_table[
- 	/* Generic Bluetooth USB device */
- 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
+--- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
++++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+@@ -666,8 +666,11 @@ static ssize_t clusterip_proc_write(stru
+ 	struct clusterip_config *c = pde->data;
+ 	unsigned long nodenum;
  
-+	/* Apple MacBookPro8,2 */
-+	{ USB_DEVICE(0x05ac, 0x821a) },
-+
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
+-	if (copy_from_user(buffer, input, PROC_WRITELEN))
++	if (size > PROC_WRITELEN)
++		return -EIO;
++	if (copy_from_user(buffer, input, size))
+ 		return -EFAULT;
++	buffer[size] = 0;
  
+ 	if (*buffer == '+') {
+ 		nodenum = simple_strtoul(buffer+1, NULL, 10);
 
 
