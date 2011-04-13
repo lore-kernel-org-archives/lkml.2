@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab1DMP7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:59:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56384 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420Ab1DMP7K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:59:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sEXptAY7YAhBvo9SP6EFU0RwoT0LQd36KXE/rudAuDy+B6MeMz9dV0bMnxYjYydCGa
-         pAkUxNRFegGnEDGcBXXUZqxjqOsBI6og8OOoetFjhyVmUBhW49MpGFjDam4NF4ONZwVC
-         /3Ykw3QOXf4Awohs8KN7sfapXdM1Q5NeEju0c=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan>
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan>
-Date: Wed, 13 Apr 2011 17:59:07 +0200
-Message-ID: <BANLkTi==Bw6mWWJidLi+ZRzz87ck4DAqVA@mail.gmail.com>
-Subject: Re: 2.6.38: rt2800usb: high latency (1000ms)?
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932415Ab1DMQAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:00:00 -0400
+Received: from kroah.org ([198.145.64.141]:54521 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932200Ab1DMPzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:54 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:49 2011
+Message-Id: <20110413155149.099185462@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 13 Apr 2011 08:51:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>,
+        debian-release@lists.debian.org,
+        "Adam D. Barratt" <adam@adam-barratt.org.uk>,
+        paulmck@linux.vnet.ibm.com, mikey@neuling.org,
+        benh@kernel.crashing.org, anton@samba.org,
+        dann frazier <dannf@dannf.org>, galak@kernel.crashing.org,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Subject: [57/74] powerpc/kexec: Add ifdef CONFIG_PPC_STD_MMU_64 to PPC64 code
+In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-> I recall using this driver in staging and it crashing my machine, now thats
-> its no longer in staging, I thought I'd give it another try..  Using the
+------------------
 
-The rt2800usb was not in staging but has been inside the main kernel
-tree for quite
-some time already, the alternative rt2870sta was in staging and will
-be removed very soon.
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 
-> following wireless usb adapter, I'm seeing very high latency when using
-> the device in Linux, (with Windows, there are no problems).  Using Debian
-> Testing + wpa_supplicant, using the following USB adapter:
+powerpc/kexec: Add ifdef CONFIG_PPC_STD_MMU_64 to PPC64 code
 
-Can you try disabling powersaving?
-iwconfig wlan0 power off
+This patch introduces PPC64 specific #ifdef bits from the upstream
+commit: b3df895aebe091b1657a42a8c859bd49fc96646b.
 
-Ivo
+Reported-and-tested-by: dann frazier <dannf@dannf.org>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: Anton Blanchard <anton@samba.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/powerpc/kernel/crash.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/arch/powerpc/kernel/crash.c
++++ b/arch/powerpc/kernel/crash.c
+@@ -163,6 +163,7 @@ static void crash_kexec_prepare_cpus(int
+ }
+ 
+ /* wait for all the CPUs to hit real mode but timeout if they don't come in */
++#ifdef CONFIG_PPC_STD_MMU_64
+ static void crash_kexec_wait_realmode(int cpu)
+ {
+ 	unsigned int msecs;
+@@ -187,6 +188,7 @@ static void crash_kexec_wait_realmode(in
+ 	}
+ 	mb();
+ }
++#endif
+ 
+ /*
+  * This function will be called by secondary cpus or by kexec cpu
+@@ -445,7 +447,9 @@ void default_machine_crash_shutdown(stru
+ 	crash_kexec_prepare_cpus(crashing_cpu);
+ 	cpu_set(crashing_cpu, cpus_in_crash);
+ 	crash_kexec_stop_spus();
++#ifdef CONFIG_PPC_STD_MMU_64
+ 	crash_kexec_wait_realmode(crashing_cpu);
++#endif
+ 	if (ppc_md.kexec_cpu_down)
+ 		ppc_md.kexec_cpu_down(1, 0);
+ }
+
+
