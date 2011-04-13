@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab1DMPzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:55:20 -0400
-Received: from kroah.org ([198.145.64.141]:54228 "EHLO coco.kroah.org"
+	id S1758127Ab1DMPzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:55:38 -0400
+Received: from kroah.org ([198.145.64.141]:54359 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757629Ab1DMPzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:10 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:44 2011
-Message-Id: <20110413155144.138300533@clark.kroah.org>
+	id S1758039Ab1DMPzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:32 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:46 2011
+Message-Id: <20110413155146.472778700@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:35 -0700
+Date: Wed, 13 Apr 2011 08:50:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [11/74] eCryptfs: ecryptfs_keyring_auth_tok_for_sig() bug fix
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [33/74] p54usb: IDs for two new devices
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roberto Sassu <roberto.sassu@polito.it>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 1821df040ac3cd6a57518739f345da6d50ea9d3f upstream.
+commit 220107610c7c2c9703e09eb363e8ab31025b9315 upstream.
 
-The pointer '(*auth_tok_key)' is set to NULL in case request_key()
-fails, in order to prevent its use by functions calling
-ecryptfs_keyring_auth_tok_for_sig().
-
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Reported-by: Mark Davis [via p54/devices wiki]
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/keystore.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/p54/p54usb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -1542,6 +1542,7 @@ int ecryptfs_keyring_auth_tok_for_sig(st
- 		printk(KERN_ERR "Could not find key with description: [%s]\n",
- 		       sig);
- 		rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-+		(*auth_tok_key) = NULL;
- 		goto out;
- 	}
- 	(*auth_tok) = ecryptfs_get_key_payload_data(*auth_tok_key);
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -54,6 +54,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x0846, 0x4210)},	/* Netgear WG121 the second ? */
+ 	{USB_DEVICE(0x0846, 0x4220)},	/* Netgear WG111 */
+ 	{USB_DEVICE(0x09aa, 0x1000)},	/* Spinnaker Proto board */
++	{USB_DEVICE(0x0bf8, 0x1007)},	/* Fujitsu E-5400 USB */
+ 	{USB_DEVICE(0x0cde, 0x0006)},	/* Medion 40900, Roper Europe */
+ 	{USB_DEVICE(0x0db0, 0x6826)},	/* MSI UB54G (MS-6826) */
+ 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
+@@ -66,6 +67,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x1915, 0x2235)},	/* Linksys WUSB54G Portable OEM */
+ 	{USB_DEVICE(0x2001, 0x3701)},	/* DLink DWL-G120 Spinnaker */
+ 	{USB_DEVICE(0x2001, 0x3703)},	/* DLink DWL-G122 */
++	{USB_DEVICE(0x2001, 0x3762)},	/* Conceptronic C54U */
+ 	{USB_DEVICE(0x5041, 0x2234)},	/* Linksys WUSB54G */
+ 	{USB_DEVICE(0x5041, 0x2235)},	/* Linksys WUSB54G Portable */
+ 
 
 
