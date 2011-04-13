@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab1DMM2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 08:28:01 -0400
-Received: from gra-lx1.iram.es ([150.214.224.41]:59033 "EHLO gra-lx1.iram.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535Ab1DMM2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 08:28:00 -0400
-Date: Wed, 13 Apr 2011 14:27:51 +0200
-From: Gabriel Paubert <paubert@iram.es>
-To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Greg KH <greg@kroah.com>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: Revert 737a3bb9416ce2a7c7a4170852473a4fcc9c67e8 ?
-Message-ID: <20110413122751.GA21050@iram.es>
-References: <20110406204327.GA11148@iram.es> <1302185075.24704.143.camel@thor.local> <20110411133128.GA24344@iram.es> <1302535963.24704.268.camel@thor.local> <20110412113033.GA16649@iram.es> <1302608770.27054.36.camel@thor.local> <20110412120055.GA7995@iram.es> <1302629362.15520.25.camel@thor.local> <20110413075943.GA27996@iram.es> <1302696736.15520.63.camel@thor.local>
+	id S1754262Ab1DMMcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 08:32:13 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43834 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750901Ab1DMMcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 08:32:12 -0400
+Message-ID: <4DA597E3.807@metafoo.de>
+Date: Wed, 13 Apr 2011 14:32:35 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302696736.15520.63.camel@thor.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] ASoC: Call snd_soc_new_widgets() after registering
+ cards DAPM widgets
+References: <1302629465-21315-1-git-send-email-lars@metafoo.de> <1302629465-21315-2-git-send-email-lars@metafoo.de> <20110413003847.GC24267@opensource.wolfsonmicro.com>
+In-Reply-To: <20110413003847.GC24267@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 02:12:16PM +0200, Michel Dänzer wrote:
-> On Mit, 2011-04-13 at 09:59 +0200, Gabriel Paubert wrote: 
-> > On Tue, Apr 12, 2011 at 07:29:22PM +0200, Michel Dänzer wrote:
-> > > On Die, 2011-04-12 at 14:00 +0200, Gabriel Paubert wrote:
-> > > > On Tue, Apr 12, 2011 at 01:46:10PM +0200, Michel Dänzer wrote:
-> > > > > > 
-> > > > > > With no_wb=1 the driver goes a bit further but the X server ends
-> > > > > > up in an infinite ioctl loop and the logs are: 
-> > > > > 
-> > > > > Which ioctl does it loop on? Please provide the Xorg.0.log file as well.
-> > > > 
-> > > > From memory, the code was 0x64, which is DRM_RADEON_GEM_WAIT_IDLE.
-> > > 
-> > > Note that it's normal for this ioctl to be called every time before the
-> > > GPU accessible pixmap memory is accessed by the CPU. Unless the ioctl
-> > > always returns an error, this may not indicate a problem on its own. 
-> > 
-> > It seems to be an infinite loop, always returning EINTR because
-> > of regular SIGALRM delivery.
-> 
-> That does sound like the GPU locks up. Do you get any messages in dmesg
-> about lockups and attempts to reset the GPU at any time?
+On 04/13/2011 02:38 AM, Mark Brown wrote:
+> On Tue, Apr 12, 2011 at 07:31:02PM +0200, Lars-Peter Clausen wrote:
+>> After registering new DAPM widgets nd_soc_new_widgets() must be called,
+>> otherwise DAPM for those new widgets will not work.
+>>
+>> snd_soc_new_widgets() is placed after the card late_probe call, so cards
+>> can register new DAPM widgets in there.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>
+> There's already a call for this in post_component_init(), it just needs
+> to be moved later in the sequence now.
 
-No.
+post_component_init() is called for each registered codec (and auxdev).
+Since all the DAPM widgets are kept in one list now it probably makes sense to
+traverse that list only once, when all components have been registered.
+But snd_soc_dapm_new_widgets also calls dapm_power_widgets which operates on
+the passed dapm_context, will it be without any effect on the DAPM context,
+when it is called on a newly allocated context?
 
-	Gabriel
+Otherwise I would say call snd_soc_dapm_new_widgets once for the cards
+dapm_context and snd_soc_dapm_sync for each codec context.
+
+- Lars
