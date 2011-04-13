@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab1DMPpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 11:45:13 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:44933 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233Ab1DMPpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:45:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=ksplice.com; s=google;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Ht9EhSRwNixMiUMG6MwnCK/40I7QD7VI2Tly/PJ0fhBFqNwyftHphOJEeuEVc9+2HR
-         qY+D4cglcsXdPEvDwJj17ZvxAs8p8+Kr3fRQETpHcsiqxtKHgLtUsZwsxTqvQ0NFhnGm
-         T3K/bQzHmVnP1ipIvUOD+olqiusNR/YrhM4ak=
-From: Nelson Elhage <nelhage@ksplice.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nelson Elhage <nelhage@ksplice.com>
-Subject: [PATCH] KVM: emulator: Handle wraparound in (cs_base + offset) when fetching.
-Date: Wed, 13 Apr 2011 11:44:13 -0400
-Message-Id: <1302709453-19031-1-git-send-email-nelhage@ksplice.com>
-X-Mailer: git-send-email 1.7.2.43.g36c08.dirty
+	id S1757321Ab1DMPqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 11:46:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35348 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756897Ab1DMPqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:46:21 -0400
+Date: Wed, 13 Apr 2011 08:46:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: [PATCH] Clean console safely
+Message-ID: <20110413154600.GA10204@suse.de>
+References: <1302705651.2768.21.camel@localhost>
+ <1302706473-16519-1-git-send-email-ppisar@redhat.com>
+ <20110413150113.GA8121@suse.de>
+ <20110413153359.GC2993@dhcp-0-146.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110413153359.GC2993@dhcp-0-146.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, setting a large (i.e. negative) base address for %cs does not work on
-a 64-bit host. The "JOS" teaching operating system, used by MIT and other
-universities, relies on such segments while bootstrapping its way to full
-virtual memory management.
+On Wed, Apr 13, 2011 at 05:33:59PM +0200, Petr Pisar wrote:
+> On Wed, Apr 13, 2011 at 08:01:13AM -0700, Greg KH wrote:
+> > On Wed, Apr 13, 2011 at 04:54:33PM +0200, Petr Písař wrote:
+> > > Traditional \E[2J sequence erases console display but scroll-back
+> > > buffer and underlying device (frame) buffer keep data that can be
+> > > accessed by scrolling console back.
+> > > 
+> > > This patch introduce new \E[J parameter 3 that allows to scramble
+> > > scroll-back buffer explicitly. Session locking programs (screen,
+> > > vlock) can use it to prevent attacker to browse locked console
+> > > history.
+> > 
+> > Is this also documented somewhere so that people know about it?
+> > 
+> > 
+> Not yet as this is fresh feature. I'd like to put few words into
+> console_codes(4). I guess manual sources are not part of Linux.
 
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
----
- arch/x86/kvm/emulate.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+No they are not, they have their own maintainer and release schedule.
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 0ad47b8..54e84b2 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -505,9 +505,12 @@ static int do_fetch_insn_byte(struct x86_emulate_ctxt *ctxt,
- 	int size, cur_size;
- 
- 	if (eip == fc->end) {
-+		unsigned long linear = eip + ctxt->cs_base;
-+		if (ctxt->mode != X86EMUL_MODE_PROT64)
-+			linear &= (u32)-1;
- 		cur_size = fc->end - fc->start;
- 		size = min(15UL - cur_size, PAGE_SIZE - offset_in_page(eip));
--		rc = ops->fetch(ctxt->cs_base + eip, fc->data + cur_size,
-+		rc = ops->fetch(linear, fc->data + cur_size,
- 				size, ctxt->vcpu, &ctxt->exception);
- 		if (rc != X86EMUL_CONTINUE)
- 			return rc;
--- 
-1.7.2.43.g36c08.dirty
+thanks,
 
+greg k-h
