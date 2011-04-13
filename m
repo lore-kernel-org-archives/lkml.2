@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1DMOjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:39:39 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49799 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab1DMOji (ORCPT
+	id S1756871Ab1DMOnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:43:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55651 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756363Ab1DMOno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:39:38 -0400
-Date: Wed, 13 Apr 2011 16:39:17 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mstowe@redhat.com" <mstowe@redhat.com>,
-        "dnelson@redhat.com" <dnelson@redhat.com>,
-        "rja@americas.sgi.com" <rja@americas.sgi.com>
-Subject: Re: [PATCH 2/3] x86, MCE: Drop default decoding notifier
-Message-ID: <20110413143917.GD2791@aftab>
-References: <20110413132409.GB1900@gere.osrc.amd.com>
- <1302701810-2471-2-git-send-email-bp@amd64.org>
- <4DA5ACB2.1070505@redhat.com>
- <20110413141829.GE1987@aftab>
- <4DA5B1B1.5090905@redhat.com>
- <20110413142648.GB2791@aftab>
- <4DA5B403.2010203@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA5B403.2010203@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 13 Apr 2011 10:43:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=JniZQz1jKKzJFLIt1K0IzLf6tQthT1wmprv4FyFaYdeyDFBSa4dOvDJRuh+8tV11tb
+         EYD2y9dxLv2n+LEfHQoBgZYkO3uON84Ks5Bu9BK3ySDF80b/O4mBONToIEnoUEul9lJ0
+         J7NzxPEHS6c+PfG6gIhRKGRRaFif1yZd2732Y=
+Subject: Re: [PATCH] Clean console safely
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Petr =?UTF-8?Q?P=C3=ADsa=C5=99?= <ppisar@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1302705170-15712-2-git-send-email-ppisar@redhat.com>
+References: <1302705170-15712-1-git-send-email-ppisar@redhat.com>
+	 <1302705170-15712-2-git-send-email-ppisar@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 17:40:51 +0300
+Message-ID: <1302705651.2768.21.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 10:32:35AM -0400, Prarit Bhargava wrote:
+On Wed, 2011-04-13 at 16:32 +0200, Petr Písař wrote:
+> Traditional \E[2J sequence erases console display but scroll-back
+> buffer and underlying device (frame) buffer keep data that can be
+> accessed by scrolling console back.
 > 
-> >> .. right ... but we would still see nonsensical messages before the
-> >> panic, which will confuse the end user.  IMO, dump the messages unless
-> >> it's UC.  And we shouldn't print out the human readable message at all.
-> >>     
-> > I'd still leave the "mcelog ... " line though as a hint.
-> >
-> >   
-> 
-> :)
-> 
-> There are no messages -- that's part of the problem.  We're asking a
-> user to do something for a message that doesn't exist ...
+> This patch introduce new \E[J parameter 3 that allows to scramble
+> scroll-back buffer explicitly. Session locking programs (screen,
+> vlock) can use it to prevent attacker to browse locked console
+> history.
+> ---
+>  drivers/tty/vt/vt.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 
-Yes and no - in the UC case you get all the MCA registers dumped in
-print_mce() - and those you want to decode. In the CE case, we won't be
-issuing any with the default notifier removed. I just sent you a -v2, I
-think it should do what we want.
-
-Or am I missing something...?
-
-Thanks.
+You forgot to "Signed-off-by:" it.
 
 -- 
-Regards/Gruss,
-Boris.
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
