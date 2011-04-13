@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab1DMO4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:56:33 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:41566 "EHLO
+	id S1757203Ab1DMO4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:56:09 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:41499 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757223Ab1DMO4M (ORCPT
+	with ESMTP id S1757147Ab1DMO4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:56:12 -0400
-X-ASG-Debug-ID: 1302706572-082d4b820001-xx1T2L
+	Wed, 13 Apr 2011 10:56:05 -0400
+X-ASG-Debug-ID: 1302706565-082b4b990001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
         linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-X-ASG-Orig-Subj: [PATCH 12/13] regulator: check name in initialization of max8925
-Subject: [PATCH 12/13] regulator: check name in initialization of max8925
-Date: Wed, 13 Apr 2011 22:51:03 +0800
-X-ASG-Orig-Subj: [PATCH 12/13] regulator: check name in initialization of max8925
-Message-Id: <1302706264-25815-13-git-send-email-haojian.zhuang@marvell.com>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH 07/13] mfd: fix build warning on 88pm860x
+Subject: [PATCH 07/13] mfd: fix build warning on 88pm860x
+Date: Wed, 13 Apr 2011 22:50:58 +0800
+X-ASG-Orig-Subj: [PATCH 07/13] mfd: fix build warning on 88pm860x
+Message-Id: <1302706264-25815-8-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1302706264-25815-12-git-send-email-haojian.zhuang@marvell.com>
+In-Reply-To: <1302706264-25815-7-git-send-email-haojian.zhuang@marvell.com>
 References: <2011041301>
  <1302706264-25815-1-git-send-email-haojian.zhuang@marvell.com>
  <1302706264-25815-2-git-send-email-haojian.zhuang@marvell.com>
@@ -30,13 +28,8 @@ References: <2011041301>
  <1302706264-25815-5-git-send-email-haojian.zhuang@marvell.com>
  <1302706264-25815-6-git-send-email-haojian.zhuang@marvell.com>
  <1302706264-25815-7-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-8-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-9-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-10-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-11-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-12-git-send-email-haojian.zhuang@marvell.com>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1302706572
+X-Barracuda-Start-Time: 1302706565
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -44,83 +37,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check name in initialization of max8925 regulator driver.
+WARNING: vmlinux.o(.devinit.text+0x6c4): Section mismatch in reference
+from the function device_onkey_init() to the (unknown reference)
+.init.data:(unknown)
+The function __devinit device_onkey_init() references a (unknown reference)
+ __initdata (unknown).
+If (unknown) is only used by device_onkey_init then annotate (unknown)
+with a matching annotation.
+
+It's caused by using __initdata on mfd cell resources. Replace __initdata
+with __devinitdata.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/max8925-regulator.c |   37 +++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 20 deletions(-)
+ drivers/mfd/88pm860x-core.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
-index 8ae1475..ce821e4 100644
---- a/drivers/regulator/max8925-regulator.c
-+++ b/drivers/regulator/max8925-regulator.c
-@@ -169,7 +169,7 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
- #define MAX8925_SDV(_id, min, max, step)			\
- {								\
- 	.desc	= {						\
--		.name	= "SDV" #_id,				\
-+		.name	= "SD" #_id,				\
- 		.ops	= &max8925_regulator_sdv_ops,		\
- 		.type	= REGULATOR_VOLTAGE,			\
- 		.id	= MAX8925_ID_SD##_id,			\
-@@ -231,39 +231,36 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
- 	MAX8925_LDO(20, 750, 3900, 50),
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index f114ec7..4fbc69b 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -21,13 +21,13 @@
+ 
+ #define INT_STATUS_NUM			3
+ 
+-static struct resource bk_resources[] __initdata = {
++static struct resource bk_resources[] __devinitdata = {
+ 	{PM8606_BACKLIGHT1, PM8606_BACKLIGHT1, "backlight-0", IORESOURCE_IO,},
+ 	{PM8606_BACKLIGHT2, PM8606_BACKLIGHT2, "backlight-1", IORESOURCE_IO,},
+ 	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,},
  };
  
--static struct max8925_regulator_info * __devinit find_regulator_info(int id)
-+static int __devinit max8925_regulator_probe(struct platform_device *pdev)
- {
--	struct max8925_regulator_info *ri;
-+	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
-+	struct max8925_regulator_info *ri = NULL;
-+	struct regulator_init_data *pdata;
-+	struct regulator_dev *rdev;
- 	int i;
+-static struct resource led_resources[] __initdata = {
++static struct resource led_resources[] __devinitdata = {
+ 	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,},
+ 	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,},
+ 	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,},
+@@ -36,7 +36,7 @@ static struct resource led_resources[] __initdata = {
+ 	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
+ };
  
-+	pdata = pdev->dev.platform_data;
-+	if (pdata == NULL)
-+		return -EINVAL;
-+
- 	for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
- 		ri = &max8925_regulator_info[i];
--		if (ri->desc.id == id)
--			return ri;
-+		if (!strcmp(ri->desc.name, pdata->constraints.name))
-+			break;
- 	}
--	return NULL;
--}
--
--static int __devinit max8925_regulator_probe(struct platform_device *pdev)
--{
--	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
--	struct max8925_platform_data *pdata = chip->dev->platform_data;
--	struct max8925_regulator_info *ri;
--	struct regulator_dev *rdev;
--
--	ri = find_regulator_info(pdev->id);
--	if (ri == NULL) {
--		dev_err(&pdev->dev, "invalid regulator ID specified\n");
-+	if (i > ARRAY_SIZE(max8925_regulator_info)) {
-+		dev_err(&pdev->dev, "Failed to find regulator %s\n",
-+			pdata->constraints.name);
- 		return -EINVAL;
- 	}
- 	ri->i2c = chip->i2c;
- 	ri->chip = chip;
+-static struct resource regulator_resources[] __initdata = {
++static struct resource regulator_resources[] __devinitdata = {
+ 	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,},
+ 	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,},
+ 	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,},
+@@ -61,15 +61,15 @@ static struct resource rtc_resources[] __devinitdata = {
+ 	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ,},
+ };
  
- 	rdev = regulator_register(&ri->desc, &pdev->dev,
--				  pdata->regulator[pdev->id], ri);
-+				  pdata, ri);
- 	if (IS_ERR(rdev)) {
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
--				ri->desc.name);
-+			ri->desc.name);
- 		return PTR_ERR(rdev);
- 	}
+-static struct resource touch_resources[] __initdata = {
++static struct resource touch_resources[] __devinitdata = {
+ 	{PM8607_IRQ_PEN, PM8607_IRQ_PEN, "touch", IORESOURCE_IRQ,},
+ };
+ 
+-static struct resource onkey_resources[] __initdata = {
++static struct resource onkey_resources[] __devinitdata = {
+ 	{PM8607_IRQ_ONKEY, PM8607_IRQ_ONKEY, "onkey", IORESOURCE_IRQ,},
+ };
+ 
+-static struct resource codec_resources[] __initdata = {
++static struct resource codec_resources[] __devinitdata = {
+ 	/* Headset microphone insertion or removal */
+ 	{PM8607_IRQ_MICIN,   PM8607_IRQ_MICIN,   "micin",   IORESOURCE_IRQ,},
+ 	/* Hook-switch press or release */
+@@ -80,12 +80,12 @@ static struct resource codec_resources[] __initdata = {
+ 	{PM8607_IRQ_AUDIO_SHORT, PM8607_IRQ_AUDIO_SHORT, "audio-short", IORESOURCE_IRQ,},
+ };
+ 
+-static struct resource battery_resources[] __initdata = {
++static struct resource battery_resources[] __devinitdata = {
+ 	{PM8607_IRQ_CC,  PM8607_IRQ_CC,  "columb counter", IORESOURCE_IRQ,},
+ 	{PM8607_IRQ_BAT, PM8607_IRQ_BAT, "battery",        IORESOURCE_IRQ,},
+ };
+ 
+-static struct resource charger_resources[] __initdata = {
++static struct resource charger_resources[] __devinitdata = {
+ 	{PM8607_IRQ_CHG,  PM8607_IRQ_CHG,  "charger detect",  IORESOURCE_IRQ,},
+ 	{PM8607_IRQ_CHG_DONE,  PM8607_IRQ_CHG_DONE,  "charging done",       IORESOURCE_IRQ,},
+ 	{PM8607_IRQ_CHG_FAULT, PM8607_IRQ_CHG_FAULT, "charging timeout",    IORESOURCE_IRQ,},
+@@ -94,13 +94,13 @@ static struct resource charger_resources[] __initdata = {
+ 	{PM8607_IRQ_VCHG, PM8607_IRQ_VCHG, "vchg voltage",    IORESOURCE_IRQ,},
+ };
+ 
+-static struct mfd_cell bk_devs[] __initdata = {
++static struct mfd_cell bk_devs[] = {
+ 	{"88pm860x-backlight", 0,},
+ 	{"88pm860x-backlight", 1,},
+ 	{"88pm860x-backlight", 2,},
+ };
+ 
+-static struct mfd_cell led_devs[] __initdata = {
++static struct mfd_cell led_devs[] = {
+ 	{"88pm860x-led", 0,},
+ 	{"88pm860x-led", 1,},
+ 	{"88pm860x-led", 2,},
+@@ -109,7 +109,7 @@ static struct mfd_cell led_devs[] __initdata = {
+ 	{"88pm860x-led", 5,},
+ };
+ 
+-static struct mfd_cell regulator_devs[] __initdata = {
++static struct mfd_cell regulator_devs[] = {
+ 	{"88pm860x-regulator", 0,},
+ 	{"88pm860x-regulator", 1,},
+ 	{"88pm860x-regulator", 2,},
+@@ -134,15 +134,15 @@ static struct mfd_cell rtc_devs[] = {
+ 	{"88pm860x-rtc", -1,},
+ };
+ 
+-static struct mfd_cell touch_devs[] __initdata = {
++static struct mfd_cell touch_devs[] = {
+ 	{"88pm860x-touch", -1,},
+ };
+ 
+-static struct mfd_cell onkey_devs[] __initdata = {
++static struct mfd_cell onkey_devs[] = {
+ 	{"88pm860x-onkey", -1,},
+ };
+ 
+-static struct mfd_cell codec_devs[] __initdata = {
++static struct mfd_cell codec_devs[] = {
+ 	{"88pm860x-codec", -1,},
+ };
  
 -- 
 1.5.6.5
