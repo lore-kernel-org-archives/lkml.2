@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab1DMFGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 01:06:13 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62365 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab1DMFGM (ORCPT
+	id S1752101Ab1DMFLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 01:11:46 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:56175 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab1DMFLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 01:06:12 -0400
+	Wed, 13 Apr 2011 01:11:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FKe0BatLSTi7lW/CEuX3XbDBcw6H1k2Z5SraRsJF7LSc+umC5hEXH2n81J7BPNNY7B
-         J1+aE7hUUQbow5ZrewR/PXyLRf7/luRh11iPggD3h7xgRocS9Sbai5VjkA8kEV7CSHTd
-         0FsR4NV5c5jLf9L+f3+qdujnht84e2vJHxWNQ=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZMqQMECGanjDBKJwQ78Qe/DopJEN4oX/4XO/Md6zCfJ9ZRMhoflYFnv27t2yfpD9/V
+         QOwSQfuc8UMokPI9XkYMBwqTr2qzYGWTtU3o4hnRV9e1FiZblC1s7k78MzVlRfoFG9gb
+         +MrFIambGOlO/ltXyeSz6q6VLNjq4K0Sajg0g=
+Date: Wed, 13 Apr 2011 14:11:39 +0900
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: Strange block/scsi/workqueue issue
+Message-ID: <20110413051139.GC24161@mtj.dyndns.org>
+References: <1302533763.2596.23.camel@dolmen>
+ <20110411171803.GG9673@mtj.dyndns.org>
+ <1302569276.2558.9.camel@mulgrave.site>
+ <20110412025145.GJ9673@mtj.dyndns.org>
+ <1302583757.2558.21.camel@mulgrave.site>
+ <20110412051512.GL9673@mtj.dyndns.org>
+ <1302621318.2604.19.camel@mulgrave.site>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=AOvVELYKA=BSTsOLbzfZyDg8UaQ@mail.gmail.com>
-References: <20110413031904.9276.qmail@science.horizon.com>
-	<BANLkTi=AOvVELYKA=BSTsOLbzfZyDg8UaQ@mail.gmail.com>
-Date: Wed, 13 Apr 2011 09:06:11 +0400
-Message-ID: <BANLkTi=k0GMrWV5covpnGBfB30UO14z-HA@mail.gmail.com>
-Subject: Re: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: George Spelvin <linux@horizon.com>
-Cc: airlied@gmail.com, dzickus@redhat.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, ming.m.lin@intel.com, eranian@google.com,
-        sruffell@digium.com
-Content-Type: multipart/mixed; boundary=001636e0ae486a936204a0c5c44a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302621318.2604.19.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636e0ae486a936204a0c5c44a
-Content-Type: text/plain; charset=ISO-8859-1
+Hey, James.
 
-On Wed, Apr 13, 2011 at 8:34 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> There is a patch fromDon we are testing now, i will resend it in a couple of
-> hours.
->
+On Tue, Apr 12, 2011 at 10:15:18AM -0500, James Bottomley wrote:
+> So your idea is that all final puts should go through a workqueue?  Like
+> I said, that would work, but it's not just SCSI ... any call path that
+> destroys a queue has to be audited.
 
-George, mind to give these patches a shot please? (Sorry for sending
-it as attachment).
+Yeap.
 
---001636e0ae486a936204a0c5c44a
-Content-Type: application/octet-stream; name="don-apic-nmi-unmask-fix.patch"
-Content-Disposition: attachment; filename="don-apic-nmi-unmask-fix.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gmfspjbd0
+> The problem is nothing to do with sleeping context ... it's that any
+> work called by the block workqueue can't destroy that queue.  In a
+> refcounted model, that's a bit nasty.
 
-RnJvbTogRG9uIFppY2t1cyA8ZHppY2t1c0ByZWRoYXQuY29tPgpEYXRlOiBUdWUsIDEyIEFwciAy
-MDExIDEyOjMwOjMxIC0wNDAwClN1YmplY3Q6IFtQQVRDSF0gcGVyZiwgeDg2OiBmaXggdW5rbm93
-biBOTUlzIG9uIGEgUGVudGl1bTQgYm94CgpXaGVuIHVzaW5nIHBlcmYgb24gYSBQZW50aXVtNCBi
-b3gsIGxvdHMgb2YgdW5rbm93biBOTUlzIHdvdWxkIGJlIGdlbmVyYXRlZC4KVGhpcyBpcyB0aGUg
-cmVzdWx0IG9mIGEgUDQgcXVpcmsgdGhhdCBpcyBzdWJ0bGUuICBUaGUgUDQgZ2VuZXJhdGVzIGFu
-IE5NSQp3aGVuIHRoZSBjb3VudGVyIG92ZXJmbG93IGFuZCB1bmxpa2Ugb3RoZXIgYXJjaGVzIHdo
-ZXJlIHRoZSBOTUkgaXMgYSBvbmUgdGltZQpldmVudCwgdGhlIFA0IGNvbnRpbnVlcyB0byBhc3Nl
-cnQgaXRzIE5NSSB1bnRpbCBjbGVhciBieSB0aGUgT1MuCgpBcyBhIHNpZGUgZWZmZWN0IHRvIHRo
-aXMgcXVpcmssIHRoZSBOTUkgb24gdGhlIGFwaWMgaXMgbWFza2VkIG9mZiB0byBwcmV2ZW50CmEg
-c3RyZWFtIG9mIE5NSXMgdW50aWwgdGhlIG92ZXJmbG93IGZsYWcgaXMgY2xlYXJlZC4gIER1cmlu
-ZyB0aGUgcGVyZgpyZS1kZXNpZ24sIHRoaXMgc3VidGxlLW5lc3Mgd2FzIG92ZXJsb29rZWQgYW5k
-IHRoZSBhcGljIHdhcyB1bm1hc2tlZCBfYmVmb3JlXwp0aGUgb3ZlcmZsb3cgZmxhZyB3YXMgY2xl
-YXJlZC4gIEFzIGEgcmVzdWx0LCB0aGlzIGdlbmVyYXRlZCBhbiBleHRyYSBOTUkgb24KdGhlIFA0
-IG1jaGluZXMuCgpUaGUgZml4IGlzIHRyaXZpYWwsIHdhaXQgdW50aWwgdGhlIE5NSSBpcyBwcm9w
-ZXJseSBoYW5kbGVkIGJlZm9yZSB1bi1tYXNraW5nCnRoZSBhcGljLgoKU2FkbHksIGluIHRoZSBv
-bGQgbm1pIHdhdGNoZG9nIHRoZXJlIHdhcyBhIG5vdGUgdGhhdCBleHBsYWluZWQgdGhpcyBleGFj
-dApiZWhhdmlvdXIuCgpTaWduZWQtb2ZmLWJ5OiBEb24gWmlja3VzIDxkemlja3VzQHJlZGhhdC5j
-b20+ClRlc3RlZC1ieTogU2hhdW4gUnVmZmVsbCA8c3J1ZmZlbGxAZGlnaXVtLmNvbT4KVGVzdGVk
-LWJ5OiBDeXJpbGwgR29yY3Vub3YgPGdvcmN1bm92QG9wZW52ei5vcmc+CkFja2VkLWJ5OiBDeXJp
-bGwgR29yY3Vub3YgPGdvcmN1bm92QG9wZW52ei5vcmc+Ci0tLQogYXJjaC94ODYva2VybmVsL2Nw
-dS9wZXJmX2V2ZW50LmMgfCAgICAyICstCiAxIGZpbGVzIGNoYW5nZWQsIDEgaW5zZXJ0aW9ucygr
-KSwgMSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvY3B1L3BlcmZf
-ZXZlbnQuYyBiL2FyY2gveDg2L2tlcm5lbC9jcHUvcGVyZl9ldmVudC5jCmluZGV4IGVlZDM2NzNh
-Li5lMTA4ZWY4IDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9rZXJuZWwvY3B1L3BlcmZfZXZlbnQuYwor
-KysgYi9hcmNoL3g4Ni9rZXJuZWwvY3B1L3BlcmZfZXZlbnQuYwpAQCAtMTM3MCw5ICsxMzcwLDkg
-QEAgcGVyZl9ldmVudF9ubWlfaGFuZGxlcihzdHJ1Y3Qgbm90aWZpZXJfYmxvY2sgKnNlbGYsCiAJ
-CXJldHVybiBOT1RJRllfRE9ORTsKIAl9CiAKLQlhcGljX3dyaXRlKEFQSUNfTFZUUEMsIEFQSUNf
-RE1fTk1JKTsKIAogCWhhbmRsZWQgPSB4ODZfcG11LmhhbmRsZV9pcnEoYXJncy0+cmVncyk7CisJ
-YXBpY193cml0ZShBUElDX0xWVFBDLCBBUElDX0RNX05NSSk7CiAJaWYgKCFoYW5kbGVkKQogCQly
-ZXR1cm4gTk9USUZZX0RPTkU7CiAKLS0gCjEuNy40LjIKCg==
---001636e0ae486a936204a0c5c44a--
+I can see your point but please read on.
+
+> > Hmmm... maybe but at least I prefer doing explicit shutdown/draining
+> > on destruction even if the base data structure is refcounted.  Things
+> > become much more predictable that way.
+> 
+> It is pretty much instantaneous.  Unless we're executing, we cancel the
+> work.  If the work is already running, we just let it complete instead
+> of waiting for it.
+> 
+> Synchronous waits are dangerous because they cause entanglement.
+
+There are two different types of dangers involved.  One is of getting
+trapped into deadlock by recursing and ending up waiting for oneself.
+The other of continuing operation on objects which could be in dubious
+state.  I guess my point is that I prefer the former by a large
+margin.
+
+The deadlocks are more reliable in reproducibility.  Lockdep and soft
+hang check can detect them easily and a single stack dump will point
+us right to where the problem is.  The latter is much trickier.  The
+problem is more difficult to trigger and even when it triggers the
+effect often wouldn't be obvious.  Auditing for correctness is more
+difficult too - which fields are safe to access post-mortem?  Is there
+any chance that the ongoing operation might reach out to hardware
+which is already gone or claimed by another software entity?
+
+In this particular case, IMHO it's reasonable for block layer to
+require that the destruction function not to be called directly from
+request queue path although it definitely could have used better
+documentation.
+
+Thank you.
+
+-- 
+tejun
