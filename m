@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab1DMA07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 20:26:59 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59190 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751847Ab1DMA06 (ORCPT
+	id S1757470Ab1DMA1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 20:27:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36063 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751847Ab1DMA1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 20:26:58 -0400
-X-Sasl-enc: Ke2jHBUziflW5akFr05Hi4sZjZ5KNDeJWwWjrgSb4IJa 1302654417
-Message-ID: <90769A9DD8A14AE8A5A08BAC24B1245F@jem>
-From: "Rob Mueller" <robm@fastmail.fm>
-To: "David Rientjes" <rientjes@google.com>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>
-Cc: "LKML" <linux-kernel@vger.kernel.org>, "linux-mm" <linux-mm@kvack.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Christoph Lameter" <cl@linux.com>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110411172004.0361.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1104121659510.10966@chino.kir.corp.google.com>
-Subject: Re: [PATCH resend^2] mm: increase RECLAIM_DISTANCE to 30
-Date: Wed, 13 Apr 2011 10:26:50 +1000
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
+	Tue, 12 Apr 2011 20:27:02 -0400
+Date: Tue, 12 Apr 2011 17:26:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Balbir Singh <balbir@in.ibm.com>
+Subject: Re: [RFC]Documentation:accounting:getdelays.c Fix: warning:
+ variable =?UTF-8?Q?=E2=80=98i=E2=80=99?= set but not used
+Message-Id: <20110412172627.4e9c4339.akpm@linux-foundation.org>
+In-Reply-To: <1302019370-7101-1-git-send-email-justinmattock@gmail.com>
+References: <1302019370-7101-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue,  5 Apr 2011 09:02:50 -0700
+"Justin P. Mattock" <justinmattock@gmail.com> wrote:
 
->> Recently, Robert Mueller reported zone_reclaim_mode doesn't work
->> properly on his new NUMA server (Dual Xeon E5520 + Intel S5520UR MB).
->> He is using Cyrus IMAPd and it's built on a very traditional
->> single-process model.
->>
->
-> Let's add Robert to the cc to see if this is still an issue, it hasn't
-> been re-reported in over six months.
+> Keep in mind there is another warning with this file, but need am unsure what might be the best solution:
+> Documentation/accounting/getdelays.c: In function ___get_family_id___:
+> Documentation/accounting/getdelays.c:172:14: warning: variable ___rc___ set but not used [-Wunused-but-set-variable]
 
-We definitely still set this in /etc/sysctl.conf on every imap server 
-machine:
+this?
 
-vm.zone_reclaim_mode = 0
 
-I believe it still defaults to 1 otherwise. What I haven't tested is if 
-leaving it at 1 still causes problems. It definitely DID previously cause 
-big problems (I think that was around 2.6.34 or so).
+Subject: Documentation/accounting/getdelays.c: handle sendto() failures
+From: Andrew Morton <akpm@linux-foundation.org>
 
-http://blog.fastmail.fm/2010/09/15/default-zone_reclaim_mode-1-on-numa-kernel-is-bad-for-fileemailweb-servers/
+Documentation/accounting/getdelays.c: In function `get_family_id':
+Documentation/accounting/getdelays.c:172:14: warning: variable `rc' set but not used [-Wunused-but-set-variable]
 
-I'll try changing it to 1 on a machine for 4 hours, see if it makes a 
-noticeable difference and report back.
+Reported-by: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Balbir Singh <balbir@in.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-Rob
+ Documentation/accounting/getdelays.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff -puN Documentation/accounting/getdelays.c~documentation-accounting-getdelaysc-handle-sendto-failures Documentation/accounting/getdelays.c
+--- a/Documentation/accounting/getdelays.c~documentation-accounting-getdelaysc-handle-sendto-failures
++++ a/Documentation/accounting/getdelays.c
+@@ -177,6 +177,8 @@ static int get_family_id(int sd)
+ 	rc = send_cmd(sd, GENL_ID_CTRL, getpid(), CTRL_CMD_GETFAMILY,
+ 			CTRL_ATTR_FAMILY_NAME, (void *)name,
+ 			strlen(TASKSTATS_GENL_NAME)+1);
++	if (rc < 0)
++		return 0;	/* sendto() failure? */
+ 
+ 	rep_len = recv(sd, &ans, sizeof(ans), 0);
+ 	if (ans.n.nlmsg_type == NLMSG_ERROR ||
+_
 
