@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab1DMQJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:09:27 -0400
-Received: from kroah.org ([198.145.64.141]:54265 "EHLO coco.kroah.org"
+	id S932588Ab1DMQJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:09:45 -0400
+Received: from kroah.org ([198.145.64.141]:54261 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757741Ab1DMPzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 11:55:17 -0400
+	id S1757633Ab1DMPzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 11:55:16 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Apr 13 08:51:44 2011
-Message-Id: <20110413155144.895499184@clark.kroah.org>
+Message-Id: <20110413155144.799029367@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 13 Apr 2011 08:50:42 -0700
+Date: Wed, 13 Apr 2011 08:50:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Alex Elder <aelder@sgi.com>
-Subject: [18/74] xfs: prevent leaking uninitialized stack memory in FSGEOMETRY_V1
+        Julien Tinnes <jln@google.com>, Roland Dreier <roland@purestorage.com>
+Subject: [17/74] Relax si_code check in rt_sigqueueinfo and rt_tgsigqueueinfo
 In-Reply-To: <20110413155406.GA22568@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit c4d0c3b097f7584772316ee4d64a09fe0e4ddfca upstream.
+commit 243b422af9ea9af4ead07a8ad54c90d4f9b6081a upstream.
 
-The FSGEOMETRY_V1 ioctl (and its compat equivalent) calls out to
-xfs_fs_geometry() with a version number of 3.  This code path does not
-fill in the logsunit member of the passed xfs_fsop_geom_t, leading to
-the leaking of four bytes of uninitialized stack data to potentially
-unprivileged callers.
+Commit da48524eb206 ("Prevent rt_sigqueueinfo and rt_tgsigqueueinfo
+from spoofing the signal code") made the check on si_code too strict.
+There are several legitimate places where glibc wants to queue a
+negative si_code different from SI_QUEUE:
 
-v2 switches to memset() to avoid future issues if structure members
-change, on suggestion of Dave Chinner.
+ - This was first noticed with glibc's aio implementation, which wants
+   to queue a signal with si_code SI_ASYNCIO; the current kernel
+   causes glibc's tst-aio4 test to fail because rt_sigqueueinfo()
+   fails with EPERM.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Reviewed-by: Eugene Teo <eugeneteo@kernel.org>
-Signed-off-by: Alex Elder <aelder@sgi.com>
+ - Further examination of the glibc source shows that getaddrinfo_a()
+   wants to use SI_ASYNCNL (which the kernel does not even define).
+   The timer_create() fallback code wants to queue signals with SI_TIMER.
+
+As suggested by Oleg Nesterov <oleg@redhat.com>, loosen the check to
+forbid only the problematic SI_TKILL case.
+
+Reported-by: Klaus Dittrich <kladit@arcor.de>
+Acked-by: Julien Tinnes <jln@google.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/xfs_fsops.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/signal.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/xfs/xfs_fsops.c
-+++ b/fs/xfs/xfs_fsops.c
-@@ -56,6 +56,9 @@ xfs_fs_geometry(
- 	xfs_fsop_geom_t		*geo,
- 	int			new_version)
- {
-+
-+	memset(geo, 0, sizeof(*geo));
-+
- 	geo->blocksize = mp->m_sb.sb_blocksize;
- 	geo->rtextsize = mp->m_sb.sb_rextsize;
- 	geo->agblocks = mp->m_sb.sb_agblocks;
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2353,7 +2353,7 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t,
+ 	/* Not even root can pretend to send signals from the kernel.
+ 	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
+ 	 */
+-	if (info.si_code != SI_QUEUE) {
++	if (info.si_code >= 0 || info.si_code == SI_TKILL) {
+ 		/* We used to allow any < 0 si_code */
+ 		WARN_ON_ONCE(info.si_code < 0);
+ 		return -EPERM;
+@@ -2373,7 +2373,7 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pi
+ 	/* Not even root can pretend to send signals from the kernel.
+ 	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
+ 	 */
+-	if (info->si_code != SI_QUEUE) {
++	if (info->si_code >= 0 || info->si_code == SI_TKILL) {
+ 		/* We used to allow any < 0 si_code */
+ 		WARN_ON_ONCE(info->si_code < 0);
+ 		return -EPERM;
 
 
