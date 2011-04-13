@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab1DMJYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 05:24:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58100 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab1DMJYQ convert rfc822-to-8bit (ORCPT
+	id S1758116Ab1DMJ34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 05:29:56 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42782 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758010Ab1DMJ3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 05:24:16 -0400
-Subject: Re: [PATCH 04/21] sched: Change the ttwu success details
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110405152728.866866929@chello.nl>
-References: <20110405152338.692966333@chello.nl>
-	 <20110405152728.866866929@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 13 Apr 2011 11:23:50 +0200
-Message-ID: <1302686630.2388.125.camel@twins>
+	Wed, 13 Apr 2011 05:29:55 -0400
+Date: Wed, 13 Apr 2011 10:29:47 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Nat Gurumoorthy <natg@google.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v5 1/2] Use "request_muxed_region" in it87 watchdog
+ drivers
+Message-ID: <20110413102947.3bf1cc88@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110413070259.GE4070@infomag.iguana.be>
+References: <1302641290-30212-1-git-send-email-natg@google.com>
+	<1302641387-30264-1-git-send-email-natg@google.com>
+	<20110413070259.GE4070@infomag.iguana.be>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-05 at 17:23 +0200, Peter Zijlstra wrote:
-> plain text document attachment (sched-change-ttwu-return.patch)
-> try_to_wake_up() would only return a success when it would have to
-> place a task on a rq, change that to every time we change p->state to
-> TASK_RUNNING, because that's the real measure of wakeups.
+On Wed, 13 Apr 2011 09:03:00 +0200
+Wim Van Sebroeck <wim@iguana.be> wrote:
 
-So Ingo is reporting lockups with this patch on UP and I can't seem to
-reproduce with his .config nor does it seem to make any sense.
-
-The biggest change here is the movement of success = 1 in
-try_to_wake_up(). The change to ttwu_post_activation() only affects a
-tracepoint (if that changes behaviour something is seriously screwy) and
-workqueue wakeups, and I doubt extra wakeups will cause lockups.
-
-Therefore, the changes to try_to_wake_up_local() and wake_up_new_task()
-are also not interesting. Leaving us with the one change in
-try_to_wake_up().
-
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
-> ---
->  kernel/sched.c |   18 ++++++++----------
->  1 file changed, 8 insertions(+), 10 deletions(-)
+> Hi Nat,
 > 
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
+> > +	(void) request_muxed_region(REG, 2, NAME);
+> 
+> Why do we need to typecast this? Can't we just use 
+> +	request_muxed_region(REG, 2, NAME);
 
-> @@ -2505,9 +2505,9 @@ static int try_to_wake_up(struct task_st
->  #endif /* CONFIG_SMP */
->  	ttwu_activate(p, rq, wake_flags & WF_SYNC, orig_cpu != cpu,
->  		      cpu == this_cpu, en_flags);
-> -	success = 1;
->  out_running:
-> -	ttwu_post_activation(p, rq, wake_flags, success);
-> +	ttwu_post_activation(p, rq, wake_flags);
-> +	success = 1;
->  out:
->  	task_rq_unlock(rq, &flags);
->  	put_cpu();
+We really ought to use
 
-There we move success=1 so that out_running also returns success.
+	if ()
 
-out_running is the case where the task has been marked
-TASK_(UN)INTERRUPTIBLE but the schedule() function hasn't managed to
-call deactivate_task() yet.
-
-[ On UP that means ttwu took rq->lock before schedule() takes rq->lock ]
-
-In that case we used to simply flip ->state back to TASK_RUNNING and not
-return having woken up a task.
-
-Now I think that is silly, because we most certainly did a wake-up, and
-if we'd have a slightly different interleave with ttwu()/schedule() we
-would have had to do a full wakeup.
-
-So not treating that as a wakeup makes the ttwu() semantics dependent on
-timing, something which IMO doesn't make any kind of sense.
-
-Also, the only effect of also making that return a success is that
-things like __wake_up_common() would see an extra wakeup and thus wakeup
-one less task. But again, it actually was a real wakeup, the task would
-have gone to sleep otherwise.
-
-So I'm mighty puzzled as to how this causes grief.. and vexed for not
-being able to reproduce.
+in theory the request can fail if someone has hogged the resource and not
+muxed it. I'm not clear what the right thing to do in that case is -
+given it should never happen I guess log an error and bail out but that's
+a rather bigger change and perhaps should be a follow up patch ?
