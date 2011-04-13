@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118Ab1DMQS3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 12:18:29 -0400
-Received: from kroah.org ([198.145.64.141]:47393 "EHLO coco.kroah.org"
+	id S933128Ab1DMQSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 12:18:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38416 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933106Ab1DMQSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932940Ab1DMQSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Apr 2011 12:18:25 -0400
-Date: Wed, 13 Apr 2011 09:18:14 -0700
-From: Greg KH <greg@kroah.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Greg KH <gregkh@suse.de>,
-        Marc-Antoine Perennou <Marc-Antoine@perennou.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [076/105] Bluetooth: add support for Apple MacBook Pro
- 8, 2
-Message-ID: <20110413161814.GA23380@kroah.com>
-References: <20110412143613.GA19478@kroah.com>
- <20110412143556.085500585@clark.kroah.org>
- <BANLkTimkv421jT1n-uuEx_gOSi2BNhBc5Q@mail.gmail.com>
+Date: Wed, 13 Apr 2011 09:17:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Patrick McHardy <kaber@trash.net>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, David Sterba <dsterba@suse.cz>
+Subject: Re: [49/74] netfilter: h323: bug in parsing of ASN1 SEQOF field
+Message-ID: <20110413161716.GA20829@suse.de>
+References: <20110413155148.210947709@clark.kroah.org>
+ <4DA5C95B.6000706@trash.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimkv421jT1n-uuEx_gOSi2BNhBc5Q@mail.gmail.com>
+In-Reply-To: <4DA5C95B.6000706@trash.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 09:57:29AM -0600, Grant Likely wrote:
-> On Tue, Apr 12, 2011 at 8:35 AM, Greg KH <gregkh@suse.de> wrote:
-> > 2.6.38-stable review patch.  If anyone has any objections, please let us know.
-> >
+On Wed, Apr 13, 2011 at 06:03:39PM +0200, Patrick McHardy wrote:
+> Am 13.04.2011 17:51, schrieb Greg KH:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > 
 > > ------------------
-> >
-> > From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
-> >
-> > commit 63a8588debd4dc72becb9e27add9343c76301c7d upstream.
-> >
-> > Just adding the vendor details makes it work fine.
-> >
-> > Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
-> > Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > 
+> > From: David Sterba <dsterba@suse.cz>
+> > 
+> > commit b4232a22776aa5d063f890d21ca69870dbbe431b upstream.
+> > 
+> > Static analyzer of clang found a dead store which appears to be a bug in
+> > reading count of items in SEQOF field, only the lower byte of word is
+> > stored. This may lead to corrupted read and communication shutdown.
+> > 
+> > The bug has been in the module since it's first inclusion into linux
+> > kernel.
+> > 
+> > [Patrick: the bug is real, but without practical consequence since the
+> >  largest amount of sequence-of members we parse is 30.]
 > 
-> Tested-by: Grant Likely <grant.likely@secretlab.ca>
+> As mentioned in the changelog, I don't think this patch is of any
+> relevance for -stable since its a purely theoretical problem.
 
-Added to the patch, thanks.
+Ok, thanks, now removed from the queue.
 
 greg k-h
