@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab1DMShg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 14:37:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39488 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab1DMShe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 14:37:34 -0400
+	id S1757301Ab1DMSjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 14:39:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756671Ab1DMSjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 14:39:14 -0400
+Date: Wed, 13 Apr 2011 19:21:27 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: raz ben yehuda <raziebe@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: 2.6.38 sbrk regression
+Message-ID: <20110413172127.GB5734@random.random>
+References: <1302692638.15225.14.camel@raz.scalemp.com>
+ <20110413125146.GR29444@random.random>
+ <1302703579.17536.1.camel@raz.scalemp.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1104131348530.16793@p34.internal.lan>
-References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan>
- <BANLkTi==Bw6mWWJidLi+ZRzz87ck4DAqVA@mail.gmail.com> <alpine.DEB.2.02.1104131200220.2954@p34.internal.lan>
- <BANLkTinxkXi6WnAyXoZLDR+uyL+TmevuPw@mail.gmail.com> <BANLkTin6mgFqrGQJz=zNG_buRiLKHOU_BA@mail.gmail.com>
- <alpine.DEB.2.02.1104131348530.16793@p34.internal.lan>
-From: Daniel Halperin <dhalperi@cs.washington.edu>
-Date: Wed, 13 Apr 2011 11:37:12 -0700
-Message-ID: <BANLkTinLRVyKwBA7ZbEXKqa18V=+a6+cZg@mail.gmail.com>
-Subject: Re: 2.6.38: rt2800usb: high latency (1000ms)?
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Ivo Van Doorn <ivdoorn@gmail.com>, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302703579.17536.1.camel@raz.scalemp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 10:57 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
-> Hi,
->
-> When powersave is enabled, it is very jumpy, I've used satellite comms
-> before
-> and (~600ms-1200ms was more smooth) as it did not jump around as much.  The
-> application is just a standalone desktop with minimal activity for the
-> majority
-> of the time, maybe thats why..
->
-> With powersave disabled, I now see 0% packet loss (802.11n) and low ping
-> times, this looks like the proper solution for the wireless USB device I
-> am using.  By the way, is it possible/are there wireless USB devices out
-> there
-> that support wake on wireless lan (WOWL?
->
-> Your ping command with power off:
-> 1408 bytes from server (192.168.1.2): icmp_req=539 ttl=64 time=1.07 ms
-> 1408 bytes from server (192.168.1.2): icmp_req=540 ttl=64 time=1.31 ms
-> 1408 bytes from server (192.168.1.2): icmp_req=541 ttl=64 time=1.07 ms
-> 1408 bytes from server (192.168.1.2): icmp_req=542 ttl=64 time=1.26 ms
->
-> Your ping command with power on:
-> 1408 bytes from server (192.168.1.2): icmp_req=649 ttl=64 time=1.80 ms
-> 1408 bytes from server (192.168.1.2): icmp_req=650 ttl=64 time=1.85 ms
-> 1408 bytes from server (192.168.1.2): icmp_req=651 ttl=64 time=2.86 ms
-> 1408 bytes from server (192.168.1.2): icmp_req=652 ttl=64 time=1.46 ms
->
-> You are correct, if there is a lot of traffic, its good, but if the system
-> is relatively idle and all that's going on is an SSH session, there is
-> horrible
-> latency.
+On Wed, Apr 13, 2011 at 05:06:19PM +0300, raz ben yehuda wrote:
+> ok, managed to build 38-rc3 ( keep forgetting make mrproper ).
+> problem is still there:
 
-Gotcha. I might still look around in the network stack and/or driver
-and see what the time constants are. For instance:
+Oops I thought it was typo on your prev email so I didn't answer
+assuming you would test 39-rc like I suggested in my prev email, I
+really meant 2.6.39-rc3.
 
-(1) What is the AP's beacon period and DTIM? Typical values are 100
-TUs for beacons (102.4 ms) and 2 for DTIM (2 beacons per power-save
-wakeup) which should imply a mean of 100 and max of 200 ms delay even
-on pings.
-
-(2) How long does the client wait after waking up to go back to sleep?
-It should be at least a few seconds. For ssh, then, you should see
-something like a 100-200 ms delay for the first key and then nothing
-at all unless you stop typing for a bit.
-
-I'm SSHing over a Wi-Fi link that uses power save right this second,
-and have for years. It's not generally an issue, I suspect something
-worse is going on.
-
-Dan
+The fix I refer to is d527caf22e48480b102c7c6ee5b9ba12170148f7 and
+it's included in >= 2.6.39-rc1. 38-rc3 has THP but not this
+changeset. We tried to push it for 38 final but it was a bit late so
+it got merged immediately in 39-rc1 to stay on the safe side (it's
+only a performance issue and the other longstanding irq/sched latency
+issues in compaction that got fixed in 39-rc1 where actually more
+relevant than the compaction-kswapd removal).
