@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab1DMRdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 13:33:09 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45866
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751096Ab1DMRdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 13:33:08 -0400
-Date: Wed, 13 Apr 2011 10:32:33 -0700 (PDT)
-Message-Id: <20110413.103233.193707113.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Build regressions/improvements in v2.6.39-rc3
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.DEB.2.00.1104131835280.32045@ayla.of.borg>
-References: <alpine.DEB.2.00.1104131835280.32045@ayla.of.borg>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751265Ab1DMRfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 13:35:38 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:39506 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707Ab1DMRfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 13:35:37 -0400
+X-ASG-Debug-ID: 1302716135-01de284cf813fad0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DA5DEE1.9070803@fusionio.com>
+Date: Wed, 13 Apr 2011 19:35:29 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>, NeilBrown <neilb@suse.de>,
+        Dave Chinner <david@fromorbit.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <20110411223623.4278fad1@notabene.brown> <4DA2F8AD.1060605@fusionio.com> <20110412011255.GA29236@infradead.org> <4DA40F0E.1070903@fusionio.com> <20110412122248.GC31057@dastard> <4DA4456F.3070301@fusionio.com> <20110412124134.GD31057@dastard> <4DA44C86.3090305@fusionio.com> <20110412133117.GE31057@dastard> <4DA45790.2010109@fusionio.com> <20110412143452.GH31057@dastard> <20110413070827.11b2a71d@notabene.brown> <BANLkTikBEJa7bJJoLFU7NoiEgOjVHVG08A@mail.gmail.com> <1302693122.2035.20.camel@laptop> <4DA587AF.2040308@fusionio.com> <BANLkTimTGGJjXGX96LqP0YL4dcdGONFyhA@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <BANLkTimTGGJjXGX96LqP0YL4dcdGONFyhA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1302716135
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60755
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Wed, 13 Apr 2011 18:35:45 +0200 (CEST)
+On 2011-04-13 17:13, Linus Torvalds wrote:
+> On Wed, Apr 13, 2011 at 4:23 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>
+>> Linus, I've got a few other things queued up in the area, I'll add this
+>> and send them off soon. Or feel free to add this one yourself, since you
+>> already did it.
+> 
+> Ok, I committed it with Peter's and your acks.
 
-> 47 regressions:
->   + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/ethtool.h: error: expected specifier-qualifier-list before '__u32': 104, 90, 21, 282, 389, 460, 521, 444, 96, 297, 82, 57, 291, 258, 231, 482, 209, 510, 265, 113 => 104, 538, 90, 21, 523, 552, 266, 445, 292, 96, 82, 512, 563, 57, 259, 283, 298, 484, 390, 231, 209, 462, 574, 113
+Great, thanks.
 
-I do allmodconfig builds on sparc64 systems every single day using
-various versions of gcc-4.4, gcc-4.5, and gcc-4.6
+> And if you already put it in your git tree too, git will merge it.
 
-And I never ever see this build error.  Never.
+I did not, I had a feeling you'd merge this one.
 
-If you're using a cross build environment, maybe something isn't quite
-right with that?
+-- 
+Jens Axboe
+
