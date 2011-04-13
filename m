@@ -1,45 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab1DMOcs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 10:32:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43112 "EHLO mx1.redhat.com"
+	id S1756743Ab1DMOdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 10:33:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32781 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756435Ab1DMOcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 10:32:47 -0400
-Message-ID: <4DA5B403.2010203@redhat.com>
-Date: Wed, 13 Apr 2011 10:32:35 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+	id S1756435Ab1DMOdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 10:33:43 -0400
+From: =?UTF-8?q?Petr=20P=C3=ADsa=C5=99?= <ppisar@redhat.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Clean console safely 
+Date: Wed, 13 Apr 2011 16:32:49 +0200
+Message-Id: <1302705170-15712-1-git-send-email-ppisar@redhat.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mstowe@redhat.com" <mstowe@redhat.com>,
-        "dnelson@redhat.com" <dnelson@redhat.com>,
-        "rja@americas.sgi.com" <rja@americas.sgi.com>
-Subject: Re: [PATCH 2/3] x86, MCE: Drop default decoding notifier
-References: <20110413132409.GB1900@gere.osrc.amd.com> <1302701810-2471-2-git-send-email-bp@amd64.org> <4DA5ACB2.1070505@redhat.com> <20110413141829.GE1987@aftab> <4DA5B1B1.5090905@redhat.com> <20110413142648.GB2791@aftab>
-In-Reply-To: <20110413142648.GB2791@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
->> .. right ... but we would still see nonsensical messages before the
->> panic, which will confuse the end user.  IMO, dump the messages unless
->> it's UC.  And we shouldn't print out the human readable message at all.
->>     
-> I'd still leave the "mcelog ... " line though as a hint.
->
->   
+I've posted following patch to linux-kernel already and Alan Cox liked it
+(http://thread.gmane.org/gmane.linux.kernel/1117336). I'd like to ask you,
+a TTY maintainer, to apply it to next Linux tree if it's acceptable.
 
-:)
-
-There are no messages -- that's part of the problem.  We're asking a
-user to do something for a message that doesn't exist ...
-
-P.
-
+-- Petr
