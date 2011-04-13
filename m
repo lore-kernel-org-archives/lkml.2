@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab1DMDmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Apr 2011 23:42:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43296 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756932Ab1DMDmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Apr 2011 23:42:01 -0400
-Date: Tue, 12 Apr 2011 20:40:43 -0700
-From: Greg KH <gregkh@suse.de>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: irq allocation for pci drivers
-Message-ID: <20110413034043.GA813@suse.de>
-References: <6E21E5352C11B742B20C142EB499E0481CB17E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	id S1757366Ab1DMDuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Apr 2011 23:50:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45906 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756834Ab1DMDup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Apr 2011 23:50:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eDMj50jHedfcD0a3Hu8X6TUnNzmrTWp/1yupfX48u/uB8IwyW5C03K6tXEd5Sudg88
+         2pNygqwesDSpHxkEtj+A15YVbaeJv/9eWTVZCxAPz4KkrOVXzsgqNB5YzF6HDNALHdmx
+         9Hk3LqmCINecsksgLiNzPrWyZGNZ0RejRoiOk=
+Date: Wed, 13 Apr 2011 12:50:37 +0900
+From: "tj@kernel.org" <tj@kernel.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>
+Subject: Re: [PATCH 3/4]percpu_counter: fix code for 32bit systems
+Message-ID: <20110413035037.GA24161@mtj.dyndns.org>
+References: <1302595444.3981.129.camel@sli10-conroe>
+ <1302599035.3233.27.camel@edumazet-laptop>
+ <1302656465.3981.133.camel@sli10-conroe>
+ <1302661927.2811.18.camel@edumazet-laptop>
+ <1302662517.3981.161.camel@sli10-conroe>
+ <1302662853.2811.41.camel@edumazet-laptop>
+ <1302663781.3981.169.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481CB17E@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1302663781.3981.169.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 12, 2011 at 11:57:22PM +0000, KY Srinivasan wrote:
-> Greg,
-> 
->  
-> 
-> Has something changed in the PCI code in the Linux-next tree – 2.6.39-rc1-12
-> with
-> 
-> regards to irq allocation? Earlier (a few weeks ago), the vmbus driver would
-> get the irq allocated as part
-> 
-> of it being now a pci driver. Currently, however the system is setting pdev->
-> irq to
-> 
-> 0 and needless to say, request_irq() is failing.
+Hello, guys.
 
-{sigh}  Please fix your email client...
+On Wed, Apr 13, 2011 at 11:03:01AM +0800, Shaohua Li wrote:
+> I can do this, but please give a reason. If network code is the only
+> place requiring disable irq, why not network code do it?
 
-Anyway, I have no idea, please use 'git bisect' to track down the
-problem commit that causes this.
+This thread is pointless.  The next patch converts it to atomic64_t
+and the lock is removed anyway.  I think Eric's argument makes sense
+given that atomic64_t translates into irqsave spinlock (it has to) in
+generic 32bit implementation.  That said, this is all a moot point.
+We might as well simply drop this patch and directly convert to
+atomic64_t.
 
-thanks,
+Thanks.
 
-greg k-h
+-- 
+tejun
