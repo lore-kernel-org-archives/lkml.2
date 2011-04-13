@@ -1,132 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab1DMKgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 06:36:55 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:36757 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758205Ab1DMKgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 06:36:54 -0400
-X-ASG-Debug-ID: 1302691011-01de284cf813bd70001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DA57CC0.8010400@fusionio.com>
-Date: Wed, 13 Apr 2011 12:36:48 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1758292Ab1DMKh0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 06:37:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58440 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758202Ab1DMKhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 06:37:25 -0400
+Date: Wed, 13 Apr 2011 12:37:55 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Alan Cox <alan@linux.jf.intel.com>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] gma500: Add a gtt allocator
+Message-ID: <20110413103755.GA14017@avionic-0098.adnet.avionic-design.de>
+References: <20110413093519.28527.36552.stgit@localhost.localdomain>
+ <20110413093624.28527.33558.stgit@localhost.localdomain>
 MIME-Version: 1.0
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-CC: Tejun Heo <tj@kernel.org>, Rob Landley <rlandley@parallels.com>,
-        Pete Clements <clem@clem.clem-digital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Commit 7eaceaccab5f40 causing boot hang.
-References: <201103291551.p2TFpDqZ001692@clem.clem-digital.net>	 <4D92C874.7040104@parallels.com> <4D931634.5030807@fusionio.com>	 <4D933584.5050005@parallels.com> <4D94432D.5080601@fusionio.com>	 <4D944544.9040705@parallels.com> <4D945247.4080404@fusionio.com>	 <4D945976.8000401@fusionio.com> <20110331121100.GD3385@htj.dyndns.org>	 <4D9474AA.4070402@fusionio.com> <4D947D12.6070505@rsk.demon.co.uk>	 <4D947F29.5050203@fusionio.com> <1301577831.1984.2.camel@castor.rsk>	 <4D9482BA.8080807@fusionio.com>  <1301582977.1984.7.camel@castor.rsk>	 <1301924863.8526.9.camel@castor.rsk> <1302690300.1993.7.camel@castor.rsk>
-X-ASG-Orig-Subj: Re: Commit 7eaceaccab5f40 causing boot hang.
-In-Reply-To: <1302690300.1993.7.camel@castor.rsk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1302691011
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60727
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
+Content-Disposition: inline
+In-Reply-To: <20110413093624.28527.33558.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:n91OCLwKJYGcAZzYvSsDqTqvsXjTCPcH8nHkNK2+HBP
+ 9CzjZ+vWydGZy7JaNtu61T6Z9yfYqJnPllraFd+NpuMCtuVIDm
+ YHow0zIV5XTTr5DVweu7GXiRCUtw/+kNAjtGDmOPnk02EKwa6f
+ pT+5X8nP8Ahr1/oIookyXKuFOqNwu3+RAvYQknSdUDKEt5If94
+ HcGlzsHTH1c6hnXBp3UhdwvPqmOg722xizf57OsDktXzKSv4d6
+ zUzl79PQY2yOz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-13 12:25, Richard Kennedy wrote:
-> On Mon, 2011-04-04 at 14:47 +0100, Richard Kennedy wrote:
->> On Thu, 2011-03-31 at 15:49 +0100, Richard Kennedy wrote:
->>> On Thu, 2011-03-31 at 15:33 +0200, Jens Axboe wrote:
->>> [...]
->>>>>>> Hi Jens,
->>>>>>>
->>>>>>> I'm seeing a problem with fio never completing when writing to 2 disks
->>>>>>> simultaneously. In my test case I'm writing 2Gb to both a LVM volume & a
->>>>>>> pata drive on x86_64 on a AMD X2. Could this be a related issue?
->>>>>>>
->>>>>>> I'm not getting anything reported in the log, lockup detection doesn't
->>>>>>> report anything either. The write seems to have finished (the disk light
->>>>>>> activity has stopped) and the cpu cores are both below 10% usage, but
->>>>>>> fio never returns. The test does complete some times, but it seems to be
->>>>>>> one 1 in 4.
->>>>>>
->>>>>> So when you say PATA, it's /dev/hdaX something as well?
->>>>>>
->>>>>>> I'm going to try tracing it and see if I can spot where it's stuck.
->>>>>>
->>>>>> Thanks, that would be nice.
->>>>>>
->>>>> The second drive is /dev/sdb1 mounted on /opt, both file systems are
->>>>> ext4.
->>>>
->>>> So probably not related. What does the fio job look like?
->>>>
->>> fio job file --
->>> [global]
->>> pre_read=1
->>> ioengine=mmap
->>>
->>> [f1]
->>> size=2g
->>> rw=write
->>> directory=/home/tests
->>>
->>> [f2]
->>> size=2g
->>> rw=write
->>> directory=/opt/tests
->>>
->>> Fio gets run from a script that also collects stats but it's been
->>> running without any problems up until 2.6.39-rc1.
->>>
->> Hi Jens
->> I've upgrade to the latest fio version in the git repo 1.51 and I'm
->> still seeing this problem. 
->>
->> Fio gets stuck after it writes the 100% complete message and strace on
->> the processes shows this.
->>
->> the controlling fio process :- 
->>  ...
->> [pid  8439] wait4(8442, 0x7fff848203ac, WNOHANG, NULL) = 0
->> [pid  8439] nanosleep({0, 10000000}, NULL) = 0
->> [pid  8439] wait4(8441, 0x7fff848203ac, WNOHANG, NULL) = 0
->> [pid  8439] wait4(8442, 0x7fff848203ac, WNOHANG, NULL) = 0
->> [pid  8439] nanosleep({0, 10000000}
->>
->> & the 2 workers are both stopped here, strace shows only the one line
->> for each process.
->>
->> Process 8441 attached - interrupt to quit
->> futex(0x7f9db76a802c, FUTEX_WAIT_PRIVATE, 2, NULL
->>
->>
->> Process 8442 attached - interrupt to quit
->> futex(0x7f9db76a802c, FUTEX_WAIT_PRIVATE, 2, NULL
->>
->> How do I find out which futex it's waiting for? 
->> Any ideas where I should look next ?
->>
->> I can run the same test successfully on 2.6.38 so is it worth trying to
->> bisect this ? 
->>
->> thanks 
->> Richard
->>
-> My problem has gone away in v2.6.39-rc3.
-> I've just finished bisecting it down to 6de9843dab3f, & that got
-> reverted in rc3, so no problem ;)
-> 
-> (The data corruption caused by that faulty commit was zeroing out the
-> shared mutexs in fio & the worker threads were getting stuck on the
-> writeout_mutex.)
 
-Great, that's one less regression to worry about :-)
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+* Alan Cox wrote:
+> At the moment we don't do any page backing for the GTT so only the stolen
+> area pages will actually work. That is fine for our initial framebuffer a=
+nd
+> a bit of testing but will need resolution (including alternate mmap metho=
+ds
+> and the like for s/g areas) eventually.
+>=20
+> Rather than use some of the overcomplex stuff in the DRM we use the exist=
+ing
+> Linux resource allocators to hand out framebuffers and the like. This als=
+o has
+> the nice result that /proc/iomem shows the allocations.
+>=20
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+>=20
+>  drivers/staging/gma500/psb_drv.h |   16 +++-
+>  drivers/staging/gma500/psb_fb.c  |   32 +++++---
+>  drivers/staging/gma500/psb_fb.h  |   13 +--
+>  drivers/staging/gma500/psb_gtt.c |  155 ++++++++++++++++++++++++++++++++=
+++++++
+>  drivers/staging/gma500/psb_gtt.h |   30 ++++++-
+>  5 files changed, 217 insertions(+), 29 deletions(-)
+>=20
+> diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/ps=
+b_drv.h
+> index c3609e0..7a0506a 100644
+> --- a/drivers/staging/gma500/psb_drv.h
+> +++ b/drivers/staging/gma500/psb_drv.h
+> @@ -21,6 +21,7 @@
+>  #define _PSB_DRV_H_
+> =20
+>  #include <linux/version.h>
+> +#include <linux/kref.h>
+> =20
+>  #include <drm/drmP.h>
+>  #include "drm_global.h"
+> @@ -228,6 +229,7 @@ struct psb_intel_opregion {
+>  	int enabled;
+>  };
+> =20
+> +
 
--- 
-Jens Axboe
+Gratuitous newline?
 
+Thierry
+
+--AqsLC8rIMeq19msA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk2lfQMACgkQZ+BJyKLjJp/77ACeIDz9wrzxzFAjO2HHBlFnzrQz
+DRsAn17i3qBvDi+f2yJunfA95U+0YD9i
+=cgzP
+-----END PGP SIGNATURE-----
+
+--AqsLC8rIMeq19msA--
