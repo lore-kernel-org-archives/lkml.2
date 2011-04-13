@@ -1,272 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945Ab1DMV6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 17:58:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47037 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab1DMV6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 17:58:17 -0400
-Date: Wed, 13 Apr 2011 14:56:07 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: "Mark A. Allyn" <mark.a.allyn@intel.com>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com, alan@linux.intel.com,
-        jayant.mangalampalli@intel.com, venkat.r.gokulrangan@intel.com
-Subject: Re: Re-send (What else needs to be done to the sep driver
- (staging/sep))
-Message-Id: <20110413145607.3257c83b.randy.dunlap@oracle.com>
-In-Reply-To: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
-References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S933185Ab1DMV7u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 17:59:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28292 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758403Ab1DMV7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 17:59:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,207,1301900400"; 
+   d="scan'208";a="628188417"
+Subject: [PATCH] vfs: make vfs_mount lock scale for file systems without
+ mount point
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>
+Cc: Matthew Wilcox <willy@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, Tony Luck <tony.luck@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 15:00:11 -0700
+Message-ID: <1302732011.2592.102.camel@schen9-DESK>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4DA61C73.0004:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011 14:29:35 -0700 (PDT) Mark A. Allyn wrote:
+For a number of file systems that don't have a mount point (e.g. sockfs
+and pipefs), they are not marked as long term. Therefore in
+mntput_no_expire, all locks in vfs_mount lock are taken instead of just
+local cpu's lock to aggregate reference counts when we release
+reference to file objects.  In fact, only local lock need to have been
+taken to update ref counts as these file systems are in no danger of
+going away unless we are ready to unregister them and we do not need to
+check ref count aggregate going to 0 to free the mount structure. For an
+exim mail server workload with 96 clients running on a 4 socket
+Nehalem-EX system, 37% of cpu time is in contention for the
+vfsmount_lock due to heavy use of mntput_no_expire when many pipes and
+sockets being opened and closed.
 
-> Sorry, I had an incorrect return address config in alpine. . .
-> 
-> What else needs to be done to the sep driver in order for it to be moved 
-> to the kernel from staging?
+The attached patch marks file systems without mount point as long term.
+The contentions of vfs_mount lock is now completely eliminated.  
+
+I have considered consolidating call to mnt_make_longterm from within
+kern_mount.  However, there are cases like mtd_inode_fs which can
+release the file system, making it necessary to make explicit call to
+mnt_make_shortterm instead from somewhere like a kern_unmount before
+doing the final mntput.  So I opted to leave explicit mnt_make_longterm
+call after the respective file systems are registered so people will
+remember to add the mnt_make_shortterm call if they decide to unregister
+the file system at some point.  It is a bit ugly as Nick and Alexander's
+original implementation meant to hide mnt_make_longterm and
+mnt_make_shortterm.  Suggestions on better implementations are welcomed.
 
 
-1.  It's usually better for loops like this to have some hw-independent escape,
-like a timeout or iteration counter exit.
-
-static inline void sep_wait_sram_write(struct sep_device *dev)
-{
-	u32 reg_val;
-	do {
-		reg_val = sep_read_reg(dev, HW_SRAM_DATA_READY_REG_ADDR);
-	} while (!(reg_val & 1));
-}
-
-
-2.  Update Documentation/ioctl/ioctl-number.txt based on sep_driver_api.h.
-
-
-and apply the following cleanup patch (I have not looked at sep_driver.c yet).
-
----
-From: Randy Dunlap <randy.dunlap@oracle.com>
-
-sep_driver cleanups: fix some coding style & typos.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/staging/sep/Kconfig              |    2 -
- drivers/staging/sep/Makefile             |    1 
- drivers/staging/sep/TODO                 |    2 -
- drivers/staging/sep/sep_dev.h            |    3 --
- drivers/staging/sep/sep_driver_api.h     |   26 ++++++++-------------
- drivers/staging/sep/sep_driver_config.h  |   26 ++++++++-------------
- drivers/staging/sep/sep_driver_hw_defs.h |    1 
- 7 files changed, 25 insertions(+), 36 deletions(-)
-
---- linux-next-20110413.orig/drivers/staging/sep/Kconfig
-+++ linux-next-20110413/drivers/staging/sep/Kconfig
-@@ -3,7 +3,7 @@ config DX_SEP
- 	depends on PCI
- 	help
- 	  Discretix SEP driver; used for the security processor subsystem
--	  on bard the Intel Mobile Internet Device.
-+	  on board the Intel Mobile Internet Device.
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index 89accc6..3e4d5ba 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -1557,6 +1557,7 @@ init_pfm_fs(void)
+ 			unregister_filesystem(&pfm_fs_type);
+ 		else
+ 			err = 0;
++		mnt_make_longterm(pfm_fs_type);
+ 	}
+ 	return err;
+ }
+diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
+index 145b3d0d..0e8b487 100644
+--- a/drivers/mtd/mtdchar.c
++++ b/drivers/mtd/mtdchar.c
+@@ -1187,6 +1187,7 @@ static int __init init_mtdchar(void)
+ 		pr_notice("Error mounting mtd_inodefs filesystem: %d\n", ret);
+ 		goto err_unregister_filesystem;
+ 	}
++	mnt_make_longterm(mtd_inode_mnt);
+ 	register_mtd_user(&mtdchar_notifier);
  
- 	  The driver's name is sep_driver.
+ 	return ret;
+@@ -1201,6 +1202,7 @@ err_unregister_chdev:
+ static void __exit cleanup_mtdchar(void)
+ {
+ 	unregister_mtd_user(&mtdchar_notifier);
++	mnt_make_shortterm(mtd_inode_mnt);
+ 	mntput(mtd_inode_mnt);
+ 	unregister_filesystem(&mtd_inodefs_type);
+ 	__unregister_chrdev(MTD_CHAR_MAJOR, 0, 1 << MINORBITS, "mtd");
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index c5567cb..f8f3656 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -229,6 +229,7 @@ static int __init anon_inode_init(void)
+ 		error = PTR_ERR(anon_inode_inode);
+ 		goto err_mntput;
+ 	}
++	mnt_make_longterm(anon_inode_mnt);
  
---- linux-next-20110413.orig/drivers/staging/sep/Makefile
-+++ linux-next-20110413/drivers/staging/sep/Makefile
-@@ -1,2 +1 @@
- obj-$(CONFIG_DX_SEP) := sep_driver.o
--
---- linux-next-20110413.orig/drivers/staging/sep/TODO
-+++ linux-next-20110413/drivers/staging/sep/TODO
-@@ -1,4 +1,4 @@
- Todo's so far (from Alan Cox)
- - Check whether it can be plugged into any of the kernel crypto API
-   interfaces - Crypto API 'glue' is still not ready to submit
--- Clean up un-needed debug prints - Started to work on this
-+- Clean up unneeded debug prints - Started to work on this
---- linux-next-20110413.orig/drivers/staging/sep/sep_dev.h
-+++ linux-next-20110413/drivers/staging/sep/sep_dev.h
-@@ -103,7 +103,6 @@ struct sep_device {
- 	u32 nr_dcb_creat;
+ 	return 0;
  
- 	struct sep_dma_resource dma_res_arr[SEP_MAX_NUM_SYNC_DMA_OPS];
--
- };
- 
- static inline void sep_write_reg(struct sep_device *dev, int reg, u32 value)
-@@ -118,7 +117,7 @@ static inline u32 sep_read_reg(struct se
- 	return readl(addr);
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index c1511c6..81c578d 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -501,6 +501,7 @@ void __init bdev_cache_init(void)
+ 	bd_mnt = kern_mount(&bd_type);
+ 	if (IS_ERR(bd_mnt))
+ 		panic("Cannot create bdev pseudo-fs");
++	mnt_make_longterm(bd_mnt);
+ 	/*
+ 	 * This vfsmount structure is only used to obtain the
+ 	 * blockdev_superblock, so tell kmemleak not to report it.
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 7dba2ed..c474853 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2386,10 +2386,16 @@ static struct mnt_namespace *alloc_mnt_ns(void)
+ 	return new_ns;
  }
  
--/* wait for SRAM write complete(indirect write */
-+/* wait for SRAM write complete (indirect write) */
- static inline void sep_wait_sram_write(struct sep_device *dev)
++/* For file systems that don't have mount point, we should call mnt_make_longterm after
++ * registering the file system so the more efficient read_lock instead of write_lock 
++ * will be taken for vfsmount_lock when we release reference to objects in the 
++ * file systems.  Before the file system is unregistered, we should call mnt_make_shortterm.
++ */
+ void mnt_make_longterm(struct vfsmount *mnt)
  {
- 	u32 reg_val;
---- linux-next-20110413.orig/drivers/staging/sep/sep_driver_api.h
-+++ linux-next-20110413/drivers/staging/sep/sep_driver_api.h
-@@ -38,10 +38,6 @@
- #define SEP_DRIVER_SRC_PRINTF		3
+ 	__mnt_make_longterm(mnt);
+ }
++EXPORT_SYMBOL_GPL(mnt_make_longterm);
  
- 
--/*-------------------------------------------
--    TYPEDEFS
------------------------------------------------*/
--
- struct alloc_struct {
- 	/* offset from start of shared pool area */
- 	u32  offset;
-@@ -60,8 +56,8 @@ struct caller_id_struct {
- };
+ void mnt_make_shortterm(struct vfsmount *mnt)
+ {
+@@ -2401,6 +2407,7 @@ void mnt_make_shortterm(struct vfsmount *mnt)
+ 	br_write_unlock(vfsmount_lock);
+ #endif
+ }
++EXPORT_SYMBOL_GPL(mnt_make_shortterm);
  
  /*
--  structure that represents DCB
--*/
-+ * structure that represents DCB
-+ */
- struct sep_dcblock {
- 	/* physical address of the first input mlli */
- 	u32	input_mlli_address;
-@@ -89,8 +85,8 @@ struct sep_caller_id_entry {
- };
+  * Allocate a new namespace structure and populate it with contents
+diff --git a/fs/pipe.c b/fs/pipe.c
+index da42f7d..05b38c1 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -1285,12 +1285,14 @@ static int __init init_pipe_fs(void)
+ 			err = PTR_ERR(pipe_mnt);
+ 			unregister_filesystem(&pipe_fs_type);
+ 		}
++		mnt_make_longterm(pipe_mnt);
+ 	}
+ 	return err;
+ }
  
- /*
--	command structure for building dcb block (currently for ext app only
--*/
-+ * command structure for building dcb block (currently for ext app only)
-+ */
- struct build_dcb_struct {
- 	/* address value of the data in */
- 	aligned_u64 app_in_address;
-@@ -106,13 +102,11 @@ struct build_dcb_struct {
- 	u32  tail_block_size;
- };
+ static void __exit exit_pipe_fs(void)
+ {
++	mnt_make_shortterm(pipe_mnt);
+ 	unregister_filesystem(&pipe_fs_type);
+ 	mntput(pipe_mnt);
+ }
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 604f122..a7c9030 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -112,5 +112,7 @@ extern void mnt_set_expiry(struct vfsmount *mnt, struct list_head *expiry_list);
+ extern void mark_mounts_for_expiry(struct list_head *mounts);
  
--/**
-+/*
-  * @struct sep_dma_map
-  *
-  * Structure that contains all information needed for mapping the user pages
-  *	     or kernel buffers for dma operations
-- *
-- *
-  */
- struct sep_dma_map {
- 	/* mapped dma address */
-@@ -150,8 +144,10 @@ struct sep_dma_resource {
- };
+ extern dev_t name_to_dev_t(char *name);
++extern void mnt_make_longterm(struct vfsmount *mnt);
++extern void mnt_make_shortterm(struct vfsmount *mnt);
  
+ #endif /* _LINUX_MOUNT_H */
+diff --git a/net/socket.c b/net/socket.c
+index 5212447..a66d034 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2423,6 +2423,7 @@ static int __init sock_init(void)
+ 		err = PTR_ERR(sock_mnt);
+ 		goto out_mount;
+ 	}
++	mnt_make_longterm(sock_mnt);
  
--/* command struct for translating rar handle to bus address
--   and setting it at predefined location */
-+/*
-+ * command struct for translating rar handle to bus address
-+ * and setting it at predefined location
-+ */
- struct rar_hndl_to_bus_struct {
- 
- 	/* rar handle */
-@@ -159,8 +155,8 @@ struct rar_hndl_to_bus_struct {
- };
- 
- /*
--  structure that represent one entry in the DMA LLI table
--*/
-+ * structure that represent one entry in the DMA LLI table
-+ */
- struct sep_lli_entry {
- 	/* physical address */
- 	u32 bus_address;
---- linux-next-20110413.orig/drivers/staging/sep/sep_driver_config.h
-+++ linux-next-20110413/drivers/staging/sep/sep_driver_config.h
-@@ -33,9 +33,7 @@
- #define __SEP_DRIVER_CONFIG_H__
- 
- 
--/*--------------------------------------
--  DRIVER CONFIGURATION FLAGS
--  -------------------------------------*/
-+/* DRIVER CONFIGURATION FLAGS */
- 
- /* if flag is on , then the driver is running in polling and
- 	not interrupt mode */
-@@ -48,9 +46,7 @@
- /* the mode for running on the ARM1172 Evaluation platform (flag is 1) */
- #define SEP_DRIVER_ARM_DEBUG_MODE                       0
- 
--/*-------------------------------------------
--	INTERNAL DATA CONFIGURATION
--	-------------------------------------------*/
-+/* INTERNAL DATA CONFIGURATION */
- 
- /* flag for the input array */
- #define SEP_DRIVER_IN_FLAG                              0
-@@ -64,11 +60,11 @@
- /* minimum data size of the MLLI table */
- #define SEP_DRIVER_MIN_DATA_SIZE_PER_TABLE		16
- 
--/* flag that signifies tah the lock is
-+/* flag that signifies that the lock is
- currently held by the process (struct file) */
- #define SEP_DRIVER_OWN_LOCK_FLAG                        1
- 
--/* flag that signifies tah the lock is currently NOT
-+/* flag that signifies that the lock is currently NOT
- held by the process (struct file) */
- #define SEP_DRIVER_DISOWN_LOCK_FLAG                     0
- 
-@@ -109,9 +105,9 @@ held by the process (struct file) */
- 
- 
- /*
--	the maximum length of the message - the rest of the message shared
--	area will be dedicated to the dma lli tables
--*/
-+ * the maximum length of the message - the rest of the message shared
-+ *area will be dedicated to the dma lli tables
-+ */
- #define SEP_DRIVER_MAX_MESSAGE_SIZE_IN_BYTES			(8 * 1024)
- 
- /* the size of the message shared area in pages */
-@@ -142,9 +138,9 @@ held by the process (struct file) */
- 	DATA POOL areas. area must be module 4k */
- #define SEP_DRIVER_MMMAP_AREA_SIZE				(1024 * 28)
- 
--/*-----------------------------------------------
--	offsets of the areas starting from the shared area start address
--*/
-+/*
-+ * offsets of the areas starting from the shared area start address
-+ */
- 
- /* message area offset */
- #define SEP_DRIVER_MESSAGE_AREA_OFFSET_IN_BYTES			0
-@@ -205,7 +201,7 @@ held by the process (struct file) */
- /* size of the caller id hash (sha2) */
- #define SEP_CALLER_ID_HASH_SIZE_IN_BYTES                      32
- 
--/* size of the caller id hash (sha2) in 32 bit words */
-+/* size of the caller id hash (sha2) in 32-bit words */
- #define SEP_CALLER_ID_HASH_SIZE_IN_WORDS                8
- 
- /* maximum number of entries in the caller id table */
---- linux-next-20110413.orig/drivers/staging/sep/sep_driver_hw_defs.h
-+++ linux-next-20110413/drivers/staging/sep/sep_driver_hw_defs.h
-@@ -37,7 +37,6 @@
- 
- /*----------------------- */
- /* HW Registers Defines.  */
--/*                        */
- /*---------------------- -*/
- 
- 
+ 	/* The real protocol initialization is performed in later initcalls.
+ 	 */
+
+
+
