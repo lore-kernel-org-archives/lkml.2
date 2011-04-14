@@ -1,91 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933937Ab1DNShH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:37:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37257 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438Ab1DNRpY (ORCPT
+	id S1759332Ab1DNSiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:38:21 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:57886 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759081Ab1DNSiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:45:24 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Lytochkin Boris <lytboris@gmail.com>,
-        Alexander Beregalov <a.beregalov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 007/209] serial: add support for OX16PCI958 card
-Date: Thu, 14 Apr 2011 13:40:37 -0400
-Message-Id: <1302803039-9400-8-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 14 Apr 2011 14:38:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=pWhelesGbx0S3074pRMmqlTocxaSc91+H2OrUG+JK7hP6yx6GtuwxpfmnDYWtobAof
+         j6x4kin1WW1LCpcpOKkw==
+Date: Thu, 14 Apr 2011 11:38:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch v2] x86: allow ZONE_DMA to be configurable
+Message-ID: <alpine.DEB.2.00.1104141134260.386@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lytochkin Boris <lytboris@gmail.com>
+ZONE_DMA is unnecessary for a large number of machines that do not
+require addressing in the lower 16MB of memory because they do not use
+ISA devices with 16-bit address registers (plus one page byte register).
 
-  =====================================================================
-  | This is a commit scheduled for the next v2.6.34 longterm release. |
-  | If you see a problem with using this for longterm, please comment.|
-  =====================================================================
+This patch allows users to disable ZONE_DMA for x86 if they know they
+will not be using such devices with their kernel.
 
-commit e847003f00d5eca3e3b3a6a1199f82b51293faf6 upstream.
+This prevents the VM from unnecessarily reserving a ratio of memory
+(defaulting to 1/256th of system capacity) with lowmem_reserve_ratio
+for such allocations when it will never be used.
 
-Signed-off-by: Lytochkin Boris <lytboris@gmail.com>
-Tested-by: Lytochkin Boris <lytboris@gmail.com>
-Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- drivers/serial/8250_pci.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ v2: updated from October 2010
 
-diff --git a/drivers/serial/8250_pci.c b/drivers/serial/8250_pci.c
-index 01c012d..c0a4860 100644
---- a/drivers/serial/8250_pci.c
-+++ b/drivers/serial/8250_pci.c
-@@ -982,6 +982,7 @@ static int skip_tx_en_setup(struct serial_private *priv,
- #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
- #define PCI_VENDOR_ID_ADVANTECH		0x13fe
- #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
-+#define PCI_DEVICE_ID_OXSEMI_16PCI958	0x9538
- 
- /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
- #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
-@@ -1530,6 +1531,8 @@ enum pci_board_num_t {
- 	pbn_b2_4_921600,
- 	pbn_b2_8_921600,
- 
-+	pbn_b2_8_1152000,
-+
- 	pbn_b2_bt_1_115200,
- 	pbn_b2_bt_2_115200,
- 	pbn_b2_bt_4_115200,
-@@ -1944,6 +1947,13 @@ static struct pciserial_board pci_boards[] __devinitdata = {
- 		.uart_offset	= 8,
- 	},
- 
-+	[pbn_b2_8_1152000] = {
-+		.flags		= FL_BASE2,
-+		.num_ports	= 8,
-+		.base_baud	= 1152000,
-+		.uart_offset	= 8,
-+	},
-+
- 	[pbn_b2_bt_1_115200] = {
- 		.flags		= FL_BASE2|FL_BASE_BARS,
- 		.num_ports	= 1,
-@@ -2840,6 +2850,9 @@ static struct pci_device_id serial_pci_tbl[] = {
- 	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI952,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_bt_2_921600 },
-+	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI958,
-+		PCI_ANY_ID , PCI_ANY_ID, 0, 0,
-+		pbn_b2_8_1152000 },
- 
- 	/*
- 	 * Oxford Semiconductor Inc. Tornado PCI express device range.
--- 
-1.7.4.4
+     H. Peter Anvin requested that CONFIG_EMBEDDED be renamed to
+     CONFIG_EXPERT prior to this change in the original thread:
 
+	http://marc.info/?t=128701541500005
+
+     I did that at Ingo's suggestion.  Also, CONFIG_GENERIC_ISA_DMA
+     and CONFIG_ISA_DMA_API are now configurable on x86 as discussed
+     in the same thread, as well, for additional text savings in
+     combination with this patch.
+
+ arch/x86/Kconfig      |    9 ++++++++-
+ arch/x86/mm/init_32.c |    2 ++
+ arch/x86/mm/init_64.c |    2 ++
+ 3 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -112,7 +112,14 @@ config MMU
+ 	def_bool y
+ 
+ config ZONE_DMA
+-	def_bool y
++	bool "DMA memory allocation support" if EXPERT
++	default y
++	help
++	  DMA memory allocation support allows old ISA devices with 16-bit
++	  address registers to allocate memory within the first 16MB of
++	  address space.  Disable if no such devices will be used.
++
++	  If unsure, say Y.
+ 
+ config SBUS
+ 	bool
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -678,8 +678,10 @@ static void __init zone_sizes_init(void)
+ {
+ 	unsigned long max_zone_pfns[MAX_NR_ZONES];
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
++#ifdef CONFIG_ZONE_DMA
+ 	max_zone_pfns[ZONE_DMA] =
+ 		virt_to_phys((char *)MAX_DMA_ADDRESS) >> PAGE_SHIFT;
++#endif
+ 	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
+ #ifdef CONFIG_HIGHMEM
+ 	max_zone_pfns[ZONE_HIGHMEM] = highend_pfn;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -616,7 +616,9 @@ void __init paging_init(void)
+ 	unsigned long max_zone_pfns[MAX_NR_ZONES];
+ 
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
++#ifdef CONFIG_ZONE_DMA
+ 	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
++#endif
+ 	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
+ 	max_zone_pfns[ZONE_NORMAL] = max_pfn;
+ 
