@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759483Ab1DNUC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:02:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57554 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759462Ab1DNUCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:02:11 -0400
-Date: Thu, 14 Apr 2011 12:58:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Bill Gatliff <bgat@billgatliff.com>, linux-kernel@vger.kernel.org,
-        linux-embedded@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PWM v9 1/3] PWM: Implement a generic PWM framework
-Message-ID: <20110414195842.GA18872@suse.de>
-References: <1301630392-20793-1-git-send-email-bgat@billgatliff.com>
- <1301630392-20793-2-git-send-email-bgat@billgatliff.com>
- <BANLkTi=1Nh+EcZw_U6U8ZS2yVyqmCtuAcQ@mail.gmail.com>
+	id S932649Ab1DNUFN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:05:13 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37224 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758243Ab1DNUFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 16:05:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=iEZQvgtdWjUdXHXNSxtIh2MgwwMo4I3cgZgGmWdCHZZJi9y+UT6tL1cRpRxv34OLAY
+         LcF72YL76nPoCtNjmCUpe8KYo2DLRQGCPe2dfz5VfLN1DEa+FSw6A8Lbhlzh2emJ4Urz
+         1EDGuVf8XSNZ/pmF115+H9mz7CY5Yak7J7hqI=
+Message-ID: <4DA75373.9040705@openvz.org>
+Date: Fri, 15 Apr 2011 00:05:07 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=1Nh+EcZw_U6U8ZS2yVyqmCtuAcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        Shaun Ruffell <sruffell@digium.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <robert.richter@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
+References: <4DA70950.3060102@openvz.org> <20110414174327.GA8863@elte.hu> <20110414183231.GN16939@redhat.com> <20110414184606.GD16064@elte.hu> <4DA74E5D.4060002@openvz.org> <20110414195748.GO16939@redhat.com>
+In-Reply-To: <20110414195748.GO16939@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 01:49:27PM -0600, Grant Likely wrote:
-> > +static struct class pwm_class = {
-> > +       .name           = "pwm",
-> > +       .owner          = THIS_MODULE,
-> > +       .dev_attrs      = pwm_dev_attrs,
-> > +};
+On 04/14/2011 11:57 PM, Don Zickus wrote:
+> On Thu, Apr 14, 2011 at 11:43:25PM +0400, Cyrill Gorcunov wrote:
+>> On 04/14/2011 10:46 PM, Ingo Molnar wrote:
+>>>
+>>> btw., the bug went away once i removed your patch so it's 100% sure caused by 
+>>> this change.
+>>>
+>>> Thanks,
+>>>
+>>> 	Ingo
+>>
+>> Ingo if you have a chance mind to give this patch a shot please? Seems we might miss unmasking
+>> for inflight nmis.
 > 
-> >From my understanding, class is deprecated.  I believe you should be
-> using bus_type directly now.  Check with Greg and Kay.
+> I don't think this patch will work.  It would make sense if the unmasking
+> happened _after_ the "if (!handled)" path, but that is not the path Ingo
+> wanted for v1.
 
-Yes, that is correct, please don't create new classes if at all
-possible.  And this code looks like it is fine to use a bus_type.
+This thing happened if inflight nmi reaches the system and note that inflight
+NMI comes from perf and masks lvt entry, it has nothing to do with "handled" but
+rather the _fact_ that NMI reached apic via LVTPC and as result -- masked it.
+Don, I might be missin something, brain is slowly going to sleep :)
 
-thanks,
+> 
+> Cheers,
+> Don
+> 
+>> -	apic_write(APIC_LVTPC, APIC_DM_NMI);
+>>
+>>  	handled = x86_pmu.handle_irq(args->regs);
+>> +	apic_write(APIC_LVTPC, APIC_DM_NMI);
+> 
+> ^^^^ all handled/unhandled NMIs hit that apic_write
+>>  	if (!handled)
+>>  		return NOTIFY_DONE;
+>>
 
-greg k-h
+yeah, Ingo asked to make it this way -- ie like in your former
+patch, the conditional unmasking is left to be tested in further
+kernel series.
+
+-- 
+    Cyrill
