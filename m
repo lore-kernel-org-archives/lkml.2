@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab1DNRrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:47:42 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38656 "EHLO
+	id S933567Ab1DNRrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:45 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38660 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933472Ab1DNRrk (ORCPT
+	with ESMTP id S933550Ab1DNRrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:40 -0400
+	Thu, 14 Apr 2011 13:47:42 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jack Steiner <steiner@sgi.com>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Ken Sumrall <ksumrall@android.com>,
+        Anfei <anfei.zhou@gmail.com>, "Anand V. Avati" <avati@gluster.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 112/209] x86, UV: Fix initialization of max_pnode
-Date: Thu, 14 Apr 2011 13:42:22 -0400
-Message-Id: <1302803039-9400-113-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 089/209] fuse: fix attributes after open(O_TRUNC)
+Date: Thu, 14 Apr 2011 13:41:59 -0400
+Message-Id: <1302803039-9400-90-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,60 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jack Steiner <steiner@sgi.com>
+From: Ken Sumrall <ksumrall@android.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 36ac4b987bea9a95217e1af552252f275ca7fc44 upstream.
+commit a0822c55779d9319939eac69f00bb729ea9d23da upstream.
 
-Fix calculation of "max_pnode" for systems where the the highest
-blade has neither cpus or memory. (And, yes, although rare this
-does occur).
+The attribute cache for a file was not being cleared when a file is opened
+with O_TRUNC.
 
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-LKML-Reference: <20100910150808.GA19802@sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+If the filesystem's open operation truncates the file ("atomic_o_trunc"
+feature flag is set) then the kernel should invalidate the cached st_mtime
+and st_ctime attributes.
+
+Also i_size should be explicitly be set to zero as it is used sometimes
+without refreshing the cache.
+
+Signed-off-by: Ken Sumrall <ksumrall@android.com>
+Cc: Anfei <anfei.zhou@gmail.com>
+Cc: "Anand V. Avati" <avati@gluster.com>
+Signed-off-by: Miklos Szeredi <miklos@szeredi.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/apic/x2apic_uv_x.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ fs/fuse/file.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index e46f98f..25a1b3c 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -694,9 +694,11 @@ void __init uv_system_init(void)
- 		for (j = 0; j < 64; j++) {
- 			if (!test_bit(j, &present))
- 				continue;
--			uv_blade_info[blade].pnode = (i * 64 + j);
-+			pnode = (i * 64 + j);
-+			uv_blade_info[blade].pnode = pnode;
- 			uv_blade_info[blade].nr_possible_cpus = 0;
- 			uv_blade_info[blade].nr_online_cpus = 0;
-+			max_pnode = max(pnode, max_pnode);
- 			blade++;
- 		}
- 	}
-@@ -734,7 +736,6 @@ void __init uv_system_init(void)
- 		uv_cpu_hub_info(cpu)->scir.offset = uv_scir_offset(apicid);
- 		uv_node_to_blade[nid] = blade;
- 		uv_cpu_to_blade[cpu] = blade;
--		max_pnode = max(pnode, max_pnode);
- 	}
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index a9f5e13..cbd2214 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -134,6 +134,7 @@ EXPORT_SYMBOL_GPL(fuse_do_open);
+ void fuse_finish_open(struct inode *inode, struct file *file)
+ {
+ 	struct fuse_file *ff = file->private_data;
++	struct fuse_conn *fc = get_fuse_conn(inode);
  
- 	/* Add blade/pnode info for nodes without cpus */
-@@ -746,7 +747,6 @@ void __init uv_system_init(void)
- 		pnode = (paddr >> m_val) & pnode_mask;
- 		blade = boot_pnode_to_blade(pnode);
- 		uv_node_to_blade[nid] = blade;
--		max_pnode = max(pnode, max_pnode);
- 	}
+ 	if (ff->open_flags & FOPEN_DIRECT_IO)
+ 		file->f_op = &fuse_direct_io_file_operations;
+@@ -141,6 +142,15 @@ void fuse_finish_open(struct inode *inode, struct file *file)
+ 		invalidate_inode_pages2(inode->i_mapping);
+ 	if (ff->open_flags & FOPEN_NONSEEKABLE)
+ 		nonseekable_open(inode, file);
++	if (fc->atomic_o_trunc && (file->f_flags & O_TRUNC)) {
++		struct fuse_inode *fi = get_fuse_inode(inode);
++
++		spin_lock(&fc->lock);
++		fi->attr_version = ++fc->attr_version;
++		i_size_write(inode, 0);
++		spin_unlock(&fc->lock);
++		fuse_invalidate_attr(inode);
++	}
+ }
  
- 	map_gru_high(max_pnode);
+ int fuse_open_common(struct inode *inode, struct file *file, bool isdir)
 -- 
 1.7.4.4
 
