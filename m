@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab1DNRqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38219 "EHLO
+	id S933908Ab1DNSXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:23:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38246 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933071Ab1DNRqe (ORCPT
+	with ESMTP id S933199Ab1DNRqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:34 -0400
+	Thu, 14 Apr 2011 13:46:37 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Markus Grabner <grabner@icg.tugraz.at>,
-        Mariusz Kozlowski <m.kozlowski@tuxland.pl>,
+Cc: stable-review@kernel.org, Daniel T Chen <crimsun@ubuntu.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 028/209] Staging: line6: fix up my fixup for some sysfs attribute permissions
-Date: Thu, 14 Apr 2011 13:40:58 -0400
-Message-Id: <1302803039-9400-29-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 062/209] ALSA: hda: Use "alienware" model quirk for another SSID
+Date: Thu, 14 Apr 2011 13:41:32 -0400
+Message-Id: <1302803039-9400-63-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,462 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a3a972a053010bfd61c13cfa4ce688d4eebd9a19 upstream
+commit 0defe09ca70daccdc83abd9c3c24cd89ae6a1141 upstream.
 
-They should be writable by root, not readable.
-Doh, stupid me with the wrong flags.
+BugLink: https://launchpad.net/bugs/683695
 
-[PG: 34 doesn't have the DEVICE_ATTR chunk in pcm.c so drop that chunk]
+The original reporter states that headphone jacks do not appear to
+work.  Upon inspecting his codec dump, and upon further testing, it is
+confirmed that the "alienware" model quirk is correct.
 
-Reported-by: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Markus Grabner <grabner@icg.tugraz.at>
-Cc: Mariusz Kozlowski <m.kozlowski@tuxland.pl>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Reported-and-tested-by: Cody Thierauf
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/line6/control.c  |  204 +++++++++++++++++++-------------------
- drivers/staging/line6/midi.c     |    4 +-
- drivers/staging/line6/pod.c      |   32 +++---
- drivers/staging/line6/toneport.c |    4 +-
- drivers/staging/line6/variax.c   |   12 +-
- 5 files changed, 128 insertions(+), 128 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/line6/control.c b/drivers/staging/line6/control.c
-index 7f7c57b..e414571 100644
---- a/drivers/staging/line6/control.c
-+++ b/drivers/staging/line6/control.c
-@@ -268,210 +268,210 @@ VARIAX_PARAM_R(float, mix2);
- VARIAX_PARAM_R(float, mix1);
- VARIAX_PARAM_R(int, pickup_wiring);
- 
--static DEVICE_ATTR(tweak, S_IRUSR | S_IRUGO, pod_get_tweak, pod_set_tweak);
--static DEVICE_ATTR(wah_position, S_IRUSR | S_IRUGO, pod_get_wah_position,
-+static DEVICE_ATTR(tweak, S_IWUSR | S_IRUGO, pod_get_tweak, pod_set_tweak);
-+static DEVICE_ATTR(wah_position, S_IWUSR | S_IRUGO, pod_get_wah_position,
- 		   pod_set_wah_position);
--static DEVICE_ATTR(compression_gain, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(compression_gain, S_IWUSR | S_IRUGO,
- 		   pod_get_compression_gain, pod_set_compression_gain);
--static DEVICE_ATTR(vol_pedal_position, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(vol_pedal_position, S_IWUSR | S_IRUGO,
- 		   pod_get_vol_pedal_position, pod_set_vol_pedal_position);
--static DEVICE_ATTR(compression_threshold, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(compression_threshold, S_IWUSR | S_IRUGO,
- 		   pod_get_compression_threshold,
- 		   pod_set_compression_threshold);
--static DEVICE_ATTR(pan, S_IRUSR | S_IRUGO, pod_get_pan, pod_set_pan);
--static DEVICE_ATTR(amp_model_setup, S_IRUSR | S_IRUGO, pod_get_amp_model_setup,
-+static DEVICE_ATTR(pan, S_IWUSR | S_IRUGO, pod_get_pan, pod_set_pan);
-+static DEVICE_ATTR(amp_model_setup, S_IWUSR | S_IRUGO, pod_get_amp_model_setup,
- 		   pod_set_amp_model_setup);
--static DEVICE_ATTR(amp_model, S_IRUSR | S_IRUGO, pod_get_amp_model,
-+static DEVICE_ATTR(amp_model, S_IWUSR | S_IRUGO, pod_get_amp_model,
- 		   pod_set_amp_model);
--static DEVICE_ATTR(drive, S_IRUSR | S_IRUGO, pod_get_drive, pod_set_drive);
--static DEVICE_ATTR(bass, S_IRUSR | S_IRUGO, pod_get_bass, pod_set_bass);
--static DEVICE_ATTR(mid, S_IRUSR | S_IRUGO, pod_get_mid, pod_set_mid);
--static DEVICE_ATTR(lowmid, S_IRUSR | S_IRUGO, pod_get_lowmid, pod_set_lowmid);
--static DEVICE_ATTR(treble, S_IRUSR | S_IRUGO, pod_get_treble, pod_set_treble);
--static DEVICE_ATTR(highmid, S_IRUSR | S_IRUGO, pod_get_highmid,
-+static DEVICE_ATTR(drive, S_IWUSR | S_IRUGO, pod_get_drive, pod_set_drive);
-+static DEVICE_ATTR(bass, S_IWUSR | S_IRUGO, pod_get_bass, pod_set_bass);
-+static DEVICE_ATTR(mid, S_IWUSR | S_IRUGO, pod_get_mid, pod_set_mid);
-+static DEVICE_ATTR(lowmid, S_IWUSR | S_IRUGO, pod_get_lowmid, pod_set_lowmid);
-+static DEVICE_ATTR(treble, S_IWUSR | S_IRUGO, pod_get_treble, pod_set_treble);
-+static DEVICE_ATTR(highmid, S_IWUSR | S_IRUGO, pod_get_highmid,
- 		   pod_set_highmid);
--static DEVICE_ATTR(chan_vol, S_IRUSR | S_IRUGO, pod_get_chan_vol,
-+static DEVICE_ATTR(chan_vol, S_IWUSR | S_IRUGO, pod_get_chan_vol,
- 		   pod_set_chan_vol);
--static DEVICE_ATTR(reverb_mix, S_IRUSR | S_IRUGO, pod_get_reverb_mix,
-+static DEVICE_ATTR(reverb_mix, S_IWUSR | S_IRUGO, pod_get_reverb_mix,
- 		   pod_set_reverb_mix);
--static DEVICE_ATTR(effect_setup, S_IRUSR | S_IRUGO, pod_get_effect_setup,
-+static DEVICE_ATTR(effect_setup, S_IWUSR | S_IRUGO, pod_get_effect_setup,
- 		   pod_set_effect_setup);
--static DEVICE_ATTR(band_1_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(band_1_frequency, S_IWUSR | S_IRUGO,
- 		   pod_get_band_1_frequency, pod_set_band_1_frequency);
--static DEVICE_ATTR(presence, S_IRUSR | S_IRUGO, pod_get_presence,
-+static DEVICE_ATTR(presence, S_IWUSR | S_IRUGO, pod_get_presence,
- 		   pod_set_presence);
--static DEVICE_ATTR2(treble__bass, treble, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(treble__bass, treble, S_IWUSR | S_IRUGO,
- 		    pod_get_treble__bass, pod_set_treble__bass);
--static DEVICE_ATTR(noise_gate_enable, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(noise_gate_enable, S_IWUSR | S_IRUGO,
- 		   pod_get_noise_gate_enable, pod_set_noise_gate_enable);
--static DEVICE_ATTR(gate_threshold, S_IRUSR | S_IRUGO, pod_get_gate_threshold,
-+static DEVICE_ATTR(gate_threshold, S_IWUSR | S_IRUGO, pod_get_gate_threshold,
- 		   pod_set_gate_threshold);
--static DEVICE_ATTR(gate_decay_time, S_IRUSR | S_IRUGO, pod_get_gate_decay_time,
-+static DEVICE_ATTR(gate_decay_time, S_IWUSR | S_IRUGO, pod_get_gate_decay_time,
- 		   pod_set_gate_decay_time);
--static DEVICE_ATTR(stomp_enable, S_IRUSR | S_IRUGO, pod_get_stomp_enable,
-+static DEVICE_ATTR(stomp_enable, S_IWUSR | S_IRUGO, pod_get_stomp_enable,
- 		   pod_set_stomp_enable);
--static DEVICE_ATTR(comp_enable, S_IRUSR | S_IRUGO, pod_get_comp_enable,
-+static DEVICE_ATTR(comp_enable, S_IWUSR | S_IRUGO, pod_get_comp_enable,
- 		   pod_set_comp_enable);
--static DEVICE_ATTR(stomp_time, S_IRUSR | S_IRUGO, pod_get_stomp_time,
-+static DEVICE_ATTR(stomp_time, S_IWUSR | S_IRUGO, pod_get_stomp_time,
- 		   pod_set_stomp_time);
--static DEVICE_ATTR(delay_enable, S_IRUSR | S_IRUGO, pod_get_delay_enable,
-+static DEVICE_ATTR(delay_enable, S_IWUSR | S_IRUGO, pod_get_delay_enable,
- 		   pod_set_delay_enable);
--static DEVICE_ATTR(mod_param_1, S_IRUSR | S_IRUGO, pod_get_mod_param_1,
-+static DEVICE_ATTR(mod_param_1, S_IWUSR | S_IRUGO, pod_get_mod_param_1,
- 		   pod_set_mod_param_1);
--static DEVICE_ATTR(delay_param_1, S_IRUSR | S_IRUGO, pod_get_delay_param_1,
-+static DEVICE_ATTR(delay_param_1, S_IWUSR | S_IRUGO, pod_get_delay_param_1,
- 		   pod_set_delay_param_1);
--static DEVICE_ATTR(delay_param_1_note_value, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(delay_param_1_note_value, S_IWUSR | S_IRUGO,
- 		   pod_get_delay_param_1_note_value,
- 		   pod_set_delay_param_1_note_value);
--static DEVICE_ATTR2(band_2_frequency__bass, band_2_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_2_frequency__bass, band_2_frequency, S_IWUSR | S_IRUGO,
- 		    pod_get_band_2_frequency__bass,
- 		    pod_set_band_2_frequency__bass);
--static DEVICE_ATTR(delay_param_2, S_IRUSR | S_IRUGO, pod_get_delay_param_2,
-+static DEVICE_ATTR(delay_param_2, S_IWUSR | S_IRUGO, pod_get_delay_param_2,
- 		   pod_set_delay_param_2);
--static DEVICE_ATTR(delay_volume_mix, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(delay_volume_mix, S_IWUSR | S_IRUGO,
- 		   pod_get_delay_volume_mix, pod_set_delay_volume_mix);
--static DEVICE_ATTR(delay_param_3, S_IRUSR | S_IRUGO, pod_get_delay_param_3,
-+static DEVICE_ATTR(delay_param_3, S_IWUSR | S_IRUGO, pod_get_delay_param_3,
- 		   pod_set_delay_param_3);
--static DEVICE_ATTR(reverb_enable, S_IRUSR | S_IRUGO, pod_get_reverb_enable,
-+static DEVICE_ATTR(reverb_enable, S_IWUSR | S_IRUGO, pod_get_reverb_enable,
- 		   pod_set_reverb_enable);
--static DEVICE_ATTR(reverb_type, S_IRUSR | S_IRUGO, pod_get_reverb_type,
-+static DEVICE_ATTR(reverb_type, S_IWUSR | S_IRUGO, pod_get_reverb_type,
- 		   pod_set_reverb_type);
--static DEVICE_ATTR(reverb_decay, S_IRUSR | S_IRUGO, pod_get_reverb_decay,
-+static DEVICE_ATTR(reverb_decay, S_IWUSR | S_IRUGO, pod_get_reverb_decay,
- 		   pod_set_reverb_decay);
--static DEVICE_ATTR(reverb_tone, S_IRUSR | S_IRUGO, pod_get_reverb_tone,
-+static DEVICE_ATTR(reverb_tone, S_IWUSR | S_IRUGO, pod_get_reverb_tone,
- 		   pod_set_reverb_tone);
--static DEVICE_ATTR(reverb_pre_delay, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(reverb_pre_delay, S_IWUSR | S_IRUGO,
- 		   pod_get_reverb_pre_delay, pod_set_reverb_pre_delay);
--static DEVICE_ATTR(reverb_pre_post, S_IRUSR | S_IRUGO, pod_get_reverb_pre_post,
-+static DEVICE_ATTR(reverb_pre_post, S_IWUSR | S_IRUGO, pod_get_reverb_pre_post,
- 		   pod_set_reverb_pre_post);
--static DEVICE_ATTR(band_2_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(band_2_frequency, S_IWUSR | S_IRUGO,
- 		   pod_get_band_2_frequency, pod_set_band_2_frequency);
--static DEVICE_ATTR2(band_3_frequency__bass, band_3_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_3_frequency__bass, band_3_frequency, S_IWUSR | S_IRUGO,
- 		    pod_get_band_3_frequency__bass,
- 		    pod_set_band_3_frequency__bass);
--static DEVICE_ATTR(wah_enable, S_IRUSR | S_IRUGO, pod_get_wah_enable,
-+static DEVICE_ATTR(wah_enable, S_IWUSR | S_IRUGO, pod_get_wah_enable,
- 		   pod_set_wah_enable);
--static DEVICE_ATTR(modulation_lo_cut, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(modulation_lo_cut, S_IWUSR | S_IRUGO,
- 		   pod_get_modulation_lo_cut, pod_set_modulation_lo_cut);
--static DEVICE_ATTR(delay_reverb_lo_cut, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(delay_reverb_lo_cut, S_IWUSR | S_IRUGO,
- 		   pod_get_delay_reverb_lo_cut, pod_set_delay_reverb_lo_cut);
--static DEVICE_ATTR(volume_pedal_minimum, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(volume_pedal_minimum, S_IWUSR | S_IRUGO,
- 		   pod_get_volume_pedal_minimum, pod_set_volume_pedal_minimum);
--static DEVICE_ATTR(eq_pre_post, S_IRUSR | S_IRUGO, pod_get_eq_pre_post,
-+static DEVICE_ATTR(eq_pre_post, S_IWUSR | S_IRUGO, pod_get_eq_pre_post,
- 		   pod_set_eq_pre_post);
--static DEVICE_ATTR(volume_pre_post, S_IRUSR | S_IRUGO, pod_get_volume_pre_post,
-+static DEVICE_ATTR(volume_pre_post, S_IWUSR | S_IRUGO, pod_get_volume_pre_post,
- 		   pod_set_volume_pre_post);
--static DEVICE_ATTR(di_model, S_IRUSR | S_IRUGO, pod_get_di_model,
-+static DEVICE_ATTR(di_model, S_IWUSR | S_IRUGO, pod_get_di_model,
- 		   pod_set_di_model);
--static DEVICE_ATTR(di_delay, S_IRUSR | S_IRUGO, pod_get_di_delay,
-+static DEVICE_ATTR(di_delay, S_IWUSR | S_IRUGO, pod_get_di_delay,
- 		   pod_set_di_delay);
--static DEVICE_ATTR(mod_enable, S_IRUSR | S_IRUGO, pod_get_mod_enable,
-+static DEVICE_ATTR(mod_enable, S_IWUSR | S_IRUGO, pod_get_mod_enable,
- 		   pod_set_mod_enable);
--static DEVICE_ATTR(mod_param_1_note_value, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(mod_param_1_note_value, S_IWUSR | S_IRUGO,
- 		   pod_get_mod_param_1_note_value,
- 		   pod_set_mod_param_1_note_value);
--static DEVICE_ATTR(mod_param_2, S_IRUSR | S_IRUGO, pod_get_mod_param_2,
-+static DEVICE_ATTR(mod_param_2, S_IWUSR | S_IRUGO, pod_get_mod_param_2,
- 		   pod_set_mod_param_2);
--static DEVICE_ATTR(mod_param_3, S_IRUSR | S_IRUGO, pod_get_mod_param_3,
-+static DEVICE_ATTR(mod_param_3, S_IWUSR | S_IRUGO, pod_get_mod_param_3,
- 		   pod_set_mod_param_3);
--static DEVICE_ATTR(mod_param_4, S_IRUSR | S_IRUGO, pod_get_mod_param_4,
-+static DEVICE_ATTR(mod_param_4, S_IWUSR | S_IRUGO, pod_get_mod_param_4,
- 		   pod_set_mod_param_4);
--static DEVICE_ATTR(mod_param_5, S_IRUSR | S_IRUGO, pod_get_mod_param_5,
-+static DEVICE_ATTR(mod_param_5, S_IWUSR | S_IRUGO, pod_get_mod_param_5,
- 		   pod_set_mod_param_5);
--static DEVICE_ATTR(mod_volume_mix, S_IRUSR | S_IRUGO, pod_get_mod_volume_mix,
-+static DEVICE_ATTR(mod_volume_mix, S_IWUSR | S_IRUGO, pod_get_mod_volume_mix,
- 		   pod_set_mod_volume_mix);
--static DEVICE_ATTR(mod_pre_post, S_IRUSR | S_IRUGO, pod_get_mod_pre_post,
-+static DEVICE_ATTR(mod_pre_post, S_IWUSR | S_IRUGO, pod_get_mod_pre_post,
- 		   pod_set_mod_pre_post);
--static DEVICE_ATTR(modulation_model, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(modulation_model, S_IWUSR | S_IRUGO,
- 		   pod_get_modulation_model, pod_set_modulation_model);
--static DEVICE_ATTR(band_3_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(band_3_frequency, S_IWUSR | S_IRUGO,
- 		   pod_get_band_3_frequency, pod_set_band_3_frequency);
--static DEVICE_ATTR2(band_4_frequency__bass, band_4_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_4_frequency__bass, band_4_frequency, S_IWUSR | S_IRUGO,
- 		    pod_get_band_4_frequency__bass,
- 		    pod_set_band_4_frequency__bass);
--static DEVICE_ATTR(mod_param_1_double_precision, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(mod_param_1_double_precision, S_IWUSR | S_IRUGO,
- 		   pod_get_mod_param_1_double_precision,
- 		   pod_set_mod_param_1_double_precision);
--static DEVICE_ATTR(delay_param_1_double_precision, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(delay_param_1_double_precision, S_IWUSR | S_IRUGO,
- 		   pod_get_delay_param_1_double_precision,
- 		   pod_set_delay_param_1_double_precision);
--static DEVICE_ATTR(eq_enable, S_IRUSR | S_IRUGO, pod_get_eq_enable,
-+static DEVICE_ATTR(eq_enable, S_IWUSR | S_IRUGO, pod_get_eq_enable,
- 		   pod_set_eq_enable);
--static DEVICE_ATTR(tap, S_IRUSR | S_IRUGO, pod_get_tap, pod_set_tap);
--static DEVICE_ATTR(volume_tweak_pedal_assign, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(tap, S_IWUSR | S_IRUGO, pod_get_tap, pod_set_tap);
-+static DEVICE_ATTR(volume_tweak_pedal_assign, S_IWUSR | S_IRUGO,
- 		   pod_get_volume_tweak_pedal_assign,
- 		   pod_set_volume_tweak_pedal_assign);
--static DEVICE_ATTR(band_5_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(band_5_frequency, S_IWUSR | S_IRUGO,
- 		   pod_get_band_5_frequency, pod_set_band_5_frequency);
--static DEVICE_ATTR(tuner, S_IRUSR | S_IRUGO, pod_get_tuner, pod_set_tuner);
--static DEVICE_ATTR(mic_selection, S_IRUSR | S_IRUGO, pod_get_mic_selection,
-+static DEVICE_ATTR(tuner, S_IWUSR | S_IRUGO, pod_get_tuner, pod_set_tuner);
-+static DEVICE_ATTR(mic_selection, S_IWUSR | S_IRUGO, pod_get_mic_selection,
- 		   pod_set_mic_selection);
--static DEVICE_ATTR(cabinet_model, S_IRUSR | S_IRUGO, pod_get_cabinet_model,
-+static DEVICE_ATTR(cabinet_model, S_IWUSR | S_IRUGO, pod_get_cabinet_model,
- 		   pod_set_cabinet_model);
--static DEVICE_ATTR(stomp_model, S_IRUSR | S_IRUGO, pod_get_stomp_model,
-+static DEVICE_ATTR(stomp_model, S_IWUSR | S_IRUGO, pod_get_stomp_model,
- 		   pod_set_stomp_model);
--static DEVICE_ATTR(roomlevel, S_IRUSR | S_IRUGO, pod_get_roomlevel,
-+static DEVICE_ATTR(roomlevel, S_IWUSR | S_IRUGO, pod_get_roomlevel,
- 		   pod_set_roomlevel);
--static DEVICE_ATTR(band_4_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(band_4_frequency, S_IWUSR | S_IRUGO,
- 		   pod_get_band_4_frequency, pod_set_band_4_frequency);
--static DEVICE_ATTR(band_6_frequency, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(band_6_frequency, S_IWUSR | S_IRUGO,
- 		   pod_get_band_6_frequency, pod_set_band_6_frequency);
--static DEVICE_ATTR(stomp_param_1_note_value, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(stomp_param_1_note_value, S_IWUSR | S_IRUGO,
- 		   pod_get_stomp_param_1_note_value,
- 		   pod_set_stomp_param_1_note_value);
--static DEVICE_ATTR(stomp_param_2, S_IRUSR | S_IRUGO, pod_get_stomp_param_2,
-+static DEVICE_ATTR(stomp_param_2, S_IWUSR | S_IRUGO, pod_get_stomp_param_2,
- 		   pod_set_stomp_param_2);
--static DEVICE_ATTR(stomp_param_3, S_IRUSR | S_IRUGO, pod_get_stomp_param_3,
-+static DEVICE_ATTR(stomp_param_3, S_IWUSR | S_IRUGO, pod_get_stomp_param_3,
- 		   pod_set_stomp_param_3);
--static DEVICE_ATTR(stomp_param_4, S_IRUSR | S_IRUGO, pod_get_stomp_param_4,
-+static DEVICE_ATTR(stomp_param_4, S_IWUSR | S_IRUGO, pod_get_stomp_param_4,
- 		   pod_set_stomp_param_4);
--static DEVICE_ATTR(stomp_param_5, S_IRUSR | S_IRUGO, pod_get_stomp_param_5,
-+static DEVICE_ATTR(stomp_param_5, S_IWUSR | S_IRUGO, pod_get_stomp_param_5,
- 		   pod_set_stomp_param_5);
--static DEVICE_ATTR(stomp_param_6, S_IRUSR | S_IRUGO, pod_get_stomp_param_6,
-+static DEVICE_ATTR(stomp_param_6, S_IWUSR | S_IRUGO, pod_get_stomp_param_6,
- 		   pod_set_stomp_param_6);
--static DEVICE_ATTR(amp_switch_select, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(amp_switch_select, S_IWUSR | S_IRUGO,
- 		   pod_get_amp_switch_select, pod_set_amp_switch_select);
--static DEVICE_ATTR(delay_param_4, S_IRUSR | S_IRUGO, pod_get_delay_param_4,
-+static DEVICE_ATTR(delay_param_4, S_IWUSR | S_IRUGO, pod_get_delay_param_4,
- 		   pod_set_delay_param_4);
--static DEVICE_ATTR(delay_param_5, S_IRUSR | S_IRUGO, pod_get_delay_param_5,
-+static DEVICE_ATTR(delay_param_5, S_IWUSR | S_IRUGO, pod_get_delay_param_5,
- 		   pod_set_delay_param_5);
--static DEVICE_ATTR(delay_pre_post, S_IRUSR | S_IRUGO, pod_get_delay_pre_post,
-+static DEVICE_ATTR(delay_pre_post, S_IWUSR | S_IRUGO, pod_get_delay_pre_post,
- 		   pod_set_delay_pre_post);
--static DEVICE_ATTR(delay_model, S_IRUSR | S_IRUGO, pod_get_delay_model,
-+static DEVICE_ATTR(delay_model, S_IWUSR | S_IRUGO, pod_get_delay_model,
- 		   pod_set_delay_model);
--static DEVICE_ATTR(delay_verb_model, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(delay_verb_model, S_IWUSR | S_IRUGO,
- 		   pod_get_delay_verb_model, pod_set_delay_verb_model);
--static DEVICE_ATTR(tempo_msb, S_IRUSR | S_IRUGO, pod_get_tempo_msb,
-+static DEVICE_ATTR(tempo_msb, S_IWUSR | S_IRUGO, pod_get_tempo_msb,
- 		   pod_set_tempo_msb);
--static DEVICE_ATTR(tempo_lsb, S_IRUSR | S_IRUGO, pod_get_tempo_lsb,
-+static DEVICE_ATTR(tempo_lsb, S_IWUSR | S_IRUGO, pod_get_tempo_lsb,
- 		   pod_set_tempo_lsb);
--static DEVICE_ATTR(wah_model, S_IRUSR | S_IRUGO, pod_get_wah_model,
-+static DEVICE_ATTR(wah_model, S_IWUSR | S_IRUGO, pod_get_wah_model,
- 		   pod_set_wah_model);
--static DEVICE_ATTR(bypass_volume, S_IRUSR | S_IRUGO, pod_get_bypass_volume,
-+static DEVICE_ATTR(bypass_volume, S_IWUSR | S_IRUGO, pod_get_bypass_volume,
- 		   pod_set_bypass_volume);
--static DEVICE_ATTR(fx_loop_on_off, S_IRUSR | S_IRUGO, pod_get_fx_loop_on_off,
-+static DEVICE_ATTR(fx_loop_on_off, S_IWUSR | S_IRUGO, pod_get_fx_loop_on_off,
- 		   pod_set_fx_loop_on_off);
--static DEVICE_ATTR(tweak_param_select, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR(tweak_param_select, S_IWUSR | S_IRUGO,
- 		   pod_get_tweak_param_select, pod_set_tweak_param_select);
--static DEVICE_ATTR(amp1_engage, S_IRUSR | S_IRUGO, pod_get_amp1_engage,
-+static DEVICE_ATTR(amp1_engage, S_IWUSR | S_IRUGO, pod_get_amp1_engage,
- 		   pod_set_amp1_engage);
--static DEVICE_ATTR(band_1_gain, S_IRUSR | S_IRUGO, pod_get_band_1_gain,
-+static DEVICE_ATTR(band_1_gain, S_IWUSR | S_IRUGO, pod_get_band_1_gain,
- 		   pod_set_band_1_gain);
--static DEVICE_ATTR2(band_2_gain__bass, band_2_gain, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_2_gain__bass, band_2_gain, S_IWUSR | S_IRUGO,
- 		    pod_get_band_2_gain__bass, pod_set_band_2_gain__bass);
--static DEVICE_ATTR(band_2_gain, S_IRUSR | S_IRUGO, pod_get_band_2_gain,
-+static DEVICE_ATTR(band_2_gain, S_IWUSR | S_IRUGO, pod_get_band_2_gain,
- 		   pod_set_band_2_gain);
--static DEVICE_ATTR2(band_3_gain__bass, band_3_gain, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_3_gain__bass, band_3_gain, S_IWUSR | S_IRUGO,
- 		    pod_get_band_3_gain__bass, pod_set_band_3_gain__bass);
--static DEVICE_ATTR(band_3_gain, S_IRUSR | S_IRUGO, pod_get_band_3_gain,
-+static DEVICE_ATTR(band_3_gain, S_IWUSR | S_IRUGO, pod_get_band_3_gain,
- 		   pod_set_band_3_gain);
--static DEVICE_ATTR2(band_4_gain__bass, band_4_gain, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_4_gain__bass, band_4_gain, S_IWUSR | S_IRUGO,
- 		    pod_get_band_4_gain__bass, pod_set_band_4_gain__bass);
--static DEVICE_ATTR2(band_5_gain__bass, band_5_gain, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_5_gain__bass, band_5_gain, S_IWUSR | S_IRUGO,
- 		    pod_get_band_5_gain__bass, pod_set_band_5_gain__bass);
--static DEVICE_ATTR(band_4_gain, S_IRUSR | S_IRUGO, pod_get_band_4_gain,
-+static DEVICE_ATTR(band_4_gain, S_IWUSR | S_IRUGO, pod_get_band_4_gain,
- 		   pod_set_band_4_gain);
--static DEVICE_ATTR2(band_6_gain__bass, band_6_gain, S_IRUSR | S_IRUGO,
-+static DEVICE_ATTR2(band_6_gain__bass, band_6_gain, S_IWUSR | S_IRUGO,
- 		    pod_get_band_6_gain__bass, pod_set_band_6_gain__bass);
- static DEVICE_ATTR(body, S_IRUGO, variax_get_body, line6_nop_write);
- static DEVICE_ATTR(pickup1_enable, S_IRUGO, variax_get_pickup1_enable,
-diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
-index 02becee..9b42e34 100644
---- a/drivers/staging/line6/midi.c
-+++ b/drivers/staging/line6/midi.c
-@@ -362,8 +362,8 @@ static ssize_t midi_set_midi_mask_receive(struct device *dev,
- 	return count;
- }
- 
--static DEVICE_ATTR(midi_mask_transmit, S_IRUSR | S_IRUGO, midi_get_midi_mask_transmit, midi_set_midi_mask_transmit);
--static DEVICE_ATTR(midi_mask_receive, S_IRUSR | S_IRUGO, midi_get_midi_mask_receive, midi_set_midi_mask_receive);
-+static DEVICE_ATTR(midi_mask_transmit, S_IWUSR | S_IRUGO, midi_get_midi_mask_transmit, midi_set_midi_mask_transmit);
-+static DEVICE_ATTR(midi_mask_receive, S_IWUSR | S_IRUGO, midi_get_midi_mask_receive, midi_set_midi_mask_receive);
- 
- /* MIDI device destructor */
- static int snd_line6_midi_free(struct snd_device *device)
-diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
-index 90c3cb6..6d2f4c5 100644
---- a/drivers/staging/line6/pod.c
-+++ b/drivers/staging/line6/pod.c
-@@ -952,33 +952,33 @@ POD_GET_SYSTEM_PARAM(tuner_pitch, 1, 1);
- #undef GET_SYSTEM_PARAM
- 
- /* POD special files: */
--static DEVICE_ATTR(channel, S_IRUSR | S_IRUGO, pod_get_channel, pod_set_channel);
-+static DEVICE_ATTR(channel, S_IWUSR | S_IRUGO, pod_get_channel, pod_set_channel);
- static DEVICE_ATTR(clip, S_IRUGO, pod_wait_for_clip, line6_nop_write);
- static DEVICE_ATTR(device_id, S_IRUGO, pod_get_device_id, line6_nop_write);
- static DEVICE_ATTR(dirty, S_IRUGO, pod_get_dirty, line6_nop_write);
--static DEVICE_ATTR(dump, S_IRUSR | S_IRUGO, pod_get_dump, pod_set_dump);
--static DEVICE_ATTR(dump_buf, S_IRUSR | S_IRUGO, pod_get_dump_buf, pod_set_dump_buf);
--static DEVICE_ATTR(finish, S_IRUSR, line6_nop_read, pod_set_finish);
-+static DEVICE_ATTR(dump, S_IWUSR | S_IRUGO, pod_get_dump, pod_set_dump);
-+static DEVICE_ATTR(dump_buf, S_IWUSR | S_IRUGO, pod_get_dump_buf, pod_set_dump_buf);
-+static DEVICE_ATTR(finish, S_IWUSR, line6_nop_read, pod_set_finish);
- static DEVICE_ATTR(firmware_version, S_IRUGO, pod_get_firmware_version, line6_nop_write);
--static DEVICE_ATTR(midi_postprocess, S_IRUSR | S_IRUGO, pod_get_midi_postprocess, pod_set_midi_postprocess);
--static DEVICE_ATTR(monitor_level, S_IRUSR | S_IRUGO, pod_get_monitor_level, pod_set_monitor_level);
-+static DEVICE_ATTR(midi_postprocess, S_IWUSR | S_IRUGO, pod_get_midi_postprocess, pod_set_midi_postprocess);
-+static DEVICE_ATTR(monitor_level, S_IWUSR | S_IRUGO, pod_get_monitor_level, pod_set_monitor_level);
- static DEVICE_ATTR(name, S_IRUGO, pod_get_name, line6_nop_write);
- static DEVICE_ATTR(name_buf, S_IRUGO, pod_get_name_buf, line6_nop_write);
--static DEVICE_ATTR(retrieve_amp_setup, S_IRUSR, line6_nop_read, pod_set_retrieve_amp_setup);
--static DEVICE_ATTR(retrieve_channel, S_IRUSR, line6_nop_read, pod_set_retrieve_channel);
--static DEVICE_ATTR(retrieve_effects_setup, S_IRUSR, line6_nop_read, pod_set_retrieve_effects_setup);
--static DEVICE_ATTR(routing, S_IRUSR | S_IRUGO, pod_get_routing, pod_set_routing);
-+static DEVICE_ATTR(retrieve_amp_setup, S_IWUSR, line6_nop_read, pod_set_retrieve_amp_setup);
-+static DEVICE_ATTR(retrieve_channel, S_IWUSR, line6_nop_read, pod_set_retrieve_channel);
-+static DEVICE_ATTR(retrieve_effects_setup, S_IWUSR, line6_nop_read, pod_set_retrieve_effects_setup);
-+static DEVICE_ATTR(routing, S_IWUSR | S_IRUGO, pod_get_routing, pod_set_routing);
- static DEVICE_ATTR(serial_number, S_IRUGO, pod_get_serial_number, line6_nop_write);
--static DEVICE_ATTR(store_amp_setup, S_IRUSR, line6_nop_read, pod_set_store_amp_setup);
--static DEVICE_ATTR(store_channel, S_IRUSR, line6_nop_read, pod_set_store_channel);
--static DEVICE_ATTR(store_effects_setup, S_IRUSR, line6_nop_read, pod_set_store_effects_setup);
--static DEVICE_ATTR(tuner_freq, S_IRUSR | S_IRUGO, pod_get_tuner_freq, pod_set_tuner_freq);
--static DEVICE_ATTR(tuner_mute, S_IRUSR | S_IRUGO, pod_get_tuner_mute, pod_set_tuner_mute);
-+static DEVICE_ATTR(store_amp_setup, S_IWUSR, line6_nop_read, pod_set_store_amp_setup);
-+static DEVICE_ATTR(store_channel, S_IWUSR, line6_nop_read, pod_set_store_channel);
-+static DEVICE_ATTR(store_effects_setup, S_IWUSR, line6_nop_read, pod_set_store_effects_setup);
-+static DEVICE_ATTR(tuner_freq, S_IWUSR | S_IRUGO, pod_get_tuner_freq, pod_set_tuner_freq);
-+static DEVICE_ATTR(tuner_mute, S_IWUSR | S_IRUGO, pod_get_tuner_mute, pod_set_tuner_mute);
- static DEVICE_ATTR(tuner_note, S_IRUGO, pod_get_tuner_note, line6_nop_write);
- static DEVICE_ATTR(tuner_pitch, S_IRUGO, pod_get_tuner_pitch, line6_nop_write);
- 
- #if CREATE_RAW_FILE
--static DEVICE_ATTR(raw, S_IRUSR, line6_nop_read, line6_set_raw);
-+static DEVICE_ATTR(raw, S_IWUSR, line6_nop_read, line6_set_raw);
- #endif
- 
- /*
-diff --git a/drivers/staging/line6/toneport.c b/drivers/staging/line6/toneport.c
-index e20fbf2..db42178 100644
---- a/drivers/staging/line6/toneport.c
-+++ b/drivers/staging/line6/toneport.c
-@@ -124,9 +124,9 @@ static ssize_t toneport_set_led_green(struct device *dev,
- 	return count;
- }
- 
--static DEVICE_ATTR(led_red, S_IRUSR | S_IRUGO, line6_nop_read,
-+static DEVICE_ATTR(led_red, S_IWUSR | S_IRUGO, line6_nop_read,
- 		   toneport_set_led_red);
--static DEVICE_ATTR(led_green, S_IRUSR | S_IRUGO, line6_nop_read,
-+static DEVICE_ATTR(led_green, S_IWUSR | S_IRUGO, line6_nop_read,
- 		   toneport_set_led_green);
- 
- static int toneport_send_cmd(struct usb_device *usbdev, int cmd1, int cmd2)
-diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
-index c2ff9c2..0f48914 100644
---- a/drivers/staging/line6/variax.c
-+++ b/drivers/staging/line6/variax.c
-@@ -389,17 +389,17 @@ static ssize_t variax_set_raw2(struct device *dev,
- #endif
- 
- /* Variax workbench special files: */
--static DEVICE_ATTR(model, S_IRUSR | S_IRUGO, variax_get_model, variax_set_model);
--static DEVICE_ATTR(volume, S_IRUSR | S_IRUGO, variax_get_volume, variax_set_volume);
--static DEVICE_ATTR(tone, S_IRUSR | S_IRUGO, variax_get_tone, variax_set_tone);
-+static DEVICE_ATTR(model, S_IWUSR | S_IRUGO, variax_get_model, variax_set_model);
-+static DEVICE_ATTR(volume, S_IWUSR | S_IRUGO, variax_get_volume, variax_set_volume);
-+static DEVICE_ATTR(tone, S_IWUSR | S_IRUGO, variax_get_tone, variax_set_tone);
- static DEVICE_ATTR(name, S_IRUGO, variax_get_name, line6_nop_write);
- static DEVICE_ATTR(bank, S_IRUGO, variax_get_bank, line6_nop_write);
- static DEVICE_ATTR(dump, S_IRUGO, variax_get_dump, line6_nop_write);
--static DEVICE_ATTR(active, S_IRUSR | S_IRUGO, variax_get_active, variax_set_active);
-+static DEVICE_ATTR(active, S_IWUSR | S_IRUGO, variax_get_active, variax_set_active);
- 
- #if CREATE_RAW_FILE
--static DEVICE_ATTR(raw, S_IRUSR, line6_nop_read, line6_set_raw);
--static DEVICE_ATTR(raw2, S_IRUSR, line6_nop_read, variax_set_raw2);
-+static DEVICE_ATTR(raw, S_IWUSR, line6_nop_read, line6_set_raw);
-+static DEVICE_ATTR(raw2, S_IWUSR, line6_nop_read, variax_set_raw2);
- #endif
- 
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index f1e7bab..6cf2dd4 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1616,6 +1616,8 @@ static struct snd_pci_quirk stac92hd73xx_cfg_tbl[] = {
+ static struct snd_pci_quirk stac92hd73xx_codec_id_cfg_tbl[] = {
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02a1,
+ 		      "Alienware M17x", STAC_ALIENWARE_M17X),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x043a,
++		      "Alienware M17x", STAC_ALIENWARE_M17X),
+ 	{} /* terminator */
+ };
  
 -- 
 1.7.4.4
