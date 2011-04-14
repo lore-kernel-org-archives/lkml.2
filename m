@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab1DNRHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:07:38 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63335 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757316Ab1DNRHg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:07:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=xp39Hfd2X6fUhe0fn0M6CFe/q+MRfn9uyRY65K3hjSOemqCk5HwUgk45m36ggt0Nr/
-         TfjXnX0Hid/AJNo6/8SqucA0MVV2Qkh8uJwbFkLm5voBx+2wV67/5e960bpd0mc4FU/o
-         dnpXnI4ZjDK5U9UZnIti1/p7tJshK+agKb9sc=
+	id S1758583Ab1DNRHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:07:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48898 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758438Ab1DNRHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 13:07:48 -0400
+Message-ID: <4DA72965.20907@zytor.com>
+Date: Thu, 14 Apr 2011 10:05:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1302800120-31560-1-git-send-email-segoon@openwall.com>
-References: <1302800120-31560-1-git-send-email-segoon@openwall.com>
-Date: Thu, 14 Apr 2011 21:07:36 +0400
-Message-ID: <BANLkTimNgb+5W4kjKiarRAU=EH=X=_vUzQ@mail.gmail.com>
-Subject: Re: [PATCH] char: agp: fix OOM and buffer overflow
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Mike Frysinger <vapier@gentoo.org>, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org,
+        x86@kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [Kgdb-bugreport] [PATCH 3/5] x86: convert to asm-generic ptrace.h
+References: <1302760895-13459-1-git-send-email-vapier@gentoo.org> <1302760895-13459-4-git-send-email-vapier@gentoo.org> <4DA701D5.5050205@mvista.com>
+In-Reply-To: <4DA701D5.5050205@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -       if ((atomic_read(&bridge->current_memory_agp) + page_count) > bridge->max_memory_agp)
-> +       cur_memory = atomic_read(&bridge->current_memory_agp);
-> +       if ((cur_memory + page_count > bridge->max_memory_agp) ||
-> +           (cur_memory + page_count < page_count))
-I should have said that current_memory_agp is already protected by
-agp_fe.agp_mutex, so the patch doesn't break atomic operation
-(otherwise there is also a race between the check and use of
-current_memory_agp).
+On 04/14/2011 07:16 AM, Sergei Shtylyov wrote:
+> Hello.
+>
+> Mike Frysinger wrote:
+>
+>> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+>> ---
+>> arch/x86/include/asm/ptrace.h | 18 +++++-------------
+>> 1 files changed, 5 insertions(+), 13 deletions(-)
+>
+>> diff --git a/arch/x86/include/asm/ptrace.h
+>> b/arch/x86/include/asm/ptrace.h
+>> index 78cd1ea..98a5e97 100644
+>> --- a/arch/x86/include/asm/ptrace.h
+>> +++ b/arch/x86/include/asm/ptrace.h
+>> @@ -136,6 +136,7 @@ struct cpuinfo_x86;
+>> struct task_struct;
+>>
+>> extern unsigned long profile_pc(struct pt_regs *regs);
+>> +#define profile_pc profile_pc
+>
+> Er, won't this lead to infinite recursion in preprocessor? :-)
+>
+> WBR, Sergei
+>
+
+No.
+
+	-hpa
