@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab1DNR4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:56:55 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38314 "EHLO
+	id S933588Ab1DNR5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:57:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38277 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933234Ab1DNRqo (ORCPT
+	with ESMTP id S933221Ab1DNRqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:44 -0400
+	Thu, 14 Apr 2011 13:46:40 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Sebastien Bourdeauducq <sebastien@milkymist.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, "Darrick J. Wong" <djwong@us.ibm.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 073/209] USB: ftdi_sio: add device IDs for Milkymist One JTAG/serial
-Date: Thu, 14 Apr 2011 13:41:43 -0400
-Message-Id: <1302803039-9400-74-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 071/209] PCI: fix offset check for sysfs mmapped files
+Date: Thu, 14 Apr 2011 13:41:41 -0400
+Message-Id: <1302803039-9400-72-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,55 +22,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastien Bourdeauducq <sebastien@milkymist.org>
+From: Darrick J. Wong <djwong@us.ibm.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 7fea0f714ffb3f303d4b66933af2df2f5584c9bf upstream.
+commit 8c05cd08a7504b855c265263e84af61aabafa329 upstream.
 
-Add the USB IDs for the Milkymist One FTDI-based JTAG/serial adapter
-(http://projects.qi-hardware.com/index.php/p/mmone-jtag-serial-cable/)
-to the ftdi_sio driver and disable the first serial channel (used as
-JTAG from userspace).
+I just loaded 2.6.37-rc2 on my machines, and I noticed that X no longer starts.
+Running an strace of the X server shows that it's doing this:
 
-Signed-off-by: Sebastien Bourdeauducq <sebastien@milkymist.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+open("/sys/bus/pci/devices/0000:07:00.0/resource0", O_RDWR) = 10
+mmap(NULL, 16777216, PROT_READ|PROT_WRITE, MAP_SHARED, 10, 0) = -1 EINVAL (Invalid argument)
+
+This code seems to be asking for a shared read/write mapping of 16MB worth of
+BAR0 starting at file offset 0, and letting the kernel assign a starting
+address.  Unfortunately, this -EINVAL causes X not to start.  Looking into
+dmesg, there's a complaint like so:
+
+process "Xorg" tried to map 0x01000000 bytes at page 0x00000000 on 0000:07:00.0 BAR 0 (start 0x        96000000, size 0x         1000000)
+
+...with the following code in pci_mmap_fits:
+
+	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
+		pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
+        if (start >= pci_start && start < pci_start + size &&
+                        start + nr <= pci_start + size)
+
+It looks like the logic here is set up such that when the mmap call comes via
+sysfs, the check in pci_mmap_fits wants vma->vm_pgoff to be between the
+resource's start and end address, and the end of the vma to be no farther than
+the end.  However, the sysfs PCI resource files always start at offset zero,
+which means that this test always fails for programs that mmap the sysfs files.
+Given the comment in the original commit
+3b519e4ea618b6943a82931630872907f9ac2c2b, I _think_ the old procfs files
+require that the file offset be equal to the resource's base address when
+mmapping.
+
+I think what we want here is for pci_start to be 0 when mmap_api ==
+PCI_MMAP_PROCFS.  The following patch makes that change, after which the Matrox
+and Mach64 X drivers work again.
+
+Acked-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/pci/pci-sysfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 55ff244..6c7b6ba 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -800,6 +800,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LOGBOOKML_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LS_LOGBOOK_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_HS_LOGBOOK_PID) },
-+	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 4addf78..9116449 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1107,3 +1107,9 @@
- #define FTDI_SCIENCESCOPE_LOGBOOKML_PID		0xFF18
- #define FTDI_SCIENCESCOPE_LS_LOGBOOK_PID	0xFF1C
- #define FTDI_SCIENCESCOPE_HS_LOGBOOK_PID	0xFF1D
-+
-+/*
-+ * Milkymist One JTAG/Serial
-+ */
-+#define QIHARDWARE_VID			0x20B7
-+#define MILKYMISTONE_JTAGSERIAL_PID	0x0713
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 627d067..f5cd68c 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -702,7 +702,7 @@ int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
+ 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 	start = vma->vm_pgoff;
+ 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+-	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
++	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
+ 			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
+ 	if (start >= pci_start && start < pci_start + size &&
+ 			start + nr <= pci_start + size)
 -- 
 1.7.4.4
 
