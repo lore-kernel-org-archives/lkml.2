@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933536Ab1DNRwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:52:30 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38532 "EHLO
+	id S933546Ab1DNRwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:52:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38530 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933407Ab1DNRrR (ORCPT
+	with ESMTP id S933406Ab1DNRrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:17 -0400
+	Thu, 14 Apr 2011 13:47:16 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Peter Jones <pjones@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Michael Stuermer <ms@mallorn.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 072/209] efifb: check that the base address is plausible on pci systems
-Date: Thu, 14 Apr 2011 13:41:42 -0400
-Message-Id: <1302803039-9400-73-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 086/209] USB: ftdi_sio: Add ID for RT Systems USB-29B radio cable
+Date: Thu, 14 Apr 2011 13:41:56 -0400
+Message-Id: <1302803039-9400-87-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,149 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Jones <pjones@redhat.com>
+From: Michael Stuermer <ms@mallorn.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 85a00d9bbfb4704fbf368944b1cb9fed8f1598c5 upstream.
+commit 28942bb6a9dd4e2ed793675e515cfb8297ed355b upstream.
 
-Some Apple machines have identical DMI data but different memory
-configurations for the video.  Given that, check that the address in our
-table is actually within the range of a PCI BAR on a VGA device in the
-machine.
+Another variant of the RT Systems programming cable for ham radios.
 
-This also fixes up the return value from set_system(), which has always
-been wrong, but never resulted in bad behavior since there's only ever
-been one matching entry in the dmi table.
-
-The patch
-
-1) stops people's machines from crashing when we get their display wrong,
-   which seems to be unfortunately inevitable,
-
-2) allows us to support identical dmi data with differing video memory
-   configurations
-
-This also adds me as the efifb maintainer, since I've effectively been
-acting as such for quite some time.
-
-Signed-off-by: Peter Jones <pjones@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michael Stuermer <ms@mallorn.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- MAINTAINERS           |    6 +++++
- drivers/video/efifb.c |   61 +++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 55 insertions(+), 12 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index d329b05..502b380 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2104,6 +2104,12 @@ W:	http://acpi4asus.sf.net
- S:	Maintained
- F:	drivers/platform/x86/eeepc-laptop.c
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index a654281..513b5a6 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -702,6 +702,7 @@ static struct usb_device_id id_table_combined [] = {
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 9116449..e06f014 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -728,6 +728,7 @@
+  */
+ #define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+ #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
++#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
  
-+EFIFB FRAMEBUFFER DRIVER
-+L:	linux-fbdev@vger.kernel.org
-+M:	Peter Jones <pjones@redhat.com>
-+S:	Maintained
-+F:	drivers/video/efifb.c
-+
- EFS FILESYSTEM
- W:	http://aeschi.ch.eu.org/efs/
- S:	Orphan
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index ecf4055..e090f8e 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -13,7 +13,7 @@
- #include <linux/platform_device.h>
- #include <linux/screen_info.h>
- #include <linux/dmi.h>
--
-+#include <linux/pci.h>
- #include <video/vga.h>
- 
- static struct fb_var_screeninfo efifb_defined __initdata = {
-@@ -116,7 +116,7 @@ static int set_system(const struct dmi_system_id *id)
- {
- 	struct efifb_dmi_info *info = id->driver_data;
- 	if (info->base == 0)
--		return -ENODEV;
-+		return 0;
- 
- 	printk(KERN_INFO "efifb: dmi detected %s - framebuffer at %p "
- 			 "(%dx%d, stride %d)\n", id->ident,
-@@ -124,18 +124,55 @@ static int set_system(const struct dmi_system_id *id)
- 			 info->stride);
- 
- 	/* Trust the bootloader over the DMI tables */
--	if (screen_info.lfb_base == 0)
-+	if (screen_info.lfb_base == 0) {
-+#if defined(CONFIG_PCI)
-+		struct pci_dev *dev = NULL;
-+		int found_bar = 0;
-+#endif
- 		screen_info.lfb_base = info->base;
--	if (screen_info.lfb_linelength == 0)
--		screen_info.lfb_linelength = info->stride;
--	if (screen_info.lfb_width == 0)
--		screen_info.lfb_width = info->width;
--	if (screen_info.lfb_height == 0)
--		screen_info.lfb_height = info->height;
--	if (screen_info.orig_video_isVGA == 0)
--		screen_info.orig_video_isVGA = VIDEO_TYPE_EFI;
- 
--	return 0;
-+#if defined(CONFIG_PCI)
-+		/* make sure that the address in the table is actually on a
-+		 * VGA device's PCI BAR */
-+
-+		for_each_pci_dev(dev) {
-+			int i;
-+			if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
-+				continue;
-+			for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
-+				resource_size_t start, end;
-+
-+				start = pci_resource_start(dev, i);
-+				if (start == 0)
-+					break;
-+				end = pci_resource_end(dev, i);
-+				if (screen_info.lfb_base >= start &&
-+						screen_info.lfb_base < end) {
-+					found_bar = 1;
-+				}
-+			}
-+		}
-+		if (!found_bar)
-+			screen_info.lfb_base = 0;
-+#endif
-+	}
-+	if (screen_info.lfb_base) {
-+		if (screen_info.lfb_linelength == 0)
-+			screen_info.lfb_linelength = info->stride;
-+		if (screen_info.lfb_width == 0)
-+			screen_info.lfb_width = info->width;
-+		if (screen_info.lfb_height == 0)
-+			screen_info.lfb_height = info->height;
-+		if (screen_info.orig_video_isVGA == 0)
-+			screen_info.orig_video_isVGA = VIDEO_TYPE_EFI;
-+	} else {
-+		screen_info.lfb_linelength = 0;
-+		screen_info.lfb_width = 0;
-+		screen_info.lfb_height = 0;
-+		screen_info.orig_video_isVGA = 0;
-+		return 0;
-+	}
-+	return 1;
- }
- 
- static int efifb_setcolreg(unsigned regno, unsigned red, unsigned green,
+ /*
+  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
 -- 
 1.7.4.4
 
