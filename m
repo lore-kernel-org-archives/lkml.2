@@ -1,165 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab1DNVf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:35:28 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36225 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab1DNVf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:35:27 -0400
-Message-ID: <4DA7689B.70809@suse.com>
-Date: Thu, 14 Apr 2011 17:35:23 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Cc: James Morris <jmorris@namei.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Peter Huewe <huewe.external.infineon@googlemail.com>
-Subject: Re: [GIT PULL] TPM driver robustness fixes
-References: <4D81708D.5090607@linux.vnet.ibm.com>
-In-Reply-To: <4D81708D.5090607@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753606Ab1DNVh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:37:28 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:62819 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061Ab1DNVhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 17:37:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=nLYOZcxT5Y+feZlRzyEZyIZIbhOmzk1NH9tkQVKgUwAogEMfQ/hw9aYS54td+MNkG
+	ZY9zBJCdlTT8qA2F/nQ4g==
+From: Nat Gurumoorthy <natg@google.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Cc: Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Nat Gurumoorthy <natg@google.com>
+Subject: [PATCH v6 0/2] Make all it87 drivers SMP safe
+Date: Thu, 14 Apr 2011 14:36:36 -0700
+Message-Id: <1302816996-6345-1-git-send-email-natg@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+There are 3 different drivers that touch the it87 hardware registers.
+The 3 drivers have been written independently and access the it87 hardware
+registers assuming they are the only driver accessing it. This change
+attempts to serialize access to the hardware by using
+"request_muxed_region" macro defined by Alan Cox. Call to this macro
+will hold off the requestor if the resource is currently busy.
+The use of the above macro makes it possible to get rid of
+spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
+This also greatly simplifies the implementation of it87_wdt.c driver.
 
-On 03/16/2011 10:23 PM, Rajiv Andrade wrote:
-> Hi James,
-> 
-> 
-> The following changes since commit
-> 2e270d84223262a38d4755c61d55f5c73ea89e56:
-> 
->   Merge branch 'for-linus' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2011-03-16
-> 13:26:17 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
-> 
-> Peter Huewe (3):
-> 
->       This patch changes the call of tpm_transmit by supplying the size
-> of the userspace buffer instead of TPM_BUFSIZE
-> 
->       This patch fixes information leakage to the userspace by
-> initializing the data buffer to zero
-> 
->       Since the buffer might contain security related data it might be a
-> good idea to zero the buffer after we have copied it to userspace.
-> 
->  drivers/char/tpm/tpm.c |    7 ++++---
-> 
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> 
-> index 1f46f1c..c6d2cde 100644
-> 
-> --- a/drivers/char/tpm/tpm.c
-> 
-> +++ b/drivers/char/tpm/tpm.c
-> 
-> @@ -427,7 +427,7 @@ static ssize_t tpm_transmit(struct tpm_chip *chip,
-> const char *buf,
-> 
->      goto out;
-> 
->  
-> 
->  out_recv:
-> 
-> -    rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
-> 
-> +    rc = chip->vendor.recv(chip, (u8 *) buf, TPM_BUFSIZE);
-> 
->      if (rc<  0)
-> 
->          dev_err(chip->dev,
-> 
->              "tpm_transmit: tpm_recv: error %zd\n", rc);
-> 
+01 - Changes to it87 watchdog driver to use "request_muxed_region"
+ drivers/watchdog/it8712f_wdt.c
+ drivers/watchdog/it87_wdt.c
 
-This works in the tpm_write case, but it seems like it's introducing a
-bug in the __tpm_pcr_read (bufsiz=30) and tpm_continue_selftest
-(bufsiz=10) cases. Am I missing something?
+02 - Chages to hwmon it87 driver to use "request_muxed_region"
+ drivers/hwmon/it87.c
 
-- -Jeff
+ drivers/hwmon/it87.c           |   30 +++++++++++++-
+ drivers/watchdog/it8712f_wdt.c |   50 +++++++++++++++++++++---
+ drivers/watchdog/it87_wdt.c    |   80 +++++++++++++++++++++------------------
+ 3 files changed, 113 insertions(+), 47 deletions(-)
 
-> @@ -980,7 +980,7 @@ int tpm_open(struct inode *inode, struct file *file)
-> 
->          return -EBUSY;
-> 
->      }
-> 
->  
-> 
-> -    chip->data_buffer = kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-> 
-> +    chip->data_buffer = kzalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-> 
->      if (chip->data_buffer == NULL) {
-> 
->          clear_bit(0,&chip->is_open);
-> 
->          put_device(chip->dev);
-> 
-> @@ -1035,7 +1035,7 @@ ssize_t tpm_write(struct file *file, const char
-> __user *buf,
-> 
->      }
-> 
->  
-> 
->      /* atomic tpm command send and result receive */
-> 
-> -    out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
-> 
-> +    out_size = tpm_transmit(chip, chip->data_buffer, in_size);
-> 
->  
-> 
->      atomic_set(&chip->data_pending, out_size);
-> 
->      mutex_unlock(&chip->buffer_mutex);
-> 
-> @@ -1064,6 +1064,7 @@ ssize_t tpm_read(struct file *file, char __user *buf,
-> 
->          mutex_lock(&chip->buffer_mutex);
-> 
->          if (copy_to_user(buf, chip->data_buffer, ret_size))
-> 
->              ret_size = -EFAULT;
-> 
-> +        memset(chip->data_buffer, 0, ret_size);
-> 
->          mutex_unlock(&chip->buffer_mutex);
-> 
->      }
-> 
->  
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Nat Gurumoorthy <natg@google.com>
 
+Patch History:
+v6:
+- Pay attention to value returned by request_muxed_region. The first call to
+  request_muxed_region will attempt 10 times to reserve the region before it
+  gives up. This will typically get called from the driver init routines. If this
+  succeeds then subsequent calls wait forever for the resource to be available.
 
-- -- 
-Jeff Mahoney
-SUSE Labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+v5:
+- Remove unnecessary while from superio_enter.
 
-iEYEARECAAYFAk2naJsACgkQLPWxlyuTD7JMoQCaAj3aOiGYFubu/NKHRT0bM4Fy
-wwkAn2Zj2yH2KLFrA0otJZ3ZSOZttd9B
-=cxp4
------END PGP SIGNATURE-----
+v4:
+- Remove extra braces in superio_enter routines.
+
+v3:
+- Totally abandon the spinlock based approach and use "request_muxed_region" to
+  hold off requestors if the resource is busy.
+
+v2:
+- More verbose patch headers. Add In-Reply-To: field.
+
