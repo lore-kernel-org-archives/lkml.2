@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964772Ab1DNRtF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:49:05 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38625 "EHLO
+	id S933503Ab1DNRrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38578 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933379Ab1DNRrd (ORCPT
+	with ESMTP id S933465Ab1DNRrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:33 -0400
+	Thu, 14 Apr 2011 13:47:25 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Luke Macken <lmacken@redhat.com>,
-        Peter Jones <pjones@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Antonio Ospite <ospite@studenti.unina.it>,
+        Jiri Kosina <jkosina@suse.cz>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 113/209] efifb: support the EFI framebuffer on more Apple hardware
-Date: Thu, 14 Apr 2011 13:42:23 -0400
-Message-Id: <1302803039-9400-114-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 102/209] HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
+Date: Thu, 14 Apr 2011 13:42:12 -0400
+Message-Id: <1302803039-9400-103-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,137 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luke Macken <lmacken@redhat.com>
+From: Antonio Ospite <ospite@studenti.unina.it>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a5757c2a474a15f87e5baa9a4caacc31cde2bae6 upstream.
+commit d20d5ffab92f00188f360c44c791a5ffb988247c upstream.
 
-Enable the EFI framebuffer on 14 more Macs, including the iMac11,1
-iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 MacBook5,1 MacBook6,1 MacBook7,1
-MacBookPro2,2 MacBookPro5,2 MacBookPro5,3 MacBookPro6,1 MacBookPro6,2 and
-MacBookPro7,1
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+IP: [<ffffffffa02c66b4>] hidraw_ioctl+0xfc/0x32c [hid]
+[...]
 
-Information gathered from various user submissions.
+This is reproducible by disconnecting the device while userspace does
+ioctl in a loop and doesn't check return values in order to exit the
+loop.
 
-    https://bugzilla.redhat.com/show_bug.cgi?id=528232
-    http://ubuntuforums.org/showthread.php?t=1557326
+[PG: slightly/trivially reworked for backport to 34]
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Luke Macken <lmacken@redhat.com>
-Signed-off-by: Peter Jones <pjones@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/video/efifb.c |   42 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 42 insertions(+), 0 deletions(-)
+ drivers/hid/hidraw.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index e090f8e..709eae1 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -39,17 +39,31 @@ enum {
- 	M_I20,		/* 20-Inch iMac */
- 	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
- 	M_I24,		/* 24-Inch iMac */
-+	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
-+	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
-+	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
- 	M_MINI,		/* Mac Mini */
-+	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
-+	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
- 	M_MB,		/* MacBook */
- 	M_MB_2,		/* MacBook, 2nd rev. */
- 	M_MB_3,		/* MacBook, 3rd rev. */
-+	M_MB_5_1,	/* MacBook, 5th rev. */
-+	M_MB_6_1,	/* MacBook, 6th rev. */
-+	M_MB_7_1,	/* MacBook, 7th rev. */
- 	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
- 	M_MBA,		/* MacBook Air */
- 	M_MBP,		/* MacBook Pro */
- 	M_MBP_2,	/* MacBook Pro 2nd gen */
-+	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
- 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
- 	M_MBP_4,	/* MacBook Pro, 4th gen */
- 	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
-+	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
-+	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
-+	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
-+	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
-+	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
- 	M_UNKNOWN	/* placeholder */
- };
+diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+index 6eadf1a..0db1a0f 100644
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -243,6 +243,11 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
+ 	void __user *user_arg = (void __user*) arg;
  
-@@ -64,14 +78,28 @@ static struct efifb_dmi_info {
- 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
- 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
- 	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
-+	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
-+	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
-+	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440 },
- 	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
-+	[M_MINI_3_1] = { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
-+	[M_MINI_4_1] = { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
- 	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
-+	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800 },
- 	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
- 	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
-+	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
- 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
- 	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050 },
-+	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800 },
- 	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
- };
+ 	lock_kernel();
++	if (!dev) {
++		ret = -ENODEV;
++		goto out;
++	}
++
+ 	switch (cmd) {
+ 		case HIDIOCGRDESCSIZE:
+ 			if (put_user(dev->hid->rsize, (int __user *)arg))
+@@ -315,6 +320,7 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
  
-@@ -92,7 +120,12 @@ static struct dmi_system_id __initdata dmi_system_table[] = {
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
- 	/* At least one of these two will be right; maybe both? */
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
-@@ -101,14 +134,23 @@ static struct dmi_system_id __initdata dmi_system_table[] = {
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
- 	{},
- };
- 
+ 		ret = -ENOTTY;
+ 	}
++out:
+ 	unlock_kernel();
+ 	return ret;
+ }
 -- 
 1.7.4.4
 
