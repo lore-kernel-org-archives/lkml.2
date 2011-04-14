@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab1DNRp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:45:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37190 "EHLO
+	id S932670Ab1DNRph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:45:37 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37333 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab1DNRpV (ORCPT
+	with ESMTP id S932553Ab1DNRpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:45:21 -0400
+	Thu, 14 Apr 2011 13:45:31 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <daenzer@vmware.com>,
-        Dave Airlie <airlied@redhat.com>,
+Cc: stable-review@kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Christopher James Halse Rogers <chalserogers@gmail.com>,
+        Eric Anholt <eric@anholt.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 004/209] drm/radeon: fall back to GTT if bo creation/validation in VRAM fails.
-Date: Thu, 14 Apr 2011 13:40:34 -0400
-Message-Id: <1302803039-9400-5-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 006/209] drm/i915: Unset cursor if out-of-bounds upon mode change (v4)
+Date: Thu, 14 Apr 2011 13:40:36 -0400
+Message-Id: <1302803039-9400-7-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,90 +26,285 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michel Dänzer <daenzer@vmware.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit e376573f7267390f4e1bdc552564b6fb913bce76 upstream.
+commit cda4b7d3a5b1dcbc0d8e7bad52134347798e9047 upstream.
 
-This fixes a problem where on low VRAM cards we'd run out of space for validation.
+The docs warn that to position the cursor such that no part of it is
+visible on the pipe is an undefined operation. Avoid such circumstances
+upon changing the mode, or at any other time, by unsetting the cursor if
+it moves out of bounds.
 
-[airlied: Tested on my M7, Thinkpad T42, compiz works with no problems.]
+"For normal high resolution display modes, the cursor must have at least a
+single pixel positioned over the active screen.” (p143, p148 of the hardware
+registers docs).
 
-Signed-off-by: Michel Dänzer <daenzer@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fixes:
+
+  Bug 24748 - [965G] Graphics crashes when resolution is changed with KMS
+              enabled
+  https://bugs.freedesktop.org/show_bug.cgi?id=24748
+
+v2: Only update the cursor registers if they change.
+v3: Fix the unsigned comparision of x,y against width,height.
+v4: Always set CUR.BASE or else the cursor may become corrupt.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-by: Christian Eggers <ceggers@gmx.de>
+Cc: Christopher James Halse Rogers  <chalserogers@gmail.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/radeon/radeon_object.c |   27 ++++++++++++++++++---------
- 1 files changed, 18 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |  144 ++++++++++++++++++++++------------
+ drivers/gpu/drm/i915/intel_drv.h     |    8 ++-
+ 2 files changed, 99 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
-index 1227747..bae33b7 100644
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -110,16 +110,22 @@ int radeon_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
- 	bo->surface_reg = -1;
- 	INIT_LIST_HEAD(&bo->list);
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 28eebc5..614bda1 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -42,6 +42,7 @@
+ bool intel_pipe_has_type (struct drm_crtc *crtc, int type);
+ static void intel_update_watermarks(struct drm_device *dev);
+ static void intel_increase_pllclock(struct drm_crtc *crtc, bool schedule);
++static void intel_crtc_update_cursor(struct drm_crtc *crtc);
  
-+retry:
- 	radeon_ttm_placement_from_domain(bo, domain);
- 	/* Kernel allocation are uninterruptible */
- 	r = ttm_bo_init(&rdev->mman.bdev, &bo->tbo, size, type,
- 			&bo->placement, 0, 0, !kernel, NULL, size,
- 			&radeon_ttm_bo_destroy);
- 	if (unlikely(r != 0)) {
--		if (r != -ERESTARTSYS)
-+		if (r != -ERESTARTSYS) {
-+			if (domain == RADEON_GEM_DOMAIN_VRAM) {
-+				domain |= RADEON_GEM_DOMAIN_GTT;
-+				goto retry;
-+			}
- 			dev_err(rdev->dev,
- 				"object_init failed for (%lu, 0x%08X)\n",
- 				size, domain);
-+		}
- 		return r;
+ typedef struct {
+     /* given values */
+@@ -3010,6 +3011,9 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
+ 		return -EINVAL;
  	}
- 	*bo_ptr = bo;
-@@ -314,6 +320,7 @@ int radeon_bo_list_validate(struct list_head *head)
- {
- 	struct radeon_bo_list *lobj;
- 	struct radeon_bo *bo;
-+	u32 domain;
- 	int r;
  
- 	r = radeon_bo_list_reserve(head);
-@@ -323,17 +330,19 @@ int radeon_bo_list_validate(struct list_head *head)
- 	list_for_each_entry(lobj, head, list) {
- 		bo = lobj->bo;
- 		if (!bo->pin_count) {
--			if (lobj->wdomain) {
--				radeon_ttm_placement_from_domain(bo,
--								lobj->wdomain);
--			} else {
--				radeon_ttm_placement_from_domain(bo,
--								lobj->rdomain);
--			}
-+			domain = lobj->wdomain ? lobj->wdomain : lobj->rdomain;
++	/* Ensure that the cursor is valid for the new mode before changing... */
++	intel_crtc_update_cursor(crtc);
 +
-+		retry:
-+			radeon_ttm_placement_from_domain(bo, domain);
- 			r = ttm_bo_validate(&bo->tbo, &bo->placement,
- 						true, false);
--			if (unlikely(r))
-+			if (unlikely(r)) {
-+				if (r != -ERESTARTSYS && domain == RADEON_GEM_DOMAIN_VRAM) {
-+					domain |= RADEON_GEM_DOMAIN_GTT;
-+					goto retry;
-+				}
- 				return r;
+ 	if (is_lvds && dev_priv->lvds_downclock_avail) {
+ 		has_reduced_clock = limit->find_pll(limit, crtc,
+ 							    dev_priv->lvds_downclock,
+@@ -3473,6 +3477,85 @@ void intel_crtc_load_lut(struct drm_crtc *crtc)
+ 	}
+ }
+ 
++/* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
++static void intel_crtc_update_cursor(struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
++	int pipe = intel_crtc->pipe;
++	int x = intel_crtc->cursor_x;
++	int y = intel_crtc->cursor_y;
++	uint32_t base, pos;
++	bool visible;
++
++	pos = 0;
++
++	if (crtc->fb) {
++		base = intel_crtc->cursor_addr;
++		if (x > (int) crtc->fb->width)
++			base = 0;
++
++		if (y > (int) crtc->fb->height)
++			base = 0;
++	} else
++		base = 0;
++
++	if (x < 0) {
++		if (x + intel_crtc->cursor_width < 0)
++			base = 0;
++
++		pos |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
++		x = -x;
++	}
++	pos |= x << CURSOR_X_SHIFT;
++
++	if (y < 0) {
++		if (y + intel_crtc->cursor_height < 0)
++			base = 0;
++
++		pos |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
++		y = -y;
++	}
++	pos |= y << CURSOR_Y_SHIFT;
++
++	visible = base != 0;
++	if (!visible && !intel_crtc->cursor_visble)
++		return;
++
++	I915_WRITE(pipe == 0 ? CURAPOS : CURBPOS, pos);
++	if (intel_crtc->cursor_visble != visible) {
++		uint32_t cntl = I915_READ(pipe == 0 ? CURACNTR : CURBCNTR);
++		if (base) {
++			/* Hooray for CUR*CNTR differences */
++			if (IS_MOBILE(dev) || IS_I9XX(dev)) {
++				cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
++				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++				cntl |= pipe << 28; /* Connect to correct pipe */
++			} else {
++				cntl &= ~(CURSOR_FORMAT_MASK);
++				cntl |= CURSOR_ENABLE;
++				cntl |= CURSOR_FORMAT_ARGB | CURSOR_GAMMA_ENABLE;
 +			}
++		} else {
++			if (IS_MOBILE(dev) || IS_I9XX(dev)) {
++				cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
++				cntl |= CURSOR_MODE_DISABLE;
++			} else {
++				cntl &= ~(CURSOR_ENABLE | CURSOR_GAMMA_ENABLE);
++			}
++		}
++		I915_WRITE(pipe == 0 ? CURACNTR : CURBCNTR, cntl);
++
++		intel_crtc->cursor_visble = visible;
++	}
++	/* and commit changes on next vblank */
++	I915_WRITE(pipe == 0 ? CURABASE : CURBBASE, base);
++
++	if (visible)
++		intel_mark_busy(dev, to_intel_framebuffer(crtc->fb)->obj);
++}
++
+ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 				 struct drm_file *file_priv,
+ 				 uint32_t handle,
+@@ -3483,11 +3566,7 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct drm_gem_object *bo;
+ 	struct drm_i915_gem_object *obj_priv;
+-	int pipe = intel_crtc->pipe;
+-	uint32_t control = (pipe == 0) ? CURACNTR : CURBCNTR;
+-	uint32_t base = (pipe == 0) ? CURABASE : CURBBASE;
+-	uint32_t temp = I915_READ(control);
+-	size_t addr;
++	uint32_t addr;
+ 	int ret;
+ 
+ 	DRM_DEBUG_KMS("\n");
+@@ -3495,12 +3574,6 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 	/* if we want to turn off the cursor ignore width and height */
+ 	if (!handle) {
+ 		DRM_DEBUG_KMS("cursor off\n");
+-		if (IS_MOBILE(dev) || IS_I9XX(dev)) {
+-			temp &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+-			temp |= CURSOR_MODE_DISABLE;
+-		} else {
+-			temp &= ~(CURSOR_ENABLE | CURSOR_GAMMA_ENABLE);
+-		}
+ 		addr = 0;
+ 		bo = NULL;
+ 		mutex_lock(&dev->struct_mutex);
+@@ -3535,7 +3608,8 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
  		}
- 		lobj->gpu_offset = radeon_bo_gpu_offset(bo);
- 		lobj->tiling_flags = bo->tiling_flags;
+ 		addr = obj_priv->gtt_offset;
+ 	} else {
+-		ret = i915_gem_attach_phys_object(dev, bo, (pipe == 0) ? I915_GEM_PHYS_CURSOR_0 : I915_GEM_PHYS_CURSOR_1);
++		ret = i915_gem_attach_phys_object(dev, bo,
++						  (intel_crtc->pipe == 0) ? I915_GEM_PHYS_CURSOR_0 : I915_GEM_PHYS_CURSOR_1);
+ 		if (ret) {
+ 			DRM_ERROR("failed to attach phys object\n");
+ 			goto fail_locked;
+@@ -3546,21 +3620,7 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 	if (!IS_I9XX(dev))
+ 		I915_WRITE(CURSIZE, (height << 12) | width);
+ 
+-	/* Hooray for CUR*CNTR differences */
+-	if (IS_MOBILE(dev) || IS_I9XX(dev)) {
+-		temp &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
+-		temp |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
+-		temp |= (pipe << 28); /* Connect to correct pipe */
+-	} else {
+-		temp &= ~(CURSOR_FORMAT_MASK);
+-		temp |= CURSOR_ENABLE;
+-		temp |= CURSOR_FORMAT_ARGB | CURSOR_GAMMA_ENABLE;
+-	}
+-
+  finish:
+-	I915_WRITE(control, temp);
+-	I915_WRITE(base, addr);
+-
+ 	if (intel_crtc->cursor_bo) {
+ 		if (dev_priv->info->cursor_needs_physical) {
+ 			if (intel_crtc->cursor_bo != bo)
+@@ -3574,6 +3634,10 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 
+ 	intel_crtc->cursor_addr = addr;
+ 	intel_crtc->cursor_bo = bo;
++	intel_crtc->cursor_width = width;
++	intel_crtc->cursor_height = height;
++
++	intel_crtc_update_cursor(crtc);
+ 
+ 	return 0;
+ fail_locked:
+@@ -3585,34 +3649,12 @@ fail:
+ 
+ static int intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+ {
+-	struct drm_device *dev = crtc->dev;
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+-	struct intel_framebuffer *intel_fb;
+-	int pipe = intel_crtc->pipe;
+-	uint32_t temp = 0;
+-	uint32_t adder;
+-
+-	if (crtc->fb) {
+-		intel_fb = to_intel_framebuffer(crtc->fb);
+-		intel_mark_busy(dev, intel_fb->obj);
+-	}
+-
+-	if (x < 0) {
+-		temp |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
+-		x = -x;
+-	}
+-	if (y < 0) {
+-		temp |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
+-		y = -y;
+-	}
+ 
+-	temp |= x << CURSOR_X_SHIFT;
+-	temp |= y << CURSOR_Y_SHIFT;
++	intel_crtc->cursor_x = x;
++	intel_crtc->cursor_y = y;
+ 
+-	adder = intel_crtc->cursor_addr;
+-	I915_WRITE((pipe == 0) ? CURAPOS : CURBPOS, temp);
+-	I915_WRITE((pipe == 0) ? CURABASE : CURBBASE, adder);
++	intel_crtc_update_cursor(crtc);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 7a1ad65..4e9f24a 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -140,8 +140,6 @@ struct intel_crtc {
+ 	struct drm_crtc base;
+ 	enum pipe pipe;
+ 	enum plane plane;
+-	struct drm_gem_object *cursor_bo;
+-	uint32_t cursor_addr;
+ 	u8 lut_r[256], lut_g[256], lut_b[256];
+ 	int dpms_mode;
+ 	bool busy; /* is scanout buffer being updated frequently? */
+@@ -149,6 +147,12 @@ struct intel_crtc {
+ 	bool lowfreq_avail;
+ 	struct intel_overlay *overlay;
+ 	struct intel_unpin_work *unpin_work;
++
++	struct drm_gem_object *cursor_bo;
++	uint32_t cursor_addr;
++	int16_t cursor_x, cursor_y;
++	int16_t cursor_width, cursor_height;
++	bool cursor_visble;
+ };
+ 
+ #define to_intel_crtc(x) container_of(x, struct intel_crtc, base)
 -- 
 1.7.4.4
 
