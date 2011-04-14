@@ -1,36 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab1DNHWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 03:22:06 -0400
-Received: from web94710.mail.in2.yahoo.com ([203.104.17.170]:30923 "HELO
-	web94710.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752104Ab1DNHWF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 03:22:05 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Apr 2011 03:22:04 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Tuiip98WWL25g4cS3FtfzByswdqP9zivyYOd38ynmP6TqgHRPF+mrabDx33oAu9aeRanv2DXgMMFk67pQ9ENv0RxeV7dC8Ic3IpM0B4WBinApl7zUgHlEZ+63n0qfV6dfCBYbpUNsBQRPY3aO6frw9HrglowEjL2wmWqJKLjbIo=;
-Message-ID: <200224.38679.qm@web94710.mail.in2.yahoo.com>
-X-YMail-OSG: R2cfOOcVM1nuYUL.C3OPPfu62ZHFNqrulVvrpxf0OOsjJGZ
- 7r5TqWl9zHSAzaECvSsdN_CU8HX0AQX4ILmld41lXfdQ_KuqvgyCboHk14HQ
- C_4bVTDxM6IGpiuzz3LodVmEYdY2oO1f2cde2WoYDfTcGuSB8mearuyGj3yf
- 69tyWfrdM8ADNGKPgWfTS9golY.GMXqUJP8kWYw8fsjP3qoU6h12BBFBCCs3
- ckqIGrQLfMUFgetIwWd0WgdYXfgTQ8GNZRKfU9__4wBBihNOCDf7qwnJb5wS
- PZcaBBTrgE2sdT1ctvBxi_aXuyldPNtky_CECuj2fCTEx2Wkw1MNFVKZEoxM
- PZeppLxDuoHgixByHD16BgFyt7fOixKdIsg--
-X-Mailer: YahooMailWebService/0.8.109.295617
-Date: Thu, 14 Apr 2011 12:45:21 +0530 (IST)
-From: pradeep Annavarapu <asnvpradeep@yahoo.com>
-To: kkkpatni@freemail.ph, knsumanth@rediff.com, krreddy2u@yahoo.co.in,
-        lavi2905@yahoo.com, leelaratnam@yahoo.com, lillian.gonzalez@njit.edu,
-        linux-kernel@vger.kernel.org
+	id S1758479Ab1DNHX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 03:23:56 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:50343 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755905Ab1DNHXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 03:23:55 -0400
+X-Greylist: delayed 2012 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Apr 2011 03:23:55 EDT
+Message-ID: <4DA698BE.70903@ispras.ru>
+Date: Thu, 14 Apr 2011 10:48:30 +0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Neil Brown <neilb@suse.de>
+CC: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] md: fix unchecked interruptible mutex locks
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://vicumybi.blogspot.com
+mddev_lock() is an alias for mutex_lock_interruptible() at the moment,
+but there are places where returned value of mddev_lock() is not checked.
+
+The patch proposed introduces mddev_lock_interruptible(),
+which is an equivalent for old mddev_lock(), while mddev_lock()
+becomes an alias for uninterruptible mutex_lock(). 
+Calls of mddev_lock(), where the result is being checked, 
+are replaced by mddev_lock_interruptible().
+All the other calls become uninterruptible.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/md/md.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index b12b377..cc6d183 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -623,7 +623,12 @@ static mddev_t * mddev_find(dev_t unit)
+ 	goto retry;
+ }
+
+-static inline int mddev_lock(mddev_t * mddev)
++static inline void mddev_lock(mddev_t *mddev)
++{
++	return mutex_lock(&mddev->reconfig_mutex);
++}
++
++static inline int __must_check mddev_lock_interruptible(mddev_t *mddev)
+ {
+ 	return mutex_lock_interruptible(&mddev->reconfig_mutex);
+ }
+@@ -2706,7 +2711,7 @@ rdev_attr_show(struct kobject *kobj, struct
+attribute *attr, char *page)
+ 	if (!entry->show)
+ 		return -EIO;
+
+-	rv = mddev ? mddev_lock(mddev) : -EBUSY;
++	rv = mddev ? mddev_lock_interruptible(mddev) : -EBUSY;
+ 	if (!rv) {
+ 		if (rdev->mddev == NULL)
+ 			rv = -EBUSY;
+@@ -2730,7 +2735,7 @@ rdev_attr_store(struct kobject *kobj, struct
+attribute *attr,
+ 		return -EIO;
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+-	rv = mddev ? mddev_lock(mddev): -EBUSY;
++	rv = mddev ? mddev_lock_interruptible(mddev) : -EBUSY;
+ 	if (!rv) {
+ 		if (rdev->mddev == NULL)
+ 			rv = -EBUSY;
+@@ -4199,7 +4204,7 @@ md_attr_show(struct kobject *kobj, struct
+attribute *attr, char *page)
+
+ 	if (!entry->show)
+ 		return -EIO;
+-	rv = mddev_lock(mddev);
++	rv = mddev_lock_interruptible(mddev);
+ 	if (!rv) {
+ 		rv = entry->show(mddev, page);
+ 		mddev_unlock(mddev);
+@@ -4219,7 +4224,7 @@ md_attr_store(struct kobject *kobj, struct
+attribute *attr,
+ 		return -EIO;
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+-	rv = mddev_lock(mddev);
++	rv = mddev_lock_interruptible(mddev);
+ 	if (mddev->hold_active == UNTIL_IOCTL)
+ 		mddev->hold_active = 0;
+ 	if (!rv) {
+@@ -4951,7 +4956,7 @@ static void autorun_devices(int part)
+ 				"md: cannot allocate memory for md drive.\n");
+ 			break;
+ 		}
+-		if (mddev_lock(mddev))
++		if (mddev_lock_interruptible(mddev))
+ 			printk(KERN_WARNING "md: %s locked, cannot run\n",
+ 			       mdname(mddev));
+ 		else if (mddev->raid_disks || mddev->major_version
+@@ -5771,7 +5776,7 @@ static int md_ioctl(struct block_device *bdev,
+fmode_t mode,
+ 		goto abort;
+ 	}
+
+-	err = mddev_lock(mddev);
++	err = mddev_lock_interruptible(mddev);
+ 	if (err) {
+ 		printk(KERN_INFO
+ 			"md: ioctl lock interrupted, reason %d, cmd %d\n",
+@@ -6379,7 +6384,7 @@ static int md_seq_show(struct seq_file *seq, void *v)
+ 		return 0;
+ 	}
+
+-	if (mddev_lock(mddev) < 0)
++	if (mddev_lock_interruptible(mddev) < 0)
+ 		return -EINTR;
+
+ 	if (mddev->pers || mddev->raid_disks || !list_empty(&mddev->disks)) {
+-- 1.7.1
