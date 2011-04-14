@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab1DNSKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:10:43 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42102 "EHLO
+	id S933875Ab1DNSLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:11:13 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42085 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933700Ab1DNR6b (ORCPT
+	with ESMTP id S933658Ab1DNR63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:31 -0400
+	Thu, 14 Apr 2011 13:58:29 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Neil Brown <neilb@suse.de>,
+Cc: stable-review@kernel.org, NeilBrown <neilb@suse.de>,
         "J. Bruce Fields" <bfields@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 163/209] nfsd: Fix possible BUG_ON firing in set_change_info
-Date: Thu, 14 Apr 2011 13:55:21 -0400
-Message-Id: <1302803767-9715-50-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 165/209] sunrpc: prevent use-after-free on clearing XPT_BUSY
+Date: Thu, 14 Apr 2011 13:55:23 -0400
+Message-Id: <1302803767-9715-52-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,86 +23,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Brown <neilb@suse.de>
+From: NeilBrown <neilb@suse.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit c1ac3ffcd0bc7e9617f62be8c7043d53ab84deac upstream.
+commit ed2849d3ecfa339435818eeff28f6c3424300cec upstream.
 
-If vfs_getattr in fill_post_wcc returns an error, we don't
-set fh_post_change.
-For NFSv4, this can result in set_change_info triggering a BUG_ON.
-i.e. fh_post_saved being zero isn't really a bug.
+When an xprt is created, it has a refcount of 1, and XPT_BUSY is set.
+The refcount is *not* owned by the thread that created the xprt
+(as is clear from the fact that creators never put the reference).
+Rather, it is owned by the absence of XPT_DEAD.  Once XPT_DEAD is set,
+(And XPT_BUSY is clear) that initial reference is dropped and the xprt
+can be freed.
 
-So:
- - instead of BUGging when fh_post_saved is zero, just clear ->atomic.
- - if vfs_getattr fails in fill_post_wcc, take a copy of i_ctime anyway.
-   This will be used i seg_change_info, but not overly trusted.
- - While we are there, remove the pointless 'if' statements in set_change_info.
-   There is no harm setting all the values.
+So when a creator clears XPT_BUSY it is dropping its only reference and
+so must not touch the xprt again.
+
+However svc_recv, after calling ->xpo_accept (and so getting an XPT_BUSY
+reference on a new xprt), calls svc_xprt_recieved.  This clears
+XPT_BUSY and then svc_xprt_enqueue - this last without owning a reference.
+This is dangerous and has been seen to leave svc_xprt_enqueue working
+with an xprt containing garbage.
+
+So we need to hold an extra counted reference over that call to
+svc_xprt_received.
+
+For safety, any time we clear XPT_BUSY and then use the xprt again, we
+first get a reference, and the put it again afterwards.
+
+Note that svc_close_all does not need this extra protection as there are
+no threads running, and the final free can only be called asynchronously
+from such a thread.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/nfsd/nfs3xdr.c |    6 ++++--
- fs/nfsd/xdr4.h    |   21 ++++++++++-----------
- 2 files changed, 14 insertions(+), 13 deletions(-)
+ net/sunrpc/svc_xprt.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 2a533a0..7e84a85 100644
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -260,9 +260,11 @@ void fill_post_wcc(struct svc_fh *fhp)
- 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
- 			&fhp->fh_post_attr);
- 	fhp->fh_post_change = fhp->fh_dentry->d_inode->i_version;
--	if (err)
-+	if (err) {
- 		fhp->fh_post_saved = 0;
--	else
-+		/* Grab the ctime anyway - set_change_info might use it */
-+		fhp->fh_post_attr.ctime = fhp->fh_dentry->d_inode->i_ctime;
-+	} else
- 		fhp->fh_post_saved = 1;
- }
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 061b2e0..aa1d2c6 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -212,6 +212,7 @@ int svc_create_xprt(struct svc_serv *serv, const char *xprt_name,
+ 	spin_lock(&svc_xprt_class_lock);
+ 	list_for_each_entry(xcl, &svc_xprt_class_list, xcl_list) {
+ 		struct svc_xprt *newxprt;
++		unsigned short newport;
  
-diff --git a/fs/nfsd/xdr4.h b/fs/nfsd/xdr4.h
-index efa3377..c1aed78 100644
---- a/fs/nfsd/xdr4.h
-+++ b/fs/nfsd/xdr4.h
-@@ -479,18 +479,17 @@ static inline bool nfsd4_not_cached(struct nfsd4_compoundres *resp)
- static inline void
- set_change_info(struct nfsd4_change_info *cinfo, struct svc_fh *fhp)
+ 		if (strcmp(xprt_name, xcl->xcl_name))
+ 			continue;
+@@ -230,8 +231,9 @@ int svc_create_xprt(struct svc_serv *serv, const char *xprt_name,
+ 		spin_lock_bh(&serv->sv_lock);
+ 		list_add(&newxprt->xpt_list, &serv->sv_permsocks);
+ 		spin_unlock_bh(&serv->sv_lock);
++		newport = svc_xprt_local_port(newxprt);
+ 		clear_bit(XPT_BUSY, &newxprt->xpt_flags);
+-		return svc_xprt_local_port(newxprt);
++		return newport;
+ 	}
+  err:
+ 	spin_unlock(&svc_xprt_class_lock);
+@@ -431,8 +433,13 @@ void svc_xprt_received(struct svc_xprt *xprt)
  {
--	BUG_ON(!fhp->fh_pre_saved || !fhp->fh_post_saved);
--	cinfo->atomic = 1;
-+	BUG_ON(!fhp->fh_pre_saved);
-+	cinfo->atomic = fhp->fh_post_saved;
- 	cinfo->change_supported = IS_I_VERSION(fhp->fh_dentry->d_inode);
--	if (cinfo->change_supported) {
--		cinfo->before_change = fhp->fh_pre_change;
--		cinfo->after_change = fhp->fh_post_change;
--	} else {
--		cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
--		cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
--		cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
--		cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
--	}
-+
-+	cinfo->before_change = fhp->fh_pre_change;
-+	cinfo->after_change = fhp->fh_post_change;
-+	cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
-+	cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
-+	cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
-+	cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
-+
+ 	BUG_ON(!test_bit(XPT_BUSY, &xprt->xpt_flags));
+ 	xprt->xpt_pool = NULL;
++	/* As soon as we clear busy, the xprt could be closed and
++	 * 'put', so we need a reference to call svc_xprt_enqueue with:
++	 */
++	svc_xprt_get(xprt);
+ 	clear_bit(XPT_BUSY, &xprt->xpt_flags);
+ 	svc_xprt_enqueue(xprt);
++	svc_xprt_put(xprt);
  }
+ EXPORT_SYMBOL_GPL(svc_xprt_received);
  
- int nfs4svc_encode_voidres(struct svc_rqst *, __be32 *, void *);
 -- 
 1.7.4.4
 
