@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab1DNITT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 04:19:19 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38058 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab1DNITR (ORCPT
+	id S1755682Ab1DNIU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 04:20:26 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:37268 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab1DNIUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 04:19:17 -0400
-Date: Thu, 14 Apr 2011 10:18:54 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <gregkh@suse.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [Stable-review] [56/74] x86, microcode, AMD: Extend ucode size
- verification
-Message-ID: <20110414081854.GA9238@aftab>
-References: <20110413155148.974006996@clark.kroah.org>
- <1302752223.5282.674.camel@localhost>
- <20110414074125.GA8575@aftab>
+	Thu, 14 Apr 2011 04:20:24 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Sandeen <sandeen@redhat.com>
+Subject: Re: Linux 2.6.39-rc3
+In-Reply-To: <20110412192103.GA13278@redhat.com>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412190934.GA12082@redhat.com> <20110412192103.GA13278@redhat.com>
+User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 14 Apr 2011 13:50:16 +0530
+Message-ID: <87tye1ckhr.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414074125.GA8575@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 03:41:25AM -0400, Borislav Petkov wrote:
-
-[..]
-
-> > > +static unsigned int verify_ucode_size(int cpu, const u8 *buf, unsigned int size)
-> > > +{
-> > > +	struct cpuinfo_x86 *c = &cpu_data(cpu);
-> > > +	unsigned int max_size, actual_size;
-> > > +
-> > > +#define F1XH_MPB_MAX_SIZE 2048
-> > > +#define F14H_MPB_MAX_SIZE 1824
-> > > +#define F15H_MPB_MAX_SIZE 4096
-> > > +
-> > > +	switch (c->x86) {
-> > > +	case 0x14:
-> > > +		max_size = F14H_MPB_MAX_SIZE;
-> > > +		break;
-> > > +	case 0x15:
-> > > +		max_size = F15H_MPB_MAX_SIZE;
-> > > +		break;
-> > > +	default:
-> > > +		max_size = F1XH_MPB_MAX_SIZE;
-> > > +		break;
-> > > +	}
-> > > +
-> > > +	actual_size = buf[4] + (buf[5] << 8);
-> > > +
-> > > +	if (actual_size > size || actual_size > max_size) {
-> > 
-> > Surely:
-> > 
-> > 	if (actual_size + UCODE_CONTAINER_SECTION_HDR > size || ...
+On Tue, 12 Apr 2011 15:21:03 -0400, Dave Jones <davej@redhat.com> wrote:
+> On Tue, Apr 12, 2011 at 03:09:34PM -0400, Dave Jones wrote:
 > 
-> Well, not really because the UCODE_CONTAINER_SECTION_HDR is just 8 bytes
-> of patch header before each ucode patch and we don't copy it. So the
-> first part of the check is to see whether the ucode patch we're looking
-> at is incomplete and the ucode file is truncated.
+>  > however, the output of mount looks very confused..
+>  > 
+>  > .38:
+>  > /dev/mapper/vg_adamo-lv_home on /home type ext4 (rw,relatime,seclabel,barrier=1,data=ordered)
+>  > 
+>  > .39:
+>  > - on /home type 79a9-4526-888c-1f86d35a6704 (rw,relatime,ext4)
+>  > 
+>  > It looks like /proc/self/mountinfo broke abi.
+>  > 
+>  > .38:
+>  > 48 45 253:3 / /home rw,relatime - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,barrier=1,data=ordered
+>  > 
+>  > .39:
+>  > 46 22 253:3 / /home rw,relatime uuid:f3971858-79a9-4526-888c-1f86d35a6704 - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,user_xattr,barrier=1,data=ordered
 > 
-> That's why we skip the 8 bytes when we do get_ucode_data() later.
+> looks like this was caused by 93f1c20bc8cdb757be50566eff88d65c3b26881f
+> 
+> perhaps adding that string to the end of the line would preserve what mount expects ?
 
-Actually, scratch that. I think you're right - this is a bug in the
-original code since the check there ignored those 8 bytes too:
+uuid:<value> is the option field  as per
+Documentation/filesystem/proc.txt. There was an error in libmount
+parsing which got fixed upstream recently 
 
-        total_size = (unsigned long) (section_hdr[4] + (section_hdr[5] << 8));
+you can find the details here 
 
-        printk(KERN_DEBUG "microcode: size %u, total_size %u\n",
-               size, total_size);
+http://thread.gmane.org/gmane.linux.kernel/1121533/focus=52474
 
-        if (total_size > size || total_size > UCODE_MAX_SIZE) {
-                printk(KERN_ERR "microcode: error: size mismatch\n");
-                return NULL;
-        }
-
-Btw, while staring at it, I've found another discrepancy that needs to
-be fixed, I'll whip up a patch soon.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+-aneesh
