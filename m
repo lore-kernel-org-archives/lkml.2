@@ -1,42 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab1DNGdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 02:33:51 -0400
-Received: from ebb06.tieto.com ([131.207.168.38]:48096 "EHLO ebb06.tieto.com"
+	id S1753716Ab1DNGlK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 02:41:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9483 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800Ab1DNGdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 02:33:50 -0400
-X-AuditID: 83cfa826-b7c64ae000004fc2-5e-4da6954c626d
-Date: Thu, 14 Apr 2011 14:44:41 +0800
-From: Yang Ruirui <ruirui.r.yang@tieto.com>
-To: <tytso@mit.edu>, <linux-ext4@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ext4: release page cache in ext4_mb_load_buddy error path
-Message-ID: <20110414064441.GA3499@darkstar>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1751519Ab1DNGlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 02:41:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,209,1301900400"; 
+   d="scan'208";a="418963063"
+From: Youquan Song <youquan.song@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, mingo@elte.hu, tglx@linutronix.de,
+        hpa@zytor.com, hpa@linux.intel.com, suresh.b.siddha@intel.com,
+        yong.y.wang@linux.intel.com, joe@perches.com, jbaron@redhat.com,
+        trenn@suse.de, kent.liu@intel.com, chaohong.guo@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH v4 1/2] apic: Fix error interrupt report at all APs
+Date: Thu, 14 Apr 2011 14:36:07 +0800
+Message-Id: <1302762968-24380-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing page_cache_release in the error path of ext4_mb_load_buddy
+Recently, customer report that once machine boot, there are many error interrupt
+reported with exact number of all APs. 
 
-Signed-off-by: Yang Ruirui <ruirui.r.yang@tieto.com>
+The root cause is Local APIC will generate error interrupt when it detect
+the illegal vector (one in 0 ~ 15) in an interrupt message received or
+interrupt generate from local vector table or self IPI. SDM3A.chapter 10.
+
+AP LAPIC thermal sensor register will be reset to 0x10000, if thermal throttling
+interrupt take over by BIOS, it need restore AP with the thermal sensor register
+value of geting from BSP, otherwise cause system issue. If BIOS does not take
+over the thermal interrupt, The restore value will be CPU rest value of 0x10000,
+which means the interrupt vector is zero. After writing 0x10000 to thermal
+sensor LVT, the processor will recieve the error interrupt report if the APIC
+error interrupt is also set.
+
+This patch add check the BIOS whether take over the thermal interrupt by look
+at interrupt delivery mode not fixed mode(BIOS handle will be SMI mode) before
+restore AP's thermal LVT. So the agony noise of error interrupt will dismiss
+when boot on machine that BIOS does not handle thermal interrupt..  
+
+
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Yong Wang <yong.y.wang@intel.com>
 ---
- fs/ext4/mballoc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/apicdef.h           |    1 +
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
---- linux-2.6.orig/fs/ext4/mballoc.c	2011-04-14 14:04:48.000000000 +0800
-+++ linux-2.6/fs/ext4/mballoc.c	2011-04-14 14:33:28.702958245 +0800
-@@ -1273,6 +1273,8 @@ repeat_load_buddy:
- 	return 0;
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index d87988b..34595d5 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -78,6 +78,7 @@
+ #define		APIC_DEST_LOGICAL	0x00800
+ #define		APIC_DEST_PHYSICAL	0x00000
+ #define		APIC_DM_FIXED		0x00000
++#define		APIC_DM_FIXED_MASK	0x00700
+ #define		APIC_DM_LOWEST		0x00100
+ #define		APIC_DM_SMI		0x00200
+ #define		APIC_DM_REMRD		0x00300
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 6f8c5e9..22c212a 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -446,18 +446,20 @@ void intel_init_thermal(struct cpuinfo_x86 *c)
+ 	 */
+ 	rdmsr(MSR_IA32_MISC_ENABLE, l, h);
  
- err:
-+	if (page)
-+		page_cache_release(page);
- 	if (e4b->bd_bitmap_page)
- 		page_cache_release(e4b->bd_bitmap_page);
- 	if (e4b->bd_buddy_page)
++	h = lvtthmr_init;
+ 	/*
+ 	 * The initial value of thermal LVT entries on all APs always reads
+ 	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
+ 	 * sequence to them and LVT registers are reset to 0s except for
+ 	 * the mask bits which are set to 1s when APs receive INIT IPI.
+-	 * Always restore the value that BIOS has programmed on AP based on
+-	 * BSP's info we saved since BIOS is always setting the same value
+-	 * for all threads/cores
++	 * If BIOS take over the thermal interrupt and set its interrupt
++	 * delivery mode to SMI not fixed, it restore the value that BIOS has
++	 * programmed on AP based on BSP's info we saved since BIOS is always
++	 * setting the same value for all threads/cores.
+ 	 */
+-	apic_write(APIC_LVTTHMR, lvtthmr_init);
++	if ((h & APIC_DM_FIXED_MASK) != APIC_DM_FIXED)
++		apic_write(APIC_LVTTHMR, lvtthmr_init);
+ 
+-	h = lvtthmr_init;
+ 
+ 	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
+ 		printk(KERN_DEBUG
+-- 
+1.6.4.2
+
