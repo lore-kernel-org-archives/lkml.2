@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab1DNIFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 04:05:36 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36114 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756421Ab1DNIFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 04:05:25 -0400
-Date: Thu, 14 Apr 2011 10:05:06 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, maciej.rutecki@gmail.com,
-        Shaun Ruffell <sruffell@digium.com>, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
- proper MSR register to catch" and NMIs
-Message-ID: <20110414080506.GA23965@elte.hu>
-References: <20110406223036.GA15721@digium.com>
- <201104132133.51958.maciej.rutecki@gmail.com>
- <4DA6011F.7070405@openvz.org>
- <20110414064737.GB15535@elte.hu>
- <BANLkTinC18PetP=dzCsfOL_v_1hGv0jUag@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinC18PetP=dzCsfOL_v_1hGv0jUag@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757310Ab1DNILz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 04:11:55 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34550 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757127Ab1DNILw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 04:11:52 -0400
+Date: Thu, 14 Apr 2011 09:09:14 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+Message-ID: <20110414090914.2d643362@lxorguk.ukuu.org.uk>
+In-Reply-To: <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+	<20110412090207.GE19819@8bytes.org>
+	<BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
+	<20110412184433.GF19819@8bytes.org>
+	<20110413064609.GA18777@elte.hu>
+	<20110413172147.GI19819@8bytes.org>
+	<4DA5F62F.3030504@kernel.org>
+	<20110413193459.GL19819@8bytes.org>
+	<4DA60C30.4060606@kernel.org>
+	<BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
+	<4DA6145D.9070703@kernel.org>
+	<BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
+	<4DA655E7.3000904@zytor.com>
+	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
+	<BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 13 Apr 2011 19:33:40 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-* Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-
-> On Thu, Apr 14, 2011 at 10:47 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> >
-> >> -     apic_write(APIC_LVTPC, APIC_DM_NMI);
+> On Wednesday, April 13, 2011, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Wednesday, April 13, 2011, H. Peter Anvin <hpa@zytor.com> wrote:
 > >>
-> >>       handled = x86_pmu.handle_irq(args->regs);
-> >>       if (!handled)
-> >>               return NOTIFY_DONE;
-> >>
-> >> +     /*
-> >> +      * Unmasking should be done after IRQ handled, otherwise
-> >> +      * there is a race between clearing of counter overflow
-> >> +      * flag and LTV entry unmasking (which might lead to double
-> >> +      * NMIs generation).
-> >> +      */
-> >> +     apic_write(APIC_LVTPC, APIC_DM_NMI);
-> >
-> > Here we could leak a masked IRQ through the !handled path. If we got a LVTPC
-> > irq we better handle it and unmask the LVTPC unconditionally - regardless of
-> > whether we consider it 'handled' or not from the kernel POV ...
-> >
-> > Thanks,
-> >
-> >        Ingo
+> >> Yes.  However, even if we *do* revert (and the time is running short on
+> >> not reverting) I would like to understand this particular one, simply
+> >> because I think it may very well be a problem that is manifesting itself
+> >> in other ways on other systems.
 > 
-> If there is no counters overflowed I believe we should not poke LVTPC until 
-> we sure NMI comes from it (and counter overflow is the only sign that NMI 
-> came from LVTPC as far as I may say, and I see also a possibility for race if 
-> counter signal reaches LVTPC and it is being processed inside apic chip 
-> {which might take some time too before real NMI signal appears in cpu} and as 
-> result hard to tell what we get in output -- double nmi again or something 
-> else).
+>  sorry, fingerfart. Anyway, I agree 100%.
+> 
+>  we definitely want to also understand the reason for things not
+> working, even if we do revert..
 
-Well, we unmasked unconditionally before. If we unmask conditionally now, we 
-risk not unmasking. We risk a completely stuck PMU (there wont ever come *any* 
-NMI from it if we ever forget to unmask) versus spurious NMIs.
+Definitely because if it fails when the "magic" involves the GART base it
+starts to sound like something may be hitting the wrong address space or
+not flushing properly.
 
-Maybe we can do it - but it will need a lot of testing on a lot of CPU types to 
-make sure there's no other CPU quirks in this area ...
-
-So unless the conditional unmasking fixes a real bug (in kgdb or elsewhere) 
-lets unmask unconditionally now to fix the P4 regression in .39 - and queue up 
-a *separate* patch that moves it even further down and makes it conditional - 
-but queue that up for .40.
-
-Thanks,
-
-	Ingo
