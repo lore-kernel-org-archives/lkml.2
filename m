@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab1DNVzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:55:19 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54643 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab1DNVzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:55:16 -0400
-Subject: Re: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, Jens Axboe <jaxboe@fusionio.com>,
-        kevin diggs <diggskevin38@gmail.com>,
-        Michel Daenzer <michel@daenzer.net>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <BANLkTimykvKp=bwsFyNE9fWqcE9Ffws6bA@mail.gmail.com>
-References: <19876.35918.322649.256455@pilspetsen.it.uu.se>
-	 <1302646173.28876.53.camel@pasglop> <1302652502.28876.76.camel@pasglop>
-	 <19877.23529.745123.819112@pilspetsen.it.uu.se>
-	 <1302685102.28876.81.camel@pasglop>
-	 <BANLkTimc84A8kddarnhvrcab3iKZc0HZAg@mail.gmail.com>
-	 <1302736869.28876.91.camel@pasglop>
-	 <BANLkTika8FY1dD_hOQ4wMhHzuQ2Qt8fg7A@mail.gmail.com>
-	 <1302771756.15520.100.camel@thor.local>
-	 <BANLkTimykvKp=bwsFyNE9fWqcE9Ffws6bA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Apr 2011 07:54:49 +1000
-Message-ID: <1302818089.28876.134.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753858Ab1DNV4B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:56:01 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:48051 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996Ab1DNVz7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 17:55:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=e1M7MkgdEZ5fTrCO6ZYVKZTU1KyU0C71WfZ5c4A+m+i+7EN0vBzMmRGM0mfb6KS/wB
+         tC4g8owiHHxphuLDPO/g==
+Date: Thu, 14 Apr 2011 14:55:50 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Timur Tabi <timur@freescale.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 2/3] make new alloc_pages_exact()
+In-Reply-To: <20110414200140.CDE09A20@kernel>
+Message-ID: <alpine.DEB.2.00.1104141455390.13286@chino.kir.corp.google.com>
+References: <20110414200139.ABD98551@kernel> <20110414200140.CDE09A20@kernel>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-14 at 14:25 -0700, Hugh Dickins wrote:
+On Thu, 14 Apr 2011, Dave Hansen wrote:
+
 > 
-> Something worth trying: turn off CONFIG_IDE.  That's what I need to
-> boot 2.6.39-rc[1-3] on PowerPC G5.
+> What I really wanted in the end was a highmem-capable
+> alloc_pages_exact(), so here it is.  This function can be used to
+> allocate unmapped (like highmem) non-power-of-two-sized areas of
+> memory.  This is in constast to get_free_pages_exact() which can only
+> allocate from lowmem.
 > 
-> I know Jens has been fixing problems with IDE versus his plug/unplug
-> changes, but it's still not fixed for me in rc3.
+> My plan is to use this in the virtio_balloon driver to allocate large,
+> oddly-sized contiguous areas.
 > 
-> In other mail http://lkml.org/lkml/2011/4/14/614
-> I see Linus recommending his post-rc3 commit 6631e635c65d
-> but I've not tried that myself yet.
+> The new __alloc_pages_exact() now takes a size in numbers of pages,
+> and returns a 'struct page', which means it can now address
+> highmem.  The (new) argument order mirrors alloc_pages() itself.
+> 
+> It's a bit unfortunate that this introduces __free_pages_exact()
+> alongside free_pages_exact().  But that mess already exists with
+> __free_pages() vs. free_pages_exact().  So, at worst, this mirrors the
+> mess that we already have.
+> 
+> I'm also a bit worried that I've not put in something named
+> alloc_pages_exact(), but that behaves differently than it did before
+> this set.  I got all of the in-tree cases, but I'm a bit worried about
+> stragglers elsewhere.  So, I'm calling this __alloc_pages_exact() for
+> the moment.  We can take out the __ some day if it bothers people.
+> 
+> Note that the __get_free_pages() has a !GFP_HIGHMEM check.  Now that
+> we are using alloc_pages_exact() instead of __get_free_pages() for
+> get_free_pages_exact(), we had to add a new check in
+> get_free_pages_exact().
+> 
+> This has been compile and boot tested, and I checked that
+> 
+> 	echo 2 > /sys/kernel/profiling
+> 
+> still works, since it uses get_free_pages_exact().
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 
-Well, the disk is SATA so it's CONFIG_ATA/libata, which works fine here,
-unless you somewhat replaced your CD-ROM with a legacy IDE disk :-) Or
-maybe the problem is related to the CD-ROM drive. There's a libata
-driver for it nowadays, so you can use PATA_MACIO instead of IDE_PMAC
-
-Cheers,
-Ben.
-
-
+Acked-by: David Rientjes <rientjes@google.com>
