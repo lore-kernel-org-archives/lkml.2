@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab1DNR6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:58:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41847 "EHLO
+	id S933647Ab1DNR5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:57:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41312 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964888Ab1DNR6K (ORCPT
+	with ESMTP id S933236Ab1DNR5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:10 -0400
+	Thu, 14 Apr 2011 13:57:37 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Hillf Danton <dhillf@gmail.com>,
+Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 146/209] bonding: Fix slave selection bug.
-Date: Thu, 14 Apr 2011 13:55:04 -0400
-Message-Id: <1302803767-9715-33-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 118/209] x25: Prevent crashing when parsing bad X.25 facilities
+Date: Thu, 14 Apr 2011 13:54:36 -0400
+Message-Id: <1302803767-9715-5-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,43 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hillf Danton <dhillf@gmail.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit af3e5bd5f650163c2e12297f572910a1af1b8236 upstream
+commit 5ef41308f94dcbb3b7afc56cdef1c2ba53fa5d2f upstream.
 
-The returned slave is incorrect, if the net device under check is not
-charged yet by the master.
+Now with improved comma support.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+On parsing malformed X.25 facilities, decrementing the remaining length
+may cause it to underflow.  Since the length is an unsigned integer,
+this will result in the loop continuing until the kernel crashes.
+
+This patch adds checks to ensure decrementing the remaining length does
+not cause it to wrap around.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/bonding/bonding.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/x25/x25_facilities.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index 257a7a4..d881eb8 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -235,11 +235,11 @@ static inline struct slave *bond_get_slave_by_dev(struct bonding *bond, struct n
- 
- 	bond_for_each_slave(bond, slave, i) {
- 		if (slave->dev == slave_dev) {
--			break;
-+			return slave;
- 		}
- 	}
- 
--	return slave;
-+	return 0;
- }
- 
- static inline struct bonding *bond_get_bond_by_slave(struct slave *slave)
+diff --git a/net/x25/x25_facilities.c b/net/x25/x25_facilities.c
+index 3a8c4c4..55187c8 100644
+--- a/net/x25/x25_facilities.c
++++ b/net/x25/x25_facilities.c
+@@ -61,6 +61,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
+ 	while (len > 0) {
+ 		switch (*p & X25_FAC_CLASS_MASK) {
+ 		case X25_FAC_CLASS_A:
++			if (len < 2)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_REVERSE:
+ 				if((p[1] & 0x81) == 0x81) {
+@@ -104,6 +106,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
+ 			len -= 2;
+ 			break;
+ 		case X25_FAC_CLASS_B:
++			if (len < 3)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_PACKET_SIZE:
+ 				facilities->pacsize_in  = p[1];
+@@ -125,6 +129,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
+ 			len -= 3;
+ 			break;
+ 		case X25_FAC_CLASS_C:
++			if (len < 4)
++				return 0;
+ 			printk(KERN_DEBUG "X.25: unknown facility %02X, "
+ 			       "values %02X, %02X, %02X\n",
+ 			       p[0], p[1], p[2], p[3]);
+@@ -132,6 +138,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
+ 			len -= 4;
+ 			break;
+ 		case X25_FAC_CLASS_D:
++			if (len < p[1] + 2)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_CALLING_AE:
+ 				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
+@@ -149,9 +157,7 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
+ 				break;
+ 			default:
+ 				printk(KERN_DEBUG "X.25: unknown facility %02X,"
+-					"length %d, values %02X, %02X, "
+-					"%02X, %02X\n",
+-					p[0], p[1], p[2], p[3], p[4], p[5]);
++					"length %d\n", p[0], p[1]);
+ 				break;
+ 			}
+ 			len -= p[1] + 2;
 -- 
 1.7.4.4
 
