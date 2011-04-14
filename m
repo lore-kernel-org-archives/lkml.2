@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab1DNUFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:05:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37224 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758243Ab1DNUFL (ORCPT
+	id S1751626Ab1DNUIV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:08:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38993 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab1DNUIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:05:11 -0400
+	Thu, 14 Apr 2011 16:08:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=iEZQvgtdWjUdXHXNSxtIh2MgwwMo4I3cgZgGmWdCHZZJi9y+UT6tL1cRpRxv34OLAY
-         LcF72YL76nPoCtNjmCUpe8KYo2DLRQGCPe2dfz5VfLN1DEa+FSw6A8Lbhlzh2emJ4Urz
-         1EDGuVf8XSNZ/pmF115+H9mz7CY5Yak7J7hqI=
-Message-ID: <4DA75373.9040705@openvz.org>
-Date: Fri, 15 Apr 2011 00:05:07 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-References: <4DA70950.3060102@openvz.org> <20110414174327.GA8863@elte.hu> <20110414183231.GN16939@redhat.com> <20110414184606.GD16064@elte.hu> <4DA74E5D.4060002@openvz.org> <20110414195748.GO16939@redhat.com>
-In-Reply-To: <20110414195748.GO16939@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WRA1ShTu8pofl1q+YOGITfihZ2I7kld3t70/RhQDTtg30Vo9A4IimuUA4YrSuj0w3U
+         E719RRlSIvc5v4LKpicXvCCkBrErVuFJ5N2VKbh1WUOjWY4XQq0wmItaUpTh3Ly+25gh
+         Jb1QLM9Tpq3moLUENESmESWNCMulLXEJVbNdU=
+Subject: Re: 2.6.38 page_test regression
+From: raz ben yehuda <raziebe@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20110414150925.GD15707@random.random>
+References: <1302692638.15225.14.camel@raz.scalemp.com>
+	 <20110413125146.GR29444@random.random>
+	 <1302703579.17536.1.camel@raz.scalemp.com>
+	 <20110413172127.GB5734@random.random>
+	 <1302781754.5098.13.camel@raz.scalemp.com>
+	 <20110414150925.GD15707@random.random>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 23:07:23 +0300
+Message-ID: <1302811643.10051.8.camel@raz.scalemp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 11:57 PM, Don Zickus wrote:
-> On Thu, Apr 14, 2011 at 11:43:25PM +0400, Cyrill Gorcunov wrote:
->> On 04/14/2011 10:46 PM, Ingo Molnar wrote:
->>>
->>> btw., the bug went away once i removed your patch so it's 100% sure caused by 
->>> this change.
->>>
->>> Thanks,
->>>
->>> 	Ingo
->>
->> Ingo if you have a chance mind to give this patch a shot please? Seems we might miss unmasking
->> for inflight nmis.
-> 
-> I don't think this patch will work.  It would make sense if the unmasking
-> happened _after_ the "if (!handled)" path, but that is not the path Ingo
-> wanted for v1.
+bah. Mel is correct. I did mean page_test  ( in my defense it is in the
+msg ).
+Here some more information:
+1. I manage to lower the regression to 2 sha1's:
+    	32dba98e085f8b2b4345887df9abf5e0e93bfc12 to
+71e3aac0724ffe8918992d76acfe3aad7d8724a5. 
+	though I had to remark wait_split_huge_page for the sake of
+compilation. up to 32dba98e085f8b2b4345887df9abf5e0e93bfc12 there is no
+regression.
 
-This thing happened if inflight nmi reaches the system and note that inflight
-NMI comes from perf and masks lvt entry, it has nothing to do with "handled" but
-rather the _fact_ that NMI reached apic via LVTPC and as result -- masked it.
-Don, I might be missin something, brain is slowly going to sleep :)
+2. I booted 2.6.37-rc5 you gave me. same regression is there. 
 
-> 
-> Cheers,
-> Don
-> 
->> -	apic_write(APIC_LVTPC, APIC_DM_NMI);
->>
->>  	handled = x86_pmu.handle_irq(args->regs);
->> +	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> 
-> ^^^^ all handled/unhandled NMIs hit that apic_write
->>  	if (!handled)
->>  		return NOTIFY_DONE;
->>
+raz
 
-yeah, Ingo asked to make it this way -- ie like in your former
-patch, the conditional unmasking is left to be tested in further
-kernel series.
 
--- 
-    Cyrill
+On Thu, 2011-04-14 at 17:09 +0200, Andrea Arcangeli wrote:
+> On Thu, Apr 14, 2011 at 02:49:14PM +0300, raz ben yehuda wrote:
+> > Hey Andrea
+> > Me again. I managed to ftrace ( function graph ) the two kernels. I used
+> > 2.6.37 and 2.6.39-rc3. The bellow is example for sys_brk calls traces
+> > from each kernel. As you can see, there is no "single smoking gun"
+> > here. 
+> > 
+> > The vm functions durations increased as a whole.
+> > I repeated the tests from sha1 4e9f64c42d0ba5eb0c78569435ada4c224332ce4
+> > compared to sha1 152c9ccb75548c027fa3103efa4fa4e19a345449  and it is
+> > consistent. ~13% performance decrease.
+> > 
+> 
+> > Can you see any relation to thp that might causes this degradation ?
+> 
+> With compaction and THP off I don't see how it could change
+> anything.
+> 
+> But can you try the THP-33 tag of my aa.git tree, that was based on
+> 2.3.37-rc5 so it'll rule out the whole THP patchset if it doesn't
+> regress compared to 2.6.37-rc5 vanilla.
+> 
+> git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+> git checkout THP-33
+> 
+> Thanks,
+> Andrea
+
+
