@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964876Ab1DNSSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:18:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41606 "EHLO
+	id S964889Ab1DNSTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:19:06 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41521 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964826Ab1DNR54 (ORCPT
+	with ESMTP id S933692Ab1DNR5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:57:56 -0400
+	Thu, 14 Apr 2011 13:57:49 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+Cc: stable-review@kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 135/209] filter: make sure filters dont read uninitialized memory
-Date: Thu, 14 Apr 2011 13:54:53 -0400
-Message-Id: <1302803767-9715-22-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 128/209] nmi: fix clock comparator revalidation
+Date: Thu, 14 Apr 2011 13:54:46 -0400
+Message-Id: <1302803767-9715-15-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,243 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David S. Miller <davem@davemloft.net>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 57fe93b374a6b8711995c2d466c502af9f3a08bb upstream
+commit e8129c642155616d9e2160a75f103e127c8c3708 upstream.
 
-There is a possibility malicious users can get limited information about
-uninitialized stack mem array. Even if sk_run_filter() result is bound
-to packet length (0 .. 65535), we could imagine this can be used by
-hostile user.
+On each machine check all registers are revalidated. The save area for
+the clock comparator however only contains the upper most seven bytes
+of the former contents, if valid.
+Therefore the machine check handler uses a store clock instruction to
+get the current time and writes that to the clock comparator register
+which in turn will generate an immediate timer interrupt.
+However within the lowcore the expected time of the next timer
+interrupt is stored. If the interrupt happens before that time the
+handler won't be called. In turn the clock comparator won't be
+reprogrammed and therefore the interrupt condition stays pending which
+causes an interrupt loop until the expected time is reached.
 
-Initializing mem[] array, like Dan Rosenberg suggested in his patch is
-expensive since most filters dont even use this array.
+On NOHZ machines this can result in unresponsive machines since the
+time of the next expected interrupted can be a couple of days in the
+future.
 
-Its hard to make the filter validation in sk_chk_filter(), because of
-the jumps. This might be done later.
+To fix this just revalidate the clock comparator register with the
+expected value.
+In addition the special handling for udelay must be changed as well.
 
-In this patch, I use a bitmap (a single long var) so that only filters
-using mem[] loads/stores pay the price of added security checks.
-
-For other filters, additional cost is a single instruction.
-
-[ Since we access fentry->k a lot now, cache it in a local variable
-  and mark filter entry pointer as const. -DaveM ]
-
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/core/filter.c |   64 +++++++++++++++++++++++++++++------------------------
- 1 files changed, 35 insertions(+), 29 deletions(-)
+ arch/s390/kernel/nmi.c |   10 ++++------
+ arch/s390/lib/delay.c  |   14 +++++++++-----
+ 2 files changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/net/core/filter.c b/net/core/filter.c
-index ff943be..3462e9d 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -112,39 +112,41 @@ EXPORT_SYMBOL(sk_filter);
-  */
- unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int flen)
+diff --git a/arch/s390/kernel/nmi.c b/arch/s390/kernel/nmi.c
+index 015e27d..31bc708 100644
+--- a/arch/s390/kernel/nmi.c
++++ b/arch/s390/kernel/nmi.c
+@@ -95,7 +95,6 @@ EXPORT_SYMBOL_GPL(s390_handle_mcck);
+ static int notrace s390_revalidate_registers(struct mci *mci)
  {
--	struct sock_filter *fentry;	/* We walk down these */
- 	void *ptr;
- 	u32 A = 0;			/* Accumulator */
- 	u32 X = 0;			/* Index Register */
- 	u32 mem[BPF_MEMWORDS];		/* Scratch Memory Store */
-+	unsigned long memvalid = 0;
- 	u32 tmp;
- 	int k;
- 	int pc;
+ 	int kill_task;
+-	u64 tmpclock;
+ 	u64 zero;
+ 	void *fpt_save_area, *fpt_creg_save_area;
  
-+	BUILD_BUG_ON(BPF_MEMWORDS > BITS_PER_LONG);
- 	/*
- 	 * Process array of filter instructions.
- 	 */
- 	for (pc = 0; pc < flen; pc++) {
--		fentry = &filter[pc];
-+		const struct sock_filter *fentry = &filter[pc];
-+		u32 f_k = fentry->k;
+@@ -214,11 +213,10 @@ static int notrace s390_revalidate_registers(struct mci *mci)
+ 			: "0", "cc");
+ #endif
+ 	/* Revalidate clock comparator register */
+-	asm volatile(
+-		"	stck	0(%1)\n"
+-		"	sckc	0(%1)"
+-		: "=m" (tmpclock) : "a" (&(tmpclock)) : "cc", "memory");
+-
++	if (S390_lowcore.clock_comparator == -1)
++		set_clock_comparator(S390_lowcore.mcck_clock);
++	else
++		set_clock_comparator(S390_lowcore.clock_comparator);
+ 	/* Check if old PSW is valid */
+ 	if (!mci->wp)
+ 		/*
+diff --git a/arch/s390/lib/delay.c b/arch/s390/lib/delay.c
+index 752b362..7c37ec3 100644
+--- a/arch/s390/lib/delay.c
++++ b/arch/s390/lib/delay.c
+@@ -29,17 +29,21 @@ static void __udelay_disabled(unsigned long long usecs)
+ {
+ 	unsigned long mask, cr0, cr0_saved;
+ 	u64 clock_saved;
++	u64 end;
  
- 		switch (fentry->code) {
- 		case BPF_ALU|BPF_ADD|BPF_X:
- 			A += X;
- 			continue;
- 		case BPF_ALU|BPF_ADD|BPF_K:
--			A += fentry->k;
-+			A += f_k;
- 			continue;
- 		case BPF_ALU|BPF_SUB|BPF_X:
- 			A -= X;
- 			continue;
- 		case BPF_ALU|BPF_SUB|BPF_K:
--			A -= fentry->k;
-+			A -= f_k;
- 			continue;
- 		case BPF_ALU|BPF_MUL|BPF_X:
- 			A *= X;
- 			continue;
- 		case BPF_ALU|BPF_MUL|BPF_K:
--			A *= fentry->k;
-+			A *= f_k;
- 			continue;
- 		case BPF_ALU|BPF_DIV|BPF_X:
- 			if (X == 0)
-@@ -152,49 +154,49 @@ unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int
- 			A /= X;
- 			continue;
- 		case BPF_ALU|BPF_DIV|BPF_K:
--			A /= fentry->k;
-+			A /= f_k;
- 			continue;
- 		case BPF_ALU|BPF_AND|BPF_X:
- 			A &= X;
- 			continue;
- 		case BPF_ALU|BPF_AND|BPF_K:
--			A &= fentry->k;
-+			A &= f_k;
- 			continue;
- 		case BPF_ALU|BPF_OR|BPF_X:
- 			A |= X;
- 			continue;
- 		case BPF_ALU|BPF_OR|BPF_K:
--			A |= fentry->k;
-+			A |= f_k;
- 			continue;
- 		case BPF_ALU|BPF_LSH|BPF_X:
- 			A <<= X;
- 			continue;
- 		case BPF_ALU|BPF_LSH|BPF_K:
--			A <<= fentry->k;
-+			A <<= f_k;
- 			continue;
- 		case BPF_ALU|BPF_RSH|BPF_X:
- 			A >>= X;
- 			continue;
- 		case BPF_ALU|BPF_RSH|BPF_K:
--			A >>= fentry->k;
-+			A >>= f_k;
- 			continue;
- 		case BPF_ALU|BPF_NEG:
- 			A = -A;
- 			continue;
- 		case BPF_JMP|BPF_JA:
--			pc += fentry->k;
-+			pc += f_k;
- 			continue;
- 		case BPF_JMP|BPF_JGT|BPF_K:
--			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A > f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JGE|BPF_K:
--			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A >= f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JEQ|BPF_K:
--			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A == f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JSET|BPF_K:
--			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A & f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JGT|BPF_X:
- 			pc += (A > X) ? fentry->jt : fentry->jf;
-@@ -209,7 +211,7 @@ unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int
- 			pc += (A & X) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_LD|BPF_W|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_w:
- 			ptr = load_pointer(skb, k, 4, &tmp);
- 			if (ptr != NULL) {
-@@ -218,7 +220,7 @@ load_w:
- 			}
- 			break;
- 		case BPF_LD|BPF_H|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_h:
- 			ptr = load_pointer(skb, k, 2, &tmp);
- 			if (ptr != NULL) {
-@@ -227,7 +229,7 @@ load_h:
- 			}
- 			break;
- 		case BPF_LD|BPF_B|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_b:
- 			ptr = load_pointer(skb, k, 1, &tmp);
- 			if (ptr != NULL) {
-@@ -242,32 +244,34 @@ load_b:
- 			X = skb->len;
- 			continue;
- 		case BPF_LD|BPF_W|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_w;
- 		case BPF_LD|BPF_H|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_h;
- 		case BPF_LD|BPF_B|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_b;
- 		case BPF_LDX|BPF_B|BPF_MSH:
--			ptr = load_pointer(skb, fentry->k, 1, &tmp);
-+			ptr = load_pointer(skb, f_k, 1, &tmp);
- 			if (ptr != NULL) {
- 				X = (*(u8 *)ptr & 0xf) << 2;
- 				continue;
- 			}
- 			return 0;
- 		case BPF_LD|BPF_IMM:
--			A = fentry->k;
-+			A = f_k;
- 			continue;
- 		case BPF_LDX|BPF_IMM:
--			X = fentry->k;
-+			X = f_k;
- 			continue;
- 		case BPF_LD|BPF_MEM:
--			A = mem[fentry->k];
-+			A = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_LDX|BPF_MEM:
--			X = mem[fentry->k];
-+			X = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_MISC|BPF_TAX:
- 			X = A;
-@@ -276,14 +280,16 @@ load_b:
- 			A = X;
- 			continue;
- 		case BPF_RET|BPF_K:
--			return fentry->k;
-+			return f_k;
- 		case BPF_RET|BPF_A:
- 			return A;
- 		case BPF_ST:
--			mem[fentry->k] = A;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = A;
- 			continue;
- 		case BPF_STX:
--			mem[fentry->k] = X;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = X;
- 			continue;
- 		default:
- 			WARN_ON(1);
++	mask = psw_kernel_bits | PSW_MASK_WAIT | PSW_MASK_EXT;
++	end = get_clock() + (usecs << 12);
+ 	clock_saved = local_tick_disable();
+-	set_clock_comparator(get_clock() + (usecs << 12));
+ 	__ctl_store(cr0_saved, 0, 0);
+ 	cr0 = (cr0_saved & 0xffff00e0) | 0x00000800;
+ 	__ctl_load(cr0 , 0, 0);
+-	mask = psw_kernel_bits | PSW_MASK_WAIT | PSW_MASK_EXT;
+ 	lockdep_off();
+-	trace_hardirqs_on();
+-	__load_psw_mask(mask);
+-	local_irq_disable();
++	do {
++		set_clock_comparator(end);
++		trace_hardirqs_on();
++		__load_psw_mask(mask);
++		local_irq_disable();
++	} while (get_clock() < end);
+ 	lockdep_on();
+ 	__ctl_load(cr0_saved, 0, 0);
+ 	local_tick_enable(clock_saved);
 -- 
 1.7.4.4
 
