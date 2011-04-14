@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab1DNO5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:57:10 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:53304 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab1DNO5J (ORCPT
+	id S1759074Ab1DNO5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:57:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32710 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758008Ab1DNO5e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:57:09 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4DA70B32.1090505@ise.pw.edu.pl>
-Date: Thu, 14 Apr 2011 16:56:50 +0200
-From: wzab <wzab@ise.pw.edu.pl>
-Reply-To: wzab@ise.pw.edu.pl
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+	Thu, 14 Apr 2011 10:57:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,211,1301900400"; 
+   d="scan'208";a="679028376"
+From: "Allyn, Mark A" <mark.a.allyn@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Joe Perches <joe@perches.com>, Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
+        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>,
+        "Cox, Alan" <alan.cox@intel.com>, "Gross, Mark" <mark.gross@intel.com>,
+        "Beare, Bruce J" <bruce.j.beare@intel.com>
+Date: Thu, 14 Apr 2011 08:57:33 -0600
+Subject: RE: Re-send (What else needs to be done to the sep driver
+ (staging/sep))
+Thread-Topic: Re-send (What else needs to be done to the sep driver
+ (staging/sep))
+Thread-Index: Acv6s9M7TP6hmn5GTXSoocAP2qZXzAAACPCw
+Message-ID: <8A0E4C92AE2D6D40AF99653191DA32316154CEF1EC@rrsmsx501.amr.corp.intel.com>
+References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
+	<1302731811.11415.38.camel@Joe-Laptop>	<20110413222332.GA32013@kroah.com>
+	<1302733836.11415.42.camel@Joe-Laptop>	<20110413224621.GA4909@kroah.com>
+	<1302736379.11415.57.camel@Joe-Laptop>
+	<8A0E4C92AE2D6D40AF99653191DA32316154CEF1CF@rrsmsx501.amr.corp.intel.com>
+ <20110414155503.55518951@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110414155503.55518951@lxorguk.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: wzab@ise.pw.edu.pl
-CC: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: Screen corrupted in Xorg with KMS on 945GM/GMS, 943/940GML chipset
- with kernel 2.6.38.2
-References: <4DA4243A.5030805@ise.pw.edu.pl> <20110412184143.27dbf34f@neptune.home> <4DA4832F.2090600@ise.pw.edu.pl>
-In-Reply-To: <4DA4832F.2090600@ise.pw.edu.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 12.04.2011 18:51, wzab pisze:
-> W dniu 12.04.2011 18:41, Bruno Prémont pisze:
->> [CCing intel-gfx]
->>
->> On Tue, 12 April 2011 Wojciech Zabołotny<wzab@ise.pw.edu.pl>  wrote:
->>> After I've upgraded my kernel to 2.6.38.2, I started to experience very
->>> often screen corruption in X (it happened also earlier with 2.6.37.3,
->>> but now is very often.
->>> Hardware seems to be OK. I attach  sample screendumps, configuration of
->>> my kernel, log of the X server and output of the lspci command.
->>
->> This looks similar to the xchat corruptions I see (on i855).
->>
->> Have a look at #34980 (also 945 family) and #35460 on 
->> bugs.freedesktop.org.
->>
->> Bruno
->
-> Yes, the similar symptoms have also been reported in Ubuntu
->
-> https://bugs.launchpad.net/ubuntu/+source/xorg/+bug/737900
->
-> I have yet another machine, with an older chipset - VGA compatible 
-> controller: Intel Corporation 82865G Integrated Graphics Controller 
-> (rev 02) no corruptions occur in this machine.
-Ooops, sorry, today I have noticed the same problems on the machine with 
-Intel Corporation 82865G Integrated Graphics Controller (rev 02).
 
-Wojtek
+
+-----Original Message-----
+From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
+Sent: Thursday, April 14, 2011 7:55 AM
+To: Allyn, Mark A
+Cc: Joe Perches; Greg KH; linux-kernel@vger.kernel.org; alan@linux.intel.com; Mangalampalli, Jayant; Gokulrangan, Venkat R; Cox, Alan; Gross, Mark; Beare, Bruce J
+Subject: Re: Re-send (What else needs to be done to the sep driver (staging/sep))
+
+I think the logging is a distraction. Everyone is I think happy with the
+other minor tidying and the move from staging ? If so lets just get it
+moved while Greg and Joe throw buns at each other 8)
+
+For the record IMHO custom _dbg wrappers are usually not justified but I
+think I agree with Joe on this one because we have some many
+&foo->bar->baz it eliminates.
+
+Anyway - that can wait.
+
+Alan
+
+==============================================
+
+I have no problem with Alan's suggestion, however, I think I need to wait
+until Greg integrates two patches that are already in the queue; one that I 
+submitted yesterday (for device version detection) and the clean-up patch.
+
+Once I see these in the staging, then I plan to try to move to the misc
+directory under drivers.
+
+Mark Allyn
