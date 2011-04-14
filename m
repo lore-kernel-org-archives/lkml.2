@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797Ab1DNRjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:39:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54119 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab1DNRjs (ORCPT
+	id S1759158Ab1DNRj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:39:57 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52781 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758856Ab1DNRjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:39:48 -0400
-Message-ID: <4DA730F9.4030803@mvista.com>
-Date: Thu, 14 Apr 2011 21:38:01 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Thu, 14 Apr 2011 13:39:55 -0400
+Date: Thu, 14 Apr 2011 13:39:54 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+cc: gregkh@suse.de, <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        <balbi@ti.com>, Maya Erez <merez@codeaurora.org>,
+        "open list:USB GADGET/PERIPH..." <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH v6 1/5] usb: Add streams support to the gadget
+ framework
+In-Reply-To: <1302788149-27926-1-git-send-email-tlinder@codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1104141331410.2487-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Mike Frysinger <vapier@gentoo.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org,
-        x86@kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [Kgdb-bugreport] [PATCH 3/5] x86: convert to asm-generic ptrace.h
-References: <1302760895-13459-1-git-send-email-vapier@gentoo.org> <1302760895-13459-4-git-send-email-vapier@gentoo.org> <4DA701D5.5050205@mvista.com> <4DA72965.20907@zytor.com>
-In-Reply-To: <4DA72965.20907@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, 14 Apr 2011, Tatyana Brokhman wrote:
 
-H. Peter Anvin wrote:
+> This patch defines necessary fields to support streaming for USB3.0.
+> It implements a new function (usb_ep_autoconfig_ss) to be used instead of
+> the existing usb_ep_autoconfig when working in SS mode and there is a
+> need to search for an endpoint according to the number of required
+> streams.
 
->>> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
->>> ---
->>> arch/x86/include/asm/ptrace.h | 18 +++++-------------
->>> 1 files changed, 5 insertions(+), 13 deletions(-)
+Suggestions for some small improvements...
 
->>> diff --git a/arch/x86/include/asm/ptrace.h
->>> b/arch/x86/include/asm/ptrace.h
->>> index 78cd1ea..98a5e97 100644
->>> --- a/arch/x86/include/asm/ptrace.h
->>> +++ b/arch/x86/include/asm/ptrace.h
->>> @@ -136,6 +136,7 @@ struct cpuinfo_x86;
->>> struct task_struct;
->>>
->>> extern unsigned long profile_pc(struct pt_regs *regs);
->>> +#define profile_pc profile_pc
+> --- a/include/linux/usb/gadget.h
+> +++ b/include/linux/usb/gadget.h
+> @@ -34,6 +34,8 @@ struct usb_ep;
+>   *     by adding a zero length packet as needed;
+>   * @short_not_ok: When reading data, makes short packets be
+>   *     treated as errors (queue stops advancing till cleanup).
+> + * @reserved: reserved bits
+> + * @stream_id: the stream id
 
->> Er, won't this lead to infinite recursion in preprocessor? :-)
+If you move stream_id to the start of the bitfields then you won't need 
+to reserve any bits.
 
->> WBR, Sergei
+Also, the comment should explain a little more.  For example:
 
-> No.
+ * @stream_id: The stream id, when USB-3.0 bulk streams are being used.
 
-    Strange, I thought the macro expansion is the subject to other macro expansions.
+> @@ -131,6 +136,8 @@ struct usb_ep_ops {
+>   * @maxpacket:The maximum packet size used on this endpoint.  The initial
+>   *	value can sometimes be reduced (hardware allowing), according to
+>   *      the endpoint descriptor used to configure the endpoint.
+> + * @num_supported_strms:The number of maximum streams supported
+> + *	by this EP (0 - 16, actual number is 2^n)
 
->     -hpa
+Ugh!  Call this max_streams instead.  The comment should say "maximum 
+number of streams", not "number of maximum streams".
 
-WBR, Sergei
+>   * @mult: multiplier, 'mult' value for SS Isoc EPs
+>   * @maxburst: the maximum number of bursts supported by this EP (for usb3)
+>   * @driver_data:for use by the gadget driver.
+> @@ -152,6 +159,7 @@ struct usb_ep {
+>  	const struct usb_ep_ops	*ops;
+>  	struct list_head	ep_list;
+>  	unsigned		maxpacket:16;
+> +	int			num_supported_strms;
+
+You might also want to make this a 16-bit unsigned field, instead of 
+sticking an integer between two bitfields.
+
+>  	unsigned				mult:2;
+>  	unsigned				pad:1;
+>  	unsigned				maxburst:4;
+
+Alan Stern
+
