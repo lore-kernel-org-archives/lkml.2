@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab1DNWx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 18:53:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64444 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753956Ab1DNWx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 18:53:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,214,1301900400"; 
-   d="scan'208";a="733541754"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        John Kacur <jkacur@redhat.com>, stable@kernel.org
-Subject: [PATCH V5] futex: set FLAGS_HAS_TIMEOUT during futex_wait restart setup
-Date: Thu, 14 Apr 2011 15:41:57 -0700
-Message-Id: <daac0eb3af607f72b9a4d3126b2ba8fb5ed3b883.1302820917.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754526Ab1DNW6D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 18:58:03 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35729 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab1DNW57 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 18:57:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <loom.20110414T113238-377@post.gmane.org>
+References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com>
+	<loom.20110414T113238-377@post.gmane.org>
+Date: Thu, 14 Apr 2011 19:57:57 -0300
+Message-ID: <BANLkTi=T42zgY0hy4_u7YKboYuuUiRg_Yw@mail.gmail.com>
+Subject: Re: [RFC] NFC subsystem prototype
+From: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
-restart futex_wait() without a timeout after a signal.
+Hi Samuel,
 
-Commit b41277dc7a18ee332d in 2.6.38 introduced the regression by accidentally
-removing the the FLAGS_HAS_TIMEOUT assignment from futex_wait() during the setup
-of the restart block. Restore the originaly behavior.
+2011/4/14 Samuel Ortiz <sameo@linux.intel.com>:
 
-Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=32922
+>> Subsystem Operations:
+>>       - start poll - start polling for targets using the protocols given as
+>> parameter
+>>       - stop poll - stop polling
+>>       - activate target - activate a target for communication using a
+>> specific protocol
+>>       - deactivate target - deactivate a target
+>>       - reset device - put the adapter in idle mode
+>>       - data exchange - low level data exchange (send and receive data)
+> I suppose the data_exchange hook is sitting at the NFCIP level ? As I agree
+> with your further comment that this one should not be part of the netlink
+> API but should be done through sockets instead, I think this one should be
+> defined as the netdev start_xmit hook.
+> So this matches quite well the pn533 API, but I'm wondering how you're
+> planning to support the HCI based devices (pn544, microread). We clearly
+> have 2 kind of devices here, and it reminds me of the soft MAC vs full MAC
+> problem in the 802.11 subsystem.
+> I think we should have a kernel NFC HCI layer that would implement those
+> hooks by following the HCP protocol. Then devices that only take HCI
+> commands (kind of soft MAC NFC devices) would register against the NFC HCI
+> layer and use those hooks. Other devices (e.g. pn533) would register at a
+> higher level (The NFC core layer) and provide their own hooks. This would be
+> similar to what 802.11 drivers do by registering against mac80211 (soft MACs)
+> or directly against cfg80211 (full MACs).
 
-V2: Added references to commit message.
-V3: Set flag during restart block instead of do_futex()
-V4: Correct stupid order of assignment mistake pointed out by Eric
-V5: Correct subject to match implementation, correct stable submission
+I fully agree. The prototype was designed with pn533 and pn544 in
+mind. When the pn544 device driver is implemented, we will need
+another layer for the HCI implementation.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Tim Smith <tsmith201104@yahoo.com>
-Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: stable@kernel.org
----
- kernel/futex.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index bda4157..abd5324 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1886,7 +1886,7 @@ retry:
- 	restart->futex.val = val;
- 	restart->futex.time = abs_time->tv64;
- 	restart->futex.bitset = bitset;
--	restart->futex.flags = flags;
-+	restart->futex.flags = flags | FLAGS_HAS_TIMEOUT;
- 
- 	ret = -ERESTART_RESTARTBLOCK;
- 
--- 
-1.7.1
+>> Further work:
+>>       - Define subsystem operations for adapters in "target mode"
+> I am not sure we need any specific additional hook for the target mode. In
+> this mode, we mostly would be sending events (RF field ON, card activated
+> or deactivated). After that, afaiu, the card would be expecting data
+> reception, and then sending responses to it.
 
+I think the main part is the handling of timing constraints between
+the data reception and the response using a socket interface.
+
+> We probably need to add a mode setting hook in the ops structure. And also,
+> according to NFCIP-2, NFC devices should by default be in target mode.
+
+The selection between proximity and vicinity is partially covered by
+the protocols selection in start_poll operation.
+
+Probably, the polling loop needs to have an initiator mode phase and a
+target mode phase in a cycle (as the PN544 Polling management).
+
+
+Regards,
+
+Lauro Ramos Venancio
+INdT - Instituto Nokia de Tecnologia
