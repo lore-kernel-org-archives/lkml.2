@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610Ab1DNR5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:57:11 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38275 "EHLO
+	id S933630Ab1DNR6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:58:25 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41963 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933216Ab1DNRqk (ORCPT
+	with ESMTP id S964938Ab1DNR6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:40 -0400
+	Thu, 14 Apr 2011 13:58:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Vasiliy Kulikov <segooon@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.kernel.org>, Len Brown <lenb@kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.hl>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 044/209] ipc: shm: fix information leak to userland
-Date: Thu, 14 Apr 2011 13:41:14 -0400
-Message-Id: <1302803039-9400-45-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 154/209] x86, hotplug: Move WBINVD back outside the play_dead loop
+Date: Thu, 14 Apr 2011 13:55:12 -0400
+Message-Id: <1302803767-9715-41-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+ <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+From: H. Peter Anvin <hpa@linux.intel.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 3af54c9bd9e6f14f896aac1bb0e8405ae0bc7a44 upstream.
+commit a68e5c94f7d3dd64fef34dd5d97e365cae4bb42a upstream.
 
-The shmid_ds structure is copied to userland with shm_unused{,2,3}
-fields unitialized.  It leads to leaking of contents of kernel stack
-memory.
+On processors with hyperthreading, when only one thread is offlined
+the other thread can cause a spurious wakeup on the idled thread.  We
+do not want to re-WBINVD when that happens.
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Ideally, we should simply skip WBINVD unless we're the last thread on
+a particular core to shut down, but there might be similar issues
+elsewhere in the system.
+
+Thus, revert to previous behavior of only WBINVD outside the loop.
+Partly as a result, remove the mb()'s around it: they are not
+necessary since wbinvd() is a serializing instruction, but they were
+intended to make sure the compiler didn't do any funny loop
+optimizations.
+
+Reported-by: Asit Mallick <asit.k.mallick@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.kernel.org>
+Cc: Len Brown <lenb@kernel.org>
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.hl>
+LKML-Reference: <tip-ea53069231f9317062910d6e772cca4ce93de8c8@git.kernel.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- ipc/shm.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/kernel/smpboot.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 1a314c8..2225a77 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -476,6 +476,7 @@ static inline unsigned long copy_shmid_to_user(void __user *buf, struct shmid64_
- 	    {
- 		struct shmid_ds out;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index d528e75..b283dbf 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1399,9 +1399,9 @@ static inline void mwait_play_dead(void)
+ 			(highest_subcstate - 1);
+ 	}
  
-+		memset(&out, 0, sizeof(out));
- 		ipc64_perm_to_ipc_perm(&in->shm_perm, &out.shm_perm);
- 		out.shm_segsz	= in->shm_segsz;
- 		out.shm_atime	= in->shm_atime;
++	wbinvd();
++
+ 	while (1) {
+-		mb();
+-		wbinvd();
+ 		__monitor(&current_thread_info()->flags, 0, 0);
+ 		mb();
+ 		__mwait(eax, 0);
+@@ -1410,11 +1410,10 @@ static inline void mwait_play_dead(void)
+ 
+ static inline void hlt_play_dead(void)
+ {
++	if (current_cpu_data.x86 >= 4)
++		wbinvd();
++
+ 	while (1) {
+-		mb();
+-		if (current_cpu_data.x86 >= 4)
+-			wbinvd();
+-		mb();
+ 		native_halt();
+ 	}
+ }
 -- 
 1.7.4.4
 
