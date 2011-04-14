@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab1DNRqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38087 "EHLO
+	id S933640Ab1DNSZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:25:49 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38188 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933071Ab1DNRqY (ORCPT
+	with ESMTP id S933122Ab1DNRqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:24 -0400
+	Thu, 14 Apr 2011 13:46:31 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 055/209] TTY: ldisc, fix open flag handling
-Date: Thu, 14 Apr 2011 13:41:25 -0400
-Message-Id: <1302803039-9400-56-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 061/209] ALSA: HDA: Add an extra DAC for Realtek ALC887-VD
+Date: Thu, 14 Apr 2011 13:41:31 -0400
+Message-Id: <1302803039-9400-62-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,56 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: David Henningsson <david.henningsson@canonical.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 7f90cfc505d613f4faf096e0d84ffe99208057d9 upstream.
+commit cc1c452e509aefc28f7ad2deed75bc69d4f915f7 upstream.
 
-When a concrete ldisc open fails in tty_ldisc_open, we forget to clear
-TTY_LDISC_OPEN. This causes a false warning on the next ldisc open:
-WARNING: at drivers/char/tty_ldisc.c:445 tty_ldisc_open+0x26/0x38()
-Hardware name: System Product Name
-Modules linked in: ...
-Pid: 5251, comm: a.out Tainted: G        W  2.6.32-5-686 #1
-Call Trace:
- [<c1030321>] ? warn_slowpath_common+0x5e/0x8a
- [<c1030357>] ? warn_slowpath_null+0xa/0xc
- [<c119311c>] ? tty_ldisc_open+0x26/0x38
- [<c11936c5>] ? tty_set_ldisc+0x218/0x304
-...
+The patch enables ALC887-VD to use the DAC at nid 0x26,
+which makes it possible to use this DAC for e g Headphone
+volume.
 
-So clear the bit when failing...
-
-Introduced in c65c9bc3efa (tty: rewrite the ldisc locking) back in
-2.6.31-rc1.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@linux.intel.com>
-Reported-by: Sergey Lapin <slapin@ossfans.org>
-Tested-by: Sergey Lapin <slapin@ossfans.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/tty_ldisc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index 7af1a15..236628f 100644
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -452,6 +452,8 @@ static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
-                 /* BKL here locks verus a hangup event */
- 		lock_kernel();
- 		ret = ld->ops->open(tty);
-+		if (ret)
-+			clear_bit(TTY_LDISC_OPEN, &tty->flags);
- 		unlock_kernel();
- 		return ret;
- 	}
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 7b516f1..a1d30d3 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -18198,6 +18198,8 @@ static inline hda_nid_t alc662_mix_to_dac(hda_nid_t nid)
+ 		return 0x02;
+ 	else if (nid >= 0x0c && nid <= 0x0e)
+ 		return nid - 0x0c + 0x02;
++	else if (nid == 0x26) /* ALC887-VD has this DAC too */
++		return 0x25;
+ 	else
+ 		return 0;
+ }
+@@ -18206,7 +18208,7 @@ static inline hda_nid_t alc662_mix_to_dac(hda_nid_t nid)
+ static hda_nid_t alc662_dac_to_mix(struct hda_codec *codec, hda_nid_t pin,
+ 				   hda_nid_t dac)
+ {
+-	hda_nid_t mix[4];
++	hda_nid_t mix[5];
+ 	int i, num;
+ 
+ 	num = snd_hda_get_connections(codec, pin, mix, ARRAY_SIZE(mix));
 -- 
 1.7.4.4
 
