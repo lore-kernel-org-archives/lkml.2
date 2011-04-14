@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab1DNVZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:25:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37889 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab1DNVZm convert rfc822-to-8bit (ORCPT
+	id S1753320Ab1DNVbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:31:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44862 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab1DNVbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:25:42 -0400
+	Thu, 14 Apr 2011 17:31:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IkMjdzf93IvQDZIodp9YNaUUoobgcg3fwIpqf/D6dgFScq6usMUeZxldTxkdJvvFum
-         B+l5sik4Tlfx7CwUvx2g==
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=MzD10y9jv4/Ieojzylx3Pn+prIvDA2TBaceJmRpGhgHBrjfbRdPrgrBU5bVMVWTtlE
+         nMF9ghU6jjtQBE0uXx5qgGy/a21ezZzpnX2BmQEEb+EoS/XZiTNT0sqJAXmwmq31zkrB
+         x/C6aXytcMhkC7mdXs7xOpKI8wRR9BaOOlGdE=
+Message-ID: <4DA76790.8040909@suse.cz>
+Date: Thu, 14 Apr 2011 23:30:56 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <1302771756.15520.100.camel@thor.local>
-References: <19876.35918.322649.256455@pilspetsen.it.uu.se>
-	<1302646173.28876.53.camel@pasglop>
-	<1302652502.28876.76.camel@pasglop>
-	<19877.23529.745123.819112@pilspetsen.it.uu.se>
-	<1302685102.28876.81.camel@pasglop>
-	<BANLkTimc84A8kddarnhvrcab3iKZc0HZAg@mail.gmail.com>
-	<1302736869.28876.91.camel@pasglop>
-	<BANLkTika8FY1dD_hOQ4wMhHzuQ2Qt8fg7A@mail.gmail.com>
-	<1302771756.15520.100.camel@thor.local>
-Date: Thu, 14 Apr 2011 14:25:31 -0700
-Message-ID: <BANLkTimykvKp=bwsFyNE9fWqcE9Ffws6bA@mail.gmail.com>
-Subject: Re: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
-From: Hugh Dickins <hughd@google.com>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Jens Axboe <jaxboe@fusionio.com>, kevin diggs <diggskevin38@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michel Daenzer <michel@daenzer.net>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Bryan Schumaker <bjschuma@netapp.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz>	 <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz>	 <4DA49D3A.7090800@netapp.com> <4DA49F7F.8060005@suse.cz>	 <4DA60AB9.1050104@netapp.com>  <4DA75AFC.3040000@suse.cz> <1302816095.24028.87.camel@lade.trondhjem.org>
+In-Reply-To: <1302816095.24028.87.camel@lade.trondhjem.org>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 2:02 AM, Michel Dänzer <michel@daenzer.net> wrote:
-> On Mit, 2011-04-13 at 18:43 -0500, kevin diggs wrote:
+On 04/14/2011 11:21 PM, Trond Myklebust wrote:
+> On Thu, 2011-04-14 at 22:37 +0200, Jiri Slaby wrote:
+>> On 04/13/2011 10:42 PM, Bryan Schumaker wrote:
+>>> On 04/12/2011 02:52 PM, Jiri Slaby wrote:
+>>>> On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
+>>>>> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
+>>>>>> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
+>>>>>>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
+>>>>>>>> inacceptable for automounted NFS dirs.
+>>>>>>>
+>>>>>>> I'm still confused as to why you are hitting it at all. In the normal
+>>>>>>> autonegotiation case, the client should be trying to use AUTH_SYS first
+>>>>>>> and then trying rpcsec_gss if and only if that fails.
+>>>>>>>
+>>>>>>> Are you really exporting a filesystem using AUTH_NULL as the only
+>>>>>>> supported flavour?
+>>>>>>
+>>>>>> I don't know, I connect to a nfs server which is not maintained by me.
+>>>>>> It looks like that. How can I find out?
+>>>>>
+>>>>> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
+>>>>
+>>>> I don't have NFS in modules. It's all built-in. And this one is
+>>>> unconditionally selected because of CONFIG_NFS_V4.
+>>>
+>>> Does this patch help?
 >>
->> On Wed, Apr 13, 2011 at 6:21 PM, Benjamin Herrenschmidt
->> <benh@kernel.crashing.org> wrote:
->> > On Wed, 2011-04-13 at 12:52 -0500, kevin diggs wrote:
->> >> > Actually I do get a crash in X later on... something in the radeon
->> >> DRM
->> >> > interrupt code is getting what looks like a NULL dereference. I'll
->> >> try
->> >> > to dig that one later on. I don't know if it's related to your
->> >> problem
->> >> > at all though.
->> >> >
->> >> In this context, what does 'crash' mean? The X thingy goes down? Or
->> >> the whole OS?
->> >
->> > Depends, with xmon enabled you get into xmon :-) Dunno if the oops is
->> > fatal but it could be.
->> >
->> > Cheers,
->> > Ben.
->> >
->> >
+>> Nope, it makes things even worse:
+>> # mount -oro,intr XXX:/yyy /mnt/c/
+>> <15s delay here>
+>> mount.nfs: access denied by server while mounting XXX:/yyy
 >>
->> As I think I have the same hardware as you (7,3, radeon 9600) If you
->> can tell me how to reproduce it maybe I can poke around a little.
->> Thus, at least temporarily, freeing you up for other stuff.
+>> So in nfs4_proc_get_root I do:
+>>   printk("%s: %d %u\n", __func__, i, flav_array[i]);
+>>   status = nfs4_lookup_root_sec(server, fhandle, info, flav_array[i]);
+>>   printk("%s: res=%d\n", __func__, status);
+>> and get:
+>> [   18.159818] nfs4_proc_get_root: 0 1
+>> [   18.214872] nfs4_proc_get_root: res=-1
+>> [   18.214875] nfs4_proc_get_root: 1 0
+>> [   18.254636] nfs4_proc_get_root: res=-1
+>> [   18.254639] nfs4_proc_get_root: 2 390003
+>> [   33.252174] RPC: AUTH_GSS upcall timed out.
+>> [   33.252177] Please check user daemon is running.
+>> [   33.252192] nfs4_proc_get_root: res=-13
 >>
->> I kinda need a break from fighting with GCC.
->
-> FWIW, the problem Ben refers to might be fixed in current mainline by
-> commit d87dfdbfc91c5e37288e7e8f7afdd992ba61a60d which reverts
-> 69a07f0b117a40fcc1a479358d8e1f41793617f2 .
+>> If I revert that back and do the same:
+>> [   28.275569] nfs4_proc_get_root: 0 1
+>> [   28.296545] nfs4_proc_get_root: res=-1
+>> [   28.296548] nfs4_proc_get_root: 1 390003
+>> [   43.296107] RPC: AUTH_GSS upcall timed out.
+>> [   43.296108] Please check user daemon is running.
+>> [   43.296121] nfs4_proc_get_root: res=-13
+>> [   43.296122] nfs4_proc_get_root: 2 0
+>> [   43.318201] nfs4_proc_get_root: res=-1
+>>
+>> I.e. all methods fail. And what matters is the last retval. From NULL it
+>> is EPERM, from GSS it is EACCESS. For EPERM, mount(8) falls back to
+>> nfs3, for EACCESS it dies terrible death.
+> 
+> OK. That's good information. Thanks for testing!
+> 
+> I'm still curious as to why that NFS server is refusing all NFSv4 mounts
+> with NFS4ERR_WRONGSEC. Unless NFSv4 really is configured only to export
+> the root filesystem with RPCSEC_GSS, then that definitely sounds like a
+> bug...
 
-Mikael,
+With gssd running if that helps:
+[  229.806528] nfs4_proc_get_root: 0 1
+[  229.828491] nfs4_proc_get_root: res=-1
+[  229.828494] nfs4_proc_get_root: 1 390003
+[  229.896994] nfs4_proc_get_root: res=-13
+[  229.896997] nfs4_proc_get_root: 2 0
+[  229.920344] nfs4_proc_get_root: res=-1
 
-Something worth trying: turn off CONFIG_IDE.  That's what I need to
-boot 2.6.39-rc[1-3] on PowerPC G5.
-
-I know Jens has been fixing problems with IDE versus his plug/unplug
-changes, but it's still not fixed for me in rc3.
-
-In other mail http://lkml.org/lkml/2011/4/14/614
-I see Linus recommending his post-rc3 commit 6631e635c65d
-but I've not tried that myself yet.
-
-Hugh
+thanks,
+-- 
+js
+suse labs
