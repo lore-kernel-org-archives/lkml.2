@@ -1,310 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab1DNRph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:45:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37333 "EHLO
+	id S932836Ab1DNRpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:45:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37416 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932553Ab1DNRpb (ORCPT
+	with ESMTP id S932662Ab1DNRpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:45:31 -0400
+	Thu, 14 Apr 2011 13:45:36 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
-        Christopher James Halse Rogers <chalserogers@gmail.com>,
-        Eric Anholt <eric@anholt.net>,
+Cc: stable-review@kernel.org, Guo-Fu Tseng <cooldavid@cooldavid.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 006/209] drm/i915: Unset cursor if out-of-bounds upon mode change (v4)
-Date: Thu, 14 Apr 2011 13:40:36 -0400
-Message-Id: <1302803039-9400-7-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 019/209] jme: Fix PHY power-off error
+Date: Thu, 14 Apr 2011 13:40:49 -0400
+Message-Id: <1302803039-9400-20-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Guo-Fu Tseng <cooldavid@cooldavid.org>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit cda4b7d3a5b1dcbc0d8e7bad52134347798e9047 upstream.
+commit c8a8684d5cfb0f110a962c93586630c0bf91ebc1 upstream.
 
-The docs warn that to position the cursor such that no part of it is
-visible on the pipe is an undefined operation. Avoid such circumstances
-upon changing the mode, or at any other time, by unsetting the cursor if
-it moves out of bounds.
+Adding phy_on in opposition to phy_off.
 
-"For normal high resolution display modes, the cursor must have at least a
-single pixel positioned over the active screen.” (p143, p148 of the hardware
-registers docs).
-
-Fixes:
-
-  Bug 24748 - [965G] Graphics crashes when resolution is changed with KMS
-              enabled
-  https://bugs.freedesktop.org/show_bug.cgi?id=24748
-
-v2: Only update the cursor registers if they change.
-v3: Fix the unsigned comparision of x,y against width,height.
-v4: Always set CUR.BASE or else the cursor may become corrupt.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reported-by: Christian Eggers <ceggers@gmx.de>
-Cc: Christopher James Halse Rogers  <chalserogers@gmail.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Guo-Fu Tseng <cooldavid@cooldavid.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/i915/intel_display.c |  144 ++++++++++++++++++++++------------
- drivers/gpu/drm/i915/intel_drv.h     |    8 ++-
- 2 files changed, 99 insertions(+), 53 deletions(-)
+ drivers/net/jme.c |   22 ++++++++++++++++++----
+ 1 files changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 28eebc5..614bda1 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -42,6 +42,7 @@
- bool intel_pipe_has_type (struct drm_crtc *crtc, int type);
- static void intel_update_watermarks(struct drm_device *dev);
- static void intel_increase_pllclock(struct drm_crtc *crtc, bool schedule);
-+static void intel_crtc_update_cursor(struct drm_crtc *crtc);
- 
- typedef struct {
-     /* given values */
-@@ -3010,6 +3011,9 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
- 		return -EINVAL;
- 	}
- 
-+	/* Ensure that the cursor is valid for the new mode before changing... */
-+	intel_crtc_update_cursor(crtc);
-+
- 	if (is_lvds && dev_priv->lvds_downclock_avail) {
- 		has_reduced_clock = limit->find_pll(limit, crtc,
- 							    dev_priv->lvds_downclock,
-@@ -3473,6 +3477,85 @@ void intel_crtc_load_lut(struct drm_crtc *crtc)
+diff --git a/drivers/net/jme.c b/drivers/net/jme.c
+index b705ad3..b2d190e 100644
+--- a/drivers/net/jme.c
++++ b/drivers/net/jme.c
+@@ -1579,6 +1579,16 @@ jme_free_irq(struct jme_adapter *jme)
  	}
  }
  
-+/* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
-+static void intel_crtc_update_cursor(struct drm_crtc *crtc)
++static inline void
++jme_phy_on(struct jme_adapter *jme)
 +{
-+	struct drm_device *dev = crtc->dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-+	int pipe = intel_crtc->pipe;
-+	int x = intel_crtc->cursor_x;
-+	int y = intel_crtc->cursor_y;
-+	uint32_t base, pos;
-+	bool visible;
++	u32 bmcr;
 +
-+	pos = 0;
-+
-+	if (crtc->fb) {
-+		base = intel_crtc->cursor_addr;
-+		if (x > (int) crtc->fb->width)
-+			base = 0;
-+
-+		if (y > (int) crtc->fb->height)
-+			base = 0;
-+	} else
-+		base = 0;
-+
-+	if (x < 0) {
-+		if (x + intel_crtc->cursor_width < 0)
-+			base = 0;
-+
-+		pos |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
-+		x = -x;
-+	}
-+	pos |= x << CURSOR_X_SHIFT;
-+
-+	if (y < 0) {
-+		if (y + intel_crtc->cursor_height < 0)
-+			base = 0;
-+
-+		pos |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
-+		y = -y;
-+	}
-+	pos |= y << CURSOR_Y_SHIFT;
-+
-+	visible = base != 0;
-+	if (!visible && !intel_crtc->cursor_visble)
-+		return;
-+
-+	I915_WRITE(pipe == 0 ? CURAPOS : CURBPOS, pos);
-+	if (intel_crtc->cursor_visble != visible) {
-+		uint32_t cntl = I915_READ(pipe == 0 ? CURACNTR : CURBCNTR);
-+		if (base) {
-+			/* Hooray for CUR*CNTR differences */
-+			if (IS_MOBILE(dev) || IS_I9XX(dev)) {
-+				cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
-+				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+				cntl |= pipe << 28; /* Connect to correct pipe */
-+			} else {
-+				cntl &= ~(CURSOR_FORMAT_MASK);
-+				cntl |= CURSOR_ENABLE;
-+				cntl |= CURSOR_FORMAT_ARGB | CURSOR_GAMMA_ENABLE;
-+			}
-+		} else {
-+			if (IS_MOBILE(dev) || IS_I9XX(dev)) {
-+				cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-+				cntl |= CURSOR_MODE_DISABLE;
-+			} else {
-+				cntl &= ~(CURSOR_ENABLE | CURSOR_GAMMA_ENABLE);
-+			}
-+		}
-+		I915_WRITE(pipe == 0 ? CURACNTR : CURBCNTR, cntl);
-+
-+		intel_crtc->cursor_visble = visible;
-+	}
-+	/* and commit changes on next vblank */
-+	I915_WRITE(pipe == 0 ? CURABASE : CURBBASE, base);
-+
-+	if (visible)
-+		intel_mark_busy(dev, to_intel_framebuffer(crtc->fb)->obj);
++	bmcr = jme_mdio_read(jme->dev, jme->mii_if.phy_id, MII_BMCR);
++	bmcr &= ~BMCR_PDOWN;
++	jme_mdio_write(jme->dev, jme->mii_if.phy_id, MII_BMCR, bmcr);
 +}
 +
- static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 				 struct drm_file *file_priv,
- 				 uint32_t handle,
-@@ -3483,11 +3566,7 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
- 	struct drm_gem_object *bo;
- 	struct drm_i915_gem_object *obj_priv;
--	int pipe = intel_crtc->pipe;
--	uint32_t control = (pipe == 0) ? CURACNTR : CURBCNTR;
--	uint32_t base = (pipe == 0) ? CURABASE : CURBBASE;
--	uint32_t temp = I915_READ(control);
--	size_t addr;
-+	uint32_t addr;
- 	int ret;
- 
- 	DRM_DEBUG_KMS("\n");
-@@ -3495,12 +3574,6 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	/* if we want to turn off the cursor ignore width and height */
- 	if (!handle) {
- 		DRM_DEBUG_KMS("cursor off\n");
--		if (IS_MOBILE(dev) || IS_I9XX(dev)) {
--			temp &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
--			temp |= CURSOR_MODE_DISABLE;
--		} else {
--			temp &= ~(CURSOR_ENABLE | CURSOR_GAMMA_ENABLE);
--		}
- 		addr = 0;
- 		bo = NULL;
- 		mutex_lock(&dev->struct_mutex);
-@@ -3535,7 +3608,8 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 		}
- 		addr = obj_priv->gtt_offset;
- 	} else {
--		ret = i915_gem_attach_phys_object(dev, bo, (pipe == 0) ? I915_GEM_PHYS_CURSOR_0 : I915_GEM_PHYS_CURSOR_1);
-+		ret = i915_gem_attach_phys_object(dev, bo,
-+						  (intel_crtc->pipe == 0) ? I915_GEM_PHYS_CURSOR_0 : I915_GEM_PHYS_CURSOR_1);
- 		if (ret) {
- 			DRM_ERROR("failed to attach phys object\n");
- 			goto fail_locked;
-@@ -3546,21 +3620,7 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	if (!IS_I9XX(dev))
- 		I915_WRITE(CURSIZE, (height << 12) | width);
- 
--	/* Hooray for CUR*CNTR differences */
--	if (IS_MOBILE(dev) || IS_I9XX(dev)) {
--		temp &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
--		temp |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
--		temp |= (pipe << 28); /* Connect to correct pipe */
--	} else {
--		temp &= ~(CURSOR_FORMAT_MASK);
--		temp |= CURSOR_ENABLE;
--		temp |= CURSOR_FORMAT_ARGB | CURSOR_GAMMA_ENABLE;
--	}
--
-  finish:
--	I915_WRITE(control, temp);
--	I915_WRITE(base, addr);
--
- 	if (intel_crtc->cursor_bo) {
- 		if (dev_priv->info->cursor_needs_physical) {
- 			if (intel_crtc->cursor_bo != bo)
-@@ -3574,6 +3634,10 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 
- 	intel_crtc->cursor_addr = addr;
- 	intel_crtc->cursor_bo = bo;
-+	intel_crtc->cursor_width = width;
-+	intel_crtc->cursor_height = height;
-+
-+	intel_crtc_update_cursor(crtc);
- 
- 	return 0;
- fail_locked:
-@@ -3585,34 +3649,12 @@ fail:
- 
- static int intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+ static int
+ jme_open(struct net_device *netdev)
  {
--	struct drm_device *dev = crtc->dev;
--	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
--	struct intel_framebuffer *intel_fb;
--	int pipe = intel_crtc->pipe;
--	uint32_t temp = 0;
--	uint32_t adder;
--
--	if (crtc->fb) {
--		intel_fb = to_intel_framebuffer(crtc->fb);
--		intel_mark_busy(dev, intel_fb->obj);
--	}
--
--	if (x < 0) {
--		temp |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
--		x = -x;
--	}
--	if (y < 0) {
--		temp |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
--		y = -y;
--	}
+@@ -1599,10 +1609,12 @@ jme_open(struct net_device *netdev)
  
--	temp |= x << CURSOR_X_SHIFT;
--	temp |= y << CURSOR_Y_SHIFT;
-+	intel_crtc->cursor_x = x;
-+	intel_crtc->cursor_y = y;
+ 	jme_start_irq(jme);
  
--	adder = intel_crtc->cursor_addr;
--	I915_WRITE((pipe == 0) ? CURAPOS : CURBPOS, temp);
--	I915_WRITE((pipe == 0) ? CURABASE : CURBBASE, adder);
-+	intel_crtc_update_cursor(crtc);
+-	if (test_bit(JME_FLAG_SSET, &jme->flags))
++	if (test_bit(JME_FLAG_SSET, &jme->flags)) {
++		jme_phy_on(jme);
+ 		jme_set_settings(netdev, &jme->old_ecmd);
+-	else
++	} else {
+ 		jme_reset_phy_processor(jme);
++	}
  
- 	return 0;
- }
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 7a1ad65..4e9f24a 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -140,8 +140,6 @@ struct intel_crtc {
- 	struct drm_crtc base;
- 	enum pipe pipe;
- 	enum plane plane;
--	struct drm_gem_object *cursor_bo;
--	uint32_t cursor_addr;
- 	u8 lut_r[256], lut_g[256], lut_b[256];
- 	int dpms_mode;
- 	bool busy; /* is scanout buffer being updated frequently? */
-@@ -149,6 +147,12 @@ struct intel_crtc {
- 	bool lowfreq_avail;
- 	struct intel_overlay *overlay;
- 	struct intel_unpin_work *unpin_work;
-+
-+	struct drm_gem_object *cursor_bo;
-+	uint32_t cursor_addr;
-+	int16_t cursor_x, cursor_y;
-+	int16_t cursor_width, cursor_height;
-+	bool cursor_visble;
- };
+ 	jme_reset_link(jme);
  
- #define to_intel_crtc(x) container_of(x, struct intel_crtc, base)
+@@ -3010,10 +3022,12 @@ jme_resume(struct pci_dev *pdev)
+ 	jme_clear_pm(jme);
+ 	pci_restore_state(pdev);
+ 
+-	if (test_bit(JME_FLAG_SSET, &jme->flags))
++	if (test_bit(JME_FLAG_SSET, &jme->flags)) {
++		jme_phy_on(jme);
+ 		jme_set_settings(netdev, &jme->old_ecmd);
+-	else
++	} else {
+ 		jme_reset_phy_processor(jme);
++	}
+ 
+ 	jme_start_irq(jme);
+ 	netif_device_attach(netdev);
 -- 
 1.7.4.4
 
