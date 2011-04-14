@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759074Ab1DNO5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:57:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32710 "EHLO mga11.intel.com"
+	id S1759065Ab1DNO7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:59:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35649 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758008Ab1DNO5e convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:57:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,211,1301900400"; 
-   d="scan'208";a="679028376"
-From: "Allyn, Mark A" <mark.a.allyn@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Joe Perches <joe@perches.com>, Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
-        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>,
-        "Cox, Alan" <alan.cox@intel.com>, "Gross, Mark" <mark.gross@intel.com>,
-        "Beare, Bruce J" <bruce.j.beare@intel.com>
-Date: Thu, 14 Apr 2011 08:57:33 -0600
-Subject: RE: Re-send (What else needs to be done to the sep driver
- (staging/sep))
-Thread-Topic: Re-send (What else needs to be done to the sep driver
- (staging/sep))
-Thread-Index: Acv6s9M7TP6hmn5GTXSoocAP2qZXzAAACPCw
-Message-ID: <8A0E4C92AE2D6D40AF99653191DA32316154CEF1EC@rrsmsx501.amr.corp.intel.com>
-References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
-	<1302731811.11415.38.camel@Joe-Laptop>	<20110413222332.GA32013@kroah.com>
-	<1302733836.11415.42.camel@Joe-Laptop>	<20110413224621.GA4909@kroah.com>
-	<1302736379.11415.57.camel@Joe-Laptop>
-	<8A0E4C92AE2D6D40AF99653191DA32316154CEF1CF@rrsmsx501.amr.corp.intel.com>
- <20110414155503.55518951@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110414155503.55518951@lxorguk.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757098Ab1DNO7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:59:14 -0400
+Message-ID: <4DA70BB4.4020407@redhat.com>
+Date: Thu, 14 Apr 2011 10:59:00 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>,
+        "rja@americas.sgi.com" <rja@americas.sgi.com>
+Subject: Re: [PATCH -v2] x86, MCE: Drop default decoding notifier
+References: <20110413132409.GB1900@gere.osrc.amd.com> <1302701810-2471-2-git-send-email-bp@amd64.org> <4DA5ACB2.1070505@redhat.com> <20110413141829.GE1987@aftab> <4DA5B1B1.5090905@redhat.com> <20110413142648.GB2791@aftab> <20110413143642.GC2791@aftab> <4DA5D6CC.9090500@redhat.com> <4DA5D9FB.1010503@redhat.com> <20110413173705.GJ2791@aftab>
+In-Reply-To: <20110413173705.GJ2791@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+> In the worst case, we will report 32 CEs before panicking. For that case
+> we either do printk_once as Tony suggested or we ratelimit it. I'll
+> update the patch.
+> 
 
------Original Message-----
-From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
-Sent: Thursday, April 14, 2011 7:55 AM
-To: Allyn, Mark A
-Cc: Joe Perches; Greg KH; linux-kernel@vger.kernel.org; alan@linux.intel.com; Mangalampalli, Jayant; Gokulrangan, Venkat R; Cox, Alan; Gross, Mark; Beare, Bruce J
-Subject: Re: Re-send (What else needs to be done to the sep driver (staging/sep))
+Okay ... how 'bout using Tony's printk_once() just after the call to
+print_mce() in mce_panic()? [uncompiled and untested patch below]
 
-I think the logging is a distraction. Everyone is I think happy with the
-other minor tidying and the move from staging ? If so lets just get it
-moved while Greg and Joe throw buns at each other 8)
-
-For the record IMHO custom _dbg wrappers are usually not justified but I
-think I agree with Joe on this one because we have some many
-&foo->bar->baz it eliminates.
-
-Anyway - that can wait.
-
-Alan
-
-==============================================
-
-I have no problem with Alan's suggestion, however, I think I need to wait
-until Greg integrates two patches that are already in the queue; one that I 
-submitted yesterday (for device version detection) and the clean-up patch.
-
-Once I see these in the staging, then I plan to try to move to the misc
-directory under drivers.
-
-Mark Allyn
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index eb16e94..021979a 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
+ static inline void enable_p5_mce(void) {}
+ #endif
+ 
+-extern void (*x86_mce_decode_callback)(struct mce *m);
+-
+ void mce_setup(struct mce *m);
+ void mce_log(struct mce *m);
+ DECLARE_PER_CPU(struct sys_device, mce_dev);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 3385ea2..6ecfea5 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -105,20 +105,6 @@ static int			cpu_missing;
+ ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
+ EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
+ 
+-static int default_decode_mce(struct notifier_block *nb, unsigned long val,
+-			       void *data)
+-{
+-	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
+-	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
+-
+-	return NOTIFY_STOP;
+-}
+-
+-static struct notifier_block mce_dec_nb = {
+-	.notifier_call = default_decode_mce,
+-	.priority      = -1,
+-};
+-
+ /* MCA banks polled by the period polling timer for corrected events */
+ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+ 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
+@@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
+ 
+ static void print_mce(struct mce *m)
+ {
++	int ret = 0;
++
+ 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
+ 	       m->extcpu, m->mcgstatus, m->bank, m->status);
+ 
+@@ -239,7 +227,10 @@ static void print_mce(struct mce *m)
+ 	 * Print out human-readable details about the MCE error,
+ 	 * (if the CPU has an implementation for that)
+ 	 */
+-	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
++	if (ret != NOTIFY_STOP && (m->status & MCI_STATUS_UC))
++		pr_emerg(HW_ERR "Run the above through 'mcelog --ascii' "
++			 "to decode.\n");
+ }
+ 
+ #define PANIC_TIMEOUT 5 /* 5 seconds */
+@@ -289,6 +280,8 @@ static void mce_panic(char *msg, struct mce *final, char *exp)
+ 			continue;
+ 		if (!(m->status & MCI_STATUS_UC)) {
+ 			print_mce(m);
++			printk_once(KERN_EMERG HW_ERR "MCE Corrected Error(s) "
++				    "detected.");
+ 			if (!apei_err)
+ 				apei_err = apei_write_mce(m);
+ 		}
+@@ -1722,8 +1715,6 @@ __setup("mce", mcheck_enable);
+ 
+ int __init mcheck_init(void)
+ {
+-	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
+-
+ 	mcheck_intel_therm_init();
+ 
+ 	return 0;
