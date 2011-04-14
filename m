@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab1DNRyH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:54:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38442 "EHLO
+	id S933441Ab1DNRyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:54:05 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38443 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933357Ab1DNRrE (ORCPT
+	with ESMTP id S933362Ab1DNRrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:47:04 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ken Chen <kenchen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 064/209] latencytop: fix per task accumulator
-Date: Thu, 14 Apr 2011 13:41:34 -0400
-Message-Id: <1302803039-9400-65-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 078/209] USB: EHCI: fix obscure race in ehci_endpoint_disable
+Date: Thu, 14 Apr 2011 13:41:48 -0400
+Message-Id: <1302803039-9400-79-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,67 +23,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ken Chen <kenchen@google.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 38715258aa2e8cd94bd4aafadc544e5104efd551 upstream.
+commit 02e2c51ba3e80acde600721ea784c3ef84da5ea1 upstream.
 
-Per task latencytop accumulator prematurely terminates due to erroneous
-placement of latency_record_count.  It should be incremented whenever a
-new record is allocated instead of increment on every latencytop event.
+This patch (as1435) fixes an obscure and unlikely race in ehci-hcd.
+When an async URB is unlinked, the corresponding QH is removed from
+the async list.  If the QH's endpoint is then disabled while the URB
+is being given back, ehci_endpoint_disable() won't find the QH on the
+async list, causing it to believe that the QH has been lost.  This
+will lead to a memory leak at best and quite possibly to an oops.
 
-Also fix search iterator to only search known record events instead of
-blindly searching all pre-allocated space.
+The solution is to trust usbcore not to lose track of endpoints.  If
+the QH isn't on the async list then it doesn't need to be taken off
+the list, but the driver should still wait for the QH to become IDLE
+before disabling it.
 
-Signed-off-by: Ken Chen <kenchen@google.com>
-Reviewed-by: Arjan van de Ven <arjan@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In theory this fixes Bugzilla #20182.  In fact the race is so rare
+that it's not possible to tell whether the bug is still present.
+However, adding delays and making other changes to force the race
+seems to show that the patch works.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: David Brownell <david-b@pacbell.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/latencytop.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+ drivers/usb/host/ehci-hcd.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/latencytop.c b/kernel/latencytop.c
-index 877fb30..17110a4 100644
---- a/kernel/latencytop.c
-+++ b/kernel/latencytop.c
-@@ -194,14 +194,7 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
- 
- 	account_global_scheduler_latency(tsk, &lat);
- 
--	/*
--	 * short term hack; if we're > 32 we stop; future we recycle:
--	 */
--	tsk->latency_record_count++;
--	if (tsk->latency_record_count >= LT_SAVECOUNT)
--		goto out_unlock;
--
--	for (i = 0; i < LT_SAVECOUNT; i++) {
-+	for (i = 0; i < tsk->latency_record_count; i++) {
- 		struct latency_record *mylat;
- 		int same = 1;
- 
-@@ -227,8 +220,14 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 13ead00..d2dd6e1 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1010,10 +1010,11 @@ rescan:
+ 				tmp && tmp != qh;
+ 				tmp = tmp->qh_next.qh)
+ 			continue;
+-		/* periodic qh self-unlinks on empty */
+-		if (!tmp)
+-			goto nogood;
+-		unlink_async (ehci, qh);
++		/* periodic qh self-unlinks on empty, and a COMPLETING qh
++		 * may already be unlinked.
++		 */
++		if (tmp)
++			unlink_async(ehci, qh);
+ 		/* FALL THROUGH */
+ 	case QH_STATE_UNLINK:		/* wait for hw to finish? */
+ 	case QH_STATE_UNLINK_WAIT:
+@@ -1030,7 +1031,6 @@ idle_timeout:
  		}
- 	}
- 
-+	/*
-+	 * short term hack; if we're > 32 we stop; future we recycle:
-+	 */
-+	if (tsk->latency_record_count >= LT_SAVECOUNT)
-+		goto out_unlock;
-+
- 	/* Allocated a new one: */
--	i = tsk->latency_record_count;
-+	i = tsk->latency_record_count++;
- 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
- 
- out_unlock:
+ 		/* else FALL THROUGH */
+ 	default:
+-nogood:
+ 		/* caller was supposed to have unlinked any requests;
+ 		 * that's not our job.  just leak this memory.
+ 		 */
 -- 
 1.7.4.4
 
