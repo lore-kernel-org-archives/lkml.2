@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933875Ab1DNSLN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:11:13 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42085 "EHLO
+	id S933846Ab1DNSLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:11:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42086 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933658Ab1DNR63 (ORCPT
+	with ESMTP id S933661Ab1DNR63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:58:29 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, NeilBrown <neilb@suse.de>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: stable-review@kernel.org, Alex Deucher <alexdeucher@gmail.com>,
+        Sergej Pupykin <ml@sergej.pp.ru>, Dave Airlie <airlied@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 165/209] sunrpc: prevent use-after-free on clearing XPT_BUSY
-Date: Thu, 14 Apr 2011 13:55:23 -0400
-Message-Id: <1302803767-9715-52-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 159/209] drm/kms: remove spaces from connector names (v2)
+Date: Thu, 14 Apr 2011 13:55:17 -0400
+Message-Id: <1302803767-9715-46-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,85 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Alex Deucher <alexdeucher@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit ed2849d3ecfa339435818eeff28f6c3424300cec upstream.
+commit e76116ca9671e2e5239054a40303b94feab585ad upstream.
 
-When an xprt is created, it has a refcount of 1, and XPT_BUSY is set.
-The refcount is *not* owned by the thread that created the xprt
-(as is clear from the fact that creators never put the reference).
-Rather, it is owned by the absence of XPT_DEAD.  Once XPT_DEAD is set,
-(And XPT_BUSY is clear) that initial reference is dropped and the xprt
-can be freed.
+Grub doesn't parse spaces in parameters correctly, so
+this makes it impossible to force video= parameters
+for kms on the grub kernel command line.
 
-So when a creator clears XPT_BUSY it is dropping its only reference and
-so must not touch the xprt again.
+v2: shorten the names to make them easier to type.
 
-However svc_recv, after calling ->xpo_accept (and so getting an XPT_BUSY
-reference on a new xprt), calls svc_xprt_recieved.  This clears
-XPT_BUSY and then svc_xprt_enqueue - this last without owning a reference.
-This is dangerous and has been seen to leave svc_xprt_enqueue working
-with an xprt containing garbage.
-
-So we need to hold an extra counted reference over that call to
-svc_xprt_received.
-
-For safety, any time we clear XPT_BUSY and then use the xprt again, we
-first get a reference, and the put it again afterwards.
-
-Note that svc_close_all does not need this extra protection as there are
-no threads running, and the final free can only be called asynchronously
-from such a thread.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Sergej Pupykin <ml@sergej.pp.ru>
+Cc: Sergej Pupykin <ml@sergej.pp.ru>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sunrpc/svc_xprt.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/drm_crtc.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 061b2e0..aa1d2c6 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -212,6 +212,7 @@ int svc_create_xprt(struct svc_serv *serv, const char *xprt_name,
- 	spin_lock(&svc_xprt_class_lock);
- 	list_for_each_entry(xcl, &svc_xprt_class_list, xcl_list) {
- 		struct svc_xprt *newxprt;
-+		unsigned short newport;
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 61b9bcf..1a224f8 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -154,12 +154,12 @@ static struct drm_conn_prop_enum_list drm_connector_enum_list[] =
+ 	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO", 0 },
+ 	{ DRM_MODE_CONNECTOR_LVDS, "LVDS", 0 },
+ 	{ DRM_MODE_CONNECTOR_Component, "Component", 0 },
+-	{ DRM_MODE_CONNECTOR_9PinDIN, "9-pin DIN", 0 },
+-	{ DRM_MODE_CONNECTOR_DisplayPort, "DisplayPort", 0 },
+-	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI Type A", 0 },
+-	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI Type B", 0 },
++	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN", 0 },
++	{ DRM_MODE_CONNECTOR_DisplayPort, "DP", 0 },
++	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI-A", 0 },
++	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI-B", 0 },
+ 	{ DRM_MODE_CONNECTOR_TV, "TV", 0 },
+-	{ DRM_MODE_CONNECTOR_eDP, "Embedded DisplayPort", 0 },
++	{ DRM_MODE_CONNECTOR_eDP, "eDP", 0 },
+ };
  
- 		if (strcmp(xprt_name, xcl->xcl_name))
- 			continue;
-@@ -230,8 +231,9 @@ int svc_create_xprt(struct svc_serv *serv, const char *xprt_name,
- 		spin_lock_bh(&serv->sv_lock);
- 		list_add(&newxprt->xpt_list, &serv->sv_permsocks);
- 		spin_unlock_bh(&serv->sv_lock);
-+		newport = svc_xprt_local_port(newxprt);
- 		clear_bit(XPT_BUSY, &newxprt->xpt_flags);
--		return svc_xprt_local_port(newxprt);
-+		return newport;
- 	}
-  err:
- 	spin_unlock(&svc_xprt_class_lock);
-@@ -431,8 +433,13 @@ void svc_xprt_received(struct svc_xprt *xprt)
- {
- 	BUG_ON(!test_bit(XPT_BUSY, &xprt->xpt_flags));
- 	xprt->xpt_pool = NULL;
-+	/* As soon as we clear busy, the xprt could be closed and
-+	 * 'put', so we need a reference to call svc_xprt_enqueue with:
-+	 */
-+	svc_xprt_get(xprt);
- 	clear_bit(XPT_BUSY, &xprt->xpt_flags);
- 	svc_xprt_enqueue(xprt);
-+	svc_xprt_put(xprt);
- }
- EXPORT_SYMBOL_GPL(svc_xprt_received);
- 
+ static struct drm_prop_enum_list drm_encoder_enum_list[] =
 -- 
 1.7.4.4
 
