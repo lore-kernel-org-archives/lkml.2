@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab1DNQza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 12:55:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52976 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757305Ab1DNQzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 12:55:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=doxppPQAaqPR4oQL6YZeXlFBlnIohfsXSxFRTOmBB8fbxCBYmyB5PK5tJ6WPc4370A
-         sDkidkHve0yXLP9276O7fWjWfz1V7d7Ct68imILzgHAqdLPO8F6/g7w/OJs0bdj4ev7H
-         S/rBUrPWCh+xux+Jr1Aonb3lhe2WDQHFOmDBE=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: security@kernel.org, David Airlie <airlied@linux.ie>
-Subject: [PATCH] char: agp: fix OOM and buffer overflow
-Date: Thu, 14 Apr 2011 20:55:19 +0400
-Message-Id: <1302800120-31560-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932117Ab1DNQ7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 12:59:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38283 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756746Ab1DNQ7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 12:59:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,212,1301900400"; 
+   d="scan'208";a="733384929"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>
+Subject: [PATCH] futex: set FLAGS_HAS_TIMEOUT during demux for FUTEX_WAIT
+Date: Thu, 14 Apr 2011 09:58:33 -0700
+Message-Id: <39ac45dcef66930ae01cb5c632446a76447935b2.1302800313.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page_count is copied from userspace.  agp_allocate_memory() tries to
-check whether this number is too big, but doesn't take into account the
-wrap case.  Also agp_create_user_memory() doesn't check whether
-alloc_size is calculated from num_agp_pages variable without overflow.
-This may lead to allocation of too small buffer with following buffer
-overflow.
+The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
+restart futex_wait() without a timeout after a signal.
 
-Another problem in agp code is not addressed in the patch - kernel memory
-exhaustion (AGPIOC_RESERVE and AGPIOC_ALLOCATE ioctls).  It is not checked
-whether requested pid is a pid of the caller (no check in agpioc_reserve_wrap()).
-Each allocation is limited to 16KB, though, there is no per-process limit.
-This might lead to OOM situation, which is not even solved in case of the
-caller death by OOM killer - the memory is allocated for another (faked) process.
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-by: Tim Smith <tsmith201104@yahoo.com>
+Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: John Kacur <jkacur@redhat.com>
 ---
- drivers/char/agp/generic.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ kernel/futex.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
-index 745e7ba..342df51 100644
---- a/drivers/char/agp/generic.c
-+++ b/drivers/char/agp/generic.c
-@@ -115,6 +115,9 @@ static struct agp_memory *agp_create_user_memory(unsigned long num_agp_pages)
- 	struct agp_memory *new;
- 	unsigned long alloc_size = num_agp_pages*sizeof(struct page *);
+diff --git a/kernel/futex.c b/kernel/futex.c
+index bda4157..6eac6b6 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2589,6 +2589,9 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
+ 			return -ENOSYS;
+ 	}
  
-+	if (INT_MAX/sizeof(struct page *) < num_agp_pages)
-+		return NULL;
++	if (timeout)
++		flags |= FLAGS_HAS_TIMEOUT;
 +
- 	new = kzalloc(sizeof(struct agp_memory), GFP_KERNEL);
- 	if (new == NULL)
- 		return NULL;
-@@ -234,11 +237,14 @@ struct agp_memory *agp_allocate_memory(struct agp_bridge_data *bridge,
- 	int scratch_pages;
- 	struct agp_memory *new;
- 	size_t i;
-+	int cur_memory;
- 
- 	if (!bridge)
- 		return NULL;
- 
--	if ((atomic_read(&bridge->current_memory_agp) + page_count) > bridge->max_memory_agp)
-+	cur_memory = atomic_read(&bridge->current_memory_agp);
-+	if ((cur_memory + page_count > bridge->max_memory_agp) ||
-+	    (cur_memory + page_count < page_count))
- 		return NULL;
- 
- 	if (type >= AGP_USER_TYPES) {
+ 	switch (cmd) {
+ 	case FUTEX_WAIT:
+ 		val3 = FUTEX_BITSET_MATCH_ANY;
 -- 
-1.7.0.4
+1.7.1
 
