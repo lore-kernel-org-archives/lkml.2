@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933211Ab1DNS03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:26:29 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38143 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933088Ab1DNRq1 (ORCPT
+	id S933910Ab1DNS0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:26:44 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:44211 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933103Ab1DNS0l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:27 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 057/209] KVM: VMX: Fix host userspace gsbase corruption
-Date: Thu, 14 Apr 2011 13:41:27 -0400
-Message-Id: <1302803039-9400-58-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 14 Apr 2011 14:26:41 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-12.tower-131.messagelabs.com!1302805597!21582927!4
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.99]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Bill Gatliff <bgat@billgatliff.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Date: Thu, 14 Apr 2011 13:26:37 -0500
+Subject: RE: [PWM v9 0/3] Implement a generic PWM framework
+Thread-Topic: [PWM v9 0/3] Implement a generic PWM framework
+Thread-Index: Acv6tpQl4TmxiKWYQA6VkCiVXsLw2QAGqYgg
+Message-ID: <0D753D10438DA54287A00B027084269764D20F8AE3@AUSP01VMBX24.collaborationhost.net>
+References: <1301630392-20793-1-git-send-email-bgat@billgatliff.com>
+ <BANLkTik6Ftsy2yTA7LBKTUDJkqXPf4JeSA@mail.gmail.com>
+In-Reply-To: <BANLkTik6Ftsy2yTA7LBKTUDJkqXPf4JeSA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Avi Kivity <avi@redhat.com>
+On Thursday, April 14, 2011 8:13 AM, Bill Gatliff wrote:
+>
+> Guys:
+>
+>
+> Anyone have any comment on this patch series?  Is it finally ready for Linus?
+>
 
-  =====================================================================
-  | This is a commit scheduled for the next v2.6.34 longterm release. |
-  | If you see a problem with using this for longterm, please comment.|
-  =====================================================================
+Bill,
 
-commit c8770e7ba63bb5dd8fe5f9d251275a8fa717fb78 upstream.
+I looked at a previous release quite a while ago to see how the ep93xx pwm driver
+could use it.  I'll try to look at this release in the next couple days and provide
+some feedback.
 
-We now use load_gs_index() to load gs safely; unfortunately this also
-changes MSR_KERNEL_GS_BASE, which we managed separately.  This resulted
-in confusion and breakage running 32-bit host userspace on a 64-bit kernel.
-
-Fix by
-- saving guest MSR_KERNEL_GS_BASE before we we reload the host's gs
-- doing the host save/load unconditionally, instead of only when in guest
-  long mode
-
-Things can be cleaned up further, but this is the minmal fix for now.
-
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/x86/kvm/vmx.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 2cfa656..a25a345 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -676,10 +676,9 @@ static void vmx_save_host_state(struct kvm_vcpu *vcpu)
- #endif
- 
- #ifdef CONFIG_X86_64
--	if (is_long_mode(&vmx->vcpu)) {
--		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
-+	rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
-+	if (is_long_mode(&vmx->vcpu))
- 		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
--	}
- #endif
- 	for (i = 0; i < vmx->save_nmsrs; ++i)
- 		kvm_set_shared_msr(vmx->guest_msrs[i].index,
-@@ -694,23 +693,23 @@ static void __vmx_load_host_state(struct vcpu_vmx *vmx)
- 
- 	++vmx->vcpu.stat.host_state_reload;
- 	vmx->host_state.loaded = 0;
-+#ifdef CONFIG_X86_64
-+	if (is_long_mode(&vmx->vcpu))
-+		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
-+#endif
- 	if (vmx->host_state.fs_reload_needed)
- 		loadsegment(fs, vmx->host_state.fs_sel);
- 	if (vmx->host_state.gs_ldt_reload_needed) {
- 		kvm_load_ldt(vmx->host_state.ldt_sel);
- #ifdef CONFIG_X86_64
- 		load_gs_index(vmx->host_state.gs_sel);
--		wrmsrl(MSR_KERNEL_GS_BASE, current->thread.gs);
- #else
- 		loadsegment(gs, vmx->host_state.gs_sel);
- #endif
- 	}
- 	reload_tss();
- #ifdef CONFIG_X86_64
--	if (is_long_mode(&vmx->vcpu)) {
--		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
--		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
--	}
-+	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
- #endif
- 	load_gdt(&__get_cpu_var(host_gdt));
- }
--- 
-1.7.4.4
-
+Regards,
+Hartley
