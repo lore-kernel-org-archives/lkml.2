@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab1DNVSD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:18:03 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32891 "EHLO
+	id S1753083Ab1DNVSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:18:15 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32923 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab1DNVSA (ORCPT
+	with ESMTP id S1752870Ab1DNVSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:18:00 -0400
-Date: Thu, 14 Apr 2011 14:16:31 -0700
+	Thu, 14 Apr 2011 17:18:03 -0400
+Date: Thu, 14 Apr 2011 14:15:31 -0700
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
 To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
@@ -20,63 +20,57 @@ To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         avi@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
         mel@csn.ul.ie, yinghan@google.com, gthelen@google.com,
         torvalds@linux-foundation.org
-Subject: [PATCH V8 2/8] fs: add field to superblock to support cleancache
-Message-ID: <20110414211631.GA27708@ca-server1.us.oracle.com>
+Subject: [PATCH V8 0/8] Cleancache
+Message-ID: <20110414211531.GA27661@ca-server1.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DA76433.00F9,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4DA76433.015B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V8 2/8] fs: add field to superblock to support cleancache
+[PATCH V8 0/8] Cleancache
 
-This second patch of eight in this cleancache series adds a field to
-the generic superblock to squirrel away a pool identifier that is
-dynamically provided by cleancache-enabled filesystems at mount time
-to uniquely identify files and pages belonging to this mounted filesystem.
+This is a courtesy repost to lkml and linux-mm.  As of 2.6.39-rc1,
+Linus has said that he will review cleancache but hasn't yet, so
+I am updating the patchset to the very latest bits.  The patchset
+can be pulled from:
 
-Details and a FAQ can be found in Documentation/vm/cleancache.txt
+git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git
+	(branch stable/cleancache-v8-with-tmem)
 
-[v8: trivial merge conflict update]
+Version 8 of the cleancache patchset:
+- Rebase to 2.6.39-rc3
+- Resolve trivial merge conflicts for linux-next 
+- Adapt to recent remove_from_page_cache patchset by Minchan Kim
+- Fix exportfs issue that affected btrfs under certain circumstances
+- Change two macros to static inlines (per akpm)
+- Minor documentation changes
+
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik Van Riel <riel@redhat.com>
-Cc: Jan Beulich <JBeulich@novell.com>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Andreas Dilger <adilger@sun.com>
-Cc: Ted Ts'o <tytso@mit.edu>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <joel.becker@oracle.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
+(see individual patches for additional Acks/SOBs etc)
 
----
-
-Diffstat:
- include/linux/fs.h                       |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- linux-2.6.39-rc3/include/linux/fs.h	2011-04-11 18:21:51.000000000 -0600
-+++ linux-2.6.39-rc3-cleancache/include/linux/fs.h	2011-04-13 16:46:44.444861817 -0600
-@@ -1430,6 +1430,11 @@ struct super_block {
- 	 */
- 	char __rcu *s_options;
- 	const struct dentry_operations *s_d_op; /* default d_op for dentries */
-+
-+	/*
-+	 * Saved pool identifier for cleancache (-1 means none)
-+	 */
-+	int cleancache_poolid;
- };
- 
- extern struct timespec current_fs_time(struct super_block *sb);
+ Documentation/ABI/testing/sysfs-kernel-mm-cleancache |   11 
+ Documentation/vm/cleancache.txt                      |  278 +++++++++++++++++++
+ fs/btrfs/extent_io.c                                 |    9 
+ fs/btrfs/super.c                                     |    2 
+ fs/buffer.c                                          |    5 
+ fs/ext3/super.c                                      |    2 
+ fs/ext4/super.c                                      |    2 
+ fs/mpage.c                                           |    7 
+ fs/ocfs2/super.c                                     |    2 
+ fs/super.c                                           |    3 
+ include/linux/cleancache.h                           |  122 ++++++++
+ include/linux/fs.h                                   |    5 
+ mm/Kconfig                                           |   23 +
+ mm/Makefile                                          |    1 
+ mm/cleancache.c                                      |  244 ++++++++++++++++
+ mm/filemap.c                                         |   11 
+ mm/truncate.c                                        |    6 
+ 17 files changed, 733 insertions(+)
