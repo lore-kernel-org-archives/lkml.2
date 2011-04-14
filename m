@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab1DNOaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:30:23 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65513 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758837Ab1DNOaU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:30:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=ZAOcaJM+7h9At5xrhOZeI+tY4Xi7iK1pL5XC1gTOPZv+xFIwI78I4TAmUqj/dCSmrE
-         7DbbKPAuK0ILalKWW1GoKZon65fKJ1i7DAY+MUETCq6waUJjyebWdKmf5s9kz8P8yT5V
-         jUL3G2vxQUIcnH1G22QMto+XK/xNUzO8tJEI8=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Alexey Dobriyan" <adobriyan@gmail.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kstrtox: reuse functions from ctype.h
-References: <b266439c1f03640c677f911cb82f4d0e131d2e7d.1302785632.git.mina86@mina86.com> <BANLkTikk3Zof1Go8xLBeq2qyxGo6AFuv1g@mail.gmail.com>
-Date: Thu, 14 Apr 2011 16:30:17 +0200
+	id S1758893Ab1DNOam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:30:42 -0400
+Received: from mail.digium.com ([216.207.245.2]:43861 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758837Ab1DNOal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:30:41 -0400
+Date: Thu, 14 Apr 2011 09:30:24 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Don Zickus <dzickus@redhat.com>, maciej.rutecki@gmail.com,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
+	proper MSR register to catch" and NMIs
+Message-ID: <20110414143024.GA13458@digium.com>
+References: <20110406223036.GA15721@digium.com> <201104132133.51958.maciej.rutecki@gmail.com> <4DA6011F.7070405@openvz.org> <20110413203501.GA10744@digium.com> <4DA60B03.30603@openvz.org> <20110413212208.GJ16939@redhat.com> <4DA614DF.5090304@openvz.org> <20110413215322.GA11670@digium.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vtxmkrzr3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <BANLkTikk3Zof1Go8xLBeq2qyxGo6AFuv1g@mail.gmail.com>
-User-Agent: Opera Mail/11.01 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110413215322.GA11670@digium.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Apr 2011 16:06:34 +0200, Alexey Dobriyan <adobriyan@gmail.com>  
-wrote:
+On Wed, Apr 13, 2011 at 04:53:22PM -0500, Shaun Ruffell wrote:
+> On Thu, Apr 14, 2011 at 01:25:51AM +0400, Cyrill Gorcunov wrote:
+> ...
+>> OK, thanks for review! Shaun please continue testing it, if all will be fine until tomorrow
+>> we will ask Ingo to pick it up then. Sounds OK for everyone?
+> 
+> Sounds good. I'll let it run tonight with v2 tonight.
 
-> On Thu, Apr 14, 2011 at 4:34 PM, Michal Nazarewicz <mina86@mina86.com>  
-> wrote:
->> kstrto*() family of functions uses open coded test
->> for a hexadecimal digit and
->
-> Yes, so?
+I know Ingo asked to merge v1 now and something else in a later version.
+However, just to follow up on this thread, v2 ran all night without producing
+any NMIs on the PowerEdge 2600.
 
-So it's better to avoid open-coded code without a reason if there is
-already function for what one tries to do.
-
->> own implementation of tolower() function.
->
-> No!
-> It's special cased for this very usage, because the rest of ASCII is
-> of no concern.
-> It doesn't claim tolower() semantics.
-
-Either way, the question is do we care about this optimisation so much
-as to use it and somehow duplicate code which already is in ctype.h.
-
-I'm not saying we don't.  I'm asking whether we want to.
-
->> @@ -47,8 +42,8 @@ static int _kstrtoull(const char *s, unsigned int  
->> base, unsigned long long *res)
->>
->>                if ('0' <= *s && *s <= '9')
->>                        val = *s - '0';
->> -               else if ('a' <= _tolower(*s) && _tolower(*s) <= 'f')
->> -                       val = _tolower(*s) - 'a' + 10;
->> +               else if (isxdigit(*s))
->
-> [0-9] are isxdigit() as well, so the code sort of logically duplicate.
-
-Yes, so? ;)
-
-I think isxdigit(*s) looks nicer than “'a' <= _tolower(*s) &&
-_tolower(*s) <= 'f'”.
-
->> +                       val = tolower(*s) - 'a' + 10;
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Cheers,
+Shaun
