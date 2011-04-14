@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965035Ab1DNR64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:58:56 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42193 "EHLO
+	id S933806Ab1DNSFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:05:51 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42245 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964981Ab1DNR6n (ORCPT
+	with ESMTP id S965029Ab1DNR6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:43 -0400
+	Thu, 14 Apr 2011 13:58:55 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 178/209] x86: Enable the intr-remap fault handling after local APIC setup
-Date: Thu, 14 Apr 2011 13:55:36 -0400
-Message-Id: <1302803767-9715-65-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 190/209] sound: Prevent buffer overflow in OSS load_mixer_volumes
+Date: Thu, 14 Apr 2011 13:55:48 -0400
+Message-Id: <1302803767-9715-77-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,76 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 7f7fbf45c6b748074546f7f16b9488ca71de99c1 upstream.
+commit d81a12bc29ae4038770e05dce4ab7f26fd5880fb upstream.
 
-Interrupt-remapping gets enabled very early in the boot, as it determines the
-apic mode that the processor can use. And the current code enables the vt-d
-fault handling before the setup_local_APIC(). And hence the APIC LDR registers
-and data structure in the memory may not be initialized. So the vt-d fault
-handling in logical xapic/x2apic modes were broken.
+The load_mixer_volumes() function, which can be triggered by
+unprivileged users via the SOUND_MIXER_SETLEVELS ioctl, is vulnerable to
+a buffer overflow.  Because the provided "name" argument isn't
+guaranteed to be NULL terminated at the expected 32 bytes, it's possible
+to overflow past the end of the last element in the mixer_vols array.
+Further exploitation can result in an arbitrary kernel write (via
+subsequent calls to load_mixer_volumes()) leading to privilege
+escalation, or arbitrary kernel reads via get_mixer_levels().  In
+addition, the strcmp() may leak bytes beyond the mixer_vols array.
 
-Fix this by enabling the vt-d fault handling in the end_local_APIC_setup()
-
-A cleaner fix of enabling fault handling while enabling intr-remapping
-will be addressed for v2.6.38. [ Enabling intr-remapping determines the
-usage of x2apic mode and the apic mode determines the fault-handling
-configuration. ]
-
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-LKML-Reference: <20101201062244.541996375@intel.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/apic/apic.c     |    8 ++++++++
- arch/x86/kernel/apic/probe_64.c |    7 -------
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ sound/oss/soundcard.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index a96489e..c00a104 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1340,6 +1340,14 @@ void __cpuinit end_local_APIC_setup(void)
+diff --git a/sound/oss/soundcard.c b/sound/oss/soundcard.c
+index 2d9c513..5739d8b 100644
+--- a/sound/oss/soundcard.c
++++ b/sound/oss/soundcard.c
+@@ -86,7 +86,7 @@ int *load_mixer_volumes(char *name, int *levels, int present)
+ 	int             i, n;
  
- 	setup_apic_nmi_watchdog(NULL);
- 	apic_pm_activate();
-+
-+	/*
-+	 * Now that local APIC setup is completed for BP, configure the fault
-+	 * handling for interrupt remapping.
-+	 */
-+	if (!smp_processor_id() && intr_remapping_enabled)
-+		enable_drhd_fault_handling();
-+
- }
- 
- #ifdef CONFIG_X86_X2APIC
-diff --git a/arch/x86/kernel/apic/probe_64.c b/arch/x86/kernel/apic/probe_64.c
-index 83e9be4..fac49a8 100644
---- a/arch/x86/kernel/apic/probe_64.c
-+++ b/arch/x86/kernel/apic/probe_64.c
-@@ -76,13 +76,6 @@ void __init default_setup_apic_routing(void)
- 		/* need to update phys_pkg_id */
- 		apic->phys_pkg_id = apicid_phys_pkg_id;
+ 	for (i = 0; i < num_mixer_volumes; i++) {
+-		if (strcmp(name, mixer_vols[i].name) == 0) {
++		if (strncmp(name, mixer_vols[i].name, 32) == 0) {
+ 			if (present)
+ 				mixer_vols[i].num = i;
+ 			return mixer_vols[i].levels;
+@@ -98,7 +98,7 @@ int *load_mixer_volumes(char *name, int *levels, int present)
  	}
--
--	/*
--	 * Now that apic routing model is selected, configure the
--	 * fault handling for intr remapping.
--	 */
--	if (intr_remapping_enabled)
--		enable_drhd_fault_handling();
- }
+ 	n = num_mixer_volumes++;
  
- /* Same for both flat and physical. */
+-	strcpy(mixer_vols[n].name, name);
++	strncpy(mixer_vols[n].name, name, 32);
+ 
+ 	if (present)
+ 		mixer_vols[n].num = n;
 -- 
 1.7.4.4
 
