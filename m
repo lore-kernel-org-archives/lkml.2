@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758948Ab1DNOpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:45:11 -0400
-Received: from lo.gmane.org ([80.91.229.12]:41318 "EHLO lo.gmane.org"
+	id S1758940Ab1DNOrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:47:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10925 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758918Ab1DNOpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:45:10 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RFC] NFC subsystem prototype
-Date: Thu, 14 Apr 2011 14:17:42 +0000 (UTC)
-Message-ID: <loom.20110414T113238-377@post.gmane.org>
-References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 90.9.23.9 (Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101028 Iceweasel/3.5.15 (like Firefox/3.5.15))
+	id S1758816Ab1DNOrU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:47:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,211,1301900400"; 
+   d="scan'208";a="628580191"
+From: "Allyn, Mark A" <mark.a.allyn@intel.com>
+To: Joe Perches <joe@perches.com>, Greg KH <greg@kroah.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
+        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>,
+        "Cox, Alan" <alan.cox@intel.com>, "Gross, Mark" <mark.gross@intel.com>,
+        "Beare, Bruce J" <bruce.j.beare@intel.com>
+Date: Thu, 14 Apr 2011 08:46:47 -0600
+Subject: RE: Re-send (What else needs to be done to the sep driver
+ (staging/sep))
+Thread-Topic: Re-send (What else needs to be done to the sep driver
+ (staging/sep))
+Thread-Index: Acv6MFX30407cQUeQtelFGlKVSLuggAgi2og
+Message-ID: <8A0E4C92AE2D6D40AF99653191DA32316154CEF1CF@rrsmsx501.amr.corp.intel.com>
+References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
+	 <1302731811.11415.38.camel@Joe-Laptop> <20110413222332.GA32013@kroah.com>
+	 <1302733836.11415.42.camel@Joe-Laptop>  <20110413224621.GA4909@kroah.com>
+ <1302736379.11415.57.camel@Joe-Laptop>
+In-Reply-To: <1302736379.11415.57.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lauro,
-
-Lauro Ramos Venancio <lauro.venancio <at> openbossa.org> writes:
-> The prototype implementation can be found at:
-> 	git://186.215.206.130/linux-nfc.git
-> 
-> The userspace test application (list targets and read/write MIFARE
-> tags) can be found at:
-> 	git://186.215.206.130/nfc-example.git
-Really nice. What about putting those in e.g. gitorious ?
-
- 
-> Prototype Scope:
-> 	- Tag Reader/Writer
-> 	- Protocols: MIFARE, ISO14443, FELICA, JEWEL
-> 
-> Subsystem Operations:
-> 	- start poll - start polling for targets using the protocols given as
-> parameter
-> 	- stop poll - stop polling
-> 	- activate target - activate a target for communication using a
-> specific protocol
-> 	- deactivate target - deactivate a target
-> 	- reset device - put the adapter in idle mode
-> 	- data exchange - low level data exchange (send and receive data)
-I suppose the data_exchange hook is sitting at the NFCIP level ? As I agree
-with your further comment that this one should not be part of the netlink
-API but should be done through sockets instead, I think this one should be
-defined as the netdev start_xmit hook.
-So this matches quite well the pn533 API, but I'm wondering how you're
-planning to support the HCI based devices (pn544, microread). We clearly
-have 2 kind of devices here, and it reminds me of the soft MAC vs full MAC
-problem in the 802.11 subsystem.
-I think we should have a kernel NFC HCI layer that would implement those
-hooks by following the HCP protocol. Then devices that only take HCI
-commands (kind of soft MAC NFC devices) would register against the NFC HCI
-layer and use those hooks. Other devices (e.g. pn533) would register at a
-higher level (The NFC core layer) and provide their own hooks. This would be
-similar to what 802.11 drivers do by registering against mac80211 (soft MACs)
-or directly against cfg80211 (full MACs).
 
 
+-----Original Message-----
+From: Joe Perches [mailto:joe@perches.com] 
+Sent: Wednesday, April 13, 2011 4:13 PM
+To: Greg KH
+Cc: Allyn, Mark A; linux-kernel@vger.kernel.org; alan@linux.intel.com; Mangalampalli, Jayant; Gokulrangan, Venkat R
+Subject: Re: Re-send (What else needs to be done to the sep driver (staging/sep))
 
-> Subsystem Event:
-> 	- targets found - report all targets found by the polling
-I would like to see a target lost event here as well, but as far as I know,
-none of the various NFC specs specify such event. So I guess we get to know
-that e.g. a tag is not there anymore when failing to read from it.
+On Wed, 2011-04-13 at 15:46 -0700, Greg KH wrote:
+> I don't like seeing every individual driver have its own way of handling
+> debug macros, that's crazy.
 
-> However, the netlink choice has not proven to be the best solution for
-> the data exchange operation. So we plan to have a new prototype
-> version using another solution. The options are:
-> 	- sockets for all operations as in bluez implementation;
-> 	- sockets for data exchange and keep netlink for the other operations.
-I would personally prefer to have a netlink layer for basically anything
-except data I/O, and go with a socket for the rest.
+That's your preference not mine.
+
+> For larger stuff like networking, yes, they can do that, and that's
+> fine.  They also were doing this before the dev_* macros came along,
+> just like USB did, so there is historical precident there.
+
+I added netdev_<level> and netif_<level>.
+
+> But again, not for a new driver, don't redefine the existing macros just
+> because you don't like typing a few extra characters...
+
+You are not the driver maintainer and those decisions
+are driver maintainer decisions not yours.
+
+Check this out:
+
+$ grep -rP -oh --include=*.[ch] \
+	"\b[a-z]+_(dbg|alert|crit|emerg|notice|warn|err|info)\b\s*\(" drivers | \
+  sed -e 's/(//g' -r -e 's/\s*//g' | \
+  sort | uniq | wc -l
+266
+
+Most all of those are different logging forms.
+
+So, not crazy, just not your preference.
+
+I've put in some effort trying to standardize logging
+messages and mechanisms as well, and I think
+
+	<prefix>_<level>(struct *, fmt, ..._
+
+is a perfectly good and understandable style.
+
+I do not suggest using some arbitrary prefix just for the
+sake of it, only when there is a specific structure that
+can be used.
+
+cheers, Joe
 
 
-> 
-> Further work:
-> 	- Define subsystem operations for adapters in "target mode"
-I am not sure we need any specific additional hook for the target mode. In
-this mode, we mostly would be sending events (RF field ON, card activated
-or deactivated). After that, afaiu, the card would be expecting data
-reception, and then sending responses to it.
-We probably need to add a mode setting hook in the ops structure. And also,
-according to NFCIP-2, NFC devices should by default be in target mode.
+==================================
 
+I am adding Alan Cox, Mark Gross, and Bruce Beare into the discussion.
 
-> 	- Implement LLCP
-> 	- Add support to the "secure elements"
-I'm also wondering how we're going to support the various CCID USB NFC
-readers currently available ? At the moment this is all done through libusb
-and pcsc-lite in userspace, but it would be nice to see that integrated
-with this subsystem.
+I will not do anything to change the logging in this driver until I get
+better clarification from Mark, Alan, and Bruce as well as Greg.
 
-Cheers,
-Samuel.
+Thanks
 
+Mark Allyn
