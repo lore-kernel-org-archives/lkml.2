@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab1DNSEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:04:50 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42270 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965045Ab1DNR7A (ORCPT
+	id S933810Ab1DNSFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:05:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51741 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933723Ab1DNSFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:59:00 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Daniel T Chen <crimsun@ubuntu.com>,
-        Takashi Iwai <tiwai@suse.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 193/209] ALSA: hda: Use LPIB quirk for Dell Inspiron m101z/1120
-Date: Thu, 14 Apr 2011 13:55:51 -0400
-Message-Id: <1302803767-9715-80-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
- <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 14 Apr 2011 14:05:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gO2qMZQtGHWKOa5Byh0G0NeMvyuYrNRElG0uTXGx7Oh2UVMNcZ0Re+M11toE6P9wd1
+         QVQ8QmOAidmPBVBms42/6EWvOuHGUNRE2+VMOjz6a/gcOmGvxXASRSsj0BwvOVxiPAkH
+         Zyfm/qh8j4/j/izxc71EMuorDHUX8a1qK7XNw=
+Date: Thu, 14 Apr 2011 20:04:59 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] posix clocks: replace mutex with reader/writer
+ semaphore
+Message-ID: <20110414180458.GA24534@riccoc20.at.omicron.at>
+References: <20110330132421.GA31771@riccoc20.at.omicron.at>
+ <alpine.LFD.2.00.1103301541000.22418@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103301541000.22418@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+On Wed, Mar 30, 2011 at 03:41:40PM +0200, Thomas Gleixner wrote:
+> On Wed, 30 Mar 2011, Richard Cochran wrote:
+> 
+> > A dynamic posix clock is protected from asynchronous removal by a mutex.
+> > However, using a mutex has the unwanted effect that a long running clock
+> > operation in one process will unnecessarily block other processes.
+> > 
+> > For example, one process might call read() to get an external time stamp
+> > coming in at one pulse per second. A second process calling clock_gettime
+> > would have to wait for almost a whole second.
+> > 
+> > This patch fixes the issue by using a reader/writer semaphore instead of
+> > a mutex.
+> 
+> Yuck. /me wonders why we did not see that during the review :)
 
-  =====================================================================
-  | This is a commit scheduled for the next v2.6.34 longterm release. |
-  | If you see a problem with using this for longterm, please comment.|
-  =====================================================================
+Thomas,
 
-commit e03fa055bc126e536c7f65862e08a9b143138ea9 upstream.
+I don't see this in -rc3, but I think it should go in.
+Can you please take this one?
 
-Sjoerd Simons reports that, without using position_fix=1, recording
-experiences overruns. Work around that by applying the LPIB quirk
-for his hardware.
+Thanks,
 
-Reported-and-tested-by: Sjoerd Simons <sjoerd@debian.org>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- sound/pci/hda/hda_intel.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Richard
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index 0bc24bd..57adfa8 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2267,6 +2267,7 @@ static struct snd_pci_quirk position_fix_list[] __devinitdata = {
- 	SND_PCI_QUIRK(0x1028, 0x01cc, "Dell D820", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1028, 0x01de, "Dell Precision 390", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x1028, 0x0470, "Dell Inspiron 1120", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
--- 
-1.7.4.4
 
