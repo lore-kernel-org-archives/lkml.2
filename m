@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964909Ab1DNSQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:16:50 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41846 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964855Ab1DNR6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S964882Ab1DNR6J (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Apr 2011 13:58:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41736 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964855Ab1DNR6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 13:58:03 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Joe Jin <joe.jin@oracle.com>,
-        Sathya Perla <sathyap@serverengines.com>,
-        Subbu Seetharaman <subbus@serverengines.com>,
-        Sarveshwar Bandi <sarveshwarb@serverengines.com>,
-        Ajit Khaparde <ajitk@serverengines.com>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 145/209] driver/net/benet: fix be_cmd_multicast_set() memcpy bug
-Date: Thu, 14 Apr 2011 13:55:03 -0400
-Message-Id: <1302803767-9715-32-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 142/209] af_unix: limit unix_tot_inflight
+Date: Thu, 14 Apr 2011 13:55:00 -0400
+Message-Id: <1302803767-9715-29-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -27,43 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Jin <joe.jin@oracle.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 408cc293c29ada769ae772420a39961320da1854 upstream
+commit 9915672d41273f5b77f1b3c29b391ffb7732b84b upstream
 
-Regarding  benet be_cmd_multicast_set() function, now using
-netdev_for_each_mc_addr() helper for mac address copy, but
-when copying to req->mac[] did not increase of the index.
+Vegard Nossum found a unix socket OOM was possible, posting an exploit
+program.
 
-Cc: Sathya Perla <sathyap@serverengines.com>
-Cc: Subbu Seetharaman <subbus@serverengines.com>
-Cc: Sarveshwar Bandi <sarveshwarb@serverengines.com>
-Cc: Ajit Khaparde <ajitk@serverengines.com>
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
+My analysis is we can eat all LOWMEM memory before unix_gc() being
+called from unix_release_sock(). Moreover, the thread blocked in
+unix_gc() can consume huge amount of time to perform cleanup because of
+huge working set.
+
+One way to handle this is to have a sensible limit on unix_tot_inflight,
+tested from wait_for_unix_gc() and to force a call to unix_gc() if this
+limit is hit.
+
+This solves the OOM and also reduce overall latencies, and should not
+slowdown normal workloads.
+
+Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/benet/be_cmds.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/unix/garbage.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/benet/be_cmds.c b/drivers/net/benet/be_cmds.c
-index d0ef4ac..e0578d1 100644
---- a/drivers/net/benet/be_cmds.c
-+++ b/drivers/net/benet/be_cmds.c
-@@ -1163,7 +1163,7 @@ int be_cmd_multicast_set(struct be_adapter *adapter, u32 if_id,
+diff --git a/net/unix/garbage.c b/net/unix/garbage.c
+index 14c22c3..ef5aa55 100644
+--- a/net/unix/garbage.c
++++ b/net/unix/garbage.c
+@@ -268,9 +268,16 @@ static void inc_inflight_move_tail(struct unix_sock *u)
+ }
  
- 		i = 0;
- 		netdev_for_each_mc_addr(mc, netdev)
--			memcpy(req->mac[i].byte, mc->dmi_addr, ETH_ALEN);
-+			memcpy(req->mac[i++].byte, mc->dmi_addr, ETH_ALEN);
- 	} else {
- 		req->promiscuous = 1;
- 	}
+ static bool gc_in_progress = false;
++#define UNIX_INFLIGHT_TRIGGER_GC 16000
+ 
+ void wait_for_unix_gc(void)
+ {
++	/*
++	 * If number of inflight sockets is insane,
++	 * force a garbage collect right now.
++	 */
++	if (unix_tot_inflight > UNIX_INFLIGHT_TRIGGER_GC && !gc_in_progress)
++		unix_gc();
+ 	wait_event(unix_gc_wait, gc_in_progress == false);
+ }
+ 
 -- 
 1.7.4.4
 
