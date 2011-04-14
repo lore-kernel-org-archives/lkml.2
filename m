@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964818Ab1DNRxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:53:43 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38465 "EHLO
+	id S933368Ab1DNRrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:05 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38424 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932925Ab1DNRrK (ORCPT
+	with ESMTP id S933341Ab1DNRrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:10 -0400
+	Thu, 14 Apr 2011 13:47:00 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Nelson Elhage <nelhage@ksplice.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Len Brown <len.brown@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 090/209] do_exit(): make sure that we run with get_fs() == USER_DS
-Date: Thu, 14 Apr 2011 13:42:00 -0400
-Message-Id: <1302803039-9400-91-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 088/209] acpi-cpufreq: fix a memleak when unloading driver
+Date: Thu, 14 Apr 2011 13:41:58 -0400
+Message-Id: <1302803039-9400-89-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,62 +22,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nelson Elhage <nelhage@ksplice.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 33dd94ae1ccbfb7bf0fb6c692bc3d1c4269e6177 upstream.
+commit dab5fff14df2cd16eb1ad4c02e83915e1063fece upstream.
 
-If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
-otherwise reset before do_exit().  do_exit may later (via mm_release in
-fork.c) do a put_user to a user-controlled address, potentially allowing
-a user to leverage an oops into a controlled write into kernel memory.
+We didn't free per_cpu(acfreq_data, cpu)->freq_table
+when acpi_freq driver is unloaded.
 
-This is only triggerable in the presence of another bug, but this
-potentially turns a lot of DoS bugs into privilege escalations, so it's
-worth fixing.  I have proof-of-concept code which uses this bug along
-with CVE-2010-3849 to write a zero to an arbitrary kernel address, so
-I've tested that this is not theoretical.
+Resulting in the following messages in /sys/kernel/debug/kmemleak:
 
-A more logical place to put this fix might be when we know an oops has
-occurred, before we call do_exit(), but that would involve changing
-every architecture, in multiple places.
+unreferenced object 0xf6450e80 (size 64):
+  comm "modprobe", pid 1066, jiffies 4294677317 (age 19290.453s)
+  hex dump (first 32 bytes):
+    00 00 00 00 e8 a2 24 00 01 00 00 00 00 9f 24 00  ......$.......$.
+    02 00 00 00 00 6a 18 00 03 00 00 00 00 35 0c 00  .....j.......5..
+  backtrace:
+    [<c123ba97>] kmemleak_alloc+0x27/0x50
+    [<c109f96f>] __kmalloc+0xcf/0x110
+    [<f9da97ee>] acpi_cpufreq_cpu_init+0x1ee/0x4e4 [acpi_cpufreq]
+    [<c11cd8d2>] cpufreq_add_dev+0x142/0x3a0
+    [<c11920b7>] sysdev_driver_register+0x97/0x110
+    [<c11cce56>] cpufreq_register_driver+0x86/0x140
+    [<f9dad080>] 0xf9dad080
+    [<c1001130>] do_one_initcall+0x30/0x160
+    [<c10626e9>] sys_init_module+0x99/0x1e0
+    [<c1002d97>] sysenter_do_call+0x12/0x26
+    [<ffffffff>] 0xffffffff
 
-Let's just stick it in do_exit instead.
+https://bugzilla.kernel.org/show_bug.cgi?id=15807#c21
 
-[akpm@linux-foundation.org: update code comment]
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested-by: Toralf Forster <toralf.foerster@gmx.de>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/exit.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b0242b4..8eb207f 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -911,6 +911,15 @@ NORET_TYPE void do_exit(long code)
- 	if (unlikely(!tsk->pid))
- 		panic("Attempted to kill the idle task!");
+diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+index 4591680..59ca19f 100644
+--- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
++++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+@@ -744,6 +744,7 @@ static int acpi_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+ 		per_cpu(acfreq_data, policy->cpu) = NULL;
+ 		acpi_processor_unregister_performance(data->acpi_data,
+ 						      policy->cpu);
++		kfree(data->freq_table);
+ 		kfree(data);
+ 	}
  
-+	/*
-+	 * If do_exit is called because this processes oopsed, it's possible
-+	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
-+	 * continuing. Amongst other possible reasons, this is to prevent
-+	 * mm_release()->clear_child_tid() from writing to a user-controlled
-+	 * kernel address.
-+	 */
-+	set_fs(USER_DS);
-+
- 	tracehook_report_exit(&code);
- 
- 	validate_creds_for_do_exit(tsk);
 -- 
 1.7.4.4
 
