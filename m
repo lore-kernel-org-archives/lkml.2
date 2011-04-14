@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab1DNUgB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:36:01 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:44290 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab1DNUgA (ORCPT
+	id S1752397Ab1DNUhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:37:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35162 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab1DNUhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:36:00 -0400
+	Thu, 14 Apr 2011 16:37:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=uRmokcAucyQ1z5+s9wa+28ZdeN2c/G5ImRCe4O8y9++i3NK3CwVf2g+gVpJj+5kMzg
-         X8EPFEe5K6efyOtaDSXqTX2KZg1Cs9w7dZZQN8VrQVzEUlNbAAAqWybHMYjJUFwZEb+M
-         daeZ728M0+WgxW1fH1ZaSL831T5TbPjoFHrUc=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=ILcmT6reT1HUwcHiV5+P2bbDzlcHFQ8kyE87eqOZjZfEAu4aPEQaYVwuEd2XW6lA15
+         RiO1Qb0MacbM84h7MPL9YCxFhdp3gKmCPJoXhJOymcITOvLoQ6OM1EpB8Kn79d+4bOuM
+         wyuOjYEeE8Q0Co1zjsoEbibjYK7S7Jlvw2Jfk=
+Message-ID: <4DA75AFC.3040000@suse.cz>
+Date: Thu, 14 Apr 2011 22:37:16 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Date: Thu, 14 Apr 2011 17:35:58 -0300
-X-Google-Sender-Auth: iYgDzob_3HoFRkhYCFiC6rgMyso
-Message-ID: <BANLkTim-KC7qfijD5rFNTR98GSs=cTPzJw@mail.gmail.com>
-Subject: [REGRESSION] 2.6.32.36 - Linux Xen DomU doesn't boot anymore
-From: "guilherme m. schroeder" <guilherme.m.schroeder@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bryan Schumaker <bjschuma@netapp.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        ML netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz> <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz> <4DA49D3A.7090800@netapp.com> <4DA49F7F.8060005@suse.cz> <4DA60AB9.1050104@netapp.com>
+In-Reply-To: <4DA60AB9.1050104@netapp.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/13/2011 10:42 PM, Bryan Schumaker wrote:
+> On 04/12/2011 02:52 PM, Jiri Slaby wrote:
+>> On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
+>>> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
+>>>> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
+>>>>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
+>>>>>> inacceptable for automounted NFS dirs.
+>>>>>
+>>>>> I'm still confused as to why you are hitting it at all. In the normal
+>>>>> autonegotiation case, the client should be trying to use AUTH_SYS first
+>>>>> and then trying rpcsec_gss if and only if that fails.
+>>>>>
+>>>>> Are you really exporting a filesystem using AUTH_NULL as the only
+>>>>> supported flavour?
+>>>>
+>>>> I don't know, I connect to a nfs server which is not maintained by me.
+>>>> It looks like that. How can I find out?
+>>>
+>>> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
+>>
+>> I don't have NFS in modules. It's all built-in. And this one is
+>> unconditionally selected because of CONFIG_NFS_V4.
+> 
+> Does this patch help?
 
-Linux Kernel 2.6.32.36 introduced a regression that prevents Linux Xen
-DomU from booting.
-Linux DomU starts and after a while it shutdown without log messages.
+Nope, it makes things even worse:
+# mount -oro,intr XXX:/yyy /mnt/c/
+<15s delay here>
+mount.nfs: access denied by server while mounting XXX:/yyy
 
-I bisected a vanilla kernel from 2.6.32.36 (bad) to 2.6.32.32 (good)
-and got this commit:
+So in nfs4_proc_get_root I do:
+  printk("%s: %d %u\n", __func__, i, flav_array[i]);
+  status = nfs4_lookup_root_sec(server, fhandle, info, flav_array[i]);
+  printk("%s: res=%d\n", __func__, status);
+and get:
+[   18.159818] nfs4_proc_get_root: 0 1
+[   18.214872] nfs4_proc_get_root: res=-1
+[   18.214875] nfs4_proc_get_root: 1 0
+[   18.254636] nfs4_proc_get_root: res=-1
+[   18.254639] nfs4_proc_get_root: 2 390003
+[   33.252174] RPC: AUTH_GSS upcall timed out.
+[   33.252177] Please check user daemon is running.
+[   33.252192] nfs4_proc_get_root: res=-13
 
-vm:~/linux-2.6.32.y# git bisect bad
-856460aa905dcc6d11a05a832d487a7b0ce69402 is the first bad commit
-commit 856460aa905dcc6d11a05a832d487a7b0ce69402
-Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Date:   Fri Feb 18 11:32:40 2011 +0000
+If I revert that back and do the same:
+[   28.275569] nfs4_proc_get_root: 0 1
+[   28.296545] nfs4_proc_get_root: res=-1
+[   28.296548] nfs4_proc_get_root: 1 390003
+[   43.296107] RPC: AUTH_GSS upcall timed out.
+[   43.296108] Please check user daemon is running.
+[   43.296121] nfs4_proc_get_root: res=-13
+[   43.296122] nfs4_proc_get_root: 2 0
+[   43.318201] nfs4_proc_get_root: res=-1
 
-    xen: set max_pfn_mapped to the last pfn mapped
+I.e. all methods fail. And what matters is the last retval. From NULL it
+is EPERM, from GSS it is EACCESS. For EPERM, mount(8) falls back to
+nfs3, for EACCESS it dies terrible death.
 
-    commit 14988a4d350ce3b41ecad4f63c4f44c56f5ae34d upstream.
+linux-b984:~ # strace -fe mount -s 1000 mount -oro,intr XXX:/yyy /mnt/c/
+Process 2396 attached
+Process 2395 suspended
+[pid  2396] mount("XXX:/yyy", "/mnt/c", "nfs", MS_RDONLY,
+"intr,vers=4,addr=10.20.3.2,clientaddr=10.0.2.15") = -1 EPERM (Operation
+not permitted)
+[pid  2396] mount("XXX:/yyy", "/mnt/c", "nfs", MS_RDONLY,
+"intr,addr=10.20.3.2,vers=3,proto=tcp,mountvers=3,mountproto=udp,mountport=709")
+= 0
+Process 2395 resumed
+Process 2396 detached
+--- SIGCHLD (Child exited) @ 0 (0) ---
 
-    Do not set max_pfn_mapped to the end of the initial memory mappings,
-    that also contain pages that don't belong in pfn space (like the mfn
-    list).
-
-    Set max_pfn_mapped to the last real pfn mapped in the initial memory
-    mappings that is the pfn backing _end.
-
-    Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-    Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    LKML-Reference: <alpine.DEB.2.00.1103171739050.3382@kaball-desktop>
-    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-:040000 040000 a679f50b64c290b9a51e3dba8d3d648bca50fdf0
-e7b018c4e0015aae44ed6f9f6323d8b13d032b86 M	arch
-
-I have tested against XCP 1.0, Citrix XenServer 5.6 and 5.6 FP1.
-Without this patch, Linux DomU boots and runs fine.
-If more info is needed, please let me know.
+thanks,
+-- 
+js
+suse labs
