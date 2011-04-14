@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933796Ab1DNS1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:27:24 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38074 "EHLO
+	id S933179Ab1DNS1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:27:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38121 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933049Ab1DNRqX (ORCPT
+	with ESMTP id S932505Ab1DNRqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:23 -0400
+	Thu, 14 Apr 2011 13:46:25 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>, Bob Picco <bpicco@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Vasiliy Kulikov <segooon@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 029/209] hpet: fix unwanted interrupt due to stale irq status bit
-Date: Thu, 14 Apr 2011 13:40:59 -0400
-Message-Id: <1302803039-9400-30-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 056/209] KVM: x86: fix information leak to userland
+Date: Thu, 14 Apr 2011 13:41:26 -0400
+Message-Id: <1302803039-9400-57-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,84 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Vasiliy Kulikov <segooon@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 96e9694df446d1154ec2f4fdba8908588b9cba38 upstream.
+commit 97e69aa62f8b5d338d6cff49be09e37cc1262838 upstream.
 
-Jaswinder Singh Rajput wrote:
-> By executing Documentation/timers/hpet_example.c
->
-> for polling, I requested for 3 iterations but it seems iteration work
-> for only 2 as first expired time is always very small.
->
-> # ./hpet_example poll /dev/hpet 10 3
-> -hpet: executing poll
-> hpet_poll: info.hi_flags 0x0
-> hpet_poll: expired time = 0x13
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
-> hpet_poll: expired time = 0x1868c
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
-> hpet_poll: expired time = 0x18645
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
+Structures kvm_vcpu_events, kvm_debugregs, kvm_pit_state2 and
+kvm_clock_data are copied to userland with some padding and reserved
+fields unitialized.  It leads to leaking of contents of kernel stack
+memory.  We have to initialize them to zero.
 
-Clearing the HPET interrupt enable bit disables interrupt generation
-but does not disable the timer, so the interrupt status bit will still
-be set when the timer elapses.  If another interrupt arrives before
-the timer has been correctly programmed (due to some other device on
-the same interrupt line, or CONFIG_DEBUG_SHIRQ), this results in an
-extra unwanted interrupt event because the status bit is likely to be
-set from comparator matches that happened before the device was opened.
+In patch v1 Jan Kiszka suggested to fill reserved fields with zeros
+instead of memset'ting the whole struct.  It makes sense as these
+fields are explicitly marked as padding.  No more fields need zeroing.
 
-Therefore, we have to ensure that the interrupt status bit is and
-stays cleared until we actually program the timer.
+[PG: 34 doesn't have the dbgregs section to be memset, so drop that bit]
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: john stultz <johnstul@us.ibm.com>
-Cc: Bob Picco <bpicco@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+KVM-Stable-Tag.
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/hpet.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/kvm/x86.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index 9ded667..7447ffa 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -475,6 +475,21 @@ static int hpet_ioctl_ieon(struct hpet_dev *devp)
- 	if (irq) {
- 		unsigned long irq_flags;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 7ea2888..8ced130 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2115,6 +2115,7 @@ static void kvm_vcpu_ioctl_x86_get_vcpu_events(struct kvm_vcpu *vcpu,
+ 	events->exception.injected = vcpu->arch.exception.pending;
+ 	events->exception.nr = vcpu->arch.exception.nr;
+ 	events->exception.has_error_code = vcpu->arch.exception.has_error_code;
++	events->exception.pad = 0;
+ 	events->exception.error_code = vcpu->arch.exception.error_code;
  
-+		if (devp->hd_flags & HPET_SHARED_IRQ) {
-+			/*
-+			 * To prevent the interrupt handler from seeing an
-+			 * unwanted interrupt status bit, program the timer
-+			 * so that it will not fire in the near future ...
-+			 */
-+			writel(readl(&timer->hpet_config) & ~Tn_TYPE_CNF_MASK,
-+			       &timer->hpet_config);
-+			write_counter(read_counter(&hpet->hpet_mc),
-+				      &timer->hpet_compare);
-+			/* ... and clear any left-over status. */
-+			isr = 1 << (devp - devp->hd_hpets->hp_dev);
-+			writel(isr, &hpet->hpet_isr);
-+		}
-+
- 		sprintf(devp->hd_name, "hpet%d", (int)(devp - hpetp->hp_dev));
- 		irq_flags = devp->hd_flags & HPET_SHARED_IRQ
- 						? IRQF_SHARED : IRQF_DISABLED;
+ 	events->interrupt.injected = vcpu->arch.interrupt.pending;
+@@ -2124,11 +2125,13 @@ static void kvm_vcpu_ioctl_x86_get_vcpu_events(struct kvm_vcpu *vcpu,
+ 	events->nmi.injected = vcpu->arch.nmi_injected;
+ 	events->nmi.pending = vcpu->arch.nmi_pending;
+ 	events->nmi.masked = kvm_x86_ops->get_nmi_mask(vcpu);
++	events->nmi.pad = 0;
+ 
+ 	events->sipi_vector = vcpu->arch.sipi_vector;
+ 
+ 	events->flags = (KVM_VCPUEVENT_VALID_NMI_PENDING
+ 			 | KVM_VCPUEVENT_VALID_SIPI_VECTOR);
++	memset(&events->reserved, 0, sizeof(events->reserved));
+ 
+ 	vcpu_put(vcpu);
+ }
+@@ -2589,6 +2592,7 @@ static int kvm_vm_ioctl_get_pit2(struct kvm *kvm, struct kvm_pit_state2 *ps)
+ 		sizeof(ps->channels));
+ 	ps->flags = kvm->arch.vpit->pit_state.flags;
+ 	mutex_unlock(&kvm->arch.vpit->pit_state.lock);
++	memset(&ps->reserved, 0, sizeof(ps->reserved));
+ 	return r;
+ }
+ 
+@@ -2983,6 +2987,7 @@ long kvm_arch_vm_ioctl(struct file *filp,
+ 		now_ns = timespec_to_ns(&now);
+ 		user_ns.clock = kvm->arch.kvmclock_offset + now_ns;
+ 		user_ns.flags = 0;
++		memset(&user_ns.pad, 0, sizeof(user_ns.pad));
+ 
+ 		r = -EFAULT;
+ 		if (copy_to_user(argp, &user_ns, sizeof(user_ns)))
 -- 
 1.7.4.4
 
