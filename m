@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab1DNRrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:47:12 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38462 "EHLO
+	id S933312Ab1DNRq4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38379 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932892Ab1DNRrK (ORCPT
+	with ESMTP id S933155Ab1DNRqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:10 -0400
+	Thu, 14 Apr 2011 13:46:54 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Matthieu Castet <castet.matthieu@free.fr>,
+        Stanislaw Gruszka <stf_xl@wp.pl>,
+        Damien Bergamini <damien.bergamini@free.fr>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 094/209] DECnet: don't leak uninitialized stack byte
-Date: Thu, 14 Apr 2011 13:42:04 -0400
-Message-Id: <1302803039-9400-95-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 080/209] USB: atm: ueagle-atm: fix up some permissions on the sysfs files
+Date: Thu, 14 Apr 2011 13:41:50 -0400
+Message-Id: <1302803039-9400-81-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,37 +24,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 3c6f27bf33052ea6ba9d82369fb460726fb779c0 upstream.
+commit e502ac5e1eca99d7dc3f12b2a6780ccbca674858 upstream.
 
-A single uninitialized padding byte is leaked to userspace.
+Some of the sysfs files had the incorrect permissions.  Some didn't make
+sense at all (writable for a file that you could not write to?)
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthieu Castet <castet.matthieu@free.fr>
+Cc: Stanislaw Gruszka <stf_xl@wp.pl>
+Cc: Damien Bergamini <damien.bergamini@free.fr>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/decnet/af_decnet.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/usb/atm/ueagle-atm.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/decnet/af_decnet.c b/net/decnet/af_decnet.c
-index 2b494fa..7cc13e1 100644
---- a/net/decnet/af_decnet.c
-+++ b/net/decnet/af_decnet.c
-@@ -1556,6 +1556,8 @@ static int __dn_getsockopt(struct socket *sock, int level,int optname, char __us
- 			if (r_len > sizeof(struct linkinfo_dn))
- 				r_len = sizeof(struct linkinfo_dn);
+diff --git a/drivers/usb/atm/ueagle-atm.c b/drivers/usb/atm/ueagle-atm.c
+index 25f01b5..4c87b1b 100644
+--- a/drivers/usb/atm/ueagle-atm.c
++++ b/drivers/usb/atm/ueagle-atm.c
+@@ -2261,7 +2261,7 @@ out:
+ 	return ret;
+ }
  
-+			memset(&link, 0, sizeof(link));
-+
- 			switch(sock->state) {
- 				case SS_CONNECTING:
- 					link.idn_linkstate = LL_CONNECTING;
+-static DEVICE_ATTR(stat_status, S_IWUGO | S_IRUGO, read_status, reboot);
++static DEVICE_ATTR(stat_status, S_IWUSR | S_IRUGO, read_status, reboot);
+ 
+ static ssize_t read_human_status(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+@@ -2324,7 +2324,7 @@ out:
+ 	return ret;
+ }
+ 
+-static DEVICE_ATTR(stat_human_status, S_IWUGO | S_IRUGO, read_human_status, NULL);
++static DEVICE_ATTR(stat_human_status, S_IRUGO, read_human_status, NULL);
+ 
+ static ssize_t read_delin(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+@@ -2356,7 +2356,7 @@ out:
+ 	return ret;
+ }
+ 
+-static DEVICE_ATTR(stat_delin, S_IWUGO | S_IRUGO, read_delin, NULL);
++static DEVICE_ATTR(stat_delin, S_IRUGO, read_delin, NULL);
+ 
+ #define UEA_ATTR(name, reset) 					\
+ 								\
 -- 
 1.7.4.4
 
