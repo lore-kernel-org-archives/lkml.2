@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab1DNQ7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 12:59:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57315 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757503Ab1DNQ7h (ORCPT
+	id S1758092Ab1DNRAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:00:24 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:46873 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab1DNRAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 12:59:37 -0400
-Date: Thu, 14 Apr 2011 18:59:31 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
-        hjk@hansjkoch.de, arnd@arndb.de
-Subject: Re: [PATCH v2] uio/pdrv_genirq: Add OF support
-Message-ID: <20110414165931.GA19228@pengutronix.de>
-References: <1302774106-32764-1-git-send-email-monstr@monstr.eu>
+	Thu, 14 Apr 2011 13:00:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:message-id:mime-version:content-type; q=dns; s=
+	newdream.net; b=MJs7bALadWN1eP0iH1eY4Hdq079PjSmFp+oVXblghVd4TS26
+	1ucWRWvwUgz/mv191ZGEp2mYB9PaMRW7SW2WzzCwUhPOYL9PXtzXr+o3nWeKF9/G
+	5J6rwkZ20ReEC5OBauYjRZbZQv/ZsSyGPyCeD19AlsckGJoB5kACy60RDt0=
+Date: Thu, 14 Apr 2011 10:03:58 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Ceph fix for 2.6.39-rc4
+Message-ID: <Pine.LNX.4.64.1104060950440.18205@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <1302774106-32764-1-git-send-email-monstr@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull from
 
-Hi Michal,
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-On Thu, Apr 14, 2011 at 11:41:46AM +0200, Michal Simek wrote:
-> Support OF support. "generic-uio" compatible property is used.
+This might be the first time I've only had a single bug fix to push!  
+This fixes a null dereference on RBD when an osd daemon restarts.  The 
+patch in the last pull didn't get it quite right.
 
-This description is not true anymore. Please also add a short paragrpah how=
- it
-is intended to be used now.
+Thanks-
+sage
 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
 
-> +		uioinfo->version =3D "dt";
+Sage Weil (1):
+      libceph: fix linger request requeueing
 
-Minor nit: "devicetree" is probably more descriptive.
-
-> +
-> +		/* Multiple IRQs are not supported */
-> +		if (pdev->num_resources > 1) {
-> +			struct resource *r =3D &pdev->resource[1];
-
-Are you sure the irq-ressource is always [1]? (Similar question for the
-if()-block above). Try platform_get_irq().
-
-> +#ifdef CONFIG_OF
-> +/*
-> + * Empty match table for of_platform binding
-
-While it probably doesn't make change to put every supported device in
-upstream, it still deosn't technically have to be empty. So, mabye drop this
-comment and add something like "/* empty for now */" to the table?
-
-Thanks,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk2nJ/MACgkQD27XaX1/VRsuNgCfdS6fQTSKO9qBpXWJbYmCa7fA
-wxEAoLsL3ta1bfx6AjjcOvBsUkOWJkLu
-=0VEc
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
+ net/ceph/osd_client.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
