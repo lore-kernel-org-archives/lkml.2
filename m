@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964838Ab1DNR55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:57:57 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41577 "EHLO
+	id S964993Ab1DNSSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:18:16 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41650 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964822Ab1DNR5x (ORCPT
+	with ESMTP id S964841Ab1DNR56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:57:53 -0400
+	Thu, 14 Apr 2011 13:57:58 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Phil Blundell <philb@gnu.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 133/209] econet: fix CVE-2010-3848
-Date: Thu, 14 Apr 2011 13:54:51 -0400
-Message-Id: <1302803767-9715-20-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 139/209] tcp: Make TCP_MAXSEG minimum more correct.
+Date: Thu, 14 Apr 2011 13:54:57 -0400
+Message-Id: <1302803767-9715-26-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,161 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Phil Blundell <philb@gnu.org>
+From: David S. Miller <davem@davemloft.net>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a27e13d370415add3487949c60810e36069a23a6 upstream
+commit c39508d6f118308355468314ff414644115a07f3 upstream
 
-Don't declare variable sized array of iovecs on the stack since this
-could cause stack overflow if msg->msgiovlen is large.  Instead, coalesce
-the user-supplied data into a new buffer and use a single iovec for it.
+Use TCP_MIN_MSS instead of constant 64.
 
-Signed-off-by: Phil Blundell <philb@gnu.org>
+Reported-by: Min Zhang <mzhang@mvista.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/econet/af_econet.c |   62 ++++++++++++++++++++++++------------------------
- 1 files changed, 31 insertions(+), 31 deletions(-)
+ net/ipv4/tcp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/econet/af_econet.c b/net/econet/af_econet.c
-index cd62e27..2e41c76 100644
---- a/net/econet/af_econet.c
-+++ b/net/econet/af_econet.c
-@@ -31,6 +31,7 @@
- #include <linux/skbuff.h>
- #include <linux/udp.h>
- #include <linux/slab.h>
-+#include <linux/vmalloc.h>
- #include <net/sock.h>
- #include <net/inet_common.h>
- #include <linux/stat.h>
-@@ -276,12 +277,12 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
- #endif
- #ifdef CONFIG_ECONET_AUNUDP
- 	struct msghdr udpmsg;
--	struct iovec iov[msg->msg_iovlen+1];
-+	struct iovec iov[2];
- 	struct aunhdr ah;
- 	struct sockaddr_in udpdest;
- 	__kernel_size_t size;
--	int i;
- 	mm_segment_t oldfs;
-+	char *userbuf;
- #endif
- 
- 	/*
-@@ -319,17 +320,17 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 5ad716b..3a8cbf7 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2234,7 +2234,7 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
+ 		/* Values greater than interface MTU won't take effect. However
+ 		 * at the point when this call is done we typically don't yet
+ 		 * know which interface is going to be used */
+-		if (val < 64 || val > MAX_TCP_WINDOW) {
++		if (val < TCP_MIN_MSS || val > MAX_TCP_WINDOW) {
+ 			err = -EINVAL;
+ 			break;
  		}
- 	}
- 
--	if (len + 15 > dev->mtu) {
--		mutex_unlock(&econet_mutex);
--		return -EMSGSIZE;
--	}
--
- 	if (dev->type == ARPHRD_ECONET) {
- 		/* Real hardware Econet.  We're not worthy etc. */
- #ifdef CONFIG_ECONET_NATIVE
- 		unsigned short proto = 0;
- 		int res;
- 
-+		if (len + 15 > dev->mtu) {
-+			mutex_unlock(&econet_mutex);
-+			return -EMSGSIZE;
-+		}
-+
- 		dev_hold(dev);
- 
- 		skb = sock_alloc_send_skb(sk, len+LL_ALLOCATED_SPACE(dev),
-@@ -405,6 +406,11 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
- 		return -ENETDOWN;		/* No socket - can't send */
- 	}
- 
-+	if (len > 32768) {
-+		err = -E2BIG;
-+		goto error;
-+	}
-+
- 	/* Make up a UDP datagram and hand it off to some higher intellect. */
- 
- 	memset(&udpdest, 0, sizeof(udpdest));
-@@ -436,36 +442,26 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	/* tack our header on the front of the iovec */
- 	size = sizeof(struct aunhdr);
--	/*
--	 * XXX: that is b0rken.  We can't mix userland and kernel pointers
--	 * in iovec, since on a lot of platforms copy_from_user() will
--	 * *not* work with the kernel and userland ones at the same time,
--	 * regardless of what we do with set_fs().  And we are talking about
--	 * econet-over-ethernet here, so "it's only ARM anyway" doesn't
--	 * apply.  Any suggestions on fixing that code?		-- AV
--	 */
- 	iov[0].iov_base = (void *)&ah;
- 	iov[0].iov_len = size;
--	for (i = 0; i < msg->msg_iovlen; i++) {
--		void __user *base = msg->msg_iov[i].iov_base;
--		size_t iov_len = msg->msg_iov[i].iov_len;
--		/* Check it now since we switch to KERNEL_DS later. */
--		if (!access_ok(VERIFY_READ, base, iov_len)) {
--			mutex_unlock(&econet_mutex);
--			return -EFAULT;
--		}
--		iov[i+1].iov_base = base;
--		iov[i+1].iov_len = iov_len;
--		size += iov_len;
-+
-+	userbuf = vmalloc(len);
-+	if (userbuf == NULL) {
-+		err = -ENOMEM;
-+		goto error;
- 	}
- 
-+	iov[1].iov_base = userbuf;
-+	iov[1].iov_len = len;
-+	err = memcpy_fromiovec(userbuf, msg->msg_iov, len);
-+	if (err)
-+		goto error_free_buf;
-+
- 	/* Get a skbuff (no data, just holds our cb information) */
- 	if ((skb = sock_alloc_send_skb(sk, 0,
- 				       msg->msg_flags & MSG_DONTWAIT,
--				       &err)) == NULL) {
--		mutex_unlock(&econet_mutex);
--		return err;
--	}
-+				       &err)) == NULL)
-+		goto error_free_buf;
- 
- 	eb = (struct ec_cb *)&skb->cb;
- 
-@@ -481,7 +477,7 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	udpmsg.msg_name = (void *)&udpdest;
- 	udpmsg.msg_namelen = sizeof(udpdest);
- 	udpmsg.msg_iov = &iov[0];
--	udpmsg.msg_iovlen = msg->msg_iovlen + 1;
-+	udpmsg.msg_iovlen = 2;
- 	udpmsg.msg_control = NULL;
- 	udpmsg.msg_controllen = 0;
- 	udpmsg.msg_flags=0;
-@@ -489,9 +485,13 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	oldfs = get_fs(); set_fs(KERNEL_DS);	/* More privs :-) */
- 	err = sock_sendmsg(udpsock, &udpmsg, size);
- 	set_fs(oldfs);
-+
-+error_free_buf:
-+	vfree(userbuf);
- #else
- 	err = -EPROTOTYPE;
- #endif
-+	error:
- 	mutex_unlock(&econet_mutex);
- 
- 	return err;
 -- 
 1.7.4.4
 
