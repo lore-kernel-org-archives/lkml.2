@@ -1,157 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab1DNBVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 21:21:45 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:31483 "EHLO
+	id S1757110Ab1DNBWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 21:22:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31661 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682Ab1DNBVl (ORCPT
+	with ESMTP id S1755682Ab1DNBWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 21:21:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZtIuUp3OJCHe2RFVnlf+yaViUOr4XnCFC4IHk/1K72yYThGm709XkRwjmdHmAshsoZ
-         2/oHpf9XjprG/XQYu6IQ==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Rik van Riel <riel@redhat.com>, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 2/2] sched: next buddy hint on sleep and preempt path -v2
-Date: Wed, 13 Apr 2011 18:21:10 -0700
-Message-Id: <1302744070-30079-3-git-send-email-venki@google.com>
+	Wed, 13 Apr 2011 21:22:37 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=gSQuqVasQa+1DoQlMZwGQHkzllFNDnjZlb7imjyK8DfRSH/BgKb+b+RDFz4cxWsS4
+	wjEZL9F2YL8C87MbDRqHw==
+From: David Decotigny <decot@google.com>
+To: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: David Decotigny <decot@google.com>
+Subject: [PATCH 3/3] net-bonding: Adding support for throughputs larger than 65536 Mbps
+Date: Wed, 13 Apr 2011 18:22:31 -0700
+Message-Id: <1302744151-12452-3-git-send-email-decot@google.com>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <AANLkTi=ao5dci3gb=+UmegZx_ag_X6gAFZ5mBb+8=9hR@mail.gmail.com>
-References: <AANLkTi=ao5dci3gb=+UmegZx_ag_X6gAFZ5mBb+8=9hR@mail.gmail.com>
-X-System-Of-Record: true
+In-Reply-To: <1302744151-12452-1-git-send-email-decot@google.com>
+References: <1302744151-12452-1-git-send-email-decot@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a task in a taskgroup sleeps, pick_next_task starts all the way back at
-the root and picks the task/taskgroup with the min vruntime across all
-runnable tasks. But, when there are many frequently sleeping tasks
-across different taskgroups, it makes better sense to stay with same taskgroup
-for its slice period (or until all tasks in the taskgroup sleeps) instead of
-switching cross taskgroup on each sleep after a short runtime.
-This helps specifically where taskgroups corresponds to a process with
-multiple threads. The change reduces the number of CR3 switches in this case.
+This updates the bonding driver to support v2.6.27-rc3 enhancements
+(b11f8d8c aka. "ethtool: Expand ethtool_cmd.speed to 32 bits") which
+allow to encode the Mbps link speed on 32-bits (Max 4 Pbps) instead of
+16 (Max 65536 Mbps).
 
-Example:
-Two taskgroups with 2 threads each which are running for 2ms and
-sleeping for 1ms. Looking at sched:sched_switch shows -
+This patch also attempts to compact struct slave by reordering its
+fields.
 
-BEFORE: taskgroup_1 threads [5004, 5005], taskgroup_2 threads [5016, 5017]
-      cpu-soaker-5004  [003]  3683.391089
-      cpu-soaker-5016  [003]  3683.393106
-      cpu-soaker-5005  [003]  3683.395119
-      cpu-soaker-5017  [003]  3683.397130
-      cpu-soaker-5004  [003]  3683.399143
-      cpu-soaker-5016  [003]  3683.401155
-      cpu-soaker-5005  [003]  3683.403168
-      cpu-soaker-5017  [003]  3683.405170
-
-AFTER: taskgroup_1 threads [21890, 21891], taskgroup_2 threads [21934, 21935]
-      cpu-soaker-21890 [003]   865.895494
-      cpu-soaker-21935 [003]   865.897506
-      cpu-soaker-21934 [003]   865.899520
-      cpu-soaker-21935 [003]   865.901532
-      cpu-soaker-21934 [003]   865.903543
-      cpu-soaker-21935 [003]   865.905546
-      cpu-soaker-21891 [003]   865.907548
-      cpu-soaker-21890 [003]   865.909560
-      cpu-soaker-21891 [003]   865.911571
-      cpu-soaker-21890 [003]   865.913582
-      cpu-soaker-21891 [003]   865.915594
-      cpu-soaker-21934 [003]   865.917606
-
-Similar problem is there when there are multiple taskgroups and say a task A
-preempts currently running task B of taskgroup_1. On schedule, pick_next_task
-can pick an unrelated task on taskgroup_2. Here it would be better to give some
-preference to task B on pick_next_task.
-
-A simple (may be extreme case) benchmark I tried was tbench with 2 tbench
-client processes with 2 threads each running on a single CPU. Avg throughput
-across 5 50 sec runs was -
-BEFORE: 105.84 MB/sec
-AFTER: 112.42 MB/sec
-
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Signed-off-by: David Decotigny <decot@google.com>
 ---
- kernel/sched_fair.c |   26 +++++++++++++++++++++++---
- 1 files changed, 23 insertions(+), 3 deletions(-)
+ drivers/net/bonding/bond_main.c |   12 +++++++-----
+ drivers/net/bonding/bonding.h   |    6 +++---
+ 2 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index d3513b7..8828a7e 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1340,6 +1340,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 	hrtick_update(rq);
- }
- 
-+static void set_next_buddy(struct sched_entity *se);
-+
- /*
-  * The dequeue_task method is called before nr_running is
-  * decreased. We remove the task from the rbtree and
-@@ -1349,14 +1351,22 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 145f9be..c5d8ac2 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -631,7 +631,8 @@ down:
+ static int bond_update_speed_duplex(struct slave *slave)
  {
- 	struct cfs_rq *cfs_rq;
- 	struct sched_entity *se = &p->se;
-+	int task_sleep = flags & DEQUEUE_SLEEP;
+ 	struct net_device *slave_dev = slave->dev;
+-	struct ethtool_cmd etool;
++	struct ethtool_cmd etool = { .cmd = ETHTOOL_GSET };
++	u32 slave_speed;
+ 	int res;
  
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
- 		dequeue_entity(cfs_rq, se, flags);
+ 	/* Fake speed and duplex */
+@@ -645,7 +646,8 @@ static int bond_update_speed_duplex(struct slave *slave)
+ 	if (res < 0)
+ 		return -1;
  
- 		/* Don't dequeue parent if it has other entities besides us */
--		if (cfs_rq->load.weight)
-+		if (cfs_rq->load.weight) {
-+			/*
-+			 * Bias pick_next to pick a task from this cfs_rq, as
-+			 * p is sleeping when it is within its sched_slice.
-+			 */
-+			if (task_sleep && se->parent)
-+				set_next_buddy(se->parent);
- 			break;
-+		}
- 		flags |= DEQUEUE_SLEEP;
+-	switch (etool.speed) {
++	slave_speed = ethtool_cmd_speed(&etool);
++	switch (slave_speed) {
+ 	case SPEED_10:
+ 	case SPEED_100:
+ 	case SPEED_1000:
+@@ -663,7 +665,7 @@ static int bond_update_speed_duplex(struct slave *slave)
+ 		return -1;
  	}
  
-@@ -1857,12 +1867,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
- 	struct sched_entity *se = &curr->se, *pse = &p->se;
- 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
- 	int scale = cfs_rq->nr_running >= sched_nr_latency;
-+	int next_buddy_marked = 0;
+-	slave->speed = etool.speed;
++	slave->speed = slave_speed;
+ 	slave->duplex = etool.duplex;
  
- 	if (unlikely(se == pse))
- 		return;
+ 	return 0;
+@@ -2493,7 +2495,7 @@ static void bond_miimon_commit(struct bonding *bond)
  
--	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK))
-+	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK)) {
- 		set_next_buddy(pse);
-+		next_buddy_marked = 1;
-+	}
+ 			bond_update_speed_duplex(slave);
  
- 	/*
- 	 * We can come here with TIF_NEED_RESCHED already set from new task
-@@ -1890,8 +1903,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
- 	update_curr(cfs_rq);
- 	find_matching_se(&se, &pse);
- 	BUG_ON(!pse);
--	if (wakeup_preempt_entity(se, pse) == 1)
-+	if (wakeup_preempt_entity(se, pse) == 1) {
-+		/*
-+		 * Bias pick_next to pick the sched entity that is
-+		 * triggering this preemption.
-+		 */
-+		if (!next_buddy_marked)
-+			set_next_buddy(pse);
- 		goto preempt;
-+	}
+-			pr_info("%s: link status definitely up for interface %s, %d Mbps %s duplex.\n",
++			pr_info("%s: link status definitely up for interface %s, %u Mbps %s duplex.\n",
+ 				bond->dev->name, slave->dev->name,
+ 				slave->speed, slave->duplex ? "full" : "half");
  
- 	return;
+@@ -3339,7 +3341,7 @@ static int bond_slave_netdev_event(unsigned long event,
  
+ 			slave = bond_get_slave_by_dev(bond, slave_dev);
+ 			if (slave) {
+-				u16 old_speed = slave->speed;
++				u32 old_speed = slave->speed;
+ 				u8  old_duplex = slave->duplex;
+ 
+ 				bond_update_speed_duplex(slave);
+diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
+index 3ca503e..553c764 100644
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -196,12 +196,12 @@ struct slave {
+ 	u8     backup:1,   /* indicates backup slave. Value corresponds with
+ 			      BOND_STATE_ACTIVE and BOND_STATE_BACKUP */
+ 	       inactive:1; /* indicates inactive slave */
++	u8     duplex;
+ 	u32    original_mtu;
+ 	u32    link_failure_count;
+-	u8     perm_hwaddr[ETH_ALEN];
+-	u16    speed;
+-	u8     duplex;
++	u32    speed;
+ 	u16    queue_id;
++	u8     perm_hwaddr[ETH_ALEN];
+ 	struct ad_slave_info ad_info; /* HUGE - better to dynamically alloc */
+ 	struct tlb_slave_info tlb_info;
+ #ifdef CONFIG_NET_POLL_CONTROLLER
 -- 
 1.7.3.1
 
