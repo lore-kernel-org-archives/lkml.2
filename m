@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab1DNRqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:50 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38333 "EHLO
+	id S933333Ab1DNRq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:58 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38396 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab1DNRqq (ORCPT
+	with ESMTP id S933306Ab1DNRq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:46 -0400
+	Thu, 14 Apr 2011 13:46:56 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, ma rui <m00150988@huawei.com>,
+Cc: stable-review@kernel.org, Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 074/209] USB: option: fix when the driver is loaded incorrectly for some Huawei devices.
-Date: Thu, 14 Apr 2011 13:41:44 -0400
-Message-Id: <1302803039-9400-75-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 083/209] USB: ftdi_sio: revert "USB: ftdi_sio: fix DTR/RTS line modes"
+Date: Thu, 14 Apr 2011 13:41:53 -0400
+Message-Id: <1302803039-9400-84-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,44 +22,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ma rui <m00150988@huawei.com>
+From: Johan Hovold <jhovold@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 58c0d9d70109bd7e82bdb9517007311a48499960 upstream.
+commit 677aeafe19e88c282af74564048243ccabb1c590 upstream.
 
-When huawei datacard with PID 0x14AC is insterted into Linux system, the
-present kernel will load the "option" driver to all the interfaces. But
-actually, some interfaces run as other function and do not need "option"
-driver.
+This reverts commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd.
 
-In this path, we modify the id_tables, when the PID is 0x14ac ,VID is
-0x12d1, Only when the interface's Class is 0xff,Subclass is 0xff, Pro is
-0xff, it does need "option" driver.
+RTS and DTR should not be modified based on CRTSCTS when calling
+set_termios.
 
-Signed-off-by: ma rui <m00150988@huawei.com>
+Modem control lines are raised at port open by the tty layer and should stay
+raised regardless of whether hardware flow control is enabled or not.
+
+This is in conformance with the way serial ports work today and many
+applications depend on this behaviour to be able to talk to hardware
+implementing hardware flow control (without the applications actually using
+it).
+
+Hardware which expects different behaviour on these lines can always
+use TIOCMSET/TIOCMBI[SC] after port open to change them.
+
+Reported-by: Daniel Mack <daniel@caiaq.de>
+Reported-by: Dave Mielke <dave@mielke.cc>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/option.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 0e94896..58100d9 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -513,7 +513,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) }, /* Novatel Merlin V640/XV620 */
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) }, /* Novatel Merlin V620/S620 */
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 6c7b6ba..a654281 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2348,8 +2348,6 @@ static void ftdi_set_termios(struct tty_struct *tty,
+ 				"urb failed to set to rts/cts flow control\n");
+ 		}
+ 
+-		/* raise DTR/RTS */
+-		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} else {
+ 		/*
+ 		 * Xon/Xoff code
+@@ -2397,8 +2395,6 @@ static void ftdi_set_termios(struct tty_struct *tty,
+ 			}
+ 		}
+ 
+-		/* lower DTR/RTS */
+-		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	}
+ 	return;
+ }
 -- 
 1.7.4.4
 
