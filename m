@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933950Ab1DNTD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 15:03:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41175 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932485Ab1DNTD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 15:03:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JZXtemCFfFPuuTkgQP7IeOttwUO6uNTG3uiUR7s6B2GVV+eKifWVUcqjrQuizAFrL4
-         X7kBbqtA1mMmnoXTTbfWYZW9/U1eVMjEaNMpLr+H2xeswoZavlbT5Y+2BRgDJLPNav2u
-         63WMlSTHt7cGJWpdrb4soRPCQK3/dWAydC3rc=
-Date: Thu, 14 Apr 2011 21:02:01 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        mjg@redhat.com, maciej.rutecki@gmail.com,
-        nouveau@lists.freedesktop.org
-Subject: Re: 2.6.39-rc1 nouveau regression (bisected)
-Message-ID: <20110414190117.GA3493@joi.lan>
-References: <20110403181206.GA19291@comet.dominikbrodowski.net>
- <20110407151129.GA24977@comet.dominikbrodowski.net>
- <20110414170559.GA10768@comet.dominikbrodowski.net>
+	id S933972Ab1DNTFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 15:05:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932573Ab1DNTE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 15:04:59 -0400
+Message-ID: <4DA74548.7050702@redhat.com>
+Date: Thu, 14 Apr 2011 15:04:40 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414170559.GA10768@comet.dominikbrodowski.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mstowe@redhat.com" <mstowe@redhat.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>,
+        "rja@americas.sgi.com" <rja@americas.sgi.com>
+Subject: Re: [PATCH -v3] x86, MCE: Drop the default decoding notifier
+References: <20110413143642.GC2791@aftab> <4DA5D6CC.9090500@redhat.com> <4DA5D9FB.1010503@redhat.com> <20110413173705.GJ2791@aftab> <20110414150036.GG10080@aftab> <4DA70D0B.3080407@redhat.com> <20110414151621.GI10080@aftab> <4DA71158.6020302@redhat.com> <20110414154405.GK10080@aftab> <4DA71774.9020900@redhat.com> <20110414190253.GQ10080@aftab>
+In-Reply-To: <20110414190253.GQ10080@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 07:05:59PM +0200, Dominik Brodowski wrote:
-> Thought about CCing Linus to show him that 2.6.39-rcX isn't as "calm"
-> to everyone, but then chose to CC Maciej instead: Would you be so kind and
-> add this to your regression list? Thanks!
-> 
-> Since commit 38f1cff
-> 
->     From: Dave Airlie <airlied@redhat.com>
->     Date: Wed, 16 Mar 2011 11:34:41 +1000
->     Subject: [PATCH] Merge commit '5359533801e3dd3abca5b7d3d985b0b33fd9fe8b' into dr
-> 
->     This commit changed an internal radeon structure, that meant a new driver
->     in -next had to be fixed up, merge in the commit and fix up the driver.
-> 
->     Also fixes a trivial nouveau merge.
-> 
->     Conflicts:
->         drivers/gpu/drm/nouveau/nouveau_mem.c
-> 
-> booting my atom/NM10/ION2 system crashes hard during boot, right after
-> blanking the screen, and before the initramfs gets loaded. I just
-> re-checked: both parent commits ( 5359533 and 4819d2e ) do indeed work
-> just fine, but the merge commit ( 38f1cff ) fails, same as tip ( 85f2e68 ).
-
-Can you activate netconsole and check whether kernel spits anything interesting?
-You might try to load nouveau module after boot - maybe something will be saved
-to /var/log or you could even ssh into the box and check dmesg...
 
 
-Marcin
+On 04/14/2011 03:02 PM, Borislav Petkov wrote:
+> On Thu, Apr 14, 2011 at 11:49:08AM -0400, Prarit Bhargava wrote:
+>   
+>>> And we don't want to fix that - we want to fix the case with the
+>>> occasional CE MCEs which get detected in the polling path but none of
+>>> their MCA regs get dumped for decoding so the decoding hint there is
+>>> out of place. And we fixed that at least partially so that it doesn't
+>>> flood the logs. If you're not fine with the default ratelimit of 10 msgs
+>>> per 5 seconds we can always raise the ratelimit but tweaking an almost
+>>> hypothetical case is just not worth it.
+>>>
+>>>       
+>> Okay -- I'm good then.
+>>     
+> Ok, injecting MCEs with this patch looks like this. Nevermind the
+> decoded MCEs, I simply uncommented the "if (ret != NOTIFY_DONE)" line
+> so that I can see the rate limiting. So we still have them there, this
+> is the default setting of 10 calls per 5 secs, we might want to dial it
+> down in the output. After the 10th MCE, it doesn't appear anymore.
+>
+> Hmm...
+>
+> Prarit, you said you have a machine which spits a lot of CECCs on boot,
+> does the final version help there, did you have a chance to run it?
+>   
+
+Yup -- it looked good and did what I expected it to do ... I didn't save
+the output though :(
+
+P.
 
