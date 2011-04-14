@@ -1,118 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab1DNAau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 20:30:50 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10347 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757824Ab1DNAat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 20:30:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,207,1301900400"; 
-   d="scan'208";a="418825833"
-Date: Thu, 14 Apr 2011 08:30:45 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] writeback: avoid duplicate
- balance_dirty_pages_ratelimited() calls
-Message-ID: <20110414003045.GB6097@localhost>
-References: <20110413085937.981293444@intel.com>
- <20110413090415.511675208@intel.com>
- <20110413215307.GD4648@quack.suse.cz>
+	id S932269Ab1DNAko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 20:40:44 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43218 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab1DNAkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 20:40:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:x-face:face:x-url:x-pgp-fp
+         :x-pgp:date:in-reply-to:message-id:user-agent:mime-version
+         :content-type;
+        b=ffkosK2gbbfmIAxFSkS7pbgiZ8J75ioHcSScsdbIZdU35UHCbdvULVnE+iTDyDbIoo
+         xnzaIG/wADzF5uoBrTvO7sKDM2ewA581NuGJqhNvj+oNcigqM9SgpDe7tYlo5JBTa3f4
+         nFZGD8xeDNVjSWzPaqVO10aD+dQokEpLc5GB4=
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2] usb: gadget: storage_common: use kstrto*()
+References: <c7bc1074f7cd049786ac2d50fe71b5e3ca0beba2.1302732994.git.mina86@mina86.com>
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-Url: http://mina86.com/
+X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
+X-PGP: B7C6DF1E
+Date: Thu, 14 Apr 2011 02:40:39 +0200
+In-Reply-To: <c7bc1074f7cd049786ac2d50fe71b5e3ca0beba2.1302732994.git.mina86@mina86.com>
+	(Michal Nazarewicz's message of "Thu, 14 Apr 2011 00:37:00 +0200")
+Message-ID: <8739llk6m0.fsf@erwin.mina86.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110413215307.GD4648@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 05:53:07AM +0800, Jan Kara wrote:
-> On Wed 13-04-11 16:59:39, Wu Fengguang wrote:
-> > When dd in 512bytes, balance_dirty_pages_ratelimited() could be called 8
-> > times for the same page, but obviously the page is only dirtied once.
-> > 
-> > Fix it with a (slightly racy) PageDirty() test.
-> > 
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  mm/filemap.c |    5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > --- linux-next.orig/mm/filemap.c	2011-04-13 16:46:01.000000000 +0800
-> > +++ linux-next/mm/filemap.c	2011-04-13 16:47:26.000000000 +0800
-> > @@ -2313,6 +2313,7 @@ static ssize_t generic_perform_write(str
-> >  	long status = 0;
-> >  	ssize_t written = 0;
-> >  	unsigned int flags = 0;
-> > +	unsigned int dirty;
-> >  
-> >  	/*
-> >  	 * Copies from kernel address space cannot fail (NFSD is a big user).
-> > @@ -2361,6 +2362,7 @@ again:
-> >  		pagefault_enable();
-> >  		flush_dcache_page(page);
-> >  
-> > +		dirty = PageDirty(page);
->   This isn't completely right as we sometimes dirty the page in
-> ->write_begin() (see e.g. block_write_begin() when we allocate blocks under
-> an already uptodate page) and in such cases we would not call
-> balance_dirty_pages(). So I'm not sure we can really do this
-> optimization (although it's sad)...
+This commit replaces the usage of strict_strtoul() (which
+became deprecated after commit 33ee3b2e) with kstrtouint().
 
-Good catch, thanks! I evaluated three possible options, the last one
-looks most promising (however is a radical change).
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/usb/gadget/storage_common.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-- do radix_tree_tag_get() before calling ->write_begin()
-  simple but heavy weight
+> @@ -711,10 +711,11 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+>  	ssize_t		rc = count;
+>  	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+>  	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
+> -	unsigned long	ro;
+> +	unsigned	ro;
+>  
+> -	if (strict_strtoul(buf, 2, &ro))
+> -		return -EINVAL;
+> +	rc = kstrtouint(buf, 2, &ro);
+> +	if (rc)
+> +		return rc;
+>  
 
-- add balance_dirty_pages_ratelimited() in __block_write_begin()
-  seems not easy, too
+Sorry, I've just noticed this zeroes the rc so that the function returns
+invalid read length.  Attached patch has the following delta included:
 
-- accurately account the dirtied pages in account_page_dirtied() rather than
-  in balance_dirty_pages_ratelimited_nr(). This diff on top of my patchset
-  illustrates the idea, but will need to sort out cases like direct IO ...
+| @@ -708,7 +708,7 @@ static ssize_t fsg_show_file(struct device *dev, struct devi
+|  static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+|                             const char *buf, size_t count)
+|  {
+| -       ssize_t         rc = count;
+| +       ssize_t         rc;
+|         struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
+|         struct rw_semaphore     *filesem = dev_get_drvdata(dev);
+|         unsigned        ro;
+| @@ -729,6 +729,7 @@ static ssize_t fsg_store_ro(struct device *dev, struct devic
+|                 curlun->ro = ro;
+|                 curlun->initially_ro = ro;
+|                 LDBG(curlun, "read-only status set to %d\n", curlun->ro);
+| +               rc = count;
+|         }
+|         up_read(filesem);
+|         return rc;
 
---- linux-next.orig/mm/page-writeback.c	2011-04-14 07:50:09.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-04-14 07:52:35.000000000 +0800
-@@ -1295,8 +1295,6 @@ void balance_dirty_pages_ratelimited_nr(
- 	if (!bdi_cap_account_dirty(bdi))
- 		return;
+
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index b015561..1fa4f70 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -708,13 +708,14 @@ static ssize_t fsg_show_file(struct device *dev, struct device_attribute *attr,
+ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 			    const char *buf, size_t count)
+ {
+-	ssize_t		rc = count;
++	ssize_t		rc;
+ 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+ 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
+-	unsigned long	ro;
++	unsigned	ro;
  
--	current->nr_dirtied += nr_pages_dirtied;
--
- 	if (dirty_exceeded_recently(bdi, MAX_PAUSE)) {
- 		unsigned long max = current->nr_dirtied +
- 						(128 >> (PAGE_SHIFT - 10));
-@@ -1752,6 +1750,7 @@ void account_page_dirtied(struct page *p
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
- 		task_dirty_inc(current);
- 		task_io_account_write(PAGE_CACHE_SIZE);
-+		current->nr_dirtied++;
+-	if (strict_strtoul(buf, 2, &ro))
+-		return -EINVAL;
++	rc = kstrtouint(buf, 2, &ro);
++	if (rc)
++		return rc;
+ 
+ 	/*
+ 	 * Allow the write-enable status to change only while the
+@@ -728,6 +729,7 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 		curlun->ro = ro;
+ 		curlun->initially_ro = ro;
+ 		LDBG(curlun, "read-only status set to %d\n", curlun->ro);
++		rc = count;
  	}
- }
- EXPORT_SYMBOL(account_page_dirtied);
-
-> >  		mark_page_accessed(page);
-> >  		status = a_ops->write_end(file, mapping, pos, bytes, copied,
-> >  						page, fsdata);
-> > @@ -2387,7 +2389,8 @@ again:
-> >  		pos += copied;
-> >  		written += copied;
-> >  
-> > -		balance_dirty_pages_ratelimited(mapping);
-> > +		if (!dirty)
-> > +			balance_dirty_pages_ratelimited(mapping);
-> >  
-> >  	} while (iov_iter_count(i));
-> 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+ 	up_read(filesem);
+ 	return rc;
+@@ -738,10 +740,12 @@ static ssize_t fsg_store_nofua(struct device *dev,
+ 			       const char *buf, size_t count)
+ {
+ 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+-	unsigned long	nofua;
++	unsigned	nofua;
++	int		ret;
+ 
+-	if (strict_strtoul(buf, 2, &nofua))
+-		return -EINVAL;
++	ret = kstrtouint(buf, 2, &nofua);
++	if (ret)
++		return ret;
+ 
+ 	/* Sync data when switching from async mode to sync */
+ 	if (!nofua && curlun->nofua)
