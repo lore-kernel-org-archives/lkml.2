@@ -1,84 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab1DNUIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:08:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38993 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab1DNUIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:08:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=WRA1ShTu8pofl1q+YOGITfihZ2I7kld3t70/RhQDTtg30Vo9A4IimuUA4YrSuj0w3U
-         E719RRlSIvc5v4LKpicXvCCkBrErVuFJ5N2VKbh1WUOjWY4XQq0wmItaUpTh3Ly+25gh
-         Jb1QLM9Tpq3moLUENESmESWNCMulLXEJVbNdU=
-Subject: Re: 2.6.38 page_test regression
-From: raz ben yehuda <raziebe@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, riel@redhat.com,
-        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <20110414150925.GD15707@random.random>
-References: <1302692638.15225.14.camel@raz.scalemp.com>
-	 <20110413125146.GR29444@random.random>
-	 <1302703579.17536.1.camel@raz.scalemp.com>
-	 <20110413172127.GB5734@random.random>
-	 <1302781754.5098.13.camel@raz.scalemp.com>
-	 <20110414150925.GD15707@random.random>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Apr 2011 23:07:23 +0300
-Message-ID: <1302811643.10051.8.camel@raz.scalemp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1751718Ab1DNUKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:10:13 -0400
+Received: from kroah.org ([198.145.64.141]:44283 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751040Ab1DNUKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 16:10:10 -0400
+Date: Thu, 14 Apr 2011 13:07:42 -0700
+From: Greg KH <greg@kroah.com>
+To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
+ in Kernel.
+Message-ID: <20110414200742.GA25668@kroah.com>
+References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
+ <20110405161454.GB885@kroah.com>
+ <4D9F16AD.2090408@hitachi.com>
+ <20110408161212.GA12111@kroah.com>
+ <4DA6AD28.5020604@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DA6AD28.5020604@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bah. Mel is correct. I did mean page_test  ( in my defense it is in the
-msg ).
-Here some more information:
-1. I manage to lower the regression to 2 sha1's:
-    	32dba98e085f8b2b4345887df9abf5e0e93bfc12 to
-71e3aac0724ffe8918992d76acfe3aad7d8724a5. 
-	though I had to remark wait_split_huge_page for the sake of
-compilation. up to 32dba98e085f8b2b4345887df9abf5e0e93bfc12 there is no
-regression.
-
-2. I booted 2.6.37-rc5 you gave me. same regression is there. 
-
-raz
-
-
-On Thu, 2011-04-14 at 17:09 +0200, Andrea Arcangeli wrote:
-> On Thu, Apr 14, 2011 at 02:49:14PM +0300, raz ben yehuda wrote:
-> > Hey Andrea
-> > Me again. I managed to ftrace ( function graph ) the two kernels. I used
-> > 2.6.37 and 2.6.39-rc3. The bellow is example for sys_brk calls traces
-> > from each kernel. As you can see, there is no "single smoking gun"
-> > here. 
+On Thu, Apr 14, 2011 at 05:15:36PM +0900, Nao Nishijima wrote:
+> Hi,
+> 
+> (2011/04/09 1:12), Greg KH wrote:
+> > On Fri, Apr 08, 2011 at 11:07:41PM +0900, Nao Nishijima wrote:
+> >> Hi,
+> >>
+> >> (2011/04/06 1:14), Greg KH wrote:
+> >>> On Tue, Apr 05, 2011 at 09:49:46PM +0900, Nao Nishijima wrote:
+> >>>> This patch series provides a SCSI option for persistent device
+> >>>> names in kernel. With this option, user can always assign a
+> >>>> same device name (e.g. sda) to a specific device according to
+> >>>> udev rules and device id.
+> >>>>
+> >>>> Issue:
+> >>>> Recently, kernel registers block devices in parallel. As a result,
+> >>>> different device names will be assigned at each boot time. This
+> >>>> will confuse file-system mounter, thus we usually use persistent
+> >>>> symbolic links provided by udev. However, dmesg and procfs outputs
+> >>>> show device names instead of the symbolic link names. This causes
+> >>>> a serious problem when managing multiple devices (e.g. on a
+> >>>> large-scale storage), because usually, device errors are output
+> >>>> with device names on dmesg. We also concern about some commands
+> >>>> which output device names, as well as kernel messages.
+> >>>>
+> >>>> Solution:
+> >>>> To assign a persistent device name, I create unnamed devices (not
+> >>>> a block device, but an intermediate device. users cannot read/write
+> >>>> this device). When scsi device driver finds a LU, the LU is registered
+> >>>> as an unnamed device and inform to udev. After udev finds the unnamed
+> >>>> device, udev assigns a persistent device name to a specific device
+> >>>> according to udev rules and registers it as a block device. Hence,
+> >>>> this is just a naming, not a renaming.
+> >>>>
+> >>>> Some users are satisfied with current udev solution. Therefore, my
+> >>>> proposal is implemented as an option.
+> >>>>
+> >>>> If using this option, add the following kernel parameter.
+> >>>>
+> >>>> 	scsi_mod.persistent_name=1
+> >>>>
+> >>>> Also, if you want to assign a device name with sda, add the
+> >>>> following udev rules.
+> >>>>
+> >>>> SUBSYSTEM=="scsi_unnamed", ATTR{disk_id}=="xxx", PROGRAM="/bin/sh
+> >>>> -c 'echo -n sda > /sys/%p/disk_name'"
+> >>>
+> >>> Also, where is the "real" program you have created to properly name
+> >>> devices from userspace?  You need that to properly test this patch,
+> >>> right?
+> >>>
+> >>
+> >> In the udev rule described above, notation “xxx” indicated by
+> >> ATTR(disk_id) is scsi id given by disk. Then, when udev finds this rule,
+> >> "/bin/sh -c 'echo -n sda>  /sys/%p/disk_name'" indicated by PROGRAM is
+> >> operated using xxx (scsi id) if udev find the disk with scic id xxx.
+> >> Thus, persistent device name is assigned.
+> >>
+> >> I have tested this patch using the udev rule. and It works well.
 > > 
-> > The vm functions durations increased as a whole.
-> > I repeated the tests from sha1 4e9f64c42d0ba5eb0c78569435ada4c224332ce4
-> > compared to sha1 152c9ccb75548c027fa3103efa4fa4e19a345449  and it is
-> > consistent. ~13% performance decrease.
+> > That's nice, but it's a "toy".  What have you used to test this with
+> > 20000 scsi devices to properly work like it does today?  Where is the
+> > program that will name them in a deterministic manner?
 > > 
+> > We have that functionality today, you can't break it.
+> > 
+> > thanks,
 > 
-> > Can you see any relation to thp that might causes this degradation ?
-> 
-> With compaction and THP off I don't see how it could change
-> anything.
-> 
-> But can you try the THP-33 tag of my aa.git tree, that was based on
-> 2.3.37-rc5 so it'll rule out the whole THP patchset if it doesn't
-> regress compared to 2.6.37-rc5 vanilla.
-> 
-> git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-> git checkout THP-33
-> 
-> Thanks,
-> Andrea
+> Indeed, I have not (can not, of course) tested 20000 scsi devices to
+> properly work.
 
+Why not?  You should be able to do this easily with a laptop these days
+with the dummy scsi device code.
 
+> This feature targets only scsi disk/cdrom/tape devices.
+> Not all devices. We expect the target users are system administrators
+> who need to control all devices for maintenance. They know all devices
+> connected to the server and those devices will tested before connecting.
+
+But that's not the large majority of the people using Linux.  You need a
+sane default, which this does not provide.
+
+> We expect that admin will enable this option after installation. This
+> means that device names are assigned by current mechanism when
+> installation. Admin enables the option and makes udev rules (we are
+> planning to make shell script which generate udev rules use by-id and
+> assigned device names). In other word, this feature will be used just
+> for "fixing" the names.
+
+So admins are going to write their own udev rules by hand?  I find that
+very unlikely.
+
+> In our scenario, admin appends a new rule manually when a new LU is
+> added. In the future, we are planning to enhance udev to append a new
+> rule automatically as like as NIC.
+
+I recommend doing the other options that have been proposed please.
+
+thanks,
+
+greg k-h
