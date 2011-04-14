@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1DNVVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:21:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24960 "EHLO
+	id S1753385Ab1DNVUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:20:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23937 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab1DNVVT (ORCPT
+	with ESMTP id S1753022Ab1DNVUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:21:19 -0400
-Date: Thu, 14 Apr 2011 14:18:02 -0700
+	Thu, 14 Apr 2011 17:20:47 -0400
+Date: Thu, 14 Apr 2011 14:19:32 -0700
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
 To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
@@ -20,37 +20,38 @@ To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         avi@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
         mel@csn.ul.ie, yinghan@google.com, gthelen@google.com,
         torvalds@linux-foundation.org
-Subject: [PATCH V8 5/8] ext3: add cleancache support
-Message-ID: <20110414211802.GA27779@ca-server1.us.oracle.com>
+Subject: [PATCH V8 8/8] ocfs2: add cleancache support
+Message-ID: <20110414211932.GA27830@ca-server1.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DA76505.00A8,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4DA764E8.0043,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V8 5/8] ext3: add cleancache support
+[PATCH V8 8/8] ocfs2: add cleancache support
 
-This fifth patch of eight in this cleancache series "opts-in"
-cleancache for ext3.  Filesystems must explicitly enable
-cleancache by calling cleancache_init_fs anytime an instance
-of the filesystem is mounted. For ext3, all other cleancache
-hooks are in the VFS layer including the matching cleancache_flush_fs
-hook which must be called on unmount.
+This eighth patch of eight in this cleancache series "opts-in"
+cleancache for ocfs2.  Clustered filesystems must explicitly enable
+cleancache by calling cleancache_init_shared_fs anytime an instance
+of the filesystem is mounted.  Ocfs2 is currently the only user of
+the clustered filesystem interface but nevertheless, the cleancache
+hooks in the VFS layer are sufficient for ocfs2 including the matching
+cleancache_flush_fs hook which must be called on unmount.
 
 Details and a FAQ can be found in Documentation/vm/cleancache.txt
 
-[v6-v8: no changes]
+[v8: trivial merge conflict update]
 [v5: jeremy@goop.org: simplify init hook and any future fs init changes]
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Andreas Dilger <adilger@sun.com>
-Cc: Ted Ts'o <tytso@mit.edu>
+Cc: Mark Fasheh <mfasheh@suse.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Matthew Wilcox <matthew@wil.cx>
@@ -59,31 +60,31 @@ Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Rik Van Riel <riel@redhat.com>
 Cc: Jan Beulich <JBeulich@novell.com>
 Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <joel.becker@oracle.com>
+Cc: Andreas Dilger <adilger@sun.com>
+Cc: Ted Tso <tytso@mit.edu>
 Cc: Nitin Gupta <ngupta@vflare.org>
 
 ---
 
 Diffstat:
- fs/ext3/super.c                          |    2 ++
+ fs/ocfs2/super.c                         |    2 ++
  1 file changed, 2 insertions(+)
 
---- linux-2.6.39-rc3/fs/ext3/super.c	2011-04-11 18:21:51.000000000 -0600
-+++ linux-2.6.39-rc3-cleancache/fs/ext3/super.c	2011-04-13 17:10:40.918915872 -0600
-@@ -36,6 +36,7 @@
- #include <linux/quotaops.h>
+--- linux-2.6.39-rc3/fs/ocfs2/super.c	2011-04-11 18:21:51.000000000 -0600
++++ linux-2.6.39-rc3-cleancache/fs/ocfs2/super.c	2011-04-13 17:11:45.664861458 -0600
+@@ -41,6 +41,7 @@
+ #include <linux/mount.h>
  #include <linux/seq_file.h>
- #include <linux/log2.h>
+ #include <linux/quotaops.h>
 +#include <linux/cleancache.h>
  
- #include <asm/uaccess.h>
- 
-@@ -1367,6 +1368,7 @@ static int ext3_setup_super(struct super
- 	} else {
- 		ext3_msg(sb, KERN_INFO, "using internal journal");
+ #define CREATE_TRACE_POINTS
+ #include "ocfs2_trace.h"
+@@ -2352,6 +2353,7 @@ static int ocfs2_initialize_super(struct
+ 		mlog_errno(status);
+ 		goto bail;
  	}
-+	cleancache_init_fs(sb);
- 	return res;
- }
++	cleancache_init_shared_fs((char *)&uuid_net_key, sb);
  
+ bail:
+ 	return status;
