@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677Ab1DNJsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:48:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55158 "EHLO
+	id S932604Ab1DNJv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:51:58 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35658 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757579Ab1DNJsu convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932079Ab1DNJv4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:48:50 -0400
+	Thu, 14 Apr 2011 05:51:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=ODq8a0T0oKtO16AJEBrBeb63OrS4NbTyxAMfFmWYWvfjPGM9bn5sIOe0awCXiSlEp3
-         3icBaKGE3hYEGeo8P9xNvdLYBCCh7Bp+pXfMERM0Ep1TBNRdE5sBJfWcquUXuNBW88JL
-         mG6NeAMELs4vO4XOdsCqCbPlhrCwJXqVFtd7k=
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Z7fqg80Yn6Z3E4sIaPQJOU4pJcKfdqcAx3vPhDFI9m/QmIV5PJaZNNK5TZuRzpeKDa
+         DDdcY6rywPLz24FKn+RghLgwLuYSUHftyYE8giXJVi/Dkg7De4cfMXmOqAG/6SOa99xg
+         lrfySde96DCzAir/elrfiiA3EqfG7QFqXgQfQ=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
-	<BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
-	<BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
-Date: Thu, 14 Apr 2011 11:48:49 +0200
-Message-ID: <BANLkTi=BLt5evF12J-FQ3GVxnfOiEFJzwg@mail.gmail.com>
-Subject: Re: Unionmount status?
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Michal Suchanek <hramrach@centrum.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <BANLkTimcy16ggC0C66V-fbuaJwg4Sna4Qw@mail.gmail.com>
+References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
+	<20110413163113.GA24015@kroah.com>
+	<BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
+	<1302726703.8015.1.camel@dev.znau.edu.ua>
+	<BANLkTimwZOJ0a5kVfaUzEcsMc39H999u0A@mail.gmail.com>
+	<1302727516.8015.9.camel@dev.znau.edu.ua>
+	<BANLkTi=wzzzeF-PmqLt9o8arW7nRaFRRJw@mail.gmail.com>
+	<1302729243.8479.1.camel@dev.znau.edu.ua>
+	<BANLkTinLn4Ug=gX4coHJbSzrkxdSMjgGeg@mail.gmail.com>
+	<BANLkTimcy16ggC0C66V-fbuaJwg4Sna4Qw@mail.gmail.com>
+Date: Thu, 14 Apr 2011 11:51:55 +0200
+Message-ID: <BANLkTika3oprbxqYJTq=Fzms+LMdnxtwYg@mail.gmail.com>
+Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Jonas Gorski <jonas.gorski@gmail.com>
+Cc: George Kashperko <george@znau.edu.ua>, Greg KH <greg@kroah.com>,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org,
+        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 10:38 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Wed, Apr 13, 2011 at 5:13 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
->> On 13 April 2011 16:18, Jiri Kosina <jkosina@suse.cz> wrote:
->>> https://lkml.org/lkml/2011/3/22/222
->>>
+2011/4/14 Jonas Gorski <jonas.gorski@gmail.com>:
+> On 13 April 2011 23:19, Rafał Miłecki <zajec5@gmail.com> wrote:
+>> 2011/4/13 George Kashperko <george@znau.edu.ua>:
+>>>> I had no idea what you were referring to. We do not dig into PCIe
+>>>> functions yet, so I believe for now we need this "if".
+>>> You are already deep inside. Your host code drives pci function.
 >>
->> Thanks for pointing out this announcement.
->>
->> However, neither this announcement nor the document
->> Documentation/filesystems/overlayfs.txt included in the git tree
->> details how to mount the filesystem. Without that it is kind of
->> useless.
+>> But I don't use multiple PCIe functions, do not focus on that at all.
 >
-> Oh, I'll fix that in the docs.  Thanks for pointing it out.
->
-> Here's how to mount:
->
->  mount -t overlayfs overlayfs -olowerdir=/lower -oupperdir=/upper /overlay
->
-> Thanks,
-> Miklos
->
+> I think what George meant is the following (please correct me if I
+> understood you wrong) and has nothing to do with PCIe functions:
+> <http://lxr.free-electrons.com/source/drivers/staging/brcm80211/util/aiutils.c#L522>
 
-Hi Miklos,
+Ahh, thanks, I though PCIe functions are something different, that we
+have to register for pci device differently to access them or sth.
 
-did you stop working on OverlayFS (no hear no read since 3 weeks :-))?
-You made some post-v7-patchset patches, but did not publish a v8.
-
-Also, Linus requested a finer-grained split of the big overlayfs.c
-file like in the other FS.
-What's the status on this?
-
-Regards,
-- Sedat -
+-- 
+Rafał
