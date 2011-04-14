@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab1DNS0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:26:04 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38179 "EHLO
+	id S933123Ab1DNRqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38089 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933110Ab1DNRqa (ORCPT
+	with ESMTP id S933072Ab1DNRqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:30 -0400
+	Thu, 14 Apr 2011 13:46:24 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Daniel T Chen <crimsun@ubuntu.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: stable-review@kernel.org, Masanori ITOH <itoumsn@nttdata.co.jp>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 060/209] ALSA: ac97: Apply quirk for Dell Latitude D610 binding Master and Headphone controls
-Date: Thu, 14 Apr 2011 13:41:30 -0400
-Message-Id: <1302803039-9400-61-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 032/209] percpu: fix list_head init bug in __percpu_counter_init()
+Date: Thu, 14 Apr 2011 13:41:02 -0400
+Message-Id: <1302803039-9400-33-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,51 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Masanori ITOH <itoumsn@nttdata.co.jp>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 0613a59456980161d0cd468bae6c63d772743102 upstream.
+commit 8474b591faf3bb0a1e08a60d21d6baac498f15e4 upstream.
 
-BugLink: https://launchpad.net/bugs/669279
+WARNING: at lib/list_debug.c:26 __list_add+0x3f/0x81()
+Hardware name: Express5800/B120a [N8400-085]
+list_add corruption. next->prev should be prev (ffffffff81a7ea00), but was dead000000200200. (next=ffff88080b872d58).
+Modules linked in: aoe ipt_MASQUERADE iptable_nat nf_nat autofs4 sunrpc bridge 8021q garp stp llc ipv6 cpufreq_ondemand acpi_cpufreq freq_table dm_round_robin dm_multipath kvm_intel kvm uinput lpfc scsi_transport_fc igb ioatdma scsi_tgt i2c_i801 i2c_core dca iTCO_wdt iTCO_vendor_support pcspkr shpchp megaraid_sas [last unloaded: aoe]
+Pid: 54, comm: events/3 Tainted: G        W  2.6.34-vanilla1 #1
+Call Trace:
+[<ffffffff8104bd77>] warn_slowpath_common+0x7c/0x94
+[<ffffffff8104bde6>] warn_slowpath_fmt+0x41/0x43
+[<ffffffff8120fd2e>] __list_add+0x3f/0x81
+[<ffffffff81212a12>] __percpu_counter_init+0x59/0x6b
+[<ffffffff810d8499>] bdi_init+0x118/0x17e
+[<ffffffff811f2c50>] blk_alloc_queue_node+0x79/0x143
+[<ffffffff811f2d2b>] blk_alloc_queue+0x11/0x13
+[<ffffffffa02a931d>] aoeblk_gdalloc+0x8e/0x1c9 [aoe]
+[<ffffffffa02aa655>] aoecmd_sleepwork+0x25/0xa8 [aoe]
+[<ffffffff8106186c>] worker_thread+0x1a9/0x237
+[<ffffffffa02aa630>] ? aoecmd_sleepwork+0x0/0xa8 [aoe]
+[<ffffffff81065827>] ? autoremove_wake_function+0x0/0x39
+[<ffffffff810616c3>] ? worker_thread+0x0/0x237
+[<ffffffff810653ad>] kthread+0x7f/0x87
+[<ffffffff8100aa24>] kernel_thread_helper+0x4/0x10
+[<ffffffff8106532e>] ? kthread+0x0/0x87
+[<ffffffff8100aa20>] ? kernel_thread_helper+0x0/0x10
 
-The original reporter states: "The Master mixer does not change the
-volume from the headphone output (which is affected by the headphone
-mixer). Instead it only seems to control the on-board speaker volume.
-This confuses PulseAudio greatly as the Master channel is merged into
-the volume mix."
+It's because there is no initialization code for a list_head contained in
+the struct backing_dev_info under CONFIG_HOTPLUG_CPU, and the bug comes up
+when block device drivers calling blk_alloc_queue() are used.  In case of
+me, I got them by using aoe.
 
-Fix this symptom by applying the hp_only quirk for the reporter's SSID.
-The fix is applicable to all stable kernels.
-
-Reported-and-tested-by: Ben Gamari <bgamari@gmail.com>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Masanori Itoh <itoumsn@nttdata.co.jp>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/pci/intel8x0.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ lib/percpu_counter.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/sound/pci/intel8x0.c b/sound/pci/intel8x0.c
-index 4677492..ebfa1f8 100644
---- a/sound/pci/intel8x0.c
-+++ b/sound/pci/intel8x0.c
-@@ -1866,6 +1866,12 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
- 	},
- 	{
- 		.subvendor = 0x1028,
-+		.subdevice = 0x0182,
-+		.name = "Dell Latitude D610",	/* STAC9750/51 */
-+		.type = AC97_TUNE_HP_ONLY
-+	},
-+	{
-+		.subvendor = 0x1028,
- 		.subdevice = 0x0186,
- 		.name = "Dell Latitude D810", /* cf. Malone #41015 */
- 		.type = AC97_TUNE_HP_MUTE_LED
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index aeaa6d7..9d94212 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -76,6 +76,7 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
+ #ifdef CONFIG_HOTPLUG_CPU
++	INIT_LIST_HEAD(&fbc->list);
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_add(&fbc->list, &percpu_counters);
+ 	mutex_unlock(&percpu_counters_lock);
 -- 
 1.7.4.4
 
