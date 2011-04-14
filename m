@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522Ab1DNRrg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:47:36 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38603 "EHLO
+	id S933131Ab1DNRre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38585 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932892Ab1DNRr0 (ORCPT
+	with ESMTP id S933467Ab1DNRrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:26 -0400
+	Thu, 14 Apr 2011 13:47:25 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Antonio Ospite <ospite@studenti.unina.it>,
-        Jiri Kosina <jkosina@suse.cz>,
+Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 103/209] HID: hidraw, fix a NULL pointer dereference in hidraw_write
-Date: Thu, 14 Apr 2011 13:42:13 -0400
-Message-Id: <1302803039-9400-104-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 108/209] sparc64: Fix race in signal instruction flushing.
+Date: Thu, 14 Apr 2011 13:42:18 -0400
+Message-Id: <1302803039-9400-109-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,53 +21,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Antonio Ospite <ospite@studenti.unina.it>
+From: David S. Miller <davem@davemloft.net>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit e42dee9a99a3ecd32b5c027e8f7411fb5bc11eb6 upstream.
+commit 05c5e7698bdc54b3079a3517d86077f49ebcc788 upstream.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-IP: [<ffffffffa0f0a625>] hidraw_write+0x3b/0x116 [hid]
-[...]
+If another cpu does a very wide munmap() on the signal frame area,
+it can tear down the page table hierarchy from underneath us.
 
-This is reproducible by disconnecting the device while userspace writes
-to dev node in a loop and doesn't check return values in order to exit
-the loop.
+Borrow an idea from the 64-bit fault path's get_user_insn(), and
+disable cross call interrupts during the page table traversal
+to lock them in place while we operate.
 
-[PG: slightly/trivially reworked for backport to 34]
-
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/hid/hidraw.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ arch/sparc/kernel/signal32.c |  102 ++++++++++++++++++++++++-----------------
+ 1 files changed, 60 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 0db1a0f..9d3c663 100644
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -106,11 +106,15 @@ out:
- static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
- {
- 	unsigned int minor = iminor(file->f_path.dentry->d_inode);
--	/* FIXME: What stops hidraw_table going NULL */
--	struct hid_device *dev = hidraw_table[minor]->hid;
-+	struct hid_device *dev;
- 	__u8 *buf;
- 	int ret = 0;
+diff --git a/arch/sparc/kernel/signal32.c b/arch/sparc/kernel/signal32.c
+index ea22cd3..76b67c4 100644
+--- a/arch/sparc/kernel/signal32.c
++++ b/arch/sparc/kernel/signal32.c
+@@ -453,6 +453,64 @@ static int save_fpu_state32(struct pt_regs *regs, __siginfo_fpu_t __user *fpu)
+ 	return err;
+ }
  
-+	if (!hidraw_table[minor])
-+		return -ENODEV;
++/* The I-cache flush instruction only works in the primary ASI, which
++ * right now is the nucleus, aka. kernel space.
++ *
++ * Therefore we have to kick the instructions out using the kernel
++ * side linear mapping of the physical address backing the user
++ * instructions.
++ */
++static void flush_signal_insns(unsigned long address)
++{
++	unsigned long pstate, paddr;
++	pte_t *ptep, pte;
++	pgd_t *pgdp;
++	pud_t *pudp;
++	pmd_t *pmdp;
 +
-+	dev = hidraw_table[minor]->hid;
++	/* Commit all stores of the instructions we are about to flush.  */
++	wmb();
 +
- 	if (!dev->hid_output_raw_report)
- 		return -ENODEV;
++	/* Disable cross-call reception.  In this way even a very wide
++	 * munmap() on another cpu can't tear down the page table
++	 * hierarchy from underneath us, since that can't complete
++	 * until the IPI tlb flush returns.
++	 */
++
++	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
++	__asm__ __volatile__("wrpr %0, %1, %%pstate"
++				: : "r" (pstate), "i" (PSTATE_IE));
++
++	pgdp = pgd_offset(current->mm, address);
++	if (pgd_none(*pgdp))
++		goto out_irqs_on;
++	pudp = pud_offset(pgdp, address);
++	if (pud_none(*pudp))
++		goto out_irqs_on;
++	pmdp = pmd_offset(pudp, address);
++	if (pmd_none(*pmdp))
++		goto out_irqs_on;
++
++	ptep = pte_offset_map(pmdp, address);
++	pte = *ptep;
++	if (!pte_present(pte))
++		goto out_unmap;
++
++	paddr = (unsigned long) page_address(pte_page(pte));
++
++	__asm__ __volatile__("flush	%0 + %1"
++			     : /* no outputs */
++			     : "r" (paddr),
++			       "r" (address & (PAGE_SIZE - 1))
++			     : "memory");
++
++out_unmap:
++	pte_unmap(ptep);
++out_irqs_on:
++	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
++
++}
++
+ static void setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
+ 			  int signo, sigset_t *oldset)
+ {
+@@ -547,13 +605,7 @@ static void setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
+ 	if (ka->ka_restorer) {
+ 		regs->u_regs[UREG_I7] = (unsigned long)ka->ka_restorer;
+ 	} else {
+-		/* Flush instruction space. */
+ 		unsigned long address = ((unsigned long)&(sf->insns[0]));
+-		pgd_t *pgdp = pgd_offset(current->mm, address);
+-		pud_t *pudp = pud_offset(pgdp, address);
+-		pmd_t *pmdp = pmd_offset(pudp, address);
+-		pte_t *ptep;
+-		pte_t pte;
+ 
+ 		regs->u_regs[UREG_I7] = (unsigned long) (&(sf->insns[0]) - 2);
+ 	
+@@ -562,22 +614,7 @@ static void setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
+ 		if (err)
+ 			goto sigsegv;
+ 
+-		preempt_disable();
+-		ptep = pte_offset_map(pmdp, address);
+-		pte = *ptep;
+-		if (pte_present(pte)) {
+-			unsigned long page = (unsigned long)
+-				page_address(pte_page(pte));
+-
+-			wmb();
+-			__asm__ __volatile__("flush	%0 + %1"
+-					     : /* no outputs */
+-					     : "r" (page),
+-					       "r" (address & (PAGE_SIZE - 1))
+-					     : "memory");
+-		}
+-		pte_unmap(ptep);
+-		preempt_enable();
++		flush_signal_insns(address);
+ 	}
+ 	return;
+ 
+@@ -687,12 +724,7 @@ static void setup_rt_frame32(struct k_sigaction *ka, struct pt_regs *regs,
+ 	if (ka->ka_restorer)
+ 		regs->u_regs[UREG_I7] = (unsigned long)ka->ka_restorer;
+ 	else {
+-		/* Flush instruction space. */
+ 		unsigned long address = ((unsigned long)&(sf->insns[0]));
+-		pgd_t *pgdp = pgd_offset(current->mm, address);
+-		pud_t *pudp = pud_offset(pgdp, address);
+-		pmd_t *pmdp = pmd_offset(pudp, address);
+-		pte_t *ptep;
+ 
+ 		regs->u_regs[UREG_I7] = (unsigned long) (&(sf->insns[0]) - 2);
+ 	
+@@ -704,21 +736,7 @@ static void setup_rt_frame32(struct k_sigaction *ka, struct pt_regs *regs,
+ 		if (err)
+ 			goto sigsegv;
+ 
+-		preempt_disable();
+-		ptep = pte_offset_map(pmdp, address);
+-		if (pte_present(*ptep)) {
+-			unsigned long page = (unsigned long)
+-				page_address(pte_page(*ptep));
+-
+-			wmb();
+-			__asm__ __volatile__("flush	%0 + %1"
+-					     : /* no outputs */
+-					     : "r" (page),
+-					       "r" (address & (PAGE_SIZE - 1))
+-					     : "memory");
+-		}
+-		pte_unmap(ptep);
+-		preempt_enable();
++		flush_signal_insns(address);
+ 	}
+ 	return;
  
 -- 
 1.7.4.4
