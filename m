@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab1DNVUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:20:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23920 "EHLO
+	id S1753471Ab1DNVVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:21:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24960 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab1DNVUq (ORCPT
+	with ESMTP id S1753320Ab1DNVVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:20:46 -0400
-Date: Thu, 14 Apr 2011 14:18:32 -0700
+	Thu, 14 Apr 2011 17:21:19 -0400
+Date: Thu, 14 Apr 2011 14:18:02 -0700
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
 To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
@@ -20,37 +20,37 @@ To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         avi@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
         mel@csn.ul.ie, yinghan@google.com, gthelen@google.com,
         torvalds@linux-foundation.org
-Subject: [PATCH V8 6/8] btrfs: add cleancache support
-Message-ID: <20110414211832.GA27796@ca-server1.us.oracle.com>
+Subject: [PATCH V8 5/8] ext3: add cleancache support
+Message-ID: <20110414211802.GA27779@ca-server1.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DA764E6.0124,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4DA76505.00A8,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V8 6/8] btrfs: add cleancache support
+[PATCH V8 5/8] ext3: add cleancache support
 
-This sixth patch of eight in this cleancache series "opts-in"
-cleancache for btrfs.  Filesystems must explicitly enable
+This fifth patch of eight in this cleancache series "opts-in"
+cleancache for ext3.  Filesystems must explicitly enable
 cleancache by calling cleancache_init_fs anytime an instance
-of the filesystem is mounted.  Btrfs uses its own readpage
-which must be hooked, but all other cleancache hooks are in
-the VFS layer including the matching cleancache_flush_fs hook
-which must be called on unmount.
+of the filesystem is mounted. For ext3, all other cleancache
+hooks are in the VFS layer including the matching cleancache_flush_fs
+hook which must be called on unmount.
 
 Details and a FAQ can be found in Documentation/vm/cleancache.txt
 
 [v6-v8: no changes]
 [v5: jeremy@goop.org: simplify init hook and any future fs init changes]
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Andreas Dilger <adilger@sun.com>
+Cc: Ted Ts'o <tytso@mit.edu>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Matthew Wilcox <matthew@wil.cx>
@@ -58,8 +58,7 @@ Cc: Nick Piggin <npiggin@kernel.dk>
 Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Rik Van Riel <riel@redhat.com>
 Cc: Jan Beulich <JBeulich@novell.com>
-Cc: Andreas Dilger <adilger@sun.com>
-Cc: Ted Ts'o <tytso@mit.edu>
+Cc: Chris Mason <chris.mason@oracle.com>
 Cc: Mark Fasheh <mfasheh@suse.com>
 Cc: Joel Becker <joel.becker@oracle.com>
 Cc: Nitin Gupta <ngupta@vflare.org>
@@ -67,57 +66,24 @@ Cc: Nitin Gupta <ngupta@vflare.org>
 ---
 
 Diffstat:
- fs/btrfs/extent_io.c                     |    9 +++++++++
- fs/btrfs/super.c                         |    2 ++
- 2 files changed, 11 insertions(+)
+ fs/ext3/super.c                          |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- linux-2.6.39-rc3/fs/btrfs/super.c	2011-04-11 18:21:51.000000000 -0600
-+++ linux-2.6.39-rc3-cleancache/fs/btrfs/super.c	2011-04-13 17:10:46.357852791 -0600
-@@ -39,6 +39,7 @@
- #include <linux/miscdevice.h>
- #include <linux/magic.h>
- #include <linux/slab.h>
+--- linux-2.6.39-rc3/fs/ext3/super.c	2011-04-11 18:21:51.000000000 -0600
++++ linux-2.6.39-rc3-cleancache/fs/ext3/super.c	2011-04-13 17:10:40.918915872 -0600
+@@ -36,6 +36,7 @@
+ #include <linux/quotaops.h>
+ #include <linux/seq_file.h>
+ #include <linux/log2.h>
 +#include <linux/cleancache.h>
- #include "compat.h"
- #include "ctree.h"
- #include "disk-io.h"
-@@ -610,6 +611,7 @@ static int btrfs_fill_super(struct super
- 	sb->s_root = root_dentry;
  
- 	save_mount_options(sb, data);
-+	cleancache_init_fs(sb);
- 	return 0;
+ #include <asm/uaccess.h>
  
- fail_close:
---- linux-2.6.39-rc3/fs/btrfs/extent_io.c	2011-04-11 18:21:51.000000000 -0600
-+++ linux-2.6.39-rc3-cleancache/fs/btrfs/extent_io.c	2011-04-13 17:10:46.368921914 -0600
-@@ -10,6 +10,7 @@
- #include <linux/swap.h>
- #include <linux/writeback.h>
- #include <linux/pagevec.h>
-+#include <linux/cleancache.h>
- #include "extent_io.h"
- #include "extent_map.h"
- #include "compat.h"
-@@ -1990,6 +1991,13 @@ static int __extent_read_full_page(struc
- 
- 	set_page_extent_mapped(page);
- 
-+	if (!PageUptodate(page)) {
-+		if (cleancache_get_page(page) == 0) {
-+			BUG_ON(blocksize != PAGE_SIZE);
-+			goto out;
-+		}
-+	}
-+
- 	end = page_end;
- 	while (1) {
- 		lock_extent(tree, start, end, GFP_NOFS);
-@@ -2117,6 +2125,7 @@ static int __extent_read_full_page(struc
- 		cur = cur + iosize;
- 		page_offset += iosize;
+@@ -1367,6 +1368,7 @@ static int ext3_setup_super(struct super
+ 	} else {
+ 		ext3_msg(sb, KERN_INFO, "using internal journal");
  	}
-+out:
- 	if (!nr) {
- 		if (!PageError(page))
- 			SetPageUptodate(page);
++	cleancache_init_fs(sb);
+ 	return res;
+ }
+ 
