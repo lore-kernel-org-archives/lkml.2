@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813Ab1DNSEA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:04:00 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42289 "EHLO
+	id S933791Ab1DNSDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:03:55 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42310 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965050Ab1DNR7C (ORCPT
+	with ESMTP id S965053Ab1DNR7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:59:02 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
+Cc: stable-review@kernel.org, NeilBrown <neilb@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 194/209] block: Deprecate QUEUE_FLAG_CLUSTER and use queue_limits instead
-Date: Thu, 14 Apr 2011 13:55:52 -0400
-Message-Id: <1302803767-9715-81-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 196/209] md: fix regression with re-adding devices to arrays with no metadata
+Date: Thu, 14 Apr 2011 13:55:54 -0400
+Message-Id: <1302803767-9715-83-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,243 +22,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin K. Petersen <martin.petersen@oracle.com>
+From: NeilBrown <neilb@suse.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit e692cb668fdd5a712c6ed2a2d6f2a36ee83997b4 upstream.
+commit bf572541ab44240163eaa2d486b06f306a31d45a upstream.
 
-When stacking devices, a request_queue is not always available. This
-forced us to have a no_cluster flag in the queue_limits that could be
-used as a carrier until the request_queue had been set up for a
-metadevice.
+Commit 1a855a0606 (2.6.37-rc4) fixed a problem where devices were
+re-added when they shouldn't be but caused a regression in a less
+common case that means sometimes devices cannot be re-added when they
+should be.
 
-There were several problems with that approach. First of all it was up
-to the stacking device to remember to set queue flag after stacking had
-completed. Also, the queue flag and the queue limits had to be kept in
-sync at all times. We got that wrong, which could lead to us issuing
-commands that went beyond the max scatterlist limit set by the driver.
+In particular, when re-adding a device to an array without metadata
+we should always access the device, but after the above commit we
+didn't.
 
-The proper fix is to avoid having two flags for tracking the same thing.
-We deprecate QUEUE_FLAG_CLUSTER and use the queue limit directly in the
-block layer merging functions. The queue_limit 'no_cluster' is turned
-into 'cluster' to avoid double negatives and to ease stacking.
-Clustering defaults to being enabled as before. The queue flag logic is
-removed from the stacking function, and explicitly setting the cluster
-flag is no longer necessary in DM and MD.
+This patch sets the In_sync flag in that case so that the re-add
+succeeds.
 
-Reported-by: Ed Lin <ed.lin@promise.com>
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+This patch is suitable for any -stable kernel to which 1a855a0606 was
+applied.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- block/blk-merge.c       |    6 +++---
- block/blk-settings.c    |   25 ++-----------------------
- block/blk-sysfs.c       |    2 +-
- drivers/md/dm-table.c   |    5 -----
- drivers/md/md.c         |    3 ---
- drivers/scsi/scsi_lib.c |    3 +--
- include/linux/blkdev.h  |    9 ++++++---
- 7 files changed, 13 insertions(+), 40 deletions(-)
+ drivers/md/md.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 5e7dc99..01d85b5 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -22,7 +22,7 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 		return 0;
- 
- 	fbio = bio;
--	cluster = test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags);
-+	cluster = blk_queue_cluster(q);
- 	seg_size = 0;
- 	phys_size = nr_phys_segs = 0;
- 	for_each_bio(bio) {
-@@ -88,7 +88,7 @@ EXPORT_SYMBOL(blk_recount_segments);
- static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
- 				   struct bio *nxt)
- {
--	if (!test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags))
-+	if (!blk_queue_cluster(q))
- 		return 0;
- 
- 	if (bio->bi_seg_back_size + nxt->bi_seg_front_size >
-@@ -124,7 +124,7 @@ int blk_rq_map_sg(struct request_queue *q, struct request *rq,
- 	int nsegs, cluster;
- 
- 	nsegs = 0;
--	cluster = test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags);
-+	cluster = blk_queue_cluster(q);
- 
- 	/*
- 	 * for each bio in rq
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index 3430c1f..331763a 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -108,7 +108,7 @@ void blk_set_default_limits(struct queue_limits *lim)
- 	lim->alignment_offset = 0;
- 	lim->io_opt = 0;
- 	lim->misaligned = 0;
--	lim->no_cluster = 0;
-+	lim->cluster = 1;
- }
- EXPORT_SYMBOL(blk_set_default_limits);
- 
-@@ -451,15 +451,6 @@ EXPORT_SYMBOL(blk_queue_io_opt);
- void blk_queue_stack_limits(struct request_queue *t, struct request_queue *b)
- {
- 	blk_stack_limits(&t->limits, &b->limits, 0);
--
--	if (!t->queue_lock)
--		WARN_ON_ONCE(1);
--	else if (!test_bit(QUEUE_FLAG_CLUSTER, &b->queue_flags)) {
--		unsigned long flags;
--		spin_lock_irqsave(t->queue_lock, flags);
--		queue_flag_clear(QUEUE_FLAG_CLUSTER, t);
--		spin_unlock_irqrestore(t->queue_lock, flags);
--	}
- }
- EXPORT_SYMBOL(blk_queue_stack_limits);
- 
-@@ -530,7 +521,7 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
- 	t->io_min = max(t->io_min, b->io_min);
- 	t->io_opt = lcm(t->io_opt, b->io_opt);
- 
--	t->no_cluster |= b->no_cluster;
-+	t->cluster &= b->cluster;
- 	t->discard_zeroes_data &= b->discard_zeroes_data;
- 
- 	/* Physical block size a multiple of the logical block size? */
-@@ -626,7 +617,6 @@ void disk_stack_limits(struct gendisk *disk, struct block_device *bdev,
- 		       sector_t offset)
- {
- 	struct request_queue *t = disk->queue;
--	struct request_queue *b = bdev_get_queue(bdev);
- 
- 	if (bdev_stack_limits(&t->limits, bdev, offset >> 9) < 0) {
- 		char top[BDEVNAME_SIZE], bottom[BDEVNAME_SIZE];
-@@ -637,17 +627,6 @@ void disk_stack_limits(struct gendisk *disk, struct block_device *bdev,
- 		printk(KERN_NOTICE "%s: Warning: Device %s is misaligned\n",
- 		       top, bottom);
- 	}
--
--	if (!t->queue_lock)
--		WARN_ON_ONCE(1);
--	else if (!test_bit(QUEUE_FLAG_CLUSTER, &b->queue_flags)) {
--		unsigned long flags;
--
--		spin_lock_irqsave(t->queue_lock, flags);
--		if (!test_bit(QUEUE_FLAG_CLUSTER, &b->queue_flags))
--			queue_flag_clear(QUEUE_FLAG_CLUSTER, t);
--		spin_unlock_irqrestore(t->queue_lock, flags);
--	}
- }
- EXPORT_SYMBOL(disk_stack_limits);
- 
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 306759b..d246654 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -114,7 +114,7 @@ static ssize_t queue_max_segments_show(struct request_queue *q, char *page)
- 
- static ssize_t queue_max_segment_size_show(struct request_queue *q, char *page)
- {
--	if (test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags))
-+	if (blk_queue_cluster(q))
- 		return queue_var_show(queue_max_segment_size(q), (page));
- 
- 	return queue_var_show(PAGE_CACHE_SIZE, (page));
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index 9924ea2..4a83321 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -1081,11 +1081,6 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
- 	 */
- 	q->limits = *limits;
- 
--	if (limits->no_cluster)
--		queue_flag_clear_unlocked(QUEUE_FLAG_CLUSTER, q);
--	else
--		queue_flag_set_unlocked(QUEUE_FLAG_CLUSTER, q);
--
- 	dm_table_set_integrity(t);
- 
- 	/*
 diff --git a/drivers/md/md.c b/drivers/md/md.c
-index cf511de..e56e35e 100644
+index e56e35e..7db9ceb 100644
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -4185,9 +4185,6 @@ static int md_alloc(dev_t dev, char *name)
- 		goto abort;
- 	mddev->queue->queuedata = mddev;
- 
--	/* Can be unlocked because the queue is new: no concurrency */
--	queue_flag_set_unlocked(QUEUE_FLAG_CLUSTER, mddev->queue);
--
- 	blk_queue_make_request(mddev->queue, md_make_request);
- 
- 	disk = alloc_disk(1 << shift);
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 9cc450b..c2a9e12 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1640,9 +1640,8 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
- 
- 	blk_queue_max_segment_size(q, dma_get_max_seg_size(dev));
- 
--	/* New queue, no concurrency on queue_flags */
- 	if (!shost->use_clustering)
--		queue_flag_clear_unlocked(QUEUE_FLAG_CLUSTER, q);
-+		q->limits.cluster = 0;
- 
- 	/*
- 	 * set a reasonable default alignment on word boundaries: the
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 68eef76..cda62da 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -321,7 +321,7 @@ struct queue_limits {
- 
- 	unsigned char		misaligned;
- 	unsigned char		discard_misaligned;
--	unsigned char		no_cluster;
-+	unsigned char		cluster;
- 	signed char		discard_zeroes_data;
- };
- 
-@@ -444,7 +444,6 @@ struct request_queue
- #endif
- };
- 
--#define QUEUE_FLAG_CLUSTER	0	/* cluster several segments into 1 */
- #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
- #define QUEUE_FLAG_STOPPED	2	/* queue is stopped */
- #define	QUEUE_FLAG_SYNCFULL	3	/* read queue has been filled */
-@@ -465,7 +464,6 @@ struct request_queue
- #define QUEUE_FLAG_NOXMERGES   17	/* No extended merges */
- 
- #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
--				 (1 << QUEUE_FLAG_CLUSTER) |		\
- 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
- 				 (1 << QUEUE_FLAG_SAME_COMP))
- 
-@@ -632,6 +630,11 @@ enum {
- 
- #define rq_data_dir(rq)		((rq)->cmd_flags & 1)
- 
-+static inline unsigned int blk_queue_cluster(struct request_queue *q)
-+{
-+	return q->limits.cluster;
-+}
-+
- /*
-  * We regard a request as sync, if either a read or a sync write
-  */
+@@ -5008,9 +5008,10 @@ static int add_new_disk(mddev_t * mddev, mdu_disk_info_t *info)
+ 		/* set saved_raid_disk if appropriate */
+ 		if (!mddev->persistent) {
+ 			if (info->state & (1<<MD_DISK_SYNC)  &&
+-			    info->raid_disk < mddev->raid_disks)
++			    info->raid_disk < mddev->raid_disks) {
+ 				rdev->raid_disk = info->raid_disk;
+-			else
++				set_bit(In_sync, &rdev->flags);
++			} else
+ 				rdev->raid_disk = -1;
+ 		} else
+ 			super_types[mddev->major_version].
 -- 
 1.7.4.4
 
