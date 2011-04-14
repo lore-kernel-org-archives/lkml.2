@@ -1,150 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758966Ab1DNPA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 11:00:59 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49742 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756633Ab1DNPA6 (ORCPT
+	id S1759086Ab1DNPCc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 11:02:32 -0400
+Received: from elasmtp-masked.atl.sa.earthlink.net ([209.86.89.68]:58801 "EHLO
+	elasmtp-masked.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754203Ab1DNPCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 11:00:58 -0400
-Date: Thu, 14 Apr 2011 17:00:36 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mstowe@redhat.com" <mstowe@redhat.com>,
-        "dnelson@redhat.com" <dnelson@redhat.com>,
-        "rja@americas.sgi.com" <rja@americas.sgi.com>
-Subject: [PATCH -v3] x86, MCE: Drop the default decoding notifier
-Message-ID: <20110414150036.GG10080@aftab>
-References: <20110413132409.GB1900@gere.osrc.amd.com>
- <1302701810-2471-2-git-send-email-bp@amd64.org>
- <4DA5ACB2.1070505@redhat.com>
- <20110413141829.GE1987@aftab>
- <4DA5B1B1.5090905@redhat.com>
- <20110413142648.GB2791@aftab>
- <20110413143642.GC2791@aftab>
- <4DA5D6CC.9090500@redhat.com>
- <4DA5D9FB.1010503@redhat.com>
- <20110413173705.GJ2791@aftab>
+	Thu, 14 Apr 2011 11:02:30 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=YgAdPJ2ns9AQHdFpjo9wtuSlGVmsPi0ZCl0fBixaoZE9Ud2lSTYXHqOZVbCLb6Q1;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4DA70C84.9050403@earthlink.net>
+Date: Thu, 14 Apr 2011 11:02:28 -0400
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110413173705.GJ2791@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Daniel Walter <sahne@0x90.at>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 1/1] ipv6: RTA_PREFSRC support for ipv6 route source address
+ selection
+References: <20110414071057.GB78446@0x90.at> <4DA6FE25.70608@earthlink.net> <20110414144954.GA79918@0x90.at>
+In-Reply-To: <20110414144954.GA79918@0x90.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79401e0c3727488ef6764d3405053a2a65350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 01:37:05PM -0400, Borislav Petkov wrote:
-> In the worst case, we will report 32 CEs before panicking. For that case
-> we either do printk_once as Tony suggested or we ratelimit it. I'll
-> update the patch.
+On 04/14/2011 10:49 AM, Daniel Walter wrote:
+> On Thu, Apr 14, 2011 at 10:01:09AM -0400, Stephen Clark wrote:
+>    
+>> On 04/14/2011 03:10 AM, Daniel Walter wrote:
+>>      
+>>> [ipv6] Add support for RTA_PREFSRC
+>>>
+>>> This patch allows a user to select the preferred source address
+>>> for a specific IPv6-Route. It can be set via a netlink message
+>>> setting RTA_PREFSRC to a valid IPv6 address which must be
+>>> up on the device the route will be bound to.
+>>>
+>>>
+>>> Signed-off-by: Daniel Walter<dwalter@barracuda.com>
+>>> ---
+>>> Repost patch, after fixing some warnings pointed out on netdev@
+>>> applies clean against current linux-2.6 HEAD
+>>>
+>>>    include/net/ip6_fib.h   |    2 +
+>>>    include/net/ip6_route.h |    7 ++++
+>>>    net/ipv6/addrconf.c     |    2 +
+>>>    net/ipv6/ip6_output.c   |    8 ++--
+>>>    net/ipv6/route.c        |   72 +++++++++++++++++++++++++++++++++++++++++++++--
+>>>    5 files changed, 84 insertions(+), 7 deletions(-)
+>>>
+>>> ---
+>>> diff --git a/include/net/ip6_fib.h b/include/net/ip6_fib.h
+>>> index bc3cde0..98348d5 100644
+>>> --- a/include/net/ip6_fib.h
+>>> +++ b/include/net/ip6_fib.h
+>>> @@ -42,6 +42,7 @@ struct fib6_config {
+>>>
+>>>    	struct in6_addr	fc_dst;
+>>>    	struct in6_addr	fc_src;
+>>> +	struct in6_addr	fc_prefsrc;
+>>>    	struct in6_addr	fc_gateway;
+>>>
+>>>    	unsigned long	fc_expires;
+>>> @@ -107,6 +108,7 @@ struct rt6_info {
+>>>    	struct rt6key			rt6i_dst ____cacheline_aligned_in_smp;
+>>>    	u32				rt6i_flags;
+>>>    	struct rt6key			rt6i_src;
+>>> +	struct rt6key			rt6i_prefsrc;
+>>>    	u32				rt6i_metric;
+>>>    	u32				rt6i_peer_genid;
+>>>
+>>> diff --git a/include/net/ip6_route.h b/include/net/ip6_route.h
+>>> index c850e5f..86b1cb4 100644
+>>> --- a/include/net/ip6_route.h
+>>> +++ b/include/net/ip6_route.h
+>>> @@ -84,6 +84,12 @@ extern int			ip6_route_add(struct fib6_config *cfg);
+>>>    extern int			ip6_ins_rt(struct rt6_info *);
+>>>    extern int			ip6_del_rt(struct rt6_info *);
+>>>
+>>> +extern int			ip6_route_get_saddr(struct net *net,
+>>> +						    struct rt6_info *rt,
+>>> +						    struct in6_addr *daddr,
+>>> +						    unsigned int prefs,
+>>> +						    struct in6_addr *saddr);
+>>> +
+>>>    extern struct rt6_info		*rt6_lookup(struct net *net,
+>>>    					    const struct in6_addr *daddr,
+>>>    					    const struct in6_addr *saddr,
+>>> @@ -141,6 +147,7 @@ struct rt6_rtnl_dump_arg {
+>>>    extern int rt6_dump_route(struct rt6_info *rt, void *p_arg);
+>>>    extern void rt6_ifdown(struct net *net, struct net_device *dev);
+>>>    extern void rt6_mtu_change(struct net_device *dev, unsigned mtu);
+>>> +extern void rt6_remove_prefsrc(struct inet6_ifaddr *ifp);
+>>>
+>>>
+>>>    /*
+>>> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+>>> index 1493534..129d7e1 100644
+>>> --- a/net/ipv6/addrconf.c
+>>> +++ b/net/ipv6/addrconf.c
+>>> @@ -825,6 +825,8 @@ static void ipv6_del_addr(struct inet6_ifaddr *ifp)
+>>>    		dst_release(&rt->dst);
+>>>    	}
+>>>
+>>> +	/* clean up prefsrc entries */
+>>> +	rt6_remove_prefsrc(ifp);
+>>>    out:
+>>>    	in6_ifa_put(ifp);
+>>>    }
+>>> diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+>>> index 46cf7be..1f4c096 100644
+>>> --- a/net/ipv6/ip6_output.c
+>>> +++ b/net/ipv6/ip6_output.c
+>>> @@ -930,10 +930,10 @@ static int ip6_dst_lookup_tail(struct sock *sk,
+>>>    		goto out_err_release;
+>>>
+>>>    	if (ipv6_addr_any(&fl6->saddr)) {
+>>> -		err = ipv6_dev_get_saddr(net, ip6_dst_idev(*dst)->dev,
+>>> -					&fl6->daddr,
+>>> -					 sk ? inet6_sk(sk)->srcprefs : 0,
+>>> -					&fl6->saddr);
+>>> +		struct rt6_info *rt = (struct rt6_info *) *dst;
+>>> +		err = ip6_route_get_saddr(net, rt,&fl6->daddr,
+>>> +					  sk ? inet6_sk(sk)->srcprefs : 0,
+>>> +					&fl6->saddr);
+>>>    		if (err)
+>>>    			goto out_err_release;
+>>>    	}
+>>> diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+>>> index 843406f..af26cc10 100644
+>>> --- a/net/ipv6/route.c
+>>> +++ b/net/ipv6/route.c
+>>> @@ -1325,6 +1325,16 @@ int ip6_route_add(struct fib6_config *cfg)
+>>>    	if (dev == NULL)
+>>>    		goto out;
+>>>
+>>> +	if (!ipv6_addr_any(&cfg->fc_prefsrc)) {
+>>> +		if (!ipv6_chk_addr(net,&cfg->fc_prefsrc, dev, 0)) {
+>>> +			err = -EINVAL;
+>>> +			goto out;
+>>> +		}
+>>> +		ipv6_addr_copy(&rt->rt6i_prefsrc.addr,&cfg->fc_prefsrc);
+>>> +		rt->rt6i_prefsrc.plen = 128;
+>>> +	} else
+>>> +		rt->rt6i_prefsrc.plen = 0;
+>>> +
+>>>    	if (cfg->fc_flags&   (RTF_GATEWAY | RTF_NONEXTHOP)) {
+>>>    		rt->rt6i_nexthop = __neigh_lookup_errno(&nd_tbl,&rt->rt6i_gateway, dev);
+>>>    		if (IS_ERR(rt->rt6i_nexthop)) {
+>>> @@ -2037,6 +2047,55 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
+>>>    	return rt;
+>>>    }
+>>>
+>>> +int ip6_route_get_saddr(struct net *net,
+>>> +			struct rt6_info *rt,
+>>> +			struct in6_addr *daddr,
+>>> +			unsigned int prefs,
+>>> +			struct in6_addr *saddr)
+>>> +{
+>>> +	struct inet6_dev *idev = ip6_dst_idev((struct dst_entry*)rt);
+>>> +	int err = 0;
+>>> +	if (rt->rt6i_prefsrc.plen)
+>>> +		ipv6_addr_copy(saddr,&rt->rt6i_prefsrc.addr);
+>>> +	else
+>>> +		err = ipv6_dev_get_saddr(net, idev ? idev->dev : NULL,
+>>> +					 daddr, prefs, saddr);
+>>> +	return err;
+>>> +}
+>>> +
+>>> +/* remove deleted ip from prefsrc entries */
+>>> +struct arg_dev_net_ip {
+>>> +	struct net_device *dev;
+>>> +	struct net *net;
+>>> +	struct in6_addr *addr;
+>>> +};
+>>> +
+>>> +static int fib6_remove_prefsrc(struct rt6_info *rt, void *arg)
+>>> +{
+>>> +	struct net_device *dev = ((struct arg_dev_net_ip *)arg)->dev;
+>>> +	struct net *net = ((struct arg_dev_net_ip *)arg)->net;
+>>> +	struct in6_addr *addr = ((struct arg_dev_net_ip *)arg)->addr;
+>>> +
+>>> +	if (((void *)rt->rt6i_dev == dev || dev == NULL)&&
+>>> +	    rt != net->ipv6.ip6_null_entry&&
+>>> +	    ipv6_addr_equal(addr,&rt->rt6i_prefsrc.addr)) {
+>>> +		/* remove prefsrc entry */
+>>> +		rt->rt6i_prefsrc.plen = 0;
+>>> +	}
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +void rt6_remove_prefsrc(struct inet6_ifaddr *ifp)
+>>> +{
+>>> +	struct net *net = dev_net(ifp->idev->dev);
+>>> +	struct arg_dev_net_ip adni = {
+>>> +		.dev = ifp->idev->dev,
+>>> +		.net = net,
+>>> +		.addr =&ifp->addr,
+>>> +	};
+>>> +	fib6_clean_all(net, fib6_remove_prefsrc, 0,&adni);
+>>> +}
+>>> +
+>>>    struct arg_dev_net {
+>>>    	struct net_device *dev;
+>>>    	struct net *net;
+>>> @@ -2183,6 +2242,9 @@ static int rtm_to_fib6_config(struct sk_buff *skb, struct nlmsghdr *nlh,
+>>>    		nla_memcpy(&cfg->fc_src, tb[RTA_SRC], plen);
+>>>    	}
+>>>
+>>> +	if (tb[RTA_PREFSRC])
+>>> +		nla_memcpy(&cfg->fc_prefsrc, tb[RTA_PREFSRC], 16);
+>>> +
+>>>    	if (tb[RTA_OIF])
+>>>    		cfg->fc_ifindex = nla_get_u32(tb[RTA_OIF]);
+>>>
+>>> @@ -2325,13 +2387,17 @@ static int rt6_fill_node(struct net *net,
+>>>    #endif
+>>>    			NLA_PUT_U32(skb, RTA_IIF, iif);
+>>>    	} else if (dst) {
+>>> -		struct inet6_dev *idev = ip6_dst_idev(&rt->dst);
+>>>    		struct in6_addr saddr_buf;
+>>> -		if (ipv6_dev_get_saddr(net, idev ? idev->dev : NULL,
+>>> -				       dst, 0,&saddr_buf) == 0)
+>>> +		if (ip6_route_get_saddr(net, rt, dst, 0,&saddr_buf) == 0)
+>>>    			NLA_PUT(skb, RTA_PREFSRC, 16,&saddr_buf);
+>>>    	}
+>>>
+>>> +	if (rt->rt6i_prefsrc.plen) {
+>>> +		struct in6_addr saddr_buf;
+>>> +		ipv6_addr_copy(&saddr_buf,&rt->rt6i_prefsrc.addr);
+>>> +		NLA_PUT(skb, RTA_PREFSRC, 16,&saddr_buf);
+>>> +	}
+>>> +
+>>>    	if (rtnetlink_put_metrics(skb, dst_metrics_ptr(&rt->dst))<   0)
+>>>    		goto nla_put_failure;
+>>>        
+>> What userspace application will be used to set this?
+>>      
+> iproute2 already has support for this, since it is using
+> RTA_PREFSRC for ipv4.
+>
+> ip -6 r a 2001:db8:a::/64 via 2001:db8:b::1 src 2001:db8:b::2
+>
+>    
+Fantastic!
 
-Ok, how about the following, I ratelimit the printk to the default of 10
-messages per 5 seconds. I've also got the hardware MCE injection patches
-ready and will do some testing with them.
-
---
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Wed, 13 Apr 2011 14:32:06 +0200
-Subject: [PATCH -v3] x86, MCE: Drop the default decoding notifier
-
-The default notifier doesn't make a lot of sense to call in the
-correctable errors case. Drop it and emit the mcelog decoding hint only
-in the uncorrectable errors case and when no notifier is registered.
-Also, limit the issual of the "mcelog" message in the remote case when
-we dump unreported CEs before panicking.
-
-While at it, remove unused old x86_mce_decode_callback from the header.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/include/asm/mce.h       |    2 --
- arch/x86/kernel/cpu/mcheck/mce.c |   23 ++++++-----------------
- 2 files changed, 6 insertions(+), 19 deletions(-)
-
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index eb16e94..021979a 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
- static inline void enable_p5_mce(void) {}
- #endif
- 
--extern void (*x86_mce_decode_callback)(struct mce *m);
--
- void mce_setup(struct mce *m);
- void mce_log(struct mce *m);
- DECLARE_PER_CPU(struct sys_device, mce_dev);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 68e2303..679bd9e 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -105,20 +105,6 @@ static int			cpu_missing;
- ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
- EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
- 
--static int default_decode_mce(struct notifier_block *nb, unsigned long val,
--			       void *data)
--{
--	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
--	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
--
--	return NOTIFY_STOP;
--}
--
--static struct notifier_block mce_dec_nb = {
--	.notifier_call = default_decode_mce,
--	.priority      = -1,
--};
--
- /* MCA banks polled by the period polling timer for corrected events */
- DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
-@@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
- 
- static void print_mce(struct mce *m)
- {
-+	int ret = 0;
-+
- 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
- 	       m->extcpu, m->mcgstatus, m->bank, m->status);
- 
-@@ -239,7 +227,10 @@ static void print_mce(struct mce *m)
- 	 * Print out human-readable details about the MCE error,
- 	 * (if the CPU has an implementation for that)
- 	 */
--	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+	if (ret != NOTIFY_STOP)
-+		printk_ratelimited(KERN_EMERG HW_ERR
-+				   "Run the above through 'mcelog --ascii'\n");
- }
- 
- #define PANIC_TIMEOUT 5 /* 5 seconds */
-@@ -1721,8 +1712,6 @@ __setup("mce", mcheck_enable);
- 
- int __init mcheck_init(void)
- {
--	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
--
- 	mcheck_intel_therm_init();
- 
- 	return 0;
 -- 
-1.7.4.rc2
+
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
 
 
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
