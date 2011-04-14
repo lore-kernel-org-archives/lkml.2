@@ -1,118 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab1DNH6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 03:58:52 -0400
-Received: from mail.ispras.ru ([83.149.199.43]:47923 "EHLO mail.ispras.ru"
+	id S1757005Ab1DNIFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 04:05:36 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36114 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab1DNH6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 03:58:51 -0400
-Message-ID: <4DA6A8C9.3060705@ispras.ru>
-Date: Thu, 14 Apr 2011 11:56:57 +0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1756421Ab1DNIFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 04:05:25 -0400
+Date: Thu, 14 Apr 2011 10:05:06 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, maciej.rutecki@gmail.com,
+        Shaun Ruffell <sruffell@digium.com>, Don Zickus <dzickus@redhat.com>,
+        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
+ proper MSR register to catch" and NMIs
+Message-ID: <20110414080506.GA23965@elte.hu>
+References: <20110406223036.GA15721@digium.com>
+ <201104132133.51958.maciej.rutecki@gmail.com>
+ <4DA6011F.7070405@openvz.org>
+ <20110414064737.GB15535@elte.hu>
+ <BANLkTinC18PetP=dzCsfOL_v_1hGv0jUag@mail.gmail.com>
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] md: fix unchecked interruptible mutex locks
-References: <4DA698BE.70903@ispras.ru> <20110414170814.40f4d3eb@notabene.brown>
-In-Reply-To: <20110414170814.40f4d3eb@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinC18PetP=dzCsfOL_v_1hGv0jUag@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 11:08 AM, NeilBrown wrote:
+
+* Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+
+> On Thu, Apr 14, 2011 at 10:47 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> >
+> >> -     apic_write(APIC_LVTPC, APIC_DM_NMI);
+> >>
+> >>       handled = x86_pmu.handle_irq(args->regs);
+> >>       if (!handled)
+> >>               return NOTIFY_DONE;
+> >>
+> >> +     /*
+> >> +      * Unmasking should be done after IRQ handled, otherwise
+> >> +      * there is a race between clearing of counter overflow
+> >> +      * flag and LTV entry unmasking (which might lead to double
+> >> +      * NMIs generation).
+> >> +      */
+> >> +     apic_write(APIC_LVTPC, APIC_DM_NMI);
+> >
+> > Here we could leak a masked IRQ through the !handled path. If we got a LVTPC
+> > irq we better handle it and unmask the LVTPC unconditionally - regardless of
+> > whether we consider it 'handled' or not from the kernel POV ...
+> >
+> > Thanks,
+> >
+> >        Ingo
 > 
-> I would mark mddev_lock as __must_check__ (or however it is spelt) and fix
-> the errors produced.
-> 
-> I think the call in md_stop_writes is the only one where an uninterruptible
-> wait is needed - I'd probaby just change that to an explicit "mutex_lock",
-> but I wouldn't be against creating "mddev_lock_uninterruptible" for that case.
-> 
+> If there is no counters overflowed I believe we should not poke LVTPC until 
+> we sure NMI comes from it (and counter overflow is the only sign that NMI 
+> came from LVTPC as far as I may say, and I see also a possibility for race if 
+> counter signal reaches LVTPC and it is being processed inside apic chip 
+> {which might take some time too before real NMI signal appears in cpu} and as 
+> result hard to tell what we get in output -- double nmi again or something 
+> else).
 
-That is fine for me, but actually I do not see a good way to fix 
-rdev_size_store as well (at least for mddev_lock(my_mddev)).
-Please find another try.
+Well, we unmasked unconditionally before. If we unmask conditionally now, we 
+risk not unmasking. We risk a completely stuck PMU (there wont ever come *any* 
+NMI from it if we ever forget to unmask) versus spurious NMIs.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Maybe we can do it - but it will need a lot of testing on a lot of CPU types to 
+make sure there's no other CPU quirks in this area ...
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/md/md.c |   22 ++++++++++++++++------
- 1 files changed, 16 insertions(+), 6 deletions(-)
+So unless the conditional unmasking fixes a real bug (in kgdb or elsewhere) 
+lets unmask unconditionally now to fix the P4 regression in .39 - and queue up 
+a *separate* patch that moves it even further down and makes it conditional - 
+but queue that up for .40.
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index b12b377..4f83f16 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -623,11 +623,16 @@ static mddev_t * mddev_find(dev_t unit)
- 	goto retry;
- }
- 
--static inline int mddev_lock(mddev_t * mddev)
-+static inline int __must_check mddev_lock(mddev_t *mddev)
- {
- 	return mutex_lock_interruptible(&mddev->reconfig_mutex);
- }
- 
-+static inline void mddev_lock_uninterruptible(mddev_t *mddev)
-+{
-+	return mutex_lock(&mddev->reconfig_mutex);
-+}
-+
- static inline int mddev_is_locked(mddev_t *mddev)
- {
- 	return mutex_is_locked(&mddev->reconfig_mutex);
-@@ -2610,13 +2615,18 @@ rdev_size_store(mdk_rdev_t *rdev, const char *buf, size_t len)
- 		 */
- 		mddev_t *mddev;
- 		int overlap = 0;
-+		int intr = 0;
- 		struct list_head *tmp;
- 
- 		mddev_unlock(my_mddev);
- 		for_each_mddev(mddev, tmp) {
- 			mdk_rdev_t *rdev2;
- 
--			mddev_lock(mddev);
-+			if (mddev_lock(mddev)) {
-+				mddev_put(mddev);
-+				intr = 1;
-+				break;
-+			}
- 			list_for_each_entry(rdev2, &mddev->disks, same_set)
- 				if (rdev->bdev == rdev2->bdev &&
- 				    rdev != rdev2 &&
-@@ -2632,8 +2642,8 @@ rdev_size_store(mdk_rdev_t *rdev, const char *buf, size_t len)
- 				break;
- 			}
- 		}
--		mddev_lock(my_mddev);
--		if (overlap) {
-+		mddev_lock_uninterruptible(my_mddev);
-+		if (overlap || intr) {
- 			/* Someone else could have slipped in a size
- 			 * change here, but doing so is just silly.
- 			 * We put oldsectors back because we *know* it is
-@@ -2641,7 +2651,7 @@ rdev_size_store(mdk_rdev_t *rdev, const char *buf, size_t len)
- 			 * itself
- 			 */
- 			rdev->sectors = oldsectors;
--			return -EBUSY;
-+			return overlap ? -EBUSY : -EINTR;
- 		}
- 	}
- 	return len;
-@@ -4748,7 +4758,7 @@ static void __md_stop_writes(mddev_t *mddev)
- 
- void md_stop_writes(mddev_t *mddev)
- {
--	mddev_lock(mddev);
-+	mddev_lock_uninterruptible(mddev);
- 	__md_stop_writes(mddev);
- 	mddev_unlock(mddev);
- }
--- 
-1.7.1
+Thanks,
+
+	Ingo
