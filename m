@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab1DNBKl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 21:10:41 -0400
-Received: from MAIL.13thfloor.at ([213.145.232.33]:53986 "EHLO
-	MAIL.13thfloor.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab1DNBKk (ORCPT
+	id S1754826Ab1DNBVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 21:21:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31431 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab1DNBV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 21:10:40 -0400
-Date: Thu, 14 Apr 2011 03:10:37 +0200
-From: Herbert Poetzl <herbert@13thfloor.at>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] genhd: remove useless cast in diskstats_show()
-Message-ID: <20110414011037.GI11970@MAIL.13thfloor.at>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.11
+	Wed, 13 Apr 2011 21:21:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=oB35Vo4MdV9TBmCm0JEvioWpBwexHi8jTLPM8HQvF6g6LMFVxpxt2jilmJazK3vt8U
+         ctgbMSCGIF9YRsXE7UsA==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Rik van Riel <riel@redhat.com>, Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH 0/2] sched: Avoid frequent cross taskgroup switches -v2
+Date: Wed, 13 Apr 2011 18:21:08 -0700
+Message-Id: <1302744070-30079-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <AANLkTi=ao5dci3gb=+UmegZx_ag_X6gAFZ5mBb+8=9hR@mail.gmail.com>
+References: <AANLkTi=ao5dci3gb=+UmegZx_ag_X6gAFZ5mBb+8=9hR@mail.gmail.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This patch removes the (unsigned long long) cast in
-diskstats_show() and adjusts the seq_printf() format
-string to 'unsigned long'
+As I did not hear any other comments on v1, I am assuming that the
+above mentioned case of giving buddy privilege to a SCHED_IDLE task
+from one cgroup when there is a non SCHED_IDLE task in other cgroup
+is not an important case to handle and keeping this change simpler is better.
 
-diskstats_show() uses part_stat_read() to get the
-stats, which either accesses the specified field in
-the struct disk_stats directly (non SMP) or sums
-up the per CPU values in a variable of the same
-type as the field, so in any case the result will
-have the same type and range as the specified field
-which for all disk_stats entries is unsigned long
+So, I am going with Paul's suggestion of sticking with original change,
+with some cleanups to handle the frequent CR3 switches problem.
 
-also, for unsigned long ranges the output of %lu
-should be identical to the one of %llu, so no cange
-in teh actual proc entry contents
+Here is the v2 version of the change, split into two patches.
 
-best,
-Herbert
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 
-Signed-off-by: Herbert Poetzl <herbert@13thfloor.at>
----
---- linux/block/genhd.c	2011-03-07 16:53:26.000000000 +0100
-+++ linux/block/genhd.c	2011-04-14 03:36:35.000000000 +0200
-@@ -1154,17 +1154,17 @@ static int diskstats_show(struct seq_fil
- 		cpu = part_stat_lock();
- 		part_round_stats(cpu, hd);
- 		part_stat_unlock();
--		seq_printf(seqf, "%4d %7d %s %lu %lu %llu "
--			   "%u %lu %lu %llu %u %u %u %u\n",
-+		seq_printf(seqf, "%4d %7d %s %lu %lu %lu "
-+			   "%u %lu %lu %lu %u %u %u %u\n",
- 			   MAJOR(part_devt(hd)), MINOR(part_devt(hd)),
- 			   disk_name(gp, hd->partno, buf),
- 			   part_stat_read(hd, ios[0]),
- 			   part_stat_read(hd, merges[0]),
--			   (unsigned long long)part_stat_read(hd, sectors[0]),
-+			   part_stat_read(hd, sectors[0]),
- 			   jiffies_to_msecs(part_stat_read(hd, ticks[0])),
- 			   part_stat_read(hd, ios[1]),
- 			   part_stat_read(hd, merges[1]),
--			   (unsigned long long)part_stat_read(hd, sectors[1]),
-+			   part_stat_read(hd, sectors[1]),
- 			   jiffies_to_msecs(part_stat_read(hd, ticks[1])),
- 			   part_in_flight(hd),
- 			   jiffies_to_msecs(part_stat_read(hd, io_ticks)),
