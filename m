@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964960Ab1DNR6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:58:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42106 "EHLO
+	id S965020Ab1DNR6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:58:52 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42181 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933626Ab1DNR6c (ORCPT
+	with ESMTP id S964978Ab1DNR6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:32 -0400
+	Thu, 14 Apr 2011 13:58:42 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Slava Pestov <slavapestov@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 161/209] nohz: Fix get_next_timer_interrupt() vs cpu hotplug
-Date: Thu, 14 Apr 2011 13:55:19 -0400
-Message-Id: <1302803767-9715-48-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 176/209] tracing: Fix panic when lseek() called on "trace" opened for writing
+Date: Thu, 14 Apr 2011 13:55:34 -0400
+Message-Id: <1302803767-9715-63-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,78 +23,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Slava Pestov <slavapestov@google.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit dbd87b5af055a0cc9bba17795c9a2b0d17795389 upstream.
+commit 364829b1263b44aa60383824e4c1289d83d78ca7 upstream.
 
-This fixes a bug as seen on 2.6.32 based kernels where timers got
-enqueued on offline cpus.
+The file_ops struct for the "trace" special file defined llseek as seq_lseek().
+However, if the file was opened for writing only, seq_open() was not called,
+and the seek would dereference a null pointer, file->private_data.
 
-If a cpu goes offline it might still have pending timers. These will
-be migrated during CPU_DEAD handling after the cpu is offline.
-However while the cpu is going offline it will schedule the idle task
-which will then call tick_nohz_stop_sched_tick().
+This patch introduces a new wrapper for seq_lseek() which checks if the file
+descriptor is opened for reading first. If not, it does nothing.
 
-That function in turn will call get_next_timer_intterupt() to figure
-out if the tick of the cpu can be stopped or not. If it turns out that
-the next tick is just one jiffy off (delta_jiffies == 1)
-tick_nohz_stop_sched_tick() incorrectly assumes that the tick should
-not stop and takes an early exit and thus it won't update the load
-balancer cpu.
-
-Just afterwards the cpu will be killed and the load balancer cpu could
-be the offline cpu.
-
-On 2.6.32 based kernel get_nohz_load_balancer() gets called to decide
-on which cpu a timer should be enqueued (see __mod_timer()). Which
-leads to the possibility that timers get enqueued on an offline cpu.
-These will never expire and can cause a system hang.
-
-This has been observed 2.6.32 kernels. On current kernels
-__mod_timer() uses get_nohz_timer_target() which doesn't have that
-problem. However there might be other problems because of the too
-early exit tick_nohz_stop_sched_tick() in case a cpu goes offline.
-
-The easiest and probably safest fix seems to be to let
-get_next_timer_interrupt() just lie and let it say there isn't any
-pending timer if the current cpu is offline.
-
-I also thought of moving migrate_[hr]timers() from CPU_DEAD to
-CPU_DYING, but seeing that there already have been fixes at least in
-the hrtimer code in this area I'm afraid that this could add new
-subtle bugs.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20101201091109.GA8984@osiris.boeblingen.de.ibm.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Slava Pestov <slavapestov@google.com>
+LKML-Reference: <1290640396-24179-1-git-send-email-slavapestov@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/timer.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ kernel/trace/trace.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index aeb6a54..b7e3951 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1173,6 +1173,12 @@ unsigned long get_next_timer_interrupt(unsigned long now)
- 	struct tvec_base *base = __get_cpu_var(tvec_bases);
- 	unsigned long expires;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 44f916a..eb76a22 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2341,11 +2341,19 @@ tracing_write_stub(struct file *filp, const char __user *ubuf,
+ 	return count;
+ }
  
-+	/*
-+	 * Pretend that there is no timer pending if the cpu is offline.
-+	 * Possible pending timers will be migrated later to an active cpu.
-+	 */
-+	if (cpu_is_offline(smp_processor_id()))
-+		return now + NEXT_TIMER_MAX_DELTA;
- 	spin_lock(&base->lock);
- 	if (time_before_eq(base->next_timer, base->timer_jiffies))
- 		base->next_timer = __next_timer_interrupt(base);
++static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
++{
++	if (file->f_mode & FMODE_READ)
++		return seq_lseek(file, offset, origin);
++	else
++		return 0;
++}
++
+ static const struct file_operations tracing_fops = {
+ 	.open		= tracing_open,
+ 	.read		= seq_read,
+ 	.write		= tracing_write_stub,
+-	.llseek		= seq_lseek,
++	.llseek		= tracing_seek,
+ 	.release	= tracing_release,
+ };
+ 
 -- 
 1.7.4.4
 
