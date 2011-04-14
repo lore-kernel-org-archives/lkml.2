@@ -1,137 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab1DNWoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 18:44:20 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39280 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab1DNWoQ (ORCPT
+	id S1754404Ab1DNWpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 18:45:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56475 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754277Ab1DNWpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 18:44:16 -0400
-Date: Thu, 14 Apr 2011 15:44:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ
- related?)
-Message-ID: <20110414224411.GF2141@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <BANLkTikd2MpRPF37R+vCwnb7Lzzd6EiS7A@mail.gmail.com>
- <BANLkTinq=mC9rs5R3U8FPLCp-GgCJris_g@mail.gmail.com>
- <BANLkTimT9OhHLL5NaPOP30MdiMfmmmEcyQ@mail.gmail.com>
- <BANLkTikVW9Z=WxD7=w9c=Z6kHO-Za2ru8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikVW9Z=WxD7=w9c=Z6kHO-Za2ru8A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 14 Apr 2011 18:45:05 -0400
+Message-Id: <201104142244.p3EMiWTC010977@imap1.linux-foundation.org>
+Subject: mmotm 2011-04-14-15-08 uploaded
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+From: akpm@linux-foundation.org
+Date: Thu, 14 Apr 2011 15:08:47 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 12:19:34AM +0200, Sedat Dilek wrote:
-> On Thu, Apr 14, 2011 at 12:19 PM, Sedat Dilek
-> <sedat.dilek@googlemail.com> wrote:
-> > On Thu, Apr 14, 2011 at 11:16 AM, Sedat Dilek
-> > <sedat.dilek@googlemail.com> wrote:
-> >> [ Adding CC to RCU maintainer (Hi Paul :-)) ]
-> >>
-> >> Helping me for now with (see also Documentation/RCU/stallwarn.txt):
-> >>
-> >> # cat /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
-> >> 0
-> >>
-> >> # echo "1" > /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
-> >>
-> >> # cat /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
-> >> 1
-> >>
-> >> - Sedat -
-> >>
-> >
-> > That workaround helped till a system-freeze when generating a tarball
-> > from my current kernel-tree.
-> > I switched back to my yesterday's linux-next kernel.
-> >
-> > - Sedat -
-> >
-> 
-> I isolated the culprit so far:
-> 
-> commit 900507fc62d5ba0164c07878dbc36ac97866a858
-> "rcu: move TREE_RCU from softirq to kthread"
-> 
-> With this revert my system does not show the symptoms I have reported.
+The mm-of-the-moment snapshot 2011-04-14-15-08 has been uploaded to
 
-Hmmm...  I never was able to reproduce this, but did find a workload
-that slowed up the grace periods.  I fixed that (which turned out to
-be a wakeup problem), but my hopes that it would also fix your problem
-were clearly unfounded.  I have once again stopped exporting this commit
-to -next.
+   http://userweb.kernel.org/~akpm/mmotm/
 
-							Thanx, Paul
+and will soon be available at
 
-> - Sedat -
-> 
-> >> On Thu, Apr 14, 2011 at 10:59 AM, Sedat Dilek
-> >> <sedat.dilek@googlemail.com> wrote:
-> >>> On Thu, Apr 14, 2011 at 7:01 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >>>> Hi all,
-> >>>>
-> >>>> Changes since 20110413:
-> >>>>
-> >>>> Dropped tree: xen
-> >>>>
-> >>>> The gfs2 tree lost its conflict.
-> >>>>
-> >>>> The net tree lost its build failure.
-> >>>>
-> >>>> The wireless tree lost all but one conflict.
-> >>>>
-> >>>> The trivial tree lost its conflict.
-> >>>>
-> >>>> The tip tree gained a conflict against Linus' tree.
-> >>>>
-> >>>> The usb tree gained a conflict against the s5p tree.
-> >>>>
-> >>>> The staging tree lost its conflicts.
-> >>>>
-> >>>> ----------------------------------------------------------------------------
-> >>>
-> >>> Just a quick hello and an attached dmesg.
-> >>> Yesterday's linux-next (next-20110413) with same kernel-config was OK.
-> >>>
-> >>> ( Also, I have seen a section-mismatch in x86 (IIRC mm) missing
-> >>> __init... but that's another story. )
-> >>>
-> >>> - Sedat -
-> >>>
-> >>> P.S.: diff between today's and yesterday's kernel-config
-> >>>
-> >>> $ diff -uprN /boot/config-2.6.39-rc3-next20110413.2-686-small
-> >>> /boot/config-2.6.39-rc3-next20110414.2-686-small
-> >>> --- /boot/config-2.6.39-rc3-next20110413.2-686-small    2011-04-13
-> >>> 12:32:09.000000000 +0200
-> >>> +++ /boot/config-2.6.39-rc3-next20110414.2-686-small    2011-04-14
-> >>> 10:23:25.000000000 +0200
-> >>> @@ -1,7 +1,7 @@
-> >>>  #
-> >>>  # Automatically generated make config: don't edit
-> >>>  # Linux/x86 2.6.39-rc3 Kernel Configuration
-> >>> -# Wed Apr 13 11:55:54 2011
-> >>> +# Thu Apr 14 09:43:03 2011
-> >>>  #
-> >>>  # CONFIG_64BIT is not set
-> >>>  CONFIG_X86_32=y
-> >>> @@ -2602,6 +2602,7 @@ CONFIG_USB_UHCI_HCD=m
-> >>>  #
-> >>>  # Enable Host or Gadget support to see Inventra options
-> >>>  #
-> >>> +# CONFIG_USB_RENESAS_USBHS is not set
-> >>>
-> >>>  #
-> >>>  # USB Device Class drivers
-> >>>
-> >>
-> >
+   git://zen-kernel.org/kernel/mmotm.git
+
+It contains the following patches against 2.6.39-rc3:
+
+origin.patch
+memcg-fix-mem_cgroup_rotate_reclaimable_page.patch
+mm-optimize-pfn-calculation-in-online_page.patch
+rtc-rtc-mc13xxx-fix-unterminated-platform_device_id-table.patch
+fs-partitions-ldmc-fix-oops-caused-by-corrupted-partition-table.patch
+mm-page_allocc-silence-build_all_zonelists-section-mismatch.patch
+vmstat-update-comment-regarding-stat_threshold.patch
+leds-leds-regulatorc-fix-handling-of-already-enabled-regulators.patch
+kstrtox-fix-compile-warnings-in-test.patch
+kstrtox-simpler-code-in-_kstrtoull.patch
+maintainers-add-arm-ts78xx-setup-platform-maintainer.patch
+maintainers-update-m68knommu-patterns.patch
+maintainers-update-various-tty-patterns.patch
+mm-add-vm-counters-for-transparent-hugepages.patch
+maintainers-update-stable-branch-info.patch
+tmpfs-fix-off-by-one-in-max_blocks-checks.patch
+drivers-misc-sgi-gru-grufilec-fix-the-wrong-members-of-gru_chip.patch
+brk-compat_brk-fix-detection-of-randomized-brk.patch
+mm-check-that-we-have-the-right-vma-in-__access_remote_vm.patch
+vmscan-all_unreclaimable-use-zone-all_unreclaimable-as-a-name.patch
+oom-kill-remove-boost_dying_task_prio.patch
+rapidio-add-idt-cps-1432-switch-definitions.patch
+rapidio-mpc85xx-fix-possible-mport-registration-problems.patch
+maintainers-change-mail-adress-of-hans-j-koch.patch
+fs-fhandlec-add-linux-personalityh-for-ia64.patch
+um-fix-call-tracer-and-bug-handler.patch
+um-disable-config_cmpxchg_local.patch
+ramfs-fix-memleak-on-no-mmu-arch.patch
+mm-thp-use-conventional-format-for-boolean-attributes.patch
+backlight-new-driver-for-the-adp8870-backlight-devices.patch
+linux-next.patch
+next-remove-localversion.patch
+i-need-old-gcc.patch
+hid-examplec-is-borked.patch
+arch-alpha-kernel-systblss-remove-debug-check.patch
+include-asm-generic-vmlinuxldsh-fix-__modver-section-warnings.patch
+drivers-i2c-busses-i2c-designware-corec-needs-delayh.patch
+vfs-avoid-large-kmallocs-for-the-fdtable.patch
+drivers-char-agp-genericc-fix-arbitrary-kernel-memory-writes.patch
+drivers-char-agp-genericc-fix-oom-and-buffer-overflow.patch
+drivers-scsi-pmcraid-reject-negative-request-size.patch
+drivers-scsi-mpt2sas-mpt2sas_ctlc-fix-unbounded-copy_to_user.patch
+acpi-remove-acpi_sleep=s4_nonvs.patch
+acerhdf-add-support-for-aspire-1410-bios-v13314.patch
+arch-x86-include-asm-delayh-fix-udelay-and-ndelay-for-8-bit-args.patch
+x86-fix-mmap-random-address-range.patch
+leds-new-pcengines-alix-system-driver-enables-leds-via-gpio-interface.patch
+gpio-show-explicit-dependency-between-gpio_cs5535-and-mfd_cs5535.patch
+sound-pci-hda-hda_codecc-fix-warning.patch
+msm-timer-migrate-to-timer-based-__delay.patch
+arch-arm-mach-ux500-mbox-db5500c-world-writable-sysfs-fifo-file.patch
+audit-always-follow-va_copy-with-va_end.patch
+fs-btrfs-inodec-eliminate-memory-leak.patch
+btrfs-dont-dereference-extent_mapping-if-null.patch
+drivers-gpu-drm-radeon-atomc-fix-warning.patch
+fb-fix-potential-deadlock-between-lock_fb_info-and-console_lock.patch
+cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
+fscache-remove-dead-code-under-config_workqueue_debugfs.patch
+bitmap-irq-add-smp_affinity_list-interface-to-proc-irq.patch
+leds-support-automatic-start-of-blinking-with-ledtrig-timer.patch
+drivers-leds-leds-pca9532c-add-gpio-capability.patch
+leds-route-kbd-leds-through-the-generic-leds-layer.patch
+net-irda-convert-bfin_sir-to-common-blackfin-uart-header.patch
+net-convert-%p-usage-to-%pk.patch
+backlight-add-backlight-type-fix.patch
+backlight-add-backlight-type-fix-fix.patch
+drivers-video-backlight-adp5520_blc-check-strict_strtoul-return-value.patch
+drivers-video-backlight-adp5520_blc-check-strict_strtoul-return-value-fix.patch
+i915-add-native-backlight-control.patch
+btusb-patch-add_apple_macbookpro62.patch
+drivers-message-fusion-mptsasc-fix-warning.patch
+scsi-fix-a-header-to-include-linux-typesh.patch
+aic94xx-world-writable-sysfs-update_bios-file.patch
+osst-wrong-index-used-in-inner-loop.patch
+osst-wrong-index-used-in-inner-loop-checkpatch-fixes.patch
+drivers-scsi-osstc-fix-warning.patch
+drbd-fix-warning.patch
+usb-yurex-recognize-generalkeys-wireless-presenter-as-generic-hid.patch
+drivers-usb-misc-usbtestc-fix-warning.patch
+xtensa-s-irq_chip-irq_data-in-various-places.patch
+mm.patch
+arch-mm-filter-disallowed-nodes-from-arch-specific-show_mem-functions.patch
+mmap-add-alignment-for-some-variables.patch
+mmap-avoid-unnecessary-anon_vma-lock.patch
+mmap-avoid-merging-cloned-vmas.patch
+mm-remove-unused-zone_idx-variable-from-set_migratetype_isolate.patch
+mm-nommu-sort-mm-mmap-list-properly.patch
+mm-nommu-sort-mm-mmap-list-properly-fix.patch
+mm-nommu-dont-scan-the-vma-list-when-deleting.patch
+mm-nommu-find-vma-using-the-sorted-vma-list.patch
+mm-nommu-check-the-vma-list-when-unmapping-file-mapped-vma.patch
+mm-nommu-fix-a-potential-memory-leak-in-do_mmap_private.patch
+mm-nommu-fix-a-compile-warning-in-do_mmap_pgoff.patch
+mm-per-node-vmstat-show-proper-vmstats.patch
+mm-per-node-vmstat-show-proper-vmstats-fix.patch
+mm-increase-reclaim_distance-to-30.patch
+mm-introduce-wait_on_page_locked_killable.patch
+x86mm-make-pagefault-killable.patch
+mm-mem-hotplug-fix-section-mismatch-setup_per_zone_inactive_ratio-should-be-__meminit.patch
+mm-mem-hotplug-recalculate-lowmem_reserve-when-memory-hotplug-occur.patch
+mm-mem-hotplug-update-pcp-stat_threshold-when-memory-hotplug-occur.patch
+mm-mem-hotplug-update-pcp-stat_threshold-when-memory-hotplug-occur-fix.patch
+mm-convert-vma-vm_flags-to-64-bit.patch
+mm-add-__nocast-attribute-to-vm_flags.patch
+fremap-convert-vm_flags-to-unsigned-long-long.patch
+procfs-convert-vm_flags-to-unsigned-long-long.patch
+mm-compaction-reverse-the-change-that-forbade-sync-migraton-with-__gfp_no_kswapd.patch
+oom-replace-pf_oom_origin-with-toggling-oom_score_adj.patch
+oom-replace-pf_oom_origin-with-toggling-oom_score_adj-update.patch
+mm-remove-unused-token-argument-from-apply_to_page_range-callback.patch
+mm-add-apply_to_page_range_batch.patch
+ioremap-use-apply_to_page_range_batch-for-ioremap_page_range.patch
+vmalloc-use-plain-pte_clear-for-unmaps.patch
+vmalloc-use-apply_to_page_range_batch-for-vunmap_page_range.patch
+vmalloc-use-apply_to_page_range_batch-for-vmap_page_range_noflush.patch
+vmalloc-use-apply_to_page_range_batch-in-alloc_vm_area.patch
+xen-mmu-use-apply_to_page_range_batch-in-xen_remap_domain_mfn_range.patch
+xen-grant-table-use-apply_to_page_range_batch.patch
+memsw-remove-noswapaccount-kernel-parameter.patch
+mm-batch-activate_page-to-reduce-lock-contention.patch
+xattrh-expose-string-defines-to-userspace.patch
+frv-duplicate-output_buffer-of-e03.patch
+frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
+hpet-factor-timer-allocate-from-open.patch
+arch-alpha-include-asm-ioh-s-extern-inline-static-inline.patch
+bluetooth-fix-build-warnings-on-defconfigs.patch
+init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure.patch
+init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure-checkpatch-fixes.patch
+init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure-fix.patch
+lib-vsprintfc-fix-interaction-of-kasprintf-and-vsnprintf-when-using-%pv.patch
+fcntlf_setfl-allow-setting-of-o_sync.patch
+lru_cache-use-correct-type-in-sizeof-for-allocation.patch
+lru_cache-use-correct-type-in-sizeof-for-allocation-fix.patch
+lib-add-kstrto_from_user.patch
+lib-consolidate-debug_per_cpu_maps.patch
+include-linux-genalloch-add-multiple-inclusion-guards.patch
+lib-genallocc-add-support-for-specifying-the-physical-address.patch
+lib-genpoolc-document-return-values-fix-gen_pool_add_virt-return-value.patch
+percpu_counter-change-return-value-and-add-comments.patch
+percpu_counter-change-return-value-and-add-comments-fix.patch
+checkpatch-add-check-for-line-continuations-in-quoted-strings.patch
+lib-hexdumpc-make-hex2bin-return-the-updated-src-address.patch
+fs-binfmt_miscc-use-kernels-hex_to_bin-method.patch
+fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix.patch
+fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix-fix.patch
+fs-ncpfs-inodec-suppress-used-uninitialised-warning.patch
+vt-add-k_off-return-value-to-vt_ioctl-kdgkbmode.patch
+drivers-tty-vt-vt_ioctlc-repair-insane-expression.patch
+rtc-add-support-for-the-rtc-in-via-vt8500-and-compatibles.patch
+rtc-add-em3027-rtc-driver.patch
+rtc-add-rv3029c2-rtc-support.patch
+rtc-add-basic-support-for-st-m41t93-spi-rtc.patch
+drivers-rtc-rtc-mrstc-use-release_mem_region-after-request_mem_region.patch
+drivers-rtc-rtc-mrstc-use-release_mem_region-after-request_mem_region-fix.patch
+rtc-driver-for-pt7c4338-chip.patch
+rtc-driver-for-pt7c4338-chip-checkpatch-fixes.patch
+rtc-driver-for-pt7c4338-chip-fix.patch
+gpio-add-new-altera-pio-driver.patch
+gpio-add-new-altera-pio-driver-update.patch
+gpio-make-gpio_requestfree_array-gpio-array-parameter-const.patch
+jbd-remove-dependency-on-__gfp_nofail.patch
+ufs-truncated-values-handling-64-bit-metadata.patch
+documentation-atomic_opstxt-avoid-volatile-in-sample-code.patch
+documentation-accounting-getdelaysc-fix-unused-var-warning.patch
+documentation-accounting-getdelaysc-handle-sendto-failures.patch
+cgroups-read-write-lock-clone_thread-forking-per-threadgroup.patch
+cgroups-add-per-thread-subsystem-callbacks.patch
+cgroups-make-procs-file-writable.patch
+cgroups-use-flex_array-in-attach_proc.patch
+cgroup-remove-the-ns_cgroup.patch
+mm-move-enum-vm_event_item-into-a-standalone-header-file.patch
+memcg-count-the-soft_limit-reclaim-in-global-background-reclaim.patch
+memcg-add-stats-to-monitor-soft_limit-reclaim.patch
+add-the-pagefault-count-into-memcg-stats.patch
+add-the-pagefault-count-into-memcg-stats-fix.patch
+memcg-remove-pointless-next_mz-nullification-in-mem_cgroup_soft_limit_reclaim.patch
+memcg-mark-init_section_page_cgroup-properly.patch
+memcg-fix-off-by-one-when-calculating-swap-cgroup-map-length.patch
+memcg-move-page-freeing-code-out-of-lock.patch
+maintainers-add-mm-page_cgroupc-into-memcg-subsystem.patch
+cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node.patch
+signal-introduce-retarget_shared_pending.patch
+signal-retarget_shared_pending-consider-shared-unblocked-signals-only.patch
+signal-sigprocmask-narrow-the-scope-of-sigloc.patch
+signal-sigprocmask-should-do-retarget_shared_pending.patch
+x86-signal-handle_signal-should-use-sigprocmask.patch
+x86-signal-sys_rt_sigreturn-should-use-sigprocmask.patch
+kstrtox-convert-fs-proc.patch
+proc-constify-status-array.patch
+proc-stat-use-defined-macro-kmalloc_max_size.patch
+dev-kmsg-properly-support-writev-to-avoid-interleaved-printk-lines.patch
+dev-kmsg-properly-support-writev-to-avoid-interleaved-printk-lines-fix.patch
+fs-partitions-efic-corrupted-guid-partition-tables-can-cause-kernel-oops.patch
+fs-partitions-efic-corrupted-guid-partition-tables-can-cause-kernel-oops-fix.patch
+sysctl-add-proc_dointvec_bool-handler.patch
+sysctl-use-proc_dointvec_bool-where-appropriate.patch
+sysctl-add-proc_dointvec_unsigned-handler.patch
+sysctl-use-proc_dointvec_unsigned-where-appropriate.patch
+pid-fix-typo-in-function-description.patch
+fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
+scatterlist-new-helper-functions.patch
+scatterlist-new-helper-functions-update.patch
+scatterlist-new-helper-functions-update-fix.patch
+memstick-add-support-for-legacy-memorysticks.patch
+memstick-add-support-for-legacy-memorysticks-update-2.patch
+w1-add-1-wire-w1-reset-and-resume-command-api-support.patch
+w1-add-1-wire-w1-ds2408-8-channel-addressable-switch-support.patch
+w1-complete-the-1-wire-w1-ds1wm-driver-search-algorithm.patch
+kexec-remove-kmsg_dump_kexec.patch
+kexec-remove-kmsg_dump_kexec-fix.patch
+make-sure-nobodys-leaking-resources.patch
+journal_add_journal_head-debug.patch
+releasing-resources-with-children.patch
+make-frame_pointer-default=y.patch
+mutex-subsystem-synchro-test-module.patch
+mutex-subsystem-synchro-test-module-fix.patch
+slab-leaks3-default-y.patch
+put_bh-debug.patch
+add-debugging-aid-for-memory-initialisation-problems.patch
+workaround-for-a-pci-restoring-bug.patch
+prio_tree-debugging-patch.patch
+single_open-seq_release-leak-diagnostics.patch
+add-a-refcount-check-in-dput.patch
+memblock-add-input-size-checking-to-memblock_find_region.patch
+memblock-add-input-size-checking-to-memblock_find_region-fix.patch
