@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964996Ab1DNR6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:58:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42186 "EHLO
+	id S1759202Ab1DNSHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:07:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42210 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964980Ab1DNR6m (ORCPT
+	with ESMTP id S964993Ab1DNR6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:42 -0400
+	Thu, 14 Apr 2011 13:58:46 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Gabriele Gorla <gorlik@penguintown.net>,
-        Jean Delvare <khali@linux-fr.org>,
+Cc: stable-review@kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 166/209] hwmon: (adm1026) Allow 1 as a valid divider value
-Date: Thu, 14 Apr 2011 13:55:24 -0400
-Message-Id: <1302803767-9715-53-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 182/209] HID: hidraw: fix window in hidraw_release
+Date: Thu, 14 Apr 2011 13:55:40 -0400
+Message-Id: <1302803767-9715-69-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,39 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriele Gorla <gorlik@penguintown.net>
+From: Jiri Slaby <jslaby@suse.cz>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 8b0f1840a46449e1946fc88860ef3ec8d6b1c2c7 upstream.
+commit cb174681a9ececa6702f114b85bdf82144b6a5af upstream.
 
-Allow 1 as a valid div value as specified in the ADM1026 datasheet.
+There is a window between hidraw_table check and its dereference.
+In that window, the device may be unplugged and removed form the
+system and we will then dereference NULL.
 
-Signed-off-by: Gabriele Gorla <gorlik@penguintown.net>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Lock that place properly so that either we get NULL and jump out or we
+can work with real pointer.
+
+[PG: slightly/trivially reworked for backport to 34]
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/hwmon/adm1026.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/hid/hidraw.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hwmon/adm1026.c b/drivers/hwmon/adm1026.c
-index 65335b2..e059a5f 100644
---- a/drivers/hwmon/adm1026.c
-+++ b/drivers/hwmon/adm1026.c
-@@ -920,9 +920,7 @@ static ssize_t set_fan_div(struct device *dev, struct device_attribute *attr,
+diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+index 9d3c663..23d936d 100644
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -212,11 +212,12 @@ static int hidraw_release(struct inode * inode, struct file * file)
+ 	unsigned int minor = iminor(inode);
+ 	struct hidraw *dev;
+ 	struct hidraw_list *list = file->private_data;
++	int ret;
  
- 	val = simple_strtol(buf, NULL, 10);
- 	new_div = DIV_TO_REG(val);
--	if (new_div == 0) {
--		return -EINVAL;
--	}
-+
- 	mutex_lock(&data->update_lock);
- 	orig_div = data->fan_div[nr];
- 	data->fan_div[nr] = DIV_FROM_REG(new_div);
++	mutex_lock(&minors_lock);
+ 	if (!hidraw_table[minor]) {
+-		printk(KERN_EMERG "hidraw device with minor %d doesn't exist\n",
+-				minor);
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto unlock;
+ 	}
+ 
+ 	list_del(&list->node);
+@@ -230,10 +231,12 @@ static int hidraw_release(struct inode * inode, struct file * file)
+ 			kfree(list->hidraw);
+ 		}
+ 	}
+-
+ 	kfree(list);
++	ret = 0;
++unlock:
++	mutex_unlock(&minors_lock);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static long hidraw_ioctl(struct file *file, unsigned int cmd,
 -- 
 1.7.4.4
 
