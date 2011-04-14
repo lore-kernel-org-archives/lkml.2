@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758497Ab1DNIol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 04:44:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:59107 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753324Ab1DNIoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 04:44:39 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+qHNJ0GFCqWLcWry9Ibtv5+DHsUbI6I8g5p15jes
-	/DUuUacgd+jEiE
-Subject: Re: query: [PATCH 2/2] cgroup: Remove call to synchronize_rcu in
- cgroup_attach_task
-From: Mike Galbraith <efault@gmx.de>
-To: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@android.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1302770084.27576.13.camel@marge.simson.net>
-References: <1302170153.12304.31.camel@marge.simson.net>
-	 <4DA50430.8020701@cn.fujitsu.com>
-	 <1302664313.7407.29.camel@marge.simson.net>
-	 <BANLkTikqvP90Etu=L24DPWbckrawM-6n=Q@mail.gmail.com>
-	 <1302713819.7448.22.camel@marge.simson.net>
-	 <1302765999.8042.8.camel@marge.simson.net>
-	 <1302770084.27576.13.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Apr 2011 10:44:35 +0200
-Message-ID: <1302770675.7529.2.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1757147Ab1DNIsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 04:48:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34517 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755949Ab1DNIso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 04:48:44 -0400
+Date: Thu, 14 Apr 2011 10:48:42 +0200
+From: Jan Kara <jack@suse.cz>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [Stable-review] [31/74] quota: Dont write quota info in
+ dquot_commit()
+Message-ID: <20110414084842.GA5054@quack.suse.cz>
+References: <20110413155146.240695445@clark.kroah.org>
+ <1302750585.5282.663.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302750585.5282.663.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-14 at 10:34 +0200, Mike Galbraith wrote:
-> > > On Wed, 2011-04-13 at 15:16 +0200, Paul Menage wrote:
+On Thu 14-04-11 04:09:45, Ben Hutchings wrote:
+> On Wed, 2011-04-13 at 08:50 -0700, Greg KH wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > 
+> > From: Jan Kara <jack@suse.cz>
+> > 
+> > commit b03f24567ce7caf2420b8be4c6eb74c191d59a91 upstream.
+> > 
+> > There's no reason to write quota info in dquot_commit(). The writing is a
+> > relict from the old days when we didn't have dquot_acquire() and
+> > dquot_release() and thus dquot_commit() could have created / removed quota
+> > structures from the file. These days dquot_commit() only updates usage counters
+> > / limits in quota structure and thus there's no need to write quota info.
+> > 
+> > This also fixes an issue with journaling filesystem which didn't reserve
+> > enough space in the transaction for write of quota info (it could have been
+> > dirty at the time of dquot_commit() because of a race with other operation
+> > changing it).
+> [...]
+> > @@ -400,15 +400,10 @@ int dquot_commit(struct dquot *dquot)
+> >  	spin_unlock(&dq_list_lock);
+> >  	/* Inactive dquot can be only if there was error during read/init
+> >  	 * => we have better not writing it */
+> > -	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
+> > +	if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
+> >  		ret = dqopt->ops[dquot->dq_type]->commit_dqblk(dquot);
+> > -		if (info_dirty(&dqopt->info[dquot->dq_type])) {
+> > -			ret2 = dqopt->ops[dquot->dq_type]->write_file_info(
+> > -						dquot->dq_sb, dquot->dq_type);
+> > -		}
+> > -		if (ret >= 0)
+> > -			ret = ret2;
+> > -	}
+> > +	else
+> > +		ret = -EIO;
+> [...]
 > 
-> > > > > +       kfree(cgrp);
-> > > > 
-> > > > We might want to punt this through RCU again, in case the subsystem
-> > > > destroy() callbacks left anything around that was previously depending
-> > > > on the RCU barrier.
-> 
-> Yup, great idea.  Two stage teardown/free quenched the fireworks
+> Why is the return value for the flag-not-set case changed from 0 to
+> -EIO?  Is this really part of the same bug fix?
+  Yes, it is part of my original patch. It's a small unrelated cleanup I
+did when already changing that code. Frankly, the effect won't be big
+because
+a) DQ_ACTIVE_B is not set only when we for some reason failed to read the
+structure from disk.
+b) Only dqput() currently checks the return value of this callback and it
+calls it only when DQ_ACTIVE_B is set.
 
-Correction:  made fireworks take longer to ignite.   Roughly a minute
-after I poked xmit, box exploded.  Hohum.  BTTODB
+So I'm pretty sure it does not change anything.
 
-	-Mike
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
