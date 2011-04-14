@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932877Ab1DNSei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:34:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57400 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932696Ab1DNRpk (ORCPT
+	id S932639Ab1DNRpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:45:35 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37320 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414Ab1DNRpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:45:40 -0400
-Date: Thu, 14 Apr 2011 19:45:35 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, Tanya Brokhman <tlinder@codeaurora.org>,
-        gregkh@suse.de, linux-arm-msm@vger.kernel.org, ablay@codeaurora.org,
-        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: merge the two dummy_hcds into one
-Message-ID: <20110414174535.GC27435@linutronix.de>
-References: <20110414114605.GA17871@linutronix.de>
- <Pine.LNX.4.44L0.1104141141480.2487-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104141141480.2487-100000@iolanthe.rowland.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 14 Apr 2011 13:45:30 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 016/209] block: limit vec count in bio_kmalloc() and bio_alloc_map_data()
+Date: Thu, 14 Apr 2011 13:40:46 -0400
+Message-Id: <1302803039-9400-17-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alan Stern | 2011-04-14 11:45:34 [-0400]:
+From: Jens Axboe <jaxboe@fusionio.com>
 
->In fact, the support for USB-3 HCDs is currently in flux.  Sarah Sharp 
->has submitted a whole bunch of patches to allow for the creation of 
->primary and secondary HCDs, representing the USB-2 and USB-3 root hubs 
->of an xHCI controller.  dummy-hcd should use the same mechanism.
+  =====================================================================
+  | This is a commit scheduled for the next v2.6.34 longterm release. |
+  | If you see a problem with using this for longterm, please comment.|
+  =====================================================================
 
-Yeah, after I merged those two I've seen that I can't assign USB2 and
-USB3 at the same time so I looked what xhci is doing in this case.
+commit f3f63c1c28bc861a931fac283b5bc3585efb8967 upstream.
 
->This will means creating only one host-side platform device, and then 
->creating two usb_hcd structures below it.  Tanya's design should be 
->based on Sarah's work.
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ fs/bio.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-Yes, it makes sense.
+diff --git a/fs/bio.c b/fs/bio.c
+index e7bf6ca..75ea4c3 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -370,6 +370,9 @@ struct bio *bio_kmalloc(gfp_t gfp_mask, int nr_iovecs)
+ {
+ 	struct bio *bio;
+ 
++	if (nr_iovecs > UIO_MAXIOV)
++		return NULL;
++
+ 	bio = kmalloc(sizeof(struct bio) + nr_iovecs * sizeof(struct bio_vec),
+ 		      gfp_mask);
+ 	if (unlikely(!bio))
+@@ -697,8 +700,12 @@ static void bio_free_map_data(struct bio_map_data *bmd)
+ static struct bio_map_data *bio_alloc_map_data(int nr_segs, int iov_count,
+ 					       gfp_t gfp_mask)
+ {
+-	struct bio_map_data *bmd = kmalloc(sizeof(*bmd), gfp_mask);
++	struct bio_map_data *bmd;
++
++	if (iov_count > UIO_MAXIOV)
++		return NULL;
+ 
++	bmd = kmalloc(sizeof(*bmd), gfp_mask);
+ 	if (!bmd)
+ 		return NULL;
+ 
+-- 
+1.7.4.4
 
->Alan Stern
-
-Sebastian
