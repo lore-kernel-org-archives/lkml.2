@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab1DNTBC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 15:01:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932232Ab1DNTBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 15:01:00 -0400
-Date: Thu, 14 Apr 2011 21:00:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>
-Subject: Re: [RFC][PATCH 2/5] signals: Introduce per-thread siglock and
-	action rwlock
-Message-ID: <20110414190012.GA23517@redhat.com>
-References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-3-git-send-email-matt@console-pimps.org> <20110413194231.GA15330@redhat.com> <20110414113456.5182a582@mfleming-mobl1.ger.corp.intel.com>
+	id S932807Ab1DNTBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 15:01:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45560 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab1DNTBS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 15:01:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=H89vahQYk4G222rW4cYXfux3WfqVsoafPTVLaNYQreDy/EIxLRQFcd/cbnKzkdpuY5
+         8fb4VcW5ND8wbTamgVsw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414113456.5182a582@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110413102947.3bf1cc88@lxorguk.ukuu.org.uk>
+References: <1302641290-30212-1-git-send-email-natg@google.com>
+ <1302641387-30264-1-git-send-email-natg@google.com> <20110413070259.GE4070@infomag.iguana.be>
+ <20110413102947.3bf1cc88@lxorguk.ukuu.org.uk>
+From: Mike Waychison <mikew@google.com>
+Date: Thu, 14 Apr 2011 14:00:49 -0500
+Message-ID: <BANLkTinR53LO7HWMWoquKY5D+Aprs2OEWw@mail.gmail.com>
+Subject: Re: [PATCH v5 1/2] Use "request_muxed_region" in it87 watchdog drivers
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Wim Van Sebroeck <wim@iguana.be>, Nat Gurumoorthy <natg@google.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14, Matt Fleming wrote:
+On Wed, Apr 13, 2011 at 4:29 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Wed, 13 Apr 2011 09:03:00 +0200
+> Wim Van Sebroeck <wim@iguana.be> wrote:
 >
-> Well, it's not really that signals are slow (though that might be
-> true!), it's more that they don't scale. So, this patch series was not
-> designed to speed up signals in a single-threaded app, but rather to
-> make signals scale better in multithreaded apps. We do that by
-> reducing the contention on the shared siglock. Signal delivery isn't
-> getting any faster with these patches, they just try to stop it getting
-> slower when you add more threads ;-)
-
-Yes, I understand. Even the private signal needs the "global" per-process
-lock bit it is rwlock.
-
-> > > @@ -142,7 +142,9 @@ static void __exit_signal(struct task_struct *tsk)
-> > >  	 * Do this under ->siglock, we can race with another thread
-> > >  	 * doing sigqueue_free() if we have SIGQUEUE_PREALLOC signals.
-> > >  	 */
-> > > +	spin_lock(&tsk->siglock);
-> > >  	flush_sigqueue(&tsk->pending);
-> > > +	spin_unlock(&tsk->siglock);
-> >
-> > This only protects flush_sigqueue(), but this is not enough.
-> >
-> > tkill() can run without ->siglock held, how can it ensure the target
-> > can't exit before we take task->siglock?
+>> Hi Nat,
+>>
+>> > +   (void) request_muxed_region(REG, 2, NAME);
+>>
+>> Why do we need to typecast this? Can't we just use
+>> +     request_muxed_region(REG, 2, NAME);
 >
-> And by "target can't exit" you mean, how can we ensure that the target
-> doesn't execute __exit_signal() and set tsk->signal to NULL
-
-No, tsk->signal can't go away, ->sighand can. This means that
-prepare_signal()->sig_ignored() is not safe.
-
-Another problem is, __send_signal() shouldn't add the new sigqueue to
-tsk->pending if this tsk has already passed __exit_signal()->flush_sigqueue().
-
-> While we're discussing the technique for stopping tasks from exiting...
+> We really ought to use
 >
-> Is there a reason that a short-term reference counter isn't used to
-> prevent this, instead of taking the siglock?
-
-Well, sighand->count is the reference counter. The problem is, ->sighand
-is not per-process, we can share it with abother CLONE_SIGHAND process
-and de_thread() can change ->sighand during exec.
-
-Also. We have the code which checks ->sighand != NULL to check if this
-thread was released or not.
-
-I was going to try to add some cleanups here after the scope of ->signal
-was changed, but right now I can't recall what I had in mind. Anyway,
-everything in sighand_struct needs ->siglock anyway, a lockless access
-doesn't buy too much currently.
-
-> > > @@ -1666,7 +1779,8 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
-> > >   	}
-> > >
-> > >  	sighand = parent->sighand;
-> > > -	spin_lock_irqsave(&sighand->siglock, flags);
-> > > +	read_lock_irqsave(&sighand->action_lock, flags);
-> > > +	spin_lock(&sighand->siglock);
-> >
-> > Why do we need both? (the same for do_notify_parent)
+>        if ()
 >
-> We need action_lock because we're reading sighand->action and making
-> decisions based upon its value, so we need it to not change. Also,
-> __send_signal()
+> in theory the request can fail if someone has hogged the resource and not
+> muxed it. I'm not clear what the right thing to do in that case is -
+> given it should never happen I guess log an error and bail out but that's
+> a rather bigger change and perhaps should be a follow up patch ?
+>
 
-Ah, indeed, thanks. Somehow I misread the code as if it takes task->siglock,
-not sighand->siglock. But anyway I was wrong, I forgot we are going to send
-the signal.
+request_muxed_region() is sorta gross:  it's essentially acting like a
+lock, meant to be used for short periods of time, but it can fail if
+someone else decides it should.
 
-Oleg.
+Would it make more sense to have drivers that need to use the current
+request_muxed_region() be able to force a region into a mux-only state
+at driver init?  That would lead to much less contorted code to handle
+the off-chance that the request_muxed_region() fails.
 
+Ie:
+
+Driver init:
+
+if (!request_muxed_region(base, size, DRV_NAME))
+   goto cleanup_driver_init_failed;
+
+Driver cleanup
+
+release_muxed_region(base, size); /* returns void */
+
+And then within drivers:
+
+use_muxed_region(base, size); /* sleeps until region is usable --
+returns void */
+/* Do stuff */
+unuse_muxed_region(base, size); /* returns void */
+
+
+
+I realize the above example re-uses the 'request_muxed_region()' name,
+but at least this would be much more consistent with how
+request_region is used in other drivers.
