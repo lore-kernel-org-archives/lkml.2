@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230Ab1DNRql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:41 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38222 "EHLO
+	id S933256Ab1DNRqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:45 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38295 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab1DNRqe (ORCPT
+	with ESMTP id S933155Ab1DNRqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:34 -0400
+	Thu, 14 Apr 2011 13:46:42 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+Cc: stable-review@kernel.org, Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 066/209] bio: take care not overflow page count when mapping/copying user data
-Date: Thu, 14 Apr 2011 13:41:36 -0400
-Message-Id: <1302803039-9400-67-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 069/209] PCI: fix size checks for mmap() on /proc/bus/pci files
+Date: Thu, 14 Apr 2011 13:41:39 -0400
+Message-Id: <1302803039-9400-70-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,65 +22,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Axboe <jaxboe@fusionio.com>
+From: Martin Wilck <martin.wilck@ts.fujitsu.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit cb4644cac4a2797afc847e6c92736664d4b0ea34 upstream.
+commit 3b519e4ea618b6943a82931630872907f9ac2c2b upstream.
 
-If the iovec is being set up in a way that causes uaddr + PAGE_SIZE
-to overflow, we could end up attempting to map a huge number of
-pages. Check for this invalid input type.
+The checks for valid mmaps of PCI resources made through /proc/bus/pci files
+that were introduced in 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several
+problems:
 
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+1. mmap() calls on /proc/bus/pci files are made with real file offsets > 0,
+whereas under /sys/bus/pci/devices, the start of the resource corresponds
+to offset 0. This may lead to false negatives in pci_mmap_fits(), which
+implicitly assumes the /sys/bus/pci/devices layout.
+
+2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This leads
+to false positives, because pci_mmap_fits() doesn't treat empty resources
+correctly (the calculated size is 1 << (8*sizeof(resource_size_t)-PAGE_SHIFT)
+in this case!).
+
+3. If a user maps resources with BAR > 0, pci_mmap_fits will emit bogus
+WARNINGS for the first resources that don't fit until the correct one is found.
+
+On many controllers the first 2-4 BARs are used, and the others are empty.
+In this case, an mmap attempt will first fail on the non-empty BARs
+(including the "right" BAR because of 1.) and emit bogus WARNINGS because
+of 3., and finally succeed on the first empty BAR because of 2.
+This is certainly not the intended behaviour.
+
+This patch addresses all 3 issues.
+Updated with an enum type for the additional parameter for pci_mmap_fits().
+
+Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/bio.c |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+ drivers/pci/pci-sysfs.c |   22 ++++++++++++++++------
+ drivers/pci/pci.h       |    7 ++++++-
+ drivers/pci/proc.c      |    2 +-
+ 3 files changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index 75ea4c3..b3e0174 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -834,6 +834,12 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
- 		end = (uaddr + iov[i].iov_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		start = uaddr >> PAGE_SHIFT;
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index fad9398..e3efd79 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -692,17 +692,21 @@ void pci_remove_legacy_files(struct pci_bus *b)
  
-+		/*
-+		 * Overflow, abort
-+		 */
-+		if (end < start)
-+			return ERR_PTR(-EINVAL);
-+
- 		nr_pages += end - start;
- 		len += iov[i].iov_len;
+ #ifdef HAVE_PCI_MMAP
+ 
+-int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma)
++int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
++		  enum pci_mmap_api mmap_api)
+ {
+-	unsigned long nr, start, size;
++	unsigned long nr, start, size, pci_start;
+ 
++	if (pci_resource_len(pdev, resno) == 0)
++		return 0;
+ 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 	start = vma->vm_pgoff;
+ 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+-	if (start < size && size - start >= nr)
++	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
++			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
++	if (start >= pci_start && start < pci_start + size &&
++			start + nr <= pci_start + size)
+ 		return 1;
+-	WARN(1, "process \"%s\" tried to map 0x%08lx-0x%08lx on %s BAR %d (size 0x%08lx)\n",
+-		current->comm, start, start+nr, pci_name(pdev), resno, size);
+ 	return 0;
+ }
+ 
+@@ -732,8 +736,14 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
+ 	if (i >= PCI_ROM_RESOURCE)
+ 		return -ENODEV;
+ 
+-	if (!pci_mmap_fits(pdev, i, vma))
++	if (!pci_mmap_fits(pdev, i, vma, PCI_MMAP_SYSFS)) {
++		WARN(1, "process \"%s\" tried to map 0x%08lx bytes "
++			"at page 0x%08lx on %s BAR %d (start 0x%16Lx, size 0x%16Lx)\n",
++			current->comm, vma->vm_end-vma->vm_start, vma->vm_pgoff,
++			pci_name(pdev), i,
++			pci_resource_start(pdev, i), pci_resource_len(pdev, i));
+ 		return -EINVAL;
++	}
+ 
+ 	/* pci_mmap_page_range() expects the same kind of entry as coming
+ 	 * from /proc/bus/pci/ which is a "user visible" value. If this is
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 4eb10f4..32b5820 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -13,8 +13,13 @@ extern int pci_create_sysfs_dev_files(struct pci_dev *pdev);
+ extern void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
+ extern void pci_cleanup_rom(struct pci_dev *dev);
+ #ifdef HAVE_PCI_MMAP
++enum pci_mmap_api {
++	PCI_MMAP_SYSFS,	/* mmap on /sys/bus/pci/devices/<BDF>/resource<N> */
++	PCI_MMAP_PROCFS	/* mmap on /proc/bus/pci/<BDF> */
++};
+ extern int pci_mmap_fits(struct pci_dev *pdev, int resno,
+-			 struct vm_area_struct *vma);
++			 struct vm_area_struct *vmai,
++			 enum pci_mmap_api mmap_api);
+ #endif
+ int pci_probe_reset_function(struct pci_dev *dev);
+ 
+diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
+index 449e890..64ac30b 100644
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -260,7 +260,7 @@ static int proc_bus_pci_mmap(struct file *file, struct vm_area_struct *vma)
+ 
+ 	/* Make sure the caller is mapping a real resource for this device */
+ 	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
+-		if (pci_mmap_fits(dev, i, vma))
++		if (pci_mmap_fits(dev, i, vma,  PCI_MMAP_PROCFS))
+ 			break;
  	}
-@@ -961,6 +967,12 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
- 		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		unsigned long start = uaddr >> PAGE_SHIFT;
  
-+		/*
-+		 * Overflow, abort
-+		 */
-+		if (end < start)
-+			return ERR_PTR(-EINVAL);
-+
- 		nr_pages += end - start;
- 		/*
- 		 * buffer must be aligned to at least hardsector size for now
-@@ -988,7 +1000,7 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
- 		unsigned long start = uaddr >> PAGE_SHIFT;
- 		const int local_nr_pages = end - start;
- 		const int page_limit = cur_page + local_nr_pages;
--		
-+
- 		ret = get_user_pages_fast(uaddr, local_nr_pages,
- 				write_to_vm, &pages[cur_page]);
- 		if (ret < local_nr_pages) {
 -- 
 1.7.4.4
 
