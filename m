@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab1DNRqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:31 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38089 "EHLO
+	id S933211Ab1DNS03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:26:29 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38143 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933072Ab1DNRqY (ORCPT
+	with ESMTP id S933088Ab1DNRq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:24 -0400
+	Thu, 14 Apr 2011 13:46:27 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Masanori ITOH <itoumsn@nttdata.co.jp>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 032/209] percpu: fix list_head init bug in __percpu_counter_init()
-Date: Thu, 14 Apr 2011 13:41:02 -0400
-Message-Id: <1302803039-9400-33-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 057/209] KVM: VMX: Fix host userspace gsbase corruption
+Date: Thu, 14 Apr 2011 13:41:27 -0400
+Message-Id: <1302803039-9400-58-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,65 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masanori ITOH <itoumsn@nttdata.co.jp>
+From: Avi Kivity <avi@redhat.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 8474b591faf3bb0a1e08a60d21d6baac498f15e4 upstream.
+commit c8770e7ba63bb5dd8fe5f9d251275a8fa717fb78 upstream.
 
-WARNING: at lib/list_debug.c:26 __list_add+0x3f/0x81()
-Hardware name: Express5800/B120a [N8400-085]
-list_add corruption. next->prev should be prev (ffffffff81a7ea00), but was dead000000200200. (next=ffff88080b872d58).
-Modules linked in: aoe ipt_MASQUERADE iptable_nat nf_nat autofs4 sunrpc bridge 8021q garp stp llc ipv6 cpufreq_ondemand acpi_cpufreq freq_table dm_round_robin dm_multipath kvm_intel kvm uinput lpfc scsi_transport_fc igb ioatdma scsi_tgt i2c_i801 i2c_core dca iTCO_wdt iTCO_vendor_support pcspkr shpchp megaraid_sas [last unloaded: aoe]
-Pid: 54, comm: events/3 Tainted: G        W  2.6.34-vanilla1 #1
-Call Trace:
-[<ffffffff8104bd77>] warn_slowpath_common+0x7c/0x94
-[<ffffffff8104bde6>] warn_slowpath_fmt+0x41/0x43
-[<ffffffff8120fd2e>] __list_add+0x3f/0x81
-[<ffffffff81212a12>] __percpu_counter_init+0x59/0x6b
-[<ffffffff810d8499>] bdi_init+0x118/0x17e
-[<ffffffff811f2c50>] blk_alloc_queue_node+0x79/0x143
-[<ffffffff811f2d2b>] blk_alloc_queue+0x11/0x13
-[<ffffffffa02a931d>] aoeblk_gdalloc+0x8e/0x1c9 [aoe]
-[<ffffffffa02aa655>] aoecmd_sleepwork+0x25/0xa8 [aoe]
-[<ffffffff8106186c>] worker_thread+0x1a9/0x237
-[<ffffffffa02aa630>] ? aoecmd_sleepwork+0x0/0xa8 [aoe]
-[<ffffffff81065827>] ? autoremove_wake_function+0x0/0x39
-[<ffffffff810616c3>] ? worker_thread+0x0/0x237
-[<ffffffff810653ad>] kthread+0x7f/0x87
-[<ffffffff8100aa24>] kernel_thread_helper+0x4/0x10
-[<ffffffff8106532e>] ? kthread+0x0/0x87
-[<ffffffff8100aa20>] ? kernel_thread_helper+0x0/0x10
+We now use load_gs_index() to load gs safely; unfortunately this also
+changes MSR_KERNEL_GS_BASE, which we managed separately.  This resulted
+in confusion and breakage running 32-bit host userspace on a 64-bit kernel.
 
-It's because there is no initialization code for a list_head contained in
-the struct backing_dev_info under CONFIG_HOTPLUG_CPU, and the bug comes up
-when block device drivers calling blk_alloc_queue() are used.  In case of
-me, I got them by using aoe.
+Fix by
+- saving guest MSR_KERNEL_GS_BASE before we we reload the host's gs
+- doing the host save/load unconditionally, instead of only when in guest
+  long mode
 
-Signed-off-by: Masanori Itoh <itoumsn@nttdata.co.jp>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Things can be cleaned up further, but this is the minmal fix for now.
+
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- lib/percpu_counter.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/kvm/vmx.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index aeaa6d7..9d94212 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -76,6 +76,7 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
- 	if (!fbc->counters)
- 		return -ENOMEM;
- #ifdef CONFIG_HOTPLUG_CPU
-+	INIT_LIST_HEAD(&fbc->list);
- 	mutex_lock(&percpu_counters_lock);
- 	list_add(&fbc->list, &percpu_counters);
- 	mutex_unlock(&percpu_counters_lock);
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 2cfa656..a25a345 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -676,10 +676,9 @@ static void vmx_save_host_state(struct kvm_vcpu *vcpu)
+ #endif
+ 
+ #ifdef CONFIG_X86_64
+-	if (is_long_mode(&vmx->vcpu)) {
+-		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
++	rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
++	if (is_long_mode(&vmx->vcpu))
+ 		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
+-	}
+ #endif
+ 	for (i = 0; i < vmx->save_nmsrs; ++i)
+ 		kvm_set_shared_msr(vmx->guest_msrs[i].index,
+@@ -694,23 +693,23 @@ static void __vmx_load_host_state(struct vcpu_vmx *vmx)
+ 
+ 	++vmx->vcpu.stat.host_state_reload;
+ 	vmx->host_state.loaded = 0;
++#ifdef CONFIG_X86_64
++	if (is_long_mode(&vmx->vcpu))
++		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
++#endif
+ 	if (vmx->host_state.fs_reload_needed)
+ 		loadsegment(fs, vmx->host_state.fs_sel);
+ 	if (vmx->host_state.gs_ldt_reload_needed) {
+ 		kvm_load_ldt(vmx->host_state.ldt_sel);
+ #ifdef CONFIG_X86_64
+ 		load_gs_index(vmx->host_state.gs_sel);
+-		wrmsrl(MSR_KERNEL_GS_BASE, current->thread.gs);
+ #else
+ 		loadsegment(gs, vmx->host_state.gs_sel);
+ #endif
+ 	}
+ 	reload_tss();
+ #ifdef CONFIG_X86_64
+-	if (is_long_mode(&vmx->vcpu)) {
+-		rdmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
+-		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+-	}
++	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+ #endif
+ 	load_gdt(&__get_cpu_var(host_gdt));
+ }
 -- 
 1.7.4.4
 
