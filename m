@@ -1,89 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470Ab1DNNpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 09:45:09 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36149 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab1DNNpH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 09:45:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=agsXoPp9h3/2E84qk2m4+AJgyXDHoQHYVb+GbGVqL2EENRCmRBeDz/IBNzdnyAIm9T
-         VWcmvoGlu1xKWfcIvWDK1NVKBaKxL3sT07Y9kCaHcOL8pBg/n6g+knc1A7ebZk7tyFaR
-         uaUmHx+0VNbMDb+VDv05RYJi2+h72kbh+SFXI=
+	id S1758796Ab1DNNtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 09:49:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60129 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757701Ab1DNNtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 09:49:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,211,1301900400"; 
+   d="scan'208";a="909517130"
+Date: Thu, 14 Apr 2011 21:49:40 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+Message-ID: <20110414134940.GA19392@localhost>
+References: <20110413085937.981293444@intel.com>
+ <20110413090415.763161169@intel.com>
+ <20110413220444.GF4648@quack.suse.cz>
+ <20110413233122.GA6097@localhost>
+ <20110413235211.GN31057@dastard>
+ <20110414002301.GA9826@localhost>
+ <1302777382.1994.24.camel@castor.rsk>
 MIME-Version: 1.0
-In-Reply-To: <1302786900.21965.52.camel@dev.znau.edu.ua>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-	<1302781431.21145.6.camel@dev.znau.edu.ua>
-	<BANLkTinvpt5vs+rXd3WN-a2JpGtTV+=Gyg@mail.gmail.com>
-	<4DA6E9BD.3090404@hauke-m.de>
-	<BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
-	<1302786900.21965.52.camel@dev.znau.edu.ua>
-Date: Thu, 14 Apr 2011 15:45:05 +0200
-Message-ID: <BANLkTimM8=-pX+Ea8Eyp4XyvP1APbUof9w@mail.gmail.com>
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: George Kashperko <george@znau.edu.ua>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arend van Spriel <arend@broadcom.com>,
-        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
-        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302777382.1994.24.camel@castor.rsk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 14 kwietnia 2011 15:15 użytkownik George Kashperko
-<george@znau.edu.ua> napisał:
->
->> W dniu 14 kwietnia 2011 14:34 użytkownik Hauke Mehrtens
->> <hauke@hauke-m.de> napisał:
->> > On 04/14/2011 02:04 PM, Rafał Miłecki wrote:
->> >> Hauke: you were proposing integrating with drivers/amba. I really
->> >> expect you to comment on this, please tell us how do you see this now,
->> >> when we have better overview. I took your proposal seriously, you can
->> >> see the results above.
->> >
->> > I had no closer look at drivers/amba and this bus driver, I just saw
->> > that there was a discussion about drivers/amba and this implementation
->> > with no result. When the Bradcom cores are not directly connected to
->> > AMBA, but are using some sort of wrapper and there are no benefits in
->> > using drivers/amba, just leave it.
->> >
->> > As the implementation of the Braodcom AIX Bus contains some Broadcom
->> > extensions and there seams to be no normal AMBA device being connected
->> > to some Broadcom devices with this special interface number 3) "Broadcom
->> > specific bus (bcmai)" seams to the the best approach in my opinion.
->>
->> Thanks for commenting.
->>
->> Russell: you were asking:
->> > What does this do which the 'amba' bus support doesn't?
->> I believe I explained it well in this thread. Do you still think about
->> using amba/driver? Do you think we should use it?
->>
->> Arnd: I found you saying:
->> > I believe the one thing we really want from this driver is the bus
->> > scan code, which is not present in the amba bus implementation,
->> I explained how it works, I believe scanning (EPROM in this case) it
->> Broadcom specific, not really AMBA standard. How do you see it?
->>
-> It might not Broadcom specific as EPROM core seems to be CoreLink one
-> core and maybe is arm-developed. But it isn't documented publicly and we
-> don't know yet if it is obligatory for all amba (or at least axi)
-> interconnects or not.
+On Thu, Apr 14, 2011 at 06:36:22PM +0800, Richard Kennedy wrote:
+> On Thu, 2011-04-14 at 08:23 +0800, Wu Fengguang wrote:
+> > On Thu, Apr 14, 2011 at 07:52:11AM +0800, Dave Chinner wrote:
+> > > On Thu, Apr 14, 2011 at 07:31:22AM +0800, Wu Fengguang wrote:
+> > > > On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
+> > > > > On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
+> > > > > > Reduce the dampening for the control system, yielding faster
+> > > > > > convergence. The change is a bit conservative, as smaller values may
+> > > > > > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
+> > > > > > 
+> > > > > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > > > > CC: Richard Kennedy <richard@rsk.demon.co.uk>
+> > > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > > >   Well, I have nothing against this change as such but what I don't like is
+> > > > > that it just changes magical +2 for similarly magical +0. It's clear that
+> > > > 
+> > > > The patch tends to make the rampup time a bit more reasonable for
+> > > > common desktops. From 100s to 25s (see below).
+> > > > 
+> > > > > this will lead to more rapid updates of proportions of bdi's share of
+> > > > > writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
+> > > > 
+> > > > Yes, it will especially be a problem on _small memory_ JBOD setups.
+> > > > Richard actually has requested for a much radical change (decrease by
+> > > > 6) but that looks too much.
+> > > > 
+> > > > My team has a 12-disk JBOD with only 6G memory. The memory is pretty
+> > > > small as a server, but it's a real setup and serves well as the
+> > > > reference minimal setup that Linux should be able to run well on.
+> > > 
+> > > FWIW, linux runs on a lot of low power NAS boxes with jbod and/or
+> > > raid setups that have <= 1GB of RAM (many of them run XFS), so even
+> > > your setup could be considered large by a significant fraction of
+> > > the storage world. Hence you need to be careful of optimising for
+> > > what you think is a "normal" server, because there simply isn't such
+> > > a thing....
+> > 
+> > Good point! This patch is likely to hurt a loaded 1GB 4-disk NAS box...
+> > I'll test the setup.
+> > 
+> > I did test low memory setups -- but only on simple 1-disk cases.
+> > 
+> > For example, when dirty thresh is lowered to 7MB, the dirty pages are
+> > fluctuating like mad within the controlled scope:
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/xfs-4dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-14-34/balance_dirty_pages-pages.png
+> > 
+> > But still, it achieves 100% disk utilization
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/xfs-4dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-14-34/iostat-util.png
+> > 
+> > and good IO throughput:
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/xfs-4dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-14-34/balance_dirty_pages-bandwidth.png
+> > 
+> > And even better, less than 120ms writeback latencies:
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/xfs-4dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-14-34/balance_dirty_pages-pause.png
+> > 
+> > Thanks,
+> > Fengguang
+> > 
+> 
+> I'm only testing on a desktop with 2 drives. I use a simple test to
+> write 2gb to sda then 2gb to sdb while recording the threshold values.
+> On 2.6.39-rc3, after the 2nd write starts it take approx 90 seconds for
+> sda's threshold value to drop from its maximum to minimum and sdb's to
+> rise from min to max. So this seems much too slow for normal desktop
+> workloads. 
 
-Maybe EPROM is not Broadcom specific, but I suspect the content we
-deal with in bcmai/axi is Broadcom specific. I didn't see any notes of
-manuf/id/rev/class we deal with. So I guess everything *we* (out
-driver) read from EPROM is Bcm specific.
+Yes.
 
--- 
-Rafał
+> I haven't tested with this patch on 2.6.39-rc3 yet, but I'm just about
+> to set that up. 
+
+It will sure help, but the problem is now the low-memory NAS servers..
+
+Fortunately my patchset could make the dirty pages ramp up much more
+fast than the ramp up speed of the per-bdi threshold, and is also less
+sensitive to the fluctuations of per-bdi thresholds in JBOD setup.
+
+In fact my main concern in the low-memory NAS setup is how to prevent
+disk from going idle from time to time due to bdi dirty pages running
+low. The fluctuations of per-bdi thresholds in this case is no longer
+relevant for me. I end up adding a rule to throttle the task less when
+the bdi is running low of dirty pages. I find that the vanilla kernel
+also has this problem.
+
+> I know it's difficult to pick one magic number to fit every case, but I
+> don't see any easy way to make this more adaptive. We could make this
+> calculation take account of more things, but I don't know what.
+> 
+> 
+> Nice graphs :) BTW do you know what's causing that 10 second (1/10 Hz)
+> fluctuation in write bandwidth? and does this change effect that in any
+> way?   
+
+In fact each filesystems is fluctuating in its unique way. For example,
+
+ext4, 4 dd
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/ext4-4dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-14-49/balance_dirty_pages-bandwidth.png
+
+btrfs, 4 dd
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/btrfs-4dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-15-03/balance_dirty_pages-bandwidth.png
+
+btrfs, 1 dd
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/btrfs-1dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-14-56/balance_dirty_pages-bandwidth.png
+
+I'm not sure about the exact root cause, but it's more or less related
+to the fluctuations of IO completion events. For example, the
+"written" curve is not a strictly straight line:
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/512M-2%25/btrfs-1dd-1M-8p-435M-2%25-2.6.38-rc5-dt6+-2011-02-22-14-56/global_dirtied_written.png
+
+Thanks,
+Fengguang
