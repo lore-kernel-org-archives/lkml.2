@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab1DNJ4G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:56:06 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37203 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932382Ab1DNJ4C (ORCPT
+	id S932655Ab1DNJ6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:58:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50289 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382Ab1DNJ6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:56:02 -0400
+	Thu, 14 Apr 2011 05:58:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=dT5A9+AXRMx5Ao/n31gN/z24gNq1ZLeQ2l0Yh28yioAzniKMFnvreqJPfOvkagRbPo
-         kzCdncSn84V2fv8Mj/dA==
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: gadget: storage_common: use kstrto*() [bug fix]
-Date: Thu, 14 Apr 2011 11:55:43 +0200
-Message-Id: <6ae9c2910c59d7b8ce92e5293a3097e39485ac16.1302774745.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20110414021635.GA13169@suse.de>
-References: <20110414021635.GA13169@suse.de>
-X-System-Of-Record: true
+        d=szeredi.hu; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:date
+         :message-id:subject:from:to:cc:content-type;
+        b=jZhuuaI3DvbAlmXzbVjIzn95UiCSExeROeZ8eeOgYX/nTSWQr0ThCs8BsM6NfeAX5s
+         92OJWAFYjKXpQ7L8keOF7TKpej5ZauAGO3iBN21jfTzB9KWK4CGSvZj61Du+O/pVkn05
+         3OTPeMtt6oRlD0H/XJdYLP2ZMMAv6Oydv7ujs=
+MIME-Version: 1.0
+X-Originating-IP: [88.209.222.127]
+In-Reply-To: <BANLkTi=BLt5evF12J-FQ3GVxnfOiEFJzwg@mail.gmail.com>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+	<4DA4B6A8.7030804@gmail.com>
+	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+	<alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
+	<BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+	<BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
+	<BANLkTi=BLt5evF12J-FQ3GVxnfOiEFJzwg@mail.gmail.com>
+Date: Thu, 14 Apr 2011 11:58:07 +0200
+Message-ID: <BANLkTin-L4ON5JZp3A80ptxXZ03NR2E0yg@mail.gmail.com>
+Subject: Re: Unionmount status?
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
+        Michal Suchanek <hramrach@centrum.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit fixes an embarrassing bug in the "storage_common:
-use kstrto*()" patch which caused fsg_store_ro() to return
-zero instead of the length of the consumed buffer.
+On Thu, Apr 14, 2011 at 11:48 AM, Sedat Dilek
+<sedat.dilek@googlemail.com> wrote:
+> did you stop working on OverlayFS (no hear no read since 3 weeks :-))?
+> You made some post-v7-patchset patches, but did not publish a v8.
+>
+> Also, Linus requested a finer-grained split of the big overlayfs.c
+> file like in the other FS.
+> What's the status on this?
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/gadget/storage_common.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+I'm working on that.  Will post patches shortly.
 
-On Thu, 14 Apr 2011 04:16:35 +0200, Greg KH <gregkh@suse.de> wrote:
-> Ugh, I applied the first one already :(
-
-Yes, I hoped you could quickly replace the patch without anyone
-noticing.
-
-> Care to send a follow-on patch that fixes this properly?
-
-Natuarry.
-
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 109635a..1fa4f70 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -708,7 +708,7 @@ static ssize_t fsg_show_file(struct device *dev, struct device_attribute *attr,
- static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
- 			    const char *buf, size_t count)
- {
--	ssize_t		rc = count;
-+	ssize_t		rc;
- 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
- 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
- 	unsigned	ro;
-@@ -729,6 +729,7 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
- 		curlun->ro = ro;
- 		curlun->initially_ro = ro;
- 		LDBG(curlun, "read-only status set to %d\n", curlun->ro);
-+		rc = count;
- 	}
- 	up_read(filesem);
- 	return rc;
--- 
-1.7.3.1
-
+Thanks,
+Miklos
