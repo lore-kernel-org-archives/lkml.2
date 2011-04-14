@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab1DNUS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:18:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61779 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab1DNUS4 (ORCPT
+	id S1751707Ab1DNUWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:22:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35904 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750857Ab1DNUWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:18:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=LwLV7gZR3L+lzFnZVKaB53e2md8aDOYcuUhGzXpRHxODWBoSLN+G/LJlf6P/uJEKXa
-         Sc37sA7ItbmS1rUikCOlgbvLUrO/xDGHJc67paJSyxYtUzGe9ih56QU92GpMoi1Lb+rL
-         gwT/6P43L5ywlgwaMSFopqDwLNNBBWO2udYaE=
-Message-ID: <4DA756AC.6030201@gmail.com>
-Date: Fri, 15 Apr 2011 00:18:52 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
+	Thu, 14 Apr 2011 16:22:30 -0400
+Date: Thu, 14 Apr 2011 13:22:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jan Beulich <JBeulich@novell.com>,
+        Christoph Lameter <cl@linux.com>, linux-mm <linux-mm@kvack.org>,
         lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-References: <4DA70950.3060102@openvz.org> <20110414174327.GA8863@elte.hu> <20110414183231.GN16939@redhat.com> <20110414184606.GD16064@elte.hu> <4DA74E5D.4060002@openvz.org> <20110414195748.GO16939@redhat.com> <4DA75373.9040705@openvz.org>
-In-Reply-To: <4DA75373.9040705@openvz.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: BUILD_BUG_ON() breaks sparse gfp_t checks
+Message-Id: <20110414132220.970cfb2a.akpm@linux-foundation.org>
+In-Reply-To: <1302795695.14658.6801.camel@nimitz>
+References: <1302795695.14658.6801.camel@nimitz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2011 12:05 AM, Cyrill Gorcunov wrote:
-...
->>
->> I don't think this patch will work.  It would make sense if the unmasking
->> happened _after_ the "if (!handled)" path, but that is not the path Ingo
->> wanted for v1.
+On Thu, 14 Apr 2011 08:41:35 -0700
+Dave Hansen <dave@sr71.net> wrote:
+
+> Running sparse on page_alloc.c today, it errors out:
+>         
+>         mm/page_alloc.c:96:5: warning: symbol 'percpu_pagelist_fraction' was not declared. Should it be static?
+>         mm/page_alloc.c:175:5: warning: symbol 'min_free_kbytes' was not declared. Should it be static?
+>         include/linux/gfp.h:254:17: error: bad constant expression
+>         include/linux/gfp.h:254:17: error: cannot size expression
 > 
-> This thing happened if inflight nmi reaches the system and note that inflight
-> NMI comes from perf and masks lvt entry, it has nothing to do with "handled" but
-> rather the _fact_ that NMI reached apic via LVTPC and as result -- masked it.
-> Don, I might be missin something, brain is slowly going to sleep :)
+> which is a line in gfp_zone():
 > 
+> 	BUILD_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+> 
+> That's really unfortunate, because it ends up hiding all of the other
+> legitimate sparse messages (like I introduced with the appended patch):
+> 
+>         mm/page_alloc.c:96:5: warning: symbol 'percpu_pagelist_fraction' was not declared. Should it be static?
+>         mm/page_alloc.c:175:5: warning: symbol 'min_free_kbytes' was not declared. Should it be static?
+>         mm/page_alloc.c:3692:15: warning: symbol '__early_pfn_to_nid' was not declared. Should it be static?
+>         mm/page_alloc.c:5315:59: warning: incorrect type in argument 1 (different base types)
+>         mm/page_alloc.c:5315:59:    expected unsigned long [unsigned] [usertype] size
+>         mm/page_alloc.c:5315:59:    got restricted gfp_t [usertype] <noident>
+> ...
+> 
+> Is sparse broken, or is that ?  Even if it is, should we be working
+> around this somehow?  It looks like we've basically crippled sparse in
+> some spots.
 
-Seems I'm wrong in this assumption, otherwise when this mechanism was
-introduced for first time every in-flight nmi catched would block further
-perf activity.
+Is sparse having conniptions over that monster expression for
+GFP_ZONE_BAD?
 
->>
->> Cheers,
->> Don
->>
+The kernel calls gfp_zone() with a constant arg in very few places. 
+This?
 
--- 
-    Cyrill
+--- a/include/linux/gfp.h~a
++++ a/include/linux/gfp.h
+@@ -249,14 +249,9 @@ static inline enum zone_type gfp_zone(gf
+ 
+ 	z = (GFP_ZONE_TABLE >> (bit * ZONES_SHIFT)) &
+ 					 ((1 << ZONES_SHIFT) - 1);
+-
+-	if (__builtin_constant_p(bit))
+-		BUILD_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+-	else {
+ #ifdef CONFIG_DEBUG_VM
+-		BUG_ON((GFP_ZONE_BAD >> bit) & 1);
++	BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+ #endif
+-	}
+ 	return z;
+ }
+ 
+_
+
