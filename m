@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab1DNSgt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:36:49 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37265 "EHLO
+	id S933977Ab1DNShL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:37:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37234 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab1DNRpZ (ORCPT
+	with ESMTP id S932422Ab1DNRpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:45:25 -0400
+	Thu, 14 Apr 2011 13:45:23 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Williams <dan.j.williams@intel.com>,
+Cc: stable-review@kernel.org, Alex Deucher <alexdeucher@gmail.com>,
+        Dave Airlie <airlied@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 010/209] ioat2: catch and recover from broken vtd configurations v6
-Date: Thu, 14 Apr 2011 13:40:40 -0400
-Message-Id: <1302803039-9400-11-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 005/209] drm/radeon/kms: handle the case of no active displays properly in the bandwidth code
+Date: Thu, 14 Apr 2011 13:40:35 -0400
+Message-Id: <1302803039-9400-6-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,171 +22,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 556ab45f9a775bfa4762bacc0a4afb5b44b067bc upstream.
+commit e06b14ee91a2ddefc9a67443a6cd8ee0fa800115 upstream.
 
-On some platforms (MacPro3,1) the BIOS assigns the ioatdma device to the
-incorrect iommu causing faults when the driver initializes.  Add a quirk
-to catch this misconfiguration and try falling back to untranslated
-operation (which works in the MacPro3,1 case).
+Logic was:
+if (mode0 && mode1)
+else if (mode0)
+else
 
-Assuming there are other platforms with misconfigured iommus teach the
-ioatdma driver to treat initialization failures as non-fatal (just fail
-the driver load and emit a warning instead of triggering a BUG_ON).
+Should be:
+if (mode0 && mode1)
+else if (mode0)
+else if (mode1)
 
-This can be classified as a boot regression since 2.6.32 on affected
-platforms since the ioatdma module did not autoload prior to that
-kernel.
+Otherwise we may end up calculating the priority regs with
+unitialized values.
 
-[PG: 34 has no WARN_TAINT_ONCE, use WARN_ONCE instead]
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=16492
 
-Acked-by: David Woodhouse <David.Woodhouse@intel.com>
-Reported-by: Chris Li <lkml@chrisli.org>
-Tested-by: Chris Li <lkml@chrisli.org>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/dma/ioat/dma.h    |    1 +
- drivers/dma/ioat/dma_v2.c |   24 ++++++++++++++++++++++--
- drivers/dma/ioat/dma_v3.c |    5 ++++-
- drivers/pci/intel-iommu.c |   27 +++++++++++++++++++++++++++
- 4 files changed, 54 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/rs690.c |   27 +++++++++------------------
+ drivers/gpu/drm/radeon/rv515.c |   23 +++++++++--------------
+ 2 files changed, 18 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
-index 86b97ac..4eda2e5 100644
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -96,6 +96,7 @@ struct ioat_chan_common {
- 	#define IOAT_COMPLETION_ACK 1
- 	#define IOAT_RESET_PENDING 2
- 	#define IOAT_KOBJ_INIT_FAIL 3
-+	#define IOAT_RUN 5
- 	struct timer_list timer;
- 	#define COMPLETION_TIMEOUT msecs_to_jiffies(100)
- 	#define IDLE_TIMEOUT msecs_to_jiffies(2000)
-diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
-index b5ae56c..63e6929 100644
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -304,7 +304,10 @@ void ioat2_timer_event(unsigned long data)
- 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
- 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
- 				__func__, chanerr);
--			BUG_ON(is_ioat_bug(chanerr));
-+			if (test_bit(IOAT_RUN, &chan->state))
-+				BUG_ON(is_ioat_bug(chanerr));
-+			else /* we never got off the ground */
-+				return;
+diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
+index 97e3002..6249cf7 100644
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -400,7 +400,9 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
+ 	struct drm_display_mode *mode1 = NULL;
+ 	struct rs690_watermark wm0;
+ 	struct rs690_watermark wm1;
+-	u32 tmp, d1mode_priority_a_cnt, d2mode_priority_a_cnt;
++	u32 tmp;
++	u32 d1mode_priority_a_cnt = S_006548_D1MODE_PRIORITY_A_OFF(1);
++	u32 d2mode_priority_a_cnt = S_006548_D1MODE_PRIORITY_A_OFF(1);
+ 	fixed20_12 priority_mark02, priority_mark12, fill_rate;
+ 	fixed20_12 a, b;
+ 
+@@ -497,10 +499,6 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
+ 			d1mode_priority_a_cnt |= S_006548_D1MODE_PRIORITY_A_ALWAYS_ON(1);
+ 			d2mode_priority_a_cnt |= S_006D48_D2MODE_PRIORITY_A_ALWAYS_ON(1);
  		}
- 
- 		/* if we haven't made progress and we have already
-@@ -496,6 +499,8 @@ static struct ioat_ring_ent **ioat2_alloc_ring(struct dma_chan *c, int order, gf
- 	return ring;
+-		WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	} else if (mode0) {
+ 		if (rfixed_trunc(wm0.dbpp) > 64)
+ 			a.full = rfixed_mul(wm0.dbpp, wm0.num_line_pair);
+@@ -530,13 +528,7 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
+ 		d1mode_priority_a_cnt = rfixed_trunc(priority_mark02);
+ 		if (rdev->disp_priority == 2)
+ 			d1mode_priority_a_cnt |= S_006548_D1MODE_PRIORITY_A_ALWAYS_ON(1);
+-		WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT,
+-			S_006D48_D2MODE_PRIORITY_A_OFF(1));
+-		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT,
+-			S_006D4C_D2MODE_PRIORITY_B_OFF(1));
+-	} else {
++	} else if (mode1) {
+ 		if (rfixed_trunc(wm1.dbpp) > 64)
+ 			a.full = rfixed_mul(wm1.dbpp, wm1.num_line_pair);
+ 		else
+@@ -565,13 +557,12 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
+ 		d2mode_priority_a_cnt = rfixed_trunc(priority_mark12);
+ 		if (rdev->disp_priority == 2)
+ 			d2mode_priority_a_cnt |= S_006D48_D2MODE_PRIORITY_A_ALWAYS_ON(1);
+-		WREG32(R_006548_D1MODE_PRIORITY_A_CNT,
+-			S_006548_D1MODE_PRIORITY_A_OFF(1));
+-		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT,
+-			S_00654C_D1MODE_PRIORITY_B_OFF(1));
+-		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	}
++
++	WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
++	WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
++	WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
++	WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
  }
  
-+void ioat2_free_chan_resources(struct dma_chan *c);
-+
- /* ioat2_alloc_chan_resources - allocate/initialize ioat2 descriptor ring
-  * @chan: channel to be initialized
-  */
-@@ -504,6 +509,7 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
- 	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
- 	struct ioat_chan_common *chan = &ioat->base;
- 	struct ioat_ring_ent **ring;
-+	u64 status;
- 	int order;
+ uint32_t rs690_mc_rreg(struct radeon_device *rdev, uint32_t reg)
+diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
+index 9035121..cf8f27f 100644
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -1017,7 +1017,9 @@ void rv515_bandwidth_avivo_update(struct radeon_device *rdev)
+ 	struct drm_display_mode *mode1 = NULL;
+ 	struct rv515_watermark wm0;
+ 	struct rv515_watermark wm1;
+-	u32 tmp, d1mode_priority_a_cnt, d2mode_priority_a_cnt;
++	u32 tmp;
++	u32 d1mode_priority_a_cnt = MODE_PRIORITY_OFF;
++	u32 d2mode_priority_a_cnt = MODE_PRIORITY_OFF;
+ 	fixed20_12 priority_mark02, priority_mark12, fill_rate;
+ 	fixed20_12 a, b;
  
- 	/* have we already been set up? */
-@@ -542,7 +548,20 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
- 	tasklet_enable(&chan->cleanup_task);
- 	ioat2_start_null_desc(ioat);
- 
--	return 1 << ioat->alloc_order;
-+	/* check that we got off the ground */
-+	udelay(5);
-+	status = ioat_chansts(chan);
-+	if (is_ioat_active(status) || is_ioat_idle(status)) {
-+		set_bit(IOAT_RUN, &chan->state);
-+		return 1 << ioat->alloc_order;
-+	} else {
-+		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
-+
-+		dev_WARN(to_dev(chan),
-+			"failed to start channel chanerr: %#x\n", chanerr);
-+		ioat2_free_chan_resources(c);
-+		return -EFAULT;
-+	}
- }
- 
- bool reshape_ring(struct ioat2_dma_chan *ioat, int order)
-@@ -776,6 +795,7 @@ void ioat2_free_chan_resources(struct dma_chan *c)
- 	del_timer_sync(&chan->timer);
- 	device->cleanup_fn((unsigned long) c);
- 	device->reset_hw(chan);
-+	clear_bit(IOAT_RUN, &chan->state);
- 
- 	spin_lock_bh(&ioat->ring_lock);
- 	descs = ioat2_ring_space(ioat);
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index 6740e31..52b1e3d 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -401,7 +401,10 @@ static void ioat3_timer_event(unsigned long data)
- 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
- 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
- 				__func__, chanerr);
--			BUG_ON(is_ioat_bug(chanerr));
-+			if (test_bit(IOAT_RUN, &chan->state))
-+				BUG_ON(is_ioat_bug(chanerr));
-+			else /* we never got off the ground */
-+				return;
+@@ -1091,10 +1093,6 @@ void rv515_bandwidth_avivo_update(struct radeon_device *rdev)
+ 			d1mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
+ 			d2mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
  		}
- 
- 		/* if we haven't made progress and we have already
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index fff8832..3507692 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -3028,6 +3028,33 @@ static void __init iommu_exit_mempool(void)
- 
+-		WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	} else if (mode0) {
+ 		if (rfixed_trunc(wm0.dbpp) > 64)
+ 			a.full = rfixed_div(wm0.dbpp, wm0.num_line_pair);
+@@ -1124,11 +1122,7 @@ void rv515_bandwidth_avivo_update(struct radeon_device *rdev)
+ 		d1mode_priority_a_cnt = rfixed_trunc(priority_mark02);
+ 		if (rdev->disp_priority == 2)
+ 			d1mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
+-		WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_A_CNT, MODE_PRIORITY_OFF);
+-		WREG32(D2MODE_PRIORITY_B_CNT, MODE_PRIORITY_OFF);
+-	} else {
++	} else if (mode1) {
+ 		if (rfixed_trunc(wm1.dbpp) > 64)
+ 			a.full = rfixed_div(wm1.dbpp, wm1.num_line_pair);
+ 		else
+@@ -1157,11 +1151,12 @@ void rv515_bandwidth_avivo_update(struct radeon_device *rdev)
+ 		d2mode_priority_a_cnt = rfixed_trunc(priority_mark12);
+ 		if (rdev->disp_priority == 2)
+ 			d2mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
+-		WREG32(D1MODE_PRIORITY_A_CNT, MODE_PRIORITY_OFF);
+-		WREG32(D1MODE_PRIORITY_B_CNT, MODE_PRIORITY_OFF);
+-		WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	}
++
++	WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
++	WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
++	WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
++	WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
  }
  
-+static void quirk_ioat_snb_local_iommu(struct pci_dev *pdev)
-+{
-+	struct dmar_drhd_unit *drhd;
-+	u32 vtbar;
-+	int rc;
-+
-+	/* We know that this device on this chipset has its own IOMMU.
-+	 * If we find it under a different IOMMU, then the BIOS is lying
-+	 * to us. Hope that the IOMMU for this device is actually
-+	 * disabled, and it needs no translation...
-+	 */
-+	rc = pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0), 0xb0, &vtbar);
-+	if (rc) {
-+		/* "can't" happen */
-+		dev_info(&pdev->dev, "failed to run vt-d quirk\n");
-+		return;
-+	}
-+	vtbar &= 0xffff0000;
-+
-+	/* we know that the this iommu should be at offset 0xa000 from vtbar */
-+	drhd = dmar_find_matched_drhd_unit(pdev);
-+	if (WARN_ONCE(!drhd || drhd->reg_base_addr - vtbar != 0xa000,
-+			    "BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device\n"))
-+		pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
-+}
-+DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB, quirk_ioat_snb_local_iommu);
-+
- static void __init init_no_remapping_devices(void)
- {
- 	struct dmar_drhd_unit *drhd;
+ void rv515_bandwidth_update(struct radeon_device *rdev)
 -- 
 1.7.4.4
 
