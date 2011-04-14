@@ -1,158 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933885Ab1DNSVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:21:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18850 "EHLO mx1.redhat.com"
+	id S933899Ab1DNSV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:21:29 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52908 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933271Ab1DNSVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:21:03 -0400
-Date: Thu, 14 Apr 2011 20:19:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [34-longterm 136/209] exec: make argv/envp memory visible to
-	oom-killer
-Message-ID: <20110414181936.GA22589@redhat.com>
-References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com> <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com> <1302803767-9715-23-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302803767-9715-23-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933872Ab1DNSVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 14:21:09 -0400
+Subject: Re: Improved TSC calculation
+From: john stultz <johnstul@us.ibm.com>
+To: Ed W <lists@wildgooses.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4DA6D85A.8000800@wildgooses.com>
+References: <4DA6D85A.8000800@wildgooses.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 11:20:53 -0700
+Message-ID: <1302805253.2673.17.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14, Paul Gortmaker wrote:
->
->   =====================================================================
->   | This is a commit scheduled for the next v2.6.34 longterm release. |
->   | If you see a problem with using this for longterm, please comment.|
->   =====================================================================
-> ...
->
-> With this patch get_arg_page() increments current's MM_ANONPAGES
-> counter every time we allocate the new page for argv/envp. When
-> do_execve() succeds or fails, we change this counter back.
+On Thu, 2011-04-14 at 12:19 +0100, Ed W wrote:
+> Hi, Thanks for the new stable TSC calculation commit
+> (08ec0c58fb8a05d3191d5cb6f5d6f81adb419798).
+> 
+> My situation is that I don't have a PM or HPET timer (x86 Alix board),
+> and my requirements are embedded type use, but with only intermittently
+> connected network/gps, so accurate timekeeping between reboots is
+> important.
+> 
+> I had been experimenting with extending the existing PIT timer routines
+> at boot, but I had the problem that it was taking 1s+ to get a very
+> stable calculation (which is undesirable for my requirements), however,
+> having spotted your commit it seems like a much more sensible solution.
 
-This only works starting from 2.6.36.
+Thanks!
 
-before 2.6.36 kernel, oom-killer's badness() uses mm->total_vm. Please
-see the patch for pre2.6.36 kernel below.
+> Before I try and hack probably an (inadequate) solution myself, do you
+> have any thoughts on the best solution to extend your commit to non
+> PM/HEPT machine?  My initial thought was to repeatedly call
+> pit_calibrate_tsc() with an extended latch, looking for a stable
+> solution (ie refactor native_calibrate_tsc() ).  Is this workable?
+> Better ideas?
 
-Oleg.
+Oof. So with the PIT you can maybe utilize the second channel/counter,
+using a largish long countdown to try to get a similar functionality.
+The only big concern is that the timer interrupt hardware is always
+problematic (every time we chanage our usage, some random chunk of
+laptops seem to stop working). So whatever solution that works for you
+might not be able to be generically deployed. But I think it could be
+interesting and might be worth you giving it a shot.
 
---------------------------------------------------------------------
-commit 3c77f845722158206a7209c45ccddc264d19319c upstream.
+I'd probably look at reworking tsc_refine_calibration_work, extending
+the tsc_read_refs() code to also get PIT count values and then start the
+long PIT countdown on the second channel before we
+schedule_delayed_work.
 
-Brad Spengler published a local memory-allocation DoS that
-evades the OOM-killer (though not the virtual memory RLIMIT):
-http://www.grsecurity.net/~spender/64bit_dos.c
-
-execve()->copy_strings() can allocate a lot of memory, but
-this is not visible to oom-killer, nobody can see the nascent
-bprm->mm and take it into account.
-
-With this patch get_arg_page() increments current's MM_ANONPAGES
-counter every time we allocate the new page for argv/envp. When
-do_execve() succeds or fails, we change this counter back.
-
-Technically this is not 100% correct, we can't know if the new
-page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
-I don't think this really matters and everything becomes correct
-once exec changes ->mm or fails.
-
-Compared to upstream:
-
-	before 2.6.36 kernel, oom-killer's badness() takes
-	mm->total_vm into account and nothing else. So
-	acct_arg_size() has to play with this counter too.
-
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
----
-
- include/linux/binfmts.h |    1 +
- fs/exec.c               |   28 ++++++++++++++++++++++++++--
- 2 files changed, 27 insertions(+), 2 deletions(-)
-
---- 2.6.35/include/linux/binfmts.h~1_acct_exec_mem	2010-03-11 13:11:50.000000000 +0100
-+++ 2.6.35/include/linux/binfmts.h	2010-12-13 12:01:22.000000000 +0100
-@@ -29,6 +29,7 @@ struct linux_binprm{
- 	char buf[BINPRM_BUF_SIZE];
- #ifdef CONFIG_MMU
- 	struct vm_area_struct *vma;
-+	unsigned long vma_pages;
- #else
- # define MAX_ARG_PAGES	32
- 	struct page *page[MAX_ARG_PAGES];
---- 2.6.35/fs/exec.c~1_acct_exec_mem	2010-05-28 13:41:40.000000000 +0200
-+++ 2.6.35/fs/exec.c	2010-12-13 12:00:51.000000000 +0100
-@@ -158,6 +158,21 @@ out:
- 
- #ifdef CONFIG_MMU
- 
-+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+	struct mm_struct *mm = current->mm;
-+	long diff = (long)(pages - bprm->vma_pages);
-+
-+	if (!mm || !diff)
-+		return;
-+
-+	bprm->vma_pages = pages;
-+
-+	down_write(&mm->mmap_sem);
-+	mm->total_vm += diff;
-+	up_write(&mm->mmap_sem);
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
-@@ -180,6 +195,8 @@ static struct page *get_arg_page(struct 
- 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
- 		struct rlimit *rlim;
- 
-+		acct_arg_size(bprm, size / PAGE_SIZE);
-+
- 		/*
- 		 * We've historically supported up to 32 pages (ARG_MAX)
- 		 * of argument strings even with small stacks
-@@ -270,6 +287,10 @@ static bool valid_arg_len(struct linux_b
- 
- #else
- 
-+static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
-@@ -977,6 +998,7 @@ int flush_old_exec(struct linux_binprm *
- 	/*
- 	 * Release all of the old mmap stuff
- 	 */
-+	acct_arg_size(bprm, 0);
- 	retval = exec_mmap(bprm->mm);
- 	if (retval)
- 		goto out;
-@@ -1401,8 +1423,10 @@ int do_execve(char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
--		mmput (bprm->mm);
-+	if (bprm->mm) {
-+		acct_arg_size(bprm, 0);
-+		mmput(bprm->mm);
-+	}
- 
- out_file:
- 	if (bprm->file) {
+thanks
+-john
 
