@@ -1,105 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927Ab1DNOsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:48:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63271 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758920Ab1DNOsx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:48:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=j/HmYzkuI63tIwmAros39wktLMseKlZhY/dTjMc+y8ku/MEomyno06Z+UXV+M7AxDe
-         i98CC7bxS4/DK50sPFTGbNXQHUcSynqxe2Q78E1j/6wUGNPTaGWl/zYSfa3wOE+VKkME
-         u6wEEZcDQ+q7g92+MyVtU7pXSFFTmdDPZt+Vw=
-Message-ID: <4DA70950.3060102@openvz.org>
-Date: Thu, 14 Apr 2011 18:48:48 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1758993Ab1DNOtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:49:24 -0400
+Received: from www.0x90.at ([78.46.59.21]:44074 "EHLO mail.0x90.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758921Ab1DNOtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:49:23 -0400
+Date: Thu, 14 Apr 2011 16:49:54 +0200
+From: Daniel Walter <sahne@0x90.at>
+To: Stephen Clark <sclark46@earthlink.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 1/1] ipv6: RTA_PREFSRC support for ipv6 route source
+ address selection
+Message-ID: <20110414144954.GA79918@0x90.at>
+References: <20110414071057.GB78446@0x90.at>
+ <4DA6FE25.70608@earthlink.net>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Lin Ming <ming.m.lin@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA6FE25.70608@earthlink.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
-Subject: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
+On Thu, Apr 14, 2011 at 10:01:09AM -0400, Stephen Clark wrote:
+> On 04/14/2011 03:10 AM, Daniel Walter wrote:
+> > [ipv6] Add support for RTA_PREFSRC
+> >
+> > This patch allows a user to select the preferred source address
+> > for a specific IPv6-Route. It can be set via a netlink message
+> > setting RTA_PREFSRC to a valid IPv6 address which must be
+> > up on the device the route will be bound to.
+> >
+> >
+> > Signed-off-by: Daniel Walter<dwalter@barracuda.com>
+> > ---
+> > Repost patch, after fixing some warnings pointed out on netdev@
+> > applies clean against current linux-2.6 HEAD
+> >
+> >   include/net/ip6_fib.h   |    2 +
+> >   include/net/ip6_route.h |    7 ++++
+> >   net/ipv6/addrconf.c     |    2 +
+> >   net/ipv6/ip6_output.c   |    8 ++--
+> >   net/ipv6/route.c        |   72 +++++++++++++++++++++++++++++++++++++++++++++--
+> >   5 files changed, 84 insertions(+), 7 deletions(-)
+> >
+> > ---
+> > diff --git a/include/net/ip6_fib.h b/include/net/ip6_fib.h
+> > index bc3cde0..98348d5 100644
+> > --- a/include/net/ip6_fib.h
+> > +++ b/include/net/ip6_fib.h
+> > @@ -42,6 +42,7 @@ struct fib6_config {
+> >
+> >   	struct in6_addr	fc_dst;
+> >   	struct in6_addr	fc_src;
+> > +	struct in6_addr	fc_prefsrc;
+> >   	struct in6_addr	fc_gateway;
+> >
+> >   	unsigned long	fc_expires;
+> > @@ -107,6 +108,7 @@ struct rt6_info {
+> >   	struct rt6key			rt6i_dst ____cacheline_aligned_in_smp;
+> >   	u32				rt6i_flags;
+> >   	struct rt6key			rt6i_src;
+> > +	struct rt6key			rt6i_prefsrc;
+> >   	u32				rt6i_metric;
+> >   	u32				rt6i_peer_genid;
+> >
+> > diff --git a/include/net/ip6_route.h b/include/net/ip6_route.h
+> > index c850e5f..86b1cb4 100644
+> > --- a/include/net/ip6_route.h
+> > +++ b/include/net/ip6_route.h
+> > @@ -84,6 +84,12 @@ extern int			ip6_route_add(struct fib6_config *cfg);
+> >   extern int			ip6_ins_rt(struct rt6_info *);
+> >   extern int			ip6_del_rt(struct rt6_info *);
+> >
+> > +extern int			ip6_route_get_saddr(struct net *net,
+> > +						    struct rt6_info *rt,
+> > +						    struct in6_addr *daddr,
+> > +						    unsigned int prefs,
+> > +						    struct in6_addr *saddr);
+> > +
+> >   extern struct rt6_info		*rt6_lookup(struct net *net,
+> >   					    const struct in6_addr *daddr,
+> >   					    const struct in6_addr *saddr,
+> > @@ -141,6 +147,7 @@ struct rt6_rtnl_dump_arg {
+> >   extern int rt6_dump_route(struct rt6_info *rt, void *p_arg);
+> >   extern void rt6_ifdown(struct net *net, struct net_device *dev);
+> >   extern void rt6_mtu_change(struct net_device *dev, unsigned mtu);
+> > +extern void rt6_remove_prefsrc(struct inet6_ifaddr *ifp);
+> >
+> >
+> >   /*
+> > diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+> > index 1493534..129d7e1 100644
+> > --- a/net/ipv6/addrconf.c
+> > +++ b/net/ipv6/addrconf.c
+> > @@ -825,6 +825,8 @@ static void ipv6_del_addr(struct inet6_ifaddr *ifp)
+> >   		dst_release(&rt->dst);
+> >   	}
+> >
+> > +	/* clean up prefsrc entries */
+> > +	rt6_remove_prefsrc(ifp);
+> >   out:
+> >   	in6_ifa_put(ifp);
+> >   }
+> > diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+> > index 46cf7be..1f4c096 100644
+> > --- a/net/ipv6/ip6_output.c
+> > +++ b/net/ipv6/ip6_output.c
+> > @@ -930,10 +930,10 @@ static int ip6_dst_lookup_tail(struct sock *sk,
+> >   		goto out_err_release;
+> >
+> >   	if (ipv6_addr_any(&fl6->saddr)) {
+> > -		err = ipv6_dev_get_saddr(net, ip6_dst_idev(*dst)->dev,
+> > -					&fl6->daddr,
+> > -					 sk ? inet6_sk(sk)->srcprefs : 0,
+> > -					&fl6->saddr);
+> > +		struct rt6_info *rt = (struct rt6_info *) *dst;
+> > +		err = ip6_route_get_saddr(net, rt,&fl6->daddr,
+> > +					  sk ? inet6_sk(sk)->srcprefs : 0,
+> > +					&fl6->saddr);
+> >   		if (err)
+> >   			goto out_err_release;
+> >   	}
+> > diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+> > index 843406f..af26cc10 100644
+> > --- a/net/ipv6/route.c
+> > +++ b/net/ipv6/route.c
+> > @@ -1325,6 +1325,16 @@ int ip6_route_add(struct fib6_config *cfg)
+> >   	if (dev == NULL)
+> >   		goto out;
+> >
+> > +	if (!ipv6_addr_any(&cfg->fc_prefsrc)) {
+> > +		if (!ipv6_chk_addr(net,&cfg->fc_prefsrc, dev, 0)) {
+> > +			err = -EINVAL;
+> > +			goto out;
+> > +		}
+> > +		ipv6_addr_copy(&rt->rt6i_prefsrc.addr,&cfg->fc_prefsrc);
+> > +		rt->rt6i_prefsrc.plen = 128;
+> > +	} else
+> > +		rt->rt6i_prefsrc.plen = 0;
+> > +
+> >   	if (cfg->fc_flags&  (RTF_GATEWAY | RTF_NONEXTHOP)) {
+> >   		rt->rt6i_nexthop = __neigh_lookup_errno(&nd_tbl,&rt->rt6i_gateway, dev);
+> >   		if (IS_ERR(rt->rt6i_nexthop)) {
+> > @@ -2037,6 +2047,55 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
+> >   	return rt;
+> >   }
+> >
+> > +int ip6_route_get_saddr(struct net *net,
+> > +			struct rt6_info *rt,
+> > +			struct in6_addr *daddr,
+> > +			unsigned int prefs,
+> > +			struct in6_addr *saddr)
+> > +{
+> > +	struct inet6_dev *idev = ip6_dst_idev((struct dst_entry*)rt);
+> > +	int err = 0;
+> > +	if (rt->rt6i_prefsrc.plen)
+> > +		ipv6_addr_copy(saddr,&rt->rt6i_prefsrc.addr);
+> > +	else
+> > +		err = ipv6_dev_get_saddr(net, idev ? idev->dev : NULL,
+> > +					 daddr, prefs, saddr);
+> > +	return err;
+> > +}
+> > +
+> > +/* remove deleted ip from prefsrc entries */
+> > +struct arg_dev_net_ip {
+> > +	struct net_device *dev;
+> > +	struct net *net;
+> > +	struct in6_addr *addr;
+> > +};
+> > +
+> > +static int fib6_remove_prefsrc(struct rt6_info *rt, void *arg)
+> > +{
+> > +	struct net_device *dev = ((struct arg_dev_net_ip *)arg)->dev;
+> > +	struct net *net = ((struct arg_dev_net_ip *)arg)->net;
+> > +	struct in6_addr *addr = ((struct arg_dev_net_ip *)arg)->addr;
+> > +
+> > +	if (((void *)rt->rt6i_dev == dev || dev == NULL)&&
+> > +	    rt != net->ipv6.ip6_null_entry&&
+> > +	    ipv6_addr_equal(addr,&rt->rt6i_prefsrc.addr)) {
+> > +		/* remove prefsrc entry */
+> > +		rt->rt6i_prefsrc.plen = 0;
+> > +	}
+> > +	return 0;
+> > +}
+> > +
+> > +void rt6_remove_prefsrc(struct inet6_ifaddr *ifp)
+> > +{
+> > +	struct net *net = dev_net(ifp->idev->dev);
+> > +	struct arg_dev_net_ip adni = {
+> > +		.dev = ifp->idev->dev,
+> > +		.net = net,
+> > +		.addr =&ifp->addr,
+> > +	};
+> > +	fib6_clean_all(net, fib6_remove_prefsrc, 0,&adni);
+> > +}
+> > +
+> >   struct arg_dev_net {
+> >   	struct net_device *dev;
+> >   	struct net *net;
+> > @@ -2183,6 +2242,9 @@ static int rtm_to_fib6_config(struct sk_buff *skb, struct nlmsghdr *nlh,
+> >   		nla_memcpy(&cfg->fc_src, tb[RTA_SRC], plen);
+> >   	}
+> >
+> > +	if (tb[RTA_PREFSRC])
+> > +		nla_memcpy(&cfg->fc_prefsrc, tb[RTA_PREFSRC], 16);
+> > +
+> >   	if (tb[RTA_OIF])
+> >   		cfg->fc_ifindex = nla_get_u32(tb[RTA_OIF]);
+> >
+> > @@ -2325,13 +2387,17 @@ static int rt6_fill_node(struct net *net,
+> >   #endif
+> >   			NLA_PUT_U32(skb, RTA_IIF, iif);
+> >   	} else if (dst) {
+> > -		struct inet6_dev *idev = ip6_dst_idev(&rt->dst);
+> >   		struct in6_addr saddr_buf;
+> > -		if (ipv6_dev_get_saddr(net, idev ? idev->dev : NULL,
+> > -				       dst, 0,&saddr_buf) == 0)
+> > +		if (ip6_route_get_saddr(net, rt, dst, 0,&saddr_buf) == 0)
+> >   			NLA_PUT(skb, RTA_PREFSRC, 16,&saddr_buf);
+> >   	}
+> >
+> > +	if (rt->rt6i_prefsrc.plen) {
+> > +		struct in6_addr saddr_buf;
+> > +		ipv6_addr_copy(&saddr_buf,&rt->rt6i_prefsrc.addr);
+> > +		NLA_PUT(skb, RTA_PREFSRC, 16,&saddr_buf);
+> > +	}
+> > +
+> >   	if (rtnetlink_put_metrics(skb, dst_metrics_ptr(&rt->dst))<  0)
+> >   		goto nla_put_failure;
+> 
+> What userspace application will be used to set this?
 
-When using perf on a Pentium4 box, lots of unknown NMIs would be generated.
-This is the result of a P4 quirk that is subtle.  The P4 generates an NMI
-when the counter overflow and unlike other arches where the NMI is a one time
-event, the P4 continues to assert its NMI until clear by the OS.
+iproute2 already has support for this, since it is using
+RTA_PREFSRC for ipv4. 
 
-As a side effect to this quirk, the NMI on the apic is masked off to prevent
-a stream of NMIs until the overflow flag is cleared.  During the perf
-re-design, this subtle-ness was overlooked and the apic was unmasked _before_
-the overflow flag was cleared.  As a result, this generated an extra NMI on
-the P4 mchines.
+ip -6 r a 2001:db8:a::/64 via 2001:db8:b::1 src 2001:db8:b::2
 
-The fix is trivial, wait until the NMI is properly handled before un-masking
-the apic.
-
-Sadly, in the old nmi watchdog there was a note that explained this exact
-behaviour.
-
- Cyrill Gorcunov: Added a comment into code itself. We should consider
-if we need to unmask LVTPC if no oveflow happened at all.
-
- Ingo Molnar: Pointed out that unmasking unconditionally is proven by time
-to be correct.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Tested-by: Shaun Ruffell <sruffell@digium.com>
-Tested-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Maciej Rutecki <maciej.rutecki@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Stephane Eranian <eranian@google.com>
-CC: Robert Richter <robert.richter@amd.com>
----
-
-Ingo, please make sure I've added conform notes about conditional/uconditional
-unmasking in changelog. Don, I've added a comment in code just to not forget why
-we need it. Thanks.
-
- arch/x86/kernel/cpu/perf_event.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-@@ -1370,9 +1370,16 @@ perf_event_nmi_handler(struct notifier_b
- 		return NOTIFY_DONE;
- 	}
-
--	apic_write(APIC_LVTPC, APIC_DM_NMI);
-
- 	handled = x86_pmu.handle_irq(args->regs);
-+
-+	/*
-+	 * Note the unmasking of LVTPC entry must be
-+	 * done *after* counter oveflow flag is cleared
-+	 * otherwise it might lead to double NMIs generation.
-+	 */
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
-+
- 	if (!handled)
- 		return NOTIFY_DONE;
-
-
--- 
-    Cyrill
