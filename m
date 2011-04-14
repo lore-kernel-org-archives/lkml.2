@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab1DNSf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:35:58 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37340 "EHLO
+	id S932850Ab1DNSf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:35:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37342 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932558Ab1DNRpb (ORCPT
+	with ESMTP id S932562Ab1DNRpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:45:31 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+Cc: stable-review@kernel.org, Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 017/209] block: take care not to overflow when calculating total iov length
-Date: Thu, 14 Apr 2011 13:40:47 -0400
-Message-Id: <1302803039-9400-18-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 012/209] drbd: Initialize all members of sync_conf to their defaults [Bugz 315]
+Date: Thu, 14 Apr 2011 13:40:42 -0400
+Message-Id: <1302803039-9400-13-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,84 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Axboe <jaxboe@fusionio.com>
+From: Philipp Reisner <philipp.reisner@linbit.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 9f864c80913467312c7b8690e41fb5ebd1b50e92 upstream.
+commit 85f4cc17a62c3ac9edeaf120cdae7261df458053 upstream.
 
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+[PG: remove fields volume, interval, throttle, hold_off; not in 34]
+
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- block/scsi_ioctl.c |   34 ++++++++++++++++++++++++----------
- 1 files changed, 24 insertions(+), 10 deletions(-)
+ drivers/block/drbd/drbd_main.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index a8b5a10..4f4230b 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -321,33 +321,47 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
- 	if (hdr->iovec_count) {
- 		const int size = sizeof(struct sg_iovec) * hdr->iovec_count;
- 		size_t iov_data_len;
--		struct sg_iovec *iov;
-+		struct sg_iovec *sg_iov;
-+		struct iovec *iov;
-+		int i;
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 93d1f9b..6c79e02 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2567,9 +2567,20 @@ static void drbd_unplug_fn(struct request_queue *q)
  
--		iov = kmalloc(size, GFP_KERNEL);
--		if (!iov) {
-+		sg_iov = kmalloc(size, GFP_KERNEL);
-+		if (!sg_iov) {
- 			ret = -ENOMEM;
- 			goto out;
- 		}
- 
--		if (copy_from_user(iov, hdr->dxferp, size)) {
--			kfree(iov);
-+		if (copy_from_user(sg_iov, hdr->dxferp, size)) {
-+			kfree(sg_iov);
- 			ret = -EFAULT;
- 			goto out;
- 		}
- 
-+		/*
-+		 * Sum up the vecs, making sure they don't overflow
-+		 */
-+		iov = (struct iovec *) sg_iov;
-+		iov_data_len = 0;
-+		for (i = 0; i < hdr->iovec_count; i++) {
-+			if (iov_data_len + iov[i].iov_len < iov_data_len) {
-+				kfree(sg_iov);
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+			iov_data_len += iov[i].iov_len;
-+		}
+ static void drbd_set_defaults(struct drbd_conf *mdev)
+ {
+-	mdev->sync_conf.after      = DRBD_AFTER_DEF;
+-	mdev->sync_conf.rate       = DRBD_RATE_DEF;
+-	mdev->sync_conf.al_extents = DRBD_AL_EXTENTS_DEF;
++	/* This way we get a compile error when sync_conf grows,
++	   and we forgot to initialize it here */
++	mdev->sync_conf = (struct syncer_conf) {
++		/* .rate = */		DRBD_RATE_DEF,
++		/* .after = */		DRBD_AFTER_DEF,
++		/* .al_extents = */	DRBD_AL_EXTENTS_DEF,
++		/* .verify_alg = */	{}, 0,
++		/* .cpu_mask = */	{}, 0,
++		/* .csums_alg = */	{}, 0,
++		/* .use_rle = */	0
++	};
 +
- 		/* SG_IO howto says that the shorter of the two wins */
--		iov_data_len = iov_length((struct iovec *)iov,
--					  hdr->iovec_count);
- 		if (hdr->dxfer_len < iov_data_len) {
--			hdr->iovec_count = iov_shorten((struct iovec *)iov,
-+			hdr->iovec_count = iov_shorten(iov,
- 						       hdr->iovec_count,
- 						       hdr->dxfer_len);
- 			iov_data_len = hdr->dxfer_len;
- 		}
- 
--		ret = blk_rq_map_user_iov(q, rq, NULL, iov, hdr->iovec_count,
-+		ret = blk_rq_map_user_iov(q, rq, NULL, sg_iov, hdr->iovec_count,
- 					  iov_data_len, GFP_KERNEL);
--		kfree(iov);
-+		kfree(sg_iov);
- 	} else if (hdr->dxfer_len)
- 		ret = blk_rq_map_user(q, rq, NULL, hdr->dxferp, hdr->dxfer_len,
- 				      GFP_KERNEL);
++	/* Have to use that way, because the layout differs between
++	   big endian and little endian */
+ 	mdev->state = (union drbd_state) {
+ 		{ .role = R_SECONDARY,
+ 		  .peer = R_UNKNOWN,
 -- 
 1.7.4.4
 
