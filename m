@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933768Ab1DNSCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:02:23 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42382 "EHLO
+	id S965066Ab1DNR7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:59:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42246 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965070Ab1DNR7L (ORCPT
+	with ESMTP id S965030Ab1DNR6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:59:11 -0400
+	Thu, 14 Apr 2011 13:58:55 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dave Airlie <airlied@redhat.com>,
+Cc: stable-review@kernel.org, David Kilroy <kilroyd@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 199/209] drm: fix unsigned vs signed comparison issue in modeset ctl ioctl.
-Date: Thu, 14 Apr 2011 13:55:57 -0400
-Message-Id: <1302803767-9715-86-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 174/209] orinoco: clear countermeasure setting on commit
+Date: Thu, 14 Apr 2011 13:55:32 -0400
+Message-Id: <1302803767-9715-61-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,52 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Airlie <airlied@redhat.com>
+From: David Kilroy <kilroyd@googlemail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 1922756124ddd53846877416d92ba4a802bc658f upstream.
+commit ba34fcee476d11e7c9df95932787a22a96ff6e68 upstream.
 
-This fixes CVE-2011-1013.
+... and interface up.
 
-Reported-by: Matthiew Herrb (OpenBSD X.org team)
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+In these situations, you are usually trying to connect to a new AP, so
+keeping TKIP countermeasures active is confusing. This is already how
+the driver behaves (inadvertently). However, querying SIOCGIWAUTH may
+tell userspace that countermeasures are active when they aren't.
+
+Clear the setting so that the reporting matches what the driver has
+done..
+
+Signed-off by: David Kilroy <kilroyd@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/drm_irq.c |    3 ++-
- include/drm/drmP.h        |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/wireless/orinoco/main.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-index a263b70..0ddd109 100644
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -545,7 +545,8 @@ int drm_modeset_ctl(struct drm_device *dev, void *data,
- 		    struct drm_file *file_priv)
- {
- 	struct drm_modeset_ctl *modeset = data;
--	int crtc, ret = 0;
-+	int ret = 0;
-+	unsigned int crtc;
+diff --git a/drivers/net/wireless/orinoco/main.c b/drivers/net/wireless/orinoco/main.c
+index 413e9ab..416c1d9 100644
+--- a/drivers/net/wireless/orinoco/main.c
++++ b/drivers/net/wireless/orinoco/main.c
+@@ -1764,6 +1764,12 @@ static int __orinoco_commit(struct orinoco_private *priv)
+ 	struct net_device *dev = priv->ndev;
+ 	int err = 0;
  
- 	/* If drm_vblank_init() hasn't been called yet, just no-op */
- 	if (!dev->num_crtcs)
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index 2f3b3a0..b447a35 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1022,7 +1022,7 @@ struct drm_device {
- 	struct pci_controller *hose;
- #endif
- 	struct drm_sg_mem *sg;	/**< Scatter gather memory */
--	int num_crtcs;                  /**< Number of CRTCs on this device */
-+	unsigned int num_crtcs;                  /**< Number of CRTCs on this device */
- 	void *dev_private;		/**< device private data */
- 	void *mm_private;
- 	struct address_space *dev_mapping;
++	/* If we've called commit, we are reconfiguring or bringing the
++	 * interface up. Maintaining countermeasures across this would
++	 * be confusing, so note that we've disabled them. The port will
++	 * be enabled later in orinoco_commit or __orinoco_up. */
++	priv->tkip_cm_active = 0;
++
+ 	err = orinoco_hw_program_rids(priv);
+ 
+ 	/* FIXME: what about netif_tx_lock */
 -- 
 1.7.4.4
 
