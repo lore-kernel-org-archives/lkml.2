@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab1DNOyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:54:25 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47526 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754203Ab1DNOyY (ORCPT
+	id S932464Ab1DNOzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:55:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37326 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754203Ab1DNOzC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:54:24 -0400
-Date: Thu, 14 Apr 2011 15:55:03 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Allyn, Mark A" <mark.a.allyn@intel.com>
-Cc: Joe Perches <joe@perches.com>, Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
-        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>,
-        "Cox, Alan" <alan.cox@intel.com>, "Gross, Mark" <mark.gross@intel.com>,
-        "Beare, Bruce J" <bruce.j.beare@intel.com>
-Subject: Re: Re-send (What else needs to be done to the sep driver
- (staging/sep))
-Message-ID: <20110414155503.55518951@lxorguk.ukuu.org.uk>
-In-Reply-To: <8A0E4C92AE2D6D40AF99653191DA32316154CEF1CF@rrsmsx501.amr.corp.intel.com>
-References: <alpine.DEB.2.00.1104131427260.31147@allyn-test>
-	<1302731811.11415.38.camel@Joe-Laptop>
-	<20110413222332.GA32013@kroah.com>
-	<1302733836.11415.42.camel@Joe-Laptop>
-	<20110413224621.GA4909@kroah.com>
-	<1302736379.11415.57.camel@Joe-Laptop>
-	<8A0E4C92AE2D6D40AF99653191DA32316154CEF1CF@rrsmsx501.amr.corp.intel.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Apr 2011 10:55:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=TjLfZ6gjEhmkxeCTajQlugxJCWgO516y2hdrv+Bae9/0fLdrpHA1aHMunODNlSmlaz
+         4NSlUp8liIjYJZjTGP57R1M0zMu5Mun7xpKpCAW61bczuAbBErl2j1D+XA+HZajzjja8
+         iR8R+Ixp1mq/H6w+koj3FT0fCXlUiV/yzqBOc=
+MIME-Version: 1.0
+In-Reply-To: <4DA6F4E2.1060005@gmail.com>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+ <4DA5F569.9020309@gmail.com> <BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
+ <1302756608.2854.10.camel@perseus.themaw.net> <BANLkTinff1NQ-iYevjccO7ADB9h4RH+mOQ@mail.gmail.com>
+ <BANLkTimD9WB_RP1j8yJR7GUn_NuDuM2SHw@mail.gmail.com> <4DA6F4E2.1060005@gmail.com>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Thu, 14 Apr 2011 16:54:41 +0200
+X-Google-Sender-Auth: X7ZnmmBSRbI-ZqcvVGGv94k1ifI
+Message-ID: <BANLkTik8uQ8keNHnmQCf=MTQK1Q-6=BK4Q@mail.gmail.com>
+Subject: Re: Unionmount status?
+To: Ric Wheeler <ricwheeler@gmail.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
+        Ian Kent <ikent@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think the logging is a distraction. Everyone is I think happy with the
-other minor tidying and the move from staging ? If so lets just get it
-moved while Greg and Joe throw buns at each other 8)
+On 14 April 2011 15:21, Ric Wheeler <ricwheeler@gmail.com> wrote:
+> On 04/14/2011 05:40 AM, Miklos Szeredi wrote:
+>>
+>> On Thu, Apr 14, 2011 at 11:32 AM, Michal Suchanek<hramrach@centrum.cz>
+>>  wrote:
+>>>
+>>> I guess overlayfs includes the better part of unionmount and achieves
+>>> similar level of functionality in much smaller code size and is
+>>> actively developed.
+>>>
+>>> This might make it the best candidate for inclusion so far.
+>>>
+>>> It does not (yet?) support NFS which is one of the options commonly
+>>> used with union solutions, though.
+>>
+>> NFS is supported as a lower (read-only) layer, but not as an upper
+>> (read-write) layer.
+>>
+>> Thanks,
+>> Miklos
+>
+> I am not that concerned with the state of Val's repo, her intention was to
+> hand off the project cleanly to others and have them drive the code (that
+> hand off was the posting of the patch set). Several people (Ian, David
+> Howells and Al Viro) had been involved with union mounts recently, so we do
+> have reasonable candidates for a hand off.
+>
+> One of the concerns with unionfs is the duplication of data. Union mounts
+> avoids this with that implementation. That might make unionfs more of a
+> burden for very large file systems, but probably not a concern for many use
+> cases.
 
-For the record IMHO custom _dbg wrappers are usually not justified but I
-think I agree with Joe on this one because we have some many
-&foo->bar->baz it eliminates.
+Just to make things clear, what is a very large filesystem?
 
-Anyway - that can wait.
+A heavily compressed DVD image?
 
-Alan
+Tens or hundreds  of gigabytes? Terabytes?
+
+Hundreds, thousands or hundreds of thousands of inodes?
+
+Or is testing required to determine at what size the performance
+becomes unacceptable?
+
+Thanks
+
+Michal
