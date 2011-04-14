@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab1DNJkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:40:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59015 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab1DNJka (ORCPT
+	id S1758449Ab1DNJlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:41:07 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33734 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757284Ab1DNJlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:40:30 -0400
+	Thu, 14 Apr 2011 05:41:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=mime-version:x-originating-ip:in-reply-to:references:date
-         :message-id:subject:from:to:cc:content-type;
-        b=W09xW0RTqNKzZNVy7L5AKfjVyZ5DazvRt0AOeMMX1C2528V1ds2Da7+Dhp6sHm5aKe
-         3KJwuVHpyv/lG8ztyA/dBWBtXAT8gl9h1UxmYGS3fKDQsEmrdDADofxxyr+oqkmQswo6
-         wgy6zKwgkA+V5evTwD3bdpMNhEVugPXNR08K4=
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=E2tDqaj72m5MF5IpliQ3hX42A0kDDznkw6pcsSuLaS1s+hV+O52OhUyLWsRDJYS9R9
+         KP7JS7ZulgHXRhtCm+ZEQjv2Lxx2klgZLnr7zrk+J9ybyRF5IC8fYnX7b8cWVnC9aUfz
+         CM75F0gZiOml/ubSCJW7THd2qmuaO4mfYOsJc=
+Message-ID: <4DA6C129.8010001@suse.cz>
+Date: Thu, 14 Apr 2011 11:40:57 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-X-Originating-IP: [88.209.222.127]
-In-Reply-To: <BANLkTinff1NQ-iYevjccO7ADB9h4RH+mOQ@mail.gmail.com>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<4DA5DCB8.3040101@gmail.com>
-	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
-	<4DA5F569.9020309@gmail.com>
-	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
-	<1302756608.2854.10.camel@perseus.themaw.net>
-	<BANLkTinff1NQ-iYevjccO7ADB9h4RH+mOQ@mail.gmail.com>
-Date: Thu, 14 Apr 2011 11:40:28 +0200
-Message-ID: <BANLkTimD9WB_RP1j8yJR7GUn_NuDuM2SHw@mail.gmail.com>
-Subject: Re: Unionmount status?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Michal Suchanek <hramrach@centrum.cz>
-Cc: Ian Kent <ikent@redhat.com>, Ric Wheeler <ricwheeler@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, jirislaby@gmail.com,
+        Robert Hancock <hancockrwd@gmail.com>, lenb@kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
+References: <4C87A62E.30108@gmail.com> <1302598086-3622-1-git-send-email-jslaby@suse.cz> <20110412085622.43488ed9@jbarnes-desktop> <20110412155921.GA531@srcf.ucam.org>
+In-Reply-To: <20110412155921.GA531@srcf.ucam.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 11:32 AM, Michal Suchanek <hramrach@centrum.cz> wrote:
-> I guess overlayfs includes the better part of unionmount and achieves
-> similar level of functionality in much smaller code size and is
-> actively developed.
->
-> This might make it the best candidate for inclusion so far.
->
-> It does not (yet?) support NFS which is one of the options commonly
-> used with union solutions, though.
+On 04/12/2011 05:59 PM, Matthew Garrett wrote:
+> On Tue, Apr 12, 2011 at 08:56:22AM -0700, Jesse Barnes wrote:
+> 
+>> I'll defer to the ACPI experts, Len or Matthew have you checked this
+>> one out?
+> 
+> Windows appears to work without this, so it seems likely that we're 
+> doing something wrong in some other sense, but I don't think we have a 
+> good idea as to what we're doing wrong...
 
-NFS is supported as a lower (read-only) layer, but not as an upper
-(read-write) layer.
+Is there anything I can do about that? Provide some info, investigate
+what a particular code does in the kernel (e.g. acpi_pci_irq_enable) etc.?
 
-Thanks,
-Miklos
+thanks,
+-- 
+js
+suse labs
