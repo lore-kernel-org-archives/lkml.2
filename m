@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab1DNPxe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 11:53:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57661 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759095Ab1DNPxd (ORCPT
+	id S1759222Ab1DNP4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 11:56:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61345 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758734Ab1DNP4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 11:53:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <fs-unreg-rcu@mdm.bga.com>
-References: <4DA48AF4.5080803@teksavvy.com> <20110413004938.GE3682@thunk.org>
- <4DA5ADA6.5060301@teksavvy.com> <5A35771F-49B6-491E-B012-DBE68907E382@mit.edu>
- <ext4-masq@mdm.bga.com> <fs-unreg-rcu@mdm.bga.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 14 Apr 2011 08:52:43 -0700
-Message-ID: <BANLkTi=Tt8HRmqODM_qPAbGMeQ9UvVDXfA@mail.gmail.com>
-Subject: Re: [PATCH] fs: synchronize_rcu when unregister_filesystem success
- not failure
-To: Milton Miller <miltonm@bga.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 14 Apr 2011 11:56:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=TdVfmgaT5iOtaFG+9qLebnTGGy4wWQ+fN0DkpeMYdBZphItct+OvrnViV+nj2wG/5m
+         oLF8RjD7O0shAp0vFa/NCQ1qlTz4aH2yqFmou1mSyEYGB5ac+Lrhaz44kB9ujc/hAX0O
+         dyKzZ3wZdnbne9I2E6KXLgPERGlm8d7fsEP7U=
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
+Subject: [PATCH] char: istallion: fix arbitrary kernel memory reads/writes
+Date: Thu, 14 Apr 2011 19:56:25 +0400
+Message-Id: <1302796585-29504-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 8:41 AM, Milton Miller <miltonm@bga.com> wrote:
->
-> While checking unregister_filesystem for saftey vs extra calls for
-> "ext4: register ext2 and ext3 alias after ext4" I realized that
-> the synchronize_rcu() was called on the error path but not on
-> the success path.
+stli_brdstats is defined as global variable.  After de-BKL-ization in
+the patch b4eda9cb48eac1b7 an access to the variable is not serialized
+anymore.  This leads to the race window between the check and the use
+in stli_getbrdstats():
 
-Good catch.
+        if (copy_from_user(&stli_brdstats, bp, sizeof(combrd_t)))
+                return -EFAULT;
+        if (stli_brdstats.brd >= STL_MAXBRDS) <<<
+                return -ENODEV;
+        brdp = stli_brds[stli_brdstats.brd];  <<<
 
-I think this is the bug that then caused us to do commit d863b50ab013
-("vfs: call rcu_barrier after ->kill_sb()")
+If one process calls COM_GETBRDSTATS ioctl() with sane .brd, second
+process calls COM_GETBRDSTATS ioctl() with invalid .brd, and the
+second process' copy_from_user() executes exactly between the check and
+stli_brds[] indexation of the first process, then the first process gets
+contents of memory at *stli_brds[stli_brdstats.brd] address.  Also
+the resulting .nrpanels field may be too big, in this case
+stli_brdstats.panels array overflows.
 
-That said, that commit says that "synchronize_rcu()" isn't enough, and
-uses rcu_barrier().
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ drivers/staging/tty/istallion.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Which _should_ mean that there are no actual users that care about RCU
-events by the time you actually hit "unregister_filesystem()".
+diff --git a/drivers/staging/tty/istallion.c b/drivers/staging/tty/istallion.c
+index 0b26627..ca18cbf 100644
+--- a/drivers/staging/tty/istallion.c
++++ b/drivers/staging/tty/istallion.c
+@@ -186,7 +186,6 @@ static struct ktermios		stli_deftermios = {
+  *	re-used for each stats call.
+  */
+ static comstats_t	stli_comstats;
+-static combrd_t		stli_brdstats;
+ static struct asystats	stli_cdkstats;
+ 
+ /*****************************************************************************/
+@@ -4005,6 +4004,7 @@ static int stli_getbrdstats(combrd_t __user *bp)
+ {
+ 	struct stlibrd *brdp;
+ 	unsigned int i;
++	combrd_t stli_brdstats;
+ 
+ 	if (copy_from_user(&stli_brdstats, bp, sizeof(combrd_t)))
+ 		return -EFAULT;
+-- 
+1.7.0.4
 
-So I think your patch is correct, but won't actually matter. But maybe
-I'm missing something.
-
-> Should we call it in both?
-
-No, I think the success path is the one that would matter.
-
-Comments?
-
-                              Linus
