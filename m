@@ -1,117 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab1DNKTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 06:19:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48934 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758697Ab1DNKTI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 06:19:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=VpB8eZ0iYcOk4L9emM4O1m981le5Bi3Unlk8mtLdXhWlgTBw4FZ+NDE4a1ioBfGevV
-         CZWxFr1r8lixSejLghaigVC/Z+JrCNcnEOMJuDjr/sajn11u/F0faQ7xnKYzeAiIzXAU
-         Z39Twju9YsiY50JL5t6PCNyU3YC1wts4hgM3I=
+	id S932645Ab1DNKU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 06:20:56 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38346 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753964Ab1DNKUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 06:20:55 -0400
+Date: Thu, 14 Apr 2011 12:20:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] writeback: avoid duplicate
+ balance_dirty_pages_ratelimited() calls
+Message-ID: <20110414102047.GG5054@quack.suse.cz>
+References: <20110413085937.981293444@intel.com>
+ <20110413090415.511675208@intel.com>
+ <20110413215307.GD4648@quack.suse.cz>
+ <20110414003045.GB6097@localhost>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <BANLkTinq=mC9rs5R3U8FPLCp-GgCJris_g@mail.gmail.com>
-References: <BANLkTikd2MpRPF37R+vCwnb7Lzzd6EiS7A@mail.gmail.com>
-	<BANLkTinq=mC9rs5R3U8FPLCp-GgCJris_g@mail.gmail.com>
-Date: Thu, 14 Apr 2011 12:19:07 +0200
-Message-ID: <BANLkTimT9OhHLL5NaPOP30MdiMfmmmEcyQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ related?)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110414003045.GB6097@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 11:16 AM, Sedat Dilek
-<sedat.dilek@googlemail.com> wrote:
-> [ Adding CC to RCU maintainer (Hi Paul :-)) ]
->
-> Helping me for now with (see also Documentation/RCU/stallwarn.txt):
->
-> # cat /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
-> 0
->
-> # echo "1" > /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
->
-> # cat /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
-> 1
->
-> - Sedat -
->
+On Thu 14-04-11 08:30:45, Wu Fengguang wrote:
+> On Thu, Apr 14, 2011 at 05:53:07AM +0800, Jan Kara wrote:
+> > On Wed 13-04-11 16:59:39, Wu Fengguang wrote:
+> > > When dd in 512bytes, balance_dirty_pages_ratelimited() could be called 8
+> > > times for the same page, but obviously the page is only dirtied once.
+> > > 
+> > > Fix it with a (slightly racy) PageDirty() test.
+> > > 
+> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > ---
+> > >  mm/filemap.c |    5 ++++-
+> > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > > 
+> > > --- linux-next.orig/mm/filemap.c	2011-04-13 16:46:01.000000000 +0800
+> > > +++ linux-next/mm/filemap.c	2011-04-13 16:47:26.000000000 +0800
+> > > @@ -2313,6 +2313,7 @@ static ssize_t generic_perform_write(str
+> > >  	long status = 0;
+> > >  	ssize_t written = 0;
+> > >  	unsigned int flags = 0;
+> > > +	unsigned int dirty;
+> > >  
+> > >  	/*
+> > >  	 * Copies from kernel address space cannot fail (NFSD is a big user).
+> > > @@ -2361,6 +2362,7 @@ again:
+> > >  		pagefault_enable();
+> > >  		flush_dcache_page(page);
+> > >  
+> > > +		dirty = PageDirty(page);
+> >   This isn't completely right as we sometimes dirty the page in
+> > ->write_begin() (see e.g. block_write_begin() when we allocate blocks under
+> > an already uptodate page) and in such cases we would not call
+> > balance_dirty_pages(). So I'm not sure we can really do this
+> > optimization (although it's sad)...
+> 
+> Good catch, thanks! I evaluated three possible options, the last one
+> looks most promising (however is a radical change).
+> 
+> - do radix_tree_tag_get() before calling ->write_begin()
+>   simple but heavy weight
+  Yes, moreover you cannot really do the check until you have the page
+locked for write because otherwise someone could come and write the page
+before ->write_begin starts working with it.
 
-That workaround helped till a system-freeze when generating a tarball
-from my current kernel-tree.
-I switched back to my yesterday's linux-next kernel.
+> - add balance_dirty_pages_ratelimited() in __block_write_begin()
+>   seems not easy, too
+  Yes, you would call balance_dirty_pages_ratelimited() with page lock held
+which is not a good thing to do.
 
-- Sedat -
+> - accurately account the dirtied pages in account_page_dirtied() rather than
+>   in balance_dirty_pages_ratelimited_nr(). This diff on top of my patchset
+>   illustrates the idea, but will need to sort out cases like direct IO ...
+> 
+> --- linux-next.orig/mm/page-writeback.c	2011-04-14 07:50:09.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-04-14 07:52:35.000000000 +0800
+> @@ -1295,8 +1295,6 @@ void balance_dirty_pages_ratelimited_nr(
+>  	if (!bdi_cap_account_dirty(bdi))
+>  		return;
+>  
+> -	current->nr_dirtied += nr_pages_dirtied;
+> -
+>  	if (dirty_exceeded_recently(bdi, MAX_PAUSE)) {
+>  		unsigned long max = current->nr_dirtied +
+>  						(128 >> (PAGE_SHIFT - 10));
+> @@ -1752,6 +1750,7 @@ void account_page_dirtied(struct page *p
+>  		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+>  		task_dirty_inc(current);
+>  		task_io_account_write(PAGE_CACHE_SIZE);
+> +		current->nr_dirtied++;
+>  	}
+>  }
+  I see. We could do ratelimit accounting in account_page_dirtied() and
+only check limits in balance_dirty_pages(). The only downside of this I can
+see is that we would do one-by-one increment instead of a simple addition
+when several pages are dirtied (ocfs2, btrfs, and splice interface take
+advantage of this). But that should not be a huge issue and it's probably
+worth the better ratelimit accounting.
 
-> On Thu, Apr 14, 2011 at 10:59 AM, Sedat Dilek
-> <sedat.dilek@googlemail.com> wrote:
->> On Thu, Apr 14, 2011 at 7:01 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> Hi all,
->>>
->>> Changes since 20110413:
->>>
->>> Dropped tree: xen
->>>
->>> The gfs2 tree lost its conflict.
->>>
->>> The net tree lost its build failure.
->>>
->>> The wireless tree lost all but one conflict.
->>>
->>> The trivial tree lost its conflict.
->>>
->>> The tip tree gained a conflict against Linus' tree.
->>>
->>> The usb tree gained a conflict against the s5p tree.
->>>
->>> The staging tree lost its conflicts.
->>>
->>> ----------------------------------------------------------------------------
->>
->> Just a quick hello and an attached dmesg.
->> Yesterday's linux-next (next-20110413) with same kernel-config was OK.
->>
->> ( Also, I have seen a section-mismatch in x86 (IIRC mm) missing
->> __init... but that's another story. )
->>
->> - Sedat -
->>
->> P.S.: diff between today's and yesterday's kernel-config
->>
->> $ diff -uprN /boot/config-2.6.39-rc3-next20110413.2-686-small
->> /boot/config-2.6.39-rc3-next20110414.2-686-small
->> --- /boot/config-2.6.39-rc3-next20110413.2-686-small    2011-04-13
->> 12:32:09.000000000 +0200
->> +++ /boot/config-2.6.39-rc3-next20110414.2-686-small    2011-04-14
->> 10:23:25.000000000 +0200
->> @@ -1,7 +1,7 @@
->>  #
->>  # Automatically generated make config: don't edit
->>  # Linux/x86 2.6.39-rc3 Kernel Configuration
->> -# Wed Apr 13 11:55:54 2011
->> +# Thu Apr 14 09:43:03 2011
->>  #
->>  # CONFIG_64BIT is not set
->>  CONFIG_X86_32=y
->> @@ -2602,6 +2602,7 @@ CONFIG_USB_UHCI_HCD=m
->>  #
->>  # Enable Host or Gadget support to see Inventra options
->>  #
->> +# CONFIG_USB_RENESAS_USBHS is not set
->>
->>  #
->>  # USB Device Class drivers
->>
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
