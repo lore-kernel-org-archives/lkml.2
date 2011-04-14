@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab1DNXSy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 19:18:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52204 "EHLO ogre.sisk.pl"
+	id S1754685Ab1DNXSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 19:18:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52189 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754675Ab1DNXSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 19:18:50 -0400
+	id S1753985Ab1DNXSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 19:18:46 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [RFC][PATCH 0/2] Remove __weak definitions of platform PM callbacks
-Date: Fri, 15 Apr 2011 01:16:01 +0200
+Subject: [RFC][PATCH 2/2] PM / Platform: Use generic runtime PM callbacks directly
+Date: Fri, 15 Apr 2011 01:19:08 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
         linux-sh@vger.kernel.org, lethal@linux-sh.org,
         Magnus Damm <magnus.damm@gmail.com>,
         Alan Stern <stern@rowland.harvard.edu>
-References: <201104130205.26988.rjw@sisk.pl>
-In-Reply-To: <201104130205.26988.rjw@sisk.pl>
+References: <201104130205.26988.rjw@sisk.pl> <201104150116.01634.rjw@sisk.pl>
+In-Reply-To: <201104150116.01634.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104150116.01634.rjw@sisk.pl>
+Message-Id: <201104150119.08855.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The following two patches are based on top of
-https://patchwork.kernel.org/patch/702401/ .
+Once shmobile platforms have been converted to using power domains
+for overriding the platform bus type's PM callbacks, it isn't
+necessary to use the __weakly defined wrappers around the generinc
+runtime PM callbacks in the platform bus type any more.
 
-[1/2] converts shmobile (both the ARM and SH flavors) to using a power domain
-for overriding the platform bus type's PM callbacks, which makes it possible
-to remove the __weak definitions of the runtime PM callbacks from platform.c,
-which is done in [2/2].
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/platform.c |   31 +++----------------------------
+ 1 file changed, 3 insertions(+), 28 deletions(-)
 
-Comments welcome.
-
-Thanks,
-Rafael
+Index: linux-2.6/drivers/base/platform.c
+===================================================================
+--- linux-2.6.orig/drivers/base/platform.c
++++ linux-2.6/drivers/base/platform.c
+@@ -900,31 +900,6 @@ int platform_pm_restore_noirq(struct dev
+ 
+ #endif /* CONFIG_HIBERNATE_CALLBACKS */
+ 
+-#ifdef CONFIG_PM_RUNTIME
+-
+-int __weak platform_pm_runtime_suspend(struct device *dev)
+-{
+-	return pm_generic_runtime_suspend(dev);
+-};
+-
+-int __weak platform_pm_runtime_resume(struct device *dev)
+-{
+-	return pm_generic_runtime_resume(dev);
+-};
+-
+-int __weak platform_pm_runtime_idle(struct device *dev)
+-{
+-	return pm_generic_runtime_idle(dev);
+-};
+-
+-#else /* !CONFIG_PM_RUNTIME */
+-
+-#define platform_pm_runtime_suspend NULL
+-#define platform_pm_runtime_resume NULL
+-#define platform_pm_runtime_idle NULL
+-
+-#endif /* !CONFIG_PM_RUNTIME */
+-
+ static const struct dev_pm_ops platform_dev_pm_ops = {
+ 	.prepare = platform_pm_prepare,
+ 	.complete = platform_pm_complete,
+@@ -940,9 +915,9 @@ static const struct dev_pm_ops platform_
+ 	.thaw_noirq = platform_pm_thaw_noirq,
+ 	.poweroff_noirq = platform_pm_poweroff_noirq,
+ 	.restore_noirq = platform_pm_restore_noirq,
+-	.runtime_suspend = platform_pm_runtime_suspend,
+-	.runtime_resume = platform_pm_runtime_resume,
+-	.runtime_idle = platform_pm_runtime_idle,
++	.runtime_suspend = pm_generic_runtime_suspend,
++	.runtime_resume = pm_generic_runtime_resume,
++	.runtime_idle = pm_generic_runtime_idle,
+ };
+ 
+ struct bus_type platform_bus_type = {
 
