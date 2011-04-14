@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab1DNVJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:09:35 -0400
-Received: from 8bytes.org ([88.198.83.132]:38099 "EHLO 8bytes.org"
+	id S1752830Ab1DNVPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:15:38 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53648 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab1DNVJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:09:34 -0400
-Date: Thu, 14 Apr 2011 23:09:32 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110414210932.GG18463@8bytes.org>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <4DA654D6.2060103@zytor.com> <20110414085624.GC18463@8bytes.org> <BANLkTintewt4kadNLEZ-RAew0Gx6=gUOfQ@mail.gmail.com>
+	id S1751764Ab1DNVPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 17:15:37 -0400
+Date: Thu, 14 Apr 2011 17:14:41 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm/vmalloc: remove guard page from between vmap blocks
+Message-ID: <20110414211441.GA1700@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTintewt4kadNLEZ-RAew0Gx6=gUOfQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 10:28:43AM -0400, Alex Deucher wrote:
-> On Thu, Apr 14, 2011 at 4:56 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> > And this makes a difference, with this change on-top of -rc3 the box boots
-> > fine. So there seems to be some dependency between the GART base and the GTT
-> > base even when they are in different address spaces.
-> >
-> > Alex, can you comment on this?
-> 
-> As Dave said, they are completely different addresses spaces.  You
-> could put the GPU aperture at 0 if you wanted (in fact we do on some
-> chips).  Perhaps there's some strange interaction with the nb gart
-> since the nb gart on that chipset was designed to be used for graphics
-> and the rs780/880 can be configured to use an agp aperture.
-> Unfortunately, I'm not that familiar with the nb gart.
+The vmap allocator is used to, among other things, allocate per-cpu
+vmap blocks, where each vmap block is naturally aligned to its own
+size.  Obviously, leaving a guard page after each vmap area forbids
+packing vmap blocks efficiently and can make the kernel run out of
+possible vmap blocks long before overall vmap space is exhausted.
 
-Actually, the nb gart is part of the cpu. It is part of the cpu north
-bridge and can translate io and cpu accesses. In fact, it is a remapper
-of physical memory addresses.
+The new interface to map a user-supplied page array into linear
+vmalloc space (vm_map_ram) insists on allocating from a vmap block
+(instead of falling back to a custom area) when the area size is below
+a certain threshold.  With heavy users of this interface (e.g. XFS)
+and limited vmalloc space on 32-bit, vmap block exhaustion is a real
+problem.
 
-The problem seems to be related to specific gpu chips. On another
-notebook with an hd3000 card gtt and the nb gart aperture are both on
-0xa0000000 too but the box works fine. I havn't tested with an hd5000
-yet. The failing notebook has an hd4200 mobility.
+Remove the guard page from the core vmap allocator.  vmalloc and the
+old vmap interface enforce a guard page on their own at a higher
+level.
 
-Btw. what happens if the gpu accesses an unmapped address in the gtt
-range?
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+---
+ mm/vmalloc.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Regards,
+Note that without this patch, we had accidental guard pages after
+those vm_map_ram areas that happened to be at the end of a vmap block,
+but not between every area.  This patch removes this accidental guard
+page only.
 
-	Joerg
+If we want guard pages after every vm_map_ram area, this should be
+done separately.  And just like with vmalloc and the old interface on
+a different level, not in the core allocator.
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index cbd9f9f..5d8666b 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -307,7 +307,7 @@ nocache:
+ 	/* find starting point for our search */
+ 	if (free_vmap_cache) {
+ 		first = rb_entry(free_vmap_cache, struct vmap_area, rb_node);
+-		addr = ALIGN(first->va_end + PAGE_SIZE, align);
++		addr = ALIGN(first->va_end, align);
+ 		if (addr < vstart)
+ 			goto nocache;
+ 		if (addr + size - 1 < addr)
+@@ -338,10 +338,10 @@ nocache:
+ 	}
+ 
+ 	/* from the starting point, walk areas until a suitable hole is found */
+-	while (addr + size >= first->va_start && addr + size <= vend) {
++	while (addr + size > first->va_start && addr + size <= vend) {
+ 		if (addr + cached_hole_size < first->va_start)
+ 			cached_hole_size = first->va_start - addr;
+-		addr = ALIGN(first->va_end + PAGE_SIZE, align);
++		addr = ALIGN(first->va_end, align);
+ 		if (addr + size - 1 < addr)
+ 			goto overflow;
+ 
+-- 
+1.7.4
 
