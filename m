@@ -1,53 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757037Ab1DNGK3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 02:10:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39188 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab1DNGK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 02:10:28 -0400
-Message-ID: <4DA68FBB.4030807@zytor.com>
-Date: Wed, 13 Apr 2011 23:10:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Dave Airlie <airlied@redhat.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Linux 2.6.39-rc3
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>	 <20110412090207.GE19819@8bytes.org>	 <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>	 <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu>	 <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org>	 <4DA654D6.2060103@zytor.com> <1302746853.4842.20.camel@clockmaker-el6>
-In-Reply-To: <1302746853.4842.20.camel@clockmaker-el6>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757196Ab1DNGcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 02:32:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34261 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445Ab1DNGcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 02:32:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=bKuyEBfIycqdlbCQzjp05nn6Lsni8vZgF6zeiPqE1+46tan6fwIDB7GJgzubYBKFnl
+         nHApjZBEZZvzP0LzF5pRleCjeeobD+IPpsRYnrQfElgrJ9Ex+vnwimXdao9Xh4Yh14TV
+         QKMbfo8Hc/q3rjzhg+SEMLqBfTY1+2uFJyL3Q=
+Subject: Re: Regression from 2.6.36
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Changli Gao <xiaosuo@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20110413222803.38e42baf.akpm@linux-foundation.org>
+References: <20110315132527.130FB80018F1@mail1005.cent>
+	 <20110317001519.GB18911@kroah.com> <20110407120112.E08DCA03@pobox.sk>
+	 <4D9D8FAA.9080405@suse.cz>
+	 <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>
+	 <1302177428.3357.25.camel@edumazet-laptop>
+	 <1302178426.3357.34.camel@edumazet-laptop>
+	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
+	 <1302190586.3357.45.camel@edumazet-laptop>
+	 <20110412154906.70829d60.akpm@linux-foundation.org>
+	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
+	 <20110412183132.a854bffc.akpm@linux-foundation.org>
+	 <1302662256.2811.27.camel@edumazet-laptop>
+	 <20110413141600.28793661.akpm@linux-foundation.org>
+	 <1302747058.3549.7.camel@edumazet-laptop>
+	 <20110413222803.38e42baf.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 08:31:58 +0200
+Message-ID: <1302762718.3549.229.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2011 07:07 PM, Dave Airlie wrote:
->>
->> Okay, staring at this, it definitely seems toxic to overlay the GART
->> over memory areas reserved by the BIOS.  If I were to guess, I would say
->> that the problem here seems to be that the kernel thinks it is
->> overlaying 64 MiB of memory, but the actual GART is in fact 512 MiB in
->> size -- 131072 CPU pages -- which now overlaps the BIOS reserved areas.
->>
->> Alex D., could you comment on the "num cpu pages" bit?
+Le mercredi 13 avril 2011 à 22:28 -0700, Andrew Morton a écrit :
+> On Thu, 14 Apr 2011 04:10:58 +0200 Eric Dumazet <eric.dumazet@gmail.com> wrote:
 > 
-> These are not CPU addresses. I think we've stated that already. Not the
-> droids.
+> > > --- a/fs/file.c~a
+> > > +++ a/fs/file.c
+> > > @@ -39,14 +39,17 @@ int sysctl_nr_open_max = 1024 * 1024; /*
+> > >   */
+> > >  static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+> > >  
+> > > -static inline void *alloc_fdmem(unsigned int size)
+> > > +static void *alloc_fdmem(unsigned int size)
+> > >  {
+> > > -	void *data;
+> > > -
+> > > -	data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+> > > -	if (data != NULL)
+> > > -		return data;
+> > > -
+> > > +	/*
+> > > +	 * Very large allocations can stress page reclaim, so fall back to
+> > > +	 * vmalloc() if the allocation size will be considered "large" by the VM.
+> > > +	 */
+> > > +	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) {
+> > > +		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+> > > +		if (data != NULL)
+> > > +			return data;
+> > > +	}
+> > >  	return vmalloc(size);
+> > >  }
+> > >  
+> > > _
+> > > 
+> > 
+> > Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > 
+> > #define PAGE_ALLOC_COSTLY_ORDER 3
+> > 
+> > On x86_64, this means we try kmalloc() up to 4096 files in fdtable.
 > 
-> the num cpu pages is how many CPU pages would be needed to fill the GPU
-> GTT, for those crazy cases where CPU pagesize != GPU pagesize.
+> Thanks.  I added the cc:stable to the changelog.
 > 
+> It'd be nice to get this tested if poss, to confrm that it actually
+> fixes things.
+> 
+> Also, Melpoke.
 
-OK, well, something is still weird.
+Azurit, could you check how many fds are opened by your apache servers ?
+(must be related to number of virtual hosts / acces_log / error_log
+files)
 
-	-hpa
+Pick one pid from ps list
+ps aux | grep apache
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+ls /proc/{pid_of_one_apache}/fd | wc -l
+
+or
+
+lsof -p { pid_of_one_apache} | tail -n 2
+apache2 8501 httpadm   13w   REG     104,7  2350407   3866638 /data/logs/httpd/rewrites.log
+apache2 8501 httpadm   14r  0000      0,10        0 263148343 eventpoll
+
+Here it's "14"
+
+Thanks
+
 
