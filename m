@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933791Ab1DNSDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:03:55 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42310 "EHLO
+	id S933801Ab1DNSD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:03:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42308 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965053Ab1DNR7C (ORCPT
+	with ESMTP id S965052Ab1DNR7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:59:02 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, NeilBrown <neilb@suse.de>,
+Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 196/209] md: fix regression with re-adding devices to arrays with no metadata
-Date: Thu, 14 Apr 2011 13:55:54 -0400
-Message-Id: <1302803767-9715-83-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 198/209] x25: Do not reference freed memory.
+Date: Thu, 14 Apr 2011 13:55:56 -0400
+Message-Id: <1302803767-9715-85-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,53 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: David S. Miller <davem@davemloft.net>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit bf572541ab44240163eaa2d486b06f306a31d45a upstream.
+commit 96642d42f076101ba98866363d908cab706d156c upstream.
 
-Commit 1a855a0606 (2.6.37-rc4) fixed a problem where devices were
-re-added when they shouldn't be but caused a regression in a less
-common case that means sometimes devices cannot be re-added when they
-should be.
+In x25_link_free(), we destroy 'nb' before dereferencing
+'nb->dev'.  Don't do this, because 'nb' might be freed
+by then.
 
-In particular, when re-adding a device to an array without metadata
-we should always access the device, but after the above commit we
-didn't.
-
-This patch sets the In_sync flag in that case so that the re-add
-succeeds.
-
-This patch is suitable for any -stable kernel to which 1a855a0606 was
-applied.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/md/md.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ net/x25/x25_link.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index e56e35e..7db9ceb 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -5008,9 +5008,10 @@ static int add_new_disk(mddev_t * mddev, mdu_disk_info_t *info)
- 		/* set saved_raid_disk if appropriate */
- 		if (!mddev->persistent) {
- 			if (info->state & (1<<MD_DISK_SYNC)  &&
--			    info->raid_disk < mddev->raid_disks)
-+			    info->raid_disk < mddev->raid_disks) {
- 				rdev->raid_disk = info->raid_disk;
--			else
-+				set_bit(In_sync, &rdev->flags);
-+			} else
- 				rdev->raid_disk = -1;
- 		} else
- 			super_types[mddev->major_version].
+diff --git a/net/x25/x25_link.c b/net/x25/x25_link.c
+index b25c646..88048b6 100644
+--- a/net/x25/x25_link.c
++++ b/net/x25/x25_link.c
+@@ -392,9 +392,12 @@ void __exit x25_link_free(void)
+ 	write_lock_bh(&x25_neigh_list_lock);
+ 
+ 	list_for_each_safe(entry, tmp, &x25_neigh_list) {
++		struct net_device *dev;
++
+ 		nb = list_entry(entry, struct x25_neigh, node);
++		dev = nb->dev;
+ 		__x25_remove_neigh(nb);
+-		dev_put(nb->dev);
++		dev_put(dev);
+ 	}
+ 	write_unlock_bh(&x25_neigh_list_lock);
+ }
 -- 
 1.7.4.4
 
