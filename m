@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964956Ab1DNSPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:15:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41893 "EHLO
+	id S964933Ab1DNSPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:15:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41896 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964858Ab1DNR6M (ORCPT
+	with ESMTP id S964903Ab1DNR6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:58:12 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Len Brown <lenb@kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 136/209] exec: make argv/envp memory visible to oom-killer
-Date: Thu, 14 Apr 2011 13:54:54 -0400
-Message-Id: <1302803767-9715-23-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 152/209] x86, mwait: Move mwait constants to a common header file
+Date: Thu, 14 Apr 2011 13:55:10 -0400
+Message-Id: <1302803767-9715-39-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,125 +23,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: H. Peter Anvin <hpa@linux.intel.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 3c77f845722158206a7209c45ccddc264d19319c upstream
+commit bc83cccc761953f878088cdfa682de0970b5561f upstream.
 
-Brad Spengler published a local memory-allocation DoS that
-evades the OOM-killer (though not the virtual memory RLIMIT):
-http://www.grsecurity.net/~spender/64bit_dos.c
+We have MWAIT constants spread across three different .c files, for no
+good reason.  Move them all into a common header file.
 
-execve()->copy_strings() can allocate a lot of memory, but
-this is not visible to oom-killer, nobody can see the nascent
-bprm->mm and take it into account.
+[PG: required for cherry pick of ce5f68246b - to avoid dup. mwait
+fields in smpboot.c; drop intel_idle.c chunk, as 34 doesnt have it]
 
-With this patch get_arg_page() increments current's MM_ANONPAGES
-counter every time we allocate the new page for argv/envp. When
-do_execve() succeds or fails, we change this counter back.
-
-Technically this is not 100% correct, we can't know if the new
-page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
-I don't think this really matters and everything becomes correct
-once exec changes ->mm or fails.
-
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reviewed-by: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Len Brown <lenb@kernel.org>
+LKML-Reference: <tip-*@git.kernel.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/exec.c               |   32 ++++++++++++++++++++++++++++++--
- include/linux/binfmts.h |    1 +
- 2 files changed, 31 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/mwait.h  |   15 +++++++++++++++
+ arch/x86/kernel/acpi/cstate.c |   11 +----------
+ drivers/acpi/acpi_pad.c       |    7 +------
+ 3 files changed, 17 insertions(+), 16 deletions(-)
+ create mode 100644 arch/x86/include/asm/mwait.h
 
-diff --git a/fs/exec.c b/fs/exec.c
-index afd9977..8d4912f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -158,6 +158,25 @@ out:
+diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
+new file mode 100644
+index 0000000..bcdff99
+--- /dev/null
++++ b/arch/x86/include/asm/mwait.h
+@@ -0,0 +1,15 @@
++#ifndef _ASM_X86_MWAIT_H
++#define _ASM_X86_MWAIT_H
++
++#define MWAIT_SUBSTATE_MASK		0xf
++#define MWAIT_CSTATE_MASK		0xf
++#define MWAIT_SUBSTATE_SIZE		4
++#define MWAIT_MAX_NUM_CSTATES		8
++
++#define CPUID_MWAIT_LEAF		5
++#define CPUID5_ECX_EXTENSIONS_SUPPORTED 0x1
++#define CPUID5_ECX_INTERRUPT_BREAK	0x2
++
++#define MWAIT_ECX_INTERRUPT_BREAK	0x1
++
++#endif /* _ASM_X86_MWAIT_H */
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index fb7a5f0..bcc4add 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -13,6 +13,7 @@
  
- #ifdef CONFIG_MMU
+ #include <acpi/processor.h>
+ #include <asm/acpi.h>
++#include <asm/mwait.h>
  
-+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+	struct mm_struct *mm = current->mm;
-+	long diff = (long)(pages - bprm->vma_pages);
-+
-+	if (!mm || !diff)
-+		return;
-+
-+	bprm->vma_pages = pages;
-+
-+#ifdef SPLIT_RSS_COUNTING
-+	add_mm_counter(mm, MM_ANONPAGES, diff);
-+#else
-+	spin_lock(&mm->page_table_lock);
-+	add_mm_counter(mm, MM_ANONPAGES, diff);
-+	spin_unlock(&mm->page_table_lock);
-+#endif
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
+ /*
+  * Initialize bm_flags based on the CPU cache properties
+@@ -65,16 +66,6 @@ static struct cstate_entry *cpu_cstate_entry;	/* per CPU ptr */
+ 
+ static short mwait_supported[ACPI_PROCESSOR_MAX_POWER];
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
+-
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
+-
+-#define MWAIT_ECX_INTERRUPT_BREAK	(0x1)
+-
+ #define NATIVE_CSTATE_BEYOND_HALT	(2)
+ 
+ static long acpi_processor_ffh_cstate_probe_cpu(void *_cx)
+diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
+index 6212213..6f7a7c0 100644
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -30,18 +30,13 @@
+ #include <linux/slab.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <asm/mwait.h>
+ 
+ #define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad"
+ #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
+ #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
+ static DEFINE_MUTEX(isolated_cpus_lock);
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
+ static unsigned long power_saving_mwait_eax;
+ static void power_saving_mwait_init(void)
  {
-@@ -180,6 +199,8 @@ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
- 		struct rlimit *rlim;
- 
-+		acct_arg_size(bprm, size / PAGE_SIZE);
-+
- 		/*
- 		 * We've historically supported up to 32 pages (ARG_MAX)
- 		 * of argument strings even with small stacks
-@@ -269,6 +290,10 @@ static bool valid_arg_len(struct linux_binprm *bprm, long len)
- 
- #else
- 
-+static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+{
-+}
-+
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
-@@ -987,6 +1012,7 @@ int flush_old_exec(struct linux_binprm * bprm)
- 	/*
- 	 * Release all of the old mmap stuff
- 	 */
-+	acct_arg_size(bprm, 0);
- 	retval = exec_mmap(bprm->mm);
- 	if (retval)
- 		goto out;
-@@ -1411,8 +1437,10 @@ int do_execve(char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
--		mmput (bprm->mm);
-+	if (bprm->mm) {
-+		acct_arg_size(bprm, 0);
-+		mmput(bprm->mm);
-+	}
- 
- out_file:
- 	if (bprm->file) {
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index c809e28..39798c6 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -29,6 +29,7 @@ struct linux_binprm{
- 	char buf[BINPRM_BUF_SIZE];
- #ifdef CONFIG_MMU
- 	struct vm_area_struct *vma;
-+	unsigned long vma_pages;
- #else
- # define MAX_ARG_PAGES	32
- 	struct page *page[MAX_ARG_PAGES];
 -- 
 1.7.4.4
 
