@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab1DNFyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 01:54:44 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:32994 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267Ab1DNFym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 01:54:42 -0400
-Date: Thu, 14 Apr 2011 09:53:11 +0800
-From: Simon Horman <horms@verge.net.au>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Pavel Kankovsky <peak@argo.troja.mff.cuni.cz>,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Eugene Teo <eugene@redhat.com>, Nelson Elhage <nelhage@ksplice.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Pekka Savola <pekkas@netcore.fi>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] net: ipv4: add IPPROTO_ICMP socket kind
-Message-ID: <20110414015310.GC5167@verge.net.au>
-References: <20110409101514.GA4262@albatros>
- <BANLkTi=ogJg_uJqsJFpnwnnr6LS+SFT3Vg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=ogJg_uJqsJFpnwnnr6LS+SFT3Vg@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756324Ab1DNGBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 02:01:38 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:57533 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752997Ab1DNGBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 02:01:36 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-sh@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/5] ptrace low level unification
+Date: Thu, 14 Apr 2011 02:01:30 -0400
+Message-Id: <1302760895-13459-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.5.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 01:29:49PM +0300, Alexey Dobriyan wrote:
-> On Sat, Apr 9, 2011 at 1:15 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+This is a series of low level ptrace unification steps to make it easier
+for common code (like KGDB) to poke at register state.  This also avoids
+having to duplicate higher level operations for most ports which don't
+have special needs for accessing things.
 
-[snip]
+Mike Frysinger (5):
+  asm-generic/ptrace.h: start a common low level ptrace helper
+  Blackfin: convert to asm-generic ptrace.h
+  x86: convert to asm-generic ptrace.h
+  sh: convert to asm-generic ptrace.h
+  kgdbts: unify/generalize gdb breakpoint adjustment
 
-> > @@ -714,8 +790,22 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
-> >                        &net->ipv4.sysctl_icmp_ratemask;
-> >                table[6].data =
-> >                        &net->ipv4.sysctl_rt_cache_rebuild_count;
-> > +#ifdef CONFIG_IP_PING
-> > +               table[7].data =
-> > +                       &net->ipv4.sysctl_ping_group_range;
-> > +#endif
-> 
-> Now I understand it's not related, but next sysctl will have
-> "table[8].data = ..." line which is off-by-one if CONFIG_IP_PING=n.
+ arch/blackfin/include/asm/kgdb.h   |    1 +
+ arch/blackfin/include/asm/ptrace.h |    5 +-
+ arch/sh/include/asm/kgdb.h         |    1 +
+ arch/sh/include/asm/ptrace.h       |    6 ++-
+ arch/x86/include/asm/kgdb.h        |    1 +
+ arch/x86/include/asm/ptrace.h      |   18 ++------
+ drivers/misc/kgdbts.c              |   29 +++++---------
+ include/asm-generic/ptrace.h       |   74 ++++++++++++++++++++++++++++++++++++
+ 8 files changed, 99 insertions(+), 36 deletions(-)
+ create mode 100644 include/asm-generic/ptrace.h
 
-Another good reason for the code to be non-optoinal
-and not to have CONFIG_IP_PING.
+-- 
+1.7.5.rc1
+
