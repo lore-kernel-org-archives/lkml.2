@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964915Ab1DNR6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:58:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41719 "EHLO
+	id S964956Ab1DNSPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:15:33 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41893 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964854Ab1DNR6C (ORCPT
+	with ESMTP id S964858Ab1DNR6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:02 -0400
+	Thu, 14 Apr 2011 13:58:12 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 141/209] tcp: avoid a possible divide by zero
-Date: Thu, 14 Apr 2011 13:54:59 -0400
-Message-Id: <1302803767-9715-28-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 136/209] exec: make argv/envp memory visible to oom-killer
+Date: Thu, 14 Apr 2011 13:54:54 -0400
+Message-Id: <1302803767-9715-23-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,55 +23,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit ad9f4f50fe9288bbe65b7dfd76d8820afac6a24c upstream
+commit 3c77f845722158206a7209c45ccddc264d19319c upstream
 
-sysctl_tcp_tso_win_divisor might be set to zero while one cpu runs in
-tcp_tso_should_defer(). Make sure we dont allow a divide by zero by
-reading sysctl_tcp_tso_win_divisor exactly once.
+Brad Spengler published a local memory-allocation DoS that
+evades the OOM-killer (though not the virtual memory RLIMIT):
+http://www.grsecurity.net/~spender/64bit_dos.c
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+execve()->copy_strings() can allocate a lot of memory, but
+this is not visible to oom-killer, nobody can see the nascent
+bprm->mm and take it into account.
+
+With this patch get_arg_page() increments current's MM_ANONPAGES
+counter every time we allocate the new page for argv/envp. When
+do_execve() succeds or fails, we change this counter back.
+
+Technically this is not 100% correct, we can't know if the new
+page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
+I don't think this really matters and everything becomes correct
+once exec changes ->mm or fails.
+
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv4/tcp_output.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ fs/exec.c               |   32 ++++++++++++++++++++++++++++++--
+ include/linux/binfmts.h |    1 +
+ 2 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index e1819aa..6fdff30 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1514,6 +1514,7 @@ static int tcp_tso_should_defer(struct sock *sk, struct sk_buff *skb)
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	const struct inet_connection_sock *icsk = inet_csk(sk);
- 	u32 send_win, cong_win, limit, in_flight;
-+	int win_divisor;
+diff --git a/fs/exec.c b/fs/exec.c
+index afd9977..8d4912f 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -158,6 +158,25 @@ out:
  
- 	if (TCP_SKB_CB(skb)->flags & TCPCB_FLAG_FIN)
- 		goto send_now;
-@@ -1545,13 +1546,14 @@ static int tcp_tso_should_defer(struct sock *sk, struct sk_buff *skb)
- 	if ((skb != tcp_write_queue_tail(sk)) && (limit >= skb->len))
- 		goto send_now;
+ #ifdef CONFIG_MMU
  
--	if (sysctl_tcp_tso_win_divisor) {
-+	win_divisor = ACCESS_ONCE(sysctl_tcp_tso_win_divisor);
-+	if (win_divisor) {
- 		u32 chunk = min(tp->snd_wnd, tp->snd_cwnd * tp->mss_cache);
++static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++	struct mm_struct *mm = current->mm;
++	long diff = (long)(pages - bprm->vma_pages);
++
++	if (!mm || !diff)
++		return;
++
++	bprm->vma_pages = pages;
++
++#ifdef SPLIT_RSS_COUNTING
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++#else
++	spin_lock(&mm->page_table_lock);
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++	spin_unlock(&mm->page_table_lock);
++#endif
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -180,6 +199,8 @@ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
+ 		struct rlimit *rlim;
  
- 		/* If at least some fraction of a window is available,
- 		 * just use it.
- 		 */
--		chunk /= sysctl_tcp_tso_win_divisor;
-+		chunk /= win_divisor;
- 		if (limit >= chunk)
- 			goto send_now;
- 	} else {
++		acct_arg_size(bprm, size / PAGE_SIZE);
++
+ 		/*
+ 		 * We've historically supported up to 32 pages (ARG_MAX)
+ 		 * of argument strings even with small stacks
+@@ -269,6 +290,10 @@ static bool valid_arg_len(struct linux_binprm *bprm, long len)
+ 
+ #else
+ 
++static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -987,6 +1012,7 @@ int flush_old_exec(struct linux_binprm * bprm)
+ 	/*
+ 	 * Release all of the old mmap stuff
+ 	 */
++	acct_arg_size(bprm, 0);
+ 	retval = exec_mmap(bprm->mm);
+ 	if (retval)
+ 		goto out;
+@@ -1411,8 +1437,10 @@ int do_execve(char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
+-		mmput (bprm->mm);
++	if (bprm->mm) {
++		acct_arg_size(bprm, 0);
++		mmput(bprm->mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index c809e28..39798c6 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -29,6 +29,7 @@ struct linux_binprm{
+ 	char buf[BINPRM_BUF_SIZE];
+ #ifdef CONFIG_MMU
+ 	struct vm_area_struct *vma;
++	unsigned long vma_pages;
+ #else
+ # define MAX_ARG_PAGES	32
+ 	struct page *page[MAX_ARG_PAGES];
 -- 
 1.7.4.4
 
