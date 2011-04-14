@@ -1,779 +1,853 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757806Ab1DNNVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 09:21:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3141 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757455Ab1DNNVu (ORCPT
+	id S1758367Ab1DNNWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 09:22:45 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:16841 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755051Ab1DNNWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 09:21:50 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6315"; a="85566372"
+	Thu, 14 Apr 2011 09:22:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6315"; a="85765702"
 From: Tatyana Brokhman <tlinder@codeaurora.org>
 To: gregkh@suse.de
 Cc: linux-arm-msm@vger.kernel.org, ablay@codeaurora.org, balbi@ti.com,
         Tatyana Brokhman <tlinder@codeaurora.org>,
         linux-usb@vger.kernel.org (open list:USB GADGET/PERIPH...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH/RESEND v8 1/6] usb: Adding SuperSpeed support to dummy_hcd
-Date: Thu, 14 Apr 2011 16:21:16 +0300
-Message-Id: <1302787276-27232-1-git-send-email-tlinder@codeaurora.org>
+Subject: [PATCH/RESEND v6 2/6] usb: Add usb_endpoint_descriptor to be part of the struct usb_ep
+Date: Thu, 14 Apr 2011 16:22:12 +0300
+Message-Id: <1302787333-27290-1-git-send-email-tlinder@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds SS support to the dummy hcd module. It may be used to test
-SS device when no (SS) HW is available.
-USB 3.0 hub includes 2 hubs - HS and SS ones.
-This patch adds support for a SS hub in the dummy_hcd module. Thus, when
-dummy_hcd enabled it will register 2 root hubs (SS and HS).
+Change usb_ep_enable() prototype to use endpoint descriptor from usb_ep.
+This optimization spares the FDs from saving the endpoint chosen
+descriptor. This optimization is not full though. To fully exploit this
+change one needs to update all the UDCs as well since in the current
+implementation each of them saves the endpoint descriptor in it's
+internal (and extended) endpoint structure.
 
 Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
-diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index 3214ca3..4f4db96 100644
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -62,9 +62,12 @@
- #define POWER_BUDGET	500	/* in mA; use 8 for low-power port testing */
+diff --git a/drivers/usb/gadget/dbgp.c b/drivers/usb/gadget/dbgp.c
+index e5ac8a3..3458c61 100644
+--- a/drivers/usb/gadget/dbgp.c
++++ b/drivers/usb/gadget/dbgp.c
+@@ -173,7 +173,9 @@ fail_1:
  
- static const char	driver_name [] = "dummy_hcd";
-+static const char	ss_driver_name[] = "ss_dummy_hcd";
- static const char	driver_desc [] = "USB Host+Gadget Emulator";
-+static const char	ss_driver_desc[] = "SS USB Host+Gadget Emulator";
- 
- static const char	gadget_name [] = "dummy_udc";
-+static const char	ss_gadget_name[] = "ss_dummy_udc";
- 
- MODULE_DESCRIPTION (DRIVER_DESC);
- MODULE_AUTHOR ("David Brownell");
-@@ -220,6 +223,7 @@ static inline struct dummy *gadget_dev_to_dummy (struct device *dev)
- }
- 
- static struct dummy			*the_controller;
-+static struct dummy			*the_ss_controller;
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -259,10 +263,94 @@ stop_activity (struct dummy *dum)
- 	/* driver now does any non-usb quiescing necessary */
- }
- 
--/* caller must hold lock */
-+/**
-+ * set_ss_link_state() - Sets the current state of the SuperSpeed link
-+ * @dum: pointer to the dummy_hcd structure to update the link
-+ *     state for
-+ *
-+ * This function updates the port_status according to the link
-+ * state. The old status is saved befor updating.
-+ * Note: this function should be called only for SuperSpeed
-+ * master and the caller must hold the lock.
-+ */
-+static void
-+set_ss_link_state(struct dummy *dum)
-+{
-+	dum->active = 0;
-+	if ((dum->port_status & USB_SS_PORT_STAT_POWER) == 0)
-+		dum->port_status = 0;
-+
-+	/* UDC suspend must cause a disconnect */
-+	else if (!dum->pullup || dum->udc_suspended) {
-+		dum->port_status &= ~(USB_PORT_STAT_CONNECTION |
-+					USB_PORT_STAT_ENABLE);
-+		if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0)
-+			dum->port_status |=
-+					(USB_PORT_STAT_C_CONNECTION << 16);
-+	} else {
-+		/* device is connected and not suspended */
-+		dum->port_status |= (USB_PORT_STAT_CONNECTION |
-+				     USB_PORT_STAT_SPEED_5GBPS) ;
-+		if ((dum->old_status & USB_PORT_STAT_CONNECTION) == 0)
-+			dum->port_status |=
-+				(USB_PORT_STAT_C_CONNECTION << 16);
-+		if ((dum->port_status & USB_PORT_STAT_ENABLE) == 1 &&
-+		    (dum->port_status & USB_SS_PORT_LS_U0) == 1 &&
-+		    dum->rh_state != DUMMY_RH_SUSPENDED)
-+			dum->active = 1;
-+	}
-+
-+
-+	if ((dum->port_status & USB_PORT_STAT_ENABLE) == 0 || dum->active)
-+		dum->resuming = 0;
-+
-+	/* if !connected or reset */
-+	if ((dum->port_status & USB_PORT_STAT_CONNECTION) == 0 ||
-+			(dum->port_status & USB_PORT_STAT_RESET) != 0) {
-+		/*
-+		 * We're connected and not reseted (reset occured now),
-+		 * and driver attached - disconnect!
-+		 */
-+		if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0 &&
-+		    (dum->old_status & USB_PORT_STAT_RESET) == 0 &&
-+		    dum->driver) {
-+			stop_activity(dum);
-+			spin_unlock(&dum->lock);
-+			dum->driver->disconnect(&dum->gadget);
-+			spin_lock(&dum->lock);
-+		}
-+	} else if (dum->active != dum->old_active) {
-+		if (dum->old_active && dum->driver->suspend) {
-+			spin_unlock(&dum->lock);
-+			dum->driver->suspend(&dum->gadget);
-+			spin_lock(&dum->lock);
-+		} else if (!dum->old_active &&  dum->driver->resume) {
-+			spin_unlock(&dum->lock);
-+			dum->driver->resume(&dum->gadget);
-+			spin_lock(&dum->lock);
-+		}
-+	}
-+
-+	dum->old_status = dum->port_status;
-+	dum->old_active = dum->active;
-+}
-+
-+/**
-+ * set_link_state() - Sets the current state of the link
-+ * @dum: pointer to the dummy_hcd structure to update the link
-+ *     state for
-+ *
-+ * This function updates the port_status according to the link
-+ * state. The old status is saved befor updating.
-+ * Note: caller must hold the lock.
-+ */
- static void
- set_link_state (struct dummy *dum)
+ static int __enable_ep(struct usb_ep *ep, struct usb_endpoint_descriptor *desc)
  {
-+	if (dum == the_ss_controller) {
-+		set_ss_link_state(dum);
-+		return;
-+	}
- 	dum->active = 0;
- 	if ((dum->port_status & USB_PORT_STAT_POWER) == 0)
- 		dum->port_status = 0;
-@@ -343,7 +431,13 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 	dum = ep_to_dummy (ep);
- 	if (!dum->driver || !is_enabled (dum))
- 		return -ESHUTDOWN;
--	max = le16_to_cpu(desc->wMaxPacketSize) & 0x3ff;
-+
-+	/*
-+	 * For HS/FS devices only bits 0..10 of the wMaxPacketSize represent the
-+	 * maximum packet size.
-+	 * For SS devices the wMaxPacketSize is limited by 1024.
-+	 */
-+	max = le16_to_cpu(desc->wMaxPacketSize) & 0x7ff;
+-	int err = usb_ep_enable(ep, desc);
++	int err;
++	ep->desc = desc;
++	err = usb_ep_enable(ep);
+ 	ep->driver_data = dbgp.gadget;
+ 	return err;
+ }
+@@ -268,8 +270,8 @@ static int __init dbgp_configure_endpoints(struct usb_gadget *gadget)
+ 	dbgp.serial->in = dbgp.i_ep;
+ 	dbgp.serial->out = dbgp.o_ep;
  
- 	/* drivers must not request bad settings, since lower levels
- 	 * (hardware or its drivers) may not check.  some endpoints
-@@ -361,6 +455,10 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 			goto done;
+-	dbgp.serial->in_desc = &i_desc;
+-	dbgp.serial->out_desc = &o_desc;
++	dbgp.serial->in->desc = &i_desc;
++	dbgp.serial->out->desc = &o_desc;
+ 
+ 	if (gserial_setup(gadget, 1) < 0) {
+ 		stp = 3;
+diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
+index bd6226c..d04b4a6 100644
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -62,7 +62,6 @@ struct f_acm {
+ 	struct acm_ep_descs		hs;
+ 
+ 	struct usb_ep			*notify;
+-	struct usb_endpoint_descriptor	*notify_desc;
+ 	struct usb_request		*notify_req;
+ 
+ 	struct usb_cdc_line_coding	port_line_coding;	/* 8-N-1 etc */
+@@ -405,11 +404,11 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			usb_ep_disable(acm->notify);
+ 		} else {
+ 			VDBG(cdev, "init acm ctrl interface %d\n", intf);
+-			acm->notify_desc = ep_choose(cdev->gadget,
++			acm->notify->desc = ep_choose(cdev->gadget,
+ 					acm->hs.notify,
+ 					acm->fs.notify);
  		}
- 		switch (dum->gadget.speed) {
-+		case USB_SPEED_SUPER:
-+			if (max == 1024)
-+				break;
-+			goto done;
- 		case USB_SPEED_HIGH:
- 			if (max == 512)
- 				break;
-@@ -379,6 +477,7 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 			goto done;
- 		/* real hardware might not handle all packet sizes */
- 		switch (dum->gadget.speed) {
-+		case USB_SPEED_SUPER:
- 		case USB_SPEED_HIGH:
- 			if (max <= 1024)
- 				break;
-@@ -399,6 +498,7 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 			goto done;
- 		/* real hardware might not handle all packet sizes */
- 		switch (dum->gadget.speed) {
-+		case USB_SPEED_SUPER:
- 		case USB_SPEED_HIGH:
- 			if (max <= 1024)
- 				break;
-@@ -751,9 +851,14 @@ int
- usb_gadget_probe_driver(struct usb_gadget_driver *driver,
- 		int (*bind)(struct usb_gadget *))
- {
--	struct dummy	*dum = the_controller;
-+	struct dummy	*dum;
- 	int		retval, i;
+-		usb_ep_enable(acm->notify, acm->notify_desc);
++		usb_ep_enable(acm->notify);
+ 		acm->notify->driver_data = acm;
  
-+	if (driver->speed == USB_SPEED_SUPER)
-+		dum = the_ss_controller;
-+	else
-+		dum = the_controller;
-+
- 	if (!dum)
- 		return -EINVAL;
- 	if (dum->driver)
-@@ -787,7 +892,11 @@ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 	} else if (intf == acm->data_id) {
+@@ -418,9 +417,9 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			gserial_disconnect(&acm->port);
+ 		} else {
+ 			DBG(cdev, "activate acm ttyGS%d\n", acm->port_num);
+-			acm->port.in_desc = ep_choose(cdev->gadget,
++			acm->port.in->desc = ep_choose(cdev->gadget,
+ 					acm->hs.in, acm->fs.in);
+-			acm->port.out_desc = ep_choose(cdev->gadget,
++			acm->port.out->desc = ep_choose(cdev->gadget,
+ 					acm->hs.out, acm->fs.out);
+ 		}
+ 		gserial_connect(&acm->port, acm->port_num);
+diff --git a/drivers/usb/gadget/f_audio.c b/drivers/usb/gadget/f_audio.c
+index 9abecfd..0ed0f97 100644
+--- a/drivers/usb/gadget/f_audio.c
++++ b/drivers/usb/gadget/f_audio.c
+@@ -279,7 +279,6 @@ struct f_audio {
+ 
+ 	/* endpoints handle full and/or high speeds */
+ 	struct usb_ep			*out_ep;
+-	struct usb_endpoint_descriptor	*out_desc;
+ 
+ 	spinlock_t			lock;
+ 	struct f_audio_buf *copy_buf;
+@@ -575,7 +574,7 @@ static int f_audio_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 
+ 	if (intf == 1) {
+ 		if (alt == 1) {
+-			usb_ep_enable(out_ep, audio->out_desc);
++			usb_ep_enable(out_ep);
+ 			out_ep->driver_data = audio;
+ 			audio->copy_buf = f_audio_buffer_alloc(audio_buf_size);
+ 			if (IS_ERR(audio->copy_buf))
+@@ -775,7 +774,7 @@ int __init audio_bind_config(struct usb_configuration *c)
+ 	audio->card.func.set_alt = f_audio_set_alt;
+ 	audio->card.func.setup = f_audio_setup;
+ 	audio->card.func.disable = f_audio_disable;
+-	audio->out_desc = &as_out_ep_desc;
++	audio->out_ep->desc = &as_out_ep_desc;
+ 
+ 	control_selector_init(audio);
+ 
+diff --git a/drivers/usb/gadget/f_ecm.c b/drivers/usb/gadget/f_ecm.c
+index 544257a..7c996f2 100644
+--- a/drivers/usb/gadget/f_ecm.c
++++ b/drivers/usb/gadget/f_ecm.c
+@@ -68,7 +68,6 @@ struct f_ecm {
+ 	struct ecm_ep_descs		hs;
+ 
+ 	struct usb_ep			*notify;
+-	struct usb_endpoint_descriptor	*notify_desc;
+ 	struct usb_request		*notify_req;
+ 	u8				notify_state;
+ 	bool				is_open;
+@@ -466,11 +465,11 @@ static int ecm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			usb_ep_disable(ecm->notify);
+ 		} else {
+ 			VDBG(cdev, "init ecm ctrl %d\n", intf);
+-			ecm->notify_desc = ep_choose(cdev->gadget,
++			ecm->notify->desc = ep_choose(cdev->gadget,
+ 					ecm->hs.notify,
+ 					ecm->fs.notify);
+ 		}
+-		usb_ep_enable(ecm->notify, ecm->notify_desc);
++		usb_ep_enable(ecm->notify);
+ 		ecm->notify->driver_data = ecm;
+ 
+ 	/* Data interface has two altsettings, 0 and 1 */
+@@ -483,11 +482,11 @@ static int ecm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			gether_disconnect(&ecm->port);
+ 		}
+ 
+-		if (!ecm->port.in) {
++		if (!ecm->port.in_ep->desc) {
+ 			DBG(cdev, "init ecm\n");
+-			ecm->port.in = ep_choose(cdev->gadget,
++			ecm->port.in_ep->desc = ep_choose(cdev->gadget,
+ 					ecm->hs.in, ecm->fs.in);
+-			ecm->port.out = ep_choose(cdev->gadget,
++			ecm->port.out_ep->desc = ep_choose(cdev->gadget,
+ 					ecm->hs.out, ecm->fs.out);
+ 		}
+ 
+@@ -549,7 +548,7 @@ static void ecm_disable(struct usb_function *f)
+ 	if (ecm->notify->driver_data) {
+ 		usb_ep_disable(ecm->notify);
+ 		ecm->notify->driver_data = NULL;
+-		ecm->notify_desc = NULL;
++		ecm->notify->desc = NULL;
  	}
+ }
  
- 	dum->gadget.ep0 = &dum->ep [0].ep;
--	dum->ep [0].ep.maxpacket = 64;
-+	dum->gadget.speed = driver->speed;
-+	if (driver->speed == USB_SPEED_SUPER)
-+		dum->ep[0].ep.maxpacket = 9;
-+	else
-+		dum->ep[0].ep.maxpacket = 64;
- 	list_del_init (&dum->ep [0].ep.ep_list);
- 	INIT_LIST_HEAD(&dum->fifo_req.queue);
+@@ -723,9 +722,9 @@ fail:
+ 	/* we might as well release our claims on endpoints */
+ 	if (ecm->notify)
+ 		ecm->notify->driver_data = NULL;
+-	if (ecm->port.out)
++	if (ecm->port.out_ep->desc)
+ 		ecm->port.out_ep->driver_data = NULL;
+-	if (ecm->port.in)
++	if (ecm->port.in_ep->desc)
+ 		ecm->port.in_ep->driver_data = NULL;
  
-@@ -817,12 +926,20 @@ EXPORT_SYMBOL(usb_gadget_probe_driver);
- int
- usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+diff --git a/drivers/usb/gadget/f_eem.c b/drivers/usb/gadget/f_eem.c
+index 95dd466..099f98f 100644
+--- a/drivers/usb/gadget/f_eem.c
++++ b/drivers/usb/gadget/f_eem.c
+@@ -176,11 +176,11 @@ static int eem_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			gether_disconnect(&eem->port);
+ 		}
+ 
+-		if (!eem->port.in) {
++		if (!eem->port.in_ep->desc) {
+ 			DBG(cdev, "init eem\n");
+-			eem->port.in = ep_choose(cdev->gadget,
++			eem->port.in_ep->desc = ep_choose(cdev->gadget,
+ 					eem->hs.in, eem->fs.in);
+-			eem->port.out = ep_choose(cdev->gadget,
++			eem->port.out_ep->desc = ep_choose(cdev->gadget,
+ 					eem->hs.out, eem->fs.out);
+ 		}
+ 
+@@ -289,9 +289,9 @@ fail:
+ 		usb_free_descriptors(f->descriptors);
+ 
+ 	/* we might as well release our claims on endpoints */
+-	if (eem->port.out)
++	if (eem->port.out_ep->desc)
+ 		eem->port.out_ep->driver_data = NULL;
+-	if (eem->port.in)
++	if (eem->port.in_ep->desc)
+ 		eem->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 19fffcc..c161a9a 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1544,7 +1544,8 @@ static int ffs_func_eps_enable(struct ffs_function *func)
+ 		ds = ep->descs[ep->descs[1] ? 1 : 0];
+ 
+ 		ep->ep->driver_data = ep;
+-		ret = usb_ep_enable(ep->ep, ds);
++		ep->ep->desc = ds;
++		ret = usb_ep_enable(ep->ep);
+ 		if (likely(!ret)) {
+ 			epfile->ep = ep;
+ 			epfile->in = usb_endpoint_dir_in(ds);
+diff --git a/drivers/usb/gadget/f_hid.c b/drivers/usb/gadget/f_hid.c
+index 598e7e2..12879b6 100644
+--- a/drivers/usb/gadget/f_hid.c
++++ b/drivers/usb/gadget/f_hid.c
+@@ -416,7 +416,6 @@ static int hidg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
  {
--	struct dummy	*dum = the_controller;
-+	struct dummy	*dum ;
- 	unsigned long	flags;
+ 	struct usb_composite_dev		*cdev = f->config->cdev;
+ 	struct f_hidg				*hidg = func_to_hidg(f);
+-	const struct usb_endpoint_descriptor	*ep_desc;
+ 	int status = 0;
  
-+	if (!driver || !driver->unbind)
-+		return -EINVAL;
-+
-+	if (driver->speed == USB_SPEED_SUPER)
-+		dum = the_ss_controller;
-+	else
-+		dum = the_controller;
-+
- 	if (!dum)
- 		return -ENODEV;
--	if (!driver || driver != dum->driver || !driver->unbind)
-+	if (driver != dum->driver)
- 		return -EINVAL;
+ 	VDBG(cdev, "hidg_set_alt intf:%d alt:%d\n", intf, alt);
+@@ -426,9 +425,9 @@ static int hidg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 		if (hidg->in_ep->driver_data != NULL)
+ 			usb_ep_disable(hidg->in_ep);
  
- 	dev_dbg (udc_dev(dum), "unregister gadget driver '%s'\n",
-@@ -899,6 +1016,34 @@ static int dummy_udc_probe (struct platform_device *pdev)
+-		ep_desc = ep_choose(f->config->cdev->gadget,
++		hidg->in_ep->desc = ep_choose(f->config->cdev->gadget,
+ 				hidg->hs_in_ep_desc, hidg->fs_in_ep_desc);
+-		status = usb_ep_enable(hidg->in_ep, ep_desc);
++		status = usb_ep_enable(hidg->in_ep);
+ 		if (status < 0) {
+ 			ERROR(cdev, "Enable endpoint FAILED!\n");
+ 			goto fail;
+diff --git a/drivers/usb/gadget/f_loopback.c b/drivers/usb/gadget/f_loopback.c
+index b37960f..34e3cca 100644
+--- a/drivers/usb/gadget/f_loopback.c
++++ b/drivers/usb/gadget/f_loopback.c
+@@ -250,26 +250,24 @@ static int
+ enable_loopback(struct usb_composite_dev *cdev, struct f_loopback *loop)
+ {
+ 	int					result = 0;
+-	const struct usb_endpoint_descriptor	*src, *sink;
+ 	struct usb_ep				*ep;
+ 	struct usb_request			*req;
+ 	unsigned				i;
+ 
+-	src = ep_choose(cdev->gadget,
+-			&hs_loop_source_desc, &fs_loop_source_desc);
+-	sink = ep_choose(cdev->gadget,
+-			&hs_loop_sink_desc, &fs_loop_sink_desc);
+-
+ 	/* one endpoint writes data back IN to the host */
+ 	ep = loop->in_ep;
+-	result = usb_ep_enable(ep, src);
++	ep->desc = ep_choose(cdev->gadget,
++			&hs_loop_source_desc, &fs_loop_source_desc);
++	result = usb_ep_enable(ep);
+ 	if (result < 0)
+ 		return result;
+ 	ep->driver_data = loop;
+ 
+ 	/* one endpoint just reads OUT packets */
+ 	ep = loop->out_ep;
+-	result = usb_ep_enable(ep, sink);
++	ep->desc = ep_choose(cdev->gadget,
++			&hs_loop_sink_desc, &fs_loop_sink_desc);
++	result = usb_ep_enable(ep);
+ 	if (result < 0) {
+ fail0:
+ 		ep = loop->in_ep;
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 6d8e533..dad807e 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2356,7 +2356,8 @@ static int enable_endpoint(struct fsg_common *common, struct usb_ep *ep,
+ 	int	rc;
+ 
+ 	ep->driver_data = common;
+-	rc = usb_ep_enable(ep, d);
++	ep->desc = (struct usb_endpoint_descriptor *)d;
++	rc = usb_ep_enable(ep);
+ 	if (rc)
+ 		ERROR(common, "can't enable %s, result %d\n", ep->name, rc);
  	return rc;
- }
+diff --git a/drivers/usb/gadget/f_ncm.c b/drivers/usb/gadget/f_ncm.c
+index 86902a6..06daa1b 100644
+--- a/drivers/usb/gadget/f_ncm.c
++++ b/drivers/usb/gadget/f_ncm.c
+@@ -70,7 +70,6 @@ struct f_ncm {
+ 	struct ncm_ep_descs		hs;
  
-+static int dummy_ss_udc_probe(struct platform_device *pdev)
-+{
-+	struct dummy	*dum = the_ss_controller;
-+	int		rc;
-+
-+	dum->gadget.name = gadget_name;
-+	dum->gadget.ops = &dummy_ops;
-+	dum->gadget.is_dualspeed = 1;
-+
-+	/* maybe claim OTG support, though we won't complete HNP */
-+	dum->gadget.is_otg = (dummy_to_hcd(dum)->self.otg_port != 0);
-+
-+	dev_set_name(&dum->gadget.dev, "ss_gadget");
-+	dum->gadget.dev.parent = &pdev->dev;
-+	dum->gadget.dev.release = dummy_gadget_release;
-+	rc = device_register(&dum->gadget.dev);
-+	if (rc < 0)
-+		return rc;
-+
-+	usb_get_hcd(dummy_to_hcd(dum));
-+
-+	platform_set_drvdata(pdev, dum);
-+	rc = device_create_file(&dum->gadget.dev, &dev_attr_function);
-+	if (rc < 0)
-+		device_unregister(&dum->gadget.dev);
-+	return rc;
-+}
-+
- static int dummy_udc_remove (struct platform_device *pdev)
- {
- 	struct dummy	*dum = platform_get_drvdata (pdev);
-@@ -948,6 +1093,17 @@ static struct platform_driver dummy_udc_driver = {
- 	},
- };
+ 	struct usb_ep			*notify;
+-	struct usb_endpoint_descriptor	*notify_desc;
+ 	struct usb_request		*notify_req;
+ 	u8				notify_state;
+ 	bool				is_open;
+@@ -804,11 +803,11 @@ static int ncm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			usb_ep_disable(ncm->notify);
+ 		} else {
+ 			DBG(cdev, "init ncm ctrl %d\n", intf);
+-			ncm->notify_desc = ep_choose(cdev->gadget,
++			ncm->notify->desc = ep_choose(cdev->gadget,
+ 					ncm->hs.notify,
+ 					ncm->fs.notify);
+ 		}
+-		usb_ep_enable(ncm->notify, ncm->notify_desc);
++		usb_ep_enable(ncm->notify);
+ 		ncm->notify->driver_data = ncm;
  
-+static struct platform_driver dummy_ss_udc_driver = {
-+	.probe		= dummy_ss_udc_probe,
-+	.remove		= dummy_udc_remove,
-+	.suspend	= dummy_udc_suspend,
-+	.resume		= dummy_udc_resume,
-+	.driver		= {
-+		.name	= (char *) ss_gadget_name,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
- /*-------------------------------------------------------------------------*/
+ 	/* Data interface has two altsettings, 0 and 1 */
+@@ -829,12 +828,12 @@ static int ncm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 		if (alt == 1) {
+ 			struct net_device	*net;
  
- /* MASTER/HOST SIDE DRIVER
-@@ -1161,6 +1317,21 @@ static int periodic_bytes (struct dummy *dum, struct dummy_ep *ep)
- 		tmp *= 8 /* applies to entire frame */;
- 		limit += limit * tmp;
- 	}
-+	if (dum->gadget.speed == USB_SPEED_SUPER) {
-+		switch (ep->desc->bmAttributes & 0x03) {
-+		case USB_ENDPOINT_XFER_ISOC:
-+			/* Sec. 4.4.8.2 USB3.0 Spec */
-+			limit = 3 * 16 * 1024 * 8;
-+			break;
-+		case USB_ENDPOINT_XFER_INT:
-+			/* Sec. 4.4.7.2 USB3.0 Spec */
-+			limit = 3 * 1024 * 8;
-+			break;
-+		case USB_ENDPOINT_XFER_BULK:
-+		default:
-+			break;
-+		}
-+	}
- 	return limit;
- }
- 
-@@ -1246,6 +1417,24 @@ static int handle_control_request(struct dummy *dum, struct urb *urb,
- 			case USB_DEVICE_A_ALT_HNP_SUPPORT:
- 				dum->gadget.a_alt_hnp_support = 1;
- 				break;
-+			case USB_DEVICE_U1_ENABLE:
-+				if (dum->gadget.speed == USB_SPEED_SUPER)
-+					w_value = USB_DEV_STAT_U1_ENABLED;
-+				else
-+					ret_val = -EOPNOTSUPP;
-+				break;
-+			case USB_DEVICE_U2_ENABLE:
-+				if (dum->gadget.speed == USB_SPEED_SUPER)
-+					w_value = USB_DEV_STAT_U2_ENABLED;
-+				else
-+					ret_val = -EOPNOTSUPP;
-+				break;
-+			case USB_DEVICE_LTM_ENABLE:
-+				if (dum->gadget.speed == USB_SPEED_SUPER)
-+					w_value = USB_DEV_STAT_LTM_ENABLED;
-+				else
-+					ret_val = -EOPNOTSUPP;
-+				break;
- 			default:
- 				ret_val = -EOPNOTSUPP;
+-			if (!ncm->port.in) {
++			if (!ncm->port.in_ep->desc) {
+ 				DBG(cdev, "init ncm\n");
+-				ncm->port.in = ep_choose(cdev->gadget,
++				ncm->port.in_ep->desc = ep_choose(cdev->gadget,
+ 							 ncm->hs.in,
+ 							 ncm->fs.in);
+-				ncm->port.out = ep_choose(cdev->gadget,
++				ncm->port.out_ep->desc = ep_choose(cdev->gadget,
+ 							  ncm->hs.out,
+ 							  ncm->fs.out);
  			}
-@@ -1272,6 +1461,24 @@ static int handle_control_request(struct dummy *dum, struct urb *urb,
- 			case USB_DEVICE_REMOTE_WAKEUP:
- 				w_value = USB_DEVICE_REMOTE_WAKEUP;
- 				break;
-+			case USB_DEVICE_U1_ENABLE:
-+				if (dum->gadget.speed == USB_SPEED_SUPER)
-+					w_value = USB_DEV_STAT_U1_ENABLED;
-+				else
-+					ret_val = -EOPNOTSUPP;
-+				break;
-+			case USB_DEVICE_U2_ENABLE:
-+				if (dum->gadget.speed == USB_SPEED_SUPER)
-+					w_value = USB_DEV_STAT_U2_ENABLED;
-+				else
-+					ret_val = -EOPNOTSUPP;
-+				break;
-+			case USB_DEVICE_LTM_ENABLE:
-+				if (dum->gadget.speed == USB_SPEED_SUPER)
-+					w_value = USB_DEV_STAT_LTM_ENABLED;
-+				else
-+					ret_val = -EOPNOTSUPP;
-+				break;
- 			default:
- 				ret_val = -EOPNOTSUPP;
- 				break;
-@@ -1352,6 +1559,10 @@ static void dummy_timer (unsigned long _dum)
- 	case USB_SPEED_HIGH:
- 		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
+@@ -1111,7 +1110,7 @@ static void ncm_disable(struct usb_function *f)
+ 	if (ncm->notify->driver_data) {
+ 		usb_ep_disable(ncm->notify);
+ 		ncm->notify->driver_data = NULL;
+-		ncm->notify_desc = NULL;
++		ncm->notify->desc = NULL;
+ 	}
+ }
+ 
+@@ -1288,9 +1287,9 @@ fail:
+ 	/* we might as well release our claims on endpoints */
+ 	if (ncm->notify)
+ 		ncm->notify->driver_data = NULL;
+-	if (ncm->port.out)
++	if (ncm->port.out_ep->desc)
+ 		ncm->port.out_ep->driver_data = NULL;
+-	if (ncm->port.in)
++	if (ncm->port.in_ep->desc)
+ 		ncm->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+diff --git a/drivers/usb/gadget/f_obex.c b/drivers/usb/gadget/f_obex.c
+index 8f8c643..a6dbda0 100644
+--- a/drivers/usb/gadget/f_obex.c
++++ b/drivers/usb/gadget/f_obex.c
+@@ -227,11 +227,11 @@ static int obex_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			gserial_disconnect(&obex->port);
+ 		}
+ 
+-		if (!obex->port.in_desc) {
++		if (!obex->port.in->desc) {
+ 			DBG(cdev, "init obex ttyGS%d\n", obex->port_num);
+-			obex->port.in_desc = ep_choose(cdev->gadget,
++			obex->port.in->desc = ep_choose(cdev->gadget,
+ 					obex->hs.obex_in, obex->fs.obex_in);
+-			obex->port.out_desc = ep_choose(cdev->gadget,
++			obex->port.out->desc = ep_choose(cdev->gadget,
+ 					obex->hs.obex_out, obex->fs.obex_out);
+ 		}
+ 
+diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
+index 5e14950..dc63f16 100644
+--- a/drivers/usb/gadget/f_phonet.c
++++ b/drivers/usb/gadget/f_phonet.c
+@@ -427,17 +427,16 @@ static int pn_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 		spin_lock(&port->lock);
+ 		__pn_reset(f);
+ 		if (alt == 1) {
+-			struct usb_endpoint_descriptor *out, *in;
+ 			int i;
+ 
+-			out = ep_choose(gadget,
++			fp->out_ep->desc = ep_choose(gadget,
+ 					&pn_hs_sink_desc,
+ 					&pn_fs_sink_desc);
+-			in = ep_choose(gadget,
++			fp->in_ep->desc = ep_choose(gadget,
+ 					&pn_hs_source_desc,
+ 					&pn_fs_source_desc);
+-			usb_ep_enable(fp->out_ep, out);
+-			usb_ep_enable(fp->in_ep, in);
++			usb_ep_enable(fp->out_ep);
++			usb_ep_enable(fp->in_ep);
+ 
+ 			port->usb = fp;
+ 			fp->out_ep->driver_data = fp;
+diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
+index 882484a..2066f7c 100644
+--- a/drivers/usb/gadget/f_rndis.c
++++ b/drivers/usb/gadget/f_rndis.c
+@@ -92,7 +92,6 @@ struct f_rndis {
+ 	struct rndis_ep_descs		hs;
+ 
+ 	struct usb_ep			*notify;
+-	struct usb_endpoint_descriptor	*notify_desc;
+ 	struct usb_request		*notify_req;
+ 	atomic_t			notify_count;
+ };
+@@ -487,11 +486,11 @@ static int rndis_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			usb_ep_disable(rndis->notify);
+ 		} else {
+ 			VDBG(cdev, "init rndis ctrl %d\n", intf);
+-			rndis->notify_desc = ep_choose(cdev->gadget,
++			rndis->notify->desc = ep_choose(cdev->gadget,
+ 					rndis->hs.notify,
+ 					rndis->fs.notify);
+ 		}
+-		usb_ep_enable(rndis->notify, rndis->notify_desc);
++		usb_ep_enable(rndis->notify);
+ 		rndis->notify->driver_data = rndis;
+ 
+ 	} else if (intf == rndis->data_id) {
+@@ -502,11 +501,11 @@ static int rndis_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 			gether_disconnect(&rndis->port);
+ 		}
+ 
+-		if (!rndis->port.in) {
++		if (!rndis->port.in_ep->desc) {
+ 			DBG(cdev, "init rndis\n");
+-			rndis->port.in = ep_choose(cdev->gadget,
++			rndis->port.in_ep->desc = ep_choose(cdev->gadget,
+ 					rndis->hs.in, rndis->fs.in);
+-			rndis->port.out = ep_choose(cdev->gadget,
++			rndis->port.out_ep->desc = ep_choose(cdev->gadget,
+ 					rndis->hs.out, rndis->fs.out);
+ 		}
+ 
+@@ -739,9 +738,9 @@ fail:
+ 	/* we might as well release our claims on endpoints */
+ 	if (rndis->notify)
+ 		rndis->notify->driver_data = NULL;
+-	if (rndis->port.out)
++	if (rndis->port.out_ep->desc)
+ 		rndis->port.out_ep->driver_data = NULL;
+-	if (rndis->port.in)
++	if (rndis->port.in_ep->desc)
+ 		rndis->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+diff --git a/drivers/usb/gadget/f_serial.c b/drivers/usb/gadget/f_serial.c
+index 490b00b..a9ce626 100644
+--- a/drivers/usb/gadget/f_serial.c
++++ b/drivers/usb/gadget/f_serial.c
+@@ -138,9 +138,9 @@ static int gser_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 		gserial_disconnect(&gser->port);
+ 	} else {
+ 		DBG(cdev, "activate generic ttyGS%d\n", gser->port_num);
+-		gser->port.in_desc = ep_choose(cdev->gadget,
++		gser->port.in->desc = ep_choose(cdev->gadget,
+ 				gser->hs.in, gser->fs.in);
+-		gser->port.out_desc = ep_choose(cdev->gadget,
++		gser->port.out->desc = ep_choose(cdev->gadget,
+ 				gser->hs.out, gser->fs.out);
+ 	}
+ 	gserial_connect(&gser->port, gser->port_num);
+diff --git a/drivers/usb/gadget/f_sourcesink.c b/drivers/usb/gadget/f_sourcesink.c
+index e403a53..0ffddd3 100644
+--- a/drivers/usb/gadget/f_sourcesink.c
++++ b/drivers/usb/gadget/f_sourcesink.c
+@@ -343,15 +343,12 @@ static int
+ enable_source_sink(struct usb_composite_dev *cdev, struct f_sourcesink *ss)
+ {
+ 	int					result = 0;
+-	const struct usb_endpoint_descriptor	*src, *sink;
+ 	struct usb_ep				*ep;
+ 
+-	src = ep_choose(cdev->gadget, &hs_source_desc, &fs_source_desc);
+-	sink = ep_choose(cdev->gadget, &hs_sink_desc, &fs_sink_desc);
+-
+ 	/* one endpoint writes (sources) zeroes IN (to the host) */
+ 	ep = ss->in_ep;
+-	result = usb_ep_enable(ep, src);
++	ep->desc = ep_choose(cdev->gadget, &hs_source_desc, &fs_source_desc);
++	result = usb_ep_enable(ep);
+ 	if (result < 0)
+ 		return result;
+ 	ep->driver_data = ss;
+@@ -367,7 +364,8 @@ fail:
+ 
+ 	/* one endpoint reads (sinks) anything OUT (from the host) */
+ 	ep = ss->out_ep;
+-	result = usb_ep_enable(ep, sink);
++	ep->desc = ep_choose(cdev->gadget, &hs_sink_desc, &fs_sink_desc);
++	result = usb_ep_enable(ep);
+ 	if (result < 0)
+ 		goto fail;
+ 	ep->driver_data = ss;
+diff --git a/drivers/usb/gadget/f_subset.c b/drivers/usb/gadget/f_subset.c
+index 8675ca4..aecaed1 100644
+--- a/drivers/usb/gadget/f_subset.c
++++ b/drivers/usb/gadget/f_subset.c
+@@ -243,9 +243,9 @@ static int geth_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 	}
+ 
+ 	DBG(cdev, "init + activate cdc subset\n");
+-	geth->port.in = ep_choose(cdev->gadget,
++	geth->port.in_ep->desc = ep_choose(cdev->gadget,
+ 			geth->hs.in, geth->fs.in);
+-	geth->port.out = ep_choose(cdev->gadget,
++	geth->port.out_ep->desc = ep_choose(cdev->gadget,
+ 			geth->hs.out, geth->fs.out);
+ 
+ 	net = gether_connect(&geth->port);
+@@ -334,9 +334,9 @@ geth_bind(struct usb_configuration *c, struct usb_function *f)
+ 
+ fail:
+ 	/* we might as well release our claims on endpoints */
+-	if (geth->port.out)
++	if (geth->port.out_ep->desc)
+ 		geth->port.out_ep->driver_data = NULL;
+-	if (geth->port.in)
++	if (geth->port.in_ep->desc)
+ 		geth->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+diff --git a/drivers/usb/gadget/f_uvc.c b/drivers/usb/gadget/f_uvc.c
+index be446b7..df74d03 100644
+--- a/drivers/usb/gadget/f_uvc.c
++++ b/drivers/usb/gadget/f_uvc.c
+@@ -262,8 +262,10 @@ uvc_function_set_alt(struct usb_function *f, unsigned interface, unsigned alt)
+ 		if (uvc->state != UVC_STATE_CONNECTED)
+ 			return 0;
+ 
+-		if (uvc->video.ep)
+-			usb_ep_enable(uvc->video.ep, &uvc_streaming_ep);
++		if (uvc->video.ep) {
++			uvc->video.ep->desc = &uvc_streaming_ep;
++			usb_ep_enable(uvc->video.ep);
++		}
+ 
+ 		memset(&v4l2_event, 0, sizeof(v4l2_event));
+ 		v4l2_event.type = UVC_EVENT_STREAMON;
+diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+index a6eacb5..70a144e 100644
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -2742,7 +2742,8 @@ static int enable_endpoint(struct fsg_dev *fsg, struct usb_ep *ep,
+ 	int	rc;
+ 
+ 	ep->driver_data = fsg;
+-	rc = usb_ep_enable(ep, d);
++	ep->desc = d;
++	rc = usb_ep_enable(ep);
+ 	if (rc)
+ 		ERROR(fsg, "can't enable %s, result %d\n", ep->name, rc);
+ 	return rc;
+diff --git a/drivers/usb/gadget/gmidi.c b/drivers/usb/gadget/gmidi.c
+index 47b86b9..4f40f14 100644
+--- a/drivers/usb/gadget/gmidi.c
++++ b/drivers/usb/gadget/gmidi.c
+@@ -537,14 +537,16 @@ static int set_gmidi_config(struct gmidi_device *dev, gfp_t gfp_flags)
+ 	struct usb_ep *ep;
+ 	unsigned i;
+ 
+-	err = usb_ep_enable(dev->in_ep, &bulk_in_desc);
++	dev->in_ep->desc = &bulk_in_desc;
++	err = usb_ep_enable(dev->in_ep);
+ 	if (err) {
+ 		ERROR(dev, "can't start %s: %d\n", dev->in_ep->name, err);
+ 		goto fail;
+ 	}
+ 	dev->in_ep->driver_data = dev;
+ 
+-	err = usb_ep_enable(dev->out_ep, &bulk_out_desc);
++	dev->out_ep->desc = &bulk_out_desc;
++	err = usb_ep_enable(dev->out_ep);
+ 	if (err) {
+ 		ERROR(dev, "can't start %s: %d\n", dev->out_ep->name, err);
+ 		goto fail;
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index 3ed73f4..565e201 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -828,14 +828,16 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 	switch (data->dev->gadget->speed) {
+ 	case USB_SPEED_LOW:
+ 	case USB_SPEED_FULL:
+-		value = usb_ep_enable (ep, &data->desc);
++		ep->desc = &data->desc;
++		value = usb_ep_enable(ep);
+ 		if (value == 0)
+ 			data->state = STATE_EP_ENABLED;
  		break;
-+	case USB_SPEED_SUPER:
-+		/* Bus speed is 500000 bytes/ms, so use a little less */
-+		total = 490000;
-+		break;
- 	default:
- 		dev_err (dummy_dev(dum), "bogus device speed\n");
- 		return;
-@@ -1597,7 +1808,184 @@ hub_descriptor (struct usb_hub_descriptor *desc)
- 	desc->u.hs.DeviceRemovable[1] = 0xff;
+ #ifdef	CONFIG_USB_GADGET_DUALSPEED
+ 	case USB_SPEED_HIGH:
+ 		/* fails if caller didn't provide that descriptor... */
+-		value = usb_ep_enable (ep, &data->hs_desc);
++		ep->desc = &data->hs_desc;
++		value = usb_ep_enable(ep);
+ 		if (value == 0)
+ 			data->state = STATE_EP_ENABLED;
+ 		break;
+diff --git a/drivers/usb/gadget/printer.c b/drivers/usb/gadget/printer.c
+index c3f2bd4..081036d 100644
+--- a/drivers/usb/gadget/printer.c
++++ b/drivers/usb/gadget/printer.c
+@@ -89,8 +89,7 @@ struct printer_dev {
+ 	u8			config;
+ 	s8			interface;
+ 	struct usb_ep		*in_ep, *out_ep;
+-	const struct usb_endpoint_descriptor
+-				*in, *out;
++
+ 	struct list_head	rx_reqs;	/* List of free RX structs */
+ 	struct list_head	rx_reqs_active;	/* List of Active RX xfers */
+ 	struct list_head	rx_buffers;	/* List of completed xfers */
+@@ -895,19 +894,20 @@ set_printer_interface(struct printer_dev *dev)
+ {
+ 	int			result = 0;
+ 
+-	dev->in = ep_desc(dev->gadget, &hs_ep_in_desc, &fs_ep_in_desc);
++	dev->in_ep->desc = ep_desc(dev->gadget, &hs_ep_in_desc, &fs_ep_in_desc);
+ 	dev->in_ep->driver_data = dev;
+ 
+-	dev->out = ep_desc(dev->gadget, &hs_ep_out_desc, &fs_ep_out_desc);
++	dev->out_ep->desc = ep_desc(dev->gadget, &hs_ep_out_desc,
++				    &fs_ep_out_desc);
+ 	dev->out_ep->driver_data = dev;
+ 
+-	result = usb_ep_enable(dev->in_ep, dev->in);
++	result = usb_ep_enable(dev->in_ep);
+ 	if (result != 0) {
+ 		DBG(dev, "enable %s --> %d\n", dev->in_ep->name, result);
+ 		goto done;
+ 	}
+ 
+-	result = usb_ep_enable(dev->out_ep, dev->out);
++	result = usb_ep_enable(dev->out_ep);
+ 	if (result != 0) {
+ 		DBG(dev, "enable %s --> %d\n", dev->in_ep->name, result);
+ 		goto done;
+@@ -918,8 +918,8 @@ done:
+ 	if (result != 0) {
+ 		(void) usb_ep_disable(dev->in_ep);
+ 		(void) usb_ep_disable(dev->out_ep);
+-		dev->in = NULL;
+-		dev->out = NULL;
++		dev->in_ep->desc = NULL;
++		dev->out_ep->desc = NULL;
+ 	}
+ 
+ 	/* caller is responsible for cleanup on error */
+@@ -933,12 +933,14 @@ static void printer_reset_interface(struct printer_dev *dev)
+ 
+ 	DBG(dev, "%s\n", __func__);
+ 
+-	if (dev->in)
++	if (dev->in_ep->desc)
+ 		usb_ep_disable(dev->in_ep);
+ 
+-	if (dev->out)
++	if (dev->out_ep->desc)
+ 		usb_ep_disable(dev->out_ep);
+ 
++	dev->in_ep->desc = NULL;
++	dev->out_ep->desc = NULL;
+ 	dev->interface = -1;
  }
  
--static int dummy_hub_control (
-+static inline void
-+ss_hub_descriptor(struct usb_hub_descriptor *desc)
-+{
-+	memset(desc, 0, sizeof *desc);
-+	desc->bDescriptorType = 0x2a;
-+	desc->bDescLength = 12;
-+	desc->wHubCharacteristics = cpu_to_le16(0x0001);
-+	desc->bNbrPorts = 1;
-+	desc->u.ss.bHubHdrDecLat = 0x04; /* Worst case: 0.4 micro sec*/
-+	desc->u.ss.DeviceRemovable = 0xffff;
-+}
-+
-+/**
-+ * dummy_ss_hub_control() - handles the control requests of the dummy (ss hub)
-+ * master.
-+ * @hcd: pointer to the hcd to handle
-+ * @typeReq: type of the request
-+ * @wValue: wValue of the request
-+ * @wIndex: wIndex of the request
-+ * @buf: buffer for reply in case of an IN request
-+ * @wLength: wLength of the request
-+ *
-+ * Return int - 0 on success, error code otherwise
-+ *
-+ * This function handles the control requests of the dummy (ss
-+ * hub) master. All control requests that are part of the
-+ * enumeration are handled by the dummy_timer
-+ * Note: this function is used only for the SS root hub
-+ */
-+static int dummy_ss_hub_control(
-+	struct usb_hcd	*hcd,
-+	u16		typeReq,
-+	u16		wValue,
-+	u16		wIndex,
-+	char		*buf,
-+	u16		wLength)
-+{
-+	struct dummy		*dum;
-+	int		retval = 0;
-+	unsigned long	flags;
-+
-+	if (!HCD_HW_ACCESSIBLE(hcd))
-+		return -ETIMEDOUT;
-+
-+	dum = hcd_to_dummy(hcd);
-+	spin_lock_irqsave(&dum->lock, flags);
-+	switch (typeReq) {
-+	case ClearHubFeature:
-+		break;
-+	case ClearPortFeature:
-+		switch (wValue) {
-+		case USB_PORT_FEAT_POWER:
-+			if (dum->port_status & USB_SS_PORT_STAT_POWER)
-+				dev_dbg(dummy_dev(dum), "power-off\n");
-+			/* FALLS THROUGH */
-+		default:
-+			dum->port_status &= ~(1 << wValue);
-+			set_link_state(dum);
-+		}
-+		break;
-+	case GetHubDescriptor:
-+		ss_hub_descriptor((struct usb_hub_descriptor *) buf);
-+		break;
-+	case GetHubStatus:
-+		/*
-+		 * We report that no change occured in the hub status
-+		 * (power and overcurent conditions)
-+		 */
-+		*(__le32 *) buf = cpu_to_le32 (0);
-+		break;
-+	case GetPortStatus:
-+		/* We have only one port */
-+		if (wIndex != 1)
-+			retval = -EPIPE;
-+
-+		/*
-+		 * whoever resets or resumes must GetPortStatus to
-+		 * complete it!!
-+		 */
-+		/* TODO: add support for suspend/resume */
-+		if ((dum->port_status & USB_PORT_STAT_RESET) != 0 &&
-+			time_after_eq(jiffies, dum->re_timeout)) {
-+			dum->port_status |= (USB_PORT_STAT_C_RESET << 16);
-+			dum->port_status &= ~USB_PORT_STAT_RESET;
-+		}
-+		if (dum->pullup)
-+			dum->port_status |= USB_PORT_STAT_ENABLE;
-+
-+		set_link_state(dum);
-+
-+		((__le16 *) buf)[0] = cpu_to_le16 (dum->port_status);
-+		((__le16 *) buf)[1] = cpu_to_le16 (dum->port_status >> 16);
-+		break;
-+	case SetHubFeature:
-+		retval = -EPIPE;
-+		break;
-+	case SetPortFeature:
-+		switch (wValue) {
-+		case USB_PORT_FEAT_LINK_STATE:
-+			/*
-+			 * Since this is dummy we don't have an actual link so
-+			 * there is nothing to do for the SET_LINK_STATE cmd
-+			 */
-+			break;
-+		case USB_PORT_FEAT_U1_TIMEOUT:
-+		case USB_PORT_FEAT_U2_TIMEOUT:
-+			/* TODO: add suspend/resume support! */
-+			break;
-+		case USB_PORT_FEAT_POWER:
-+			dum->port_status |= USB_SS_PORT_STAT_POWER;
-+			set_link_state(dum);
-+			break;
-+		case USB_PORT_FEAT_BH_PORT_RESET:
-+		case USB_PORT_FEAT_RESET:
-+			/* if it's already enabled, disable */
-+			dum->port_status = 0;
-+			dum->port_status = (USB_SS_PORT_STAT_POWER |
-+					       USB_PORT_STAT_CONNECTION |
-+					       USB_PORT_STAT_RESET);
-+			/*
-+			 * We want to reset device status. All but the
-+			 * Self powered feature
-+			 */
-+			dum->devstatus &= 0x0000 |
-+				(1 << USB_DEVICE_SELF_POWERED);
-+			/*
-+			 * FIXME: what is the correct reset signaling interval?
-+			 * Is it still 50msec as for HS?
-+			 */
-+			dum->re_timeout = jiffies + msecs_to_jiffies(50);
-+			/* FALLS THROUGH */
-+		default:
-+			if ((dum->port_status &
-+			     USB_SS_PORT_STAT_POWER) != 0) {
-+				dum->port_status |= (1 << wValue);
-+				set_link_state(dum);
-+			}
-+		}
-+		break;
-+	case GetPortErrorCount:
-+		/* We'll always return 0 since this is a dummy hub */
-+		*(__le32 *) buf = cpu_to_le32 (0);
-+		break;
-+	case SetHubDepth:
-+		break;
-+	default:
-+		dev_dbg(dummy_dev(dum),
-+			"hub control req%04x v%04x i%04x l%d\n",
-+			typeReq, wValue, wIndex, wLength);
-+		/* "protocol stall" on error */
-+		retval = -EPIPE;
-+	}
-+	spin_unlock_irqrestore(&dum->lock, flags);
-+
-+	if ((dum->port_status & PORT_C_MASK) != 0)
-+		usb_hcd_poll_rh_status(hcd);
-+	return retval;
-+}
-+
-+
-+/**
-+ * dummy_hub_control() - handles the control requests of the dummy (hs hub)
-+ * master.
-+ * @hcd: pointer to the hcd to handle
-+ * @typeReq: type of the request
-+ * @wValue: wValue of the request
-+ * @wIndex: wIndex of the request
-+ * @buf: buffer for reply in case of an IN request
-+ * @wLength: wLength of the request
-+ *
-+ * Return int - 0 on success, error code otherwise
-+ *
-+ * This function handles the control requests of the dummy (hs
-+ * hub) master. All control requests that are part of the
-+ * enumeration are handled by the dummy_timer
-+ * Note: this function is used only for the HS root hub
-+ */
-+static int dummy_hub_control(
- 	struct usb_hcd	*hcd,
- 	u16		typeReq,
- 	u16		wValue,
-@@ -1711,7 +2099,11 @@ static int dummy_hub_control (
- 			dum->port_status &= ~(USB_PORT_STAT_ENABLE
- 					| USB_PORT_STAT_LOW_SPEED
- 					| USB_PORT_STAT_HIGH_SPEED);
--			dum->devstatus = 0;
-+			/*
-+			 * We want to reset device status. All but the
-+			 * Self powered feature
-+			 */
-+			dum->devstatus &= (1 << USB_DEVICE_SELF_POWERED);
- 			/* 50msec reset signaling */
- 			dum->re_timeout = jiffies + msecs_to_jiffies(50);
- 			/* FALLS THROUGH */
-@@ -1788,6 +2180,9 @@ show_urb (char *buf, size_t size, struct urb *urb)
- 		 case USB_SPEED_LOW:	s = "ls"; break;
- 		 case USB_SPEED_FULL:	s = "fs"; break;
- 		 case USB_SPEED_HIGH:	s = "hs"; break;
-+		 case USB_SPEED_SUPER:
-+			 s = "ss";
-+			 break;
- 		 default:		s = "?"; break;
- 		 }; s; }),
- 		ep, ep ? (usb_pipein (urb->pipe) ? "in" : "out") : "",
-@@ -1894,6 +2289,27 @@ static const struct hc_driver dummy_hcd = {
- 	.bus_resume =		dummy_bus_resume,
+@@ -1104,9 +1106,9 @@ static void printer_soft_reset(struct printer_dev *dev)
+ 		list_add(&req->list, &dev->tx_reqs);
+ 	}
+ 
+-	if (usb_ep_enable(dev->in_ep, dev->in))
++	if (usb_ep_enable(dev->in_ep))
+ 		DBG(dev, "Failed to enable USB in_ep\n");
+-	if (usb_ep_enable(dev->out_ep, dev->out))
++	if (usb_ep_enable(dev->out_ep))
+ 		DBG(dev, "Failed to enable USB out_ep\n");
+ 
+ 	wake_up_interruptible(&dev->rx_wait);
+diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+index 2ac1d21..b91363e 100644
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -693,8 +693,8 @@ static int eth_stop(struct net_device *net)
+ 		usb_ep_disable(link->out_ep);
+ 		if (netif_carrier_ok(net)) {
+ 			DBG(dev, "host still using in/out endpoints\n");
+-			usb_ep_enable(link->in_ep, link->in);
+-			usb_ep_enable(link->out_ep, link->out);
++			usb_ep_enable(link->in_ep);
++			usb_ep_enable(link->out_ep);
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(&dev->lock, flags);
+@@ -871,7 +871,7 @@ struct net_device *gether_connect(struct gether *link)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	link->in_ep->driver_data = dev;
+-	result = usb_ep_enable(link->in_ep, link->in);
++	result = usb_ep_enable(link->in_ep);
+ 	if (result != 0) {
+ 		DBG(dev, "enable %s --> %d\n",
+ 			link->in_ep->name, result);
+@@ -879,7 +879,7 @@ struct net_device *gether_connect(struct gether *link)
+ 	}
+ 
+ 	link->out_ep->driver_data = dev;
+-	result = usb_ep_enable(link->out_ep, link->out);
++	result = usb_ep_enable(link->out_ep);
+ 	if (result != 0) {
+ 		DBG(dev, "enable %s --> %d\n",
+ 			link->out_ep->name, result);
+@@ -969,7 +969,7 @@ void gether_disconnect(struct gether *link)
+ 	}
+ 	spin_unlock(&dev->req_lock);
+ 	link->in_ep->driver_data = NULL;
+-	link->in = NULL;
++	link->in_ep->desc = NULL;
+ 
+ 	usb_ep_disable(link->out_ep);
+ 	spin_lock(&dev->req_lock);
+@@ -984,7 +984,7 @@ void gether_disconnect(struct gether *link)
+ 	}
+ 	spin_unlock(&dev->req_lock);
+ 	link->out_ep->driver_data = NULL;
+-	link->out = NULL;
++	link->out_ep->desc = NULL;
+ 
+ 	/* finish forgetting about this USB link episode */
+ 	dev->header_len = 0;
+diff --git a/drivers/usb/gadget/u_ether.h b/drivers/usb/gadget/u_ether.h
+index b56e1e7..c966440 100644
+--- a/drivers/usb/gadget/u_ether.h
++++ b/drivers/usb/gadget/u_ether.h
+@@ -52,10 +52,6 @@ struct gether {
+ 	struct usb_ep			*in_ep;
+ 	struct usb_ep			*out_ep;
+ 
+-	/* descriptors match device speed at gether_connect() time */
+-	struct usb_endpoint_descriptor	*in;
+-	struct usb_endpoint_descriptor	*out;
+-
+ 	bool				is_zlp_ok;
+ 
+ 	u16				cdc_filter;
+diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+index 40f7716..a8aa469 100644
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -1247,12 +1247,12 @@ int gserial_connect(struct gserial *gser, u8 port_num)
+ 	port = ports[port_num].port;
+ 
+ 	/* activate the endpoints */
+-	status = usb_ep_enable(gser->in, gser->in_desc);
++	status = usb_ep_enable(gser->in);
+ 	if (status < 0)
+ 		return status;
+ 	gser->in->driver_data = port;
+ 
+-	status = usb_ep_enable(gser->out, gser->out_desc);
++	status = usb_ep_enable(gser->out);
+ 	if (status < 0)
+ 		goto fail_out;
+ 	gser->out->driver_data = port;
+diff --git a/drivers/usb/gadget/u_serial.h b/drivers/usb/gadget/u_serial.h
+index 300f0ed..9b0fe64 100644
+--- a/drivers/usb/gadget/u_serial.h
++++ b/drivers/usb/gadget/u_serial.h
+@@ -35,8 +35,6 @@ struct gserial {
+ 
+ 	struct usb_ep			*in;
+ 	struct usb_ep			*out;
+-	struct usb_endpoint_descriptor	*in_desc;
+-	struct usb_endpoint_descriptor	*out_desc;
+ 
+ 	/* REVISIT avoid this CDC-ACM support harder ... */
+ 	struct usb_cdc_line_coding port_line_coding;	/* 9600-8-N-1 etc */
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index e538172..fb0b97d 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -131,8 +131,9 @@ struct usb_ep_ops {
+  * @maxpacket:The maximum packet size used on this endpoint.  The initial
+  *	value can sometimes be reduced (hardware allowing), according to
+  *      the endpoint descriptor used to configure the endpoint.
+- * @driver_data:for use by the gadget driver.  all other fields are
+- *	read-only to gadget drivers.
++ * @driver_data:for use by the gadget driver.
++ * @desc: endpoint descriptor.  This pointer is set before the endpoint is
++ *	enabled and remains valid until the endpoint is disabled.
+  *
+  * the bus controller driver lists all the general purpose endpoints in
+  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
+@@ -145,6 +146,7 @@ struct usb_ep {
+ 	const struct usb_ep_ops	*ops;
+ 	struct list_head	ep_list;
+ 	unsigned		maxpacket:16;
++	const struct usb_endpoint_descriptor	*desc;
  };
  
-+static const struct hc_driver dummy_ss_hcd = {
-+	.description =		(char *) ss_driver_name,
-+	.product_desc =		"Dummy SS host controller",
-+	.hcd_priv_size =	sizeof(struct dummy),
-+
-+	.flags =		HCD_USB3,
-+
-+	.start =		dummy_start,
-+	.stop =			dummy_stop,
-+
-+	.urb_enqueue =		dummy_urb_enqueue,
-+	.urb_dequeue =		dummy_urb_dequeue,
-+
-+	.get_frame_number =	dummy_h_get_frame,
-+
-+	.hub_status_data =	dummy_hub_status,
-+	.hub_control =		dummy_ss_hub_control,
-+	.bus_suspend =		dummy_bus_suspend,
-+	.bus_resume =		dummy_bus_resume,
-+};
-+
- static int dummy_hcd_probe(struct platform_device *pdev)
- {
- 	struct usb_hcd		*hcd;
-@@ -1914,6 +2330,26 @@ static int dummy_hcd_probe(struct platform_device *pdev)
- 	return retval;
- }
- 
-+static int dummy_hcd_probe_ss(struct platform_device *pdev)
-+{
-+	struct usb_hcd		*hcd;
-+	int			retval;
-+
-+	dev_info(&pdev->dev, "%s, driver " DRIVER_VERSION "\n", ss_driver_desc);
-+
-+	hcd = usb_create_hcd(&dummy_ss_hcd, &pdev->dev, dev_name(&pdev->dev));
-+	if (!hcd)
-+		return -ENOMEM;
-+	the_ss_controller = hcd_to_dummy(hcd);
-+
-+	retval = usb_add_hcd(hcd, 0, 0);
-+	if (retval != 0) {
-+		usb_put_hcd(hcd);
-+		the_ss_controller = NULL;
-+	}
-+	return retval;
-+}
-+
- static int dummy_hcd_remove (struct platform_device *pdev)
- {
- 	struct usb_hcd		*hcd;
-@@ -1925,6 +2361,17 @@ static int dummy_hcd_remove (struct platform_device *pdev)
- 	return 0;
- }
- 
-+static int dummy_ss_hcd_remove(struct platform_device *pdev)
-+{
-+	struct usb_hcd		*hcd;
-+
-+	hcd = platform_get_drvdata(pdev);
-+	usb_remove_hcd(hcd);
-+	usb_put_hcd(hcd);
-+	the_ss_controller = NULL;
-+	return 0;
-+}
-+
- static int dummy_hcd_suspend (struct platform_device *pdev, pm_message_t state)
- {
- 	struct usb_hcd		*hcd;
-@@ -1966,10 +2413,23 @@ static struct platform_driver dummy_hcd_driver = {
- 	},
- };
- 
-+static struct platform_driver dummy_ss_hcd_driver = {
-+	.probe		= dummy_hcd_probe_ss,
-+	.remove		= dummy_ss_hcd_remove,
-+	.suspend	= dummy_hcd_suspend,
-+	.resume		= dummy_hcd_resume,
-+	.driver		= {
-+		.name	= (char *) ss_driver_name,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
  /*-------------------------------------------------------------------------*/
- 
- static struct platform_device *the_udc_pdev;
-+static struct platform_device *the_ss_udc_pdev;
- static struct platform_device *the_hcd_pdev;
-+static struct platform_device *the_ss_hcd_pdev;
- 
- static int __init init (void)
+@@ -153,11 +155,8 @@ struct usb_ep {
+  * usb_ep_enable - configure endpoint, making it usable
+  * @ep:the endpoint being configured.  may not be the endpoint named "ep0".
+  *	drivers discover endpoints through the ep_list of a usb_gadget.
+- * @desc:descriptor for desired behavior.  caller guarantees this pointer
+- *	remains valid until the endpoint is disabled; the data byte order
+- *	is little-endian (usb-standard).
+  *
+- * when configurations are set, or when interface settings change, the driver
++ * When configurations are set, or when interface settings change, the driver
+  * will enable or disable the relevant endpoints.  while it is enabled, an
+  * endpoint may be used for i/o until the driver receives a disconnect() from
+  * the host or until the endpoint is disabled.
+@@ -172,10 +171,9 @@ struct usb_ep {
+  *
+  * returns zero, or a negative error code.
+  */
+-static inline int usb_ep_enable(struct usb_ep *ep,
+-				const struct usb_endpoint_descriptor *desc)
++static inline int usb_ep_enable(struct usb_ep *ep)
  {
-@@ -1981,34 +2441,73 @@ static int __init init (void)
- 	the_hcd_pdev = platform_device_alloc(driver_name, -1);
- 	if (!the_hcd_pdev)
- 		return retval;
-+
-+	the_ss_hcd_pdev = platform_device_alloc(ss_driver_name, -1);
-+	if (!the_ss_hcd_pdev)
-+		goto err_alloc_ss_hcd;
-+
- 	the_udc_pdev = platform_device_alloc(gadget_name, -1);
- 	if (!the_udc_pdev)
- 		goto err_alloc_udc;
- 
-+	the_ss_udc_pdev = platform_device_alloc(ss_gadget_name, -1);
-+	if (!the_ss_udc_pdev)
-+		goto err_alloc_ss_udc;
-+
- 	retval = platform_driver_register(&dummy_hcd_driver);
- 	if (retval < 0)
- 		goto err_register_hcd_driver;
-+
-+	retval = platform_driver_register(&dummy_ss_hcd_driver);
-+	if (retval < 0)
-+		goto err_register_ss_hcd_driver;
-+
- 	retval = platform_driver_register(&dummy_udc_driver);
- 	if (retval < 0)
- 		goto err_register_udc_driver;
- 
-+	retval = platform_driver_register(&dummy_ss_udc_driver);
-+	if (retval < 0)
-+		goto err_register_ss_udc_driver;
-+
- 	retval = platform_device_add(the_hcd_pdev);
- 	if (retval < 0)
- 		goto err_add_hcd;
-+
-+	retval = platform_device_add(the_ss_hcd_pdev);
-+	if (retval < 0)
-+		goto err_add_ss_hcd;
-+
- 	retval = platform_device_add(the_udc_pdev);
- 	if (retval < 0)
- 		goto err_add_udc;
-+
-+	retval = platform_device_add(the_ss_udc_pdev);
-+	if (retval < 0)
-+		goto err_add_ss_udc;
- 	return retval;
- 
-+err_add_ss_udc:
-+	platform_device_unregister(the_udc_pdev);
- err_add_udc:
-+	platform_device_del(the_ss_hcd_pdev);
-+err_add_ss_hcd:
- 	platform_device_del(the_hcd_pdev);
- err_add_hcd:
-+	platform_driver_unregister(&dummy_ss_udc_driver);
-+err_register_ss_udc_driver:
- 	platform_driver_unregister(&dummy_udc_driver);
- err_register_udc_driver:
-+	platform_driver_unregister(&dummy_ss_hcd_driver);
-+err_register_ss_hcd_driver:
- 	platform_driver_unregister(&dummy_hcd_driver);
- err_register_hcd_driver:
-+	platform_device_put(the_ss_udc_pdev);
-+err_alloc_ss_udc:
- 	platform_device_put(the_udc_pdev);
- err_alloc_udc:
-+	platform_device_put(the_ss_hcd_pdev);
-+err_alloc_ss_hcd:
- 	platform_device_put(the_hcd_pdev);
- 	return retval;
+-	return ep->ops->enable(ep, desc);
++	return ep->ops->enable(ep, ep->desc);
  }
-@@ -2017,8 +2516,12 @@ module_init (init);
- static void __exit cleanup (void)
- {
- 	platform_device_unregister(the_udc_pdev);
-+	platform_device_unregister(the_ss_udc_pdev);
- 	platform_device_unregister(the_hcd_pdev);
-+	platform_device_unregister(the_ss_hcd_pdev);
- 	platform_driver_unregister(&dummy_udc_driver);
-+	platform_driver_unregister(&dummy_ss_udc_driver);
- 	platform_driver_unregister(&dummy_hcd_driver);
-+	platform_driver_unregister(&dummy_ss_hcd_driver);
- }
- module_exit (cleanup);
+ 
+ /**
 -- 
 1.7.0.4
 
