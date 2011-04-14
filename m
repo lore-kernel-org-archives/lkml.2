@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab1DNMLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 08:11:30 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64269 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab1DNML2 (ORCPT
+	id S1754705Ab1DNMTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 08:19:54 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:64450 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab1DNMTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 08:11:28 -0400
+	Thu, 14 Apr 2011 08:19:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
          :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=StljXorwc4D6RlBQ74PHY0OFidJjE+9xAXCm78pHNm6kIJIVtGTfaRq6jIFwTJ1j9p
-         AwRZLv8Fcjb+SRJ5IhGJ5k7vPGlY2M7n6CsxSQmhsRO3wfDPxGmgMTdHLI1ikxr5b42V
-         x1mIL4SM7+xyU9N0QpOywW7xI1YPFidynT7TU=
-Subject: Re: [PATCH 1/2] MTD: s3c2410_nand: Add option to disable hw ECC at
- runtime
+        b=QcH/hyOk5EAxYIL3fryXvYuROM4Qqbm2YtbuCc1VXnpj4cdH7RxU5Uzx0XBHaLOLg3
+         Bw3n90UBVSKu0xTVclWO7Hg3YthGmpt+d+1lKRolUu6xyi+NVJAfsJKdXQ2uluEZaxbt
+         IEdkvGMnynRbBPVuPzotvxWEYlOw9ksVIWHp0=
+Subject: Re: [PATCH 1/2] nand: Fix S3C NAND clock stop
 From: Artem Bityutskiy <dedekind1@gmail.com>
 Reply-To: dedekind1@gmail.com
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Holger Freyther <zecke@openmoko.org>
-In-Reply-To: <1302637672-25339-1-git-send-email-lars@metafoo.de>
-References: <1302637672-25339-1-git-send-email-lars@metafoo.de>
+To: Jiri Pinkava <jiri.pinkava@vscht.cz>
+Cc: ben-linux@fluff.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+In-Reply-To: <1302688771-17252-1-git-send-email-jiri.pinkava@vscht.cz>
+References: <1302665784.14691.5.camel@koala>
+	 <1302688771-17252-1-git-send-email-jiri.pinkava@vscht.cz>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Apr 2011 15:08:31 +0300
-Message-ID: <1302782911.2796.21.camel@localhost>
+Date: Thu, 14 Apr 2011 15:16:56 +0300
+Message-ID: <1302783416.2796.23.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 8bit
@@ -34,21 +33,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 21:47 +0200, Lars-Peter Clausen wrote:
-> From: Holger Freyther <zecke@openmoko.org>
+On Wed, 2011-04-13 at 11:59 +0200, Jiri Pinkava wrote:
+> Current implementation of s3c2410_nand_select_chip call
+> clk_disable every time when chip = -1 (de-select). This happend
+> multiple times even if chip was already de-selected. This causes
+> disabling clock even if they are already disabled and due to
+> nature of clock subsytem implementation this causes nand clock
+> to be disabled and newer enabled again.
 > 
-> This patch adds a flag to the s3c2410_nand platform data, which configures
-> whether hardware ECC is used.
-> 
-> Currently it is only possible to decide whether hw ECC should be used or not at
-> compile time through a config option. But if you want to build a kernel which
-> runs on multiple devices you might have a configuration where some devices
-> require hw ECC and some devices which want software ECC.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Signed-off-by: Jiri Pinkava <jiri.pinkava@vscht.cz>
 
-Extending platform data is kind of vetoed in arm tree, I do not think
-the MTD tree can take these changes.
+Pushed to l2-mtd-2.6.git, thanks.
 
 -- 
 Best Regards,
