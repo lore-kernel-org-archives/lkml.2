@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab1DNSb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:31:28 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37669 "EHLO
+	id S933633Ab1DNSb1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:31:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37804 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932594Ab1DNRqH (ORCPT
+	with ESMTP id S932932Ab1DNRqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:46:07 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Milton Miller <miltonm@bga.com>, Anton Blanchard <anton@samba.org>,
-        Sonny Rao <sonnyrao@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Jean Delvare <khali@linux-fr.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 009/209] e100/e1000*/igb*/ixgb*: Add missing read memory barrier
-Date: Thu, 14 Apr 2011 13:40:39 -0400
-Message-Id: <1302803039-9400-10-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 036/209] hwmon: (lm85) Fix ADT7468 frequency table
+Date: Thu, 14 Apr 2011 13:41:06 -0400
+Message-Id: <1302803039-9400-37-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,233 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+From: Jean Delvare <khali@linux-fr.org>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 2d0bb1c1f4524befe9f0fcf0d0cd3081a451223f upstream.
+commit fa7a5797e57d2ed71f9a6fb44f0ae42c2d7b74b7 upstream.
 
-Based on patches from Sonny Rao and Milton Miller...
+The ADT7468 uses the same frequency table as the ADT7463.
 
-Combined the patches to fix up clean_tx_irq and clean_rx_irq.
-
-The PowerPC architecture does not require loads to independent bytes
-to be ordered without adding an explicit barrier.
-
-In ixgbe_clean_rx_irq we load the status bit then load the packet data.
-With packet split disabled if these loads go out of order we get a
-stale packet, but we will notice the bad sequence numbers and drop it.
-
-The problem occurs with packet split enabled where the TCP/IP header
-and data are in different descriptors. If the reads go out of order
-we may have data that doesn't match the TCP/IP header. Since we use
-hardware checksumming this bad data is never verified and it makes it
-all the way to the application.
-
-This bug was found during stress testing and adding this barrier has
-been shown to fix it.  The bug can manifest as a data integrity issue
-(bad payload data) or as a BUG in skb_pull().
-
-This was a nasty bug to hunt down, if people agree with the fix I think
-it's a candidate for stable.
-
-Previously Submitted to e1000-devel only for ixgbe
-
-http://marc.info/?l=e1000-devel&m=126593062701537&w=3
-
-We've now seen this problem hit with other device drivers (e1000e mostly)
-So I'm resubmitting with fixes for other Intel Device Drivers with
-similar issues.
-
-CC: Milton Miller <miltonm@bga.com>
-CC: Anton Blanchard <anton@samba.org>
-CC: Sonny Rao <sonnyrao@us.ibm.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Darrick J. Wong <djwong@us.ibm.com>
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/e100.c                 |    2 ++
- drivers/net/e1000/e1000_main.c     |    3 +++
- drivers/net/e1000e/netdev.c        |    4 ++++
- drivers/net/igb/igb_main.c         |    2 ++
- drivers/net/igbvf/netdev.c         |    2 ++
- drivers/net/ixgb/ixgb_main.c       |    2 ++
- drivers/net/ixgbe/ixgbe_main.c     |    1 +
- drivers/net/ixgbevf/ixgbevf_main.c |    2 ++
- 8 files changed, 18 insertions(+), 0 deletions(-)
+ drivers/hwmon/lm85.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/e100.c b/drivers/net/e100.c
-index 7910803..f6bb11e 100644
---- a/drivers/net/e100.c
-+++ b/drivers/net/e100.c
-@@ -1768,6 +1768,7 @@ static int e100_tx_clean(struct nic *nic)
- 	for (cb = nic->cb_to_clean;
- 	    cb->status & cpu_to_le16(cb_complete);
- 	    cb = nic->cb_to_clean = cb->next) {
-+		rmb(); /* read skb after status */
- 		DPRINTK(TX_DONE, DEBUG, "cb[%d]->status = 0x%04X\n",
- 		        (int)(((void*)cb - (void*)nic->cbs)/sizeof(struct cb)),
- 		        cb->status);
-@@ -1914,6 +1915,7 @@ static int e100_rx_indicate(struct nic *nic, struct rx *rx,
- 	rfd_status = le16_to_cpu(rfd->status);
- 
- 	DPRINTK(RX_STATUS, DEBUG, "status=0x%04X\n", rfd_status);
-+	rmb(); /* read size after status bit */
- 
- 	/* If data isn't ready, nothing to indicate */
- 	if (unlikely(!(rfd_status & cb_complete))) {
-diff --git a/drivers/net/e1000/e1000_main.c b/drivers/net/e1000/e1000_main.c
-index b15ece2..13e34d2 100644
---- a/drivers/net/e1000/e1000_main.c
-+++ b/drivers/net/e1000/e1000_main.c
-@@ -3433,6 +3433,7 @@ static bool e1000_clean_tx_irq(struct e1000_adapter *adapter,
- 	while ((eop_desc->upper.data & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
- 		bool cleaned = false;
-+		rmb();	/* read buffer_info after eop_desc */
- 		for ( ; !cleaned; count++) {
- 			tx_desc = E1000_TX_DESC(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -3622,6 +3623,7 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
-@@ -3803,6 +3805,7 @@ static bool e1000_clean_rx_irq(struct e1000_adapter *adapter,
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
-diff --git a/drivers/net/e1000e/netdev.c b/drivers/net/e1000e/netdev.c
-index 64a06ed..56c9e69 100644
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -637,6 +637,7 @@ static bool e1000_clean_tx_irq(struct e1000_adapter *adapter)
- 	while ((eop_desc->upper.data & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
- 		bool cleaned = false;
-+		rmb(); /* read buffer_info after eop_desc */
- 		for (; !cleaned; count++) {
- 			tx_desc = E1000_TX_DESC(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -739,6 +740,7 @@ static bool e1000_clean_rx_irq_ps(struct e1000_adapter *adapter,
- 			break;
- 		(*work_done)++;
- 		skb = buffer_info->skb;
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
- 
- 		/* in the packet split case this is header only */
- 		prefetch(skb->data - NET_IP_ALIGN);
-@@ -938,6 +940,8 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
- 
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
-diff --git a/drivers/net/igb/igb_main.c b/drivers/net/igb/igb_main.c
-index c5edd41..acc618a 100644
---- a/drivers/net/igb/igb_main.c
-+++ b/drivers/net/igb/igb_main.c
-@@ -5005,6 +5005,7 @@ static bool igb_clean_tx_irq(struct igb_q_vector *q_vector)
- 
- 	while ((eop_desc->wb.status & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
-+		rmb();	/* read buffer_info after eop_desc status */
- 		for (cleaned = false; !cleaned; count++) {
- 			tx_desc = E1000_TX_DESC_ADV(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -5212,6 +5213,7 @@ static bool igb_clean_rx_irq_adv(struct igb_q_vector *q_vector,
- 		if (*work_done >= budget)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		skb = buffer_info->skb;
- 		prefetch(skb->data - NET_IP_ALIGN);
-diff --git a/drivers/net/igbvf/netdev.c b/drivers/net/igbvf/netdev.c
-index 1b1edad..709e83d 100644
---- a/drivers/net/igbvf/netdev.c
-+++ b/drivers/net/igbvf/netdev.c
-@@ -247,6 +247,7 @@ static bool igbvf_clean_rx_irq(struct igbvf_adapter *adapter,
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		buffer_info = &rx_ring->buffer_info[i];
- 
-@@ -777,6 +778,7 @@ static bool igbvf_clean_tx_irq(struct igbvf_ring *tx_ring)
- 
- 	while ((eop_desc->wb.status & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
-+		rmb();	/* read buffer_info after eop_desc status */
- 		for (cleaned = false; !cleaned; count++) {
- 			tx_desc = IGBVF_TX_DESC_ADV(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-diff --git a/drivers/net/ixgb/ixgb_main.c b/drivers/net/ixgb/ixgb_main.c
-index c9fef65..be88a1d 100644
---- a/drivers/net/ixgb/ixgb_main.c
-+++ b/drivers/net/ixgb/ixgb_main.c
-@@ -1811,6 +1811,7 @@ ixgb_clean_tx_irq(struct ixgb_adapter *adapter)
- 
- 	while (eop_desc->status & IXGB_TX_DESC_STATUS_DD) {
- 
-+		rmb(); /* read buffer_info after eop_desc */
- 		for (cleaned = false; !cleaned; ) {
- 			tx_desc = IXGB_TX_DESC(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -1946,6 +1947,7 @@ ixgb_clean_rx_irq(struct ixgb_adapter *adapter, int *work_done, int work_to_do)
- 			break;
- 
- 		(*work_done)++;
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
- 		buffer_info->skb = NULL;
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index 6c00ee4..156dfcb 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -407,6 +407,7 @@ static bool ixgbe_clean_tx_irq(struct ixgbe_q_vector *q_vector,
- 	while ((eop_desc->wb.status & cpu_to_le32(IXGBE_TXD_STAT_DD)) &&
- 	       (count < tx_ring->work_limit)) {
- 		bool cleaned = false;
-+		rmb(); /* read buffer_info after eop_desc */
- 		for ( ; !cleaned; count++) {
- 			struct sk_buff *skb;
- 			tx_desc = IXGBE_TX_DESC_ADV(*tx_ring, i);
-diff --git a/drivers/net/ixgbevf/ixgbevf_main.c b/drivers/net/ixgbevf/ixgbevf_main.c
-index 0cd6202..75be3c9 100644
---- a/drivers/net/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ixgbevf/ixgbevf_main.c
-@@ -231,6 +231,7 @@ static bool ixgbevf_clean_tx_irq(struct ixgbevf_adapter *adapter,
- 	while ((eop_desc->wb.status & cpu_to_le32(IXGBE_TXD_STAT_DD)) &&
- 	       (count < tx_ring->work_limit)) {
- 		bool cleaned = false;
-+		rmb(); /* read buffer_info after eop_desc */
- 		for ( ; !cleaned; count++) {
- 			struct sk_buff *skb;
- 			tx_desc = IXGBE_TX_DESC_ADV(*tx_ring, i);
-@@ -518,6 +519,7 @@ static bool ixgbevf_clean_rx_irq(struct ixgbevf_q_vector *q_vector,
- 			break;
- 		(*work_done)++;
- 
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 		if (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED) {
- 			hdr_info = le16_to_cpu(ixgbevf_get_hdr_info(rx_desc));
- 			len = (hdr_info & IXGBE_RXDADV_HDRBUFLEN_MASK) >>
+diff --git a/drivers/hwmon/lm85.c b/drivers/hwmon/lm85.c
+index b3841a6..2e8f0c9 100644
+--- a/drivers/hwmon/lm85.c
++++ b/drivers/hwmon/lm85.c
+@@ -1259,6 +1259,7 @@ static int lm85_probe(struct i2c_client *client,
+ 	switch (data->type) {
+ 	case adm1027:
+ 	case adt7463:
++	case adt7468:
+ 	case emc6d100:
+ 	case emc6d102:
+ 		data->freq_map = adm1027_freq_map;
 -- 
 1.7.4.4
 
