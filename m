@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759410Ab1DNTnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 15:43:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60816 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758822Ab1DNTn3 (ORCPT
+	id S1759417Ab1DNTsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 15:48:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38029 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758846Ab1DNTsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 15:43:29 -0400
+	Thu, 14 Apr 2011 15:48:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=MjnqIx1SNamZB+wKhlfjGhOfQEXw/A5EL5bauo95VHbPEu3miW9Qq/fW6BngRsbSqv
-         ZmjaQDCByzUZgExmUNUsGTqn1ksc8MewYfrkcvvyOFh3hl1AEbbHb0Xrsc8WkVpgPtbK
-         izPx8I7h2i7n1e397xxxQ3z465uR1J3qIZR3k=
-Message-ID: <4DA74E5D.4060002@openvz.org>
-Date: Thu, 14 Apr 2011 23:43:25 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Don Zickus <dzickus@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-References: <4DA70950.3060102@openvz.org> <20110414174327.GA8863@elte.hu> <20110414183231.GN16939@redhat.com> <20110414184606.GD16064@elte.hu>
-In-Reply-To: <20110414184606.GD16064@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=mTTyzIbMIpc/q0BFkgkw0cp9nmdxh9DuNncI1m2omiWMkhdXEgHu+XFlyK4H6L+rIb
+         7xtFRd35YvHzT/vQBwQALJszPwx1CfpiPCRKWmgKj7z4pbZuDlliDSK/JuT/4GQxpY1/
+         TVVDyFf1Kt29b3qajXuflivqxYxup3/j8XuFU=
+Subject: Re: [PATCH V2] futex: set FLAGS_HAS_TIMEOUT during demux for
+ FUTEX_WAIT
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        John Kacur <jkacur@redhat.com>
+In-Reply-To: <4DA746C5.1080804@linux.intel.com>
+References: <1302800949.3248.42.camel@edumazet-laptop>
+	 <6aed1a53d080a90672bd44b773079dd81ac90b50.1302806742.git.dvhart@linux.intel.com>
+	 <1302807391.2744.6.camel@edumazet-laptop>
+	 <4DA746C5.1080804@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 21:48:34 +0200
+Message-ID: <1302810514.2744.39.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 10:46 PM, Ingo Molnar wrote:
-> 
-> btw., the bug went away once i removed your patch so it's 100% sure caused by 
-> this change.
-> 
-> Thanks,
-> 
-> 	Ingo
+Le jeudi 14 avril 2011 à 12:11 -0700, Darren Hart a écrit :
 
-Ingo if you have a chance mind to give this patch a shot please? Seems we might miss unmasking
-for inflight nmis.
--- 
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-@@ -1365,14 +1365,15 @@ perf_event_nmi_handler(struct notifier_b
- 		 * will be empty and daze the CPU. So, we drop it to
- 		 * avoid false-positive 'unknown nmi' messages.
- 		 */
-+		apic_write(APIC_LVTPC, APIC_DM_NMI);
- 		return NOTIFY_STOP;
- 	default:
- 		return NOTIFY_DONE;
- 	}
+> I would say anything calling SYS_FUTEX is the futex slow path. The fast
+> path is cmpxchg in user space.
+> 
 
--	apic_write(APIC_LVTPC, APIC_DM_NMI);
+Thats not a good reason to make it slower than necessary...
 
- 	handled = x86_pmu.handle_irq(args->regs);
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
- 	if (!handled)
- 		return NOTIFY_DONE;
+> It was. My thinking was that it was inconsistent to have the
+> FLAGS_HAS_TIMEOUT only available if a signal was received and a restart
+> was required. This is the only place it is currently needed, but the
+> inconsistency concerns me.
+> 
+
+I dont call this inconsistency, but right place for the code.
+
+> How about the following, it reuses an existing if block and ensure the
+> FLAGS_HAS_TIMEOUT is always set if a timeout is used. It means the
+> FLAG_HAS_TIMEOUT is not available in the other futex_* routines with
+> timeouts (futex_lock_pi and futex_wait_requeue_pi), but they use absolute
+> timeouts and don't need it for restart - I can agree to that, although
+> I'm not keen on FLAG_HAS_TIMEOUT not being set whenever timeout is. That
+> could be added in the same way to the other functions if needed in the
+> future.
+
+I dont understand why you insist setting in fast path a flag that is
+useless, unless we hit restart logic [ What I call the slow path in
+futex syscall ]
+
+It seems more natural and efficient to me to go back to previous code.
+
+Maybe rename FLAG_HAS_TIMEOUT to FLAG_HAS_TIMEOUT_ON_RESTART if you
+want, to make clear what is the meaning of this flag.
+
+Now if you have plans to use this flag in futex code, outside of restart
+logic, please share them with us :)
+
+
 
