@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998Ab1DNKlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 06:41:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38888 "EHLO mx1.suse.de"
+	id S933036Ab1DNKmL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 06:42:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38903 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932794Ab1DNKlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 06:41:45 -0400
+	id S932974Ab1DNKlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 06:41:49 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/12] net: Introduce sk_allocation() to allow addition of GFP flags depending on the individual socket
-Date: Thu, 14 Apr 2011 11:41:32 +0100
-Message-Id: <1302777698-28237-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 12/12] mm: Throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage
+Date: Thu, 14 Apr 2011 11:41:38 +0100
+Message-Id: <1302777698-28237-13-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1302777698-28237-1-git-send-email-mgorman@suse.de>
 References: <1302777698-28237-1-git-send-email-mgorman@suse.de>
@@ -20,159 +20,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce sk_allocation(), this function allows to inject sock specific
-flags to each sock related allocation. It is only used on allocation
-paths that may be required for writing pages back to network storage.
+If swap is backed by network storage such as NBD, there is a risk that a
+large number of reclaimers can hang the system by consuming all
+PF_MEMALLOC reserves. To avoid these hangs, the administrator must tune
+min_free_kbytes in advance. This patch will throttle direct reclaimers
+if half the PF_MEMALLOC reserves are in use as the system is at risk of
+hanging. A message will be displayed so the administrator knows that
+min_free_kbytes should be tuned to a higher value to avoid the
+throttling in the future.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/net/sock.h    |    5 +++++
- net/ipv4/tcp.c        |    3 ++-
- net/ipv4/tcp_output.c |   13 +++++++------
- net/ipv6/tcp_ipv6.c   |   12 +++++++++---
- 4 files changed, 23 insertions(+), 10 deletions(-)
+ include/linux/mmzone.h |    1 +
+ mm/page_alloc.c        |    1 +
+ mm/vmscan.c            |   66 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 68 insertions(+), 0 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index bc1cf7d8..f687e0b 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -584,6 +584,11 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
- 	return test_bit(flag, &sk->sk_flags);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 02ecb01..e86dcaf 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -638,6 +638,7 @@ typedef struct pglist_data {
+ 					     range, including holes */
+ 	int node_id;
+ 	wait_queue_head_t kswapd_wait;
++	wait_queue_head_t pfmemalloc_wait;
+ 	struct task_struct *kswapd;
+ 	int kswapd_max_order;
+ 	enum zone_type classzone_idx;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 2b87dfd..4b1170f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4160,6 +4160,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 	pgdat_resize_init(pgdat);
+ 	pgdat->nr_zones = 0;
+ 	init_waitqueue_head(&pgdat->kswapd_wait);
++	init_waitqueue_head(&pgdat->pfmemalloc_wait);
+ 	pgdat->kswapd_max_order = 0;
+ 	pgdat_page_cgroup_init(pgdat);
+ 	
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 6771ea7..2dad23d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -42,6 +42,8 @@
+ #include <linux/delayacct.h>
+ #include <linux/sysctl.h>
+ 
++#include <net/sock.h>
++
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+ 
+@@ -2115,6 +2117,61 @@ out:
+ 	return 0;
  }
  
-+static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
++static bool pfmemalloc_watermark_ok(pg_data_t *pgdat, int high_zoneidx)
 +{
-+	return gfp_mask;
++	struct zone *zone;
++	unsigned long pfmemalloc_reserve = 0;
++	unsigned long free_pages = 0;
++	int i;
++
++	for (i = 0; i <= high_zoneidx; i++) {
++		zone = &pgdat->node_zones[i];
++		pfmemalloc_reserve += min_wmark_pages(zone);
++		free_pages += zone_page_state(zone, NR_FREE_PAGES);
++	}
++
++	return (free_pages > pfmemalloc_reserve / 2) ? true : false;
 +}
 +
- static inline void sk_acceptq_removed(struct sock *sk)
++/*
++ * Throttle direct reclaimers if backing storage is backed by the network
++ * and the PFMEMALLOC reserve for the preferred node is getting dangerously
++ * depleted. kswapd will continue to make progress and wake the processes
++ * when the low watermark is reached
++ */
++static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
++					nodemask_t *nodemask)
++{
++	struct zone *zone;
++	int high_zoneidx = gfp_zone(gfp_mask);
++	DEFINE_WAIT(wait);
++
++	/*
++	 * Only worry about the PFMEMALLOC reserves when network-backed
++	 * storage is configured.
++	 */
++	if (!sk_memalloc_socks())
++		return;
++
++	/* Check if the pfmemalloc reserves are ok */
++	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
++	if (pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx))
++		return;
++
++	/* Throttle */
++	if (printk_ratelimit())
++		printk(KERN_INFO "Throttling %s due to reclaim pressure on "
++				 "network storage\n",
++			current->comm);
++	do {
++		prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
++							TASK_INTERRUPTIBLE);
++		schedule();
++		finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
++	} while (!pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx) &&
++			!fatal_signal_pending(current));
++}
++
+ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 				gfp_t gfp_mask, nodemask_t *nodemask)
  {
- 	sk->sk_ack_backlog--;
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 6c11eec..8939804 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -689,7 +689,8 @@ struct sk_buff *sk_stream_alloc_skb(struct sock *sk, int size, gfp_t gfp)
- 	/* The TCP header must be at least 32-bit aligned.  */
- 	size = ALIGN(size, 4);
+@@ -2131,6 +2188,8 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 		.nodemask = nodemask,
+ 	};
  
--	skb = alloc_skb_fclone(size + sk->sk_prot->max_header, gfp);
-+	skb = alloc_skb_fclone(size + sk->sk_prot->max_header,
-+			       sk_allocation(sk, gfp));
- 	if (skb) {
- 		if (sk_wmem_schedule(sk, skb->truesize)) {
- 			/*
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index dfa5beb..550c701 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2323,7 +2323,7 @@ void tcp_send_fin(struct sock *sk)
- 		/* Socket is locked, keep trying until memory is available. */
- 		for (;;) {
- 			skb = alloc_skb_fclone(MAX_TCP_HEADER,
--					       sk->sk_allocation);
-+					       sk_allocation(sk, GFP_KERNEL));
- 			if (skb)
- 				break;
- 			yield();
-@@ -2349,7 +2349,7 @@ void tcp_send_active_reset(struct sock *sk, gfp_t priority)
- 	struct sk_buff *skb;
++	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
++
+ 	trace_mm_vmscan_direct_reclaim_begin(order,
+ 				sc.may_writepage,
+ 				gfp_mask);
+@@ -2482,6 +2541,13 @@ loop_again:
+ 			}
  
- 	/* NOTE: No TCP options attached and we never retransmit this. */
--	skb = alloc_skb(MAX_TCP_HEADER, priority);
-+	skb = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, priority));
- 	if (!skb) {
- 		NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPABORTFAILED);
- 		return;
-@@ -2422,7 +2422,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
- 
- 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
- 		s_data_desired = cvp->s_data_desired;
--	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1, GFP_ATOMIC);
-+	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
-+					sk_allocation(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return NULL;
- 
-@@ -2718,7 +2719,7 @@ void tcp_send_ack(struct sock *sk)
- 	 * tcp_transmit_skb() will set the ownership to this
- 	 * sock.
- 	 */
--	buff = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	buff = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, GFP_ATOMIC));
- 	if (buff == NULL) {
- 		inet_csk_schedule_ack(sk);
- 		inet_csk(sk)->icsk_ack.ato = TCP_ATO_MIN;
-@@ -2733,7 +2734,7 @@ void tcp_send_ack(struct sock *sk)
- 
- 	/* Send it off, this clears delayed acks for us. */
- 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
--	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
-+	tcp_transmit_skb(sk, buff, 0, sk_allocation(sk, GFP_ATOMIC));
- }
- 
- /* This routine sends a packet with an out of date sequence
-@@ -2753,7 +2754,7 @@ static int tcp_xmit_probe_skb(struct sock *sk, int urgent)
- 	struct sk_buff *skb;
- 
- 	/* We don't queue it, tcp_transmit_skb() sets ownership. */
--	skb = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	skb = alloc_skb(MAX_TCP_HEADER, sk_allocation(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return -1;
- 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 20aa95e..3a555de 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -610,7 +610,8 @@ static int tcp_v6_md5_do_add(struct sock *sk, struct in6_addr *peer,
- 	} else {
- 		/* reallocate new list if current one is full. */
- 		if (!tp->md5sig_info) {
--			tp->md5sig_info = kzalloc(sizeof(*tp->md5sig_info), GFP_ATOMIC);
-+			tp->md5sig_info = kzalloc(sizeof(*tp->md5sig_info),
-+					sk_allocation(sk, GFP_ATOMIC));
- 			if (!tp->md5sig_info) {
- 				kfree(newkey);
- 				return -ENOMEM;
-@@ -623,7 +624,8 @@ static int tcp_v6_md5_do_add(struct sock *sk, struct in6_addr *peer,
  		}
- 		if (tp->md5sig_info->alloced6 == tp->md5sig_info->entries6) {
- 			keys = kmalloc((sizeof (tp->md5sig_info->keys6[0]) *
--				       (tp->md5sig_info->entries6 + 1)), GFP_ATOMIC);
-+				       (tp->md5sig_info->entries6 + 1)),
-+				       sk_allocation(sk, GFP_ATOMIC));
- 
- 			if (!keys) {
- 				tcp_free_md5sig_pool();
-@@ -747,7 +749,8 @@ static int tcp_v6_parse_md5_keys (struct sock *sk, char __user *optval,
- 		struct tcp_sock *tp = tcp_sk(sk);
- 		struct tcp_md5sig_info *p;
- 
--		p = kzalloc(sizeof(struct tcp_md5sig_info), GFP_KERNEL);
-+		p = kzalloc(sizeof(struct tcp_md5sig_info),
-+				   sk_allocation(sk, GFP_KERNEL));
- 		if (!p)
- 			return -ENOMEM;
- 
-@@ -1098,6 +1101,7 @@ static void tcp_v6_send_reset(struct sock *sk, struct sk_buff *skb)
- 	struct tcphdr *th = tcp_hdr(skb);
- 	u32 seq = 0, ack_seq = 0;
- 	struct tcp_md5sig_key *key = NULL;
-+	gfp_t gfp_mask = GFP_ATOMIC;
- 
- 	if (th->rst)
- 		return;
-@@ -1109,6 +1113,8 @@ static void tcp_v6_send_reset(struct sock *sk, struct sk_buff *skb)
- 	if (sk)
- 		key = tcp_v6_md5_do_lookup(sk, &ipv6_hdr(skb)->daddr);
- #endif
-+	if (sk)
-+		gfp_mask = sk_allocation(sk, gfp_mask);
- 
- 	if (th->ack)
- 		seq = ntohl(th->ack_seq);
++
++		/* Wake throttled direct reclaimers if low watermark is met */
++		if (sk_memalloc_socks() &&
++				waitqueue_active(&pgdat->pfmemalloc_wait) &&
++				pfmemalloc_watermark_ok(pgdat, MAX_NR_ZONES - 1))
++			wake_up_interruptible(&pgdat->pfmemalloc_wait);
++
+ 		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
+ 			break;		/* kswapd: all done */
+ 		/*
 -- 
 1.7.3.4
 
