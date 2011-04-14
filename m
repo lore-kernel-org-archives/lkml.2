@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758819Ab1DNOJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:09:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36407 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757200Ab1DNOJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:09:37 -0400
-Date: Thu, 14 Apr 2011 10:09:25 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        device-mapper development <dm-devel@redhat.com>
-Subject: Re: dm: improve block integrity support
-Message-ID: <20110414140925.GA25803@redhat.com>
-References: <alpine.LFD.2.00.1103290006070.2774@localhost6.localdomain6>
- <alpine.LFD.2.00.1103290040300.2774@localhost6.localdomain6>
- <20110328230319.GA12790@redhat.com>
- <4D918347.7050500@fusionio.com>
- <20110329132032.GA22921@redhat.com>
- <yq1lizyhwlr.fsf@sermon.lab.mkp.net>
- <20110329135800.GB23508@redhat.com>
- <20110401174259.GA22598@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110401174259.GA22598@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758835Ab1DNOPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:15:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42560 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757200Ab1DNOPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:15:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Yh9KcU8PfMttfhcP/Fj8VnWkT/TIFid2SIVrVMH+T0d4PNzNa1DIbZTAqiZ44L3S1Y
+         //0v+NwmbL7nmnr/m3WxdsMl6hu7N+mS7k5mpQOPP3dYrj+mGoDO7TFcPCN0hOSi6QTi
+         zJ4/uN7xFmgKR5F+j1JTJTbJ6ul/ot8FRxNfA=
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>
+Subject: [PATCH] Documentation: epoll: remove entry about max_user_instances
+Date: Thu, 14 Apr 2011 16:15:00 +0200
+Message-Id: <1302790500-16951-1-git-send-email-lucian.grijincu@gmail.com>
+X-Mailer: git-send-email 1.7.5.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[trimming CCs so as not to pester as many people directly]
+max_user_instances was removed in this commit:
 
-On Fri, Apr 01 2011 at  1:42pm -0400,
-Mike Snitzer <snitzer@redhat.com> wrote:
+   commit 9df04e1f25effde823a600e755b51475d438f56b
+   Author: Davide Libenzi <davidel@xmailserver.org>
+   Date:   Thu Jan 29 14:25:26 2009 -0800
 
-> The current block integrity (DIF/DIX) support in DM is verifying that
-> all devices' integrity profiles match during DM device resume (which
-> is past the point of no return).  To some degree that is unavoidable
-> (stacked DM devices force this late checking).  But for most DM
-> devices (which aren't stacking on other DM devices) the ideal time to
-> verify all integrity profiles match is during table load.
-> 
-> Introduce the notion of an "initialized" integrity profile: a profile
-> that was blk_integrity_register()'d with a non-NULL 'blk_integrity'
-> template.  Add blk_integrity_is_initialized() to allow checking if a
-> profile was initialized.
-> 
-> Update DM integrity support to:
-> - check all devices with _initialized_ integrity profiles match
->   during table load; uninitialized profiles (e.g. for underlying DM
->   device(s) of a stacked DM device) are ignored.
-> - disallow a table load that would result in an integrity profile that
->   conflicts with a DM device's existing (in-use) integrity profile
-> - avoid clearing an existing integrity profile
-> - validate all integrity profiles match during resume; but if they
->   don't all we can do is report the mismatch (during resume we're past
->   the point of no return)
-> 
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+    epoll: drop max_user_instances and rely only on max_user_watches
 
-Hi Martin,
+but the documentation entry was not removed.
 
-Any chance you've had a look at this?  I'm most interested in whether
-the code works with the various integrity profiles you have.
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+---
+ Documentation/sysctl/fs.txt |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-I'd really like to get this reviewed and queued for upstream so that it
-doesn't die on the vine.
+diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
+index 4af0614..88fd7f5 100644
+--- a/Documentation/sysctl/fs.txt
++++ b/Documentation/sysctl/fs.txt
+@@ -231,13 +231,6 @@ its creation).
+ 
+ This directory contains configuration options for the epoll(7) interface.
+ 
+-max_user_instances
+-------------------
+-
+-This is the maximum number of epoll file descriptors that a single user can
+-have open at a given time. The default value is 128, and should be enough
+-for normal users.
+-
+ max_user_watches
+ ----------------
+ 
+-- 
+1.7.5.rc0
 
-Thanks,
-Mike
