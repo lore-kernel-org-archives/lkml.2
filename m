@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab1DNSdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:33:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932844Ab1DNSc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:32:57 -0400
-Date: Thu, 14 Apr 2011 14:32:31 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Lin Ming <ming.m.lin@intel.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-Message-ID: <20110414183231.GN16939@redhat.com>
-References: <4DA70950.3060102@openvz.org>
- <20110414174327.GA8863@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414174327.GA8863@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S933938Ab1DNSd1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:33:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37526 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932683Ab1DNRpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 13:45:45 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jakub Schmidtke <sjakub@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 026/209] Staging: asus_oled: fix up my fixup for some sysfs attribute permissions
+Date: Thu, 14 Apr 2011 13:40:56 -0400
+Message-Id: <1302803039-9400-27-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 07:43:27PM +0200, Ingo Molnar wrote:
-> 
-> * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> 
-> > --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
-> > +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-> > @@ -1370,9 +1370,16 @@ perf_event_nmi_handler(struct notifier_b
-> >  		return NOTIFY_DONE;
-> >  	}
-> > 
-> > -	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> > 
-> >  	handled = x86_pmu.handle_irq(args->regs);
-> > +
-> > +	/*
-> > +	 * Note the unmasking of LVTPC entry must be
-> > +	 * done *after* counter oveflow flag is cleared
-> > +	 * otherwise it might lead to double NMIs generation.
-> > +	 */
-> > +	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> > +
-> >  	if (!handled)
-> >  		return NOTIFY_DONE;
-> > 
-> 
-> This breaks 'perf top' on Intel Nehalem and probably other CPUs. The NMI gets 
-> stuck fast on all CPUs:
-> 
->   NMI: 16 6 3 3 3 3 3 3 3 3 3 3 3 3 4 5 Non-maskable interrupts
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-Damn it, I was working on getting there.  First I did P4s, now I was
-working on acme's core2 issues.  Nehalem was next on my list, I swear! :-)))))
+  =====================================================================
+  | This is a commit scheduled for the next v2.6.34 longterm release. |
+  | If you see a problem with using this for longterm, please comment.|
+  =====================================================================
 
-So this sucks.  I'll grab a Nehalem and see what went wrong.  It's
-probably because of the other 'this seems to work' hacks I put in that
-handler.  I bet if I clean those up, this problem will be fixed.
+commit 515b4987ccd097cdf5416530b05fdf9e01afe95a upstream.
 
-I will note that using my patch on a core2quad system, lowered the number
-of back-to-back NMIs I was seeing when running a couple of perf records
-and a make -j8 (still generates unknown NMIs though :-( ).
+They should be writable by root, not readable.
+Doh, stupid me with the wrong flags.
 
-Cheers,
-Don
+Reported-by: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Jakub Schmidtke <sjakub@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/staging/asus_oled/asus_oled.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 3dd5173..5820286 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -620,13 +620,13 @@ static ssize_t class_set_picture(struct device *device,
+ 
+ #define ASUS_OLED_DEVICE_ATTR(_file)		dev_attr_asus_oled_##_file
+ 
+-static DEVICE_ATTR(asus_oled_enabled, S_IRUSR | S_IRUGO,
++static DEVICE_ATTR(asus_oled_enabled, S_IWUSR | S_IRUGO,
+ 		   get_enabled, set_enabled);
+-static DEVICE_ATTR(asus_oled_picture, S_IRUSR , NULL, set_picture);
++static DEVICE_ATTR(asus_oled_picture, S_IWUSR , NULL, set_picture);
+ 
+-static DEVICE_ATTR(enabled, S_IRUSR | S_IRUGO,
++static DEVICE_ATTR(enabled, S_IWUSR | S_IRUGO,
+ 		   class_get_enabled, class_set_enabled);
+-static DEVICE_ATTR(picture, S_IRUSR, NULL, class_set_picture);
++static DEVICE_ATTR(picture, S_IWUSR, NULL, class_set_picture);
+ 
+ static int asus_oled_probe(struct usb_interface *interface,
+ 			   const struct usb_device_id *id)
+-- 
+1.7.4.4
 
