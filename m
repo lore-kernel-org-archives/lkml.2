@@ -1,259 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab1DNOoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:44:05 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:55963 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758945Ab1DNOoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:44:03 -0400
-From: Haojian Zhuang <hzhuang1@marvell.com>
-To: "wanlong.gao@gmail.com" <wanlong.gao@gmail.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Thu, 14 Apr 2011 07:41:17 -0700
-Subject: RE: [PATCH 01/13] input: touchscreen: use polling mode in 88pm860x
-Thread-Topic: [PATCH 01/13] input: touchscreen: use polling mode in 88pm860x
-Thread-Index: Acv6rJVDRqzzC46QQfCTzP4OlXfWZwABNt2Q
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05CF05AC12@SC-VEXCH1.marvell.com>
-References: <1302706264-25815-1-git-send-email-haojian.zhuang@marvell.com>
-	<1302706264-25815-2-git-send-email-haojian.zhuang@marvell.com>
- <BANLkTi=vuY61=X6okw8udWZZ=uQwCAPgjA@mail.gmail.com>
-In-Reply-To: <BANLkTi=vuY61=X6okw8udWZZ=uQwCAPgjA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	id S1758948Ab1DNOpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:45:11 -0400
+Received: from lo.gmane.org ([80.91.229.12]:41318 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758918Ab1DNOpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:45:10 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [RFC] NFC subsystem prototype
+Date: Thu, 14 Apr 2011 14:17:42 +0000 (UTC)
+Message-ID: <loom.20110414T113238-377@post.gmane.org>
+References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 90.9.23.9 (Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101028 Iceweasel/3.5.15 (like Firefox/3.5.15))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3EEiIpf019850
+
+Hi Lauro,
+
+Lauro Ramos Venancio <lauro.venancio <at> openbossa.org> writes:
+> The prototype implementation can be found at:
+> 	git://186.215.206.130/linux-nfc.git
+> 
+> The userspace test application (list targets and read/write MIFARE
+> tags) can be found at:
+> 	git://186.215.206.130/nfc-example.git
+Really nice. What about putting those in e.g. gitorious ?
+
+ 
+> Prototype Scope:
+> 	- Tag Reader/Writer
+> 	- Protocols: MIFARE, ISO14443, FELICA, JEWEL
+> 
+> Subsystem Operations:
+> 	- start poll - start polling for targets using the protocols given as
+> parameter
+> 	- stop poll - stop polling
+> 	- activate target - activate a target for communication using a
+> specific protocol
+> 	- deactivate target - deactivate a target
+> 	- reset device - put the adapter in idle mode
+> 	- data exchange - low level data exchange (send and receive data)
+I suppose the data_exchange hook is sitting at the NFCIP level ? As I agree
+with your further comment that this one should not be part of the netlink
+API but should be done through sockets instead, I think this one should be
+defined as the netdev start_xmit hook.
+So this matches quite well the pn533 API, but I'm wondering how you're
+planning to support the HCI based devices (pn544, microread). We clearly
+have 2 kind of devices here, and it reminds me of the soft MAC vs full MAC
+problem in the 802.11 subsystem.
+I think we should have a kernel NFC HCI layer that would implement those
+hooks by following the HCP protocol. Then devices that only take HCI
+commands (kind of soft MAC NFC devices) would register against the NFC HCI
+layer and use those hooks. Other devices (e.g. pn533) would register at a
+higher level (The NFC core layer) and provide their own hooks. This would be
+similar to what 802.11 drivers do by registering against mac80211 (soft MACs)
+or directly against cfg80211 (full MACs).
 
 
 
->-----Original Message-----
->From: gaowanlong@gmail.com [mailto:gaowanlong@gmail.com] On Behalf Of
->Wanlong Gao
->Sent: 2011Äê4ÔÂ14ÈÕ 10:02 PM
->To: Haojian Zhuang
->Cc: sameo@linux.intel.com; haojian.zhuang@gmail.com; linux-
->kernel@vger.kernel.org; Dmitry Torokhov
->Subject: Re: [PATCH 01/13] input: touchscreen: use polling mode in
->88pm860x
->
->On 4/13/11, Haojian Zhuang <haojian.zhuang@marvell.com> wrote:
->> Measuring point on touchscreen with IRQ mode can only monitor pen-down
->> event. If finger is moving on touchscreen, it can't be monitored by
->> IRQ pen-down event. So switch to polling mode after pen-down event.
->>
->> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
->> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> ---
->>  drivers/input/touchscreen/88pm860x-ts.c |   82
->> +++++++++++++++++++++++-------
->>  1 files changed, 63 insertions(+), 19 deletions(-)
->>
->> diff --git a/drivers/input/touchscreen/88pm860x-ts.c
->> b/drivers/input/touchscreen/88pm860x-ts.c
->> index b3aebc2..fe12f61 100644
->> --- a/drivers/input/touchscreen/88pm860x-ts.c
->> +++ b/drivers/input/touchscreen/88pm860x-ts.c
->> @@ -12,13 +12,25 @@
->>  #include <linux/module.h>
->>  #include <linux/platform_device.h>
->>  #include <linux/i2c.h>
->> +#include <linux/slab.h>
->>  #include <linux/input.h>
->>  #include <linux/mfd/88pm860x.h>
->> -#include <linux/slab.h>
->>
->>  #define MEAS_LEN		(8)
->>  #define ACCURATE_BIT		(12)
->>
->> +/*
->> + * While 32KHz hardware timer is used for scheduler, we always assign
->HZ
->> + * to 128. It means that 1 tick costs 7.8msec.
->> + */
->> +#define MEASURE_INTERVAL_MS	(7)
->> +
->> +/* debounce register */
->> +#define DEBOUNCE		(0x0A)
->> +
->> +#define PD_DEBOUNCE_0MSEC	(0)
->> +#define PD_DEBOUNCE_MASK	(3)
->> +
->>  /* touch register */
->>  #define MEAS_EN3		(0x52)
->>
->> @@ -39,22 +51,27 @@
->>  #define MEAS_TSIZ2_EN		(1 << 7)
->>
->>  struct pm860x_touch {
->> -	struct input_dev *idev;
->> -	struct i2c_client *i2c;
->> -	struct pm860x_chip *chip;
->> -	int irq;
->> -	int res_x;		/* resistor of Xplate */
->> +	struct input_dev	*idev;
->> +	struct i2c_client	*i2c;
->> +	struct pm860x_chip	*chip;
->> +	struct delayed_work	poll_work;
->> +	struct mutex		lock;
->> +
->> +	int			irq;
->> +	int			res_x;		/* resistor of Xplate */
->>  };
->>
->> -static irqreturn_t pm860x_touch_handler(int irq, void *data)
->> +static void pm860x_poll_work(struct work_struct *work)
->>  {
->> -	struct pm860x_touch *touch = data;
->> +	struct pm860x_touch *touch = container_of(work, struct
->pm860x_touch,
->> +						  poll_work.work);
->>  	struct pm860x_chip *chip = touch->chip;
->> +	int x, y, z1, z2, rt = 0;
->> +	int ret, pen_down, interval;
->>  	unsigned char buf[MEAS_LEN];
->> -	int x, y, pen_down;
->> -	int z1, z2, rt = 0;
->> -	int ret;
->> +	struct timeval start, end;
->>
->> +	do_gettimeofday(&start);
->>  	ret = pm860x_bulk_read(touch->i2c, MEAS_TSIX_1, MEAS_LEN, buf);
->>  	if (ret < 0)
->>  		goto out;
->> @@ -77,30 +94,54 @@ static irqreturn_t pm860x_touch_handler(int irq,
->void
->> *data)
->>  		input_report_abs(touch->idev, ABS_PRESSURE, rt);
->>  		input_report_key(touch->idev, BTN_TOUCH, 1);
->>  		dev_dbg(chip->dev, "pen down at [%d, %d].\n", x, y);
->> +
->> +		do_gettimeofday(&end);
->> +		interval = (end.tv_sec - start.tv_sec) * 1000000 +
->> +			(end.tv_usec - start.tv_usec) / 1000;
->Is the interval you calibrated right ?
+> Subsystem Event:
+> 	- targets found - report all targets found by the polling
+I would like to see a target lost event here as well, but as far as I know,
+none of the various NFC specs specify such event. So I guess we get to know
+that e.g. a tag is not there anymore when failing to read from it.
 
-Good catch. I'll fix it.
+> However, the netlink choice has not proven to be the best solution for
+> the data exchange operation. So we plan to have a new prototype
+> version using another solution. The options are:
+> 	- sockets for all operations as in bluez implementation;
+> 	- sockets for data exchange and keep netlink for the other operations.
+I would personally prefer to have a netlink layer for basically anything
+except data I/O, and go with a socket for the rest.
 
->> +		interval = (interval < MEASURE_INTERVAL_MS)
->> +			? (MEASURE_INTERVAL_MS - interval) : 0;
->> +		schedule_delayed_work(&touch->poll_work,
->> +				      msecs_to_jiffies(interval));
->>  	} else {
->>  		input_report_abs(touch->idev, ABS_PRESSURE, 0);
->>  		input_report_key(touch->idev, BTN_TOUCH, 0);
->>  		dev_dbg(chip->dev, "pen release\n");
->> +		mutex_unlock(&touch->lock);
->>  	}
->>  	input_sync(touch->idev);
->>
->>  out:
->> +	return;
->> +}
->> +
->> +static irqreturn_t pm860x_touch_handler(int irq, void *data)
->> +{
->> +	struct pm860x_touch *touch = data;
->> +	int ret;
->> +
->> +	ret = pm860x_reg_read(touch->i2c, PM8607_STATUS_1);
->> +	dev_dbg(touch->chip->dev, "pen status:%d\n", (ret &
->PM8607_STATUS_PEN)
->> +		? 1 : 0);
->> +	if ((ret & PM8607_STATUS_PEN) == 0)
->prefer to  !(ret & PM8607_STATUS_PEN) ?
->> +		return IRQ_HANDLED;
->> +
->> +	mutex_lock(&touch->lock);
->> +	pm860x_poll_work(&touch->poll_work.work);
->>  	return IRQ_HANDLED;
->>  }
->>
->>  static int pm860x_touch_open(struct input_dev *dev)
->>  {
->>  	struct pm860x_touch *touch = input_get_drvdata(dev);
->> -	int data, ret;
->> +	int data;
->>
->> +	/* set debounce time with 0ms */
->> +	pm860x_set_bits(touch->i2c, DEBOUNCE, PD_DEBOUNCE_MASK,
->> +			PD_DEBOUNCE_0MSEC);
->>  	data = MEAS_PD_EN | MEAS_TSIX_EN | MEAS_TSIY_EN
->>  		| MEAS_TSIZ1_EN | MEAS_TSIZ2_EN;
->> -	ret = pm860x_set_bits(touch->i2c, MEAS_EN3, data, data);
->> -	if (ret < 0)
->> -		goto out;
->> +	pm860x_set_bits(touch->i2c, MEAS_EN3, data, data);
->Why not check the return value now ?
 
-Seems checking is better in open(). I'll fix it.
+> 
+> Further work:
+> 	- Define subsystem operations for adapters in "target mode"
+I am not sure we need any specific additional hook for the target mode. In
+this mode, we mostly would be sending events (RF field ON, card activated
+or deactivated). After that, afaiu, the card would be expecting data
+reception, and then sending responses to it.
+We probably need to add a mode setting hook in the ops structure. And also,
+according to NFCIP-2, NFC devices should by default be in target mode.
 
->>  	return 0;
->> -out:
->> -	return ret;
->>  }
->>
->>  static void pm860x_touch_close(struct input_dev *dev)
->> @@ -152,16 +193,17 @@ static int __devinit pm860x_touch_probe(struct
->> platform_device *pdev)
->>  	}
->>
->>  	touch->idev->name = "88pm860x-touch";
->> -	touch->idev->phys = "88pm860x/input0";
->> +	touch->idev->phys = "88pm860x/input1";
->>  	touch->idev->id.bustype = BUS_I2C;
->>  	touch->idev->dev.parent = &pdev->dev;
->>  	touch->idev->open = pm860x_touch_open;
->>  	touch->idev->close = pm860x_touch_close;
->>  	touch->chip = chip;
->>  	touch->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip-
->>companion;
->> -	touch->irq = irq + chip->irq_base;
->> +	touch->irq = irq;
->>  	touch->res_x = pdata->res_x;
->>  	input_set_drvdata(touch->idev, touch);
->> +	mutex_init(&touch->lock);
->>
->>  	ret = request_threaded_irq(touch->irq, NULL, pm860x_touch_handler,
->>  				   IRQF_ONESHOT, "touch", touch);
->> @@ -188,6 +230,7 @@ static int __devinit pm860x_touch_probe(struct
->> platform_device *pdev)
->>  	}
->>
->>  	platform_set_drvdata(pdev, touch);
->> +	INIT_DELAYED_WORK(&touch->poll_work, pm860x_poll_work);
->>  	return 0;
->>  out_rg:
->>  	free_irq(touch->irq, touch);
->> @@ -202,6 +245,7 @@ static int __devexit pm860x_touch_remove(struct
->> platform_device *pdev)
->>  {
->>  	struct pm860x_touch *touch = platform_get_drvdata(pdev);
->>
->> +	flush_scheduled_work();
->>  	input_unregister_device(touch->idev);
->>  	free_irq(touch->irq, touch);
->>  	platform_set_drvdata(pdev, NULL);
->> --
->> 1.5.6.5
->>
->Best regards
->Thanks
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-
->kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+> 	- Implement LLCP
+> 	- Add support to the "secure elements"
+I'm also wondering how we're going to support the various CCID USB NFC
+readers currently available ? At the moment this is all done through libusb
+and pcsc-lite in userspace, but it would be nice to see that integrated
+with this subsystem.
+
+Cheers,
+Samuel.
+
