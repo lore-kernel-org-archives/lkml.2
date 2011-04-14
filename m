@@ -1,87 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab1DNJHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:07:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34760 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307Ab1DNJHg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:07:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bDvT4lm6ZcEGiJ660+JZwXUpuMOuacRNLbpaH/o8ZVEkTrL1lwewkxqkn8c8ov3qVl
-         yXD6PA6FgCH3/Py5OgBs4F/3NI5Fse2woBQtfmo6ddcMYIV47bNVrlk3M7MJickqhoEU
-         6twI2DooQglbnliNiRgNOQIBFkNeUyy/2FpOk=
+	id S932490Ab1DNJIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:08:19 -0400
+Received: from gmmr7.centrum.cz ([90.183.38.150]:54369 "EHLO gmmr7.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932200Ab1DNJIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 05:08:17 -0400
+To: "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+Subject: Re: Regression from 2.6.36
+Date: Thu, 14 Apr 2011 11:08:16 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: "Changli Gao" <xiaosuo@gmail.com>,
+        "=?UTF-8?Q?Am=C3=A9rico=20Wang?=" <xiyou.wangcong@gmail.com>,
+        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
+        "Jiri Slaby" <jirislaby@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>
+References: <20110315132527.130FB80018F1@mail1005.cent>	 <20110317001519.GB18911@kroah.com> <20110407120112.E08DCA03@pobox.sk>	 <4D9D8FAA.9080405@suse.cz>	 <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>	 <1302177428.3357.25.camel@edumazet-laptop>	 <1302178426.3357.34.camel@edumazet-laptop>	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>	 <1302190586.3357.45.camel@edumazet-laptop>	 <20110412154906.70829d60.akpm@linux-foundation.org>	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>	 <20110412183132.a854bffc.akpm@linux-foundation.org>	 <1302662256.2811.27.camel@edumazet-laptop>	 <20110413141600.28793661.akpm@linux-foundation.org>	 <1302747058.3549.7.camel@edumazet-laptop>	 <20110413222803.38e42baf.akpm@linux-foundation.org> <1302762718.3549.229.camel@edumazet-laptop>
+In-Reply-To: <1302762718.3549.229.camel@edumazet-laptop>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
 MIME-Version: 1.0
-In-Reply-To: <20110414085624.GC18463@8bytes.org>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
-	<20110412090207.GE19819@8bytes.org>
-	<BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
-	<20110412184433.GF19819@8bytes.org>
-	<20110413064609.GA18777@elte.hu>
-	<20110413172147.GI19819@8bytes.org>
-	<4DA5F62F.3030504@kernel.org>
-	<4DA654D6.2060103@zytor.com>
-	<20110414085624.GC18463@8bytes.org>
-Date: Thu, 14 Apr 2011 19:07:34 +1000
-Message-ID: <BANLkTi=m6xMV9uhhCH0SEsOc6xN4pWfhPQ@mail.gmail.com>
-Subject: Re: Linux 2.6.39-rc3
-From: Dave Airlie <airlied@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Alex Deucher <alexdeucher@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Message-Id: <20110414110816.EA841944@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 6:56 PM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Wed, Apr 13, 2011 at 06:58:46PM -0700, H. Peter Anvin wrote:
->> On 04/13/2011 12:14 PM, Yinghai Lu wrote:
->> >
->> > so looks bios program wrong address to the radon card?
->> >
->>
->> Okay, staring at this, it definitely seems toxic to overlay the GART
->> over memory areas reserved by the BIOS. †If I were to guess, I would say
->> that the problem here seems to be that the kernel thinks it is
->> overlaying 64 MiB of memory, but the actual GART is in fact 512 MiB in
->> size -- 131072 CPU pages -- which now overlaps the BIOS reserved areas.
->>
->> Alex D., could you comment on the "num cpu pages" bit?
->
-> Okay, I tried the debug-patch from Yinghai (posted to the bugzilla):
->
-> --- a/drivers/gpu/drm/radeon/radeon_device.c
-> +++ b/drivers/gpu/drm/radeon/radeon_device.c
-> @@ -325,6 +325,8 @@ void radeon_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
-> † † † † † † † † † † † †mc->gtt_size = size_bf;
-> † † † † † † † †}
-> † † † † † † † †mc->gtt_start = (mc->vram_start & ~mc->gtt_base_align) - mc->gtt_size;
-> + † † † † † † † if (mc->gtt_start == 0xa0000000)
-> + † † † † † † † † † † † mc->gtt_start = 0x80000000;
-> † † † †} else {
-> † † † † † † † †if (mc->gtt_size > size_af) {
-> † † † † † † † † † † † †dev_warn(rdev->dev, "limiting GTT\n");
->
-> And this makes a difference, with this change on-top of -rc3 the box boots
-> fine. So there seems to be some dependency between the GART base and the GTT
-> base even when they are in different address spaces.
->
-> Alex, can you comment on this?
 
-Wierd either a hw bug or some access to the GTT is leaking out before,
-things are setup properly,
+Here it is:
 
-I think the RS780/880 docs are on the website, but generally the
-address spaces are completely separate so anything getting through is
-very unusual.
 
-Dave.
+# ls /proc/31416/fd | wc -l
+5926
+
+
+azur
+
+
+______________________________________________________________
+> Od: "Eric Dumazet" <eric.dumazet@gmail.com>
+> Komu: Andrew Morton <akpm@linux-foundation.org>
+> D√°tum: 14.04.2011 08:32
+> Predmet: Re: Regression from 2.6.36
+>
+> CC: "Changli Gao" <xiaosuo@gmail.com>, "Am√©rico Wang" <xiyou.wangcong@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>
+>Le mercredi 13 avril 2011 √† 22:28 -0700, Andrew Morton a √©crit :
+>> On Thu, 14 Apr 2011 04:10:58 +0200 Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> 
+>> > > --- a/fs/file.c~a
+>> > > +++ a/fs/file.c
+>> > > @@ -39,14 +39,17 @@ int sysctl_nr_open_max = 1024 * 1024; /*
+>> > >   */
+>> > >  static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+>> > >  
+>> > > -static inline void *alloc_fdmem(unsigned int size)
+>> > > +static void *alloc_fdmem(unsigned int size)
+>> > >  {
+>> > > -	void *data;
+>> > > -
+>> > > -	data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+>> > > -	if (data != NULL)
+>> > > -		return data;
+>> > > -
+>> > > +	/*
+>> > > +	 * Very large allocations can stress page reclaim, so fall back to
+>> > > +	 * vmalloc() if the allocation size will be considered "large" by the VM.
+>> > > +	 */
+>> > > +	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) {
+>> > > +		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+>> > > +		if (data != NULL)
+>> > > +			return data;
+>> > > +	}
+>> > >  	return vmalloc(size);
+>> > >  }
+>> > >  
+>> > > _
+>> > > 
+>> > 
+>> > Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> > 
+>> > #define PAGE_ALLOC_COSTLY_ORDER 3
+>> > 
+>> > On x86_64, this means we try kmalloc() up to 4096 files in fdtable.
+>> 
+>> Thanks.  I added the cc:stable to the changelog.
+>> 
+>> It'd be nice to get this tested if poss, to confrm that it actually
+>> fixes things.
+>> 
+>> Also, Melpoke.
+>
+>Azurit, could you check how many fds are opened by your apache servers ?
+>(must be related to number of virtual hosts / acces_log / error_log
+>files)
+>
+>Pick one pid from ps list
+>ps aux | grep apache
+>
+>ls /proc/{pid_of_one_apache}/fd | wc -l
+>
+>or
+>
+>lsof -p { pid_of_one_apache} | tail -n 2
+>apache2 8501 httpadm   13w   REG     104,7  2350407   3866638 /data/logs/httpd/rewrites.log
+>apache2 8501 httpadm   14r  0000      0,10        0 263148343 eventpoll
+>
+>Here it's "14"
+>
+>Thanks
+>
+>
+>
