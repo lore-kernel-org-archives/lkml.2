@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab1DNRqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61929 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200Ab1DNRqF (ORCPT
+	id S933093Ab1DNRq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:28 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38097 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933056Ab1DNRqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=QaHVfSss3FdlZmItnopjw5KoJxt10ZWAD0qMcDoHuEoB/9Zdg18UO/ZmTheYLfo59U
-         a+4c4mVpZuUvvaxWC3jQ4Zw/rd6PtybFrudbPs1HXvsnCEqCdotCKEr7Emc41+C4Gsdg
-         AAqVSgH2KbHX91B/LJfxBOGSFBhrF7Azux+D0=
-Message-ID: <4DA732D8.9040602@openvz.org>
-Date: Thu, 14 Apr 2011 21:46:00 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Lin Ming <ming.m.lin@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-References: <4DA70950.3060102@openvz.org> <20110414174327.GA8863@elte.hu>
-In-Reply-To: <20110414174327.GA8863@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Apr 2011 13:46:24 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 052/209] tty: prevent DOS in the flush_to_ldisc
+Date: Thu, 14 Apr 2011 13:41:22 -0400
+Message-Id: <1302803039-9400-53-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 09:43 PM, Ingo Molnar wrote:
-...
->>
->>  	handled = x86_pmu.handle_irq(args->regs);
->> +
->> +	/*
->> +	 * Note the unmasking of LVTPC entry must be
->> +	 * done *after* counter oveflow flag is cleared
->> +	 * otherwise it might lead to double NMIs generation.
->> +	 */
->> +	apic_write(APIC_LVTPC, APIC_DM_NMI);
->> +
->>  	if (!handled)
->>  		return NOTIFY_DONE;
->>
-> 
-> This breaks 'perf top' on Intel Nehalem and probably other CPUs. The NMI gets 
-> stuck fast on all CPUs:
-> 
->   NMI: 16 6 3 3 3 3 3 3 3 3 3 3 3 3 4 5 Non-maskable interrupts
-> 
-> Thanks,
-> 
-> 	Ingo
+From: Jiri Olsa <jolsa@redhat.com>
 
-Hmm. Thanks for info. Investigating...
+  =====================================================================
+  | This is a commit scheduled for the next v2.6.34 longterm release. |
+  | If you see a problem with using this for longterm, please comment.|
+  =====================================================================
 
+commit e045fec48970df84647a47930fcf7a22ff7229c0 upstream.
+
+There's a small window inside the flush_to_ldisc function,
+where the tty is unlocked and calling ldisc's receive_buf
+function. If in this window new buffer is added to the tty,
+the processing might never leave the flush_to_ldisc function.
+
+This scenario will hog the cpu, causing other tty processing
+starving, and making it impossible to interface the computer
+via tty.
+
+I was able to exploit this via pty interface by sending only
+control characters to the master input, causing the flush_to_ldisc
+to be scheduled, but never actually generate any output.
+
+To reproduce, please run multiple instances of following code.
+
+- SNIP
+#define _XOPEN_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int main(int argc, char **argv)
+{
+        int i, slave, master = getpt();
+        char buf[8192];
+
+        sprintf(buf, "%s", ptsname(master));
+        grantpt(master);
+        unlockpt(master);
+
+        slave = open(buf, O_RDWR);
+        if (slave < 0) {
+                perror("open slave failed");
+                return 1;
+        }
+
+        for(i = 0; i < sizeof(buf); i++)
+                buf[i] = rand() % 32;
+
+        while(1) {
+                write(master, buf, sizeof(buf));
+        }
+
+        return 0;
+}
+- SNIP
+
+The attached patch (based on -next tree) fixes this by checking on the
+tty buffer tail. Once it's reached, the current work is rescheduled
+and another could run.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/char/tty_buffer.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/tty_buffer.c b/drivers/char/tty_buffer.c
+index 7ee5216..b370629 100644
+--- a/drivers/char/tty_buffer.c
++++ b/drivers/char/tty_buffer.c
+@@ -413,7 +413,8 @@ static void flush_to_ldisc(struct work_struct *work)
+ 	spin_lock_irqsave(&tty->buf.lock, flags);
+ 
+ 	if (!test_and_set_bit(TTY_FLUSHING, &tty->flags)) {
+-		struct tty_buffer *head;
++		struct tty_buffer *head, *tail = tty->buf.tail;
++		int seen_tail = 0;
+ 		while ((head = tty->buf.head) != NULL) {
+ 			int count;
+ 			char *char_buf;
+@@ -423,6 +424,15 @@ static void flush_to_ldisc(struct work_struct *work)
+ 			if (!count) {
+ 				if (head->next == NULL)
+ 					break;
++				/*
++				  There's a possibility tty might get new buffer
++				  added during the unlock window below. We could
++				  end up spinning in here forever hogging the CPU
++				  completely. To avoid this let's have a rest each
++				  time we processed the tail buffer.
++				*/
++				if (tail == head)
++					seen_tail = 1;
+ 				tty->buf.head = head->next;
+ 				tty_buffer_free(tty, head);
+ 				continue;
+@@ -432,7 +442,7 @@ static void flush_to_ldisc(struct work_struct *work)
+ 			   line discipline as we want to empty the queue */
+ 			if (test_bit(TTY_FLUSHPENDING, &tty->flags))
+ 				break;
+-			if (!tty->receive_room) {
++			if (!tty->receive_room || seen_tail) {
+ 				schedule_delayed_work(&tty->buf.work, 1);
+ 				break;
+ 			}
 -- 
-    Cyrill
+1.7.4.4
+
