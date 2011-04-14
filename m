@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab1DNRuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:50:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38604 "EHLO
+	id S933468Ab1DNRrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:25 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38549 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933470Ab1DNRr0 (ORCPT
+	with ESMTP id S932892Ab1DNRrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:26 -0400
+	Thu, 14 Apr 2011 13:47:20 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 109/209] sparc: Don't mask signal when we can't setup signal frame.
-Date: Thu, 14 Apr 2011 13:42:19 -0400
-Message-Id: <1302803039-9400-110-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 035/209] numa: fix slab_node(MPOL_BIND)
+Date: Thu, 14 Apr 2011 13:41:05 -0400
+Message-Id: <1302803039-9400-36-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,328 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David S. Miller <davem@davemloft.net>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 392c21802ee3aa85cee0e703105f797a8a7b9416 upstream.
+commit 800416f799e0723635ac2d720ad4449917a1481c upstream.
 
-Don't invoke the signal handler tracehook in that situation
-either.
+When a node contains only HighMem memory, slab_node(MPOL_BIND)
+dereferences a NULL pointer.
 
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[ This code seems to go back all the way to commit 19770b32609b: "mm:
+  filter based on a nodemask as well as a gfp_mask".  Which was back in
+  April 2008, and it got merged into 2.6.26.  - Linus ]
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/sparc/kernel/signal32.c  |   55 +++++++++++++++++++++++++---------------
- arch/sparc/kernel/signal_32.c |   53 ++++++++++++++++++++++++---------------
- arch/sparc/kernel/signal_64.c |   43 +++++++++++++++++++------------
- 3 files changed, 93 insertions(+), 58 deletions(-)
+ mm/mempolicy.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/sparc/kernel/signal32.c b/arch/sparc/kernel/signal32.c
-index 76b67c4..643a354 100644
---- a/arch/sparc/kernel/signal32.c
-+++ b/arch/sparc/kernel/signal32.c
-@@ -511,8 +511,8 @@ out_irqs_on:
- 
- }
- 
--static void setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
--			  int signo, sigset_t *oldset)
-+static int setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
-+			 int signo, sigset_t *oldset)
- {
- 	struct signal_frame32 __user *sf;
- 	int sigframe_size;
-@@ -620,13 +620,16 @@ static void setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
- 
- sigill:
- 	do_exit(SIGILL);
-+	return -EINVAL;
-+
- sigsegv:
- 	force_sigsegv(signo, current);
-+	return -EFAULT;
- }
- 
--static void setup_rt_frame32(struct k_sigaction *ka, struct pt_regs *regs,
--			     unsigned long signr, sigset_t *oldset,
--			     siginfo_t *info)
-+static int setup_rt_frame32(struct k_sigaction *ka, struct pt_regs *regs,
-+			    unsigned long signr, sigset_t *oldset,
-+			    siginfo_t *info)
- {
- 	struct rt_signal_frame32 __user *sf;
- 	int sigframe_size;
-@@ -738,22 +741,30 @@ static void setup_rt_frame32(struct k_sigaction *ka, struct pt_regs *regs,
- 
- 		flush_signal_insns(address);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 08f40a2..c7f53b12 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1509,7 +1509,7 @@ unsigned slab_node(struct mempolicy *policy)
+ 		(void)first_zones_zonelist(zonelist, highest_zoneidx,
+ 							&policy->v.nodes,
+ 							&zone);
+-		return zone->node;
++		return zone ? zone->node : numa_node_id();
  	}
--	return;
-+	return 0;
  
- sigill:
- 	do_exit(SIGILL);
-+	return -EINVAL;
-+
- sigsegv:
- 	force_sigsegv(signr, current);
-+	return -EFAULT;
- }
- 
--static inline void handle_signal32(unsigned long signr, struct k_sigaction *ka,
--				   siginfo_t *info,
--				   sigset_t *oldset, struct pt_regs *regs)
-+static inline int handle_signal32(unsigned long signr, struct k_sigaction *ka,
-+				  siginfo_t *info,
-+				  sigset_t *oldset, struct pt_regs *regs)
- {
-+	int err;
-+
- 	if (ka->sa.sa_flags & SA_SIGINFO)
--		setup_rt_frame32(ka, regs, signr, oldset, info);
-+		err = setup_rt_frame32(ka, regs, signr, oldset, info);
- 	else
--		setup_frame32(ka, regs, signr, oldset);
-+		err = setup_frame32(ka, regs, signr, oldset);
-+
-+	if (err)
-+		return err;
- 
- 	spin_lock_irq(&current->sighand->siglock);
- 	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
-@@ -761,6 +772,10 @@ static inline void handle_signal32(unsigned long signr, struct k_sigaction *ka,
- 		sigaddset(&current->blocked,signr);
- 	recalc_sigpending();
- 	spin_unlock_irq(&current->sighand->siglock);
-+
-+	tracehook_signal_handler(signr, info, ka, regs, 0);
-+
-+	return 0;
- }
- 
- static inline void syscall_restart32(unsigned long orig_i0, struct pt_regs *regs,
-@@ -807,16 +822,14 @@ void do_signal32(sigset_t *oldset, struct pt_regs * regs,
- 	if (signr > 0) {
- 		if (restart_syscall)
- 			syscall_restart32(orig_i0, regs, &ka.sa);
--		handle_signal32(signr, &ka, &info, oldset, regs);
--
--		/* A signal was successfully delivered; the saved
--		 * sigmask will have been stored in the signal frame,
--		 * and will be restored by sigreturn, so we can simply
--		 * clear the TS_RESTORE_SIGMASK flag.
--		 */
--		current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
--
--		tracehook_signal_handler(signr, &info, &ka, regs, 0);
-+		if (handle_signal32(signr, &ka, &info, oldset, regs) == 0) {
-+			/* A signal was successfully delivered; the saved
-+			 * sigmask will have been stored in the signal frame,
-+			 * and will be restored by sigreturn, so we can simply
-+			 * clear the TS_RESTORE_SIGMASK flag.
-+			 */
-+			current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
-+		}
- 		return;
- 	}
- 	if (restart_syscall &&
-diff --git a/arch/sparc/kernel/signal_32.c b/arch/sparc/kernel/signal_32.c
-index 9882df9..99c85e9 100644
---- a/arch/sparc/kernel/signal_32.c
-+++ b/arch/sparc/kernel/signal_32.c
-@@ -315,8 +315,8 @@ save_fpu_state(struct pt_regs *regs, __siginfo_fpu_t __user *fpu)
- 	return err;
- }
- 
--static void setup_frame(struct k_sigaction *ka, struct pt_regs *regs,
--			int signo, sigset_t *oldset)
-+static int setup_frame(struct k_sigaction *ka, struct pt_regs *regs,
-+		       int signo, sigset_t *oldset)
- {
- 	struct signal_frame __user *sf;
- 	int sigframe_size, err;
-@@ -384,16 +384,19 @@ static void setup_frame(struct k_sigaction *ka, struct pt_regs *regs,
- 		/* Flush instruction space. */
- 		flush_sig_insns(current->mm, (unsigned long) &(sf->insns[0]));
- 	}
--	return;
-+	return 0;
- 
- sigill_and_return:
- 	do_exit(SIGILL);
-+	return -EINVAL;
-+
- sigsegv:
- 	force_sigsegv(signo, current);
-+	return -EFAULT;
- }
- 
--static void setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
--			   int signo, sigset_t *oldset, siginfo_t *info)
-+static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
-+			  int signo, sigset_t *oldset, siginfo_t *info)
- {
- 	struct rt_signal_frame __user *sf;
- 	int sigframe_size;
-@@ -466,22 +469,30 @@ static void setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
- 		/* Flush instruction space. */
- 		flush_sig_insns(current->mm, (unsigned long) &(sf->insns[0]));
- 	}
--	return;
-+	return 0;
- 
- sigill:
- 	do_exit(SIGILL);
-+	return -EINVAL;
-+
- sigsegv:
- 	force_sigsegv(signo, current);
-+	return -EFAULT;
- }
- 
--static inline void
-+static inline int
- handle_signal(unsigned long signr, struct k_sigaction *ka,
- 	      siginfo_t *info, sigset_t *oldset, struct pt_regs *regs)
- {
-+	int err;
-+
- 	if (ka->sa.sa_flags & SA_SIGINFO)
--		setup_rt_frame(ka, regs, signr, oldset, info);
-+		err = setup_rt_frame(ka, regs, signr, oldset, info);
- 	else
--		setup_frame(ka, regs, signr, oldset);
-+		err = setup_frame(ka, regs, signr, oldset);
-+
-+	if (err)
-+		return err;
- 
- 	spin_lock_irq(&current->sighand->siglock);
- 	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
-@@ -489,6 +500,10 @@ handle_signal(unsigned long signr, struct k_sigaction *ka,
- 		sigaddset(&current->blocked, signr);
- 	recalc_sigpending();
- 	spin_unlock_irq(&current->sighand->siglock);
-+
-+	tracehook_signal_handler(signr, info, ka, regs, 0);
-+
-+	return 0;
- }
- 
- static inline void syscall_restart(unsigned long orig_i0, struct pt_regs *regs,
-@@ -546,17 +561,15 @@ static void do_signal(struct pt_regs *regs, unsigned long orig_i0)
- 	if (signr > 0) {
- 		if (restart_syscall)
- 			syscall_restart(orig_i0, regs, &ka.sa);
--		handle_signal(signr, &ka, &info, oldset, regs);
--
--		/* a signal was successfully delivered; the saved
--		 * sigmask will have been stored in the signal frame,
--		 * and will be restored by sigreturn, so we can simply
--		 * clear the TIF_RESTORE_SIGMASK flag.
--		 */
--		if (test_thread_flag(TIF_RESTORE_SIGMASK))
--			clear_thread_flag(TIF_RESTORE_SIGMASK);
--
--		tracehook_signal_handler(signr, &info, &ka, regs, 0);
-+		if (handle_signal(signr, &ka, &info, oldset, regs) == 0) {
-+			/* a signal was successfully delivered; the saved
-+			 * sigmask will have been stored in the signal frame,
-+			 * and will be restored by sigreturn, so we can simply
-+			 * clear the TIF_RESTORE_SIGMASK flag.
-+			 */
-+			if (test_thread_flag(TIF_RESTORE_SIGMASK))
-+				clear_thread_flag(TIF_RESTORE_SIGMASK);
-+		}
- 		return;
- 	}
- 	if (restart_syscall &&
-diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
-index 9fa48c3..3f19e67 100644
---- a/arch/sparc/kernel/signal_64.c
-+++ b/arch/sparc/kernel/signal_64.c
-@@ -409,7 +409,7 @@ static inline void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *
- 	return (void __user *) sp;
- }
- 
--static inline void
-+static inline int
- setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
- 	       int signo, sigset_t *oldset, siginfo_t *info)
- {
-@@ -483,26 +483,37 @@ setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
- 	}
- 	/* 4. return to kernel instructions */
- 	regs->u_regs[UREG_I7] = (unsigned long)ka->ka_restorer;
--	return;
-+	return 0;
- 
- sigill:
- 	do_exit(SIGILL);
-+	return -EINVAL;
-+
- sigsegv:
- 	force_sigsegv(signo, current);
-+	return -EFAULT;
- }
- 
--static inline void handle_signal(unsigned long signr, struct k_sigaction *ka,
--				 siginfo_t *info,
--				 sigset_t *oldset, struct pt_regs *regs)
-+static inline int handle_signal(unsigned long signr, struct k_sigaction *ka,
-+				siginfo_t *info,
-+				sigset_t *oldset, struct pt_regs *regs)
- {
--	setup_rt_frame(ka, regs, signr, oldset,
--		       (ka->sa.sa_flags & SA_SIGINFO) ? info : NULL);
-+	int err;
-+
-+	err = setup_rt_frame(ka, regs, signr, oldset,
-+			     (ka->sa.sa_flags & SA_SIGINFO) ? info : NULL);
-+	if (err)
-+		return err;
- 	spin_lock_irq(&current->sighand->siglock);
- 	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
- 	if (!(ka->sa.sa_flags & SA_NOMASK))
- 		sigaddset(&current->blocked,signr);
- 	recalc_sigpending();
- 	spin_unlock_irq(&current->sighand->siglock);
-+
-+	tracehook_signal_handler(signr, info, ka, regs, 0);
-+
-+	return 0;
- }
- 
- static inline void syscall_restart(unsigned long orig_i0, struct pt_regs *regs,
-@@ -571,16 +582,14 @@ static void do_signal(struct pt_regs *regs, unsigned long orig_i0)
- 	if (signr > 0) {
- 		if (restart_syscall)
- 			syscall_restart(orig_i0, regs, &ka.sa);
--		handle_signal(signr, &ka, &info, oldset, regs);
--
--		/* A signal was successfully delivered; the saved
--		 * sigmask will have been stored in the signal frame,
--		 * and will be restored by sigreturn, so we can simply
--		 * clear the TS_RESTORE_SIGMASK flag.
--		 */
--		current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
--
--		tracehook_signal_handler(signr, &info, &ka, regs, 0);
-+		if (handle_signal(signr, &ka, &info, oldset, regs) == 0) {
-+			/* A signal was successfully delivered; the saved
-+			 * sigmask will have been stored in the signal frame,
-+			 * and will be restored by sigreturn, so we can simply
-+			 * clear the TS_RESTORE_SIGMASK flag.
-+			 */
-+			current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
-+		}
- 		return;
- 	}
- 	if (restart_syscall &&
+ 	default:
 -- 
 1.7.4.4
 
