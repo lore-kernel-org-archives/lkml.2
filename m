@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623Ab1DNSQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:16:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41845 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964889Ab1DNR6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:10 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Kyle McMartin <kyle@mcmartin.ca>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 132/209] TTY: don't allow reopen when ldisc is changing
-Date: Thu, 14 Apr 2011 13:54:50 -0400
-Message-Id: <1302803767-9715-19-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
- <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
+	id S933850Ab1DNSQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:16:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54249 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933701Ab1DNSQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 14:16:13 -0400
+Date: Thu, 14 Apr 2011 20:16:09 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+Message-ID: <20110414181609.GH5054@quack.suse.cz>
+References: <20110413085937.981293444@intel.com>
+ <20110413090415.763161169@intel.com>
+ <20110413220444.GF4648@quack.suse.cz>
+ <20110413233122.GA6097@localhost>
+ <20110413235211.GN31057@dastard>
+ <20110414002301.GA9826@localhost>
+ <20110414151424.GA367@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110414151424.GA367@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+On Thu 14-04-11 23:14:25, Wu Fengguang wrote:
+> On Thu, Apr 14, 2011 at 08:23:02AM +0800, Wu Fengguang wrote:
+> > On Thu, Apr 14, 2011 at 07:52:11AM +0800, Dave Chinner wrote:
+> > > On Thu, Apr 14, 2011 at 07:31:22AM +0800, Wu Fengguang wrote:
+> > > > On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
+> > > > > On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
+> > > > > > Reduce the dampening for the control system, yielding faster
+> > > > > > convergence. The change is a bit conservative, as smaller values may
+> > > > > > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
+> > > > > > 
+> > > > > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > > > > CC: Richard Kennedy <richard@rsk.demon.co.uk>
+> > > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > > >   Well, I have nothing against this change as such but what I don't like is
+> > > > > that it just changes magical +2 for similarly magical +0. It's clear that
+> > > > 
+> > > > The patch tends to make the rampup time a bit more reasonable for
+> > > > common desktops. From 100s to 25s (see below).
+> > > > 
+> > > > > this will lead to more rapid updates of proportions of bdi's share of
+> > > > > writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
+> > > > 
+> > > > Yes, it will especially be a problem on _small memory_ JBOD setups.
+> > > > Richard actually has requested for a much radical change (decrease by
+> > > > 6) but that looks too much.
+> > > > 
+> > > > My team has a 12-disk JBOD with only 6G memory. The memory is pretty
+> > > > small as a server, but it's a real setup and serves well as the
+> > > > reference minimal setup that Linux should be able to run well on.
+> > > 
+> > > FWIW, linux runs on a lot of low power NAS boxes with jbod and/or
+> > > raid setups that have <= 1GB of RAM (many of them run XFS), so even
+> > > your setup could be considered large by a significant fraction of
+> > > the storage world. Hence you need to be careful of optimising for
+> > > what you think is a "normal" server, because there simply isn't such
+> > > a thing....
+> > 
+> > Good point! This patch is likely to hurt a loaded 1GB 4-disk NAS box...
+> > I'll test the setup.
+> 
+> Just did a comparison of the IO-less patches' performance with and
+> without this patch. I hardly notice any differences besides some more
+> bdi goal fluctuations in the attached graphs. The write throughput is
+> a bit large with this patch (80MB/s vs 76MB/s), however the delta is
+> within the even larger stddev range (20MB/s).
+  Thanks for the test but I cannot find out from the numbers you provided
+how much did the per-bdi thresholds fluctuate in this low memory NAS case?
+You can gather current bdi threshold from /sys/kernel/debug/bdi/<dev>/stats
+so it shouldn't be hard to get the numbers...
 
-  =====================================================================
-  | This is a commit scheduled for the next v2.6.34 longterm release. |
-  | If you see a problem with using this for longterm, please comment.|
-  =====================================================================
-
-commit e2efafbf139d2bfdfe96f2901f03189fecd172e4 upstream
-
-There are many WARNINGs like the following reported nowadays:
-WARNING: at drivers/tty/tty_io.c:1331 tty_open+0x2a2/0x49a()
-Hardware name: Latitude E6500
-Modules linked in:
-Pid: 1207, comm: plymouthd Not tainted 2.6.37-rc3-mmotm1123 #3
-Call Trace:
- [<ffffffff8103b189>] warn_slowpath_common+0x80/0x98
- [<ffffffff8103b1b6>] warn_slowpath_null+0x15/0x17
- [<ffffffff8128a3ab>] tty_open+0x2a2/0x49a
- [<ffffffff810fd53f>] chrdev_open+0x11d/0x146
-...
-
-This means tty_reopen is called without TTY_LDISC set. For further
-considerations, note tty_lock is held in tty_open. TTY_LDISC is cleared in:
-1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
-section tty_lock is held. However tty_lock is temporarily dropped in
-the middle of the function by tty_ldisc_hangup.
-
-2) tty_release via tty_ldisc_release till the end of tty existence. If
-tty->count <= 1, tty_lock is taken, TTY_CLOSING bit set and then
-tty_ldisc_release called. tty_reopen checks TTY_CLOSING before checking
-TTY_LDISC.
-
-3) tty_set_ldisc from tty_ldisc_halt to tty_ldisc_enable. We:
-   * take tty_lock, set TTY_LDISC_CHANGING, put tty_lock
-   * call tty_ldisc_halt (clear TTY_LDISC), tty_lock is _not_ held
-   * do some other work
-   * take tty_lock, call tty_ldisc_enable (set TTY_LDISC), put
-     tty_lock
-
-I cannot see how 2) can be a problem, as there I see no race. OTOH, 1)
-and 3) can happen without problems. This patch the case 3) by checking
-TTY_LDISC_CHANGING along with TTY_CLOSING in tty_reopen. 1) will be
-fixed in the following patch.
-
-Nicely reproducible with two processes:
-while (1) {
-	fd = open("/dev/ttyS1", O_RDWR);
-	if (fd < 0) {
-		warn("open");
-		continue;
-	}
-	close(fd);
-}
---------
-while (1) {
-        fd = open("/dev/ttyS1", O_RDWR);
-        ld1 = 0; ld2 = 2;
-        while (1) {
-                ioctl(fd, TIOCSETD, &ld1);
-                ioctl(fd, TIOCSETD, &ld2);
-        }
-        close(fd);
-}
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: <Valdis.Kletnieks@vt.edu>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/char/tty_io.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index d71f0fc..bc4f45d 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -1257,7 +1257,8 @@ static int tty_reopen(struct tty_struct *tty)
- {
- 	struct tty_driver *driver = tty->driver;
- 
--	if (test_bit(TTY_CLOSING, &tty->flags))
-+	if (test_bit(TTY_CLOSING, &tty->flags) ||
-+			test_bit(TTY_LDISC_CHANGING, &tty->flags))
- 		return -EIO;
- 
- 	if (driver->type == TTY_DRIVER_TYPE_PTY &&
+								Honza
 -- 
-1.7.4.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
