@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1DNBVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 21:21:41 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50567 "EHLO
+	id S1756252Ab1DNBVp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 21:21:45 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31483 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754966Ab1DNBVi (ORCPT
+	with ESMTP id S1755682Ab1DNBVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 21:21:38 -0400
+	Wed, 13 Apr 2011 21:21:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=GIx84oNvol2DwxhUULteKKL7j91iOqmg4i/lxQqAyXgNUXANl8p7G9GyxX3gZYbmGd
-         ROFYoUCHKp8BmJkmkjQQ==
+        b=ZtIuUp3OJCHe2RFVnlf+yaViUOr4XnCFC4IHk/1K72yYThGm709XkRwjmdHmAshsoZ
+         2/oHpf9XjprG/XQYu6IQ==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
         Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
         Rik van Riel <riel@redhat.com>, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 1/2] sched: Make set_*_buddy work on non-task entity -v2
-Date: Wed, 13 Apr 2011 18:21:09 -0700
-Message-Id: <1302744070-30079-2-git-send-email-venki@google.com>
+Subject: [PATCH 2/2] sched: next buddy hint on sleep and preempt path -v2
+Date: Wed, 13 Apr 2011 18:21:10 -0700
+Message-Id: <1302744070-30079-3-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <AANLkTi=ao5dci3gb=+UmegZx_ag_X6gAFZ5mBb+8=9hR@mail.gmail.com>
 References: <AANLkTi=ao5dci3gb=+UmegZx_ag_X6gAFZ5mBb+8=9hR@mail.gmail.com>
@@ -28,62 +28,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make set_*_buddy work on non-task sched_entity, to facilitate the
-use of next_buddy to cache a group entity in cases where one of the tasks
-within that entity sleeps or gets preempted.
+When a task in a taskgroup sleeps, pick_next_task starts all the way back at
+the root and picks the task/taskgroup with the min vruntime across all
+runnable tasks. But, when there are many frequently sleeping tasks
+across different taskgroups, it makes better sense to stay with same taskgroup
+for its slice period (or until all tasks in the taskgroup sleeps) instead of
+switching cross taskgroup on each sleep after a short runtime.
+This helps specifically where taskgroups corresponds to a process with
+multiple threads. The change reduces the number of CR3 switches in this case.
 
-set_skip_buddy was wrongly comparing the policy of task that is yielding
-to be not equal to SCHED_IDLE. Yielding should happen even when task yielding
-is SCHED_IDLE. This change removes the policy check on the yielding task.
+Example:
+Two taskgroups with 2 threads each which are running for 2ms and
+sleeping for 1ms. Looking at sched:sched_switch shows -
+
+BEFORE: taskgroup_1 threads [5004, 5005], taskgroup_2 threads [5016, 5017]
+      cpu-soaker-5004  [003]  3683.391089
+      cpu-soaker-5016  [003]  3683.393106
+      cpu-soaker-5005  [003]  3683.395119
+      cpu-soaker-5017  [003]  3683.397130
+      cpu-soaker-5004  [003]  3683.399143
+      cpu-soaker-5016  [003]  3683.401155
+      cpu-soaker-5005  [003]  3683.403168
+      cpu-soaker-5017  [003]  3683.405170
+
+AFTER: taskgroup_1 threads [21890, 21891], taskgroup_2 threads [21934, 21935]
+      cpu-soaker-21890 [003]   865.895494
+      cpu-soaker-21935 [003]   865.897506
+      cpu-soaker-21934 [003]   865.899520
+      cpu-soaker-21935 [003]   865.901532
+      cpu-soaker-21934 [003]   865.903543
+      cpu-soaker-21935 [003]   865.905546
+      cpu-soaker-21891 [003]   865.907548
+      cpu-soaker-21890 [003]   865.909560
+      cpu-soaker-21891 [003]   865.911571
+      cpu-soaker-21890 [003]   865.913582
+      cpu-soaker-21891 [003]   865.915594
+      cpu-soaker-21934 [003]   865.917606
+
+Similar problem is there when there are multiple taskgroups and say a task A
+preempts currently running task B of taskgroup_1. On schedule, pick_next_task
+can pick an unrelated task on taskgroup_2. Here it would be better to give some
+preference to task B on pick_next_task.
+
+A simple (may be extreme case) benchmark I tried was tbench with 2 tbench
+client processes with 2 threads each running on a single CPU. Avg throughput
+across 5 50 sec runs was -
+BEFORE: 105.84 MB/sec
+AFTER: 112.42 MB/sec
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
- kernel/sched_fair.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ kernel/sched_fair.c |   26 +++++++++++++++++++++++---
+ 1 files changed, 23 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 80ecd09..d3513b7 100644
+index d3513b7..8828a7e 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -1826,26 +1826,26 @@ wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se)
+@@ -1340,6 +1340,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	hrtick_update(rq);
+ }
  
- static void set_last_buddy(struct sched_entity *se)
- {
--	if (likely(task_of(se)->policy != SCHED_IDLE)) {
--		for_each_sched_entity(se)
--			cfs_rq_of(se)->last = se;
--	}
-+	if (entity_is_task(se) && unlikely(task_of(se)->policy == SCHED_IDLE))
-+		return;
++static void set_next_buddy(struct sched_entity *se);
 +
-+	for_each_sched_entity(se)
-+		cfs_rq_of(se)->last = se;
- }
- 
- static void set_next_buddy(struct sched_entity *se)
- {
--	if (likely(task_of(se)->policy != SCHED_IDLE)) {
--		for_each_sched_entity(se)
--			cfs_rq_of(se)->next = se;
--	}
-+	if (entity_is_task(se) && unlikely(task_of(se)->policy == SCHED_IDLE))
-+		return;
-+
-+	for_each_sched_entity(se)
-+		cfs_rq_of(se)->next = se;
- }
- 
- static void set_skip_buddy(struct sched_entity *se)
- {
--	if (likely(task_of(se)->policy != SCHED_IDLE)) {
--		for_each_sched_entity(se)
--			cfs_rq_of(se)->skip = se;
--	}
-+	for_each_sched_entity(se)
-+		cfs_rq_of(se)->skip = se;
- }
- 
  /*
+  * The dequeue_task method is called before nr_running is
+  * decreased. We remove the task from the rbtree and
+@@ -1349,14 +1351,22 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 	struct sched_entity *se = &p->se;
++	int task_sleep = flags & DEQUEUE_SLEEP;
+ 
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		dequeue_entity(cfs_rq, se, flags);
+ 
+ 		/* Don't dequeue parent if it has other entities besides us */
+-		if (cfs_rq->load.weight)
++		if (cfs_rq->load.weight) {
++			/*
++			 * Bias pick_next to pick a task from this cfs_rq, as
++			 * p is sleeping when it is within its sched_slice.
++			 */
++			if (task_sleep && se->parent)
++				set_next_buddy(se->parent);
+ 			break;
++		}
+ 		flags |= DEQUEUE_SLEEP;
+ 	}
+ 
+@@ -1857,12 +1867,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	struct sched_entity *se = &curr->se, *pse = &p->se;
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
+ 	int scale = cfs_rq->nr_running >= sched_nr_latency;
++	int next_buddy_marked = 0;
+ 
+ 	if (unlikely(se == pse))
+ 		return;
+ 
+-	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK))
++	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK)) {
+ 		set_next_buddy(pse);
++		next_buddy_marked = 1;
++	}
+ 
+ 	/*
+ 	 * We can come here with TIF_NEED_RESCHED already set from new task
+@@ -1890,8 +1903,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	update_curr(cfs_rq);
+ 	find_matching_se(&se, &pse);
+ 	BUG_ON(!pse);
+-	if (wakeup_preempt_entity(se, pse) == 1)
++	if (wakeup_preempt_entity(se, pse) == 1) {
++		/*
++		 * Bias pick_next to pick the sched entity that is
++		 * triggering this preemption.
++		 */
++		if (!next_buddy_marked)
++			set_next_buddy(pse);
+ 		goto preempt;
++	}
+ 
+ 	return;
+ 
 -- 
 1.7.3.1
 
