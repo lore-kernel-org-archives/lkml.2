@@ -1,52 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab1DNRto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:49:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41133 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab1DNRtm (ORCPT
+	id S933511Ab1DNRt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:49:58 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38610 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933473Ab1DNRr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:49:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=bjGJUMUEAdpbLzVpZP5knmp4Pijy9jZR8yMQVEdg92DJdAsPh9mDNAgNgFDAclY/rr
-         oFLRH6vw2Zo0cWTcSKgXRancfrobV+1XAwb/pcwqtPoYQza659SApws54nJ9PzFWahlu
-         AT6gcGy30Gn5+nsikOMYqSOs1HKP7IPArI4+M=
-Message-ID: <4DA733B1.1010702@gmail.com>
-Date: Thu, 14 Apr 2011 21:49:37 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Lin Ming <ming.m.lin@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-References: <4DA70950.3060102@openvz.org> <20110414174327.GA8863@elte.hu> <20110414174420.GA8950@elte.hu>
-In-Reply-To: <20110414174420.GA8950@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Apr 2011 13:47:27 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 110/209] sparc: Prevent no-handler signal syscall restart recursion.
+Date: Thu, 14 Apr 2011 13:42:20 -0400
+Message-Id: <1302803039-9400-111-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 09:44 PM, Ingo Molnar wrote:
-> 
-> below is the commit which needs to be fixed - note that i improved the 
-> changelog, please keep these fixes for future submissions.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+From: David S. Miller <davem@davemloft.net>
 
-Yes, thanks, i'll ping back as only get nit resolved.
+  =====================================================================
+  | This is a commit scheduled for the next v2.6.34 longterm release. |
+  | If you see a problem with using this for longterm, please comment.|
+  =====================================================================
 
+commit c27852597829128a9c9d96d79ec454a83c6b0da5 upstream.
+
+Explicitly clear the "in-syscall" bit when we have no signal
+handler and back up the program counters to back up the system
+call.
+
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ arch/sparc/kernel/signal32.c  |    4 +++-
+ arch/sparc/kernel/signal_32.c |    2 ++
+ arch/sparc/kernel/signal_64.c |    2 ++
+ 3 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/arch/sparc/kernel/signal32.c b/arch/sparc/kernel/signal32.c
+index 643a354..75fad42 100644
+--- a/arch/sparc/kernel/signal32.c
++++ b/arch/sparc/kernel/signal32.c
+@@ -616,7 +616,7 @@ static int setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
+ 
+ 		flush_signal_insns(address);
+ 	}
+-	return;
++	return 0;
+ 
+ sigill:
+ 	do_exit(SIGILL);
+@@ -840,12 +840,14 @@ void do_signal32(sigset_t *oldset, struct pt_regs * regs,
+ 		regs->u_regs[UREG_I0] = orig_i0;
+ 		regs->tpc -= 4;
+ 		regs->tnpc -= 4;
++		pt_regs_clear_syscall(regs);
+ 	}
+ 	if (restart_syscall &&
+ 	    regs->u_regs[UREG_I0] == ERESTART_RESTARTBLOCK) {
+ 		regs->u_regs[UREG_G1] = __NR_restart_syscall;
+ 		regs->tpc -= 4;
+ 		regs->tnpc -= 4;
++		pt_regs_clear_syscall(regs);
+ 	}
+ 
+ 	/* If there's no signal to deliver, we just put the saved sigmask
+diff --git a/arch/sparc/kernel/signal_32.c b/arch/sparc/kernel/signal_32.c
+index 99c85e9..5e5c5fd 100644
+--- a/arch/sparc/kernel/signal_32.c
++++ b/arch/sparc/kernel/signal_32.c
+@@ -580,12 +580,14 @@ static void do_signal(struct pt_regs *regs, unsigned long orig_i0)
+ 		regs->u_regs[UREG_I0] = orig_i0;
+ 		regs->pc -= 4;
+ 		regs->npc -= 4;
++		pt_regs_clear_syscall(regs);
+ 	}
+ 	if (restart_syscall &&
+ 	    regs->u_regs[UREG_I0] == ERESTART_RESTARTBLOCK) {
+ 		regs->u_regs[UREG_G1] = __NR_restart_syscall;
+ 		regs->pc -= 4;
+ 		regs->npc -= 4;
++		pt_regs_clear_syscall(regs);
+ 	}
+ 
+ 	/* if there's no signal to deliver, we just put the saved sigmask
+diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
+index 3f19e67..006fe45 100644
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -600,12 +600,14 @@ static void do_signal(struct pt_regs *regs, unsigned long orig_i0)
+ 		regs->u_regs[UREG_I0] = orig_i0;
+ 		regs->tpc -= 4;
+ 		regs->tnpc -= 4;
++		pt_regs_clear_syscall(regs);
+ 	}
+ 	if (restart_syscall &&
+ 	    regs->u_regs[UREG_I0] == ERESTART_RESTARTBLOCK) {
+ 		regs->u_regs[UREG_G1] = __NR_restart_syscall;
+ 		regs->tpc -= 4;
+ 		regs->tnpc -= 4;
++		pt_regs_clear_syscall(regs);
+ 	}
+ 
+ 	/* If there's no signal to deliver, we just put the saved sigmask
 -- 
-    Cyrill
+1.7.4.4
+
