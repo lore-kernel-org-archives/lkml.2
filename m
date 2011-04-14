@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965107Ab1DNR7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:59:52 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42450 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965100Ab1DNR72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:59:28 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 192/209] ima: fix add LSM rule bug
-Date: Thu, 14 Apr 2011 13:55:50 -0400
-Message-Id: <1302803767-9715-79-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
- <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
+	id S965140Ab1DNSAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:00:07 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:60571 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964921Ab1DNR76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 13:59:58 -0400
+Subject: Re: [lm-sensors] [PATCH v5 1/2] Use "request_muxed_region" in it87
+ watchdog drivers
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Hans de Goede <hdegoede@redhat.com>
+CC: Nat Gurumoorthy <natg@google.com>, Jean Delvare <khali@linux-fr.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Waychison <mikew@google.com>
+In-Reply-To: <4DA547CD.60406@redhat.com>
+References: <1302641290-30212-1-git-send-email-natg@google.com>
+	 <1302641387-30264-1-git-send-email-natg@google.com>
+	 <4DA547CD.60406@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Thu, 14 Apr 2011 10:58:33 -0700
+Message-ID: <1302803913.26780.373.camel@groeck-laptop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+On Wed, 2011-04-13 at 02:50 -0400, Hans de Goede wrote:
+> Hi,
+> 
+> On 04/12/2011 10:49 PM, Nat Gurumoorthy wrote:
+> > 01 - Changes to it87 watchdog driver to use "request_muxed_region"
+> > Serialize access to the hardware by using "request_muxed_region" macro defined
+> > by Alan Cox. Call to this macro will hold off the requestor if the resource is
+> > currently busy.
+> >
+> > The use of the above macro makes it possible to get rid of
+> > spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
+> > This also greatly simplifies the implementation of it87_wdt.c driver.
+> >
+> > Signed-off-by: Nat Gurumoorthy<natg@google.com>
+> > ---
+> >
+> > diff --git a/drivers/watchdog/it8712f_wdt.c b/drivers/watchdog/it8712f_wdt.c
+> > index 6143f52..51bfbc0 100644
+> > --- a/drivers/watchdog/it8712f_wdt.c
+> > +++ b/drivers/watchdog/it8712f_wdt.c
+> > @@ -51,7 +51,6 @@ MODULE_PARM_DESC(nowayout, "Disable watchdog shutdown on close");
+> >
+> >   static unsigned long wdt_open;
+> >   static unsigned expect_close;
+> > -static spinlock_t io_lock;
+> >   static unsigned char revision;
+> >
+> >   /* Dog Food address - We use the game port address */
+> > @@ -123,7 +122,11 @@ static inline void superio_select(int ldn)
+> >
+> >   static inline void superio_enter(void)
+> >   {
+> > -	spin_lock(&io_lock);
+> > +	/*
+> > +	 * Reserve REG and REG + 1 for exclusive access.
+> > +	 */
+> > +	(void) request_muxed_region(REG, 2, NAME);
+> > +
+> 
+> You shouldn't (void) this, there is a reason you get a warning
+> otherwise! request_muxed_region can still fail if some other driver
+> has done a none muxed request_region on the same region, and in that
+> case you should not continue with accessing the io-ports.
+> 
+Absolutely agree - even if that means adding a return code to
+superio_enter() and checking it from the calling code.
 
-  =====================================================================
-  | This is a commit scheduled for the next v2.6.34 longterm release. |
-  | If you see a problem with using this for longterm, please comment.|
-  =====================================================================
+Guenter
 
-commit 867c20265459d30a01b021a9c1e81fb4c5832aa9 upstream.
-
-If security_filter_rule_init() doesn't return a rule, then not everything
-is as fine as the return code implies.
-
-This bug only occurs when the LSM (eg. SELinux) is disabled at runtime.
-
-Adding an empty LSM rule causes ima_match_rules() to always succeed,
-ignoring any remaining rules.
-
- default IMA TCB policy:
-  # PROC_SUPER_MAGIC
-  dont_measure fsmagic=0x9fa0
-  # SYSFS_MAGIC
-  dont_measure fsmagic=0x62656572
-  # DEBUGFS_MAGIC
-  dont_measure fsmagic=0x64626720
-  # TMPFS_MAGIC
-  dont_measure fsmagic=0x01021994
-  # SECURITYFS_MAGIC
-  dont_measure fsmagic=0x73636673
-
-  < LSM specific rule >
-  dont_measure obj_type=var_log_t
-
-  measure func=BPRM_CHECK
-  measure func=FILE_MMAP mask=MAY_EXEC
-  measure func=FILE_CHECK mask=MAY_READ uid=0
-
-Thus without the patch, with the boot parameters 'tcb selinux=0', adding
-the above 'dont_measure obj_type=var_log_t' rule to the default IMA TCB
-measurement policy, would result in nothing being measured.  The patch
-prevents the default TCB policy from being replaced.
-
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Cc: James Morris <jmorris@namei.org>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: David Safford <safford@watson.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- security/integrity/ima/ima_policy.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 8643a93..14efcfe 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -250,6 +250,8 @@ static int ima_lsm_rule_init(struct ima_measure_rule_entry *entry,
- 	result = security_filter_rule_init(entry->lsm[lsm_rule].type,
- 					   Audit_equal, args,
- 					   &entry->lsm[lsm_rule].rule);
-+	if (!entry->lsm[lsm_rule].rule)
-+		return -EINVAL;
- 	return result;
- }
- 
--- 
-1.7.4.4
 
