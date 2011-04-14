@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab1DNWph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 18:45:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52090 "EHLO ogre.sisk.pl"
+	id S1754395Ab1DNWum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 18:50:42 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:60508 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab1DNWpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 18:45:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Make power domain callbacks take precedence over subsystem ones
-Date: Fri, 15 Apr 2011 00:45:54 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <201104130205.26988.rjw@sisk.pl> <BANLkTimQ6kX41-53Dw2RqEVyYzbT2qbz9Q@mail.gmail.com>
-In-Reply-To: <BANLkTimQ6kX41-53Dw2RqEVyYzbT2qbz9Q@mail.gmail.com>
+	id S1754159Ab1DNWui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 18:50:38 -0400
+Subject: Re: [PATCH v6 1/2] Use "request_muxed_region" in it87 watchdog
+ drivers
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Nat Gurumoorthy <natg@google.com>
+CC: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Mike Waychison <mikew@google.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+In-Reply-To: <1302817069-6389-1-git-send-email-natg@google.com>
+References: <1302816996-6345-1-git-send-email-natg@google.com>
+	 <1302817069-6389-1-git-send-email-natg@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Thu, 14 Apr 2011 15:49:30 -0700
+Message-ID: <1302821370.26780.585.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104150045.54904.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 14, 2011, Magnus Damm wrote:
-> Hi Rafael,
+On Thu, 2011-04-14 at 17:37 -0400, Nat Gurumoorthy wrote:
+> 01 - Changes to it87 watchdog driver to use "request_muxed_region"
+> Serialize access to the hardware by using "request_muxed_region" macro defined
+> by Alan Cox. Call to this macro will hold off the requestor if the resource is
+> currently busy. The first call to request_muxed_region will attempt 10 times 
+> to reserve the region before it gives up. This will typically get called from
+> the driver init routines. If this succeeds then subsequent calls wait forever
+> for the resource to be available.
 > 
-> On Wed, Apr 13, 2011 at 9:05 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > Change the PM core's behavior related to power domains in such a way
-> > that, if a power domain is defined for a given device, its callbacks
-> > will be executed instead of and not in addition to the device
-> > subsystem's PM callbacks.
+> The use of the above macro makes it possible to get rid of
+> spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
+> This also greatly simplifies the implementation of it87_wdt.c driver.
 > 
-> Thanks for your work on this! I'm very happy to see a more fine
-> grained interface for SoC specific code compared to the weak symbols
-> and other coarse grained alternatives for the platform bus.
+> Signed-off-by: Nat Gurumoorthy <natg@google.com>
+> ---
 > 
-> My only thought on this is if we really want to limit ourselves to
-> only control power domains using these callbacks. I can imagine that
-> some SoCs want to do other non-power domain specific operations with
-> these callbacks, and if so, perhaps using the term power domain as
-> name of the pointer in struct device would be somewhat odd. OTOH, I
-> really dislike naming discussions in general and I can't really think
-> of any good names. So it all looks more like a set of system specific
-> PM override hooks.
-> 
-> Or is there something that is really power domain specific with these hooks?
+> diff --git a/drivers/watchdog/it8712f_wdt.c b/drivers/watchdog/it8712f_wdt.c
+> index 6143f52..8bf2524 100644
+> --- a/drivers/watchdog/it8712f_wdt.c
+> +++ b/drivers/watchdog/it8712f_wdt.c
+> @@ -51,7 +51,6 @@ MODULE_PARM_DESC(nowayout, "Disable watchdog shutdown on close");
+>  
+>  static unsigned long wdt_open;
+>  static unsigned expect_close;
+> -static spinlock_t io_lock;
+>  static unsigned char revision;
+>  
+>  /* Dog Food address - We use the game port address */
+> @@ -121,9 +120,46 @@ static inline void superio_select(int ldn)
+>  	outb(ldn, VAL);
+>  }
+>  
+> -static inline void superio_enter(void)
+> +static inline int
+> +try_superio_enter(void)
+>  {
+> -	spin_lock(&io_lock);
+> +	int num_tries = 10;
+> +	/*
+> +	 * Try to reserve REG and REG + 1 for exclusive access.
+> +	 * Give up after 10 attempts.
+> +	 */
+> +	while (num_tries--) {
+> +		if (!request_muxed_region(REG, 2, NAME)) {
+> +			if (num_tries)
+> +				continue;
+> +
+> +			/*
+> +			 * Someone is holding the region. Give up.
+> +			 */
+> +			pr_err("I/O address 0x%04x already in use\n", REG);
+> +			return -EBUSY;
+> +		}
+> +
+> +		break;
+> +	}
+> +
+This is way too complicated. Just return an error if
+request_muxed_region fails, like all other callers of
+request_muxed_region do.
 
-Not in principle, but I think there is.  Namely, if there are two groups
-of devices belonging to the same bus type (e.g. platform) that each require
-different PM handling, it is legitimate to call them "power domains" (where
-"domain" means "a set of devices related to each other because of the way
-they need to be handled"), even if they don't share power resources.
+Guenter
 
-Of course, if they do share power resources, the term is just right. :-)
 
-Thanks,
-Rafael
