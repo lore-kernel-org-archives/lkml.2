@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab1DNIdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 04:33:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47117 "EHLO hera.kernel.org"
+	id S1757958Ab1DNIdW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 04:33:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47129 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757398Ab1DNIdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 04:33:02 -0400
-Date: Thu, 14 Apr 2011 08:31:38 GMT
+	id S1757746Ab1DNIdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 04:33:15 -0400
+Date: Thu, 14 Apr 2011 08:32:04 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-3ca7a440da394808571dad32d33d3bc0389982e6@git.kernel.org>
+Message-ID: <tip-c6eb3dda25892f1f974f5420f63e6721aab02f6f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
         npiggin@kernel.dk, akpm@linux-foundation.org, tglx@linutronix.de,
@@ -17,166 +17,236 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, efault@gmx.de,
         npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110405152728.785452014@chello.nl>
-References: <20110405152728.785452014@chello.nl>
+In-Reply-To: <20110405152728.826338173@chello.nl>
+References: <20110405152728.826338173@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/locking] sched: Always provide p->on_cpu
-Git-Commit-ID: 3ca7a440da394808571dad32d33d3bc0389982e6
+Subject: [tip:sched/locking] mutex: Use p->on_cpu for the adaptive spin
+Git-Commit-ID: c6eb3dda25892f1f974f5420f63e6721aab02f6f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Apr 2011 08:31:39 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Apr 2011 08:32:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3ca7a440da394808571dad32d33d3bc0389982e6
-Gitweb:     http://git.kernel.org/tip/3ca7a440da394808571dad32d33d3bc0389982e6
+Commit-ID:  c6eb3dda25892f1f974f5420f63e6721aab02f6f
+Gitweb:     http://git.kernel.org/tip/c6eb3dda25892f1f974f5420f63e6721aab02f6f
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 5 Apr 2011 17:23:40 +0200
+AuthorDate: Tue, 5 Apr 2011 17:23:41 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 14 Apr 2011 08:52:32 +0200
+CommitDate: Thu, 14 Apr 2011 08:52:33 +0200
 
-sched: Always provide p->on_cpu
+mutex: Use p->on_cpu for the adaptive spin
 
-Always provide p->on_cpu so that we can determine if its on a cpu
-without having to lock the rq.
+Since we now have p->on_cpu unconditionally available, use it to
+re-implement mutex_spin_on_owner.
 
+Requested-by: Thomas Gleixner <tglx@linutronix.de>
 Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Nick Piggin <npiggin@kernel.dk>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20110405152728.785452014@chello.nl
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110405152728.826338173@chello.nl
 ---
- include/linux/sched.h |    4 +---
- kernel/sched.c        |   46 +++++++++++++++++++++++++++++-----------------
- 2 files changed, 30 insertions(+), 20 deletions(-)
+ include/linux/mutex.h |    2 +-
+ include/linux/sched.h |    2 +-
+ kernel/mutex-debug.c  |    2 +-
+ kernel/mutex-debug.h  |    2 +-
+ kernel/mutex.c        |    2 +-
+ kernel/mutex.h        |    2 +-
+ kernel/sched.c        |   83 +++++++++++++++++++-----------------------------
+ 7 files changed, 39 insertions(+), 56 deletions(-)
 
+diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+index 94b48bd..c75471d 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -51,7 +51,7 @@ struct mutex {
+ 	spinlock_t		wait_lock;
+ 	struct list_head	wait_list;
+ #if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_SMP)
+-	struct thread_info	*owner;
++	struct task_struct	*owner;
+ #endif
+ #ifdef CONFIG_DEBUG_MUTEXES
+ 	const char 		*name;
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 758e27a..3435837 100644
+index 3435837..1738504 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1200,9 +1200,7 @@ struct task_struct {
- 	int lock_depth;		/* BKL lock depth */
+@@ -360,7 +360,7 @@ extern signed long schedule_timeout_interruptible(signed long timeout);
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+-extern int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner);
++extern int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner);
  
+ struct nsproxy;
+ struct user_namespace;
+diff --git a/kernel/mutex-debug.c b/kernel/mutex-debug.c
+index ec815a9..73da83a 100644
+--- a/kernel/mutex-debug.c
++++ b/kernel/mutex-debug.c
+@@ -75,7 +75,7 @@ void debug_mutex_unlock(struct mutex *lock)
+ 		return;
+ 
+ 	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
+-	DEBUG_LOCKS_WARN_ON(lock->owner != current_thread_info());
++	DEBUG_LOCKS_WARN_ON(lock->owner != current);
+ 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+ 	mutex_clear_owner(lock);
+ }
+diff --git a/kernel/mutex-debug.h b/kernel/mutex-debug.h
+index 57d527a..0799fd3 100644
+--- a/kernel/mutex-debug.h
++++ b/kernel/mutex-debug.h
+@@ -29,7 +29,7 @@ extern void debug_mutex_init(struct mutex *lock, const char *name,
+ 
+ static inline void mutex_set_owner(struct mutex *lock)
+ {
+-	lock->owner = current_thread_info();
++	lock->owner = current;
+ }
+ 
+ static inline void mutex_clear_owner(struct mutex *lock)
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index c4195fa..fe4706c 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -160,7 +160,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 	 */
+ 
+ 	for (;;) {
+-		struct thread_info *owner;
++		struct task_struct *owner;
+ 
+ 		/*
+ 		 * If we own the BKL, then don't spin. The owner of
+diff --git a/kernel/mutex.h b/kernel/mutex.h
+index 67578ca..4115fbf 100644
+--- a/kernel/mutex.h
++++ b/kernel/mutex.h
+@@ -19,7 +19,7 @@
  #ifdef CONFIG_SMP
--#ifdef __ARCH_WANT_UNLOCKED_CTXSW
--	int oncpu;
--#endif
-+	int on_cpu;
- #endif
+ static inline void mutex_set_owner(struct mutex *lock)
+ {
+-	lock->owner = current_thread_info();
++	lock->owner = current;
+ }
  
- 	int prio, static_prio, normal_prio;
+ static inline void mutex_clear_owner(struct mutex *lock)
 diff --git a/kernel/sched.c b/kernel/sched.c
-index a187c3f..cd2593e 100644
+index cd2593e..55cc503 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -838,18 +838,39 @@ static inline int task_current(struct rq *rq, struct task_struct *p)
- 	return rq->curr == p;
- }
+@@ -4173,70 +4173,53 @@ need_resched:
+ EXPORT_SYMBOL(schedule);
  
--#ifndef __ARCH_WANT_UNLOCKED_CTXSW
- static inline int task_running(struct rq *rq, struct task_struct *p)
- {
-+#ifdef CONFIG_SMP
-+	return p->on_cpu;
-+#else
- 	return task_current(rq, p);
-+#endif
- }
- 
-+#ifndef __ARCH_WANT_UNLOCKED_CTXSW
- static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
- {
-+#ifdef CONFIG_SMP
-+	/*
-+	 * We can optimise this out completely for !SMP, because the
-+	 * SMP rebalancing from interrupt is the only thing that cares
-+	 * here.
-+	 */
-+	next->on_cpu = 1;
-+#endif
- }
- 
- static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- {
-+#ifdef CONFIG_SMP
-+	/*
-+	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
-+	 * We must ensure this doesn't happen until the switch is completely
-+	 * finished.
-+	 */
-+	smp_wmb();
-+	prev->on_cpu = 0;
-+#endif
- #ifdef CONFIG_DEBUG_SPINLOCK
- 	/* this is a valid case when another task releases the spinlock */
- 	rq->lock.owner = current;
-@@ -865,15 +886,6 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- }
- 
- #else /* __ARCH_WANT_UNLOCKED_CTXSW */
--static inline int task_running(struct rq *rq, struct task_struct *p)
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-/*
+- * Look out! "owner" is an entirely speculative pointer
+- * access and not reliable.
+- */
+-int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
 -{
--#ifdef CONFIG_SMP
--	return p->oncpu;
+-	unsigned int cpu;
+-	struct rq *rq;
+ 
+-	if (!sched_feat(OWNER_SPIN))
+-		return 0;
++static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
++{
++	bool ret = false;
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-	/*
+-	 * Need to access the cpu field knowing that
+-	 * DEBUG_PAGEALLOC could have unmapped it if
+-	 * the mutex owner just released it and exited.
+-	 */
+-	if (probe_kernel_address(&owner->cpu, cpu))
+-		return 0;
 -#else
--	return task_current(rq, p);
+-	cpu = owner->cpu;
 -#endif
--}
--
- static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
- {
- #ifdef CONFIG_SMP
-@@ -882,7 +894,7 @@ static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
- 	 * SMP rebalancing from interrupt is the only thing that cares
- 	 * here.
- 	 */
--	next->oncpu = 1;
-+	next->on_cpu = 1;
- #endif
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	raw_spin_unlock_irq(&rq->lock);
-@@ -895,12 +907,12 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- {
- #ifdef CONFIG_SMP
++	rcu_read_lock();
++	if (lock->owner != owner)
++		goto fail;
+ 
  	/*
--	 * After ->oncpu is cleared, the task can be moved to a different CPU.
-+	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
- 	 * We must ensure this doesn't happen until the switch is completely
- 	 * finished.
+-	 * Even if the access succeeded (likely case),
+-	 * the cpu field may no longer be valid.
++	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
++	 * lock->owner still matches owner, if that fails, owner might
++	 * point to free()d memory, if it still matches, the rcu_read_lock()
++	 * ensures the memory stays valid.
  	 */
- 	smp_wmb();
--	prev->oncpu = 0;
-+	prev->on_cpu = 0;
- #endif
- #ifndef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	local_irq_enable();
-@@ -2686,8 +2698,8 @@ void sched_fork(struct task_struct *p, int clone_flags)
- 	if (likely(sched_info_on()))
- 		memset(&p->sched_info, 0, sizeof(p->sched_info));
- #endif
--#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
--	p->oncpu = 0;
-+#if defined(CONFIG_SMP)
-+	p->on_cpu = 0;
- #endif
- #ifdef CONFIG_PREEMPT
- 	/* Want to start with kernel preemption disabled. */
-@@ -5776,8 +5788,8 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
- 	rcu_read_unlock();
+-	if (cpu >= nr_cpumask_bits)
+-		return 0;
++	barrier();
  
- 	rq->curr = rq->idle = idle;
--#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
--	idle->oncpu = 1;
-+#if defined(CONFIG_SMP)
-+	idle->on_cpu = 1;
- #endif
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+-	/*
+-	 * We need to validate that we can do a
+-	 * get_cpu() and that we have the percpu area.
+-	 */
+-	if (!cpu_online(cpu))
+-		return 0;
++	ret = owner->on_cpu;
++fail:
++	rcu_read_unlock();
  
+-	rq = cpu_rq(cpu);
++	return ret;
++}
+ 
+-	for (;;) {
+-		/*
+-		 * Owner changed, break to re-assess state.
+-		 */
+-		if (lock->owner != owner) {
+-			/*
+-			 * If the lock has switched to a different owner,
+-			 * we likely have heavy contention. Return 0 to quit
+-			 * optimistic spinning and not contend further:
+-			 */
+-			if (lock->owner)
+-				return 0;
+-			break;
+-		}
++/*
++ * Look out! "owner" is an entirely speculative pointer
++ * access and not reliable.
++ */
++int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
++{
++	if (!sched_feat(OWNER_SPIN))
++		return 0;
+ 
+-		/*
+-		 * Is that owner really running on that cpu?
+-		 */
+-		if (task_thread_info(rq->curr) != owner || need_resched())
++	while (owner_running(lock, owner)) {
++		if (need_resched())
+ 			return 0;
+ 
+ 		arch_mutex_cpu_relax();
+ 	}
+ 
++	/*
++	 * If the owner changed to another task there is likely
++	 * heavy contention, stop spinning.
++	 */
++	if (lock->owner)
++		return 0;
++
+ 	return 1;
+ }
+ #endif
