@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069Ab1DNRqX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:23 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37999 "EHLO
+	id S933796Ab1DNS1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:27:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38074 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab1DNRqT (ORCPT
+	with ESMTP id S933049Ab1DNRqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:19 -0400
+	Thu, 14 Apr 2011 13:46:23 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Graham Gower <graham.gower@gmail.com>,
-        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: stable-review@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        john stultz <johnstul@us.ibm.com>, Bob Picco <bpicco@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 047/209] drivers/char/vt_ioctl.c: fix VT_OPENQRY error value
-Date: Thu, 14 Apr 2011 13:41:17 -0400
-Message-Id: <1302803039-9400-48-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 029/209] hpet: fix unwanted interrupt due to stale irq status bit
+Date: Thu, 14 Apr 2011 13:40:59 -0400
+Message-Id: <1302803039-9400-30-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,79 +25,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graham Gower <graham.gower@gmail.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 1e0ad2881d50becaeea70ec696a80afeadf944d2 upstream.
+commit 96e9694df446d1154ec2f4fdba8908588b9cba38 upstream.
 
-When all VT's are in use, VT_OPENQRY casts -1 to unsigned char before
-returning it to userspace as an int.  VT255 is not the next available
-console.
+Jaswinder Singh Rajput wrote:
+> By executing Documentation/timers/hpet_example.c
+>
+> for polling, I requested for 3 iterations but it seems iteration work
+> for only 2 as first expired time is always very small.
+>
+> # ./hpet_example poll /dev/hpet 10 3
+> -hpet: executing poll
+> hpet_poll: info.hi_flags 0x0
+> hpet_poll: expired time = 0x13
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
+> hpet_poll: expired time = 0x1868c
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
+> hpet_poll: expired time = 0x18645
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
 
-Signed-off-by: Graham Gower <graham.gower@gmail.com>
-Cc: Greg KH <greg@kroah.com>
+Clearing the HPET interrupt enable bit disables interrupt generation
+but does not disable the timer, so the interrupt status bit will still
+be set when the timer elapses.  If another interrupt arrives before
+the timer has been correctly programmed (due to some other device on
+the same interrupt line, or CONFIG_DEBUG_SHIRQ), this results in an
+extra unwanted interrupt event because the status bit is likely to be
+set from comparator matches that happened before the device was opened.
+
+Therefore, we have to ensure that the interrupt status bit is and
+stays cleared until we actually program the timer.
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>
+Cc: Bob Picco <bpicco@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/vt_ioctl.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/char/hpet.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/vt_ioctl.c b/drivers/char/vt_ioctl.c
-index 6aa1028..6351a26 100644
---- a/drivers/char/vt_ioctl.c
-+++ b/drivers/char/vt_ioctl.c
-@@ -503,6 +503,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
- 	struct kbd_struct * kbd;
- 	unsigned int console;
- 	unsigned char ucval;
-+	unsigned int uival;
- 	void __user *up = (void __user *)arg;
- 	int i, perm;
- 	int ret = 0;
-@@ -657,7 +658,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
- 		break;
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index 9ded667..7447ffa 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -475,6 +475,21 @@ static int hpet_ioctl_ieon(struct hpet_dev *devp)
+ 	if (irq) {
+ 		unsigned long irq_flags;
  
- 	case KDGETMODE:
--		ucval = vc->vc_mode;
-+		uival = vc->vc_mode;
- 		goto setint;
- 
- 	case KDMAPDISP:
-@@ -695,7 +696,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
- 		break;
- 
- 	case KDGKBMODE:
--		ucval = ((kbd->kbdmode == VC_RAW) ? K_RAW :
-+		uival = ((kbd->kbdmode == VC_RAW) ? K_RAW :
- 				 (kbd->kbdmode == VC_MEDIUMRAW) ? K_MEDIUMRAW :
- 				 (kbd->kbdmode == VC_UNICODE) ? K_UNICODE :
- 				 K_XLATE);
-@@ -717,9 +718,9 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
- 		break;
- 
- 	case KDGKBMETA:
--		ucval = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
-+		uival = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
- 	setint:
--		ret = put_user(ucval, (int __user *)arg);
-+		ret = put_user(uival, (int __user *)arg);
- 		break;
- 
- 	case KDGETKEYCODE:
-@@ -949,7 +950,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
- 		for (i = 0; i < MAX_NR_CONSOLES; ++i)
- 			if (! VT_IS_IN_USE(i))
- 				break;
--		ucval = i < MAX_NR_CONSOLES ? (i+1) : -1;
-+		uival = i < MAX_NR_CONSOLES ? (i+1) : -1;
- 		goto setint;		 
- 
- 	/*
++		if (devp->hd_flags & HPET_SHARED_IRQ) {
++			/*
++			 * To prevent the interrupt handler from seeing an
++			 * unwanted interrupt status bit, program the timer
++			 * so that it will not fire in the near future ...
++			 */
++			writel(readl(&timer->hpet_config) & ~Tn_TYPE_CNF_MASK,
++			       &timer->hpet_config);
++			write_counter(read_counter(&hpet->hpet_mc),
++				      &timer->hpet_compare);
++			/* ... and clear any left-over status. */
++			isr = 1 << (devp - devp->hd_hpets->hp_dev);
++			writel(isr, &hpet->hpet_isr);
++		}
++
+ 		sprintf(devp->hd_name, "hpet%d", (int)(devp - hpetp->hp_dev));
+ 		irq_flags = devp->hd_flags & HPET_SHARED_IRQ
+ 						? IRQF_SHARED : IRQF_DISABLED;
 -- 
 1.7.4.4
 
