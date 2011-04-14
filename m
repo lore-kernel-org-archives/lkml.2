@@ -1,90 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab1DNLrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 07:47:12 -0400
-Received: from mail.academy.zt.ua ([82.207.120.245]:4235 "EHLO
-	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1DNLrK (ORCPT
+	id S1753697Ab1DNLuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 07:50:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45915 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1DNLuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 07:47:10 -0400
-X-MDAV-Processed: mail.academy.zt.ua, Thu, 14 Apr 2011 14:47:09 +0300
-X-Spam-Processed: mail.academy.zt.ua, Thu, 14 Apr 2011 14:47:09 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-Return-Path: george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: George Kashperko <george@znau.edu.ua>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Arend van Spriel <arend@broadcom.com>,
-        Jonas Gorski <jonas.gorski@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-Content-Type: text/plain
-Date: Thu, 14 Apr 2011 14:43:51 +0300
-Message-Id: <1302781431.21145.6.camel@dev.znau.edu.ua>
+	Thu, 14 Apr 2011 07:50:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=i+PX9WIV9S+5792Uzq9rbiOWItC16W8YGcAL0In+0yEKfxrhtQK+m+3szVKcxDtBDH
+         f+jRBqnaj1055S88Wl9a5CEYRq+GWb5jewBl927CzTGywDOP1W6GEQVW1KK3LpH/TBUp
+         Li/q7b3XwUJnpDmSzpxipyKSxzk+0NmTW6rZ4=
+Subject: Re: 2.6.38 sbrk regression
+From: raz ben yehuda <raziebe@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20110413172127.GB5734@random.random>
+References: <1302692638.15225.14.camel@raz.scalemp.com>
+	 <20110413125146.GR29444@random.random>
+	 <1302703579.17536.1.camel@raz.scalemp.com>
+	 <20110413172127.GB5734@random.random>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 14:49:14 +0300
+Message-ID: <1302781754.5098.13.camel@raz.scalemp.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey Andrea
+Me again. I managed to ftrace ( function graph ) the two kernels. I used
+2.6.37 and 2.6.39-rc3. The bellow is example for sys_brk calls traces
+from each kernel. As you can see, there is no "single smoking gun"
+here. 
 
-> 
-> We have slightly improved our knowledge of new Broadcom's bus. It
-> appears Broadcom took standard AMBA bus and put on it two cores for
-> every device:
-> 1) First core from each pair is real AMBA device, it has CID and PID.
-> Broadcom called it wrapper, it is used to control second core
-> (enabling second, disabling second, resetting second, setting flags of
-> second).
-> 2) Second core from each pair is Broadcom specific device. It can
-> *not* be treated as standard AMBA core - attempting to read it's CID
-> on PID leads to machine hang. Instead it is identified by MANUF, ID,
-> REV and CLASS. Example can be 80211 core.
-> 
-> One of the idea is to integrate with current AMBA driver:
-> 1) First driver read info about all cores in Broadcom specific way. It
-> registers all *wrapper* (AMBA type) cores as amba_device(s).
-> 2) Second driver registers for cores with PID 0x103BB369 (Broadcom
-> specific I believe). It receives wrappers (from AMBA bus) and exposes
-> wrapper-related Broadcom specific core in the system.
-> 
-> Problem: how to expose Broadcom specific cores in the system? Remember
-> we can not use amba_device, because Broadcom specific cores are
-> programmed and identified differently.
-> 
-> Could we register some virtual bcm_amba bus in the system and register
-> Broadcom specific cores with it? Or is there something better for this
-> case? In summary everything I need is to make driver (for example b43)
-> able to register for Broadcom specific core with Broadcom specific
-> identifiers. For example:
-> static const struct axi_device_id b43_axi_tbl[] = {
-> 	AXI_CORE(AXI_MANUF_BCM, AXI_CORE_80211, 0x17, AXI_ANY_CLASS),
-> 	AXI_CORETABLE_END
-> };
-> MODULE_DEVICE_TABLE(axi, b43_axi_tbl);
-> 
-> We have problems deciding architecture, the whole proposed layout is
-> not approved as final yet. Right now I try to check possibilities.
-> 
-If you beleive you do need to register broadcom ip core devices on amba
-bus then I would suggest you to introduce class driver for broadcom
-cores rather than breaking into bus_type layout. But to be honest I
-think it is bad idea and your original approach where you managed agents
-internally and registered _broadcom_ devices on dedicated _broadcom_ bus
-have much more sense. Going your original way you still can also
-register agents on amba thus registering two buses per host but honestly
-registering them just for the sake of registering makes no sense at all.
+The vm functions durations increased as a whole.
+I repeated the tests from sha1 4e9f64c42d0ba5eb0c78569435ada4c224332ce4
+compared to sha1 152c9ccb75548c027fa3103efa4fa4e19a345449  and it is
+consistent. ~13% performance decrease.
 
-Have nice day,
-George
+Can you see any relation to thp that might causes this degradation ?
+
+thank you
+raz
+
+2.6.39-rc3
+
+ 0)       .       |  sys_brk() {
+ 0)   0.205 us    |    down_write();
+ 0)   0.256 us    |    find_vma();
+ 0)               |    do_brk() {
+ 0)   0.549 us    |      cap_file_mmap();
+ 0)               |      get_unmapped_area() {
+ 0)   0.130 us    |        arch_get_unmapped_area_topdown();
+ 0)   1.112 us    |      }
+ 0)               |      cap_vm_enough_memory() {
+ 0)   0.163 us    |        __vm_enough_memory();
+ 0)   1.408 us    |      }
+ 0)               |      vma_merge() {
+ 0)   0.313 us    |        vma_adjust();
+ 0)   2.315 us    |      }
+ 0)   9.692 us    |    }
+ 0)   0.168 us    |    up_write();
+ 0) + 14.473 us   |  }
+
+2.6.37
+ 0)               |  sys_brk() {
+ 0)   0.261 us    |    down_write();
+ 0)   0.416 us    |    find_vma();
+ 0)               |    do_brk() {
+ 0)   0.411 us    |      cap_file_mmap();
+ 0)               |      get_unmapped_area() {
+ 0)   0.443 us    |        arch_get_unmapped_area_topdown();
+ 0)   0.982 us    |      }
+ 0)               |      cap_vm_enough_memory() {
+ 0)   0.481 us    |        __vm_enough_memory();
+ 0)   1.145 us    |      }
+ 0)               |      vma_merge() {
+ 0)   0.459 us    |        vma_adjust();
+ 0)   1.004 us    |      }
+ 0)   5.423 us    |    }
+ 0)   0.273 us    |    up_write();
+ 0)   8.020 us    |  }
+
+
+
+
+On Wed, 2011-04-13 at 19:21 +0200, Andrea Arcangeli wrote:
+> On Wed, Apr 13, 2011 at 05:06:19PM +0300, raz ben yehuda wrote:
+> > ok, managed to build 38-rc3 ( keep forgetting make mrproper ).
+> > problem is still there:
+> 
+> Oops I thought it was typo on your prev email so I didn't answer
+> assuming you would test 39-rc like I suggested in my prev email, I
+> really meant 2.6.39-rc3.
+> 
+> The fix I refer to is d527caf22e48480b102c7c6ee5b9ba12170148f7 and
+> it's included in >= 2.6.39-rc1. 38-rc3 has THP but not this
+> changeset. We tried to push it for 38 final but it was a bit late so
+> it got merged immediately in 39-rc1 to stay on the safe side (it's
+> only a performance issue and the other longstanding irq/sched latency
+> issues in compaction that got fixed in 39-rc1 where actually more
+> relevant than the compaction-kswapd removal).
 
 
