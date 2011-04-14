@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab1DNOnZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:43:25 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:55639 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758881Ab1DNOnY (ORCPT
+	id S1758943Ab1DNOn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:43:58 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64472 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758881Ab1DNOn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:43:24 -0400
+	Thu, 14 Apr 2011 10:43:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=VkToSnIy/F/hR1wOYVA5mOu2kmhwHZHSh7SVMPzFqU9ZfTOD7dpkaaJUzWkRxnNdbE
-         kgyvy/oHIKOmRb7PRkG0Jhih9tqIVfw3Vc5pF4Wq5xXEfE72iMNgTFDMd/qbc/m/1z6V
-         Y79cHvOOu4b6yJ0ll9gaBvUCThMGxxRb5C8HU=
-MIME-Version: 1.0
-In-Reply-To: <201104132150.05623.richard@nod.at>
-References: <201104132150.05623.richard@nod.at>
-Date: Thu, 14 Apr 2011 21:43:23 +0700
-Message-ID: <BANLkTinj1vtMk4qo-dc46KWXScjDDt4vCg@mail.gmail.com>
-Subject: Re: gcc-4.6.0 generates no code for sub_preempt_count()
-From: masterkom masterkom <masterkom33@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=tdXrZbBBXeJmtOqJ5R3wzNvuFN7xi8NBsp86xPMaEPvacMGWqd1eSgcEmuLY9NCG9D
+         W9/wkrCVaBU5LxP+uL22f1SFHfP1m/vu66Y0/1npIgkB+foGXMHvurLnawpok0t9Jeju
+         1KvioyxR/nrRzIyjON0GOu4yLukq2dimqbRbA=
+Subject: [PATCH] mfd: asic3: Fix build error
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 22:43:47 +0800
+Message-ID: <1302792227.8637.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,, I have the project to make Operating System using linux kernel.
-That system is multiplatform, which is combine linux and window . This
-project hope All people that who has familiar with windows can use
-this operating system without sin. This project is free..
+Fix below compile error:
 
-I hape there people can help us to done this project ,, thx,,,
+  CC      drivers/mfd/asic3.o
+drivers/mfd/asic3.c: In function 'asic3_irq_demux':
+drivers/mfd/asic3.c:147: error: 'irq_data' undeclared (first use in this function)
+drivers/mfd/asic3.c:147: error: (Each undeclared identifier is reported only once
+drivers/mfd/asic3.c:147: error: for each function it appears in.)
 
-On 4/14/11, Richard Weinberger <richard@nod.at> wrote:
-> Hi,
->
-> I'm facing a very strange issue with gcc-4.6.0 and UML.
-> Within __local_bh_enable() gcc generates no code for sub_preempt_count().
->
-> See:
-> http://userweb.kernel.org/~rw/uml-gcc460/__local_bh_enable-gcc460.txt
-> vs.
-> http://userweb.kernel.org/~rw/uml-gcc460/__local_bh_enable-gcc431.txt
->
-> Interestingly it generates code for add_preempt_count().
-> I can reproduce this on x86 and x86_64.
->
-> The problem has to do with UML's current_thread_info() function.
-> When I replace it with arch/x86's (unportable) variant gcc generates code.
->
-> Any ideas whether this is a gcc or a kernel issue?
-> Thanks,
-> //richard
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/asic3.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
+index 0536e11..77a3971 100644
+--- a/drivers/mfd/asic3.c
++++ b/drivers/mfd/asic3.c
+@@ -144,7 +144,7 @@ static void asic3_irq_demux(unsigned int irq, struct irq_desc *desc)
+ 	int iter, i;
+ 	unsigned long flags;
+ 
+-	data->chip->irq_ack(irq_data);
++	data->chip->irq_ack(data);
+ 
+ 	for (iter = 0 ; iter < MAX_ASIC_ISR_LOOPS; iter++) {
+ 		u32 status;
+-- 
+1.7.1
+
+
+
