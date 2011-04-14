@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab1DNKbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 06:31:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56228 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab1DNKbh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 06:31:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=IeyIkAomylri1prxjX+2xVpord+41XxpJNTI3s+GKalYMgRPJEDXAX/zxvHwRZobgQ
-         TE3WzRXnXtpcRzwMkzdNfroWsP+LkTAsZKz/NLJ7h4ybqQmDtigvldJQYLAsYCOOTxEy
-         1T8IwjNq6/I1Z6kWxIuef0zgaFn/4JkP9Diu0=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: akpm@linux-foundation.org, "Alexey Dobriyan" <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [40/52] kstrtox: convert drivers/usb/
-References: <1296915654-7458-40-git-send-email-adobriyan@gmail.com>
-Date: Thu, 14 Apr 2011 12:31:35 +0200
+	id S932805Ab1DNKby (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 06:31:54 -0400
+Received: from gmmr5.centrum.cz ([90.183.38.152]:46556 "EHLO gmmr5.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932726Ab1DNKbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 06:31:52 -0400
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Subject: Re: Regression from 2.6.36
+Date: Thu, 14 Apr 2011 12:31:50 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "Changli Gao" <xiaosuo@gmail.com>,
+        "=?UTF-8?Q?Am=C3=A9rico=20Wang?=" <xiyou.wangcong@gmail.com>,
+        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
+        "Jiri Slaby" <jirislaby@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>
+References: <20110315132527.130FB80018F1@mail1005.cent>	 <20110317001519.GB18911@kroah.com> <20110407120112.E08DCA03@pobox.sk>	 <4D9D8FAA.9080405@suse.cz>	 <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>	 <1302177428.3357.25.camel@edumazet-laptop>	 <1302178426.3357.34.camel@edumazet-laptop>	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>	 <1302190586.3357.45.camel@edumazet-laptop>	 <20110412154906.70829d60.akpm@linux-foundation.org>	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>	 <20110412183132.a854bffc.akpm@linux-foundation.org>	 <1302662256.2811.27.camel@edumazet-laptop>	 <20110413141600.28793661.akpm@linux-foundation.org>	 <1302747058.3549.7.camel@edumazet-laptop>	 <20110413222803.38e42baf.akpm@linux-foundation.org>	 <1302762718.3549.229.camel@edumazet-laptop>	 <20110414110816.EA841944@pobox.sk> <1302776866.3248.2.camel@edumazet-laptop>
+In-Reply-To: <1302776866.3248.2.camel@edumazet-laptop>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vtxbiwjx3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1296915654-7458-40-git-send-email-adobriyan@gmail.com>
-User-Agent: Opera Mail/11.01 (Linux)
+Message-Id: <20110414123150.F96CAA51@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 05 Feb 2011 15:20:43 +0100, Alexey Dobriyan <adobriyan@gmail.com>  
-wrote:
 
-> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+It's completely 64bit system.
+
+
+
+______________________________________________________________
+> Od: "Eric Dumazet" <eric.dumazet@gmail.com>
+> Komu: azurIt <azurit@pobox.sk>
+> Dátum: 14.04.2011 12:28
+> Predmet: Re: Regression from 2.6.36
 >
-> ---
-> drivers/usb/gadget/storage_common.c |    7 ++++---
-
-I haven't notice your patch (wasn't sent to linux-usb?) and changed this
-file already -- patch is in Greg's tree.
-
->  drivers/usb/host/ehci-dbg.c         |    6 +++---
->  drivers/usb/serial/iuu_phoenix.c    |   27 ++++++++++-----------------
->  3 files changed, 17 insertions(+), 23 deletions(-)
+> CC: "Andrew Morton" <akpm@linux-foundation.org>, "Changli Gao" <xiaosuo@gmail.com>, "Américo Wang" <xiyou.wangcong@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>
+>Le jeudi 14 avril 2011 à 11:08 +0200, azurIt a écrit :
+>> Here it is:
+>> 
+>> 
+>> # ls /proc/31416/fd | wc -l
+>> 5926
 >
-> diff --git a/drivers/usb/gadget/storage_common.c  
-> b/drivers/usb/gadget/storage_common.c
-> index b015561..ed81718 100644
-> --- a/drivers/usb/gadget/storage_common.c
-> +++ b/drivers/usb/gadget/storage_common.c
-> @@ -713,8 +713,9 @@ static ssize_t fsg_store_ro(struct device *dev,  
-> struct device_attribute *attr,
->  	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
->  	unsigned long	ro;
-> -	if (strict_strtoul(buf, 2, &ro))
-> -		return -EINVAL;
-> +	rc = kstrtoul(buf, 2, &ro);
-> +	if (rc < 0)
-> +		return rc;
-> 	/*
->  	 * Allow the write-enable status to change only while the
-
-Also, this is actually incorrect -- it zeroes rc which it should not
-do.  I made the same mistake at first. ;)
-
-> @@ -740,7 +741,7 @@ static ssize_t fsg_store_nofua(struct device *dev,
->  	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
->  	unsigned long	nofua;
-> -	if (strict_strtoul(buf, 2, &nofua))
-> +	if (kstrtoul(buf, 2, &nofua))
->  		return -EINVAL;
-> 	/* Sync data when switching from async mode to sync */
-
-
-> diff --git a/drivers/usb/host/ehci-dbg.c b/drivers/usb/host/ehci-dbg.c
-> @@ -1000,7 +1000,7 @@ static ssize_t debug_lpm_write(struct file *file,  
-> const char __user *user_buf,
->  		buf[len - 1] = '\0';
-> 	if (strncmp(buf, "enable", 5) == 0) {
-> -		if (strict_strtoul(buf + 7, 10, &port))
-> +		if (kstrtoul(buf + 7, 10, &port))
->  			return -EINVAL;
->  		params = ehci_readl(ehci, &ehci->caps->hcs_params);
->  		if (port > HCS_N_PORTS(params)) {
-> @@ -1018,7 +1018,7 @@ static ssize_t debug_lpm_write(struct file *file,  
-> const char __user *user_buf,
->  		printk(KERN_INFO "force enable LPM for port %lu\n", port);
->  	} else if (strncmp(buf, "hird=", 5) == 0) {
->  		unsigned long hird;
-> -		if (strict_strtoul(buf + 5, 16, &hird))
-> +		if (kstrtoul(buf + 5, 16, &hird))
->  			return -EINVAL;
->  		printk(KERN_INFO "setting hird %s %lu\n", buf + 6, hird);
->  		temp = ehci_readl(ehci, &ehci->regs->command);
-> @@ -1026,7 +1026,7 @@ static ssize_t debug_lpm_write(struct file *file,  
-> const char __user *user_buf,
->  		temp |= hird << 24;
->  		ehci_writel(ehci, temp, &ehci->regs->command);
->  	} else if (strncmp(buf, "disable", 7) == 0) {
-> -		if (strict_strtoul(buf + 8, 10, &port))
-> +		if (kstrtoul(buf + 8, 10, &port))
->  			return -EINVAL;
->  		params = ehci_readl(ehci, &ehci->caps->hcs_params);
->  		if (port > HCS_N_PORTS(params)) {
-
-I'm wondering if we care about loosing the possible -ERANGE.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+>Hmm, if its a 32bit kernel, I am afraid Andrew patch wont solve the
+>problem...
+>
+>[On 32bit kernel, we still use kmalloc() up to 8192 files ]
+>
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
+>
