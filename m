@@ -1,91 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab1DNUz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:55:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48642 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751281Ab1DNUzZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:55:25 -0400
+	id S1752199Ab1DNVGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:06:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63582 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1DNVGh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 17:06:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110414202445.GA6173@liondog.tnic>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110414202445.GA6173@liondog.tnic>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 14 Apr 2011 13:55:02 -0700
-Message-ID: <BANLkTi=h+NL+qqMDBNvOUmVDonORf4Qx2A@mail.gmail.com>
-Subject: Re: Linux 2.6.39-rc3
-To: Borislav Petkov <bp@alien8.de>, Jens Axboe <jaxboe@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <662075c7-1510-43f0-baaa-82541276b2c8@default>
+Date: Thu, 14 Apr 2011 14:04:58 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>
+Subject: RE: linux-next: manual merge of the cleancache tree with Linus' tree
+References: <20110324135524.261bb5a9.sfr@canb.auug.org.au>
+ <20110323205615.6984f974.akpm@linux-foundation.org
+ AANLkTikagME334Y6PH4P_Nybf_h=fov5CiNBAY7KxYyN@mail.gmail.com>
+In-Reply-To: <AANLkTikagME334Y6PH4P_Nybf_h=fov5CiNBAY7KxYyN@mail.gmail.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6550.5003]
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DA761C0.00F1:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 1:24 PM, Borislav Petkov <bp@alien8.de> wrote:
->
-> Yep, I had to hit a buglet too. Looks like block layer, ->request_fn
-> (do_ide_request) called in IRQ disabled region. Process is blkid, i.e.
-> some udev helper. Kernel is -rc3 + Joerg's USB quirk fix which should be
-> unrelated.
+> From: Minchan Kim [mailto:minchan.kim@gmail.com]
+> Sent: Wednesday, March 23, 2011 11:38 PM
+> To: Andrew Morton
+> Cc: Stephen Rothwell; Dan Magenheimer; linux-next@vger.kernel.org;
+> linux-kernel@vger.kernel.org; Linus
+> Subject: Re: linux-next: manual merge of the cleancache tree with
+> Linus' tree
+> 
+> On Thu, Mar 24, 2011 at 12:56 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Thu, 24 Mar 2011 13:55:24 +1100 Stephen Rothwell
+> <sfr@canb.auug.org.au> wrote:
+> >
+> >> Hi Dan,
+> >>
+> >> Today's linux-next merge of the cleancache tree got a conflict in
+> >> mm/truncate.c between commit 5adc7b518b54 ("mm: truncate: change
+> >> remove_from_page_cache") from Linus' tree and commit 03e838947c8a
+> >> ("mm/fs: add hooks to support cleancache") from the cleancache tree.
+> >>
+> >> I fixed it up (see below) but am really not sure of the fix. Â I can
+> carry
+> >> this fix as necessary.
+> >>
+> >> Is this stuff going to be merged into Linus' tree this time round?
+> >> --
+> >> Cheers,
+> >> Stephen Rothwell Â  Â  Â  Â  Â  Â  Â  Â  Â  Â sfr@canb.auug.org.au
+> >>
+> >> diff --cc mm/truncate.c
+> >> index a956675,cd94607..0000000
+> >> --- a/mm/truncate.c
+> >> +++ b/mm/truncate.c
+> >> @@@ -106,8 -108,13 +108,12 @@@ truncate_complete_page(struct
+> address_s
+> >> Â  Â  Â  cancel_dirty_page(page, PAGE_CACHE_SIZE);
+> >>
+> >> Â  Â  Â  clear_page_mlock(page);
+> >> Â - Â  Â remove_from_page_cache(page);
+> >> Â  Â  Â  ClearPageMappedToDisk(page);
+> >> Â + Â  Â delete_from_page_cache(page);
+> >> + Â  Â  /* this must be after the remove_from_page_cache which
+> >> + Â  Â  Â * calls cleancache_put_page (and note page->mapping is now
+> NULL)
+> >> + Â  Â  Â */
+> >> + Â  Â  cleancache_flush_page(mapping, page);
+> >> Â - Â  Â page_cache_release(page); Â  Â  Â  /* pagecache ref */
+> >> Â  Â  Â  return 0;
+> >> Â  }
+> >
+> > I did the cleancache_flush_page() before the
+> delete_from_page_cache(),
+> > in case the delete_from_page_cache() freed the page. Â I didn't
+> actually
+> > check whether that makes sense though.
+> 
+> I am not sure cleancache's put and flush semantic.
+> If I understand rightly with old __remove_from_page_cache's comment,
+> maybe cleancache_flush_page is to invalidate the page.(If I understand
+> right, I hope the name is changed to cleancache_invalidate_page)
+> 
+> "        /*
+>          * if we're uptodate, flush out into the cleancache, otherwise
+>          * invalidate any existing cleancache entries.  We can't leave
+>          * stale data around in the cleancache once our page is gone
+>          */
+>         if (PageUptodate(page))
+>                 cleancache_put_page(page);
+>         else
+>                 cleancache_flush_page(mapping, page); "
+> 
+> So I think cleancache_flush_page should be done after
+> delete_from_page_cache because delete_from_page_cache calls
+> cleancache_put_page(maybe this function would flush the content of
+> memory into cleancache's target) before we invalidates the page.
+> 
+> And it should not be a problem in case the delete_from_page_cache
+> freed the page since cleancache should have a reference the page but I
+> didn't check cleancahe always has a reference of page. If it isn't,
+> it's a critical problem.
+> 
+> Dan, Could you comment this?
 
-I think this particular backtrace should be fixed by commit
-6631e635c65d ("block: don't flush plugged IO on forced preemtion
-scheduling"), although even without preempt scheduling, I don't think
-it's at all ok to sleep inside __blk_run_queue.
+In case anyone was waiting for a resolution on this, it
+was resolved offlist.
 
-Jens? Even from a _regular_ schedule, it would not be ok if we end up
-sleeping - we're caching things like the request-queue, and we have
-preempt_disable() inside the scheduler for a very good reason.
+The answer is that the order doesn't matter and the V8
+cleancache patch will include a fix for this.
 
-So if the unplugging can cause sleeping, that's a problem. See the
-
-        /* HLD do_request() callback might sleep, make sure it's okay */
-        might_sleep();
-
-comment in drivers/ide/ide-io.c. Hmm?
-
-                    Linus
-
----
-> Happens when I put a cd in the drive. More info upon request.
->
-> [20933.365059] BUG: sleeping function called from invalid context at drivers/ide/ide-io.c:468
-> [20933.365113] in_atomic(): 1, irqs_disabled(): 0, pid: 5817, name: blkid
-> [20933.365166] no locks held by blkid/5817.
-> [20933.365193] Pid: 5817, comm: blkid Not tainted 2.6.39-rc3-00001-g1b521ee #9
-> [20933.365228] Call Trace:
-> [20933.365282]  [<ffffffff8102db2b>] __might_sleep+0x103/0x108
-> [20933.365312]  [<ffffffff812e61c8>] do_ide_request+0x4a/0x58e
-> [20933.365362]  [<ffffffff811951af>] ? cfq_prio_tree_add+0xb3/0xc2
-> [20933.365390]  [<ffffffff811974f3>] ? cfq_add_rq_rb+0xb1/0xc5
-> [20933.365437]  [<ffffffff81197579>] ? cfq_insert_request+0x72/0x433
-> [20933.365465]  [<ffffffff81187fd8>] __blk_run_queue+0x80/0xee
-> [20933.365511]  [<ffffffff81188141>] flush_plug_list+0xfb/0x139
-> [20933.365540]  [<ffffffff810a9a86>] ? sleep_on_page+0x12/0x12
-> [20933.365586]  [<ffffffff81188199>] __blk_flush_plug+0x1a/0x3a
-> [20933.365613]  [<ffffffff81442913>] schedule+0x3d2/0xb4b
-> [20933.365663]  [<ffffffff811a2cee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [20933.365692]  [<ffffffff8100387f>] ? do_softirq+0x77/0x85
-> [20933.365739]  [<ffffffff81446244>] ? retint_restore_args+0xe/0xe
-> [20933.365767]  [<ffffffff810a9a86>] ? sleep_on_page+0x12/0x12
-> [20933.365812]  [<ffffffff81443377>] preempt_schedule+0x37/0x4b
-> [20933.365839]  [<ffffffff81445f92>] _raw_spin_unlock_irqrestore+0x64/0x69
-> [20933.365878]  [<ffffffff81057b3b>] prepare_to_wait_exclusive+0x6c/0x77
-> [20933.365925]  [<ffffffff81443806>] __wait_on_bit_lock+0x34/0x8f
-> [20933.365953]  [<ffffffff810a9a00>] __lock_page_killable+0x66/0x6d
-> [20933.366000]  [<ffffffff810579a1>] ? autoremove_wake_function+0x3d/0x3d
-> [20933.366090]  [<ffffffff810ab56d>] generic_file_aio_read+0x491/0x67c
-> [20933.366123]  [<ffffffff810e8137>] do_sync_read+0xcb/0x108
-> [20933.366183]  [<ffffffff81068f4d>] ? trace_hardirqs_on+0xd/0xf
-> [20933.366217]  [<ffffffff810e8bce>] vfs_read+0xb3/0x13b
-> [20933.366270]  [<ffffffff810e8d1f>] sys_read+0x4d/0x77
-> [20933.366303]  [<ffffffff81446aeb>] system_call_fastpath+0x16/0x1b
->
-> Thanks.
->
-> --
-> Regards/Gruss,
->    Boris.
->
+Thanks,
+Dan
