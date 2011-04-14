@@ -1,139 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759107Ab1DNPE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 11:04:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61751 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758830Ab1DNPE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 11:04:56 -0400
-Message-ID: <4DA70D0B.3080407@redhat.com>
-Date: Thu, 14 Apr 2011 11:04:43 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+	id S1759118Ab1DNPGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 11:06:03 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56320 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830Ab1DNPGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 11:06:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=aleTRLqKkS1cmLsoWptKEVfiJMijT+XVc82Uln0KVBYNXi2/uXHRotEiJDjXYUKG+O
+         YHdvL0CFRhh8u8yA4py5KrcOD2cmfqHAr1W8Qk98iB/n+N20/Zxgf4IJ3+sVfOfrf8dl
+         GKkTtpRniAVNnO94NUFfWwTkjdf52g+sXf188=
+Date: Fri, 15 Apr 2011 00:05:51 +0900
+From: Tejun Heo <tj@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Brian Gerst <brgerst@gmail.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Shaohui Zheng <shaohui.zheng@intel.com>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH v2] x86-64, NUMA: fix fakenuma boot failure
+Message-ID: <20110414150551.GC21397@mtj.dyndns.org>
+References: <20110413160239.D72A.A69D9226@jp.fujitsu.com>
+ <20110413193219.GF3987@mtj.dyndns.org>
+ <20110414095059.080E.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russ Anderson <rja@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mstowe@redhat.com" <mstowe@redhat.com>,
-        "dnelson@redhat.com" <dnelson@redhat.com>,
-        "rja@americas.sgi.com" <rja@americas.sgi.com>
-Subject: Re: [PATCH -v3] x86, MCE: Drop the default decoding notifier
-References: <20110413132409.GB1900@gere.osrc.amd.com> <1302701810-2471-2-git-send-email-bp@amd64.org> <4DA5ACB2.1070505@redhat.com> <20110413141829.GE1987@aftab> <4DA5B1B1.5090905@redhat.com> <20110413142648.GB2791@aftab> <20110413143642.GC2791@aftab> <4DA5D6CC.9090500@redhat.com> <4DA5D9FB.1010503@redhat.com> <20110413173705.GJ2791@aftab> <20110414150036.GG10080@aftab>
-In-Reply-To: <20110414150036.GG10080@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110414095059.080E.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+On Thu, Apr 14, 2011 at 09:51:00AM +0900, KOSAKI Motohiro wrote:
+> hmm...  My carbon copy is not corrupted. Maybe crappy intermediate
+> server override it ?
 
-On 04/14/2011 11:00 AM, Borislav Petkov wrote:
-> On Wed, Apr 13, 2011 at 01:37:05PM -0400, Borislav Petkov wrote:
->   
->> In the worst case, we will report 32 CEs before panicking. For that case
->> we either do printk_once as Tony suggested or we ratelimit it. I'll
->> update the patch.
->>     
-> Ok, how about the following, I ratelimit the printk to the default of 10
-> messages per 5 seconds. I've also got the hardware MCE injection patches
-> ready and will do some testing with them.
->   
+Sorry about that.  Problem was on my side.
 
-See my previous email ;)  I think just putting in a printk_once after
-the CE call to print_mce() in mce_panic() might be better?  At least
-that way we get the --ascii message for *EVERY* UC which IMO would be
-nice...
+The patch itself looks good to me now, so,
 
-P.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-> --
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> Date: Wed, 13 Apr 2011 14:32:06 +0200
-> Subject: [PATCH -v3] x86, MCE: Drop the default decoding notifier
->
-> The default notifier doesn't make a lot of sense to call in the
-> correctable errors case. Drop it and emit the mcelog decoding hint only
-> in the uncorrectable errors case and when no notifier is registered.
-> Also, limit the issual of the "mcelog" message in the remote case when
-> we dump unreported CEs before panicking.
->
-> While at it, remove unused old x86_mce_decode_callback from the header.
->
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/include/asm/mce.h       |    2 --
->  arch/x86/kernel/cpu/mcheck/mce.c |   23 ++++++-----------------
->  2 files changed, 6 insertions(+), 19 deletions(-)
->
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index eb16e94..021979a 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -142,8 +142,6 @@ static inline void winchip_mcheck_init(struct cpuinfo_x86 *c) {}
->  static inline void enable_p5_mce(void) {}
->  #endif
->  
-> -extern void (*x86_mce_decode_callback)(struct mce *m);
-> -
->  void mce_setup(struct mce *m);
->  void mce_log(struct mce *m);
->  DECLARE_PER_CPU(struct sys_device, mce_dev);
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 68e2303..679bd9e 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -105,20 +105,6 @@ static int			cpu_missing;
->  ATOMIC_NOTIFIER_HEAD(x86_mce_decoder_chain);
->  EXPORT_SYMBOL_GPL(x86_mce_decoder_chain);
->  
-> -static int default_decode_mce(struct notifier_block *nb, unsigned long val,
-> -			       void *data)
-> -{
-> -	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
-> -	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
-> -
-> -	return NOTIFY_STOP;
-> -}
-> -
-> -static struct notifier_block mce_dec_nb = {
-> -	.notifier_call = default_decode_mce,
-> -	.priority      = -1,
-> -};
-> -
->  /* MCA banks polled by the period polling timer for corrected events */
->  DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
->  	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
-> @@ -212,6 +198,8 @@ void mce_log(struct mce *mce)
->  
->  static void print_mce(struct mce *m)
->  {
-> +	int ret = 0;
-> +
->  	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
->  	       m->extcpu, m->mcgstatus, m->bank, m->status);
->  
-> @@ -239,7 +227,10 @@ static void print_mce(struct mce *m)
->  	 * Print out human-readable details about the MCE error,
->  	 * (if the CPU has an implementation for that)
->  	 */
-> -	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-> +	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-> +	if (ret != NOTIFY_STOP)
-> +		printk_ratelimited(KERN_EMERG HW_ERR
-> +				   "Run the above through 'mcelog --ascii'\n");
->  }
->  
->  #define PANIC_TIMEOUT 5 /* 5 seconds */
-> @@ -1721,8 +1712,6 @@ __setup("mce", mcheck_enable);
->  
->  int __init mcheck_init(void)
->  {
-> -	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
-> -
->  	mcheck_intel_therm_init();
->  
->  	return 0;
->   
+but I have some nitpicky comments and it would be nice if you can
+respin the patch with the suggested updates.
+
+> Currently, numa=fake boot parameter is broken. If it's used, kernel
+> doesn't boot and makes panic by zero divide error.
+
+"kernel may panic due to devide by zero error depending on CPU
+configuration"
+
+> The zero divede is caused following line. (ie group->cpu_power==0)
+> 
+> update_sg_lb_stats()
+
+Maybe it would be a good idea to prefix the above with filename, ie -
+"kernel/sched_fail.c::update_sg_lb_stats()"
+
+> This is regression  since commit e23bba6044 (x86-64, NUMA: Unify
+> emulated distance mapping). Because It drop fake_physnodes() and
+> then cpu-node mapping was changed.
+
+"This is a regression caused by blah blah because it changes cpu ->
+node mapping in the process of dropping fake_physnodes()"
+
+> old) all cpus are assinged node 0
+> now) cpus are assigned round robin
+>      (the logic is implemented by numa_init_array())
+
+It would be nice to note that the above happens only for CPUs which
+lack explicit NUMA configuration information.
+
+> Why round robin assignment doesn't work? Because init_numa_sched_groups_power()
+> assume all logical cpus in the same physical cpu are assigned the same node.
+  ^^^^^^                                           ^^^^^^^^^^^^
+  assumes                                            share
+
+> (Then it only account group_first_cpu()). But the simple round robin
+                ^^^^^^^                   ^^^^^
+              accounts for      probably ", and" would work better here
+> broke the above assumption.
+  ^^^^^
+  breaks
+
+> Thus, this patch implement to reassigne node-id if buggy firmware or numa
+> emulation makes wrong cpu node map.
+
+It would be nice if you can detail the solution a bit more.  What it's
+doing, which configuration it affects and so on.
+
+> +	/*
+> +	 * Our CPU scheduler assume all logical cpus in the same physical cpu
+> +	 * package are assigned the same node. But, Buggy ACPI table or NUMA
+> +	 * emulation might assign them to different node. Fix it.
+> +	*/
+
+Care to make the above a docbook comment?
+
+Thank you.
+
+-- 
+tejun
