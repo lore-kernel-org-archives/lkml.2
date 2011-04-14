@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964985Ab1DNSIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:08:25 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42165 "EHLO
+	id S1759327Ab1DNSIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:08:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42166 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964968Ab1DNR6j (ORCPT
+	with ESMTP id S964970Ab1DNR6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:58:39 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: stable-review@kernel.org, NeilBrown <neilb@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 177/209] x86, gcc-4.6: Use gcc -m options when building vdso
-Date: Thu, 14 Apr 2011 13:55:35 -0400
-Message-Id: <1302803767-9715-64-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 175/209] md: fix bug with re-adding of partially recovered device.
+Date: Thu, 14 Apr 2011 13:55:33 -0400
+Message-Id: <1302803767-9715-62-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,52 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: H. Peter Anvin <hpa@linux.intel.com>
+From: NeilBrown <neilb@suse.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit de2a8cf98ecdde25231d6c5e7901e2cffaf32af9 upstream.
+commit 1a855a0606653d2d82506281e2c686bacb4b2f45 upstream.
 
-The vdso Makefile passes linker-style -m options not to the linker but
-to gcc.  This happens to work with earlier gcc, but fails with gcc
-4.6.  Pass gcc-style -m options, instead.
+With v0.90 metadata, a hot-spare does not become a full member of the
+array until recovery is complete.  So if we re-add such a device to
+the array, we know that all of it is as up-to-date as the event count
+would suggest, and so it a bitmap-based recovery is possible.
 
-Note: all currently supported versions of gcc supports -m32, so there
-is no reason to conditionalize it any more.
+However with v1.x metadata, the hot-spare immediately becomes a full
+member of the array, but it record how much of the device has been
+recovered.  If the array is stopped and re-assembled recovery starts
+from this point.
 
-Reported-by: H. J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <tip-*@git.kernel.org>
+When such a device is hot-added to an array we currently lose the 'how
+much is recovered' information and incorrectly included it as a full
+in-sync member (after bitmap-based fixup).
+This is wrong and unsafe and could corrupt data.
+
+So be more careful about setting saved_raid_disk - which is what
+guides the re-adding of devices back into an array.
+The new code matches the code in slot_store which does a similar
+thing, which is encouraging.
+
+This is suitable for any -stable kernel.
+
+Reported-by: "Dailey, Nate" <Nate.Dailey@stratus.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/vdso/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/md.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 6b4ffed..dd78ef6 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -25,7 +25,7 @@ targets += vdso.so vdso.so.dbg vdso.lds $(vobjs-y)
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 92dbef5..cf511de 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -5008,7 +5008,7 @@ static int add_new_disk(mddev_t * mddev, mdu_disk_info_t *info)
+ 				PTR_ERR(rdev));
+ 			return PTR_ERR(rdev);
+ 		}
+-		/* set save_raid_disk if appropriate */
++		/* set saved_raid_disk if appropriate */
+ 		if (!mddev->persistent) {
+ 			if (info->state & (1<<MD_DISK_SYNC)  &&
+ 			    info->raid_disk < mddev->raid_disks)
+@@ -5018,7 +5018,10 @@ static int add_new_disk(mddev_t * mddev, mdu_disk_info_t *info)
+ 		} else
+ 			super_types[mddev->major_version].
+ 				validate_super(mddev, rdev);
+-		rdev->saved_raid_disk = rdev->raid_disk;
++		if (test_bit(In_sync, &rdev->flags))
++			rdev->saved_raid_disk = rdev->raid_disk;
++		else
++			rdev->saved_raid_disk = -1;
  
- export CPPFLAGS_vdso.lds += -P -C
- 
--VDSO_LDFLAGS_vdso.lds = -m elf_x86_64 -Wl,-soname=linux-vdso.so.1 \
-+VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
- 		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
- 
- $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
-@@ -69,7 +69,7 @@ vdso32.so-$(VDSO32-y)		+= sysenter
- vdso32-images			= $(vdso32.so-y:%=vdso32-%.so)
- 
- CPPFLAGS_vdso32.lds = $(CPPFLAGS_vdso.lds)
--VDSO_LDFLAGS_vdso32.lds = -m elf_i386 -Wl,-soname=linux-gate.so.1
-+VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-soname=linux-gate.so.1
- 
- # This makes sure the $(obj) subdirectory exists even though vdso32/
- # is not a kbuild sub-make subdirectory.
+ 		clear_bit(In_sync, &rdev->flags); /* just to be sure */
+ 		if (info->state & (1<<MD_DISK_WRITEMOSTLY))
 -- 
 1.7.4.4
 
