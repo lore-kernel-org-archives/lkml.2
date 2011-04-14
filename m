@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab1DNJQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:16:21 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53149 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932538Ab1DNJQR convert rfc822-to-8bit (ORCPT
+	id S932622Ab1DNJQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:16:58 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45615 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932538Ab1DNJQ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:16:17 -0400
+	Thu, 14 Apr 2011 05:16:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=T3xqiEX8QGzP0+uSUgO2yhKZyGn0H1/fUpCPm1pfE6p68l0MdWLyi5kKAAmBRZ6MP2
-         2cs/J1qvYxRgcP/G9E/TTI1VLTCaUaMNOSr/3XXgKl1yToAe8X/9LsdKTc1SN24YggiK
-         DbwjbPnBOm8IPmoEMeYSh1f7hS4dW8EEJmYpY=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=OBtwrHMmko+JMDlAqn2OCLprBdKzh5B/UZIPtdiWvCTfJw69VnrdKmOkUcofjJQ/7h
+         io1tSQMHyFKzmUwAu5vZMn2CxFP4YGBY4xjvpLSoVvXtSReljOokk/BnDPyy7xXXeGBd
+         I/QOHM4HDKUxI9c8HRe0zhTXaoshUND0yGIUk=
 MIME-Version: 1.0
-In-Reply-To: <20110413113204.GB6948@albatros>
-References: <BANLkTi=ogJg_uJqsJFpnwnnr6LS+SFT3Vg@mail.gmail.com>
-	<20110413113204.GB6948@albatros>
-Date: Thu, 14 Apr 2011 12:16:15 +0300
-Message-ID: <BANLkTinh0cmb0hzpVdm5XemT5NeULeAoHQ@mail.gmail.com>
-Subject: Re: [PATCH] net: ipv4: add IPPROTO_ICMP socket kind
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Pavel Kankovsky <peak@argo.troja.mff.cuni.cz>,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Eugene Teo <eugene@redhat.com>, Nelson Elhage <nelhage@ksplice.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Pekka Savola <pekkas@netcore.fi>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <BANLkTikd2MpRPF37R+vCwnb7Lzzd6EiS7A@mail.gmail.com>
+References: <BANLkTikd2MpRPF37R+vCwnb7Lzzd6EiS7A@mail.gmail.com>
+Date: Thu, 14 Apr 2011 11:16:55 +0200
+Message-ID: <BANLkTinq=mC9rs5R3U8FPLCp-GgCJris_g@mail.gmail.com>
+Subject: Re: linux-next: Tree for April 14 (Call-traces: RCU/ACPI/WQ related?)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 2:32 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> On Wed, Apr 13, 2011 at 13:29 +0300, Alexey Dobriyan wrote:
->> On Sat, Apr 9, 2011 at 1:15 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->> > This patch adds IPPROTO_ICMP socket kind.
+[ Adding CC to RCU maintainer (Hi Paul :-)) ]
+
+Helping me for now with (see also Documentation/RCU/stallwarn.txt):
+
+# cat /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
+0
+
+# echo "1" > /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
+
+# cat /sys/module/rcutree/parameters/rcu_cpu_stall_suppress
+1
+
+- Sedat -
+
+On Thu, Apr 14, 2011 at 10:59 AM, Sedat Dilek
+<sedat.dilek@googlemail.com> wrote:
+> On Thu, Apr 14, 2011 at 7:01 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
 >>
->> > +       seq_printf(f, "%5d: %08X:%04X %08X:%04X"
->> > +               " %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %p %d%n",
->> > +               bucket, src, srcp, dest, destp, sp->sk_state,
->> > +               sk_wmem_alloc_get(sp),
->> > +               sk_rmem_alloc_get(sp),
->> > +               0, 0L, 0, sock_i_uid(sp), 0, sock_i_ino(sp),
+>> Changes since 20110413:
 >>
->> These zeroes can be embedded into format string for slightly faster printing.
+>> Dropped tree: xen
+>>
+>> The gfs2 tree lost its conflict.
+>>
+>> The net tree lost its build failure.
+>>
+>> The wireless tree lost all but one conflict.
+>>
+>> The trivial tree lost its conflict.
+>>
+>> The tip tree gained a conflict against Linus' tree.
+>>
+>> The usb tree gained a conflict against the s5p tree.
+>>
+>> The staging tree lost its conflicts.
+>>
+>> ----------------------------------------------------------------------------
 >
-> Is it really needed?  I mean, it is not a fast path, so such a small
-> overhead is not very bad.  But embedding them into the string makes it a
-> bit more difficult to read.
-
-In fact, if field is always zero, it can be removed altogether.
-Also, there was big discussion re exposing kernel socket pointers,
-which this file continue to do.
-
-> +               atomic_read(&sp->sk_refcnt), sp,
-> +               atomic_read(&sp->sk_drops), len);
+> Just a quick hello and an attached dmesg.
+> Yesterday's linux-next (next-20110413) with same kernel-config was OK.
+>
+> ( Also, I have seen a section-mismatch in x86 (IIRC mm) missing
+> __init... but that's another story. )
+>
+> - Sedat -
+>
+> P.S.: diff between today's and yesterday's kernel-config
+>
+> $ diff -uprN /boot/config-2.6.39-rc3-next20110413.2-686-small
+> /boot/config-2.6.39-rc3-next20110414.2-686-small
+> --- /boot/config-2.6.39-rc3-next20110413.2-686-small Â  Â 2011-04-13
+> 12:32:09.000000000 +0200
+> +++ /boot/config-2.6.39-rc3-next20110414.2-686-small Â  Â 2011-04-14
+> 10:23:25.000000000 +0200
+> @@ -1,7 +1,7 @@
+> Â #
+> Â # Automatically generated make config: don't edit
+> Â # Linux/x86 2.6.39-rc3 Kernel Configuration
+> -# Wed Apr 13 11:55:54 2011
+> +# Thu Apr 14 09:43:03 2011
+> Â #
+> Â # CONFIG_64BIT is not set
+> Â CONFIG_X86_32=y
+> @@ -2602,6 +2602,7 @@ CONFIG_USB_UHCI_HCD=m
+> Â #
+> Â # Enable Host or Gadget support to see Inventra options
+> Â #
+> +# CONFIG_USB_RENESAS_USBHS is not set
+>
+> Â #
+> Â # USB Device Class drivers
+>
