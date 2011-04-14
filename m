@@ -1,167 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab1DNT3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 15:29:30 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59195 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233Ab1DNT33 (ORCPT
+	id S1758188Ab1DNT3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 15:29:55 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:28274 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756233Ab1DNT3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 15:29:29 -0400
-Message-ID: <4DA74AF4.4020405@windriver.com>
-Date: Thu, 14 Apr 2011 15:28:52 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
+	Thu, 14 Apr 2011 15:29:53 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6316"; a="85857867"
+Message-ID: <4DA74B30.8090200@codeaurora.org>
+Date: Thu, 14 Apr 2011 12:29:52 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [34-longterm 136/209] exec: make argv/envp memory visible to
- oom-killer
-References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com> <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com> <1302803767-9715-23-git-send-email-paul.gortmaker@windriver.com> <20110414181936.GA22589@redhat.com>
-In-Reply-To: <20110414181936.GA22589@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
+        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
+References: <1299134429.100626.661279191478.0.gpush@pororo> <1302754859.2767.30.camel@pororo> <20110414100048.GB1611@n2100.arm.linux.org.uk> <1302776705.28876.113.camel@pasglop> <20110414103200.GF1611@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104140751220.24613@xanadu.home> <20110414120904.GH1611@n2100.arm.linux.org.uk>
+In-Reply-To: <20110414120904.GH1611@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Apr 2011 19:28:54.0472 (UTC) FILETIME=[31282480:01CBFADA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-14 02:19 PM, Oleg Nesterov wrote:
-> On 04/14, Paul Gortmaker wrote:
+On 04/14/2011 05:09 AM, Russell King - ARM Linux wrote:
+> On Thu, Apr 14, 2011 at 07:59:58AM -0400, Nicolas Pitre wrote:
+>> On Thu, 14 Apr 2011, Russell King - ARM Linux wrote:
 >>
->>   =====================================================================
->>   | This is a commit scheduled for the next v2.6.34 longterm release. |
->>   | If you see a problem with using this for longterm, please comment.|
->>   =====================================================================
->> ...
+>>> On Thu, Apr 14, 2011 at 08:25:05PM +1000, Benjamin Herrenschmidt wrote:
+>>>> On Thu, 2011-04-14 at 11:00 +0100, Russell King - ARM Linux wrote:
+>>>>>
+>>>>> I will take it, but at the moment I'm rather unhappy about the response
+>>>>> from the community to Linus' complaint.
+>>>>>
+>>>>> If existing platform maintainers can show that moving over to this will
+>>>>> result in a net reduction of code under arch/arm, then that will be good.
+>>>>> What I don't want to see at the moment is arch/arm increasing in size as
+>>>>> a result of any change.  We desperately need to see a reduction for the
+>>>>> next merge window.
+>>>>
+>>>> It's a chicken and egg... platform maintainers wait for you to take it
+>>>> and you wait for them to take it :-)
+>>>>
+>>>> It seems to me that this fits well into the category of "better common
+>>>> abstractions" that was discussed in the thread initiated by Linus as one
+>>>> of the ways to improve on the "clutter"...
+>>>
+>>> That depends - sometimes creating generic stuff results in a net increase
+>>> in the overall size, and that's something that Linus also complained about.
+>>>
+>>> According to linux-next, where we are at the moment with arch/arm is a
+>>> net increase of 6000 lines since the close of the last merge window,
+>>> and arch/arm is responsible for almost 75% of arch/ changes.  It looks
+>>> very much like the same situation which Linus complained about.
 >>
->> With this patch get_arg_page() increments current's MM_ANONPAGES
->> counter every time we allocate the new page for argv/envp. When
->> do_execve() succeds or fails, we change this counter back.
-> 
-> This only works starting from 2.6.36.
-> 
-> before 2.6.36 kernel, oom-killer's badness() uses mm->total_vm. Please
-> see the patch for pre2.6.36 kernel below.
+>> Quoting Linus:
+>>
+>> | Umm. The whole "number of lines of code" thing has become a total red
+>> | herring.
+>> |
+>> | THAT IS NOT WHY I STARTED TO COMPLAIN!
+>> |
+>> | The reason I point out the number of lines of code is because it's one
+>> | of the more obvious _symptoms_ of the problem.
+>>
+>> So we need to work on infrastructure, and the clock API is exactly that.
+>> Obviously adding it will increase the number of lines of code initially,
+>> but eventually this will help _reduce_ them, and more importantly it
+>> will allow for the reduction of mindless duplication of code that was
+>> identified as being the actual problem causing maintenance pain.
+>
+> Adding it without anyone using it doesn't solve anything.  We need
+> people to commit to producing patches to use it for the next merge
+> window.
 
-Thanks Oleg -- I see the earlier discussion about this from December
-now, and will swap in the pre-36 version -- I appreciate the review.
+Russell,
 
-Paul.
+In your first reply to Jeremy you said this:
+"I will take it, but at the moment I'm rather unhappy about the response
+from the community to Linus' complaint."
 
-> 
-> Oleg.
-> 
-> --------------------------------------------------------------------
-> commit 3c77f845722158206a7209c45ccddc264d19319c upstream.
-> 
-> Brad Spengler published a local memory-allocation DoS that
-> evades the OOM-killer (though not the virtual memory RLIMIT):
-> http://www.grsecurity.net/~spender/64bit_dos.c
-> 
-> execve()->copy_strings() can allocate a lot of memory, but
-> this is not visible to oom-killer, nobody can see the nascent
-> bprm->mm and take it into account.
-> 
-> With this patch get_arg_page() increments current's MM_ANONPAGES
-> counter every time we allocate the new page for argv/envp. When
-> do_execve() succeds or fails, we change this counter back.
-> 
-> Technically this is not 100% correct, we can't know if the new
-> page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
-> I don't think this really matters and everything becomes correct
-> once exec changes ->mm or fails.
-> 
-> Compared to upstream:
-> 
-> 	before 2.6.36 kernel, oom-killer's badness() takes
-> 	mm->total_vm into account and nothing else. So
-> 	acct_arg_size() has to play with this counter too.
-> 
-> Reported-by: Brad Spengler <spender@grsecurity.net>
-> Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> ---
-> 
->  include/linux/binfmts.h |    1 +
->  fs/exec.c               |   28 ++++++++++++++++++++++++++--
->  2 files changed, 27 insertions(+), 2 deletions(-)
-> 
-> --- 2.6.35/include/linux/binfmts.h~1_acct_exec_mem	2010-03-11 13:11:50.000000000 +0100
-> +++ 2.6.35/include/linux/binfmts.h	2010-12-13 12:01:22.000000000 +0100
-> @@ -29,6 +29,7 @@ struct linux_binprm{
->  	char buf[BINPRM_BUF_SIZE];
->  #ifdef CONFIG_MMU
->  	struct vm_area_struct *vma;
-> +	unsigned long vma_pages;
->  #else
->  # define MAX_ARG_PAGES	32
->  	struct page *page[MAX_ARG_PAGES];
-> --- 2.6.35/fs/exec.c~1_acct_exec_mem	2010-05-28 13:41:40.000000000 +0200
-> +++ 2.6.35/fs/exec.c	2010-12-13 12:00:51.000000000 +0100
-> @@ -158,6 +158,21 @@ out:
->  
->  #ifdef CONFIG_MMU
->  
-> +static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-> +{
-> +	struct mm_struct *mm = current->mm;
-> +	long diff = (long)(pages - bprm->vma_pages);
-> +
-> +	if (!mm || !diff)
-> +		return;
-> +
-> +	bprm->vma_pages = pages;
-> +
-> +	down_write(&mm->mmap_sem);
-> +	mm->total_vm += diff;
-> +	up_write(&mm->mmap_sem);
-> +}
-> +
->  static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
->  		int write)
->  {
-> @@ -180,6 +195,8 @@ static struct page *get_arg_page(struct 
->  		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
->  		struct rlimit *rlim;
->  
-> +		acct_arg_size(bprm, size / PAGE_SIZE);
-> +
->  		/*
->  		 * We've historically supported up to 32 pages (ARG_MAX)
->  		 * of argument strings even with small stacks
-> @@ -270,6 +287,10 @@ static bool valid_arg_len(struct linux_b
->  
->  #else
->  
-> +static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-> +{
-> +}
-> +
->  static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
->  		int write)
->  {
-> @@ -977,6 +998,7 @@ int flush_old_exec(struct linux_binprm *
->  	/*
->  	 * Release all of the old mmap stuff
->  	 */
-> +	acct_arg_size(bprm, 0);
->  	retval = exec_mmap(bprm->mm);
->  	if (retval)
->  		goto out;
-> @@ -1401,8 +1423,10 @@ int do_execve(char * filename,
->  	return retval;
->  
->  out:
-> -	if (bprm->mm)
-> -		mmput (bprm->mm);
-> +	if (bprm->mm) {
-> +		acct_arg_size(bprm, 0);
-> +		mmput(bprm->mm);
-> +	}
->  
->  out_file:
->  	if (bprm->file) {
-> 
+So, if you are going to pull in his patches for the next merge, you can 
+ignore this most of this email.
+
+Talking for MSM, I'm waiting for some kind of certainty that these APIs 
+will not be changed again before I rework our clock code to it. Even if 
+I decide to move to this new framework without that certainty, it's 
+going to be hard to convince driver teams to start using this new API if 
+it's not already accepted upstream. At which point we would be back to 
+square one -- "we need to see drivers (clock consumers) use these new 
+APIs/rework before we pull it in".
+
+Long story short, it's exactly the chicken and egg problem Nicolas was 
+talking about and we need to break the egg :-)
+
+Also, Jeremy's changes are more than just consolidation. They add 
+clk_prepare/clk_unprepare APIs and those would be quite beneficial to 
+quite a few machs/archs.
+
+> And if you think its not about lines of code - grab the current linux-next
+> tree and look at the diff between v2.6.39-rc1 and master for arch/arm, and
+> then tell me whether using LOC is unreasonable given the patch content.
+
+I'm sure lines of code is important, but saying we won't add any 
+architectural improvements because it adds LOC seems backwards. If we go 
+by that policy, the end result would be a freeze of the kernel.
+
+Btw, what's your position on device tree for ARM? Device tree should 
+help out a lot with clock data taking up too many LOCs.
+
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
