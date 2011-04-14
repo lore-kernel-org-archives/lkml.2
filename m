@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569Ab1DNRwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:52:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38529 "EHLO
+	id S964797Ab1DNRxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:53:25 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38521 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933404Ab1DNRrQ (ORCPT
+	with ESMTP id S933212Ab1DNRrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:16 -0400
+	Thu, 14 Apr 2011 13:47:15 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        David Taht <d@teklibre.com>,
+Cc: stable-review@kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        <arunabal@in.ibm.com>, <sbest@us.ibm.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 098/209] Staging: frontier: fix up some sysfs attribute permissions
-Date: Thu, 14 Apr 2011 13:42:08 -0400
-Message-Id: <1302803039-9400-99-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 065/209] mm/vfs: revalidate page->mapping in do_generic_file_read()
+Date: Thu, 14 Apr 2011 13:41:35 -0400
+Message-Id: <1302803039-9400-66-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,38 +26,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 3bad28ec006ad6ab2bca4e5103860b75391e3c9d upstream.
+commit 8d056cb965b8fb7c53c564abf28b1962d1061cd3 upstream.
 
-They should not be writable by any user
+70 hours into some stress tests of a 2.6.32-based enterprise kernel, we
+ran into a NULL dereference in here:
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Taht <d@teklibre.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+	int block_is_partially_uptodate(struct page *page, read_descriptor_t *desc,
+	                                        unsigned long from)
+	{
+---->		struct inode *inode = page->mapping->host;
+
+It looks like page->mapping was the culprit.  (xmon trace is below).
+After closer examination, I realized that do_generic_file_read() does a
+find_get_page(), and eventually locks the page before calling
+block_is_partially_uptodate().  However, it doesn't revalidate the
+page->mapping after the page is locked.  So, there's a small window
+between the find_get_page() and ->is_partially_uptodate() where the page
+could get truncated and page->mapping cleared.
+
+We _have_ a reference, so it can't get reclaimed, but it certainly
+can be truncated.
+
+I think the correct thing is to check page->mapping after the
+trylock_page(), and jump out if it got truncated.  This patch has been
+running in the test environment for a month or so now, and we have not
+seen this bug pop up again.
+
+xmon info:
+
+  1f:mon> e
+  cpu 0x1f: Vector: 300 (Data Access) at [c0000002ae36f770]
+      pc: c0000000001e7a6c: .block_is_partially_uptodate+0xc/0x100
+      lr: c000000000142944: .generic_file_aio_read+0x1e4/0x770
+      sp: c0000002ae36f9f0
+     msr: 8000000000009032
+     dar: 0
+   dsisr: 40000000
+    current = 0xc000000378f99e30
+    paca    = 0xc000000000f66300
+      pid   = 21946, comm = bash
+  1f:mon> r
+  R00 = 0025c0500000006d   R16 = 0000000000000000
+  R01 = c0000002ae36f9f0   R17 = c000000362cd3af0
+  R02 = c000000000e8cd80   R18 = ffffffffffffffff
+  R03 = c0000000031d0f88   R19 = 0000000000000001
+  R04 = c0000002ae36fa68   R20 = c0000003bb97b8a0
+  R05 = 0000000000000000   R21 = c0000002ae36fa68
+  R06 = 0000000000000000   R22 = 0000000000000000
+  R07 = 0000000000000001   R23 = c0000002ae36fbb0
+  R08 = 0000000000000002   R24 = 0000000000000000
+  R09 = 0000000000000000   R25 = c000000362cd3a80
+  R10 = 0000000000000000   R26 = 0000000000000002
+  R11 = c0000000001e7b60   R27 = 0000000000000000
+  R12 = 0000000042000484   R28 = 0000000000000001
+  R13 = c000000000f66300   R29 = c0000003bb97b9b8
+  R14 = 0000000000000001   R30 = c000000000e28a08
+  R15 = 000000000000ffff   R31 = c0000000031d0f88
+  pc  = c0000000001e7a6c .block_is_partially_uptodate+0xc/0x100
+  lr  = c000000000142944 .generic_file_aio_read+0x1e4/0x770
+  msr = 8000000000009032   cr  = 22000488
+  ctr = c0000000001e7a60   xer = 0000000020000000   trap =  300
+  dar = 0000000000000000   dsisr = 40000000
+  1f:mon> t
+  [link register   ] c000000000142944 .generic_file_aio_read+0x1e4/0x770
+  [c0000002ae36f9f0] c000000000142a14 .generic_file_aio_read+0x2b4/0x770 (unreliable)
+  [c0000002ae36fb40] c0000000001b03e4 .do_sync_read+0xd4/0x160
+  [c0000002ae36fce0] c0000000001b153c .vfs_read+0xec/0x1f0
+  [c0000002ae36fd80] c0000000001b1768 .SyS_read+0x58/0xb0
+  [c0000002ae36fe30] c00000000000852c syscall_exit+0x0/0x40
+  --- Exception: c00 (System Call) at 00000080a840bc54
+  SP (fffca15df30) is in userspace
+  1f:mon> di c0000000001e7a6c
+  c0000000001e7a6c  e9290000      ld      r9,0(r9)
+  c0000000001e7a70  418200c0      beq     c0000000001e7b30        # .block_is_partially_uptodate+0xd0/0x100
+  c0000000001e7a74  e9440008      ld      r10,8(r4)
+  c0000000001e7a78  78a80020      clrldi  r8,r5,32
+  c0000000001e7a7c  3c000001      lis     r0,1
+  c0000000001e7a80  812900a8      lwz     r9,168(r9)
+  c0000000001e7a84  39600001      li      r11,1
+  c0000000001e7a88  7c080050      subf    r0,r8,r0
+  c0000000001e7a8c  7f805040      cmplw   cr7,r0,r10
+  c0000000001e7a90  7d6b4830      slw     r11,r11,r9
+  c0000000001e7a94  796b0020      clrldi  r11,r11,32
+  c0000000001e7a98  419d00a8      bgt     cr7,c0000000001e7b40    # .block_is_partially_uptodate+0xe0/0x100
+  c0000000001e7a9c  7fa55840      cmpld   cr7,r5,r11
+  c0000000001e7aa0  7d004214      add     r8,r0,r8
+  c0000000001e7aa4  79080020      clrldi  r8,r8,32
+  c0000000001e7aa8  419c0078      blt     cr7,c0000000001e7b20    # .block_is_partially_uptodate+0xc0/0x100
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: <arunabal@in.ibm.com>
+Cc: <sbest@us.ibm.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/frontier/tranzport.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/filemap.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/frontier/tranzport.c b/drivers/staging/frontier/tranzport.c
-index 2f03f43..7218334 100644
---- a/drivers/staging/frontier/tranzport.c
-+++ b/drivers/staging/frontier/tranzport.c
-@@ -202,7 +202,7 @@ static void usb_tranzport_abort_transfers(struct usb_tranzport *dev)
-     t->value = temp;							\
-     return count;							\
-   }									\
--  static DEVICE_ATTR(value, S_IWUGO | S_IRUGO, show_##value, set_##value);
-+  static DEVICE_ATTR(value, S_IRUSR | S_IRUGO, show_##value, set_##value);
- 
- show_int(enable);
- show_int(offline);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 3760bdc..ffdae5c 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1009,6 +1009,9 @@ find_page:
+ 				goto page_not_up_to_date;
+ 			if (!trylock_page(page))
+ 				goto page_not_up_to_date;
++			/* Did it get truncated before we got the lock? */
++			if (!page->mapping)
++				goto page_not_up_to_date_locked;
+ 			if (!mapping->a_ops->is_partially_uptodate(page,
+ 								desc, offset))
+ 				goto page_not_up_to_date_locked;
 -- 
 1.7.4.4
 
