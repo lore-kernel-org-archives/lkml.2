@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab1DNR6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:58:52 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42181 "EHLO
+	id S965082Ab1DNR7O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:59:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42253 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964978Ab1DNR6m (ORCPT
+	with ESMTP id S965036Ab1DNR64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:58:42 -0400
+	Thu, 14 Apr 2011 13:58:56 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Slava Pestov <slavapestov@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: stable-review@kernel.org, Saeed Bishara <saeed@marvell.com>,
+        Dan Williams <dan.j.williams@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 176/209] tracing: Fix panic when lseek() called on "trace" opened for writing
-Date: Thu, 14 Apr 2011 13:55:34 -0400
-Message-Id: <1302803767-9715-63-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 191/209] mv_xor: fix race in tasklet function
+Date: Thu, 14 Apr 2011 13:55:49 -0400
+Message-Id: <1302803767-9715-78-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,55 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Slava Pestov <slavapestov@google.com>
+From: Saeed Bishara <saeed@marvell.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 364829b1263b44aa60383824e4c1289d83d78ca7 upstream.
+commit 8333f65ef094e47020cd01452b4637e7daf5a77f upstream.
 
-The file_ops struct for the "trace" special file defined llseek as seq_lseek().
-However, if the file was opened for writing only, seq_open() was not called,
-and the seek would dereference a null pointer, file->private_data.
+use mv_xor_slot_cleanup() instead of __mv_xor_slot_cleanup() as the former function
+aquires the spin lock that needed to protect the drivers data.
 
-This patch introduces a new wrapper for seq_lseek() which checks if the file
-descriptor is opened for reading first. If not, it does nothing.
-
-Signed-off-by: Slava Pestov <slavapestov@google.com>
-LKML-Reference: <1290640396-24179-1-git-send-email-slavapestov@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Saeed Bishara <saeed@marvell.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/trace/trace.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ drivers/dma/mv_xor.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 44f916a..eb76a22 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2341,11 +2341,19 @@ tracing_write_stub(struct file *filp, const char __user *ubuf,
- 	return count;
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index ba28b29..35d0d8c 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -449,7 +449,7 @@ mv_xor_slot_cleanup(struct mv_xor_chan *mv_chan)
+ static void mv_xor_tasklet(unsigned long data)
+ {
+ 	struct mv_xor_chan *chan = (struct mv_xor_chan *) data;
+-	__mv_xor_slot_cleanup(chan);
++	mv_xor_slot_cleanup(chan);
  }
  
-+static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
-+{
-+	if (file->f_mode & FMODE_READ)
-+		return seq_lseek(file, offset, origin);
-+	else
-+		return 0;
-+}
-+
- static const struct file_operations tracing_fops = {
- 	.open		= tracing_open,
- 	.read		= seq_read,
- 	.write		= tracing_write_stub,
--	.llseek		= seq_lseek,
-+	.llseek		= tracing_seek,
- 	.release	= tracing_release,
- };
- 
+ static struct mv_xor_desc_slot *
 -- 
 1.7.4.4
 
