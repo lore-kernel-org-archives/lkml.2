@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1DNL2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 07:28:13 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58461 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab1DNL2L convert rfc822-to-8bit (ORCPT
+	id S1752744Ab1DNLa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 07:30:27 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:10296 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab1DNLaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 07:28:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=QDPYziV/vdDNnuHsNt2H26AHrADa66sjnpK3WGUkbro8OBhmXBL3ifP2C2zOPhhwQg
-         bVj9oGPQ9oweCGCIqMTwMqnN+DLilGwdjVZ97zvbZ6+iNVlyLSzWFqA1DKrRx+yiELdS
-         F2wR5sa+jryL7aYTGGKORptqVhxufXnGeqMpI=
+	Thu, 14 Apr 2011 07:30:25 -0400
+X-IronPort-AV: E=Sophos;i="4.64,210,1301875200"; 
+   d="scan'208";a="5301851"
+Date: Thu, 14 Apr 2011 12:30:11 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 2/4] x86,xen: introduce
+ x86_init.mapping.pagetable_reserve
+In-Reply-To: <4DA5EAE4.2060406@linux.intel.com>
+Message-ID: <alpine.DEB.2.00.1104141218110.22672@kaball-desktop>
+References: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop> <1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com> <4DA5EAE4.2060406@linux.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Thu, 14 Apr 2011 13:28:10 +0200
-Message-ID: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-Subject: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        George Kashperko <george@znau.edu.ua>,
-        Arend van Spriel <arend@broadcom.com>,
-        Jonas Gorski <jonas.gorski@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Cc: b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 13 Apr 2011, H. Peter Anvin wrote:
+> On 04/12/2011 04:19 AM, stefano.stabellini@eu.citrix.com wrote:
+> > From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > 
+> > Introduce a new x86_init hook called pagetable_reserve that during the
+> > initial memory mapping is used to reserve a range of memory addresses for
+> > kernel pagetable usage.
+> > 
+> > On native it just calls memblock_x86_reserve_range while on xen it also
+> > takes care of setting the spare memory previously allocated
+> > for kernel pagetable pages from RO to RW, so that it can be used for
+> > other purposes.
+> > 
+> 
+> What are the *semantics* of this hook?
+> 
+> Hooks are insanely nasty if they are just defined by a particular code
+> flow, as evidenced by the royal mess called paravirt_ops.
 
-We have slightly improved our knowledge of new Broadcom's bus. It
-appears Broadcom took standard AMBA bus and put on it two cores for
-every device:
-1) First core from each pair is real AMBA device, it has CID and PID.
-Broadcom called it wrapper, it is used to control second core
-(enabling second, disabling second, resetting second, setting flags of
-second).
-2) Second core from each pair is Broadcom specific device. It can
-*not* be treated as standard AMBA core - attempting to read it's CID
-on PID leads to machine hang. Instead it is identified by MANUF, ID,
-REV and CLASS. Example can be 80211 core.
+I hope that the other email I have just sent clarifies the purpose of
+the hook.
+I admit that as it is it wouldn't find much usage outside
+init_memory_mapping.
+Maybe adding the corresponding hook to allocate the initial kernel
+pagetable pages would help generalizing it.  Or maybe we just need a
+better comment in the code:
 
-One of the idea is to integrate with current AMBA driver:
-1) First driver read info about all cores in Broadcom specific way. It
-registers all *wrapper* (AMBA type) cores as amba_device(s).
-2) Second driver registers for cores with PID 0x103BB369 (Broadcom
-specific I believe). It receives wrappers (from AMBA bus) and exposes
-wrapper-related Broadcom specific core in the system.
 
-Problem: how to expose Broadcom specific cores in the system? Remember
-we can not use amba_device, because Broadcom specific cores are
-programmed and identified differently.
-
-Could we register some virtual bcm_amba bus in the system and register
-Broadcom specific cores with it? Or is there something better for this
-case? In summary everything I need is to make driver (for example b43)
-able to register for Broadcom specific core with Broadcom specific
-identifiers. For example:
-static const struct axi_device_id b43_axi_tbl[] = {
-	AXI_CORE(AXI_MANUF_BCM, AXI_CORE_80211, 0x17, AXI_ANY_CLASS),
-	AXI_CORETABLE_END
-};
-MODULE_DEVICE_TABLE(axi, b43_axi_tbl);
-
-We have problems deciding architecture, the whole proposed layout is
-not approved as final yet. Right now I try to check possibilities.
-
--- 
-Rafał
+/* Reserve the kernel pagetable pages we used and free the other ones so
+ * that they can be reused for other purposes.
+ * 
+ * On native it just means calling memblock_x86_reserve_range, on Xen it
+ * also means marking RW the pagetable pages that we allocated before
+ * but that haven't been used here.
+ */
+if (!after_bootmem && pgt_buf_end > pgt_buf_start)
+		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
+				PFN_PHYS(pgt_buf_end));
+		
