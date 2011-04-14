@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab1DNREt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:04:49 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34472 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab1DNREr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:04:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=LLHr7tlITv7iGelEBeNEXYJ65h3NU3BOHoE5huXdv+uPUUIxQ47FQB4U1QV86PMZbK
-         mfM3QMBLuhMVme/O7/jMGCikza5yWOMWhD6uikgQq9ZCiufDvMe0GtzQyBHGeiAGtsdK
-         n+9bmZ05LzbPDPo8SFdG8GIqt2DJ3+RkEtuC4=
-Message-ID: <4DA727D9.3000904@gmail.com>
-Date: Thu, 14 Apr 2011 18:59:05 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1758189Ab1DNRGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:06:10 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:37137 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756746Ab1DNRGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 13:06:09 -0400
+Date: Thu, 14 Apr 2011 19:05:59 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, mjg@redhat.com
+Cc: maciej.rutecki@gmail.com
+Subject: 2.6.39-rc1 nouveau regression (bisected)
+Message-ID: <20110414170559.GA10768@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	airlied@redhat.com, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, mjg@redhat.com,
+	maciej.rutecki@gmail.com
+References: <20110403181206.GA19291@comet.dominikbrodowski.net>
+ <20110407151129.GA24977@comet.dominikbrodowski.net>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Milton Miller <miltonm@bga.com>, Nick Piggin <npiggin@kernel.dk>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: synchronize_rcu when unregister_filesystem success
- not failure
-References: <4DA48AF4.5080803@teksavvy.com> <20110413004938.GE3682@thunk.org> <4DA5ADA6.5060301@teksavvy.com> <5A35771F-49B6-491E-B012-DBE68907E382@mit.edu> <ext4-masq@mdm.bga.com> <fs-unreg-rcu@mdm.bga.com> <BANLkTi=Tt8HRmqODM_qPAbGMeQ9UvVDXfA@mail.gmail.com>
-In-Reply-To: <BANLkTi=Tt8HRmqODM_qPAbGMeQ9UvVDXfA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment
+In-Reply-To: <20110407151129.GA24977@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 14/04/2011 17:52, Linus Torvalds ha scritto:
-> On Thu, Apr 14, 2011 at 8:41 AM, Milton Miller<miltonm@bga.com>  wrote:
->>
->> While checking unregister_filesystem for saftey vs extra calls for
->> "ext4: register ext2 and ext3 alias after ext4" I realized that
->> the synchronize_rcu() was called on the error path but not on
->> the success path.
->
-> Good catch.
->
-> I think this is the bug that then caused us to do commit d863b50ab013
-> ("vfs: call rcu_barrier after ->kill_sb()")
->
-> That said, that commit says that "synchronize_rcu()" isn't enough, and
-> uses rcu_barrier().
->
-> Which _should_ mean that there are no actual users that care about RCU
-> events by the time you actually hit "unregister_filesystem()".
->
-> So I think your patch is correct, but won't actually matter. But maybe
-> I'm missing something.
->
->> Should we call it in both?
->
-> No, I think the success path is the one that would matter.
->
-> Comments?
->
+Thought about CCing Linus to show him that 2.6.39-rcX isn't as "calm"
+to everyone, but then chose to CC Maciej instead: Would you be so kind and
+add this to your regression list? Thanks!
 
-If I well remember the rcu_barrier was needed for the fs module 
-unloading problem. In that case synchronize_rcu() wasn't enough. That 
-said, I agree with you, it won't have any impact.
+Since commit 38f1cff
 
-Marco
+    From: Dave Airlie <airlied@redhat.com>
+    Date: Wed, 16 Mar 2011 11:34:41 +1000
+    Subject: [PATCH] Merge commit '5359533801e3dd3abca5b7d3d985b0b33fd9fe8b' into dr
+
+    This commit changed an internal radeon structure, that meant a new driver
+    in -next had to be fixed up, merge in the commit and fix up the driver.
+
+    Also fixes a trivial nouveau merge.
+
+    Conflicts:
+        drivers/gpu/drm/nouveau/nouveau_mem.c
+
+booting my atom/NM10/ION2 system crashes hard during boot, right after
+blanking the screen, and before the initramfs gets loaded. I just
+re-checked: both parent commits ( 5359533 and 4819d2e ) do indeed work
+just fine, but the merge commit ( 38f1cff ) fails, same as tip ( 85f2e68 ).
+
+My previous reports (Apr 03, Apr 07) seem to have gotten lost (or ignored,
+or both).
+
+Best,
+	Dominik
