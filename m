@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758731Ab1DNK0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 06:26:53 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42589 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758701Ab1DNK0w (ORCPT
+	id S932703Ab1DNK1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 06:27:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46901 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758711Ab1DNK1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 06:26:52 -0400
-Date: Thu, 14 Apr 2011 11:26:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dima Zavin <dmitriyz@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
-Message-ID: <20110414102634.GE1611@n2100.arm.linux.org.uk>
-References: <1299134429.100626.661279191478.0.gpush@pororo> <1302754859.2767.30.camel@pororo> <20110414100048.GB1611@n2100.arm.linux.org.uk> <1302776584.2767.55.camel@pororo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302776584.2767.55.camel@pororo>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 14 Apr 2011 06:27:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=aHPaL13d8gTbz7T7ZFpN8vnTxHuHsWNxBzfWtrNNQehoKgirlG487gjFFZH6wkoMQY
+         6zGQUP4eJgPddVcT2I3LvGjV3k0DPgynJwNv8xhfBjyEHrWoOWgbcFcciSsrigmfgnEm
+         B1uOVKU98pOcGJRiP6f90RIR5Xq9yJD3rjQD4=
+Subject: Re: Regression from 2.6.36
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: azurIt <azurit@pobox.sk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Changli Gao <xiaosuo@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Jiri Slaby <jirislaby@gmail.com>, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20110414110816.EA841944@pobox.sk>
+References: <20110315132527.130FB80018F1@mail1005.cent>
+	 <20110317001519.GB18911@kroah.com> <20110407120112.E08DCA03@pobox.sk>
+	 <4D9D8FAA.9080405@suse.cz>
+	 <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>
+	 <1302177428.3357.25.camel@edumazet-laptop>
+	 <1302178426.3357.34.camel@edumazet-laptop>
+	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
+	 <1302190586.3357.45.camel@edumazet-laptop>
+	 <20110412154906.70829d60.akpm@linux-foundation.org>
+	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
+	 <20110412183132.a854bffc.akpm@linux-foundation.org>
+	 <1302662256.2811.27.camel@edumazet-laptop>
+	 <20110413141600.28793661.akpm@linux-foundation.org>
+	 <1302747058.3549.7.camel@edumazet-laptop>
+	 <20110413222803.38e42baf.akpm@linux-foundation.org>
+	 <1302762718.3549.229.camel@edumazet-laptop>
+	 <20110414110816.EA841944@pobox.sk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 12:27:45 +0200
+Message-ID: <1302776866.3248.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 06:23:04PM +0800, Jeremy Kerr wrote:
-> Hi Russell,
+Le jeudi 14 avril 2011 à 11:08 +0200, azurIt a écrit :
+> Here it is:
 > 
-> > We desperately need to see a reduction for the next merge window.
 > 
-> I can put it all on one line if you like :D
+> # ls /proc/31416/fd | wc -l
+> 5926
 
-Yea, do that and send it to Linus for his review.  I suggest a visit your
-local fire department to borrow some of their protective equipment first.
-:-P
+Hmm, if its a 32bit kernel, I am afraid Andrew patch wont solve the
+problem...
+
+[On 32bit kernel, we still use kmalloc() up to 8192 files ]
+
+
