@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab1DNWxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 18:53:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52118 "EHLO ogre.sisk.pl"
+	id S1754497Ab1DNWx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 18:53:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64444 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753907Ab1DNWxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 18:53:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tino Keitel <tino.keitel@tikei.de>
-Subject: Re: /proc/acpi/wakeup regression in 2.6.39-rc3
-Date: Fri, 15 Apr 2011 00:53:36 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <20110414222525.GA24365@mac.home>
-In-Reply-To: <20110414222525.GA24365@mac.home>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104150053.37037.rjw@sisk.pl>
+	id S1753956Ab1DNWx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 18:53:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,214,1301900400"; 
+   d="scan'208";a="733541754"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        John Kacur <jkacur@redhat.com>, stable@kernel.org
+Subject: [PATCH V5] futex: set FLAGS_HAS_TIMEOUT during futex_wait restart setup
+Date: Thu, 14 Apr 2011 15:41:57 -0700
+Message-Id: <daac0eb3af607f72b9a4d3126b2ba8fb5ed3b883.1302820917.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 15, 2011, Tino Keitel wrote:
-> Hi,
-> 
-> with 2.6.38, I enabled wakeup from suspend to RAM with the USB keyboard
-> this way:
-> 
-> echo USB2 > /proc/acpi/wakeup
-> 
-> This does not work anymore with 2.6.39-rc3. Wakeup using the keyboard
-> won't work, and the USB2 line in /proc/acpi/wakeup doesn't change to
-> "enabled" after the echo command.
-> 
-> Is this intended? If yes, what is the new way to enable keyboard
-> wakeup?
+The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
+restart futex_wait() without a timeout after a signal.
 
-No, it's supposed to work IIRC.  I'll have a look at that code tomorrow.
+Commit b41277dc7a18ee332d in 2.6.38 introduced the regression by accidentally
+removing the the FLAGS_HAS_TIMEOUT assignment from futex_wait() during the setup
+of the restart block. Restore the originaly behavior.
 
-Thanks,
-Rafael
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=32922
+
+V2: Added references to commit message.
+V3: Set flag during restart block instead of do_futex()
+V4: Correct stupid order of assignment mistake pointed out by Eric
+V5: Correct subject to match implementation, correct stable submission
+
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Tim Smith <tsmith201104@yahoo.com>
+Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: stable@kernel.org
+---
+ kernel/futex.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index bda4157..abd5324 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1886,7 +1886,7 @@ retry:
+ 	restart->futex.val = val;
+ 	restart->futex.time = abs_time->tv64;
+ 	restart->futex.bitset = bitset;
+-	restart->futex.flags = flags;
++	restart->futex.flags = flags | FLAGS_HAS_TIMEOUT;
+ 
+ 	ret = -ERESTART_RESTARTBLOCK;
+ 
+-- 
+1.7.1
+
