@@ -1,134 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab1DNUKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:10:13 -0400
-Received: from kroah.org ([198.145.64.141]:44283 "EHLO coco.kroah.org"
+	id S1751875Ab1DNULi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:11:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15514 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040Ab1DNUKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:10:10 -0400
-Date: Thu, 14 Apr 2011 13:07:42 -0700
-From: Greg KH <greg@kroah.com>
-To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jon Masters <jcm@redhat.com>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] SCSI: Add a SCSI option for persistent device names
- in Kernel.
-Message-ID: <20110414200742.GA25668@kroah.com>
-References: <20110405124946.7969.66796.stgit@ltc233.sdl.hitachi.co.jp>
- <20110405161454.GB885@kroah.com>
- <4D9F16AD.2090408@hitachi.com>
- <20110408161212.GA12111@kroah.com>
- <4DA6AD28.5020604@hitachi.com>
+	id S1751440Ab1DNULh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 16:11:37 -0400
+Date: Thu, 14 Apr 2011 22:10:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] signal: sigprocmask() should do
+	retarget_shared_pending()
+Message-ID: <20110414201045.GB25828@redhat.com>
+References: <20110411171957.GA32469@redhat.com> <20110411172137.GE32469@redhat.com> <20110412183314.GA16342@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DA6AD28.5020604@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110412183314.GA16342@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 05:15:36PM +0900, Nao Nishijima wrote:
-> Hi,
-> 
-> (2011/04/09 1:12), Greg KH wrote:
-> > On Fri, Apr 08, 2011 at 11:07:41PM +0900, Nao Nishijima wrote:
-> >> Hi,
-> >>
-> >> (2011/04/06 1:14), Greg KH wrote:
-> >>> On Tue, Apr 05, 2011 at 09:49:46PM +0900, Nao Nishijima wrote:
-> >>>> This patch series provides a SCSI option for persistent device
-> >>>> names in kernel. With this option, user can always assign a
-> >>>> same device name (e.g. sda) to a specific device according to
-> >>>> udev rules and device id.
-> >>>>
-> >>>> Issue:
-> >>>> Recently, kernel registers block devices in parallel. As a result,
-> >>>> different device names will be assigned at each boot time. This
-> >>>> will confuse file-system mounter, thus we usually use persistent
-> >>>> symbolic links provided by udev. However, dmesg and procfs outputs
-> >>>> show device names instead of the symbolic link names. This causes
-> >>>> a serious problem when managing multiple devices (e.g. on a
-> >>>> large-scale storage), because usually, device errors are output
-> >>>> with device names on dmesg. We also concern about some commands
-> >>>> which output device names, as well as kernel messages.
-> >>>>
-> >>>> Solution:
-> >>>> To assign a persistent device name, I create unnamed devices (not
-> >>>> a block device, but an intermediate device. users cannot read/write
-> >>>> this device). When scsi device driver finds a LU, the LU is registered
-> >>>> as an unnamed device and inform to udev. After udev finds the unnamed
-> >>>> device, udev assigns a persistent device name to a specific device
-> >>>> according to udev rules and registers it as a block device. Hence,
-> >>>> this is just a naming, not a renaming.
-> >>>>
-> >>>> Some users are satisfied with current udev solution. Therefore, my
-> >>>> proposal is implemented as an option.
-> >>>>
-> >>>> If using this option, add the following kernel parameter.
-> >>>>
-> >>>> 	scsi_mod.persistent_name=1
-> >>>>
-> >>>> Also, if you want to assign a device name with sda, add the
-> >>>> following udev rules.
-> >>>>
-> >>>> SUBSYSTEM=="scsi_unnamed", ATTR{disk_id}=="xxx", PROGRAM="/bin/sh
-> >>>> -c 'echo -n sda > /sys/%p/disk_name'"
-> >>>
-> >>> Also, where is the "real" program you have created to properly name
-> >>> devices from userspace?  You need that to properly test this patch,
-> >>> right?
-> >>>
-> >>
-> >> In the udev rule described above, notation “xxx” indicated by
-> >> ATTR(disk_id) is scsi id given by disk. Then, when udev finds this rule,
-> >> "/bin/sh -c 'echo -n sda>  /sys/%p/disk_name'" indicated by PROGRAM is
-> >> operated using xxx (scsi id) if udev find the disk with scic id xxx.
-> >> Thus, persistent device name is assigned.
-> >>
-> >> I have tested this patch using the udev rule. and It works well.
-> > 
-> > That's nice, but it's a "toy".  What have you used to test this with
-> > 20000 scsi devices to properly work like it does today?  Where is the
-> > program that will name them in a deterministic manner?
-> > 
-> > We have that functionality today, you can't break it.
-> > 
-> > thanks,
-> 
-> Indeed, I have not (can not, of course) tested 20000 scsi devices to
-> properly work.
+On 04/13, Tejun Heo wrote:
+>
+> Hello, Oleg.
+>
+> On Mon, Apr 11, 2011 at 07:21:37PM +0200, Oleg Nesterov wrote:
+> > --- sigprocmask/include/linux/signal.h~4_sigprocmask_retarget	2011-04-06 21:33:50.000000000 +0200
+> > +++ sigprocmask/include/linux/signal.h	2011-04-11 18:16:51.000000000 +0200
+> > @@ -126,10 +126,14 @@ _SIG_SET_BINOP(sigandsets, _sig_and)
+> >  #define _sig_nand(x,y)	((x) & ~(y))
+> >  _SIG_SET_BINOP(signandsets, _sig_nand)
+> >
+> > +#define _sig_nor(x,y)	((x) | ~(y))
+> > +_SIG_SET_BINOP(signorsets, _sig_nor)
+> > +
+> >  #undef _SIG_SET_BINOP
+> >  #undef _sig_or
+> >  #undef _sig_and
+> >  #undef _sig_nand
+> > +#undef _sig_nor
+>
+> I'm confused.  Isn't nand ^(A&B) and nor ^(A|B)?
 
-Why not?  You should be able to do this easily with a laptop these days
-with the dummy scsi device code.
+Well, I don't know the common definition... But please note that
+signandsets() does ((x) & ~(y)), so I defined nor as (x | ~y) by analogy.
 
-> This feature targets only scsi disk/cdrom/tape devices.
-> Not all devices. We expect the target users are system administrators
-> who need to control all devices for maintenance. They know all devices
-> connected to the server and those devices will tested before connecting.
+> >  #define _SIG_SET_OP(name, op)						\
+> >  static inline void name(sigset_t *set)					\
+> > --- sigprocmask/kernel/signal.c~4_sigprocmask_retarget	2011-04-10 21:57:42.000000000 +0200
+> > +++ sigprocmask/kernel/signal.c	2011-04-11 18:02:22.000000000 +0200
+> > @@ -2131,6 +2131,11 @@ int sigprocmask(int how, sigset_t *set, 
+> >  	}
+> >
+> >  	spin_lock_irq(&tsk->sighand->siglock);
+> > +	if (signal_pending(tsk) && !thread_group_empty(tsk)) {
+> > +		sigset_t not_newblocked;
+> > +		signorsets(&not_newblocked, &current->blocked, &newset);
+> > +		retarget_shared_pending(tsk, &not_newblocked);
+>
+> I think it would be much easier to follow the logic if
+> retarget_shared_pending() took target mask instead of blocked
 
-But that's not the large majority of the people using Linux.  You need a
-sane default, which this does not provide.
+Indeed.  But currently we only have has_pending_signals() which needs
+blocked, not mask.
 
-> We expect that admin will enable this option after installation. This
-> means that device names are assigned by current mechanism when
-> installation. Admin enables the option and makes udev rules (we are
-> planning to make shell script which generate udev rules use by-id and
-> assigned device names). In other word, this feature will be used just
-> for "fixing" the names.
+> but I think we
+> really need to do retargeting (and the initial targeting too) more
+> efficiently as you noted in the earlier commit message.
 
-So admins are going to write their own udev rules by hand?  I find that
-very unlikely.
+Yes, will do. And to do this we need the mask, not blocked.
 
-> In our scenario, admin appends a new rule manually when a new LU is
-> added. In the future, we are planning to enhance udev to append a new
-> rule automatically as like as NIC.
+But I'd prefer to do this after this series to make the first patches
+simpler.
 
-I recommend doing the other options that have been proposed please.
+The main optimization is the first has_pending_signals() check which
+can likely avoid while_each_thread() altogether. Once we start looping
+we already lost. But anyway I agree, we should do this. Perhaps we can
+add more optimizations later... say, perhaps we can add something like
+TIF_SIGPENDING_SHARED, I am not sure.
 
-thanks,
+Oleg.
 
-greg k-h
