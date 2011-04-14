@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab1DNR5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:57:50 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41475 "EHLO
+	id S964820Ab1DNR5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:57:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41524 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933674Ab1DNR5r (ORCPT
+	with ESMTP id S933694Ab1DNR5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:57:47 -0400
+	Thu, 14 Apr 2011 13:57:50 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Phil Blundell <philb@gnu.org>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 123/209] econet: disallow NULL remote addr for sendmsg(), fixes CVE-2010-3849
-Date: Thu, 14 Apr 2011 13:54:41 -0400
-Message-Id: <1302803767-9715-10-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 130/209] net sched: fix some kernel memory leaks
+Date: Thu, 14 Apr 2011 13:54:48 -0400
+Message-Id: <1302803767-9715-17-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,69 +23,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Phil Blundell <philb@gnu.org>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit fa0e846494792e722d817b9d3d625a4ef4896c96 upstream.
+commit 1c40be12f7d8ca1d387510d39787b12e512a7ce8 upstream.
 
-Later parts of econet_sendmsg() rely on saddr != NULL, so return early
-with EINVAL if NULL was passed otherwise an oops may occur.
+We leak at least 32bits of kernel memory to user land in tc dump,
+because we dont init all fields (capab ?) of the dumped structure.
 
-Signed-off-by: Phil Blundell <philb@gnu.org>
+Use C99 initializers so that holes and non explicit fields are zeroed.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/econet/af_econet.c |   26 ++++++++------------------
- 1 files changed, 8 insertions(+), 18 deletions(-)
+ net/sched/act_gact.c    |   21 ++++++++++++---------
+ net/sched/act_mirred.c  |   15 ++++++++-------
+ net/sched/act_nat.c     |   22 +++++++++++-----------
+ net/sched/act_simple.c  |   11 ++++++-----
+ net/sched/act_skbedit.c |   11 ++++++-----
+ 5 files changed, 43 insertions(+), 37 deletions(-)
 
-diff --git a/net/econet/af_econet.c b/net/econet/af_econet.c
-index 2a5a805..8170acb 100644
---- a/net/econet/af_econet.c
-+++ b/net/econet/af_econet.c
-@@ -297,23 +297,14 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
+diff --git a/net/sched/act_gact.c b/net/sched/act_gact.c
+index e7f796a..f9fc6ec 100644
+--- a/net/sched/act_gact.c
++++ b/net/sched/act_gact.c
+@@ -152,21 +152,24 @@ static int tcf_gact(struct sk_buff *skb, struct tc_action *a, struct tcf_result
+ static int tcf_gact_dump(struct sk_buff *skb, struct tc_action *a, int bind, int ref)
+ {
+ 	unsigned char *b = skb_tail_pointer(skb);
+-	struct tc_gact opt;
+ 	struct tcf_gact *gact = a->priv;
++	struct tc_gact opt = {
++		.index   = gact->tcf_index,
++		.refcnt  = gact->tcf_refcnt - ref,
++		.bindcnt = gact->tcf_bindcnt - bind,
++		.action  = gact->tcf_action,
++	};
+ 	struct tcf_t t;
  
- 	mutex_lock(&econet_mutex);
+-	opt.index = gact->tcf_index;
+-	opt.refcnt = gact->tcf_refcnt - ref;
+-	opt.bindcnt = gact->tcf_bindcnt - bind;
+-	opt.action = gact->tcf_action;
+ 	NLA_PUT(skb, TCA_GACT_PARMS, sizeof(opt), &opt);
+ #ifdef CONFIG_GACT_PROB
+ 	if (gact->tcfg_ptype) {
+-		struct tc_gact_p p_opt;
+-		p_opt.paction = gact->tcfg_paction;
+-		p_opt.pval = gact->tcfg_pval;
+-		p_opt.ptype = gact->tcfg_ptype;
++		struct tc_gact_p p_opt = {
++			.paction = gact->tcfg_paction,
++			.pval    = gact->tcfg_pval,
++			.ptype   = gact->tcfg_ptype,
++		};
++
+ 		NLA_PUT(skb, TCA_GACT_PROB, sizeof(p_opt), &p_opt);
+ 	}
+ #endif
+diff --git a/net/sched/act_mirred.c b/net/sched/act_mirred.c
+index c046682..7f9c54f 100644
+--- a/net/sched/act_mirred.c
++++ b/net/sched/act_mirred.c
+@@ -211,15 +211,16 @@ static int tcf_mirred_dump(struct sk_buff *skb, struct tc_action *a, int bind, i
+ {
+ 	unsigned char *b = skb_tail_pointer(skb);
+ 	struct tcf_mirred *m = a->priv;
+-	struct tc_mirred opt;
++	struct tc_mirred opt = {
++		.index   = m->tcf_index,
++		.action  = m->tcf_action,
++		.refcnt  = m->tcf_refcnt - ref,
++		.bindcnt = m->tcf_bindcnt - bind,
++		.eaction = m->tcfm_eaction,
++		.ifindex = m->tcfm_ifindex,
++	};
+ 	struct tcf_t t;
  
--	if (saddr == NULL) {
--		struct econet_sock *eo = ec_sk(sk);
+-	opt.index = m->tcf_index;
+-	opt.action = m->tcf_action;
+-	opt.refcnt = m->tcf_refcnt - ref;
+-	opt.bindcnt = m->tcf_bindcnt - bind;
+-	opt.eaction = m->tcfm_eaction;
+-	opt.ifindex = m->tcfm_ifindex;
+ 	NLA_PUT(skb, TCA_MIRRED_PARMS, sizeof(opt), &opt);
+ 	t.install = jiffies_to_clock_t(jiffies - m->tcf_tm.install);
+ 	t.lastuse = jiffies_to_clock_t(jiffies - m->tcf_tm.lastuse);
+diff --git a/net/sched/act_nat.c b/net/sched/act_nat.c
+index 3e593a8..047c234 100644
+--- a/net/sched/act_nat.c
++++ b/net/sched/act_nat.c
+@@ -261,19 +261,19 @@ static int tcf_nat_dump(struct sk_buff *skb, struct tc_action *a,
+ {
+ 	unsigned char *b = skb_tail_pointer(skb);
+ 	struct tcf_nat *p = a->priv;
+-	struct tc_nat opt;
++	struct tc_nat opt = {
++		.old_addr = p->old_addr,
++		.new_addr = p->new_addr,
++		.mask     = p->mask,
++		.flags    = p->flags,
++
++		.index    = p->tcf_index,
++		.action   = p->tcf_action,
++		.refcnt   = p->tcf_refcnt - ref,
++		.bindcnt  = p->tcf_bindcnt - bind,
++	};
+ 	struct tcf_t t;
+ 
+-	opt.old_addr = p->old_addr;
+-	opt.new_addr = p->new_addr;
+-	opt.mask = p->mask;
+-	opt.flags = p->flags;
 -
--		addr.station = eo->station;
--		addr.net     = eo->net;
--		port	     = eo->port;
--		cb	     = eo->cb;
--	} else {
--		if (msg->msg_namelen < sizeof(struct sockaddr_ec)) {
--			mutex_unlock(&econet_mutex);
--			return -EINVAL;
--		}
--		addr.station = saddr->addr.station;
--		addr.net = saddr->addr.net;
--		port = saddr->port;
--		cb = saddr->cb;
--	}
-+        if (saddr == NULL || msg->msg_namelen < sizeof(struct sockaddr_ec)) {
-+                mutex_unlock(&econet_mutex);
-+                return -EINVAL;
-+        }
-+        addr.station = saddr->addr.station;
-+        addr.net = saddr->addr.net;
-+        port = saddr->port;
-+        cb = saddr->cb;
+-	opt.index = p->tcf_index;
+-	opt.action = p->tcf_action;
+-	opt.refcnt = p->tcf_refcnt - ref;
+-	opt.bindcnt = p->tcf_bindcnt - bind;
+-
+ 	NLA_PUT(skb, TCA_NAT_PARMS, sizeof(opt), &opt);
+ 	t.install = jiffies_to_clock_t(jiffies - p->tcf_tm.install);
+ 	t.lastuse = jiffies_to_clock_t(jiffies - p->tcf_tm.lastuse);
+diff --git a/net/sched/act_simple.c b/net/sched/act_simple.c
+index 622ca80..a697576 100644
+--- a/net/sched/act_simple.c
++++ b/net/sched/act_simple.c
+@@ -164,13 +164,14 @@ static inline int tcf_simp_dump(struct sk_buff *skb, struct tc_action *a,
+ {
+ 	unsigned char *b = skb_tail_pointer(skb);
+ 	struct tcf_defact *d = a->priv;
+-	struct tc_defact opt;
++	struct tc_defact opt = {
++		.index   = d->tcf_index,
++		.refcnt  = d->tcf_refcnt - ref,
++		.bindcnt = d->tcf_bindcnt - bind,
++		.action  = d->tcf_action,
++	};
+ 	struct tcf_t t;
  
- 	/* Look for a device with the right network number. */
- 	dev = net2dev_map[addr.net];
-@@ -351,7 +342,6 @@ static int econet_sendmsg(struct kiocb *iocb, struct socket *sock,
+-	opt.index = d->tcf_index;
+-	opt.refcnt = d->tcf_refcnt - ref;
+-	opt.bindcnt = d->tcf_bindcnt - bind;
+-	opt.action = d->tcf_action;
+ 	NLA_PUT(skb, TCA_DEF_PARMS, sizeof(opt), &opt);
+ 	NLA_PUT_STRING(skb, TCA_DEF_DATA, d->tcfd_defdata);
+ 	t.install = jiffies_to_clock_t(jiffies - d->tcf_tm.install);
+diff --git a/net/sched/act_skbedit.c b/net/sched/act_skbedit.c
+index e9607fe..66cbf4e 100644
+--- a/net/sched/act_skbedit.c
++++ b/net/sched/act_skbedit.c
+@@ -159,13 +159,14 @@ static inline int tcf_skbedit_dump(struct sk_buff *skb, struct tc_action *a,
+ {
+ 	unsigned char *b = skb_tail_pointer(skb);
+ 	struct tcf_skbedit *d = a->priv;
+-	struct tc_skbedit opt;
++	struct tc_skbedit opt = {
++		.index   = d->tcf_index,
++		.refcnt  = d->tcf_refcnt - ref,
++		.bindcnt = d->tcf_bindcnt - bind,
++		.action  = d->tcf_action,
++	};
+ 	struct tcf_t t;
  
- 		eb = (struct ec_cb *)&skb->cb;
- 
--		/* BUG: saddr may be NULL */
- 		eb->cookie = saddr->cookie;
- 		eb->sec = *saddr;
- 		eb->sent = ec_tx_done;
+-	opt.index = d->tcf_index;
+-	opt.refcnt = d->tcf_refcnt - ref;
+-	opt.bindcnt = d->tcf_bindcnt - bind;
+-	opt.action = d->tcf_action;
+ 	NLA_PUT(skb, TCA_SKBEDIT_PARMS, sizeof(opt), &opt);
+ 	if (d->flags & SKBEDIT_F_PRIORITY)
+ 		NLA_PUT(skb, TCA_SKBEDIT_PRIORITY, sizeof(d->priority),
 -- 
 1.7.4.4
 
