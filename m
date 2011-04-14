@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab1DNBeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 21:34:23 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:30297 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754601Ab1DNBeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 21:34:21 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAMJOpk1Ld/sX/2dsb2JhbAAMhEDTW5FAgSmDTXgElBWGbg
-X-IronPort-AV: E=Sophos;i="4.64,208,1301889600"; 
-   d="scan'208";a="106339829"
-Message-ID: <4DA64F1B.4070803@teksavvy.com>
-Date: Wed, 13 Apr 2011 21:34:19 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1756349Ab1DNB7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 21:59:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33302 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754362Ab1DNB7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 21:59:18 -0400
+Message-ID: <4DA654D6.2060103@zytor.com>
+Date: Wed, 13 Apr 2011 18:58:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Theodore Tso <tytso@MIT.EDU>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: CONFIG_EXT4_USE_FOR_EXT23:  rootfs shows as ext2 instead of ext4
-References: <4DA48AF4.5080803@teksavvy.com> <20110413004938.GE3682@thunk.org> <4DA5AEBE.6060705@teksavvy.com> <5A35771F-49B6-491E-B012-DBE68907E382@mit.edu>
-In-Reply-To: <5A35771F-49B6-491E-B012-DBE68907E382@mit.edu>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org>
+In-Reply-To: <4DA5F62F.3030504@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-13 05:00 PM, Theodore Tso wrote:
->
-> It's not dangerous at all.   Again, as you can tell if you were to actually
-> look at your .config carefully, the ext2 file system was not compiled
-> into your kernel at all.   Ext4 will only try masquerading as ext2 if
-> CONFIG_EXT2_FS is disabled.  So it couldn't have possibly been
-> using ext2 code, if you thought about it for a second.
->
-> I can write up a patch which explicitly tests for feature flags that go
-> beyond ext2 as of a particular version, and if so, refuse the mount
-> when ext4 is masquerading as ext2, and do the same for ext3.   I
-> probably will do this to avoid user questions, when I have some
-> spare time.
->
-> However, please note that this will have no actual effect on how
-> anything int he kernel will behave --- none ---- except for a one
-> character change in /proc/mounts: s/2/4/.   (This is because the
-> kernel will now try ext2, and fail, try ext3 and fail, and then succeed
-> when the exact same file system driver is used.  Oh, it might also
-> extend the boot time by a few milliseconds.)
->
-> Have I made it clear enough now to assuage your fears?
+On 04/13/2011 12:14 PM, Yinghai Lu wrote:
+> 
+> so those two patches uncover some problems.
+> 
+> [    0.000000] Checking aperture...
+> [    0.000000] No AGP bridge found
+> [    0.000000] Node 0: aperture @ a0000000 size 32 MB
+> [    0.000000] Aperture pointing to e820 RAM. Ignoring.
+> [    0.000000] Your BIOS doesn't leave a aperture memory hole
+> [    0.000000] Please enable the IOMMU option in the BIOS setup
+> [    0.000000] This costs you 64 MB of RAM
+> [    0.000000]     memblock_x86_reserve_range: [0xa0000000-0xa3ffffff]       aperture64
+> [    0.000000] Mapping aperture over 65536 KB of RAM @ a0000000
+> 
+> so kernel try to reallocate apperture. because BIOS allocated is pointed to RAM or size is too small.
+> 
+> but your radeon does use [0xa0000000, 0xbfffffff)
+> 
+> [    4.281993] radeon 0000:01:05.0: VRAM: 320M 0x00000000C0000000 - 0x00000000D3FFFFFF (320M used)
+> [    4.290672] radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
+> [    4.298550] [drm] Detected VRAM RAM=320M, BAR=256M
+> [    4.309857] [drm] RAM width 32bits DDR
+> [    4.313748] [TTM] Zone  kernel: Available graphics memory: 1896524 kiB.
+> [    4.320379] [TTM] Initializing pool allocator.
+> [    4.324948] [drm] radeon: 320M of VRAM memory ready
+> [    4.329832] [drm] radeon: 512M of GTT memory ready.
+> 
+> and the one seems working:
+> 
+> [    0.000000] Checking aperture...
+> [    0.000000] No AGP bridge found
+> [    0.000000] Node 0: aperture @ a0000000 size 32 MB
+> [    0.000000] Aperture pointing to e820 RAM. Ignoring.
+> [    0.000000] Your BIOS doesn't leave a aperture memory hole
+> [    0.000000] Please enable the IOMMU option in the BIOS setup
+> [    0.000000] This costs you 64 MB of RAM
+> [    0.000000]     memblock_x86_reserve_range: [0x80000000-0x83ffffff]       aperture64
+> [    0.000000] Mapping aperture over 65536 KB of RAM @ 80000000
+> [    0.000000]     memblock_x86_reserve_range: [0xacb6bdc0-0xacb6bddf]          BOOTMEM
+> 
+> will use different position...
+> 
+> [    4.250159] radeon 0000:01:05.0: VRAM: 320M 0x00000000C0000000 - 0x00000000D3FFFFFF (320M used)
+> [    4.258830] radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
+> [    4.266742] [drm] Detected VRAM RAM=320M, BAR=256M
+> [    4.271549] [drm] RAM width 32bits DDR
+> [    4.275435] [TTM] Zone  kernel: Available graphics memory: 1896526 kiB.
+> [    4.282066] [TTM] Initializing pool allocator.
+> [    4.282085] usb 7-2: new full speed USB device number 2 using ohci_hcd
+> [    4.293076] [drm] radeon: 320M of VRAM memory ready
+> [    4.298277] [drm] radeon: 512M of GTT memory ready.
+> [    4.303218] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> [    4.309854] [drm] Driver supports precise vblank timestamp query.
+> [    4.315970] [drm] radeon: irq initialized.
+> [    4.320094] [drm] GART: num cpu pages 131072, num gpu pages 131072
+> 
+> So question is why radeon is using the address [0xa0000000 - 0xc000000], and in E820 it is RAM ....
+> 
+> [    0.000000]  BIOS-e820: 0000000000100000 - 00000000acb8d000 (usable)
+> [    0.000000]  BIOS-e820: 00000000acb8d000 - 00000000acb8f000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000acb8f000 - 00000000afce9000 (usable)
+> [    0.000000]  BIOS-e820: 00000000afce9000 - 00000000afd21000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000afd21000 - 00000000afd4f000 (usable)
+> [    0.000000]  BIOS-e820: 00000000afd4f000 - 00000000afdcf000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000afdcf000 - 00000000afecf000 (ACPI NVS)
+> [    0.000000]  BIOS-e820: 00000000afecf000 - 00000000afeff000 (ACPI data)
+> [    0.000000]  BIOS-e820: 00000000afeff000 - 00000000aff00000 (usable)
+> 
+> so looks bios program wrong address to the radon card?
+> 
 
-No, very much the contrary, despite the condescending
-attempt at "explanation".
+Okay, staring at this, it definitely seems toxic to overlay the GART
+over memory areas reserved by the BIOS.  If I were to guess, I would say
+that the problem here seems to be that the kernel thinks it is
+overlaying 64 MiB of memory, but the actual GART is in fact 512 MiB in
+size -- 131072 CPU pages -- which now overlaps the BIOS reserved areas.
 
-    config EXT4_USE_FOR_EXT23
-        bool "Use ext4 for ext2/ext3 file systems"
-        depends on EXT4_FS
-        depends on EXT3_FS=n || EXT2_FS=n
-        default y
-        help
-          Allow the ext4 file system driver code to be used for ext2 or
-          ext3 file system mounts.  This allows users to reduce their
-          compiled kernel size by using one file system driver for
-          ext2, ext3, and ext4 file systems.
+Alex D., could you comment on the "num cpu pages" bit?
 
-So the option is supposed to allow ext4 code to be used
-to access ext2 and ext3 filesystems, saving some space
-in the binary kernel.  That much is obvious.
+	-hpa
 
-But far far less obvious is why the kernel reports
-having mounted my ext4 filesystem as "ext2",
-and what exactly it means by that.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-And I've been a kernel developer as long as you have, Ted,
-so just imagine the confusion this might be causing lots
-of other less experienced people.
-
-Thanks.
