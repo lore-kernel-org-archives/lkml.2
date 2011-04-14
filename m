@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933533Ab1DNRrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:47:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38607 "EHLO
+	id S933577Ab1DNRrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:55 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38713 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933471Ab1DNRr1 (ORCPT
+	with ESMTP id S933278Ab1DNRrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:27 -0400
+	Thu, 14 Apr 2011 13:47:53 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Miller <davem@davemloft.net>,
+Cc: stable-review@kernel.org,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 106/209] sysctl: min/max bounds are optional
-Date: Thu, 14 Apr 2011 13:42:16 -0400
-Message-Id: <1302803039-9400-107-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 092/209] backlight: grab ops_lock before testing bd->ops
+Date: Thu, 14 Apr 2011 13:42:02 -0400
+Message-Id: <1302803039-9400-93-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a9febbb4bd1302b6f01aa1203b0a804e4e5c9e25 upstream
+commit d1d73578e053b981c3611e5a211534290d24a5eb upstream.
 
-sysctl check complains with a WARN() when proc_doulongvec_minmax() or
-proc_doulongvec_ms_jiffies_minmax() are used by a vector of longs (with
-more than one element), with no min or max value specified.
+According to the comment describing ops_lock in the definition of struct
+backlight_device and when comparing with other functions in backlight.c
+the mutex must be hold when checking ops to be non-NULL.
 
-This is unexpected, given we had a bug on this min/max handling :)
+Fixes a problem added by c835ee7f4154992e6 ("backlight: Add suspend/resume
+support to the backlight core") in Jan 2009.
 
-Reported-by: Jiri Slaby <jirislaby@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: David Miller <davem@davemloft.net>
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Acked-by: Richard Purdie <rpurdie@linux.intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sysctl_check.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+ drivers/video/backlight/backlight.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
-index 04cdcf7..10b90d8 100644
---- a/kernel/sysctl_check.c
-+++ b/kernel/sysctl_check.c
-@@ -143,15 +143,6 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
- 				if (!table->maxlen)
- 					set_fail(&fail, table, "No maxlen");
- 			}
--			if ((table->proc_handler == proc_doulongvec_minmax) ||
--			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
--				if (table->maxlen > sizeof (unsigned long)) {
--					if (!table->extra1)
--						set_fail(&fail, table, "No min");
--					if (!table->extra2)
--						set_fail(&fail, table, "No max");
--				}
--			}
- #ifdef CONFIG_PROC_SYSCTL
- 			if (table->procname && !table->proc_handler)
- 				set_fail(&fail, table, "No proc_handler");
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index e207810..0870329 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -197,12 +197,12 @@ static int backlight_suspend(struct device *dev, pm_message_t state)
+ {
+ 	struct backlight_device *bd = to_backlight_device(dev);
+ 
+-	if (bd->ops->options & BL_CORE_SUSPENDRESUME) {
+-		mutex_lock(&bd->ops_lock);
++	mutex_lock(&bd->ops_lock);
++	if (bd->ops && bd->ops->options & BL_CORE_SUSPENDRESUME) {
+ 		bd->props.state |= BL_CORE_SUSPENDED;
+ 		backlight_update_status(bd);
+-		mutex_unlock(&bd->ops_lock);
+ 	}
++	mutex_unlock(&bd->ops_lock);
+ 
+ 	return 0;
+ }
+@@ -211,12 +211,12 @@ static int backlight_resume(struct device *dev)
+ {
+ 	struct backlight_device *bd = to_backlight_device(dev);
+ 
+-	if (bd->ops->options & BL_CORE_SUSPENDRESUME) {
+-		mutex_lock(&bd->ops_lock);
++	mutex_lock(&bd->ops_lock);
++	if (bd->ops && bd->ops->options & BL_CORE_SUSPENDRESUME) {
+ 		bd->props.state &= ~BL_CORE_SUSPENDED;
+ 		backlight_update_status(bd);
+-		mutex_unlock(&bd->ops_lock);
+ 	}
++	mutex_unlock(&bd->ops_lock);
+ 
+ 	return 0;
+ }
 -- 
 1.7.4.4
 
