@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256Ab1DNRqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:45 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38295 "EHLO
+	id S933284Ab1DNRqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:50 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38333 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab1DNRqm (ORCPT
+	with ESMTP id S933155Ab1DNRqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:42 -0400
+	Thu, 14 Apr 2011 13:46:46 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
+Cc: stable-review@kernel.org, ma rui <m00150988@huawei.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 069/209] PCI: fix size checks for mmap() on /proc/bus/pci files
-Date: Thu, 14 Apr 2011 13:41:39 -0400
-Message-Id: <1302803039-9400-70-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 074/209] USB: option: fix when the driver is loaded incorrectly for some Huawei devices.
+Date: Thu, 14 Apr 2011 13:41:44 -0400
+Message-Id: <1302803039-9400-75-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,129 +22,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Wilck <martin.wilck@ts.fujitsu.com>
+From: ma rui <m00150988@huawei.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 3b519e4ea618b6943a82931630872907f9ac2c2b upstream.
+commit 58c0d9d70109bd7e82bdb9517007311a48499960 upstream.
 
-The checks for valid mmaps of PCI resources made through /proc/bus/pci files
-that were introduced in 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several
-problems:
+When huawei datacard with PID 0x14AC is insterted into Linux system, the
+present kernel will load the "option" driver to all the interfaces. But
+actually, some interfaces run as other function and do not need "option"
+driver.
 
-1. mmap() calls on /proc/bus/pci files are made with real file offsets > 0,
-whereas under /sys/bus/pci/devices, the start of the resource corresponds
-to offset 0. This may lead to false negatives in pci_mmap_fits(), which
-implicitly assumes the /sys/bus/pci/devices layout.
+In this path, we modify the id_tables, when the PID is 0x14ac ,VID is
+0x12d1, Only when the interface's Class is 0xff,Subclass is 0xff, Pro is
+0xff, it does need "option" driver.
 
-2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This leads
-to false positives, because pci_mmap_fits() doesn't treat empty resources
-correctly (the calculated size is 1 << (8*sizeof(resource_size_t)-PAGE_SHIFT)
-in this case!).
-
-3. If a user maps resources with BAR > 0, pci_mmap_fits will emit bogus
-WARNINGS for the first resources that don't fit until the correct one is found.
-
-On many controllers the first 2-4 BARs are used, and the others are empty.
-In this case, an mmap attempt will first fail on the non-empty BARs
-(including the "right" BAR because of 1.) and emit bogus WARNINGS because
-of 3., and finally succeed on the first empty BAR because of 2.
-This is certainly not the intended behaviour.
-
-This patch addresses all 3 issues.
-Updated with an enum type for the additional parameter for pci_mmap_fits().
-
-Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: ma rui <m00150988@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/pci/pci-sysfs.c |   22 ++++++++++++++++------
- drivers/pci/pci.h       |    7 ++++++-
- drivers/pci/proc.c      |    2 +-
- 3 files changed, 23 insertions(+), 8 deletions(-)
+ drivers/usb/serial/option.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index fad9398..e3efd79 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -692,17 +692,21 @@ void pci_remove_legacy_files(struct pci_bus *b)
- 
- #ifdef HAVE_PCI_MMAP
- 
--int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma)
-+int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
-+		  enum pci_mmap_api mmap_api)
- {
--	unsigned long nr, start, size;
-+	unsigned long nr, start, size, pci_start;
- 
-+	if (pci_resource_len(pdev, resno) == 0)
-+		return 0;
- 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
- 	start = vma->vm_pgoff;
- 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
--	if (start < size && size - start >= nr)
-+	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
-+			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
-+	if (start >= pci_start && start < pci_start + size &&
-+			start + nr <= pci_start + size)
- 		return 1;
--	WARN(1, "process \"%s\" tried to map 0x%08lx-0x%08lx on %s BAR %d (size 0x%08lx)\n",
--		current->comm, start, start+nr, pci_name(pdev), resno, size);
- 	return 0;
- }
- 
-@@ -732,8 +736,14 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
- 	if (i >= PCI_ROM_RESOURCE)
- 		return -ENODEV;
- 
--	if (!pci_mmap_fits(pdev, i, vma))
-+	if (!pci_mmap_fits(pdev, i, vma, PCI_MMAP_SYSFS)) {
-+		WARN(1, "process \"%s\" tried to map 0x%08lx bytes "
-+			"at page 0x%08lx on %s BAR %d (start 0x%16Lx, size 0x%16Lx)\n",
-+			current->comm, vma->vm_end-vma->vm_start, vma->vm_pgoff,
-+			pci_name(pdev), i,
-+			pci_resource_start(pdev, i), pci_resource_len(pdev, i));
- 		return -EINVAL;
-+	}
- 
- 	/* pci_mmap_page_range() expects the same kind of entry as coming
- 	 * from /proc/bus/pci/ which is a "user visible" value. If this is
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 4eb10f4..32b5820 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -13,8 +13,13 @@ extern int pci_create_sysfs_dev_files(struct pci_dev *pdev);
- extern void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
- extern void pci_cleanup_rom(struct pci_dev *dev);
- #ifdef HAVE_PCI_MMAP
-+enum pci_mmap_api {
-+	PCI_MMAP_SYSFS,	/* mmap on /sys/bus/pci/devices/<BDF>/resource<N> */
-+	PCI_MMAP_PROCFS	/* mmap on /proc/bus/pci/<BDF> */
-+};
- extern int pci_mmap_fits(struct pci_dev *pdev, int resno,
--			 struct vm_area_struct *vma);
-+			 struct vm_area_struct *vmai,
-+			 enum pci_mmap_api mmap_api);
- #endif
- int pci_probe_reset_function(struct pci_dev *dev);
- 
-diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
-index 449e890..64ac30b 100644
---- a/drivers/pci/proc.c
-+++ b/drivers/pci/proc.c
-@@ -260,7 +260,7 @@ static int proc_bus_pci_mmap(struct file *file, struct vm_area_struct *vma)
- 
- 	/* Make sure the caller is mapping a real resource for this device */
- 	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
--		if (pci_mmap_fits(dev, i, vma))
-+		if (pci_mmap_fits(dev, i, vma,  PCI_MMAP_PROCFS))
- 			break;
- 	}
- 
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 0e94896..58100d9 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -513,7 +513,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) }, /* Novatel Merlin V640/XV620 */
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) }, /* Novatel Merlin V620/S620 */
 -- 
 1.7.4.4
 
