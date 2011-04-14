@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab1DNBWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 21:22:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:31661 "EHLO
+	id S1758048Ab1DNBWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 21:22:51 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:50781 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682Ab1DNBWh (ORCPT
+	with ESMTP id S1757620Ab1DNBWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 21:22:37 -0400
+	Wed, 13 Apr 2011 21:22:48 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=gSQuqVasQa+1DoQlMZwGQHkzllFNDnjZlb7imjyK8DfRSH/BgKb+b+RDFz4cxWsS4
-	wjEZL9F2YL8C87MbDRqHw==
+	b=sMGLYxtjv9AKXXIEZRsoGfJ7YbDBOjJmmL8eN5nFWx4M0vWrPe2dMAUv1cL+2QYlt
+	LqqJXd7+pzzk4Th2bcaZA==
 From: David Decotigny <decot@google.com>
 To: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: David Decotigny <decot@google.com>
-Subject: [PATCH 3/3] net-bonding: Adding support for throughputs larger than 65536 Mbps
-Date: Wed, 13 Apr 2011 18:22:31 -0700
-Message-Id: <1302744151-12452-3-git-send-email-decot@google.com>
+Subject: [PATCH 2/3] net-bonding: Fix minor/cosmetic type inconsistencies
+Date: Wed, 13 Apr 2011 18:22:30 -0700
+Message-Id: <1302744151-12452-2-git-send-email-decot@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1302744151-12452-1-git-send-email-decot@google.com>
 References: <1302744151-12452-1-git-send-email-decot@google.com>
@@ -25,91 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updates the bonding driver to support v2.6.27-rc3 enhancements
-(b11f8d8c aka. "ethtool: Expand ethtool_cmd.speed to 32 bits") which
-allow to encode the Mbps link speed on 32-bits (Max 4 Pbps) instead of
-16 (Max 65536 Mbps).
+The __get_link_speed() function returns a u16 value which was stored
+in a u32 local variable. This patch uses the return value directly,
+thus fixing that minor type consistency.
 
-This patch also attempts to compact struct slave by reordering its
-fields.
+The 'duplex' field in struct slave being encoded on 8 bits, to be more
+consistent we use a u8 integer (instead of u16) whenever we copy it to
+local variables.
 
 Signed-off-by: David Decotigny <decot@google.com>
 ---
- drivers/net/bonding/bond_main.c |   12 +++++++-----
- drivers/net/bonding/bonding.h   |    6 +++---
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ drivers/net/bonding/bond_3ad.c  |    4 +---
+ drivers/net/bonding/bond_main.c |    2 +-
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 494bf96..123dd60 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -716,11 +716,9 @@ static void __set_agg_ports_ready(struct aggregator *aggregator, int val)
+ static u32 __get_agg_bandwidth(struct aggregator *aggregator)
+ {
+ 	u32 bandwidth = 0;
+-	u32 basic_speed;
+ 
+ 	if (aggregator->num_of_ports) {
+-		basic_speed = __get_link_speed(aggregator->lag_ports);
+-		switch (basic_speed) {
++		switch (__get_link_speed(aggregator->lag_ports)) {
+ 		case AD_LINK_SPEED_BITMASK_1MBPS:
+ 			bandwidth = aggregator->num_of_ports;
+ 			break;
 diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 145f9be..c5d8ac2 100644
+index 8264ed7..145f9be 100644
 --- a/drivers/net/bonding/bond_main.c
 +++ b/drivers/net/bonding/bond_main.c
-@@ -631,7 +631,8 @@ down:
- static int bond_update_speed_duplex(struct slave *slave)
- {
- 	struct net_device *slave_dev = slave->dev;
--	struct ethtool_cmd etool;
-+	struct ethtool_cmd etool = { .cmd = ETHTOOL_GSET };
-+	u32 slave_speed;
- 	int res;
- 
- 	/* Fake speed and duplex */
-@@ -645,7 +646,8 @@ static int bond_update_speed_duplex(struct slave *slave)
- 	if (res < 0)
- 		return -1;
- 
--	switch (etool.speed) {
-+	slave_speed = ethtool_cmd_speed(&etool);
-+	switch (slave_speed) {
- 	case SPEED_10:
- 	case SPEED_100:
- 	case SPEED_1000:
-@@ -663,7 +665,7 @@ static int bond_update_speed_duplex(struct slave *slave)
- 		return -1;
- 	}
- 
--	slave->speed = etool.speed;
-+	slave->speed = slave_speed;
- 	slave->duplex = etool.duplex;
- 
- 	return 0;
-@@ -2493,7 +2495,7 @@ static void bond_miimon_commit(struct bonding *bond)
- 
- 			bond_update_speed_duplex(slave);
- 
--			pr_info("%s: link status definitely up for interface %s, %d Mbps %s duplex.\n",
-+			pr_info("%s: link status definitely up for interface %s, %u Mbps %s duplex.\n",
- 				bond->dev->name, slave->dev->name,
- 				slave->speed, slave->duplex ? "full" : "half");
- 
-@@ -3339,7 +3341,7 @@ static int bond_slave_netdev_event(unsigned long event,
- 
+@@ -3340,7 +3340,7 @@ static int bond_slave_netdev_event(unsigned long event,
  			slave = bond_get_slave_by_dev(bond, slave_dev);
  			if (slave) {
--				u16 old_speed = slave->speed;
-+				u32 old_speed = slave->speed;
- 				u8  old_duplex = slave->duplex;
+ 				u16 old_speed = slave->speed;
+-				u16 old_duplex = slave->duplex;
++				u8  old_duplex = slave->duplex;
  
  				bond_update_speed_duplex(slave);
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index 3ca503e..553c764 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -196,12 +196,12 @@ struct slave {
- 	u8     backup:1,   /* indicates backup slave. Value corresponds with
- 			      BOND_STATE_ACTIVE and BOND_STATE_BACKUP */
- 	       inactive:1; /* indicates inactive slave */
-+	u8     duplex;
- 	u32    original_mtu;
- 	u32    link_failure_count;
--	u8     perm_hwaddr[ETH_ALEN];
--	u16    speed;
--	u8     duplex;
-+	u32    speed;
- 	u16    queue_id;
-+	u8     perm_hwaddr[ETH_ALEN];
- 	struct ad_slave_info ad_info; /* HUGE - better to dynamically alloc */
- 	struct tlb_slave_info tlb_info;
- #ifdef CONFIG_NET_POLL_CONTROLLER
+ 
 -- 
 1.7.3.1
 
