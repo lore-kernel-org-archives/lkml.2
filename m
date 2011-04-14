@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933499Ab1DNRus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:50:48 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38574 "EHLO
+	id S933451Ab1DNRrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38544 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933455Ab1DNRrY (ORCPT
+	with ESMTP id S933419Ab1DNRrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:24 -0400
+	Thu, 14 Apr 2011 13:47:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 095/209] perf_events: Fix perf_counter_mmap() hook in mprotect()
-Date: Thu, 14 Apr 2011 13:42:05 -0400
-Message-Id: <1302803039-9400-96-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 100/209] staging: rtl8187se: Change panic to warn when RF switch turned off
+Date: Thu, 14 Apr 2011 13:42:10 -0400
+Message-Id: <1302803039-9400-101-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,56 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pekka Enberg <penberg@kernel.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 63bfd7384b119409685a17d5c58f0b56e5dc03da upstream.
+commit f36d83a8cb7224f45fdfa1129a616dff56479a09 upstream.
 
-As pointed out by Linus, commit dab5855 ("perf_counter: Add mmap event hooks to
-mprotect()") is fundamentally wrong as mprotect_fixup() can free 'vma' due to
-merging. Fix the problem by moving perf_event_mmap() hook to
-mprotect_fixup().
+This driver issues a kernel panic over conditions that do not
+justify such drastic action. Change these to log entries with
+a stack dump.
 
-Note: there's another successful return path from mprotect_fixup() if old
-flags equal to new flags. We don't, however, need to call
-perf_event_mmap() there because 'perf' already knows the VMA is
-executable.
+This patch fixes the system crash reported in
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/674285.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Analyzed-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Reviewed-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-and-Tested-by: Robie Basik <rb-oss-3@justgohome.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/mprotect.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/rtl8187se/r8185b_init.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 2d1bf7c..4c51338 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -211,6 +211,7 @@ success:
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
- 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
-+	perf_event_mmap(vma);
- 	return 0;
+diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
+index a0ece1f..e7e8745 100644
+--- a/drivers/staging/rtl8187se/r8185b_init.c
++++ b/drivers/staging/rtl8187se/r8185b_init.c
+@@ -268,8 +268,12 @@ HwHSSIThreeWire(
+ 			}
+ 			udelay(10);
+ 		}
+-		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT)
+-			panic("HwThreeWire(): CmdReg: %#X RE|WE bits are not clear!!\n", u1bTmp);
++		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT) {
++			printk(KERN_ERR "rtl8187se: HwThreeWire(): CmdReg:"
++			       " %#X RE|WE bits are not clear!!\n", u1bTmp);
++			dump_stack();
++			return 0;
++		}
  
- fail:
-@@ -299,7 +300,6 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
- 		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags);
- 		if (error)
- 			goto out;
--		perf_event_mmap(vma);
- 		nstart = tmp;
+ 		// RTL8187S HSSI Read/Write Function
+ 		u1bTmp = read_nic_byte(dev, RF_SW_CONFIG);
+@@ -309,13 +313,23 @@ HwHSSIThreeWire(
+ 				int idx;
+ 				int ByteCnt = nDataBufBitCnt / 8;
+                                 //printk("%d\n",nDataBufBitCnt);
+-				if ((nDataBufBitCnt % 8) != 0)
+-				panic("HwThreeWire(): nDataBufBitCnt(%d) should be multiple of 8!!!\n",
+-				nDataBufBitCnt);
++				if ((nDataBufBitCnt % 8) != 0) {
++					printk(KERN_ERR "rtl8187se: "
++					       "HwThreeWire(): nDataBufBitCnt(%d)"
++					       " should be multiple of 8!!!\n",
++					       nDataBufBitCnt);
++					dump_stack();
++					nDataBufBitCnt += 8;
++					nDataBufBitCnt &= ~7;
++				}
  
- 		if (nstart < prev->vm_end)
+-			       if (nDataBufBitCnt > 64)
+-				panic("HwThreeWire(): nDataBufBitCnt(%d) should <= 64!!!\n",
+-				nDataBufBitCnt);
++			       if (nDataBufBitCnt > 64) {
++					printk(KERN_ERR "rtl8187se: HwThreeWire():"
++					       " nDataBufBitCnt(%d) should <= 64!!!\n",
++					       nDataBufBitCnt);
++					dump_stack();
++					nDataBufBitCnt = 64;
++				}
+ 
+ 				for(idx = 0; idx < ByteCnt; idx++)
+ 				{
 -- 
 1.7.4.4
 
