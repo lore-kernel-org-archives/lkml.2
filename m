@@ -1,130 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab1DNAko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 20:40:44 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43218 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab1DNAkn (ORCPT
+	id S932343Ab1DNAmY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 20:42:24 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49110 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139Ab1DNAmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 20:40:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:x-face:face:x-url:x-pgp-fp
-         :x-pgp:date:in-reply-to:message-id:user-agent:mime-version
-         :content-type;
-        b=ffkosK2gbbfmIAxFSkS7pbgiZ8J75ioHcSScsdbIZdU35UHCbdvULVnE+iTDyDbIoo
-         xnzaIG/wADzF5uoBrTvO7sKDM2ewA581NuGJqhNvj+oNcigqM9SgpDe7tYlo5JBTa3f4
-         nFZGD8xeDNVjSWzPaqVO10aD+dQokEpLc5GB4=
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2] usb: gadget: storage_common: use kstrto*()
-References: <c7bc1074f7cd049786ac2d50fe71b5e3ca0beba2.1302732994.git.mina86@mina86.com>
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-Url: http://mina86.com/
-X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
-X-PGP: B7C6DF1E
-Date: Thu, 14 Apr 2011 02:40:39 +0200
-In-Reply-To: <c7bc1074f7cd049786ac2d50fe71b5e3ca0beba2.1302732994.git.mina86@mina86.com>
-	(Michal Nazarewicz's message of "Thu, 14 Apr 2011 00:37:00 +0200")
-Message-ID: <8739llk6m0.fsf@erwin.mina86.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 13 Apr 2011 20:42:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 14 Apr 2011 09:35:49 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        Andrey Vagin <avagin@openvz.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/4] forkbomb killer
+Message-Id: <20110414093549.80539260.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110414092033.0809.A69D9226@jp.fujitsu.com>
+References: <20110329101234.54d5d45a.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTi=pMapbVoUO6+7nUEg1bY4fb844-A@mail.gmail.com>
+	<20110414092033.0809.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit replaces the usage of strict_strtoul() (which
-became deprecated after commit 33ee3b2e) with kstrtouint().
+On Thu, 14 Apr 2011 09:20:41 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/gadget/storage_common.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+> Hi, Minchan, Kamezawa-san,
+> 
+> > >> So whenever user push sysrq, older tasks would be killed and at last,
+> > >> root forkbomb task would be killed.
+> > >>
+> > >
+> > > Maybe good for a single user system and it can send Sysrq.
+> > > But I myself not very excited with this new feature becasuse I need to
+> > > run to push Sysrq ....
+> > >
+> > > Please do as you like, I think the idea itself is interesting.
+> > > But I love some automatic ones. I do other jobs.
+> > 
+> > Okay. Thanks for the comment, Kame.
+> > 
+> > I hope Andrew or someone gives feedback forkbomb problem itself before
+> > diving into this.
+> 
+> May I ask current status of this thread? I'm unhappy if our kernel keep 
+> to have forkbomb weakness. ;)
 
-> @@ -711,10 +711,11 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
->  	ssize_t		rc = count;
->  	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
->  	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
-> -	unsigned long	ro;
-> +	unsigned	ro;
->  
-> -	if (strict_strtoul(buf, 2, &ro))
-> -		return -EINVAL;
-> +	rc = kstrtouint(buf, 2, &ro);
-> +	if (rc)
-> +		return rc;
->  
+I've stopped updating but can restart at any time. (And I found a bug ;)
 
-Sorry, I've just noticed this zeroes the rc so that the function returns
-invalid read length.  Attached patch has the following delta included:
+> Can we consider to take either or both idea?
+> 
+I think yes, both idea can be used.
+One idea is
+ - kill all recent threads by Sysrq. The user can use Sysrq multiple times
+   until forkbomb stops.
+Another(mine) is
+ - kill all problematic in automatic. This adds some tracking costs but
+   can be configurable.
 
-| @@ -708,7 +708,7 @@ static ssize_t fsg_show_file(struct device *dev, struct devi
-|  static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
-|                             const char *buf, size_t count)
-|  {
-| -       ssize_t         rc = count;
-| +       ssize_t         rc;
-|         struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
-|         struct rw_semaphore     *filesem = dev_get_drvdata(dev);
-|         unsigned        ro;
-| @@ -729,6 +729,7 @@ static ssize_t fsg_store_ro(struct device *dev, struct devic
-|                 curlun->ro = ro;
-|                 curlun->initially_ro = ro;
-|                 LDBG(curlun, "read-only status set to %d\n", curlun->ro);
-| +               rc = count;
-|         }
-|         up_read(filesem);
-|         return rc;
+Thanks,
+-Kame
 
-
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index b015561..1fa4f70 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -708,13 +708,14 @@ static ssize_t fsg_show_file(struct device *dev, struct device_attribute *attr,
- static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
- 			    const char *buf, size_t count)
- {
--	ssize_t		rc = count;
-+	ssize_t		rc;
- 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
- 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
--	unsigned long	ro;
-+	unsigned	ro;
- 
--	if (strict_strtoul(buf, 2, &ro))
--		return -EINVAL;
-+	rc = kstrtouint(buf, 2, &ro);
-+	if (rc)
-+		return rc;
- 
- 	/*
- 	 * Allow the write-enable status to change only while the
-@@ -728,6 +729,7 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
- 		curlun->ro = ro;
- 		curlun->initially_ro = ro;
- 		LDBG(curlun, "read-only status set to %d\n", curlun->ro);
-+		rc = count;
- 	}
- 	up_read(filesem);
- 	return rc;
-@@ -738,10 +740,12 @@ static ssize_t fsg_store_nofua(struct device *dev,
- 			       const char *buf, size_t count)
- {
- 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
--	unsigned long	nofua;
-+	unsigned	nofua;
-+	int		ret;
- 
--	if (strict_strtoul(buf, 2, &nofua))
--		return -EINVAL;
-+	ret = kstrtouint(buf, 2, &nofua);
-+	if (ret)
-+		return ret;
- 
- 	/* Sync data when switching from async mode to sync */
- 	if (!nofua && curlun->nofua)
