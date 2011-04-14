@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab1DNJ6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:58:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50289 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932382Ab1DNJ6I (ORCPT
+	id S1758690Ab1DNKBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 06:01:11 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37233 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757056Ab1DNKBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:58:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=mime-version:x-originating-ip:in-reply-to:references:date
-         :message-id:subject:from:to:cc:content-type;
-        b=jZhuuaI3DvbAlmXzbVjIzn95UiCSExeROeZ8eeOgYX/nTSWQr0ThCs8BsM6NfeAX5s
-         92OJWAFYjKXpQ7L8keOF7TKpej5ZauAGO3iBN21jfTzB9KWK4CGSvZj61Du+O/pVkn05
-         3OTPeMtt6oRlD0H/XJdYLP2ZMMAv6Oydv7ujs=
+	Thu, 14 Apr 2011 06:01:10 -0400
+Date: Thu, 14 Apr 2011 11:00:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
+Message-ID: <20110414100048.GB1611@n2100.arm.linux.org.uk>
+References: <1299134429.100626.661279191478.0.gpush@pororo> <1302754859.2767.30.camel@pororo>
 MIME-Version: 1.0
-X-Originating-IP: [88.209.222.127]
-In-Reply-To: <BANLkTi=BLt5evF12J-FQ3GVxnfOiEFJzwg@mail.gmail.com>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
-	<BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
-	<BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
-	<BANLkTi=BLt5evF12J-FQ3GVxnfOiEFJzwg@mail.gmail.com>
-Date: Thu, 14 Apr 2011 11:58:07 +0200
-Message-ID: <BANLkTin-L4ON5JZp3A80ptxXZ03NR2E0yg@mail.gmail.com>
-Subject: Re: Unionmount status?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Michal Suchanek <hramrach@centrum.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302754859.2767.30.camel@pororo>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 11:48 AM, Sedat Dilek
-<sedat.dilek@googlemail.com> wrote:
-> did you stop working on OverlayFS (no hear no read since 3 weeks :-))?
-> You made some post-v7-patchset patches, but did not publish a v8.
->
-> Also, Linus requested a finer-grained split of the big overlayfs.c
-> file like in the other FS.
-> What's the status on this?
+On Thu, Apr 14, 2011 at 12:20:59PM +0800, Jeremy Kerr wrote:
+> Any updates on these patches? I've added to your patch-tracker, would
+> you expect these to make the next merge window, or are there changes
+> you'd like made first?
+> 
+> Reason I ask is that I have a few queries from platform maintainers that
+> would like to complete their clock ports to this API, but don't want to
+> commit until the interface has been accepted, in at least an initial
+> form.
 
-I'm working on that.  Will post patches shortly.
+I will take it, but at the moment I'm rather unhappy about the response
+from the community to Linus' complaint.
 
-Thanks,
-Miklos
+If existing platform maintainers can show that moving over to this will
+result in a net reduction of code under arch/arm, then that will be good.
+What I don't want to see at the moment is arch/arm increasing in size as
+a result of any change.  We desperately need to see a reduction for the
+next merge window.
