@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab1DNRq2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:28 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38097 "EHLO
+	id S933230Ab1DNRql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:41 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38222 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056Ab1DNRqY (ORCPT
+	with ESMTP id S933155Ab1DNRqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:24 -0400
+	Thu, 14 Apr 2011 13:46:34 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Jens Axboe <jaxboe@fusionio.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 052/209] tty: prevent DOS in the flush_to_ldisc
-Date: Thu, 14 Apr 2011 13:41:22 -0400
-Message-Id: <1302803039-9400-53-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 066/209] bio: take care not overflow page count when mapping/copying user data
+Date: Thu, 14 Apr 2011 13:41:36 -0400
+Message-Id: <1302803039-9400-67-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,115 +21,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Jens Axboe <jaxboe@fusionio.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit e045fec48970df84647a47930fcf7a22ff7229c0 upstream.
+commit cb4644cac4a2797afc847e6c92736664d4b0ea34 upstream.
 
-There's a small window inside the flush_to_ldisc function,
-where the tty is unlocked and calling ldisc's receive_buf
-function. If in this window new buffer is added to the tty,
-the processing might never leave the flush_to_ldisc function.
+If the iovec is being set up in a way that causes uaddr + PAGE_SIZE
+to overflow, we could end up attempting to map a huge number of
+pages. Check for this invalid input type.
 
-This scenario will hog the cpu, causing other tty processing
-starving, and making it impossible to interface the computer
-via tty.
-
-I was able to exploit this via pty interface by sending only
-control characters to the master input, causing the flush_to_ldisc
-to be scheduled, but never actually generate any output.
-
-To reproduce, please run multiple instances of following code.
-
-- SNIP
-#define _XOPEN_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-int main(int argc, char **argv)
-{
-        int i, slave, master = getpt();
-        char buf[8192];
-
-        sprintf(buf, "%s", ptsname(master));
-        grantpt(master);
-        unlockpt(master);
-
-        slave = open(buf, O_RDWR);
-        if (slave < 0) {
-                perror("open slave failed");
-                return 1;
-        }
-
-        for(i = 0; i < sizeof(buf); i++)
-                buf[i] = rand() % 32;
-
-        while(1) {
-                write(master, buf, sizeof(buf));
-        }
-
-        return 0;
-}
-- SNIP
-
-The attached patch (based on -next tree) fixes this by checking on the
-tty buffer tail. Once it's reached, the current work is rescheduled
-and another could run.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/tty_buffer.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ fs/bio.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/tty_buffer.c b/drivers/char/tty_buffer.c
-index 7ee5216..b370629 100644
---- a/drivers/char/tty_buffer.c
-+++ b/drivers/char/tty_buffer.c
-@@ -413,7 +413,8 @@ static void flush_to_ldisc(struct work_struct *work)
- 	spin_lock_irqsave(&tty->buf.lock, flags);
+diff --git a/fs/bio.c b/fs/bio.c
+index 75ea4c3..b3e0174 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -834,6 +834,12 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
+ 		end = (uaddr + iov[i].iov_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		start = uaddr >> PAGE_SHIFT;
  
- 	if (!test_and_set_bit(TTY_FLUSHING, &tty->flags)) {
--		struct tty_buffer *head;
-+		struct tty_buffer *head, *tail = tty->buf.tail;
-+		int seen_tail = 0;
- 		while ((head = tty->buf.head) != NULL) {
- 			int count;
- 			char *char_buf;
-@@ -423,6 +424,15 @@ static void flush_to_ldisc(struct work_struct *work)
- 			if (!count) {
- 				if (head->next == NULL)
- 					break;
-+				/*
-+				  There's a possibility tty might get new buffer
-+				  added during the unlock window below. We could
-+				  end up spinning in here forever hogging the CPU
-+				  completely. To avoid this let's have a rest each
-+				  time we processed the tail buffer.
-+				*/
-+				if (tail == head)
-+					seen_tail = 1;
- 				tty->buf.head = head->next;
- 				tty_buffer_free(tty, head);
- 				continue;
-@@ -432,7 +442,7 @@ static void flush_to_ldisc(struct work_struct *work)
- 			   line discipline as we want to empty the queue */
- 			if (test_bit(TTY_FLUSHPENDING, &tty->flags))
- 				break;
--			if (!tty->receive_room) {
-+			if (!tty->receive_room || seen_tail) {
- 				schedule_delayed_work(&tty->buf.work, 1);
- 				break;
- 			}
++		/*
++		 * Overflow, abort
++		 */
++		if (end < start)
++			return ERR_PTR(-EINVAL);
++
+ 		nr_pages += end - start;
+ 		len += iov[i].iov_len;
+ 	}
+@@ -961,6 +967,12 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
+ 		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		unsigned long start = uaddr >> PAGE_SHIFT;
+ 
++		/*
++		 * Overflow, abort
++		 */
++		if (end < start)
++			return ERR_PTR(-EINVAL);
++
+ 		nr_pages += end - start;
+ 		/*
+ 		 * buffer must be aligned to at least hardsector size for now
+@@ -988,7 +1000,7 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
+ 		unsigned long start = uaddr >> PAGE_SHIFT;
+ 		const int local_nr_pages = end - start;
+ 		const int page_limit = cur_page + local_nr_pages;
+-		
++
+ 		ret = get_user_pages_fast(uaddr, local_nr_pages,
+ 				write_to_vm, &pages[cur_page]);
+ 		if (ret < local_nr_pages) {
 -- 
 1.7.4.4
 
