@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526Ab1DNRvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:51:00 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38567 "EHLO
+	id S933438Ab1DNRrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:20 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38480 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933419Ab1DNRrX (ORCPT
+	with ESMTP id S932892Ab1DNRrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:23 -0400
+	Thu, 14 Apr 2011 13:47:14 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jarek Poplawski <jarkao2@gmail.com>,
-        Andy Fleming <afleming@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Will Newton <will.newton@gmail.com>,
+        Jeff Dike <jdike@addtoit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 104/209] gianfar: Fix crashes on RX path (Was Re: [Bugme-new] [Bug 19692] New: linux-2.6.36-rc5 crash with gianfar ethernet at full line rate traffic)
-Date: Thu, 14 Apr 2011 13:42:14 -0400
-Message-Id: <1302803039-9400-105-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 091/209] uml: disable winch irq before freeing handler data
+Date: Thu, 14 Apr 2011 13:42:01 -0400
+Message-Id: <1302803039-9400-92-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,68 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jarek Poplawski <jarkao2@gmail.com>
+From: Will Newton <will.newton@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit cd0ea2419544cfc4ccbf8ee0087d0d9f109852d2 upstream.
+commit 69e83dad5207f8f03c9699e57e1febb114383cb8 upstream.
 
-The rx_recycle queue is global per device but can be accesed by many
-napi handlers at the same time, so it needs full skb_queue primitives
-(with locking). Otherwise, various crashes caused by broken skbs are
-possible.
+Disable the winch irq early to make sure we don't take an interrupt part
+way through the freeing of the handler data, resulting in a crash on
+shutdown:
 
-This patch resolves, at least partly, bugzilla bug 19692. (Because of
-some doubts that there could be still something around which is hard
-to reproduce my proposal is to leave this bug opened for a month.)
+  winch_interrupt : read failed, errno = 9
+  fd 13 is losing SIGWINCH support
+  ------------[ cut here ]------------
+  WARNING: at lib/list_debug.c:48 list_del+0xc6/0x100()
+  list_del corruption, next is LIST_POISON1 (00100100)
+  082578c8:  [<081fd77f>] dump_stack+0x22/0x24
+  082578e0:  [<0807a18a>] warn_slowpath_common+0x5a/0x80
+  08257908:  [<0807a23e>] warn_slowpath_fmt+0x2e/0x30
+  08257920:  [<08172196>] list_del+0xc6/0x100
+  08257940:  [<08060244>] free_winch+0x14/0x80
+  08257958:  [<080606fb>] winch_interrupt+0xdb/0xe0
+  08257978:  [<080a65b5>] handle_IRQ_event+0x35/0xe0
+  08257998:  [<080a8717>] handle_edge_irq+0xb7/0x170
+  082579bc:  [<08059bc4>] do_IRQ+0x34/0x50
+  082579d4:  [<08059e1b>] sigio_handler+0x5b/0x80
+  082579ec:  [<0806a374>] sig_handler_common+0x44/0xb0
+  08257a68:  [<0806a538>] sig_handler+0x38/0x50
+  08257a78:  [<0806a77c>] handle_signal+0x5c/0xa0
+  08257a9c:  [<0806be28>] hard_handler+0x18/0x20
+  08257aac:  [<00c14400>] 0xc14400
 
-Fixes commit: 0fd56bb5be6455d0d42241e65aed057244665e5e ("gianfar: Add
-support for skb recycling")
-
-Reported-by: emin ak <eminak71@gmail.com>
-Tested-by: emin ak <eminak71@gmail.com>
-Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
-CC: Andy Fleming <afleming@freescale.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Will Newton <will.newton@gmail.com>
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: Jeff Dike <jdike@addtoit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/gianfar.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ arch/um/drivers/line.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
-index 5d3763f..58496d3 100644
---- a/drivers/net/gianfar.c
-+++ b/drivers/net/gianfar.c
-@@ -2303,7 +2303,7 @@ static int gfar_clean_tx_ring(struct gfar_priv_tx_q *tx_queue)
- 		if (skb_queue_len(&priv->rx_recycle) < rx_queue->rx_ring_size &&
- 				skb_recycle_check(skb, priv->rx_buffer_size +
- 					RXBUF_ALIGNMENT))
--			__skb_queue_head(&priv->rx_recycle, skb);
-+			skb_queue_head(&priv->rx_recycle, skb);
- 		else
- 			dev_kfree_skb_any(skb);
+diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
+index 7a656bd..3aa33a7 100644
+--- a/arch/um/drivers/line.c
++++ b/arch/um/drivers/line.c
+@@ -728,6 +728,9 @@ struct winch {
  
-@@ -2374,7 +2374,7 @@ struct sk_buff * gfar_new_skb(struct net_device *dev)
- 	struct gfar_private *priv = netdev_priv(dev);
- 	struct sk_buff *skb = NULL;
+ static void free_winch(struct winch *winch, int free_irq_ok)
+ {
++	if (free_irq_ok)
++		free_irq(WINCH_IRQ, winch);
++
+ 	list_del(&winch->list);
  
--	skb = __skb_dequeue(&priv->rx_recycle);
-+	skb = skb_dequeue(&priv->rx_recycle);
- 	if (!skb)
- 		skb = netdev_alloc_skb(dev,
- 				priv->rx_buffer_size + RXBUF_ALIGNMENT);
-@@ -2537,7 +2537,7 @@ int gfar_clean_rx_ring(struct gfar_priv_rx_q *rx_queue, int rx_work_limit)
- 				 * recycle list.
- 				 */
- 				skb_reserve(skb, -GFAR_CB(skb)->alignamount);
--				__skb_queue_head(&priv->rx_recycle, skb);
-+				skb_queue_head(&priv->rx_recycle, skb);
- 			}
- 		} else {
- 			/* Increment the number of packets */
+ 	if (winch->pid != -1)
+@@ -736,8 +739,6 @@ static void free_winch(struct winch *winch, int free_irq_ok)
+ 		os_close_file(winch->fd);
+ 	if (winch->stack != 0)
+ 		free_stack(winch->stack, 0);
+-	if (free_irq_ok)
+-		free_irq(WINCH_IRQ, winch);
+ 	kfree(winch);
+ }
+ 
 -- 
 1.7.4.4
 
