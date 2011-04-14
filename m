@@ -1,115 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab1DNVV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:21:58 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:64627 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753572Ab1DNVVx convert rfc822-to-8bit (ORCPT
+	id S1753457Ab1DNVXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:23:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23852 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab1DNVXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:21:53 -0400
-X-IronPort-AV: E=Sophos;i="4.64,213,1301900400"; 
-   d="scan'208";a="541458437"
-Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Bryan Schumaker <bjschuma@netapp.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <4DA75AFC.3040000@suse.cz>
-References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>
-	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>
-	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>
-	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>
-	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz>
-	 <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz>
-	 <4DA49D3A.7090800@netapp.com> <4DA49F7F.8060005@suse.cz>
-	 <4DA60AB9.1050104@netapp.com>  <4DA75AFC.3040000@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 14 Apr 2011 17:21:35 -0400
-Message-ID: <1302816095.24028.87.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 14 Apr 2011 21:21:37.0907 (UTC) FILETIME=[F07A6C30:01CBFAE9]
+	Thu, 14 Apr 2011 17:23:20 -0400
+Date: Thu, 14 Apr 2011 14:20:02 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
+        jlbec@evilplan.org, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+        linux-mm@kvack.org, hch@infradead.org, ngupta@vflare.org,
+        jeremy@goop.org, JBeulich@novell.com, kurt.hackel@oracle.com,
+        npiggin@kernel.dk, dave.mccracken@oracle.com, riel@redhat.com,
+        avi@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        mel@csn.ul.ie, yinghan@google.com, gthelen@google.com,
+        torvalds@linux-foundation.org
+Subject: [PATCH] xen: cleancache shim to Xen Transcendent Memory
+Message-ID: <20110414212002.GA27846@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-11)
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DA7657F.0105,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-14 at 22:37 +0200, Jiri Slaby wrote:
-> On 04/13/2011 10:42 PM, Bryan Schumaker wrote:
-> > On 04/12/2011 02:52 PM, Jiri Slaby wrote:
-> >> On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
-> >>> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
-> >>>> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
-> >>>>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
-> >>>>>> inacceptable for automounted NFS dirs.
-> >>>>>
-> >>>>> I'm still confused as to why you are hitting it at all. In the normal
-> >>>>> autonegotiation case, the client should be trying to use AUTH_SYS first
-> >>>>> and then trying rpcsec_gss if and only if that fails.
-> >>>>>
-> >>>>> Are you really exporting a filesystem using AUTH_NULL as the only
-> >>>>> supported flavour?
-> >>>>
-> >>>> I don't know, I connect to a nfs server which is not maintained by me.
-> >>>> It looks like that. How can I find out?
-> >>>
-> >>> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
-> >>
-> >> I don't have NFS in modules. It's all built-in. And this one is
-> >> unconditionally selected because of CONFIG_NFS_V4.
-> > 
-> > Does this patch help?
-> 
-> Nope, it makes things even worse:
-> # mount -oro,intr XXX:/yyy /mnt/c/
-> <15s delay here>
-> mount.nfs: access denied by server while mounting XXX:/yyy
-> 
-> So in nfs4_proc_get_root I do:
->   printk("%s: %d %u\n", __func__, i, flav_array[i]);
->   status = nfs4_lookup_root_sec(server, fhandle, info, flav_array[i]);
->   printk("%s: res=%d\n", __func__, status);
-> and get:
-> [   18.159818] nfs4_proc_get_root: 0 1
-> [   18.214872] nfs4_proc_get_root: res=-1
-> [   18.214875] nfs4_proc_get_root: 1 0
-> [   18.254636] nfs4_proc_get_root: res=-1
-> [   18.254639] nfs4_proc_get_root: 2 390003
-> [   33.252174] RPC: AUTH_GSS upcall timed out.
-> [   33.252177] Please check user daemon is running.
-> [   33.252192] nfs4_proc_get_root: res=-13
-> 
-> If I revert that back and do the same:
-> [   28.275569] nfs4_proc_get_root: 0 1
-> [   28.296545] nfs4_proc_get_root: res=-1
-> [   28.296548] nfs4_proc_get_root: 1 390003
-> [   43.296107] RPC: AUTH_GSS upcall timed out.
-> [   43.296108] Please check user daemon is running.
-> [   43.296121] nfs4_proc_get_root: res=-13
-> [   43.296122] nfs4_proc_get_root: 2 0
-> [   43.318201] nfs4_proc_get_root: res=-1
-> 
-> I.e. all methods fail. And what matters is the last retval. From NULL it
-> is EPERM, from GSS it is EACCESS. For EPERM, mount(8) falls back to
-> nfs3, for EACCESS it dies terrible death.
+[PATCH] xen: cleancache shim to Xen Transcendent Memory
 
-OK. That's good information. Thanks for testing!
+This patch provides a shim between the kernel-internal cleancache
+API (see Documentation/mm/cleancache.txt) and the Xen Transcendent
+Memory ABI (see http://oss.oracle.com/projects/tmem).
 
-I'm still curious as to why that NFS server is refusing all NFSv4 mounts
-with NFS4ERR_WRONGSEC. Unless NFSv4 really is configured only to export
-the root filesystem with RPCSEC_GSS, then that definitely sounds like a
-bug...
+Xen tmem provides "hypervisor RAM" as an ephemeral page-oriented
+pseudo-RAM store for cleancache pages, shared cleancache pages,
+and frontswap pages.  Tmem provides enterprise-quality concurrency,
+full save/restore and live migration support, compression
+and deduplication.
 
-Cheers
-  Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
+A presentation showing up to 8% faster performance and up to 52%
+reduction in sectors read on a kernel compile workload, despite
+aggressive in-kernel page reclamation ("self-ballooning") can be
+found at:
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+http://oss.oracle.com/projects/tmem/dist/documentation/presentations/TranscendentMemoryXenSummit2010.pdf
 
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Matthew Wilcox <matthew@wil.cx>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik Van Riel <riel@redhat.com>
+Cc: Jan Beulich <JBeulich@novell.com>
+Cc: Chris Mason <chris.mason@oracle.com>
+Cc: Andreas Dilger <adilger@sun.com>
+Cc: Ted Ts'o <tytso@mit.edu>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <joel.becker@oracle.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+
+---
+
+Diffstat:
+ arch/x86/include/asm/xen/hypercall.h     |    7 
+ drivers/xen/Makefile                     |    1 
+ drivers/xen/tmem.c                       |  264 +++++++++++++++++++++
+ include/xen/interface/xen.h              |   22 +
+ 4 files changed, 294 insertions(+)
+
+diff -Napur -X linux-2.6.39-rc3/Documentation/dontdiff linux-2.6.39-rc3-cleancache/arch/x86/include/asm/xen/hypercall.h linux-2.6.39-rc3-cleancache-xen/arch/x86/include/asm/xen/hypercall.h
+--- linux-2.6.39-rc3-cleancache/arch/x86/include/asm/xen/hypercall.h	2011-04-11 18:21:51.000000000 -0600
++++ linux-2.6.39-rc3-cleancache-xen/arch/x86/include/asm/xen/hypercall.h	2011-04-14 09:54:19.210857901 -0600
+@@ -447,6 +447,13 @@ HYPERVISOR_hvm_op(int op, void *arg)
+        return _hypercall2(unsigned long, hvm_op, op, arg);
+ }
+ 
++static inline int
++HYPERVISOR_tmem_op(
++	struct tmem_op *op)
++{
++	return _hypercall1(int, tmem_op, op);
++}
++
+ static inline void
+ MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
+ {
+diff -Napur -X linux-2.6.39-rc3/Documentation/dontdiff linux-2.6.39-rc3-cleancache/drivers/xen/Makefile linux-2.6.39-rc3-cleancache-xen/drivers/xen/Makefile
+--- linux-2.6.39-rc3-cleancache/drivers/xen/Makefile	2011-04-11 18:21:51.000000000 -0600
++++ linux-2.6.39-rc3-cleancache-xen/drivers/xen/Makefile	2011-04-14 09:54:19.236096051 -0600
+@@ -1,5 +1,6 @@
+ obj-y	+= grant-table.o features.o events.o manage.o balloon.o
+ obj-y	+= xenbus/
++obj-y	+= tmem.o
+ 
+ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_features.o			:= $(nostackp)
+diff -Napur -X linux-2.6.39-rc3/Documentation/dontdiff linux-2.6.39-rc3-cleancache/drivers/xen/tmem.c linux-2.6.39-rc3-cleancache-xen/drivers/xen/tmem.c
+--- linux-2.6.39-rc3-cleancache/drivers/xen/tmem.c	1969-12-31 17:00:00.000000000 -0700
++++ linux-2.6.39-rc3-cleancache-xen/drivers/xen/tmem.c	2011-04-14 09:54:19.236917913 -0600
+@@ -0,0 +1,264 @@
++/*
++ * Xen implementation for transcendent memory (tmem)
++ *
++ * Copyright (C) 2009-2010 Oracle Corp.  All rights reserved.
++ * Author: Dan Magenheimer
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/pagemap.h>
++#include <linux/cleancache.h>
++
++#include <xen/xen.h>
++#include <xen/interface/xen.h>
++#include <asm/xen/hypercall.h>
++#include <asm/xen/page.h>
++#include <asm/xen/hypervisor.h>
++
++#define TMEM_CONTROL               0
++#define TMEM_NEW_POOL              1
++#define TMEM_DESTROY_POOL          2
++#define TMEM_NEW_PAGE              3
++#define TMEM_PUT_PAGE              4
++#define TMEM_GET_PAGE              5
++#define TMEM_FLUSH_PAGE            6
++#define TMEM_FLUSH_OBJECT          7
++#define TMEM_READ                  8
++#define TMEM_WRITE                 9
++#define TMEM_XCHG                 10
++
++/* Bits for HYPERVISOR_tmem_op(TMEM_NEW_POOL) */
++#define TMEM_POOL_PERSIST          1
++#define TMEM_POOL_SHARED           2
++#define TMEM_POOL_PAGESIZE_SHIFT   4
++#define TMEM_VERSION_SHIFT        24
++
++
++struct tmem_pool_uuid {
++	u64 uuid_lo;
++	u64 uuid_hi;
++};
++
++struct tmem_oid {
++	u64 oid[3];
++};
++
++#define TMEM_POOL_PRIVATE_UUID	{ 0, 0 }
++
++/* flags for tmem_ops.new_pool */
++#define TMEM_POOL_PERSIST          1
++#define TMEM_POOL_SHARED           2
++
++/* xen tmem foundation ops/hypercalls */
++
++static inline int xen_tmem_op(u32 tmem_cmd, u32 tmem_pool, struct tmem_oid oid,
++	u32 index, unsigned long gmfn, u32 tmem_offset, u32 pfn_offset, u32 len)
++{
++	struct tmem_op op;
++	int rc = 0;
++
++	op.cmd = tmem_cmd;
++	op.pool_id = tmem_pool;
++	op.u.gen.oid[0] = oid.oid[0];
++	op.u.gen.oid[1] = oid.oid[1];
++	op.u.gen.oid[2] = oid.oid[2];
++	op.u.gen.index = index;
++	op.u.gen.tmem_offset = tmem_offset;
++	op.u.gen.pfn_offset = pfn_offset;
++	op.u.gen.len = len;
++	set_xen_guest_handle(op.u.gen.gmfn, (void *)gmfn);
++	rc = HYPERVISOR_tmem_op(&op);
++	return rc;
++}
++
++static int xen_tmem_new_pool(struct tmem_pool_uuid uuid,
++				u32 flags, unsigned long pagesize)
++{
++	struct tmem_op op;
++	int rc = 0, pageshift;
++
++	for (pageshift = 0; pagesize != 1; pageshift++)
++		pagesize >>= 1;
++	flags |= (pageshift - 12) << TMEM_POOL_PAGESIZE_SHIFT;
++	flags |= TMEM_SPEC_VERSION << TMEM_VERSION_SHIFT;
++	op.cmd = TMEM_NEW_POOL;
++	op.u.new.uuid[0] = uuid.uuid_lo;
++	op.u.new.uuid[1] = uuid.uuid_hi;
++	op.u.new.flags = flags;
++	rc = HYPERVISOR_tmem_op(&op);
++	return rc;
++}
++
++/* xen generic tmem ops */
++
++static int xen_tmem_put_page(u32 pool_id, struct tmem_oid oid,
++			     u32 index, unsigned long pfn)
++{
++	unsigned long gmfn = xen_pv_domain() ? pfn_to_mfn(pfn) : pfn;
++
++	return xen_tmem_op(TMEM_PUT_PAGE, pool_id, oid, index,
++		gmfn, 0, 0, 0);
++}
++
++static int xen_tmem_get_page(u32 pool_id, struct tmem_oid oid,
++			     u32 index, unsigned long pfn)
++{
++	unsigned long gmfn = xen_pv_domain() ? pfn_to_mfn(pfn) : pfn;
++
++	return xen_tmem_op(TMEM_GET_PAGE, pool_id, oid, index,
++		gmfn, 0, 0, 0);
++}
++
++static int xen_tmem_flush_page(u32 pool_id, struct tmem_oid oid, u32 index)
++{
++	return xen_tmem_op(TMEM_FLUSH_PAGE, pool_id, oid, index,
++		0, 0, 0, 0);
++}
++
++static int xen_tmem_flush_object(u32 pool_id, struct tmem_oid oid)
++{
++	return xen_tmem_op(TMEM_FLUSH_OBJECT, pool_id, oid, 0, 0, 0, 0, 0);
++}
++
++static int xen_tmem_destroy_pool(u32 pool_id)
++{
++	struct tmem_oid oid = { { 0 } };
++
++	return xen_tmem_op(TMEM_DESTROY_POOL, pool_id, oid, 0, 0, 0, 0, 0);
++}
++
++int tmem_enabled;
++
++static int __init enable_tmem(char *s)
++{
++	tmem_enabled = 1;
++	return 1;
++}
++
++__setup("tmem", enable_tmem);
++
++/* cleancache ops */
++
++static void tmem_cleancache_put_page(int pool, struct cleancache_filekey key,
++				     pgoff_t index, struct page *page)
++{
++	u32 ind = (u32) index;
++	struct tmem_oid oid = *(struct tmem_oid *)&key;
++	unsigned long pfn = page_to_pfn(page);
++
++	if (pool < 0)
++		return;
++	if (ind != index)
++		return;
++	mb(); /* ensure page is quiescent; tmem may address it with an alias */
++	(void)xen_tmem_put_page((u32)pool, oid, ind, pfn);
++}
++
++static int tmem_cleancache_get_page(int pool, struct cleancache_filekey key,
++				    pgoff_t index, struct page *page)
++{
++	u32 ind = (u32) index;
++	struct tmem_oid oid = *(struct tmem_oid *)&key;
++	unsigned long pfn = page_to_pfn(page);
++	int ret;
++
++	/* translate return values to linux semantics */
++	if (pool < 0)
++		return -1;
++	if (ind != index)
++		return -1;
++	ret = xen_tmem_get_page((u32)pool, oid, ind, pfn);
++	if (ret == 1)
++		return 0;
++	else
++		return -1;
++}
++
++static void tmem_cleancache_flush_page(int pool, struct cleancache_filekey key,
++				       pgoff_t index)
++{
++	u32 ind = (u32) index;
++	struct tmem_oid oid = *(struct tmem_oid *)&key;
++
++	if (pool < 0)
++		return;
++	if (ind != index)
++		return;
++	(void)xen_tmem_flush_page((u32)pool, oid, ind);
++}
++
++static void tmem_cleancache_flush_inode(int pool, struct cleancache_filekey key)
++{
++	struct tmem_oid oid = *(struct tmem_oid *)&key;
++
++	if (pool < 0)
++		return;
++	(void)xen_tmem_flush_object((u32)pool, oid);
++}
++
++static void tmem_cleancache_flush_fs(int pool)
++{
++	if (pool < 0)
++		return;
++	(void)xen_tmem_destroy_pool((u32)pool);
++}
++
++static int tmem_cleancache_init_fs(size_t pagesize)
++{
++	struct tmem_pool_uuid uuid_private = TMEM_POOL_PRIVATE_UUID;
++
++	return xen_tmem_new_pool(uuid_private, 0, pagesize);
++}
++
++static int tmem_cleancache_init_shared_fs(char *uuid, size_t pagesize)
++{
++	struct tmem_pool_uuid shared_uuid;
++
++	shared_uuid.uuid_lo = *(u64 *)uuid;
++	shared_uuid.uuid_hi = *(u64 *)(&uuid[8]);
++	return xen_tmem_new_pool(shared_uuid, TMEM_POOL_SHARED, pagesize);
++}
++
++static int use_cleancache = 1;
++
++static int __init no_cleancache(char *s)
++{
++	use_cleancache = 0;
++	return 1;
++}
++
++__setup("nocleancache", no_cleancache);
++
++static struct cleancache_ops tmem_cleancache_ops = {
++	.put_page = tmem_cleancache_put_page,
++	.get_page = tmem_cleancache_get_page,
++	.flush_page = tmem_cleancache_flush_page,
++	.flush_inode = tmem_cleancache_flush_inode,
++	.flush_fs = tmem_cleancache_flush_fs,
++	.init_shared_fs = tmem_cleancache_init_shared_fs,
++	.init_fs = tmem_cleancache_init_fs
++};
++
++static int __init xen_tmem_init(void)
++{
++	struct cleancache_ops old_ops;
++
++	if (!xen_domain())
++		return 0;
++#ifdef CONFIG_CLEANCACHE
++	BUG_ON(sizeof(struct cleancache_filekey) != sizeof(struct tmem_oid));
++	if (tmem_enabled && use_cleancache) {
++		char *s = "";
++		old_ops = cleancache_register_ops(&tmem_cleancache_ops);
++		if (old_ops.init_fs != NULL)
++			s = " (WARNING: cleancache_ops overridden)";
++		printk(KERN_INFO "cleancache enabled, RAM provided by "
++				 "Xen Transcendent Memory%s\n", s);
++	}
++#endif
++	return 0;
++}
++
++module_init(xen_tmem_init)
+diff -Napur -X linux-2.6.39-rc3/Documentation/dontdiff linux-2.6.39-rc3-cleancache/include/xen/interface/xen.h linux-2.6.39-rc3-cleancache-xen/include/xen/interface/xen.h
+--- linux-2.6.39-rc3-cleancache/include/xen/interface/xen.h	2011-04-11 18:21:51.000000000 -0600
++++ linux-2.6.39-rc3-cleancache-xen/include/xen/interface/xen.h	2011-04-14 09:54:19.237875256 -0600
+@@ -58,6 +58,7 @@
+ #define __HYPERVISOR_event_channel_op     32
+ #define __HYPERVISOR_physdev_op           33
+ #define __HYPERVISOR_hvm_op               34
++#define __HYPERVISOR_tmem_op              38
+ 
+ /* Architecture-specific hypercall definitions. */
+ #define __HYPERVISOR_arch_0               48
+@@ -461,6 +462,27 @@ typedef uint8_t xen_domain_handle_t[16];
+ #define __mk_unsigned_long(x) x ## UL
+ #define mk_unsigned_long(x) __mk_unsigned_long(x)
+ 
++#define TMEM_SPEC_VERSION 1
++
++struct tmem_op {
++	uint32_t cmd;
++	int32_t pool_id;
++	union {
++		struct {  /* for cmd == TMEM_NEW_POOL */
++			uint64_t uuid[2];
++			uint32_t flags;
++		} new;
++		struct {
++			uint64_t oid[3];
++			uint32_t index;
++			uint32_t tmem_offset;
++			uint32_t pfn_offset;
++			uint32_t len;
++			GUEST_HANDLE(void) gmfn; /* guest machine page frame */
++		} gen;
++	} u;
++};
++
+ #else /* __ASSEMBLY__ */
+ 
+ /* In assembly code we cannot use C numeric constant suffixes. */
