@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965151Ab1DNSAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:00:12 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42614 "EHLO
+	id S933713Ab1DNR7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:59:48 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42451 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965131Ab1DNSAB (ORCPT
+	with ESMTP id S965017Ab1DNR72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:00:01 -0400
+	Thu, 14 Apr 2011 13:59:28 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "J. Bruce Fields" <bfields@citi.umich.edu>,
+Cc: stable-review@kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 203/209] sunrpc/cache: fix module refcnt leak in a failure path
-Date: Thu, 14 Apr 2011 13:56:01 -0400
-Message-Id: <1302803767-9715-90-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 195/209] posix-cpu-timers: workaround to suppress the problems with mt exec
+Date: Thu, 14 Apr 2011 13:55:53 -0400
+Message-Id: <1302803767-9715-82-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,44 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a5990ea1254cd186b38744507aeec3136a0c1c95 upstream
+commit e0a70217107e6f9844628120412cb27bb4cea194 upstream.
 
-Don't forget to release the module refcnt if seq_open() returns failure.
+posix-cpu-timers.c correctly assumes that the dying process does
+posix_cpu_timers_exit_group() and removes all !CPUCLOCK_PERTHREAD
+timers from signal->cpu_timers list.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Cc: J. Bruce Fields <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+But, it also assumes that timer->it.cpu.task is always the group
+leader, and thus the dead ->task means the dead thread group.
+
+This is obviously not true after de_thread() changes the leader.
+After that almost every posix_cpu_timer_ method has problems.
+
+It is not simple to fix this bug correctly. First of all, I think
+that timer->it.cpu should use struct pid instead of task_struct.
+Also, the locking should be reworked completely. In particular,
+tasklist_lock should not be used at all. This all needs a lot of
+nontrivial and hard-to-test changes.
+
+Change __exit_signal() to do posix_cpu_timers_exit_group() when
+the old leader dies during exec. This is not the fix, just the
+temporary hack to hide the problem for 2.6.37 and stable. IOW,
+this is obviously wrong but this is what we currently have anyway:
+cpu timers do not work after mt exec.
+
+In theory this change adds another race. The exiting leader can
+detach the timers which were attached to the new leader. However,
+the window between de_thread() and release_task() is small, we
+can pretend that sys_timer_create() was called before de_thread().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sunrpc/cache.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ kernel/exit.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 39bddba..b7af6b2 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -1233,8 +1233,10 @@ static int content_open(struct inode *inode, struct file *file,
- 	if (!cd || !try_module_get(cd->owner))
- 		return -EACCES;
- 	han = __seq_open_private(file, &cache_content_op, sizeof(*han));
--	if (han == NULL)
-+	if (han == NULL) {
-+		module_put(cd->owner);
- 		return -ENOMEM;
-+	}
- 
- 	han->cd = cd;
- 	return 0;
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 8eb207f..a652c26 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -95,6 +95,14 @@ static void __exit_signal(struct task_struct *tsk)
+ 		posix_cpu_timers_exit_group(tsk);
+ 	else {
+ 		/*
++		 * This can only happen if the caller is de_thread().
++		 * FIXME: this is the temporary hack, we should teach
++		 * posix-cpu-timers to handle this case correctly.
++		 */
++		if (unlikely(has_group_leader_pid(tsk)))
++			posix_cpu_timers_exit_group(tsk);
++
++		/*
+ 		 * If there is any task waiting for the group exit
+ 		 * then notify it:
+ 		 */
 -- 
 1.7.4.4
 
