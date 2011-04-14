@@ -1,101 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759406Ab1DNS4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:56:38 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44223 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759378Ab1DNS4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:56:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=nueJmJTuV2KhFm+6nyd+0MRC5cYX1wuwvy3FfNwGEqO2Jux/PKqUPN6brg0NiaKmz6
-         9XKFN/RP3RijFmjWOJYMNuK97iHYGFLEgB5PiIPesUlAp1lZogXaJb/n9kFMRJlWrShs
-         vCzuv4AEVqZ5XN6+J3ScHpIqrjOu90bxXl4vY=
-Subject: Re: [PATCH V2] futex: set FLAGS_HAS_TIMEOUT during demux for
- FUTEX_WAIT
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S932627Ab1DNTBC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 15:01:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932232Ab1DNTBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 15:01:00 -0400
+Date: Thu, 14 Apr 2011 21:00:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        John Kacur <jkacur@redhat.com>
-In-Reply-To: <6aed1a53d080a90672bd44b773079dd81ac90b50.1302806742.git.dvhart@linux.intel.com>
-References: <1302800949.3248.42.camel@edumazet-laptop>
-	 <6aed1a53d080a90672bd44b773079dd81ac90b50.1302806742.git.dvhart@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Apr 2011 20:56:31 +0200
-Message-ID: <1302807391.2744.6.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [RFC][PATCH 2/5] signals: Introduce per-thread siglock and
+	action rwlock
+Message-ID: <20110414190012.GA23517@redhat.com>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-3-git-send-email-matt@console-pimps.org> <20110413194231.GA15330@redhat.com> <20110414113456.5182a582@mfleming-mobl1.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110414113456.5182a582@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 14 avril 2011 à 11:45 -0700, Darren Hart a écrit :
-> The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
-> restart futex_wait() without a timeout after a signal.
-> 
-> Commit b41277dc7a18ee332d in 2.6.38 introduced the regression by accidentally
-> removing the the FLAGS_HAS_TIMEOUT assignment from futex_wait() during the setup
-> of the restart block. It makes more sense to set the flag earlier during
-> do_futex() where the other flags are set, although futex_wait is the only user
-> of FLAGS_HAS_TIMEOUT as it is the only op using a relative timeout (an
-> unfortunately preexisting condition).
-> 
-> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=32922
-> 
-> V2: Added references to commit message.
-> 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Reported-by: Tim Smith <tsmith201104@yahoo.com>
-> Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> CC: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: John Kacur <jkacur@redhat.com>
-> ---
->  kernel/futex.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index bda4157..6eac6b6 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -2589,6 +2589,9 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
->  			return -ENOSYS;
->  	}
->  
-> +	if (timeout)
-> +		flags |= FLAGS_HAS_TIMEOUT;
-> +
->  	switch (cmd) {
->  	case FUTEX_WAIT:
->  		val3 = FUTEX_BITSET_MATCH_ANY;
+On 04/14, Matt Fleming wrote:
+>
+> Well, it's not really that signals are slow (though that might be
+> true!), it's more that they don't scale. So, this patch series was not
+> designed to speed up signals in a single-threaded app, but rather to
+> make signals scale better in multithreaded apps. We do that by
+> reducing the contention on the shared siglock. Signal delivery isn't
+> getting any faster with these patches, they just try to stop it getting
+> slower when you add more threads ;-)
 
+Yes, I understand. Even the private signal needs the "global" per-process
+lock bit it is rwlock.
 
-I dont agree with your fix. You add yet another test in futex fastpath.
+> > > @@ -142,7 +142,9 @@ static void __exit_signal(struct task_struct *tsk)
+> > >  	 * Do this under ->siglock, we can race with another thread
+> > >  	 * doing sigqueue_free() if we have SIGQUEUE_PREALLOC signals.
+> > >  	 */
+> > > +	spin_lock(&tsk->siglock);
+> > >  	flush_sigqueue(&tsk->pending);
+> > > +	spin_unlock(&tsk->siglock);
+> >
+> > This only protects flush_sigqueue(), but this is not enough.
+> >
+> > tkill() can run without ->siglock held, how can it ensure the target
+> > can't exit before we take task->siglock?
+>
+> And by "target can't exit" you mean, how can we ensure that the target
+> doesn't execute __exit_signal() and set tsk->signal to NULL
 
-Prior commit  b41277dc7a18ee332d, this was done only in case of restart.
+No, tsk->signal can't go away, ->sighand can. This means that
+prepare_signal()->sig_ignored() is not safe.
 
-Could we instead use 
+Another problem is, __send_signal() shouldn't add the new sigqueue to
+tsk->pending if this tsk has already passed __exit_signal()->flush_sigqueue().
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index dfb924f..fe28dc2 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1886,7 +1886,7 @@ retry:
- 	restart->futex.val = val;
- 	restart->futex.time = abs_time->tv64;
- 	restart->futex.bitset = bitset;
--	restart->futex.flags = flags;
-+	restart->futex.flags = flags | FLAGS_HAS_TIMEOUT;
- 
- 	ret = -ERESTART_RESTARTBLOCK;
- 
+> While we're discussing the technique for stopping tasks from exiting...
+>
+> Is there a reason that a short-term reference counter isn't used to
+> prevent this, instead of taking the siglock?
 
+Well, sighand->count is the reference counter. The problem is, ->sighand
+is not per-process, we can share it with abother CLONE_SIGHAND process
+and de_thread() can change ->sighand during exec.
+
+Also. We have the code which checks ->sighand != NULL to check if this
+thread was released or not.
+
+I was going to try to add some cleanups here after the scope of ->signal
+was changed, but right now I can't recall what I had in mind. Anyway,
+everything in sighand_struct needs ->siglock anyway, a lockless access
+doesn't buy too much currently.
+
+> > > @@ -1666,7 +1779,8 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
+> > >   	}
+> > >
+> > >  	sighand = parent->sighand;
+> > > -	spin_lock_irqsave(&sighand->siglock, flags);
+> > > +	read_lock_irqsave(&sighand->action_lock, flags);
+> > > +	spin_lock(&sighand->siglock);
+> >
+> > Why do we need both? (the same for do_notify_parent)
+>
+> We need action_lock because we're reading sighand->action and making
+> decisions based upon its value, so we need it to not change. Also,
+> __send_signal()
+
+Ah, indeed, thanks. Somehow I misread the code as if it takes task->siglock,
+not sighand->siglock. But anyway I was wrong, I forgot we are going to send
+the signal.
+
+Oleg.
 
