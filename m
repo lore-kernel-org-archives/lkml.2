@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368Ab1DNRrF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:47:05 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38424 "EHLO
+	id S933505Ab1DNRyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:54:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38442 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933341Ab1DNRrA (ORCPT
+	with ESMTP id S933357Ab1DNRrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:00 -0400
+	Thu, 14 Apr 2011 13:47:04 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <len.brown@intel.com>,
+Cc: stable-review@kernel.org, Ken Chen <kenchen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 088/209] acpi-cpufreq: fix a memleak when unloading driver
-Date: Thu, 14 Apr 2011 13:41:58 -0400
-Message-Id: <1302803039-9400-89-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 064/209] latencytop: fix per task accumulator
+Date: Thu, 14 Apr 2011 13:41:34 -0400
+Message-Id: <1302803039-9400-65-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,60 +23,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Ken Chen <kenchen@google.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit dab5fff14df2cd16eb1ad4c02e83915e1063fece upstream.
+commit 38715258aa2e8cd94bd4aafadc544e5104efd551 upstream.
 
-We didn't free per_cpu(acfreq_data, cpu)->freq_table
-when acpi_freq driver is unloaded.
+Per task latencytop accumulator prematurely terminates due to erroneous
+placement of latency_record_count.  It should be incremented whenever a
+new record is allocated instead of increment on every latencytop event.
 
-Resulting in the following messages in /sys/kernel/debug/kmemleak:
+Also fix search iterator to only search known record events instead of
+blindly searching all pre-allocated space.
 
-unreferenced object 0xf6450e80 (size 64):
-  comm "modprobe", pid 1066, jiffies 4294677317 (age 19290.453s)
-  hex dump (first 32 bytes):
-    00 00 00 00 e8 a2 24 00 01 00 00 00 00 9f 24 00  ......$.......$.
-    02 00 00 00 00 6a 18 00 03 00 00 00 00 35 0c 00  .....j.......5..
-  backtrace:
-    [<c123ba97>] kmemleak_alloc+0x27/0x50
-    [<c109f96f>] __kmalloc+0xcf/0x110
-    [<f9da97ee>] acpi_cpufreq_cpu_init+0x1ee/0x4e4 [acpi_cpufreq]
-    [<c11cd8d2>] cpufreq_add_dev+0x142/0x3a0
-    [<c11920b7>] sysdev_driver_register+0x97/0x110
-    [<c11cce56>] cpufreq_register_driver+0x86/0x140
-    [<f9dad080>] 0xf9dad080
-    [<c1001130>] do_one_initcall+0x30/0x160
-    [<c10626e9>] sys_init_module+0x99/0x1e0
-    [<c1002d97>] sysenter_do_call+0x12/0x26
-    [<ffffffff>] 0xffffffff
-
-https://bugzilla.kernel.org/show_bug.cgi?id=15807#c21
-
-Tested-by: Toralf Forster <toralf.foerster@gmx.de>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Ken Chen <kenchen@google.com>
+Reviewed-by: Arjan van de Ven <arjan@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ kernel/latencytop.c |   17 ++++++++---------
+ 1 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-index 4591680..59ca19f 100644
---- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-@@ -744,6 +744,7 @@ static int acpi_cpufreq_cpu_exit(struct cpufreq_policy *policy)
- 		per_cpu(acfreq_data, policy->cpu) = NULL;
- 		acpi_processor_unregister_performance(data->acpi_data,
- 						      policy->cpu);
-+		kfree(data->freq_table);
- 		kfree(data);
+diff --git a/kernel/latencytop.c b/kernel/latencytop.c
+index 877fb30..17110a4 100644
+--- a/kernel/latencytop.c
++++ b/kernel/latencytop.c
+@@ -194,14 +194,7 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
+ 
+ 	account_global_scheduler_latency(tsk, &lat);
+ 
+-	/*
+-	 * short term hack; if we're > 32 we stop; future we recycle:
+-	 */
+-	tsk->latency_record_count++;
+-	if (tsk->latency_record_count >= LT_SAVECOUNT)
+-		goto out_unlock;
+-
+-	for (i = 0; i < LT_SAVECOUNT; i++) {
++	for (i = 0; i < tsk->latency_record_count; i++) {
+ 		struct latency_record *mylat;
+ 		int same = 1;
+ 
+@@ -227,8 +220,14 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
+ 		}
  	}
  
++	/*
++	 * short term hack; if we're > 32 we stop; future we recycle:
++	 */
++	if (tsk->latency_record_count >= LT_SAVECOUNT)
++		goto out_unlock;
++
+ 	/* Allocated a new one: */
+-	i = tsk->latency_record_count;
++	i = tsk->latency_record_count++;
+ 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
+ 
+ out_unlock:
 -- 
 1.7.4.4
 
