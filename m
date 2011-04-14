@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758893Ab1DNOam (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:30:42 -0400
-Received: from mail.digium.com ([216.207.245.2]:43861 "EHLO mail.digium.com"
+	id S1758895Ab1DNOch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:32:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47022 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758837Ab1DNOal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:30:41 -0400
-Date: Thu, 14 Apr 2011 09:30:24 -0500
-From: Shaun Ruffell <sruffell@digium.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Don Zickus <dzickus@redhat.com>, maciej.rutecki@gmail.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [regression 2.6.39-rc2][bisected] "perf, x86: P4 PMU - Read
-	proper MSR register to catch" and NMIs
-Message-ID: <20110414143024.GA13458@digium.com>
-References: <20110406223036.GA15721@digium.com> <201104132133.51958.maciej.rutecki@gmail.com> <4DA6011F.7070405@openvz.org> <20110413203501.GA10744@digium.com> <4DA60B03.30603@openvz.org> <20110413212208.GJ16939@redhat.com> <4DA614DF.5090304@openvz.org> <20110413215322.GA11670@digium.com>
+	id S1758837Ab1DNOcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:32:36 -0400
+Message-ID: <4DA7054B.1060203@zytor.com>
+Date: Thu, 14 Apr 2011 07:31:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110413215322.GA11670@digium.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Joerg Roedel <joro@8bytes.org>, Yinghai Lu <yinghai@kernel.org>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412090207.GE19819@8bytes.org> <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <4DA654D6.2060103@zytor.com> <20110414085624.GC18463@8bytes.org> <20110414091137.GC9248@elte.hu>
+In-Reply-To: <20110414091137.GC9248@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 04:53:22PM -0500, Shaun Ruffell wrote:
-> On Thu, Apr 14, 2011 at 01:25:51AM +0400, Cyrill Gorcunov wrote:
-> ...
->> OK, thanks for review! Shaun please continue testing it, if all will be fine until tomorrow
->> we will ask Ingo to pick it up then. Sounds OK for everyone?
+On 04/14/2011 02:11 AM, Ingo Molnar wrote:
 > 
-> Sounds good. I'll let it run tonight with v2 tonight.
+> I'd strongly suggest we revert back to the old and proven allocation order, as 
+> long as it results in valid layouts. Even if we figure out this particular 
+> GART/GTT assumption there might be a dozen others in other types of hardware.
+> 
 
-I know Ingo asked to merge v1 now and something else in a later version.
-However, just to follow up on this thread, v2 ran all night without producing
-any NMIs on the PowerEdge 2600.
+Yes, but we might also be hiding a real bug which bites other hardware.
+ We have found real and very serious bugs in the kernel this way before
+-- things where drivers scribble over random memory and allocation order
+exposed the failure in a predictable way, as opposed to random crashes.
 
-Cheers,
-Shaun
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
