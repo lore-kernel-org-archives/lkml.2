@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933478Ab1DNRwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:52:00 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38545 "EHLO
+	id S933502Ab1DNRw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:52:28 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38540 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933428Ab1DNRrT (ORCPT
+	with ESMTP id S933411Ab1DNRrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:19 -0400
+	Thu, 14 Apr 2011 13:47:17 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        David Taht <d@teklibre.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 101/209] net sched: fix kernel leak in act_police
-Date: Thu, 14 Apr 2011 13:42:11 -0400
-Message-Id: <1302803039-9400-102-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 099/209] Staging: frontier: fix up my fixup for some sysfs attribute permissions
+Date: Thu, 14 Apr 2011 13:42:09 -0400
+Message-Id: <1302803039-9400-100-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,69 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 0f04cfd098fb81fded74e78ea1a1b86cc6c6c31e upstream.
+commit 2a767fda5d0d8dcff465724dfad6ee131489b3f2 upstream.
 
-While reviewing commit 1c40be12f7d8ca1d387510d39787b12e512a7ce8, I
- audited other users of tc_action_ops->dump for information leaks.
+They should be writable by root, not readable.
+Doh, stupid me with the wrong flags.
 
- That commit covered almost all of them but act_police still had a leak.
-
- opt.limit and opt.capab aren't zeroed out before the structure is
- passed out.
-
- This patch uses the C99 initializers to zero everything unused out.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Acked-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: David Taht <d@teklibre.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sched/act_police.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
+ drivers/staging/frontier/tranzport.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/sched/act_police.c b/net/sched/act_police.c
-index 654f73d..bf93162 100644
---- a/net/sched/act_police.c
-+++ b/net/sched/act_police.c
-@@ -341,22 +341,19 @@ tcf_act_police_dump(struct sk_buff *skb, struct tc_action *a, int bind, int ref)
- {
- 	unsigned char *b = skb_tail_pointer(skb);
- 	struct tcf_police *police = a->priv;
--	struct tc_police opt;
--
--	opt.index = police->tcf_index;
--	opt.action = police->tcf_action;
--	opt.mtu = police->tcfp_mtu;
--	opt.burst = police->tcfp_burst;
--	opt.refcnt = police->tcf_refcnt - ref;
--	opt.bindcnt = police->tcf_bindcnt - bind;
-+	struct tc_police opt = {
-+		.index = police->tcf_index,
-+		.action = police->tcf_action,
-+		.mtu = police->tcfp_mtu,
-+		.burst = police->tcfp_burst,
-+		.refcnt = police->tcf_refcnt - ref,
-+		.bindcnt = police->tcf_bindcnt - bind,
-+	};
-+
- 	if (police->tcfp_R_tab)
- 		opt.rate = police->tcfp_R_tab->rate;
--	else
--		memset(&opt.rate, 0, sizeof(opt.rate));
- 	if (police->tcfp_P_tab)
- 		opt.peakrate = police->tcfp_P_tab->rate;
--	else
--		memset(&opt.peakrate, 0, sizeof(opt.peakrate));
- 	NLA_PUT(skb, TCA_POLICE_TBF, sizeof(opt), &opt);
- 	if (police->tcfp_result)
- 		NLA_PUT_U32(skb, TCA_POLICE_RESULT, police->tcfp_result);
+diff --git a/drivers/staging/frontier/tranzport.c b/drivers/staging/frontier/tranzport.c
+index 7218334..9d60e92 100644
+--- a/drivers/staging/frontier/tranzport.c
++++ b/drivers/staging/frontier/tranzport.c
+@@ -202,7 +202,7 @@ static void usb_tranzport_abort_transfers(struct usb_tranzport *dev)
+     t->value = temp;							\
+     return count;							\
+   }									\
+-  static DEVICE_ATTR(value, S_IRUSR | S_IRUGO, show_##value, set_##value);
++  static DEVICE_ATTR(value, S_IWUSR | S_IRUGO, show_##value, set_##value);
+ 
+ show_int(enable);
+ show_int(offline);
 -- 
 1.7.4.4
 
