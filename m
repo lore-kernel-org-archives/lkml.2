@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751124Ab1DNEDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 00:03:47 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:44058 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab1DNEDp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 00:03:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=l+sX7l7y0jn8DULhdsiSppqV05OtoOIF7ru/OXRXhgrjOjUa/qx3RvfV+lt60TzQ05
-         VPxftJXYJ12V2UHll1gDuG/AFibjQYSMC+ogNoXl/QZeVjNKlAydlXY60j4JiYSPspBy
-         Zg0RGMkbQ9D1Pl625vkkd0q8DbOCw567zxLqE=
-Date: Thu, 14 Apr 2011 13:03:37 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110414040337.GC12781@mtj.dyndns.org>
-References: <20110413172147.GI19819@8bytes.org>
- <4DA5F62F.3030504@kernel.org>
- <20110413193459.GL19819@8bytes.org>
- <4DA60C30.4060606@kernel.org>
- <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
- <4DA6145D.9070703@kernel.org>
- <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
- <4DA655E7.3000904@zytor.com>
- <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
- <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751410Ab1DNEPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 00:15:34 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44458 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816Ab1DNEPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 00:15:33 -0400
+Date: Thu, 14 Apr 2011 14:15:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: linux-next: manual merge of the usb tree with the s5p tree
+Message-Id: <20110414141526.e0d5efa1.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Greg,
 
-On Wed, Apr 13, 2011 at 07:33:40PM -0700, Linus Torvalds wrote:
-> On Wednesday, April 13, 2011, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Wednesday, April 13, 2011, H. Peter Anvin <hpa@zytor.com> wrote:
-> >>
-> >> Yes.  However, even if we *do* revert (and the time is running short on
-> >> not reverting) I would like to understand this particular one, simply
-> >> because I think it may very well be a problem that is manifesting itself
-> >> in other ways on other systems.
-> 
->  sorry, fingerfart. Anyway, I agree 100%.
-> 
->  we definitely want to also understand the reason for things not
-> working, even if we do revert..
+Today's linux-next merge of the usb tree got a conflict in
+arch/arm/mach-exynos4/mach-nuri.c between commit d2a852f78de6 ("ARM:
+EXYNOS4: Add Atmel mXT touchscreen device to the NURI board") from the
+s5p tree and commit 01da92f7f643 ("ARM: EXYNOS4: Add usb ehci device to
+the NURI board") from the usb tree.
 
-There were (and still are) places where memblock callers implemented
-ad-hoc top-down allocation by stepping down start limit until
-allocation succeeds.  Several of them have been removed since top-down
-became the default behavior, so simply reverting the commit is likely
-to cause subtle issues.  Maybe the best approach is introducing
-@topdown parameter and use it selectively for pure memory allocations.
-
-Thanks.
-
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-tejun
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-exynos4/mach-nuri.c
+index d13c5e8,bb5d12f..0000000
+--- a/arch/arm/mach-exynos4/mach-nuri.c
++++ b/arch/arm/mach-exynos4/mach-nuri.c
+@@@ -31,8 -30,8 +31,10 @@@
+  #include <plat/cpu.h>
+  #include <plat/devs.h>
+  #include <plat/sdhci.h>
+ +#include <plat/gpio-cfg.h>
+ +#include <plat/iic.h>
++ #include <plat/ehci.h>
++ #include <plat/clock.h>
+  
+  #include <mach/map.h>
+  
+@@@ -355,7 -282,7 +367,8 @@@ static struct platform_device *nuri_dev
+  	&s3c_device_hsmmc3,
+  	&s3c_device_wdt,
+  	&s3c_device_timer[0],
+ +	&s3c_device_i2c3,
++ 	&s5p_device_ehci,
+  
+  	/* NURI Devices */
+  	&nuri_gpio_keys,
+@@@ -373,13 -300,13 +386,16 @@@ static void __init nuri_map_io(void
+  static void __init nuri_machine_init(void)
+  {
+  	nuri_sdhci_init();
+ +	nuri_tsp_init();
+  
+  	i2c_register_board_info(1, i2c1_devs, ARRAY_SIZE(i2c1_devs));
+ +	s3c_i2c3_set_platdata(&i2c3_data);
+ +	i2c_register_board_info(3, i2c3_devs, ARRAY_SIZE(i2c3_devs));
+  	i2c_register_board_info(5, i2c5_devs, ARRAY_SIZE(i2c5_devs));
+  
++ 	nuri_ehci_init();
++ 	clk_xusbxti.rate = 24000000;
++ 
+  	/* Last */
+  	platform_add_devices(nuri_devices, ARRAY_SIZE(nuri_devices));
+  }
