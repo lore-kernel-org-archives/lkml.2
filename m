@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542Ab1DNRrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:47:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38608 "EHLO
+	id S933555Ab1DNRrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:42 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38656 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933472Ab1DNRr1 (ORCPT
+	with ESMTP id S933472Ab1DNRrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:27 -0400
+	Thu, 14 Apr 2011 13:47:40 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Jack Steiner <steiner@sgi.com>,
+        Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 107/209] sysctl: fix min/max handling in __do_proc_doulongvec_minmax()
-Date: Thu, 14 Apr 2011 13:42:17 -0400
-Message-Id: <1302803039-9400-108-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 112/209] x86, UV: Fix initialization of max_pnode
+Date: Thu, 14 Apr 2011 13:42:22 -0400
+Message-Id: <1302803039-9400-113-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,49 +22,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Jack Steiner <steiner@sgi.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 27b3d80a7b6adcf069b5e869e4efcc3a79f88a91 upstream.
+commit 36ac4b987bea9a95217e1af552252f275ca7fc44 upstream.
 
-When proc_doulongvec_minmax() is used with an array of longs, and no
-min/max check requested (.extra1 or .extra2 being NULL), we dereference a
-NULL pointer for the second element of the array.
+Fix calculation of "max_pnode" for systems where the the highest
+blade has neither cpus or memory. (And, yes, although rare this
+does occur).
 
-Noticed while doing some changes in network stack for the "16TB problem"
-
-Fix is to not change min & max pointers in __do_proc_doulongvec_minmax(),
-so that all elements of the vector share an unique min/max limit, like
-proc_dointvec_minmax().
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Americo Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+LKML-Reference: <20100910150808.GA19802@sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sysctl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/apic/x2apic_uv_x.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 8686b0f..d2ceded 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -2314,7 +2314,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
- 	vleft = table->maxlen / sizeof(unsigned long);
- 	left = *lenp;
- 	
--	for (; left && vleft--; i++, min++, max++, first=0) {
-+	for (; left && vleft--; i++, first = 0) {
- 		if (write) {
- 			while (left) {
- 				char c;
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index e46f98f..25a1b3c 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -694,9 +694,11 @@ void __init uv_system_init(void)
+ 		for (j = 0; j < 64; j++) {
+ 			if (!test_bit(j, &present))
+ 				continue;
+-			uv_blade_info[blade].pnode = (i * 64 + j);
++			pnode = (i * 64 + j);
++			uv_blade_info[blade].pnode = pnode;
+ 			uv_blade_info[blade].nr_possible_cpus = 0;
+ 			uv_blade_info[blade].nr_online_cpus = 0;
++			max_pnode = max(pnode, max_pnode);
+ 			blade++;
+ 		}
+ 	}
+@@ -734,7 +736,6 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->scir.offset = uv_scir_offset(apicid);
+ 		uv_node_to_blade[nid] = blade;
+ 		uv_cpu_to_blade[cpu] = blade;
+-		max_pnode = max(pnode, max_pnode);
+ 	}
+ 
+ 	/* Add blade/pnode info for nodes without cpus */
+@@ -746,7 +747,6 @@ void __init uv_system_init(void)
+ 		pnode = (paddr >> m_val) & pnode_mask;
+ 		blade = boot_pnode_to_blade(pnode);
+ 		uv_node_to_blade[nid] = blade;
+-		max_pnode = max(pnode, max_pnode);
+ 	}
+ 
+ 	map_gru_high(max_pnode);
 -- 
 1.7.4.4
 
