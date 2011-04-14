@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab1DNV5G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:57:06 -0400
-Received: from kroah.org ([198.145.64.141]:52091 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752980Ab1DNV5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:57:03 -0400
-Date: Thu, 14 Apr 2011 14:56:56 -0700
-From: Greg KH <greg@kroah.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Stable <stable@kernel.org>, John Kacur <jkacur@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [stable] [PATCH V4] futex: set FLAGS_HAS_TIMEOUT during demux
- for FUTEX_WAIT
-Message-ID: <20110414215656.GB14169@kroah.com>
-References: <ef361f98ac0e0771c14ec7facb5b41086eb4ba50.1302817381.git.dvhart@linux.intel.com>
+	id S1753895Ab1DNWAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 18:00:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:7665 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab1DNWAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 18:00:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=R6g0TZvQfbYPfTbzn7EGUC/JxctO/vTpTqCz/19l3AugZETygCM9U8wwWeC2shmIyK
+         YPx7tWOAjt9GWQS5bIfg==
+Date: Thu, 14 Apr 2011 15:00:07 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Timur Tabi <timur@freescale.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 3/3] reuse __free_pages_exact() in
+ __alloc_pages_exact()
+In-Reply-To: <20110414200141.09C3AA5F@kernel>
+Message-ID: <alpine.DEB.2.00.1104141459510.13286@chino.kir.corp.google.com>
+References: <20110414200139.ABD98551@kernel> <20110414200141.09C3AA5F@kernel>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ef361f98ac0e0771c14ec7facb5b41086eb4ba50.1302817381.git.dvhart@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 02:43:01PM -0700, Darren Hart wrote:
-> The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
-> restart futex_wait() without a timeout after a signal.
-> 
-> Commit b41277dc7a18ee332d in 2.6.38 introduced the regression by accidentally
-> removing the the FLAGS_HAS_TIMEOUT assignment from futex_wait() during the setup
-> of the restart block. Restore the originaly behavior.
-> 
-> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=32922
-> 
-> V2: Added references to commit message.
-> V3: Set flag during restart block instead of do_futex()
-> V4: Correct stupid order of assignment mistake pointed out by Eric
-> 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Reported-by: Tim Smith <tsmith201104@yahoo.com>
-> Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> CC: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: John Kacur <jkacur@redhat.com>
-> ---
+On Thu, 14 Apr 2011, Dave Hansen wrote:
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+> 
+> Michal Nazarewicz noticed that __alloc_pages_exact()'s
+> __free_page() loop was really close to something he was
+> using in one of his patches.   That made me realize that
+> it was actually very similar to __free_pages_exact().
+> 
+> This uses __free_pages_exact() in place of the loop
+> that we had in __alloc_pages_exact().  Since we had to
+> change the temporary variables around anyway, I gave
+> them some better names to hopefully address some other
+> review comments.
+> 
 
-thanks,
+No signed-off-by?
 
-greg k-h
+Acked-by: David Rientjes <rientjes@google.com>
