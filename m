@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850Ab1DNSQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:16:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54249 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933701Ab1DNSQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:16:13 -0400
-Date: Thu, 14 Apr 2011 20:16:09 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
- time
-Message-ID: <20110414181609.GH5054@quack.suse.cz>
-References: <20110413085937.981293444@intel.com>
- <20110413090415.763161169@intel.com>
- <20110413220444.GF4648@quack.suse.cz>
- <20110413233122.GA6097@localhost>
- <20110413235211.GN31057@dastard>
- <20110414002301.GA9826@localhost>
- <20110414151424.GA367@localhost>
+	id S933882Ab1DNSQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:16:30 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51343 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933658Ab1DNSQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 14:16:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=OD/pfAqkjo4wsdLyLoE2A0wcqofW8jVYLARQYYDQtm3YLBsteHy5aBrLAfp1xwmfZu
+         BwQglQTXyCabdZ7jmRJkOJN529e3L6GRaHpm3xzNmPqyIwPULZUgTN2uHuCdD7H9kVG5
+         Le9tTVa58VRW0X4FLS92PC+TMn81tU615SGPs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414151424.GA367@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110414180936.GA20924@redhat.com>
+References: <1302760895-13459-1-git-send-email-vapier@gentoo.org>
+ <1302760895-13459-2-git-send-email-vapier@gentoo.org> <20110414180936.GA20924@redhat.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 14 Apr 2011 14:16:03 -0400
+X-Google-Sender-Auth: qz7Fliv3A0Fs2fIAt5VlcxMvA1s
+Message-ID: <BANLkTikxq-xUhYmbE93+aGHoiEEbHWkoWQ@mail.gmail.com>
+Subject: Re: [PATCH 1/5] asm-generic/ptrace.h: start a common low level ptrace helper
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 14-04-11 23:14:25, Wu Fengguang wrote:
-> On Thu, Apr 14, 2011 at 08:23:02AM +0800, Wu Fengguang wrote:
-> > On Thu, Apr 14, 2011 at 07:52:11AM +0800, Dave Chinner wrote:
-> > > On Thu, Apr 14, 2011 at 07:31:22AM +0800, Wu Fengguang wrote:
-> > > > On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
-> > > > > On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
-> > > > > > Reduce the dampening for the control system, yielding faster
-> > > > > > convergence. The change is a bit conservative, as smaller values may
-> > > > > > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
-> > > > > > 
-> > > > > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > > > > CC: Richard Kennedy <richard@rsk.demon.co.uk>
-> > > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > >   Well, I have nothing against this change as such but what I don't like is
-> > > > > that it just changes magical +2 for similarly magical +0. It's clear that
-> > > > 
-> > > > The patch tends to make the rampup time a bit more reasonable for
-> > > > common desktops. From 100s to 25s (see below).
-> > > > 
-> > > > > this will lead to more rapid updates of proportions of bdi's share of
-> > > > > writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
-> > > > 
-> > > > Yes, it will especially be a problem on _small memory_ JBOD setups.
-> > > > Richard actually has requested for a much radical change (decrease by
-> > > > 6) but that looks too much.
-> > > > 
-> > > > My team has a 12-disk JBOD with only 6G memory. The memory is pretty
-> > > > small as a server, but it's a real setup and serves well as the
-> > > > reference minimal setup that Linux should be able to run well on.
-> > > 
-> > > FWIW, linux runs on a lot of low power NAS boxes with jbod and/or
-> > > raid setups that have <= 1GB of RAM (many of them run XFS), so even
-> > > your setup could be considered large by a significant fraction of
-> > > the storage world. Hence you need to be careful of optimising for
-> > > what you think is a "normal" server, because there simply isn't such
-> > > a thing....
-> > 
-> > Good point! This patch is likely to hurt a loaded 1GB 4-disk NAS box...
-> > I'll test the setup.
-> 
-> Just did a comparison of the IO-less patches' performance with and
-> without this patch. I hardly notice any differences besides some more
-> bdi goal fluctuations in the attached graphs. The write throughput is
-> a bit large with this patch (80MB/s vs 76MB/s), however the delta is
-> within the even larger stddev range (20MB/s).
-  Thanks for the test but I cannot find out from the numbers you provided
-how much did the per-bdi thresholds fluctuate in this low memory NAS case?
-You can gather current bdi threshold from /sys/kernel/debug/bdi/<dev>/stats
-so it shouldn't be hard to get the numbers...
+On Thu, Apr 14, 2011 at 14:09, Oleg Nesterov wrote:
+> On 04/14, Mike Frysinger wrote:
+>> +#ifndef GET_IP
+>> +#define GET_IP(regs) ((regs)->pc)
+>> +#endif
+>
+> Could you explain this ifndef ?
+>
+> IIUC, this should be included by arch/*/asm/ptrace.h. Isn't it better
+> to simply require that if you include asm-generic/ptrace.h you should
+> provide the necessary GET_* macros?
+>
+> (regs)->pc looks a bit strange in asm-generic. But please feel free
+> to ignore.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+my view of asm-generic is to put as much common/sane-defaults in there
+as possible to minimize code duplication in arch code.  when it comes
+to the register names, i looked at the arches to see what people used.
+while x86 uses "ip", the majority of ports use "pc", thus the
+majority of ports wont have to define their own GET_IP helper.
+-mike
