@@ -1,75 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab1DNUAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:00:09 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:45319 "EHLO df.lth.se"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755381Ab1DNUAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:00:07 -0400
-X-Greylist: delayed 2343 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Apr 2011 16:00:07 EDT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] gpio: expose gpio_to_chip()
-Date: Thu, 14 Apr 2011 21:20:50 +0200
-Message-Id: <1302808850-7608-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1759459Ab1DNUB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:01:56 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:45820 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758156Ab1DNUBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 16:01:54 -0400
+Subject: [PATCH 2/3] make new alloc_pages_exact()
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Timur Tabi <timur@freescale.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Thu, 14 Apr 2011 13:01:40 -0700
+References: <20110414200139.ABD98551@kernel>
+In-Reply-To: <20110414200139.ABD98551@kernel>
+Message-Id: <20110414200140.CDE09A20@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the gpio_to_chip() function available to drivers. The
-usecase is when you want to add a few chip-specific operations
-apart from the ones exposed in struct gpio_chip.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+What I really wanted in the end was a highmem-capable
+alloc_pages_exact(), so here it is.  This function can be used to
+allocate unmapped (like highmem) non-power-of-two-sized areas of
+memory.  This is in constast to get_free_pages_exact() which can only
+allocate from lowmem.
+
+My plan is to use this in the virtio_balloon driver to allocate large,
+oddly-sized contiguous areas.
+
+The new __alloc_pages_exact() now takes a size in numbers of pages,
+and returns a 'struct page', which means it can now address
+highmem.  The (new) argument order mirrors alloc_pages() itself.
+
+It's a bit unfortunate that this introduces __free_pages_exact()
+alongside free_pages_exact().  But that mess already exists with
+__free_pages() vs. free_pages_exact().  So, at worst, this mirrors the
+mess that we already have.
+
+I'm also a bit worried that I've not put in something named
+alloc_pages_exact(), but that behaves differently than it did before
+this set.  I got all of the in-tree cases, but I'm a bit worried about
+stragglers elsewhere.  So, I'm calling this __alloc_pages_exact() for
+the moment.  We can take out the __ some day if it bothers people.
+
+Note that the __get_free_pages() has a !GFP_HIGHMEM check.  Now that
+we are using alloc_pages_exact() instead of __get_free_pages() for
+get_free_pages_exact(), we had to add a new check in
+get_free_pages_exact().
+
+This has been compile and boot tested, and I checked that
+
+	echo 2 > /sys/kernel/profiling
+
+still works, since it uses get_free_pages_exact().
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
-Grant, would be great to have your input on this.
 
-I will need this for enabling/disabling IRQ in certain pins
-and setting pullup/pulldown mode, setting sleep modes for pins
-etc when migrating arch/arm/mach-u300/gpio.c and
-arch/arm/plat-nomadik/gpio.c out from the arch/arm hierarchy
-and into drivers/gpio where they belong.
+ linux-2.6.git-dave/include/linux/gfp.h |    4 +
+ linux-2.6.git-dave/mm/page_alloc.c     |   85 ++++++++++++++++++++++++---------
+ 2 files changed, 68 insertions(+), 21 deletions(-)
 
-An alternative solution is to implement generic function pointers
-for these things in struct gpio_chip, which I'm happy to do.
-Beware that it'll be quite a number of enumerators for all the
-funky pullup/pulldown modes people have, and for the sleep modes
-alike.
-
-Yours,
-Linus Walleij
----
- drivers/gpio/gpiolib.c     |    2 +-
- include/asm-generic/gpio.h |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 36a2974..af219bd 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -112,7 +112,7 @@ static int gpio_ensure_requested(struct gpio_desc *desc, unsigned offset)
- }
+diff -puN include/linux/gfp.h~make_new_alloc_pages_exact include/linux/gfp.h
+--- linux-2.6.git/include/linux/gfp.h~make_new_alloc_pages_exact	2011-04-14 09:14:35.533886248 -0700
++++ linux-2.6.git-dave/include/linux/gfp.h	2011-04-14 09:14:35.573886242 -0700
+@@ -352,6 +352,10 @@ extern struct page *alloc_pages_vma(gfp_
+ extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
+ extern unsigned long get_zeroed_page(gfp_t gfp_mask);
  
- /* caller holds gpio_lock *OR* gpio is marked as requested */
--static inline struct gpio_chip *gpio_to_chip(unsigned gpio)
-+struct gpio_chip *gpio_to_chip(unsigned gpio)
++/* 'struct page' version */
++struct page *__alloc_pages_exact(gfp_t gfp_mask, unsigned long nr_pages);
++void __free_pages_exact(struct page *page, unsigned long nr_pages);
++/* virtual address version */
+ void *get_free_pages_exact(gfp_t gfp_mask, size_t size);
+ void free_pages_exact(void *virt, size_t size);
+ 
+diff -puN mm/page_alloc.c~make_new_alloc_pages_exact mm/page_alloc.c
+--- linux-2.6.git/mm/page_alloc.c~make_new_alloc_pages_exact	2011-04-14 09:14:35.545886248 -0700
++++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-14 09:24:48.793504357 -0700
+@@ -2318,9 +2318,10 @@ void free_pages(unsigned long addr, unsi
+ EXPORT_SYMBOL(free_pages);
+ 
+ /**
+- * get_free_pages_exact - allocate an exact number physically-contiguous pages.
+- * @size: the number of bytes to allocate
++ * __alloc_pages_exact - allocate an exact number physically-contiguous pages.
++ * @nr_pages: the number of pages to allocate
+  * @gfp_mask: GFP flags for the allocation
++ * returns: struct page for allocated memory
+  *
+  * This function is similar to alloc_pages(), except that it allocates the
+  * minimum number of pages to satisfy the request.  alloc_pages() can only
+@@ -2330,29 +2331,76 @@ EXPORT_SYMBOL(free_pages);
+  *
+  * Memory allocated by this function must be released by free_pages_exact().
+  */
+-void *get_free_pages_exact(gfp_t gfp_mask, size_t size)
++struct page *__alloc_pages_exact(gfp_t gfp_mask, unsigned long nr_pages)
  {
- 	return gpio_desc[gpio].chip;
- }
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index ff5c660..5a4d219 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -132,6 +132,7 @@ struct gpio_chip {
- #endif
- };
+-	unsigned int order = get_order(size);
+-	unsigned long addr;
++	unsigned int order = get_order(nr_pages * PAGE_SIZE);
++	struct page *page;
  
-+extern struct gpio_chip *gpio_to_chip(unsigned gpio);
- extern const char *gpiochip_is_requested(struct gpio_chip *chip,
- 			unsigned offset);
- extern int __must_check gpiochip_reserve(int start, int ngpio);
--- 
-1.7.4.4
-
+-	addr = __get_free_pages(gfp_mask, order);
+-	if (addr) {
+-		unsigned long alloc_end = addr + (PAGE_SIZE << order);
+-		unsigned long used = addr + PAGE_ALIGN(size);
++	page = alloc_pages(gfp_mask, order);
++	if (page) {
++		struct page *alloc_end = page + (1 << order);
++		struct page *used = page + nr_pages;
+ 
+-		split_page(virt_to_page((void *)addr), order);
++		split_page(page, order);
+ 		while (used < alloc_end) {
+-			free_page(used);
+-			used += PAGE_SIZE;
++			__free_page(used);
++			used++;
+ 		}
+ 	}
+ 
+-	return (void *)addr;
++	return page;
++}
++EXPORT_SYMBOL(__alloc_pages_exact);
++
++/**
++ * __free_pages_exact - release memory allocated via __alloc_pages_exact()
++ * @virt: the value returned by get_free_pages_exact.
++ * @nr_pages: size in pages, same value as passed to __alloc_pages_exact().
++ *
++ * Release the memory allocated by a previous call to __alloc_pages_exact().
++ */
++void __free_pages_exact(struct page *page, unsigned long nr_pages)
++{
++	struct page *end = page + nr_pages;
++
++	while (page < end) {
++		__free_page(page);
++		page++;
++	}
++}
++EXPORT_SYMBOL(__free_pages_exact);
++
++/**
++ * get_free_pages_exact - allocate an exact number physically-contiguous pages.
++ * @gfp_mask: GFP flags for the allocation
++ * @size: the number of bytes to allocate
++ * returns: virtual address of allocated memory
++ *
++ * This function is similar to __get_free_pages(), except that it allocates the
++ * minimum number of pages to satisfy the request.  get_free_pages() can only
++ * allocate memory in power-of-two pages.
++ *
++ * This function is also limited by MAX_ORDER.
++ *
++ * Memory allocated by this function must be released by free_pages_exact().
++ */
++void *get_free_pages_exact(gfp_t gfp_mask, size_t size)
++{
++	struct page *page;
++	unsigned long nr_pages = PAGE_ALIGN(size) / PAGE_SIZE;
++
++	/* If we are using page_address(), we can not allow highmem */
++	VM_BUG_ON((gfp_mask & __GFP_HIGHMEM) != 0);
++
++	page = __alloc_pages_exact(gfp_mask, nr_pages);
++	if (page)
++		return (void *) page_address(page);
++	return NULL;
+ }
+ EXPORT_SYMBOL(get_free_pages_exact);
+ 
+ /**
+- * free_pages_exact - release memory allocated via get_free_pages_exact()
++ * __free_pages_exact - release memory allocated via get_free_pages_exact()
+  * @virt: the value returned by get_free_pages_exact.
+  * @size: size of allocation, same value as passed to get_free_pages_exact().
+  *
+@@ -2360,13 +2408,8 @@ EXPORT_SYMBOL(get_free_pages_exact);
+  */
+ void free_pages_exact(void *virt, size_t size)
+ {
+-	unsigned long addr = (unsigned long)virt;
+-	unsigned long end = addr + PAGE_ALIGN(size);
+-
+-	while (addr < end) {
+-		free_page(addr);
+-		addr += PAGE_SIZE;
+-	}
++	int nr_pages = PAGE_ALIGN(size)/PAGE_SIZE;
++	__free_pages_exact(virt_to_page(virt), nr_pages);
+ }
+ EXPORT_SYMBOL(free_pages_exact);
+ 
+diff -puN mm/swap.c~make_new_alloc_pages_exact mm/swap.c
+diff -puN tools/virtio/linux/virtio.h~make_new_alloc_pages_exact tools/virtio/linux/virtio.h
+diff -puN include/linux/types.h~make_new_alloc_pages_exact include/linux/types.h
+diff -puN Documentation/kbuild/kbuild.txt~make_new_alloc_pages_exact Documentation/kbuild/kbuild.txt
+diff -puN Documentation/sparse.txt~make_new_alloc_pages_exact Documentation/sparse.txt
+_
