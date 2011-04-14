@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759473Ab1DNUCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 16:02:12 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:50226 "EHLO e3.ny.us.ibm.com"
+	id S1759483Ab1DNUC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 16:02:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57554 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759461Ab1DNUCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 16:02:07 -0400
-Subject: [PATCH 3/3] reuse __free_pages_exact() in __alloc_pages_exact()
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Timur Tabi <timur@freescale.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Thu, 14 Apr 2011 13:01:42 -0700
-References: <20110414200139.ABD98551@kernel>
-In-Reply-To: <20110414200139.ABD98551@kernel>
-Message-Id: <20110414200141.09C3AA5F@kernel>
+	id S1759462Ab1DNUCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 16:02:11 -0400
+Date: Thu, 14 Apr 2011 12:58:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Bill Gatliff <bgat@billgatliff.com>, linux-kernel@vger.kernel.org,
+        linux-embedded@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PWM v9 1/3] PWM: Implement a generic PWM framework
+Message-ID: <20110414195842.GA18872@suse.de>
+References: <1301630392-20793-1-git-send-email-bgat@billgatliff.com>
+ <1301630392-20793-2-git-send-email-bgat@billgatliff.com>
+ <BANLkTi=1Nh+EcZw_U6U8ZS2yVyqmCtuAcQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=1Nh+EcZw_U6U8ZS2yVyqmCtuAcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 14, 2011 at 01:49:27PM -0600, Grant Likely wrote:
+> > +static struct class pwm_class = {
+> > +       .name           = "pwm",
+> > +       .owner          = THIS_MODULE,
+> > +       .dev_attrs      = pwm_dev_attrs,
+> > +};
+> 
+> >From my understanding, class is deprecated.  I believe you should be
+> using bus_type directly now.  Check with Greg and Kay.
 
-Michal Nazarewicz noticed that __alloc_pages_exact()'s
-__free_page() loop was really close to something he was
-using in one of his patches.   That made me realize that
-it was actually very similar to __free_pages_exact().
+Yes, that is correct, please don't create new classes if at all
+possible.  And this code looks like it is fine to use a bus_type.
 
-This uses __free_pages_exact() in place of the loop
-that we had in __alloc_pages_exact().  Since we had to
-change the temporary variables around anyway, I gave
-them some better names to hopefully address some other
-review comments.
+thanks,
 
----
-
- linux-2.6.git-dave/mm/page_alloc.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff -puN mm/page_alloc.c~reuse-free-exact mm/page_alloc.c
---- linux-2.6.git/mm/page_alloc.c~reuse-free-exact	2011-04-14 12:03:10.132795021 -0700
-+++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-14 12:03:10.144795019 -0700
-@@ -2338,14 +2338,11 @@ struct page *__alloc_pages_exact(gfp_t g
- 
- 	page = alloc_pages(gfp_mask, order);
- 	if (page) {
--		struct page *alloc_end = page + (1 << order);
--		struct page *used = page + nr_pages;
-+		struct page *unused_start = page + nr_pages;
-+		unsigned long nr_unused = (1 << order) - nr_pages;
- 
- 		split_page(page, order);
--		while (used < alloc_end) {
--			__free_page(used);
--			used++;
--		}
-+		__free_pages_exact(unused_start, nr_unused);
- 	}
- 
- 	return page;
-_
+greg k-h
