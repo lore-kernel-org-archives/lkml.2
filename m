@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab1DNTxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 15:53:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58643 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381Ab1DNTxq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 15:53:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1302808850-7608-1-git-send-email-linus.walleij@linaro.org>
-References: <1302808850-7608-1-git-send-email-linus.walleij@linaro.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 14 Apr 2011 13:53:26 -0600
-X-Google-Sender-Auth: jAPWddGFIbxJbfqHFriztOD3sPI
-Message-ID: <BANLkTi=qjFtWeavDZbzY5bQR5vdnwAfnqw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: expose gpio_to_chip()
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759432Ab1DNT4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 15:56:31 -0400
+Received: from col0-omc3-s2.col0.hotmail.com ([65.55.34.140]:65469 "EHLO
+	col0-omc3-s2.col0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755381Ab1DNT4a convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 15:56:30 -0400
+X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Apr 2011 15:56:30 EDT
+Message-ID: <COL101-W165ED5CB17434202CE273DE2AD0@phx.gbl>
+X-Originating-IP: [71.105.174.211]
+From: James McMechan <james_mcmechan@hotmail.com>
+To: <richard@nod.at>, <mikpe@it.uu.se>
+CC: <linux-kernel@vger.kernel.org>,
+        uml devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: RE: [uml-devel] gcc-4.6.0 generates no code for sub_preempt_count()
+Date: Thu, 14 Apr 2011 19:50:13 +0000
+Importance: Normal
+In-Reply-To: <201104141552.42213.richard@nod.at>
+References: <201104132150.05623.richard@nod.at>,<19878.42746.60978.537126@pilspetsen.it.uu.se>,<201104141552.42213.richard@nod.at>
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 14 Apr 2011 19:50:14.0427 (UTC) FILETIME=[2C11C6B0:01CBFADD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 1:20 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> This makes the gpio_to_chip() function available to drivers. The
-> usecase is when you want to add a few chip-specific operations
-> apart from the ones exposed in struct gpio_chip.
 
-Similar to interrupt handling, it probably isn't a good idea to expose
-the gpio_chip directly.  Go ahead and add the ops you need and see
-what it looks like.
+> Am Donnerstag 14 April 2011, 09:49:14 schrieb Mikael Pettersson:
+> > Richard Weinberger writes:
+> > > Hi,
+> > >
+> > > I'm facing a very strange issue with gcc-4.6.0 and UML.
+> > > Within __local_bh_enable() gcc generates no code for
+> > > sub_preempt_count().
+> > >
+> > > See:
+> > > http://userweb.kernel.org/~rw/uml-gcc460/__local_bh_enable-gcc460.txt
+> > > vs.
+> > > http://userweb.kernel.org/~rw/uml-gcc460/__local_bh_enable-gcc431.txt
+> > >
+> > > Interestingly it generates code for add_preempt_count().
+> > > I can reproduce this on x86 and x86_64.
+> > >
+> > > The problem has to do with UML's current_thread_info() function.
+> > > When I replace it with arch/x86's (unportable) variant gcc generates
+> > > code.
+> > >
+> > > Any ideas whether this is a gcc or a kernel issue?
 
-g.
+It looks like a gcc error with one of the optimization passes
 
+> > Please provide a standalone test case.
 >
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Grant, would be great to have your input on this.
->
-> I will need this for enabling/disabling IRQ in certain pins
-> and setting pullup/pulldown mode, setting sleep modes for pins
-> etc when migrating arch/arm/mach-u300/gpio.c and
-> arch/arm/plat-nomadik/gpio.c out from the arch/arm hierarchy
-> and into drivers/gpio where they belong.
->
-> An alternative solution is to implement generic function pointers
-> for these things in struct gpio_chip, which I'm happy to do.
-> Beware that it'll be quite a number of enumerators for all the
-> funky pullup/pulldown modes people have, and for the sleep modes
-> alike.
->
-> Yours,
-> Linus Walleij
-> ---
->  drivers/gpio/gpiolib.c     |    2 +-
->  include/asm-generic/gpio.h |    1 +
->  2 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 36a2974..af219bd 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -112,7 +112,7 @@ static int gpio_ensure_requested(struct gpio_desc *desc, unsigned offset)
->  }
->
->  /* caller holds gpio_lock *OR* gpio is marked as requested */
-> -static inline struct gpio_chip *gpio_to_chip(unsigned gpio)
-> +struct gpio_chip *gpio_to_chip(unsigned gpio)
->  {
->        return gpio_desc[gpio].chip;
->  }
-> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-> index ff5c660..5a4d219 100644
-> --- a/include/asm-generic/gpio.h
-> +++ b/include/asm-generic/gpio.h
-> @@ -132,6 +132,7 @@ struct gpio_chip {
->  #endif
->  };
->
-> +extern struct gpio_chip *gpio_to_chip(unsigned gpio);
->  extern const char *gpiochip_is_requested(struct gpio_chip *chip,
->                        unsigned offset);
->  extern int __must_check gpiochip_reserve(int start, int ngpio);
-> --
-> 1.7.4.4
->
->
+> There you go!
+> http://userweb.kernel.org/~rw/uml-gcc460/testcase.c
+
+Replacing inline with __attribute__((noinline)) makes it produce code again
+
+without requiring asm("esp")/asm("rsp") tricks and the code appears to be working
+
+I think gcc is assuming only low bits in the address of stack vars and thought they
+
+were all masked out :( with this change my test version of gcc-4.6.0 works for x86/amd64
+
+I have not yet gotten 4.6.0 to install yet so I was testing with xgcc from the failed build
 
 
+--- testcase.orig       2011-04-14 08:34:24.000000000 -0700
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
++++ testcase.c  2011-04-14 12:17:44.000000000 -0700
+
+@@ -31,7 +31,7 @@
+
+ }
+
+ #else
+
+ /* UML */
+
+-static inline struct thread_info *current_thread_info(void)
+
++static __attribute__((noinline)) struct thread_info *current_thread_info(void)
+
+ {
+
+   struct thread_info *ti;
+
+   unsigned long mask = THREAD_SIZE - 1;>
+
+> Thanks,
+> //richard
+
+ 		 	   		  
