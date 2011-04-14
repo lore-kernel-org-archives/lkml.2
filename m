@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942Ab1DNSaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:30:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37957 "EHLO
+	id S933079Ab1DNSaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:30:13 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37967 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932963Ab1DNRqR (ORCPT
+	with ESMTP id S932971Ab1DNRqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Apr 2011 13:46:17 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Alok Kataria <akataria@vmware.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 043/209] ipc: initialize structure memory to zero for compat functions
-Date: Thu, 14 Apr 2011 13:41:13 -0400
-Message-Id: <1302803039-9400-44-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 042/209] xen: don't bother to stop other cpus on shutdown/reboot
+Date: Thu, 14 Apr 2011 13:41:12 -0400
+Message-Id: <1302803039-9400-43-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,83 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 03145beb455cf5c20a761e8451e30b8a74ba58d9 upstream.
+commit 31e323cca9d5c8afd372976c35a5d46192f540d1 upstream.
 
-This takes care of leaking uninitialized kernel stack memory to
-userspace from non-zeroed fields in structs in compat ipc functions.
+Xen will shoot all the VCPUs when we do a shutdown hypercall, so there's
+no need to do it manually.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In any case it will fail because all the IPI irqs have been pulled
+down by this point, so the cross-CPU calls will simply hang forever.
+
+Until change 76fac077db6b34e2c6383a7b4f3f4f7b7d06d8ce the function calls
+were not synchronously waited for, so this wasn't apparent.  However after
+that change the calls became synchronous leading to a hang on shutdown
+on multi-VCPU guests.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Alok Kataria <akataria@vmware.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- ipc/compat.c    |    6 ++++++
- ipc/compat_mq.c |    5 +++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+ arch/x86/xen/enlighten.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/ipc/compat.c b/ipc/compat.c
-index 9dc2c7d..845a287 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -241,6 +241,8 @@ long compat_sys_semctl(int first, int second, int third, void __user *uptr)
- 	struct semid64_ds __user *up64;
- 	int version = compat_ipc_parse_version(&third);
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 4d32089..25d787c 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1000,10 +1000,6 @@ static void xen_reboot(int reason)
+ {
+ 	struct sched_shutdown r = { .reason = reason };
  
-+	memset(&s64, 0, sizeof(s64));
-+
- 	if (!uptr)
- 		return -EINVAL;
- 	if (get_user(pad, (u32 __user *) uptr))
-@@ -421,6 +423,8 @@ long compat_sys_msgctl(int first, int second, void __user *uptr)
- 	int version = compat_ipc_parse_version(&second);
- 	void __user *p;
- 
-+	memset(&m64, 0, sizeof(m64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_INFO:
- 	case IPC_RMID:
-@@ -594,6 +598,8 @@ long compat_sys_shmctl(int first, int second, void __user *uptr)
- 	int err, err2;
- 	int version = compat_ipc_parse_version(&second);
- 
-+	memset(&s64, 0, sizeof(s64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_RMID:
- 	case SHM_LOCK:
-diff --git a/ipc/compat_mq.c b/ipc/compat_mq.c
-index d8d1e9f..380ea4f 100644
---- a/ipc/compat_mq.c
-+++ b/ipc/compat_mq.c
-@@ -53,6 +53,9 @@ asmlinkage long compat_sys_mq_open(const char __user *u_name,
- 	void __user *p = NULL;
- 	if (u_attr && oflag & O_CREAT) {
- 		struct mq_attr attr;
-+
-+		memset(&attr, 0, sizeof(attr));
-+
- 		p = compat_alloc_user_space(sizeof(attr));
- 		if (get_compat_mq_attr(&attr, u_attr) ||
- 		    copy_to_user(p, &attr, sizeof(attr)))
-@@ -127,6 +130,8 @@ asmlinkage long compat_sys_mq_getsetattr(mqd_t mqdes,
- 	struct mq_attr __user *p = compat_alloc_user_space(2 * sizeof(*p));
- 	long ret;
- 
-+	memset(&mqstat, 0, sizeof(mqstat));
-+
- 	if (u_mqstat) {
- 		if (get_compat_mq_attr(&mqstat, u_mqstat) ||
- 		    copy_to_user(p, &mqstat, sizeof(mqstat)))
+-#ifdef CONFIG_SMP
+-	stop_other_cpus();
+-#endif
+-
+ 	if (HYPERVISOR_sched_op(SCHEDOP_shutdown, &r))
+ 		BUG();
+ }
 -- 
 1.7.4.4
 
