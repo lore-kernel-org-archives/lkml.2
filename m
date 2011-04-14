@@ -1,107 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964834Ab1DNS1B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:27:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38134 "EHLO
+	id S933069Ab1DNRqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:46:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37999 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077Ab1DNRq1 (ORCPT
+	with ESMTP id S932988Ab1DNRqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:27 -0400
+	Thu, 14 Apr 2011 13:46:19 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        =?UTF-8?q?Philippe=20R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Graham Gower <graham.gower@gmail.com>,
+        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 054/209] tty_ldisc: Fix BUG() on hangup
-Date: Thu, 14 Apr 2011 13:41:24 -0400
-Message-Id: <1302803039-9400-55-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 047/209] drivers/char/vt_ioctl.c: fix VT_OPENQRY error value
+Date: Thu, 14 Apr 2011 13:41:17 -0400
+Message-Id: <1302803039-9400-48-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philippe Rétornaz <philippe.retornaz@epfl.ch>
+From: Graham Gower <graham.gower@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 1c95ba1e1de7edffc0c4e275e147f1a9eb1f81ae upstream.
+commit 1e0ad2881d50becaeea70ec696a80afeadf944d2 upstream.
 
-A kernel BUG when bluetooth rfcomm connection drop while the associated
-serial port is open is sometime triggered.
+When all VT's are in use, VT_OPENQRY casts -1 to unsigned char before
+returning it to userspace as an int.  VT255 is not the next available
+console.
 
-It seems that the line discipline can disappear between the
-tty_ldisc_put and tty_ldisc_get. This patch fall back to the N_TTY line
-discipline if the previous discipline is not available anymore.
-
-Signed-off-by: Philippe Retornaz <philippe.retornaz@epfl.ch>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Graham Gower <graham.gower@gmail.com>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/tty_ldisc.c |   20 +++++++++++++-------
- 1 files changed, 13 insertions(+), 7 deletions(-)
+ drivers/char/vt_ioctl.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index df5e7db..7af1a15 100644
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -741,9 +741,12 @@ static void tty_reset_termios(struct tty_struct *tty)
-  *	state closed
-  */
+diff --git a/drivers/char/vt_ioctl.c b/drivers/char/vt_ioctl.c
+index 6aa1028..6351a26 100644
+--- a/drivers/char/vt_ioctl.c
++++ b/drivers/char/vt_ioctl.c
+@@ -503,6 +503,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
+ 	struct kbd_struct * kbd;
+ 	unsigned int console;
+ 	unsigned char ucval;
++	unsigned int uival;
+ 	void __user *up = (void __user *)arg;
+ 	int i, perm;
+ 	int ret = 0;
+@@ -657,7 +658,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
+ 		break;
  
--static void tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
-+static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
- {
--	struct tty_ldisc *ld;
-+	struct tty_ldisc *ld = tty_ldisc_get(ldisc);
-+
-+	if (IS_ERR(ld))
-+		return -1;
+ 	case KDGETMODE:
+-		ucval = vc->vc_mode;
++		uival = vc->vc_mode;
+ 		goto setint;
  
- 	tty_ldisc_close(tty, tty->ldisc);
- 	tty_ldisc_put(tty->ldisc);
-@@ -751,10 +754,10 @@ static void tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
+ 	case KDMAPDISP:
+@@ -695,7 +696,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
+ 		break;
+ 
+ 	case KDGKBMODE:
+-		ucval = ((kbd->kbdmode == VC_RAW) ? K_RAW :
++		uival = ((kbd->kbdmode == VC_RAW) ? K_RAW :
+ 				 (kbd->kbdmode == VC_MEDIUMRAW) ? K_MEDIUMRAW :
+ 				 (kbd->kbdmode == VC_UNICODE) ? K_UNICODE :
+ 				 K_XLATE);
+@@ -717,9 +718,9 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
+ 		break;
+ 
+ 	case KDGKBMETA:
+-		ucval = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
++		uival = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
+ 	setint:
+-		ret = put_user(ucval, (int __user *)arg);
++		ret = put_user(uival, (int __user *)arg);
+ 		break;
+ 
+ 	case KDGETKEYCODE:
+@@ -949,7 +950,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
+ 		for (i = 0; i < MAX_NR_CONSOLES; ++i)
+ 			if (! VT_IS_IN_USE(i))
+ 				break;
+-		ucval = i < MAX_NR_CONSOLES ? (i+1) : -1;
++		uival = i < MAX_NR_CONSOLES ? (i+1) : -1;
+ 		goto setint;		 
+ 
  	/*
- 	 *	Switch the line discipline back
- 	 */
--	ld = tty_ldisc_get(ldisc);
--	BUG_ON(IS_ERR(ld));
- 	tty_ldisc_assign(tty, ld);
- 	tty_set_termios_ldisc(tty, ldisc);
-+
-+	return 0;
- }
- 
- /**
-@@ -816,13 +819,16 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	   a FIXME */
- 	if (tty->ldisc) {	/* Not yet closed */
- 		if (reset == 0) {
--			tty_ldisc_reinit(tty, tty->termios->c_line);
--			err = tty_ldisc_open(tty, tty->ldisc);
-+
-+			if (!tty_ldisc_reinit(tty, tty->termios->c_line))
-+				err = tty_ldisc_open(tty, tty->ldisc);
-+			else
-+				err = 1;
- 		}
- 		/* If the re-open fails or we reset then go to N_TTY. The
- 		   N_TTY open cannot fail */
- 		if (reset || err) {
--			tty_ldisc_reinit(tty, N_TTY);
-+			BUG_ON(tty_ldisc_reinit(tty, N_TTY));
- 			WARN_ON(tty_ldisc_open(tty, tty->ldisc));
- 		}
- 		tty_ldisc_enable(tty);
 -- 
 1.7.4.4
 
