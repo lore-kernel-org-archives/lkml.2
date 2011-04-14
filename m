@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab1DNVVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 17:21:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26533 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab1DNVVs (ORCPT
+	id S1753651Ab1DNVV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 17:21:58 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:64627 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753572Ab1DNVVx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 17:21:48 -0400
-Date: Thu, 14 Apr 2011 14:19:02 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
-        jlbec@evilplan.org, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, hch@infradead.org, ngupta@vflare.org,
-        jeremy@goop.org, JBeulich@novell.com, kurt.hackel@oracle.com,
-        npiggin@kernel.dk, dave.mccracken@oracle.com, riel@redhat.com,
-        avi@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        mel@csn.ul.ie, yinghan@google.com, gthelen@google.com,
-        torvalds@linux-foundation.org
-Subject: [PATCH V8 7/8] ext4: add cleancache support
-Message-ID: <20110414211902.GA27813@ca-server1.us.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DA76541.00CE,ss=1,fgs=0
+	Thu, 14 Apr 2011 17:21:53 -0400
+X-IronPort-AV: E=Sophos;i="4.64,213,1301900400"; 
+   d="scan'208";a="541458437"
+Subject: Re: [PATCH] NFS: Fix infinite loop in gss_create_upcall()
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Bryan Schumaker <bjschuma@netapp.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+In-Reply-To: <4DA75AFC.3040000@suse.cz>
+References: <201103312224.p2VMOA5g000983@imap1.linux-foundation.org>
+	 <4D96E4C5.2080302@suse.cz> <1302122693.16786.0.camel@lade.trondhjem.org>
+	 <4D9D5CC9.2040002@suse.cz> <4DA36722.2020402@suse.cz>
+	 <4DA36758.4070203@suse.cz> <4DA36DB6.8060108@suse.cz>
+	 <4DA48EB0.40600@netapp.com>  <4DA4946D.5020403@suse.cz>
+	 <1302633088.4801.48.camel@lade.trondhjem.org> <4DA49B49.1020005@suse.cz>
+	 <4DA49D3A.7090800@netapp.com> <4DA49F7F.8060005@suse.cz>
+	 <4DA60AB9.1050104@netapp.com>  <4DA75AFC.3040000@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Thu, 14 Apr 2011 17:21:35 -0400
+Message-ID: <1302816095.24028.87.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 14 Apr 2011 21:21:37.0907 (UTC) FILETIME=[F07A6C30:01CBFAE9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V8 7/8] ext4: add cleancache support
+On Thu, 2011-04-14 at 22:37 +0200, Jiri Slaby wrote:
+> On 04/13/2011 10:42 PM, Bryan Schumaker wrote:
+> > On 04/12/2011 02:52 PM, Jiri Slaby wrote:
+> >> On 04/12/2011 08:43 PM, Bryan Schumaker wrote:
+> >>> On 04/12/2011 02:34 PM, Jiri Slaby wrote:
+> >>>> On 04/12/2011 08:31 PM, Trond Myklebust wrote:
+> >>>>>> Yes, it fixes the problem. But it waits 15s before it times out. This is
+> >>>>>> inacceptable for automounted NFS dirs.
+> >>>>>
+> >>>>> I'm still confused as to why you are hitting it at all. In the normal
+> >>>>> autonegotiation case, the client should be trying to use AUTH_SYS first
+> >>>>> and then trying rpcsec_gss if and only if that fails.
+> >>>>>
+> >>>>> Are you really exporting a filesystem using AUTH_NULL as the only
+> >>>>> supported flavour?
+> >>>>
+> >>>> I don't know, I connect to a nfs server which is not maintained by me.
+> >>>> It looks like that. How can I find out?
+> >>>
+> >>> If you're not using gss for anything, you could try rmmod-ing rpcsec_gss_krb5 (and other rpcsec_gss_* modules).
+> >>
+> >> I don't have NFS in modules. It's all built-in. And this one is
+> >> unconditionally selected because of CONFIG_NFS_V4.
+> > 
+> > Does this patch help?
+> 
+> Nope, it makes things even worse:
+> # mount -oro,intr XXX:/yyy /mnt/c/
+> <15s delay here>
+> mount.nfs: access denied by server while mounting XXX:/yyy
+> 
+> So in nfs4_proc_get_root I do:
+>   printk("%s: %d %u\n", __func__, i, flav_array[i]);
+>   status = nfs4_lookup_root_sec(server, fhandle, info, flav_array[i]);
+>   printk("%s: res=%d\n", __func__, status);
+> and get:
+> [   18.159818] nfs4_proc_get_root: 0 1
+> [   18.214872] nfs4_proc_get_root: res=-1
+> [   18.214875] nfs4_proc_get_root: 1 0
+> [   18.254636] nfs4_proc_get_root: res=-1
+> [   18.254639] nfs4_proc_get_root: 2 390003
+> [   33.252174] RPC: AUTH_GSS upcall timed out.
+> [   33.252177] Please check user daemon is running.
+> [   33.252192] nfs4_proc_get_root: res=-13
+> 
+> If I revert that back and do the same:
+> [   28.275569] nfs4_proc_get_root: 0 1
+> [   28.296545] nfs4_proc_get_root: res=-1
+> [   28.296548] nfs4_proc_get_root: 1 390003
+> [   43.296107] RPC: AUTH_GSS upcall timed out.
+> [   43.296108] Please check user daemon is running.
+> [   43.296121] nfs4_proc_get_root: res=-13
+> [   43.296122] nfs4_proc_get_root: 2 0
+> [   43.318201] nfs4_proc_get_root: res=-1
+> 
+> I.e. all methods fail. And what matters is the last retval. From NULL it
+> is EPERM, from GSS it is EACCESS. For EPERM, mount(8) falls back to
+> nfs3, for EACCESS it dies terrible death.
 
-This seventh patch of eight in this cleancache series "opts-in"
-cleancache for ext4.  Filesystems must explicitly enable cleancache
-by calling cleancache_init_fs anytime an instance of the filesystem
-is mounted. For ext4, all other cleancache hooks are in
-the VFS layer including the matching cleancache_flush_fs
-hook which must be called on unmount.
+OK. That's good information. Thanks for testing!
 
-Details and a FAQ can be found in Documentation/vm/cleancache.txt
+I'm still curious as to why that NFS server is refusing all NFSv4 mounts
+with NFS4ERR_WRONGSEC. Unless NFSv4 really is configured only to export
+the root filesystem with RPCSEC_GSS, then that definitely sounds like a
+bug...
 
-[v6-v8: no changes]
-[v5: jeremy@goop.org: simplify init hook and any future fs init changes]
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Andreas Dilger <adilger@sun.com>
-Cc: Ted Ts'o <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik Van Riel <riel@redhat.com>
-Cc: Jan Beulich <JBeulich@novell.com>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <joel.becker@oracle.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
+Cheers
+  Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
----
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Diffstat:
- fs/ext4/super.c                          |    2 ++
- 1 file changed, 2 insertions(+)
-
---- linux-2.6.39-rc3/fs/ext4/super.c	2011-04-11 18:21:51.000000000 -0600
-+++ linux-2.6.39-rc3-cleancache/fs/ext4/super.c	2011-04-13 17:10:52.708850707 -0600
-@@ -38,6 +38,7 @@
- #include <linux/ctype.h>
- #include <linux/log2.h>
- #include <linux/crc16.h>
-+#include <linux/cleancache.h>
- #include <asm/uaccess.h>
- 
- #include <linux/kthread.h>
-@@ -1932,6 +1933,7 @@ static int ext4_setup_super(struct super
- 			EXT4_INODES_PER_GROUP(sb),
- 			sbi->s_mount_opt, sbi->s_mount_opt2);
- 
-+	cleancache_init_fs(sb);
- 	return res;
- }
- 
