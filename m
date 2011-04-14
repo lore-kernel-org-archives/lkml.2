@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683Ab1DNR5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:57:48 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41437 "EHLO
+	id S933697Ab1DNSTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:19:51 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41468 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270Ab1DNR5o (ORCPT
+	with ESMTP id S933673Ab1DNR5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:57:44 -0400
+	Thu, 14 Apr 2011 13:57:46 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 125/209] rds: Integer overflow in RDS cmsg handling
-Date: Thu, 14 Apr 2011 13:54:43 -0400
-Message-Id: <1302803767-9715-12-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 127/209] net: Limit socket I/O iovec total length to INT_MAX.
+Date: Thu, 14 Apr 2011 13:54:45 -0400
+Message-Id: <1302803767-9715-14-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,43 +22,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: David S. Miller <davem@davemloft.net>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 218854af84038d828a32f061858b1902ed2beec6 upstream.
+commit 8acfe468b0384e834a303f08ebc4953d72fb690a upstream.
 
-In rds_cmsg_rdma_args(), the user-provided args->nr_local value is
-restricted to less than UINT_MAX.  This seems to need a tighter upper
-bound, since the calculation of total iov_size can overflow, resulting
-in a small sock_kmalloc() allocation.  This would probably just result
-in walking off the heap and crashing when calling rds_rdma_pages() with
-a high count value.  If it somehow doesn't crash here, then memory
-corruption could occur soon after.
+This helps protect us from overflow issues down in the
+individual protocol sendmsg/recvmsg handlers.  Once
+we hit INT_MAX we truncate out the rest of the iovec
+by setting the iov_len members to zero.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+This works because:
+
+1) For SOCK_STREAM and SOCK_SEQPACKET sockets, partial
+   writes are allowed and the application will just continue
+   with another write to send the rest of the data.
+
+2) For datagram oriented sockets, where there must be a
+   one-to-one correspondance between write() calls and
+   packets on the wire, INT_MAX is going to be far larger
+   than the packet size limit the protocol is going to
+   check for and signal with -EMSGSIZE.
+
+Based upon a patch by Linus Torvalds.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/rds/rdma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/socket.h |    2 +-
+ net/compat.c           |   10 ++++++----
+ net/core/iovec.c       |   20 +++++++++-----------
+ 3 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/net/rds/rdma.c b/net/rds/rdma.c
-index 5ce9437..cf0dfa7 100644
---- a/net/rds/rdma.c
-+++ b/net/rds/rdma.c
-@@ -472,7 +472,7 @@ static struct rds_rdma_op *rds_rdma_prepare(struct rds_sock *rs,
- 		goto out;
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 1b5034a..354cc56 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -314,7 +314,7 @@ extern int csum_partial_copy_fromiovecend(unsigned char *kdata,
+ 					  int offset, 
+ 					  unsigned int len, __wsum *csump);
+ 
+-extern long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
++extern int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
+ extern int memcpy_toiovec(struct iovec *v, unsigned char *kdata, int len);
+ extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
+ 			     int offset, int len);
+diff --git a/net/compat.c b/net/compat.c
+index ec24d9e..b869534 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -41,10 +41,12 @@ static inline int iov_from_user_compat_to_kern(struct iovec *kiov,
+ 		compat_size_t len;
+ 
+ 		if (get_user(len, &uiov32->iov_len) ||
+-		   get_user(buf, &uiov32->iov_base)) {
+-			tot_len = -EFAULT;
+-			break;
+-		}
++		    get_user(buf, &uiov32->iov_base))
++			return -EFAULT;
++
++		if (len > INT_MAX - tot_len)
++			len = INT_MAX - tot_len;
++
+ 		tot_len += len;
+ 		kiov->iov_base = compat_ptr(buf);
+ 		kiov->iov_len = (__kernel_size_t) len;
+diff --git a/net/core/iovec.c b/net/core/iovec.c
+index b5b28f0..16ed584 100644
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -35,10 +35,9 @@
+  *	in any case.
+  */
+ 
+-long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
++int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
+ {
+-	int size, ct;
+-	long err;
++	int size, ct, err;
+ 
+ 	if (m->msg_namelen) {
+ 		if (mode == VERIFY_READ) {
+@@ -60,14 +59,13 @@ long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address,
+ 	err = 0;
+ 
+ 	for (ct = 0; ct < m->msg_iovlen; ct++) {
+-		err += iov[ct].iov_len;
+-		/*
+-		 * Goal is not to verify user data, but to prevent returning
+-		 * negative value, which is interpreted as errno.
+-		 * Overflow is still possible, but it is harmless.
+-		 */
+-		if (err < 0)
+-			return -EMSGSIZE;
++		size_t len = iov[ct].iov_len;
++
++		if (len > INT_MAX - err) {
++			len = INT_MAX - err;
++			iov[ct].iov_len = len;
++		}
++		err += len;
  	}
  
--	if (args->nr_local > (u64)UINT_MAX) {
-+	if (args->nr_local > UIO_MAXIOV) {
- 		ret = -EMSGSIZE;
- 		goto out;
- 	}
+ 	return err;
 -- 
 1.7.4.4
 
