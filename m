@@ -1,252 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab1DNXDV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 19:03:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:27960 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab1DNXDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 19:03:14 -0400
-From: Simon Glass <sjg@chromium.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Dave Martin <dave.martin@linaro.org>, Simon Glass <sjg@google.com>,
-        Simon Glass <sjg@chromium.org>
-Subject: [PATCH v4] ARM: Use generic BUG() handler
-Date: Thu, 14 Apr 2011 16:00:31 -0700
-Message-Id: <1302822031-6752-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	id S1754565Ab1DNXGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 19:06:14 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:33663 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754160Ab1DNXGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 19:06:09 -0400
+Date: Fri, 15 Apr 2011 01:06:02 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, w.sang@pengutronix.de, arnd@arndb.de
+Subject: Re: [PATCH v2] uio/pdrv_genirq: Add OF support
+Message-ID: <20110414230602.GC2780@local>
+References: <1302774106-32764-1-git-send-email-monstr@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302774106-32764-1-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Glass <sjg@google.com>
+On Thu, Apr 14, 2011 at 11:41:46AM +0200, Michal Simek wrote:
+> Support OF support. "generic-uio" compatible property is used.
+> 
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> 
+> ---
+> v2: Remove additional resource binding
+>     Setup correct version string
+>     Clear compatible string
+> ---
+>  drivers/uio/uio_pdrv_genirq.c |   45 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 45 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index 7174d51..fd84a93 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -23,6 +23,10 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/slab.h>
+>  
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+> +
+>  #define DRIVER_NAME "uio_pdrv_genirq"
+>  
+>  struct uio_pdrv_genirq_platdata {
+> @@ -97,6 +101,28 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	int ret = -EINVAL;
+>  	int i;
+>  
+> +	if (!uioinfo) {
+> +		/* alloc uioinfo for one device */
+> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+> +		if (!uioinfo) {
+> +			ret = -ENOMEM;
+> +			dev_err(&pdev->dev, "unable to kmalloc\n");
+> +			goto bad2;
+> +		}
+> +		uioinfo->name = pdev->dev.of_node->name;
+> +		uioinfo->version = "dt";
 
-ARM uses its own BUG() handler which makes its output slightly different
-from other archtectures.
+Can that be something more descriptive?
 
-One of the problems is that the ARM implementation doesn't report the function
-with the BUG() in it, but always reports the PC being in __bug(). The generic
-implementation doesn't have this problem.
+> +
+> +		/* Multiple IRQs are not supported */
 
-Currently we get something like:
+But multiple mappings are, and also no mappings.
 
-kernel BUG at fs/proc/breakme.c:35!
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-...
-PC is at __bug+0x20/0x2c
+> +		if (pdev->num_resources > 1) {
+> +			struct resource *r = &pdev->resource[1];
+> +			uioinfo->irq = r->start;
 
-With this patch it displays:
+Why has the irq be resource[1] ?
 
-kernel BUG at fs/proc/breakme.c:35!
-Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
-...
-PC is at write_breakme+0xd0/0x1b4
+> +			dev_info(&pdev->dev, "irq %d\n", (u32)uioinfo->irq);
+> +		} else {
+> +			uioinfo->irq = UIO_IRQ_NONE;
+> +			dev_info(&pdev->dev, "no IRQ found\n");
+> +		}
+> +	}
+> +
+>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>  		dev_err(&pdev->dev, "missing platform_data\n");
+>  		goto bad0;
+> @@ -180,6 +206,10 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	kfree(priv);
+>  	pm_runtime_disable(&pdev->dev);
+>   bad0:
+> +	/* kfree uioinfo for CONFIG_OF */
+> +	if (!pdev->dev.platform_data)
+> +		kfree(uioinfo);
+> + bad2:
+>  	return ret;
+>  }
+>  
+> @@ -215,6 +245,20 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+>  	.runtime_resume = uio_pdrv_genirq_runtime_nop,
+>  };
+>  
+> +#ifdef CONFIG_OF
+> +/*
+> + * Empty match table for of_platform binding
+> + * Select your custom compatible string in format
+> + * { .compatible = "<compatible string>", },
+> + */
+> +static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> +	{ /* end of list */ },
 
-This implementation uses an undefined instruction to implement BUG, and sets up
-a bug table containing the relevant information. Many versions of gcc do not
-support %c properly for ARM (inserting a # when they shouldn't) so we work
-around this using distasteful macro magic.
+doesn't that want a NULL termination?
 
-v1: Initial version to replace existing ARM BUG() implementation with something
-more similar to other architectures.
-
-v2: Add Thumb support, remove backtrace whitespace output changes. Change to
-use macros instead of requiring the asm %d flag to work (thanks to
-Dave Martin <dave.martin@linaro.org>)
-
-v3: Remove old BUG() implementation in favor of this one.
-Remove the Backtrace: message (will submit this separately).
-Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
-thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
-define GENERIC_BUG this might be academic.)
-Rebase to linux-2.6.git master.
-
-v4: Allow BUGS in modules (these were not reported correctly in v3)
-(thanks to Stephen Boyd <sboyd@codeaurora.org> for suggesting that.)
-Remove __bug() as this is no longer needed.
-
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- arch/arm/Kconfig              |    4 +++
- arch/arm/include/asm/bug.h    |   55 ++++++++++++++++++++++++++++++++++------
- arch/arm/kernel/traps.c       |   31 +++++++++++++++-------
- arch/arm/kernel/vmlinux.lds.S |    3 +-
- 4 files changed, 73 insertions(+), 20 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5b9f78b..7d7df40 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -207,6 +207,10 @@ config ARM_PATCH_PHYS_VIRT_16BIT
- 	def_bool y
- 	depends on ARM_PATCH_PHYS_VIRT && ARCH_MSM
- 
-+config GENERIC_BUG
-+	def_bool y
-+	depends on BUG
-+
- source "init/Kconfig"
- 
- source "kernel/Kconfig.freezer"
-diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
-index 4d88425..2914724 100644
---- a/arch/arm/include/asm/bug.h
-+++ b/arch/arm/include/asm/bug.h
-@@ -3,21 +3,58 @@
- 
- 
- #ifdef CONFIG_BUG
--#ifdef CONFIG_DEBUG_BUGVERBOSE
--extern void __bug(const char *file, int line) __attribute__((noreturn));
--
--/* give file/line information */
--#define BUG()		__bug(__FILE__, __LINE__)
- 
-+/*
-+ * Use a suitable undefined instruction to use for ARM/Thumb2 bug handling.
-+ * We need to be careful not to conflict with those used by other modules and
-+ * the register_undef_hook() system.
-+ */
-+#ifdef CONFIG_THUMB2_KERNEL
-+#define BUG_INSTR_VALUE 0xde02
-+#define BUG_INSTR_TYPE ".hword "
- #else
-+#define BUG_INSTR_VALUE 0xe7f001f2
-+#define BUG_INSTR_TYPE ".word "
-+#endif
- 
--/* this just causes an oops */
--#define BUG()		do { *(int *)0 = 0; } while (1)
- 
--#endif
-+#define BUG() _BUG(__FILE__, __LINE__, BUG_INSTR_VALUE)
-+#define _BUG(file, line, value) __BUG(file, line, value)
-+
-+#ifdef CONFIG_DEBUG_BUGVERBOSE
-+
-+/*
-+ * The extra indirection is to ensure that the __FILE__ string comes through
-+ * OK. Many version of gcc do not support the asm %c parameter which would be
-+ * preferable to this unpleasantness. We use mergeable string sections to
-+ * avoid multiple copies of the string appearing in the kernel image.
-+ */
-+
-+#define __BUG(__file, __line, __value)				\
-+do {								\
-+	BUILD_BUG_ON(sizeof(struct bug_entry) != 12);		\
-+	asm volatile("1:\t" BUG_INSTR_TYPE #__value "\n"	\
-+		".pushsection .rodata.str, \"aMS\", 1\n"	\
-+		"2:\t.asciz " #__file "\n" 			\
-+		".popsection\n" 				\
-+		".pushsection __bug_table,\"a\"\n"		\
-+		"3:\t.word 1b, 2b\n"				\
-+		"\t.hword " #__line ", 0\n"			\
-+		".popsection");					\
-+	unreachable();						\
-+} while (0)
-+
-+#else  /* not CONFIG_DEBUG_BUGVERBOSE */
-+
-+#define __BUG(__file, __line, __value)				\
-+do {								\
-+	asm volatile(BUG_INSTR_TYPE #__value);			\
-+	unreachable();						\
-+} while (0)
-+#endif  /* CONFIG_DEBUG_BUGVERBOSE */
- 
- #define HAVE_ARCH_BUG
--#endif
-+#endif  /* CONFIG_BUG */
- 
- #include <asm-generic/bug.h>
- 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index f0000e1..400df50 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -21,6 +21,7 @@
- #include <linux/kdebug.h>
- #include <linux/module.h>
- #include <linux/kexec.h>
-+#include <linux/bug.h>
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/sched.h>
-@@ -271,6 +272,8 @@ void die(const char *str, struct pt_regs *regs, int err)
- 	spin_lock_irq(&die_lock);
- 	console_verbose();
- 	bust_spinlocks(1);
-+	if (!user_mode(regs))
-+		report_bug(regs->ARM_pc, regs);
- 	ret = __die(str, err, thread, regs);
- 
- 	if (regs && kexec_should_crash(thread->task))
-@@ -302,6 +305,24 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
- 	}
- }
- 
-+#ifdef CONFIG_GENERIC_BUG
-+
-+int is_valid_bugaddr(unsigned long pc)
-+{
-+#ifdef CONFIG_THUMB2_KERNEL
-+	unsigned short bkpt;
-+#else
-+	unsigned long bkpt;
-+#endif
-+
-+	if (probe_kernel_address((unsigned *)pc, bkpt))
-+		return 0;
-+
-+	return bkpt == BUG_INSTR_VALUE;
-+}
-+
-+#endif
-+
- static LIST_HEAD(undef_hook);
- static DEFINE_SPINLOCK(undef_lock);
- 
-@@ -693,16 +714,6 @@ baddataabort(int code, unsigned long instr, struct pt_regs *regs)
- 	arm_notify_die("unknown data abort code", regs, &info, instr, 0);
- }
- 
--void __attribute__((noreturn)) __bug(const char *file, int line)
--{
--	printk(KERN_CRIT"kernel BUG at %s:%d!\n", file, line);
--	*(int *)0 = 0;
--
--	/* Avoid "noreturn function does return" */
--	for (;;);
--}
--EXPORT_SYMBOL(__bug);
--
- void __readwrite_bug(const char *fn)
- {
- 	printk("%s called, but not implemented\n", fn);
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index b4348e6..81d4efe 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -21,7 +21,8 @@
- #define ARM_CPU_KEEP(x)
- #endif
- 
--#if defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)
-+#if (defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)) || \
-+	defined(CONFIG_GENERIC_BUG)
- #define ARM_EXIT_KEEP(x)	x
- #else
- #define ARM_EXIT_KEEP(x)
--- 
-1.7.3.1
-
+> +};
+> +MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+> +#else
+> +# define uio_of_genirq_match NULL
+> +#endif
+> +
+>  static struct platform_driver uio_pdrv_genirq = {
+>  	.probe = uio_pdrv_genirq_probe,
+>  	.remove = uio_pdrv_genirq_remove,
+> @@ -222,6 +266,7 @@ static struct platform_driver uio_pdrv_genirq = {
+>  		.name = DRIVER_NAME,
+>  		.owner = THIS_MODULE,
+>  		.pm = &uio_pdrv_genirq_dev_pm_ops,
+> +		.of_match_table = uio_of_genirq_match,
+>  	},
+>  };
+>  
+> -- 
+> 1.5.5.6
+> 
+> 
