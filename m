@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965129Ab1DNR75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:59:57 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42514 "EHLO
+	id S964976Ab1DNR6k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:58:40 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42118 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964921Ab1DNR7n (ORCPT
+	with ESMTP id S933710Ab1DNR6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:59:43 -0400
+	Thu, 14 Apr 2011 13:58:33 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Julien Tinnes <jln@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
+        Roland Dreier <rolandd@cisco.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 207/209] Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from spoofing the signal code
-Date: Thu, 14 Apr 2011 13:56:05 -0400
-Message-Id: <1302803767-9715-94-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 169/209] IB/uverbs: Handle large number of entries in poll CQ
+Date: Thu, 14 Apr 2011 13:55:27 -0400
+Message-Id: <1302803767-9715-56-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,75 +23,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julien Tinnes <jln@google.com>
+From: Dan Carpenter <error27@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit da48524eb20662618854bb3df2db01fc65f3070c upstream.
+commit 7182afea8d1afd432a17c18162cc3fd441d0da93 upstream.
 
-Userland should be able to trust the pid and uid of the sender of a
-signal if the si_code is SI_TKILL.
+In ib_uverbs_poll_cq() code there is a potential integer overflow if
+userspace passes in a large cmd.ne.  The calls to kmalloc() would
+allocate smaller buffers than intended, leading to memory corruption.
+There iss also an information leak if resp wasn't all used.
+Unprivileged userspace may call this function, although only if an
+RDMA device that uses this function is present.
 
-Unfortunately, the kernel has historically allowed sigqueueinfo() to
-send any si_code at all (as long as it was negative - to distinguish it
-from kernel-generated signals like SIGILL etc), so it could spoof a
-SI_TKILL with incorrect siginfo values.
+Fix this by copying CQ entries one at a time, which avoids the
+allocation entirely, and also by moving this copying into a function
+that makes sure to initialize all memory copied to userspace.
 
-Happily, it looks like glibc has always set si_code to the appropriate
-SI_QUEUE, so there are probably no actual user code that ever uses
-anything but the appropriate SI_QUEUE flag.
+Special thanks to Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+for his help and advice.
 
-So just tighten the check for si_code (we used to allow any negative
-value), and add a (one-time) warning in case there are binaries out
-there that might depend on using other si_code values.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Signed-off-by: Julien Tinnes <jln@google.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ Monkey around with things a bit to avoid bad code generation by gcc
+  when designated initializers are used.  - Roland ]
+
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/signal.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/infiniband/core/uverbs_cmd.c |  101 +++++++++++++++++++---------------
+ 1 files changed, 57 insertions(+), 44 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index edabc2f..704c030 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2409,9 +2409,13 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t, pid, int, sig,
+diff --git a/drivers/infiniband/core/uverbs_cmd.c b/drivers/infiniband/core/uverbs_cmd.c
+index 6fcfbeb..abb8714 100644
+--- a/drivers/infiniband/core/uverbs_cmd.c
++++ b/drivers/infiniband/core/uverbs_cmd.c
+@@ -891,68 +891,81 @@ out:
+ 	return ret ? ret : in_len;
+ }
+ 
++static int copy_wc_to_user(void __user *dest, struct ib_wc *wc)
++{
++	struct ib_uverbs_wc tmp;
++
++	tmp.wr_id		= wc->wr_id;
++	tmp.status		= wc->status;
++	tmp.opcode		= wc->opcode;
++	tmp.vendor_err		= wc->vendor_err;
++	tmp.byte_len		= wc->byte_len;
++	tmp.ex.imm_data		= (__u32 __force) wc->ex.imm_data;
++	tmp.qp_num		= wc->qp->qp_num;
++	tmp.src_qp		= wc->src_qp;
++	tmp.wc_flags		= wc->wc_flags;
++	tmp.pkey_index		= wc->pkey_index;
++	tmp.slid		= wc->slid;
++	tmp.sl			= wc->sl;
++	tmp.dlid_path_bits	= wc->dlid_path_bits;
++	tmp.port_num		= wc->port_num;
++	tmp.reserved		= 0;
++
++	if (copy_to_user(dest, &tmp, sizeof tmp))
++		return -EFAULT;
++
++	return 0;
++}
++
+ ssize_t ib_uverbs_poll_cq(struct ib_uverbs_file *file,
+ 			  const char __user *buf, int in_len,
+ 			  int out_len)
+ {
+ 	struct ib_uverbs_poll_cq       cmd;
+-	struct ib_uverbs_poll_cq_resp *resp;
++	struct ib_uverbs_poll_cq_resp  resp;
++	u8 __user                     *header_ptr;
++	u8 __user                     *data_ptr;
+ 	struct ib_cq                  *cq;
+-	struct ib_wc                  *wc;
+-	int                            ret = 0;
+-	int                            i;
+-	int                            rsize;
++	struct ib_wc                   wc;
++	int                            ret;
+ 
+ 	if (copy_from_user(&cmd, buf, sizeof cmd))
  		return -EFAULT;
  
- 	/* Not even root can pretend to send signals from the kernel.
--	   Nor can they impersonate a kill(), which adds source info.  */
--	if (info.si_code >= 0)
-+	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
-+	 */
-+	if (info.si_code != SI_QUEUE) {
-+		/* We used to allow any < 0 si_code */
-+		WARN_ON_ONCE(info.si_code < 0);
- 		return -EPERM;
+-	wc = kmalloc(cmd.ne * sizeof *wc, GFP_KERNEL);
+-	if (!wc)
+-		return -ENOMEM;
+-
+-	rsize = sizeof *resp + cmd.ne * sizeof(struct ib_uverbs_wc);
+-	resp = kmalloc(rsize, GFP_KERNEL);
+-	if (!resp) {
+-		ret = -ENOMEM;
+-		goto out_wc;
+-	}
+-
+ 	cq = idr_read_cq(cmd.cq_handle, file->ucontext, 0);
+-	if (!cq) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
++	if (!cq)
++		return -EINVAL;
+ 
+-	resp->count = ib_poll_cq(cq, cmd.ne, wc);
++	/* we copy a struct ib_uverbs_poll_cq_resp to user space */
++	header_ptr = (void __user *)(unsigned long) cmd.response;
++	data_ptr = header_ptr + sizeof resp;
+ 
+-	put_cq_read(cq);
++	memset(&resp, 0, sizeof resp);
++	while (resp.count < cmd.ne) {
++		ret = ib_poll_cq(cq, 1, &wc);
++		if (ret < 0)
++			goto out_put;
++		if (!ret)
++			break;
++
++		ret = copy_wc_to_user(data_ptr, &wc);
++		if (ret)
++			goto out_put;
+ 
+-	for (i = 0; i < resp->count; i++) {
+-		resp->wc[i].wr_id 	   = wc[i].wr_id;
+-		resp->wc[i].status 	   = wc[i].status;
+-		resp->wc[i].opcode 	   = wc[i].opcode;
+-		resp->wc[i].vendor_err 	   = wc[i].vendor_err;
+-		resp->wc[i].byte_len 	   = wc[i].byte_len;
+-		resp->wc[i].ex.imm_data    = (__u32 __force) wc[i].ex.imm_data;
+-		resp->wc[i].qp_num 	   = wc[i].qp->qp_num;
+-		resp->wc[i].src_qp 	   = wc[i].src_qp;
+-		resp->wc[i].wc_flags 	   = wc[i].wc_flags;
+-		resp->wc[i].pkey_index 	   = wc[i].pkey_index;
+-		resp->wc[i].slid 	   = wc[i].slid;
+-		resp->wc[i].sl 		   = wc[i].sl;
+-		resp->wc[i].dlid_path_bits = wc[i].dlid_path_bits;
+-		resp->wc[i].port_num 	   = wc[i].port_num;
++		data_ptr += sizeof(struct ib_uverbs_wc);
++		++resp.count;
+ 	}
+ 
+-	if (copy_to_user((void __user *) (unsigned long) cmd.response, resp, rsize))
++	if (copy_to_user(header_ptr, &resp, sizeof resp)) {
+ 		ret = -EFAULT;
++		goto out_put;
 +	}
- 	info.si_signo = sig;
  
- 	/* POSIX.1b doesn't mention process groups.  */
-@@ -2425,9 +2429,13 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig, siginfo_t *info)
- 		return -EINVAL;
+-out:
+-	kfree(resp);
++	ret = in_len;
  
- 	/* Not even root can pretend to send signals from the kernel.
--	   Nor can they impersonate a kill(), which adds source info.  */
--	if (info->si_code >= 0)
-+	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
-+	 */
-+	if (info->si_code != SI_QUEUE) {
-+		/* We used to allow any < 0 si_code */
-+		WARN_ON_ONCE(info->si_code < 0);
- 		return -EPERM;
-+	}
- 	info->si_signo = sig;
+-out_wc:
+-	kfree(wc);
+-	return ret ? ret : in_len;
++out_put:
++	put_cq_read(cq);
++	return ret;
+ }
  
- 	return do_send_specific(tgid, pid, sig, info);
+ ssize_t ib_uverbs_req_notify_cq(struct ib_uverbs_file *file,
 -- 
 1.7.4.4
 
