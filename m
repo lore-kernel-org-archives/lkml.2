@@ -1,264 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759086Ab1DNPCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 11:02:32 -0400
-Received: from elasmtp-masked.atl.sa.earthlink.net ([209.86.89.68]:58801 "EHLO
-	elasmtp-masked.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754203Ab1DNPCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 11:02:30 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=YgAdPJ2ns9AQHdFpjo9wtuSlGVmsPi0ZCl0fBixaoZE9Ud2lSTYXHqOZVbCLb6Q1;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4DA70C84.9050403@earthlink.net>
-Date: Thu, 14 Apr 2011 11:02:28 -0400
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1759089Ab1DNPES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 11:04:18 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55753 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758743Ab1DNPER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 11:04:17 -0400
+Date: Thu, 14 Apr 2011 17:03:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Shaun Ruffell <sruffell@digium.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <robert.richter@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
+Message-ID: <20110414150351.GA5295@elte.hu>
+References: <4DA70950.3060102@openvz.org>
 MIME-Version: 1.0
-To: Daniel Walter <sahne@0x90.at>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH 1/1] ipv6: RTA_PREFSRC support for ipv6 route source address
- selection
-References: <20110414071057.GB78446@0x90.at> <4DA6FE25.70608@earthlink.net> <20110414144954.GA79918@0x90.at>
-In-Reply-To: <20110414144954.GA79918@0x90.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79401e0c3727488ef6764d3405053a2a65350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DA70950.3060102@openvz.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 10:49 AM, Daniel Walter wrote:
-> On Thu, Apr 14, 2011 at 10:01:09AM -0400, Stephen Clark wrote:
->    
->> On 04/14/2011 03:10 AM, Daniel Walter wrote:
->>      
->>> [ipv6] Add support for RTA_PREFSRC
->>>
->>> This patch allows a user to select the preferred source address
->>> for a specific IPv6-Route. It can be set via a netlink message
->>> setting RTA_PREFSRC to a valid IPv6 address which must be
->>> up on the device the route will be bound to.
->>>
->>>
->>> Signed-off-by: Daniel Walter<dwalter@barracuda.com>
->>> ---
->>> Repost patch, after fixing some warnings pointed out on netdev@
->>> applies clean against current linux-2.6 HEAD
->>>
->>>    include/net/ip6_fib.h   |    2 +
->>>    include/net/ip6_route.h |    7 ++++
->>>    net/ipv6/addrconf.c     |    2 +
->>>    net/ipv6/ip6_output.c   |    8 ++--
->>>    net/ipv6/route.c        |   72 +++++++++++++++++++++++++++++++++++++++++++++--
->>>    5 files changed, 84 insertions(+), 7 deletions(-)
->>>
->>> ---
->>> diff --git a/include/net/ip6_fib.h b/include/net/ip6_fib.h
->>> index bc3cde0..98348d5 100644
->>> --- a/include/net/ip6_fib.h
->>> +++ b/include/net/ip6_fib.h
->>> @@ -42,6 +42,7 @@ struct fib6_config {
->>>
->>>    	struct in6_addr	fc_dst;
->>>    	struct in6_addr	fc_src;
->>> +	struct in6_addr	fc_prefsrc;
->>>    	struct in6_addr	fc_gateway;
->>>
->>>    	unsigned long	fc_expires;
->>> @@ -107,6 +108,7 @@ struct rt6_info {
->>>    	struct rt6key			rt6i_dst ____cacheline_aligned_in_smp;
->>>    	u32				rt6i_flags;
->>>    	struct rt6key			rt6i_src;
->>> +	struct rt6key			rt6i_prefsrc;
->>>    	u32				rt6i_metric;
->>>    	u32				rt6i_peer_genid;
->>>
->>> diff --git a/include/net/ip6_route.h b/include/net/ip6_route.h
->>> index c850e5f..86b1cb4 100644
->>> --- a/include/net/ip6_route.h
->>> +++ b/include/net/ip6_route.h
->>> @@ -84,6 +84,12 @@ extern int			ip6_route_add(struct fib6_config *cfg);
->>>    extern int			ip6_ins_rt(struct rt6_info *);
->>>    extern int			ip6_del_rt(struct rt6_info *);
->>>
->>> +extern int			ip6_route_get_saddr(struct net *net,
->>> +						    struct rt6_info *rt,
->>> +						    struct in6_addr *daddr,
->>> +						    unsigned int prefs,
->>> +						    struct in6_addr *saddr);
->>> +
->>>    extern struct rt6_info		*rt6_lookup(struct net *net,
->>>    					    const struct in6_addr *daddr,
->>>    					    const struct in6_addr *saddr,
->>> @@ -141,6 +147,7 @@ struct rt6_rtnl_dump_arg {
->>>    extern int rt6_dump_route(struct rt6_info *rt, void *p_arg);
->>>    extern void rt6_ifdown(struct net *net, struct net_device *dev);
->>>    extern void rt6_mtu_change(struct net_device *dev, unsigned mtu);
->>> +extern void rt6_remove_prefsrc(struct inet6_ifaddr *ifp);
->>>
->>>
->>>    /*
->>> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
->>> index 1493534..129d7e1 100644
->>> --- a/net/ipv6/addrconf.c
->>> +++ b/net/ipv6/addrconf.c
->>> @@ -825,6 +825,8 @@ static void ipv6_del_addr(struct inet6_ifaddr *ifp)
->>>    		dst_release(&rt->dst);
->>>    	}
->>>
->>> +	/* clean up prefsrc entries */
->>> +	rt6_remove_prefsrc(ifp);
->>>    out:
->>>    	in6_ifa_put(ifp);
->>>    }
->>> diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
->>> index 46cf7be..1f4c096 100644
->>> --- a/net/ipv6/ip6_output.c
->>> +++ b/net/ipv6/ip6_output.c
->>> @@ -930,10 +930,10 @@ static int ip6_dst_lookup_tail(struct sock *sk,
->>>    		goto out_err_release;
->>>
->>>    	if (ipv6_addr_any(&fl6->saddr)) {
->>> -		err = ipv6_dev_get_saddr(net, ip6_dst_idev(*dst)->dev,
->>> -					&fl6->daddr,
->>> -					 sk ? inet6_sk(sk)->srcprefs : 0,
->>> -					&fl6->saddr);
->>> +		struct rt6_info *rt = (struct rt6_info *) *dst;
->>> +		err = ip6_route_get_saddr(net, rt,&fl6->daddr,
->>> +					  sk ? inet6_sk(sk)->srcprefs : 0,
->>> +					&fl6->saddr);
->>>    		if (err)
->>>    			goto out_err_release;
->>>    	}
->>> diff --git a/net/ipv6/route.c b/net/ipv6/route.c
->>> index 843406f..af26cc10 100644
->>> --- a/net/ipv6/route.c
->>> +++ b/net/ipv6/route.c
->>> @@ -1325,6 +1325,16 @@ int ip6_route_add(struct fib6_config *cfg)
->>>    	if (dev == NULL)
->>>    		goto out;
->>>
->>> +	if (!ipv6_addr_any(&cfg->fc_prefsrc)) {
->>> +		if (!ipv6_chk_addr(net,&cfg->fc_prefsrc, dev, 0)) {
->>> +			err = -EINVAL;
->>> +			goto out;
->>> +		}
->>> +		ipv6_addr_copy(&rt->rt6i_prefsrc.addr,&cfg->fc_prefsrc);
->>> +		rt->rt6i_prefsrc.plen = 128;
->>> +	} else
->>> +		rt->rt6i_prefsrc.plen = 0;
->>> +
->>>    	if (cfg->fc_flags&   (RTF_GATEWAY | RTF_NONEXTHOP)) {
->>>    		rt->rt6i_nexthop = __neigh_lookup_errno(&nd_tbl,&rt->rt6i_gateway, dev);
->>>    		if (IS_ERR(rt->rt6i_nexthop)) {
->>> @@ -2037,6 +2047,55 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
->>>    	return rt;
->>>    }
->>>
->>> +int ip6_route_get_saddr(struct net *net,
->>> +			struct rt6_info *rt,
->>> +			struct in6_addr *daddr,
->>> +			unsigned int prefs,
->>> +			struct in6_addr *saddr)
->>> +{
->>> +	struct inet6_dev *idev = ip6_dst_idev((struct dst_entry*)rt);
->>> +	int err = 0;
->>> +	if (rt->rt6i_prefsrc.plen)
->>> +		ipv6_addr_copy(saddr,&rt->rt6i_prefsrc.addr);
->>> +	else
->>> +		err = ipv6_dev_get_saddr(net, idev ? idev->dev : NULL,
->>> +					 daddr, prefs, saddr);
->>> +	return err;
->>> +}
->>> +
->>> +/* remove deleted ip from prefsrc entries */
->>> +struct arg_dev_net_ip {
->>> +	struct net_device *dev;
->>> +	struct net *net;
->>> +	struct in6_addr *addr;
->>> +};
->>> +
->>> +static int fib6_remove_prefsrc(struct rt6_info *rt, void *arg)
->>> +{
->>> +	struct net_device *dev = ((struct arg_dev_net_ip *)arg)->dev;
->>> +	struct net *net = ((struct arg_dev_net_ip *)arg)->net;
->>> +	struct in6_addr *addr = ((struct arg_dev_net_ip *)arg)->addr;
->>> +
->>> +	if (((void *)rt->rt6i_dev == dev || dev == NULL)&&
->>> +	    rt != net->ipv6.ip6_null_entry&&
->>> +	    ipv6_addr_equal(addr,&rt->rt6i_prefsrc.addr)) {
->>> +		/* remove prefsrc entry */
->>> +		rt->rt6i_prefsrc.plen = 0;
->>> +	}
->>> +	return 0;
->>> +}
->>> +
->>> +void rt6_remove_prefsrc(struct inet6_ifaddr *ifp)
->>> +{
->>> +	struct net *net = dev_net(ifp->idev->dev);
->>> +	struct arg_dev_net_ip adni = {
->>> +		.dev = ifp->idev->dev,
->>> +		.net = net,
->>> +		.addr =&ifp->addr,
->>> +	};
->>> +	fib6_clean_all(net, fib6_remove_prefsrc, 0,&adni);
->>> +}
->>> +
->>>    struct arg_dev_net {
->>>    	struct net_device *dev;
->>>    	struct net *net;
->>> @@ -2183,6 +2242,9 @@ static int rtm_to_fib6_config(struct sk_buff *skb, struct nlmsghdr *nlh,
->>>    		nla_memcpy(&cfg->fc_src, tb[RTA_SRC], plen);
->>>    	}
->>>
->>> +	if (tb[RTA_PREFSRC])
->>> +		nla_memcpy(&cfg->fc_prefsrc, tb[RTA_PREFSRC], 16);
->>> +
->>>    	if (tb[RTA_OIF])
->>>    		cfg->fc_ifindex = nla_get_u32(tb[RTA_OIF]);
->>>
->>> @@ -2325,13 +2387,17 @@ static int rt6_fill_node(struct net *net,
->>>    #endif
->>>    			NLA_PUT_U32(skb, RTA_IIF, iif);
->>>    	} else if (dst) {
->>> -		struct inet6_dev *idev = ip6_dst_idev(&rt->dst);
->>>    		struct in6_addr saddr_buf;
->>> -		if (ipv6_dev_get_saddr(net, idev ? idev->dev : NULL,
->>> -				       dst, 0,&saddr_buf) == 0)
->>> +		if (ip6_route_get_saddr(net, rt, dst, 0,&saddr_buf) == 0)
->>>    			NLA_PUT(skb, RTA_PREFSRC, 16,&saddr_buf);
->>>    	}
->>>
->>> +	if (rt->rt6i_prefsrc.plen) {
->>> +		struct in6_addr saddr_buf;
->>> +		ipv6_addr_copy(&saddr_buf,&rt->rt6i_prefsrc.addr);
->>> +		NLA_PUT(skb, RTA_PREFSRC, 16,&saddr_buf);
->>> +	}
->>> +
->>>    	if (rtnetlink_put_metrics(skb, dst_metrics_ptr(&rt->dst))<   0)
->>>    		goto nla_put_failure;
->>>        
->> What userspace application will be used to set this?
->>      
-> iproute2 already has support for this, since it is using
-> RTA_PREFSRC for ipv4.
->
-> ip -6 r a 2001:db8:a::/64 via 2001:db8:b::1 src 2001:db8:b::2
->
->    
-Fantastic!
 
--- 
+Cyrill,
 
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
+* Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
+> From: Don Zickus <dzickus@redhat.com>
+> Subject: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
+...
+> Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
+When forwarding patches please always use Signed-off-by, not Acked-by - 
+especially when you also edit the patch slightly.
 
+Is it fine to you if i add your SOB to this patch?
 
+Thanks,
+
+	Ingo
