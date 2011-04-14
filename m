@@ -1,28 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1DNJJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:09:17 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41167 "EHLO mx3.mail.elte.hu"
+	id S932556Ab1DNJL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:11:59 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57334 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1DNJJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:09:16 -0400
-Date: Thu, 14 Apr 2011 11:08:54 +0200
+	id S932493Ab1DNJL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 05:11:58 -0400
+Date: Thu, 14 Apr 2011 11:11:37 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Len Brown <lenb@kernel.org>
-Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Alex Deucher <alexdeucher@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
-Message-ID: <20110414090854.GB9248@elte.hu>
-References: <alpine.LFD.2.02.1103301819250.31342@x980>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+Message-ID: <20110414091137.GC9248@elte.hu>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+ <20110412090207.GE19819@8bytes.org>
+ <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
+ <20110412184433.GF19819@8bytes.org>
+ <20110413064609.GA18777@elte.hu>
+ <20110413172147.GI19819@8bytes.org>
+ <4DA5F62F.3030504@kernel.org>
+ <4DA654D6.2060103@zytor.com>
+ <20110414085624.GC18463@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1103301819250.31342@x980>
+In-Reply-To: <20110414085624.GC18463@8bytes.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -36,82 +43,45 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Len Brown <lenb@kernel.org> wrote:
+* Joerg Roedel <joro@8bytes.org> wrote:
 
-> From: Len Brown <len.brown@intel.com>
+> On Wed, Apr 13, 2011 at 06:58:46PM -0700, H. Peter Anvin wrote:
+> > On 04/13/2011 12:14 PM, Yinghai Lu wrote:
+> > > 
+> > > so looks bios program wrong address to the radon card?
+> > > 
+> > 
+> > Okay, staring at this, it definitely seems toxic to overlay the GART
+> > over memory areas reserved by the BIOS.  If I were to guess, I would say
+> > that the problem here seems to be that the kernel thinks it is
+> > overlaying 64 MiB of memory, but the actual GART is in fact 512 MiB in
+> > size -- 131072 CPU pages -- which now overlaps the BIOS reserved areas.
+> > 
+> > Alex D., could you comment on the "num cpu pages" bit?
 > 
-> Since 2.6.35 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
-> Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility is available
-> in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
+> Okay, I tried the debug-patch from Yinghai (posted to the bugzilla):
 > 
-> However, the typical BIOS fails to initialize the MSR,
-> and the typical Linux distro neglects to invoke x86_energy_perf_policy(8).
+> --- a/drivers/gpu/drm/radeon/radeon_device.c
+> +++ b/drivers/gpu/drm/radeon/radeon_device.c
+> @@ -325,6 +325,8 @@ void radeon_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
+>                         mc->gtt_size = size_bf;
+>                 }
+>                 mc->gtt_start = (mc->vram_start & ~mc->gtt_base_align) - mc->gtt_size;
+> +               if (mc->gtt_start == 0xa0000000)
+> +                       mc->gtt_start = 0x80000000;
+>         } else {
+>                 if (mc->gtt_size > size_af) {
+>                         dev_warn(rdev->dev, "limiting GTT\n");
 > 
-> The result is that some modern hardware is running in hardware default,
-> which is "performance" mode, rather than the intended design default
-> of "normal" mode.
+> And this makes a difference, with this change on-top of -rc3 the box boots
+> fine. So there seems to be some dependency between the GART base and the GTT
+> base even when they are in different address spaces.
 > 
-> Initialize the MSR to the "normal" setting during kernel boot.
-> 
-> Of course, x86_energy_perf_policy(8) is available to change
-> the default after boot, should the user have a policy preference.
-> 
-> cc: stable@kernel.org
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> ---
->  arch/x86/include/asm/msr-index.h |    3 +++
->  arch/x86/kernel/cpu/intel.c      |   14 ++++++++++++++
->  2 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-> index 43a18c7..91fedd9 100644
-> --- a/arch/x86/include/asm/msr-index.h
-> +++ b/arch/x86/include/asm/msr-index.h
-> @@ -250,6 +250,9 @@
->  #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
->  
->  #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
-> +#define ENERGY_PERF_BIAS_PERFORMANCE	0
-> +#define ENERGY_PERF_BIAS_NORMAL		6
-> +#define ENERGY_PERF_BIAS_POWERSWAVE	15
->  
->  #define MSR_IA32_PACKAGE_THERM_STATUS		0x000001b1
->  
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index d16c2c5..48cca4a 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -448,6 +448,20 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
->  
->  	if (cpu_has(c, X86_FEATURE_VMX))
->  		detect_vmx_virtcap(c);
-> +
-> +	/*
-> +	 * Initialize MSR_IA32_ENERGY_PERF_BIAS if BIOS did not.
-> +	 * x86_energy_perf_policy(8) is available to change it at run-time
-> +	 */
-> +	if (cpu_has(c, X86_FEATURE_EPB)) {
-> +		u64 epb;
-> +
-> +		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-> +		if ((epb & 0xF) == 0) {
-> +			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
-> +			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-> +		}
-> +	}
+> Alex, can you comment on this?
 
-Dunno, this patch appears to silently modify the system to be slower than it 
-was before under Linux.
-
-Won't people report this as a regression if this change reduces performance for 
-them?
-
-They wont be able to see your comments in the code and in the changelog either, 
-when this happens to them. They might look into /proc/cpuinfo and see 'epb' 
-there but it wont tell them anything. They wont know about a utility available 
-in tools/power/x86/ either.
-
-So this patch has 'future trouble' written all over it i'm afraid.
+I'd strongly suggest we revert back to the old and proven allocation order, as 
+long as it results in valid layouts. Even if we figure out this particular 
+GART/GTT assumption there might be a dozen others in other types of hardware.
 
 Thanks,
 
