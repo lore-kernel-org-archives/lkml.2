@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab1DNR4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:56:08 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38342 "EHLO
+	id S933570Ab1DNR4F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:56:05 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38346 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933259Ab1DNRqr (ORCPT
+	with ESMTP id S933262Ab1DNRqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:47 -0400
+	Thu, 14 Apr 2011 13:46:48 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Francisco Jerez <currojerez@riseup.net>,
-        Dave Airlie <airlied@redhat.com>,
+Cc: stable-review@kernel.org, Vasiliy Kulikov <segooon@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 067/209] drm/ttm: Clear the ghost cpu_writers flag on ttm_buffer_object_transfer.
-Date: Thu, 14 Apr 2011 13:41:37 -0400
-Message-Id: <1302803039-9400-68-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 077/209] usb: core: fix information leak to userland
+Date: Thu, 14 Apr 2011 13:41:47 -0400
+Message-Id: <1302803039-9400-78-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,47 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Francisco Jerez <currojerez@riseup.net>
+From: Vasiliy Kulikov <segooon@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 0fbecd400dd0a82d465b3086f209681e8c54cb0f upstream.
+commit 886ccd4520064408ce5876cfe00554ce52ecf4a7 upstream.
 
-It makes sense for a BO to move after a process has requested
-exclusive RW access on it (e.g. because the BO used to be located in
-unmappable VRAM and we intercepted the CPU access from the fault
-handler).
+Structure usbdevfs_connectinfo is copied to userland with padding byted
+after "slow" field uninitialized.  It leads to leaking of contents of
+kernel stack memory.
 
-If we let the ghost object inherit cpu_writers from the original
-object, ttm_bo_release_list() will raise a kernel BUG when the ghost
-object is destroyed. This can be reproduced with the nouveau driver on
-nv5x.
-
-Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
-Tested-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Francisco Jerez <currojerez@riseup.net>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/ttm/ttm_bo_util.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/usb/core/devio.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
-index d764e82..fe04f8c 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -327,6 +327,7 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
- 	INIT_LIST_HEAD(&fbo->lru);
- 	INIT_LIST_HEAD(&fbo->swap);
- 	fbo->vm_node = NULL;
-+	atomic_set(&fbo->cpu_writers, 0);
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 3466fdc..6088192 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -966,10 +966,11 @@ static int proc_getdriver(struct dev_state *ps, void __user *arg)
  
- 	fbo->sync_obj = driver->sync_obj_ref(bo->sync_obj);
- 	if (fbo->mem.mm_node)
+ static int proc_connectinfo(struct dev_state *ps, void __user *arg)
+ {
+-	struct usbdevfs_connectinfo ci;
++	struct usbdevfs_connectinfo ci = {
++		.devnum = ps->dev->devnum,
++		.slow = ps->dev->speed == USB_SPEED_LOW
++	};
+ 
+-	ci.devnum = ps->dev->devnum;
+-	ci.slow = ps->dev->speed == USB_SPEED_LOW;
+ 	if (copy_to_user(arg, &ci, sizeof(ci)))
+ 		return -EFAULT;
+ 	return 0;
 -- 
 1.7.4.4
 
