@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965103Ab1DNR7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:59:30 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42403 "EHLO
+	id S965129Ab1DNR75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:59:57 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42514 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965036Ab1DNR7R (ORCPT
+	with ESMTP id S964921Ab1DNR7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:59:17 -0400
+	Thu, 14 Apr 2011 13:59:43 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Julien Tinnes <jln@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 209/209] niu: Fix kernel buffer overflow for ETHTOOL_GRXCLSRLALL
-Date: Thu, 14 Apr 2011 13:56:07 -0400
-Message-Id: <1302803767-9715-96-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 207/209] Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from spoofing the signal code
+Date: Thu, 14 Apr 2011 13:56:05 -0400
+Message-Id: <1302803767-9715-94-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,76 +23,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Julien Tinnes <jln@google.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit ee9c5cfad29c8a13199962614b9b16f1c4137ac9 upstream.
+commit da48524eb20662618854bb3df2db01fc65f3070c upstream.
 
-niu_get_ethtool_tcam_all() assumes that its output buffer is the right
-size, and warns before returning if it is not.  However, the output
-buffer size is under user control and ETHTOOL_GRXCLSRLALL is an
-unprivileged ethtool command.  Therefore this is at least a local
-denial-of-service vulnerability.
+Userland should be able to trust the pid and uid of the sender of a
+signal if the si_code is SI_TKILL.
 
-Change it to check before writing each entry and to return an error if
-the buffer is already full.
+Unfortunately, the kernel has historically allowed sigqueueinfo() to
+send any si_code at all (as long as it was negative - to distinguish it
+from kernel-generated signals like SIGILL etc), so it could spoof a
+SI_TKILL with incorrect siginfo values.
 
-Compile-tested only.
+Happily, it looks like glibc has always set si_code to the appropriate
+SI_QUEUE, so there are probably no actual user code that ever uses
+anything but the appropriate SI_QUEUE flag.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+So just tighten the check for si_code (we used to allow any negative
+value), and add a (one-time) warning in case there are binaries out
+there that might depend on using other si_code values.
+
+Signed-off-by: Julien Tinnes <jln@google.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/niu.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
+ kernel/signal.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/niu.c b/drivers/net/niu.c
-index d5cd16b..408d10f 100644
---- a/drivers/net/niu.c
-+++ b/drivers/net/niu.c
-@@ -7263,32 +7263,28 @@ static int niu_get_ethtool_tcam_all(struct niu *np,
- 	struct niu_parent *parent = np->parent;
- 	struct niu_tcam_entry *tp;
- 	int i, idx, cnt;
--	u16 n_entries;
- 	unsigned long flags;
--
-+	int ret = 0;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index edabc2f..704c030 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2409,9 +2409,13 @@ SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t, pid, int, sig,
+ 		return -EFAULT;
  
- 	/* put the tcam size here */
- 	nfc->data = tcam_get_size(np);
+ 	/* Not even root can pretend to send signals from the kernel.
+-	   Nor can they impersonate a kill(), which adds source info.  */
+-	if (info.si_code >= 0)
++	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
++	 */
++	if (info.si_code != SI_QUEUE) {
++		/* We used to allow any < 0 si_code */
++		WARN_ON_ONCE(info.si_code < 0);
+ 		return -EPERM;
++	}
+ 	info.si_signo = sig;
  
- 	niu_lock_parent(np, flags);
--	n_entries = nfc->rule_cnt;
- 	for (cnt = 0, i = 0; i < nfc->data; i++) {
- 		idx = tcam_get_index(np, i);
- 		tp = &parent->tcam[idx];
- 		if (!tp->valid)
- 			continue;
-+		if (cnt == nfc->rule_cnt) {
-+			ret = -EMSGSIZE;
-+			break;
-+		}
- 		rule_locs[cnt] = i;
- 		cnt++;
- 	}
- 	niu_unlock_parent(np, flags);
+ 	/* POSIX.1b doesn't mention process groups.  */
+@@ -2425,9 +2429,13 @@ long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig, siginfo_t *info)
+ 		return -EINVAL;
  
--	if (n_entries != cnt) {
--		/* print warning, this should not happen */
--		netdev_info(np->dev, "niu%d: In %s(): n_entries[%d] != cnt[%d]!!!\n",
--			    np->parent->index, __func__, n_entries, cnt);
--	}
--
--	return 0;
-+	return ret;
- }
+ 	/* Not even root can pretend to send signals from the kernel.
+-	   Nor can they impersonate a kill(), which adds source info.  */
+-	if (info->si_code >= 0)
++	 * Nor can they impersonate a kill()/tgkill(), which adds source info.
++	 */
++	if (info->si_code != SI_QUEUE) {
++		/* We used to allow any < 0 si_code */
++		WARN_ON_ONCE(info->si_code < 0);
+ 		return -EPERM;
++	}
+ 	info->si_signo = sig;
  
- static int niu_get_nfc(struct net_device *dev, struct ethtool_rxnfc *cmd,
+ 	return do_send_specific(tgid, pid, sig, info);
 -- 
 1.7.4.4
 
