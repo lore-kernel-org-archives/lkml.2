@@ -1,330 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab1DNFBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 01:01:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33926 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266Ab1DNFBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 01:01:44 -0400
-Date: Thu, 14 Apr 2011 15:01:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for April 14
-Message-Id: <20110414150134.ec578f88.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__14_Apr_2011_15_01_34_+1000_b7rx0TP8fQbcjrtJ"
+	id S1753430Ab1DNFRR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 01:17:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40418 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab1DNFRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 01:17:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=CUKNH6TncAeJyyzSFFeYUjS5NAdwAjSYNTexVhNuWOZlSxmc0JYRiYGYVETEYo07rP
+         MKSf4rbHcu649Afuk/RkwEYr3olJh2vBfkKRhBEbRyuSC17ZoVySaBVNvJjZlFWck4nY
+         668QdaWj5/YR/2BAXJzFHjIeOeotK/TWKy3IA=
+Message-ID: <4DA68354.4060603@gmail.com>
+Date: Thu, 14 Apr 2011 09:17:08 +0400
+From: Igor Plyatov <plyatov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: Daniel Halperin <dhalperi@cs.washington.edu>,
+        Ivo Van Doorn <ivdoorn@gmail.com>, linux-usb@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38: rt2800usb: high latency (1000ms)?
+References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <BANLkTi==Bw6mWWJidLi+ZRzz87ck4DAqVA@mail.gmail.com> <alpine.DEB.2.02.1104131200220.2954@p34.internal.lan> <BANLkTinxkXi6WnAyXoZLDR+uyL+TmevuPw@mail.gmail.com> <BANLkTin6mgFqrGQJz=zNG_buRiLKHOU_BA@mail.gmail.com> <alpine.DEB.2.02.1104131348530.16793@p34.internal.lan> <BANLkTinLRVyKwBA7ZbEXKqa18V=+a6+cZg@mail.gmail.com> <alpine.DEB.2.02.1104131605010.10727@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1104131605010.10727@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__14_Apr_2011_15_01_34_+1000_b7rx0TP8fQbcjrtJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi!
 
-Hi all,
+> On Wed, 13 Apr 2011, Daniel Halperin wrote:
+>
+>> On Wed, Apr 13, 2011 at 10:57 AM, Justin Piszcz 
+>> <jpiszcz@lucidpixels.com> wrote:
+>>> Hi,
+>>>
+>>> When powersave is enabled, it is very jumpy, I've used satellite comms
+>>> before
+>>> and (~600ms-1200ms was more smooth) as it did not jump around as 
+>>> much.  The
+>>> application is just a standalone desktop with minimal activity for the
+>>> majority
+>>> of the time, maybe thats why..
+>>>
+>>> With powersave disabled, I now see 0% packet loss (802.11n) and low 
+>>> ping
+>>> times, this looks like the proper solution for the wireless USB 
+>>> device I
+>>> am using.  By the way, is it possible/are there wireless USB devices 
+>>> out
+>>> there
+>>> that support wake on wireless lan (WOWL?
+>>>
+>>> Your ping command with power off:
+>>> 1408 bytes from server (192.168.1.2): icmp_req=539 ttl=64 time=1.07 ms
+>>> 1408 bytes from server (192.168.1.2): icmp_req=540 ttl=64 time=1.31 ms
+>>> 1408 bytes from server (192.168.1.2): icmp_req=541 ttl=64 time=1.07 ms
+>>> 1408 bytes from server (192.168.1.2): icmp_req=542 ttl=64 time=1.26 ms
+>>>
+>>> Your ping command with power on:
+>>> 1408 bytes from server (192.168.1.2): icmp_req=649 ttl=64 time=1.80 ms
+>>> 1408 bytes from server (192.168.1.2): icmp_req=650 ttl=64 time=1.85 ms
+>>> 1408 bytes from server (192.168.1.2): icmp_req=651 ttl=64 time=2.86 ms
+>>> 1408 bytes from server (192.168.1.2): icmp_req=652 ttl=64 time=1.46 ms
+>>>
+>>> You are correct, if there is a lot of traffic, its good, but if the 
+>>> system
+>>> is relatively idle and all that's going on is an SSH session, there is
+>>> horrible
+>>> latency.
+>>
+>> Gotcha. I might still look around in the network stack and/or driver
+>> and see what the time constants are. For instance:
+>>
+>> (1) What is the AP's beacon period and DTIM? Typical values are 100
+>> TUs for beacons (102.4 ms) and 2 for DTIM (2 beacons per power-save
+>> wakeup) which should imply a mean of 100 and max of 200 ms delay even
+>> on pings.
+> I am using a WNDR3700 with default settings in terms of beacons/etc.  No
+> issues with any device (laptop, computer, etc (in windows)), I have two
+> wireless USB adapters (bought two) and in Windows, no problems, I 
+> don't think
+> it is the WNDR3700.  As far as linux/wpa-supplicant, using default 
+> settings.
+>
+>
+>>
+>> (2) How long does the client wait after waking up to go back to sleep?
+>> It should be at least a few seconds. For ssh, then, you should see
+>> something like a 100-200 ms delay for the first key and then nothing
+>> at all unless you stop typing for a bit.
+> It lags with each word I type, it is terrible.  If I run something like
+> dmesg or ps auxww, the entire session freezes for 5-10 seconds before it
+> comes back.
 
-Changes since 20110413:
+Yes, it's terrible. I have the same problems with ping and ssh with 
+latest GIT
+linux on my ARM platform and two different USB Wi-Fi adapters based on
+RT3070 chipset ("D-Link DWA-125" and "Qcom LR802UKN3").
 
-Dropped tree: xen
+>
+>>
+>> I'm SSHing over a Wi-Fi link that uses power save right this second,
+>> and have for years. It's not generally an issue, I suspect something
+>> worse is going on.
+> Maybe the wireless usb adapters do not function well in Linux with 
+> power save
+> on.
+>
+> I bought them awhile ago, they had the highest reviews, and in Windows,
+> they did do 10-15MiB/s, in Linux, I see ~4.6MiB/s (but that was with 
+> power save on) about the same, 4.5MiB/s.
+> http://www.amazon.com/Medialink-Wireless-Adapter-802-11n-Compatible/dp/B002RM08RE 
+>
+>
+> 100+0 records in
+> 100+0 records out
+> 104857600 bytes (105 MB) copied, 23.2803 s, 4.5 MB/s
+>
+> Justin.
 
-The gfs2 tree lost its conflict.
-
-The net tree lost its build failure.
-
-The wireless tree lost all but one conflict.
-
-The trivial tree lost its conflict.
-
-The tip tree gained a conflict against Linus' tree.
-
-The usb tree gained a conflict against the s5p tree.
-
-The staging tree lost its conflicts.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 185 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-CONFLICT (content): Merge conflict in fs/ecryptfs/ecryptfs_kernel.h
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-designware-cor=
-e.c
-CONFLICT (delete/modify): drivers/i2c/busses/i2c-intel-mid.c deleted in bjd=
-ooks-i2c/next-i2c and modified in HEAD. Version HEAD of drivers/i2c/busses/=
-i2c-intel-mid.c left in tree.
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
-$ git rm -f drivers/i2c/busses/i2c-intel-mid.c
-Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
-Applying: i2c: designware-pcidrv depends on PCI
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-CONFLICT (delete/modify): drivers/media/dvb/frontends/drx397xD.c deleted in=
- v4l-dvb/master and modified in HEAD. Version HEAD of drivers/media/dvb/fro=
-ntends/drx397xD.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/Kconfig
-CONFLICT (content): Merge conflict in drivers/staging/easycap/easycap_ioctl=
-.c
-$ git rm -f drivers/media/dvb/frontends/drx397xD.c
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging cpupowerutils/cpupowerutils
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
-.c
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-CONFLICT (content): Merge conflict in sound/soc/codecs/wm8994.c
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/mfd-core.c
-CONFLICT (content): Merge conflict in include/linux/mfd/core.h
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-CONFLICT (content): Merge conflict in kernel/sched.c
-Applying: x86 idle: merge fix for mwait move
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-CONFLICT (content): Merge conflict in drivers/platform/x86/intel_pmic_gpio.c
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
-Merging staging/staging-next
-Merging slabh/slabh
-Merging bkl-config/config
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-CONFLICT (content): Merge conflict in mm/truncate.c
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-
---Signature=_Thu__14_Apr_2011_15_01_34_+1000_b7rx0TP8fQbcjrtJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNpn+uAAoJEDMEi1NhKgbssk0IAIxzMvxxk3OloltYiZzao7xt
-z1vCzWAtIU8KHdkCNuG5UrQzR9jT8tqyIqqqhxJzgWY+DwSgpw/a1PG87vdIrARH
-9z2JokT2CwaPaOoLlZY31PkJHxEX91isDu0jTWfEhqP0ry38xxzPiqgHquyswZ+U
-tfBO9o8XALyXeqHKXKj6bguUlFyULq1a325O2w70Vc5/gdNarRWcAjpIy8R3H97D
-NBNNPqrBvlIV+IJwiWc8NSG45ytB3faCSS0oTAWZebfDD/giceqhaGE9J73XUAtk
-O0NKto5qjkiJqaRNLRFV4FWZtWFwdj6GbH/slFh2RQw6bGAHwQcWBoaYZVjVQ7U=
-=jTVx
------END PGP SIGNATURE-----
-
---Signature=_Thu__14_Apr_2011_15_01_34_+1000_b7rx0TP8fQbcjrtJ--
+Best regards!
+--
+Igor Plyatov
