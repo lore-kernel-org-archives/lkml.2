@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab1DNBWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 21:22:51 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50781 "EHLO
+	id S1758223Ab1DNBW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 21:22:57 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:50795 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757620Ab1DNBWs (ORCPT
+	with ESMTP id S1754601Ab1DNBWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 21:22:48 -0400
+	Wed, 13 Apr 2011 21:22:54 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=sMGLYxtjv9AKXXIEZRsoGfJ7YbDBOjJmmL8eN5nFWx4M0vWrPe2dMAUv1cL+2QYlt
-	LqqJXd7+pzzk4Th2bcaZA==
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=f5UNKZ04lxnN8B3Tq959xdl0wWrDr40XYkm94cIs7Mcfpkxr8YznU2JPVjUa5MD2w
+	+ewHfJqe34wxYcnl39LSA==
 From: David Decotigny <decot@google.com>
 To: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: David Decotigny <decot@google.com>
-Subject: [PATCH 2/3] net-bonding: Fix minor/cosmetic type inconsistencies
-Date: Wed, 13 Apr 2011 18:22:30 -0700
-Message-Id: <1302744151-12452-2-git-send-email-decot@google.com>
+Subject: [PATCH 1/3] net-bonding: Fix minor sparse complaints
+Date: Wed, 13 Apr 2011 18:22:29 -0700
+Message-Id: <1302744151-12452-1-git-send-email-decot@google.com>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1302744151-12452-1-git-send-email-decot@google.com>
-References: <1302744151-12452-1-git-send-email-decot@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __get_link_speed() function returns a u16 value which was stored
-in a u32 local variable. This patch uses the return value directly,
-thus fixing that minor type consistency.
-
-The 'duplex' field in struct slave being encoded on 8 bits, to be more
-consistent we use a u8 integer (instead of u16) whenever we copy it to
-local variables.
+This gets rid of minor sparse complaints:
+drivers/net/bonding/bond_main.c:4361:4: warning: do-while statement is not a compound statement
+drivers/net/bonding/bond_main.c:243:12: warning: symbol 'bond_mode_name' was not declared. Should it be static?
 
 Signed-off-by: David Decotigny <decot@google.com>
 ---
- drivers/net/bonding/bond_3ad.c  |    4 +---
- drivers/net/bonding/bond_main.c |    2 +-
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/bonding/bond_main.c   |    4 ++--
+ drivers/net/bonding/bond_procfs.c |    2 --
+ drivers/net/bonding/bonding.h     |    1 +
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
-index 494bf96..123dd60 100644
---- a/drivers/net/bonding/bond_3ad.c
-+++ b/drivers/net/bonding/bond_3ad.c
-@@ -716,11 +716,9 @@ static void __set_agg_ports_ready(struct aggregator *aggregator, int val)
- static u32 __get_agg_bandwidth(struct aggregator *aggregator)
- {
- 	u32 bandwidth = 0;
--	u32 basic_speed;
- 
- 	if (aggregator->num_of_ports) {
--		basic_speed = __get_link_speed(aggregator->lag_ports);
--		switch (basic_speed) {
-+		switch (__get_link_speed(aggregator->lag_ports)) {
- 		case AD_LINK_SPEED_BITMASK_1MBPS:
- 			bandwidth = aggregator->num_of_ports;
- 			break;
 diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 8264ed7..145f9be 100644
+index 16d6fe9..8264ed7 100644
 --- a/drivers/net/bonding/bond_main.c
 +++ b/drivers/net/bonding/bond_main.c
-@@ -3340,7 +3340,7 @@ static int bond_slave_netdev_event(unsigned long event,
- 			slave = bond_get_slave_by_dev(bond, slave_dev);
- 			if (slave) {
- 				u16 old_speed = slave->speed;
--				u16 old_duplex = slave->duplex;
-+				u8  old_duplex = slave->duplex;
+@@ -4357,9 +4357,9 @@ static u16 bond_select_queue(struct net_device *dev, struct sk_buff *skb)
+ 	u16 txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) : 0;
  
- 				bond_update_speed_duplex(slave);
+ 	if (unlikely(txq >= dev->real_num_tx_queues)) {
+-		do
++		do {
+ 			txq -= dev->real_num_tx_queues;
+-		while (txq >= dev->real_num_tx_queues);
++		} while (txq >= dev->real_num_tx_queues);
+ 	}
+ 	return txq;
+ }
+diff --git a/drivers/net/bonding/bond_procfs.c b/drivers/net/bonding/bond_procfs.c
+index c32ff55..c97307d 100644
+--- a/drivers/net/bonding/bond_procfs.c
++++ b/drivers/net/bonding/bond_procfs.c
+@@ -4,8 +4,6 @@
+ #include "bonding.h"
  
+ 
+-extern const char *bond_mode_name(int mode);
+-
+ static void *bond_info_seq_start(struct seq_file *seq, loff_t *pos)
+ 	__acquires(RCU)
+ 	__acquires(&bond->lock)
+diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
+index 90736cb..3ca503e 100644
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -416,6 +416,7 @@ void bond_destroy_debugfs(void);
+ void bond_debug_register(struct bonding *bond);
+ void bond_debug_unregister(struct bonding *bond);
+ void bond_debug_reregister(struct bonding *bond);
++const char *bond_mode_name(int mode);
+ 
+ struct bond_net {
+ 	struct net *		net;	/* Associated network namespace */
 -- 
 1.7.3.1
 
