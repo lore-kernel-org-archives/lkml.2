@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab1DNSfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:35:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37350 "EHLO
+	id S932693Ab1DNSgt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:36:49 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37265 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab1DNRpc (ORCPT
+	with ESMTP id S932449Ab1DNRpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:45:32 -0400
+	Thu, 14 Apr 2011 13:45:25 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+Cc: stable-review@kernel.org, Dan Williams <dan.j.williams@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 018/209] block: check for proper length of iov entries in blk_rq_map_user_iov()
-Date: Thu, 14 Apr 2011 13:40:48 -0400
-Message-Id: <1302803039-9400-19-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 010/209] ioat2: catch and recover from broken vtd configurations v6
+Date: Thu, 14 Apr 2011 13:40:40 -0400
+Message-Id: <1302803039-9400-11-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,38 +21,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Axboe <jaxboe@fusionio.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 9284bcf4e335e5f18a8bc7b26461c33ab60d0689 upstream.
+commit 556ab45f9a775bfa4762bacc0a4afb5b44b067bc upstream.
 
-Ensure that we pass down properly validated iov segments before
-calling into the mapping or copy functions.
+On some platforms (MacPro3,1) the BIOS assigns the ioatdma device to the
+incorrect iommu causing faults when the driver initializes.  Add a quirk
+to catch this misconfiguration and try falling back to untranslated
+operation (which works in the MacPro3,1 case).
 
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Assuming there are other platforms with misconfigured iommus teach the
+ioatdma driver to treat initialization failures as non-fatal (just fail
+the driver load and emit a warning instead of triggering a BUG_ON).
+
+This can be classified as a boot regression since 2.6.32 on affected
+platforms since the ioatdma module did not autoload prior to that
+kernel.
+
+[PG: 34 has no WARN_TAINT_ONCE, use WARN_ONCE instead]
+
+Acked-by: David Woodhouse <David.Woodhouse@intel.com>
+Reported-by: Chris Li <lkml@chrisli.org>
+Tested-by: Chris Li <lkml@chrisli.org>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- block/blk-map.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/dma/ioat/dma.h    |    1 +
+ drivers/dma/ioat/dma_v2.c |   24 ++++++++++++++++++++++--
+ drivers/dma/ioat/dma_v3.c |    5 ++++-
+ drivers/pci/intel-iommu.c |   27 +++++++++++++++++++++++++++
+ 4 files changed, 54 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-map.c b/block/blk-map.c
-index 9083cf0..30a7e51 100644
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -205,6 +205,8 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
- 			unaligned = 1;
- 			break;
+diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+index 86b97ac..4eda2e5 100644
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -96,6 +96,7 @@ struct ioat_chan_common {
+ 	#define IOAT_COMPLETION_ACK 1
+ 	#define IOAT_RESET_PENDING 2
+ 	#define IOAT_KOBJ_INIT_FAIL 3
++	#define IOAT_RUN 5
+ 	struct timer_list timer;
+ 	#define COMPLETION_TIMEOUT msecs_to_jiffies(100)
+ 	#define IDLE_TIMEOUT msecs_to_jiffies(2000)
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index b5ae56c..63e6929 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -304,7 +304,10 @@ void ioat2_timer_event(unsigned long data)
+ 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+ 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
+ 				__func__, chanerr);
+-			BUG_ON(is_ioat_bug(chanerr));
++			if (test_bit(IOAT_RUN, &chan->state))
++				BUG_ON(is_ioat_bug(chanerr));
++			else /* we never got off the ground */
++				return;
  		}
-+		if (!iov[i].iov_len)
-+			return -EINVAL;
- 	}
  
- 	if (unaligned || (q->dma_pad_mask & len) || map_data)
+ 		/* if we haven't made progress and we have already
+@@ -496,6 +499,8 @@ static struct ioat_ring_ent **ioat2_alloc_ring(struct dma_chan *c, int order, gf
+ 	return ring;
+ }
+ 
++void ioat2_free_chan_resources(struct dma_chan *c);
++
+ /* ioat2_alloc_chan_resources - allocate/initialize ioat2 descriptor ring
+  * @chan: channel to be initialized
+  */
+@@ -504,6 +509,7 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+ 	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
+ 	struct ioat_chan_common *chan = &ioat->base;
+ 	struct ioat_ring_ent **ring;
++	u64 status;
+ 	int order;
+ 
+ 	/* have we already been set up? */
+@@ -542,7 +548,20 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+ 	tasklet_enable(&chan->cleanup_task);
+ 	ioat2_start_null_desc(ioat);
+ 
+-	return 1 << ioat->alloc_order;
++	/* check that we got off the ground */
++	udelay(5);
++	status = ioat_chansts(chan);
++	if (is_ioat_active(status) || is_ioat_idle(status)) {
++		set_bit(IOAT_RUN, &chan->state);
++		return 1 << ioat->alloc_order;
++	} else {
++		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
++
++		dev_WARN(to_dev(chan),
++			"failed to start channel chanerr: %#x\n", chanerr);
++		ioat2_free_chan_resources(c);
++		return -EFAULT;
++	}
+ }
+ 
+ bool reshape_ring(struct ioat2_dma_chan *ioat, int order)
+@@ -776,6 +795,7 @@ void ioat2_free_chan_resources(struct dma_chan *c)
+ 	del_timer_sync(&chan->timer);
+ 	device->cleanup_fn((unsigned long) c);
+ 	device->reset_hw(chan);
++	clear_bit(IOAT_RUN, &chan->state);
+ 
+ 	spin_lock_bh(&ioat->ring_lock);
+ 	descs = ioat2_ring_space(ioat);
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index 6740e31..52b1e3d 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -401,7 +401,10 @@ static void ioat3_timer_event(unsigned long data)
+ 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+ 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
+ 				__func__, chanerr);
+-			BUG_ON(is_ioat_bug(chanerr));
++			if (test_bit(IOAT_RUN, &chan->state))
++				BUG_ON(is_ioat_bug(chanerr));
++			else /* we never got off the ground */
++				return;
+ 		}
+ 
+ 		/* if we haven't made progress and we have already
+diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+index fff8832..3507692 100644
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -3028,6 +3028,33 @@ static void __init iommu_exit_mempool(void)
+ 
+ }
+ 
++static void quirk_ioat_snb_local_iommu(struct pci_dev *pdev)
++{
++	struct dmar_drhd_unit *drhd;
++	u32 vtbar;
++	int rc;
++
++	/* We know that this device on this chipset has its own IOMMU.
++	 * If we find it under a different IOMMU, then the BIOS is lying
++	 * to us. Hope that the IOMMU for this device is actually
++	 * disabled, and it needs no translation...
++	 */
++	rc = pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0), 0xb0, &vtbar);
++	if (rc) {
++		/* "can't" happen */
++		dev_info(&pdev->dev, "failed to run vt-d quirk\n");
++		return;
++	}
++	vtbar &= 0xffff0000;
++
++	/* we know that the this iommu should be at offset 0xa000 from vtbar */
++	drhd = dmar_find_matched_drhd_unit(pdev);
++	if (WARN_ONCE(!drhd || drhd->reg_base_addr - vtbar != 0xa000,
++			    "BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device\n"))
++		pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
++}
++DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB, quirk_ioat_snb_local_iommu);
++
+ static void __init init_no_remapping_devices(void)
+ {
+ 	struct dmar_drhd_unit *drhd;
 -- 
 1.7.4.4
 
