@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab1DNJgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:36:15 -0400
-Received: from 8bytes.org ([88.198.83.132]:36547 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757904Ab1DNJgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:36:14 -0400
-Date: Thu, 14 Apr 2011 11:36:12 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110414093612.GE18463@8bytes.org>
-References: <4DA5F62F.3030504@kernel.org> <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com> <4DA6145D.9070703@kernel.org> <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com> <4DA655E7.3000904@zytor.com> <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com> <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com> <20110414040337.GC12781@mtj.dyndns.org>
+	id S1758160Ab1DNJkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:40:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59015 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab1DNJka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 05:40:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=szeredi.hu; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:date
+         :message-id:subject:from:to:cc:content-type;
+        b=W09xW0RTqNKzZNVy7L5AKfjVyZ5DazvRt0AOeMMX1C2528V1ds2Da7+Dhp6sHm5aKe
+         3KJwuVHpyv/lG8ztyA/dBWBtXAT8gl9h1UxmYGS3fKDQsEmrdDADofxxyr+oqkmQswo6
+         wgy6zKwgkA+V5evTwD3bdpMNhEVugPXNR08K4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110414040337.GC12781@mtj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-IP: [88.209.222.127]
+In-Reply-To: <BANLkTinff1NQ-iYevjccO7ADB9h4RH+mOQ@mail.gmail.com>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+	<4DA4B6A8.7030804@gmail.com>
+	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+	<4DA5DCB8.3040101@gmail.com>
+	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+	<4DA5F569.9020309@gmail.com>
+	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
+	<1302756608.2854.10.camel@perseus.themaw.net>
+	<BANLkTinff1NQ-iYevjccO7ADB9h4RH+mOQ@mail.gmail.com>
+Date: Thu, 14 Apr 2011 11:40:28 +0200
+Message-ID: <BANLkTimD9WB_RP1j8yJR7GUn_NuDuM2SHw@mail.gmail.com>
+Subject: Re: Unionmount status?
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Michal Suchanek <hramrach@centrum.cz>
+Cc: Ian Kent <ikent@redhat.com>, Ric Wheeler <ricwheeler@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 01:03:37PM +0900, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Apr 13, 2011 at 07:33:40PM -0700, Linus Torvalds wrote:
-> > On Wednesday, April 13, 2011, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > > On Wednesday, April 13, 2011, H. Peter Anvin <hpa@zytor.com> wrote:
-> > >>
-> > >> Yes.  However, even if we *do* revert (and the time is running short on
-> > >> not reverting) I would like to understand this particular one, simply
-> > >> because I think it may very well be a problem that is manifesting itself
-> > >> in other ways on other systems.
-> > 
-> >  sorry, fingerfart. Anyway, I agree 100%.
-> > 
-> >  we definitely want to also understand the reason for things not
-> > working, even if we do revert..
-> 
-> There were (and still are) places where memblock callers implemented
-> ad-hoc top-down allocation by stepping down start limit until
-> allocation succeeds.  Several of them have been removed since top-down
-> became the default behavior, so simply reverting the commit is likely
-> to cause subtle issues.  Maybe the best approach is introducing
-> @topdown parameter and use it selectively for pure memory allocations.
+On Thu, Apr 14, 2011 at 11:32 AM, Michal Suchanek <hramrach@centrum.cz> wrote:
+> I guess overlayfs includes the better part of unionmount and achieves
+> similar level of functionality in much smaller code size and is
+> actively developed.
+>
+> This might make it the best candidate for inclusion so far.
+>
+> It does not (yet?) support NFS which is one of the options commonly
+> used with union solutions, though.
 
-Wouldn't it be better to provide a seperate memblock allocation
-function which operates top-down and use this one in the places that
-need it? This way it wouldn't break code that relies on bottom-up.
+NFS is supported as a lower (read-only) layer, but not as an upper
+(read-write) layer.
 
-	Joerg
-
+Thanks,
+Miklos
