@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758777Ab1DNKr7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 06:47:59 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50766 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156Ab1DNKr5 (ORCPT
+	id S1758750Ab1DNK5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 06:57:55 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:38136 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758703Ab1DNK5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 06:47:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=fDP+sSB1b1QQG7WgXlLslGWQhjDzJ2JTrDxsh/pK8WiGZ6xylq7DLvSoaGlo6KR/+F
-         VuNBu3x2+n+NEVmgH7UIqseDHZ8+1ahgSGvI6O3kyS9Z3tyKWOVtGS3mWXZo9QuTp/xM
-         fS/NY3KuKHYCNOCPI9n/Q78jx1PIbAocZu9jA=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: =?utf-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        "Pintu Agarwal" <pintu_agarwal@yahoo.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Changli Gao" <xiaosuo@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>,
-        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        "Jiri Slaby" <jirislaby@gmail.com>
-Subject: Re: Regarding memory fragmentation using malloc....
-References: <475805.23113.qm@web162014.mail.bf1.yahoo.com>
-Date: Thu, 14 Apr 2011 12:47:53 +0200
-MIME-Version: 1.0
+	Thu, 14 Apr 2011 06:57:54 -0400
+Date: Thu, 14 Apr 2011 11:57:50 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [RFC][PATCH 5/5] signals: Don't hold shared siglock across
+ signal delivery
+Message-ID: <20110414115750.1a6703b6@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110413201219.GB15330@redhat.com>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org>
+	<1302031310-1765-6-git-send-email-matt@console-pimps.org>
+	<20110413201219.GB15330@redhat.com>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vtxb92f73l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <475805.23113.qm@web162014.mail.bf1.yahoo.com>
-User-Agent: Opera Mail/11.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Apr 2011 08:44:50 +0200, Pintu Agarwal  
-<pintu_agarwal@yahoo.com> wrote:
-> As I can understand from your comments that, malloc from user space will  
-> not have much impact on memory fragmentation.
+On Wed, 13 Apr 2011 22:12:19 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-It has an impact, just like any kind of allocation, it just don't care  
-about
-fragmentation of physical memory.  You can have only 0-order pages and
-successfully allocate megabytes of memory with malloc().
+> On 04/05, Matt Fleming wrote:
+> >
+> > To reduce the contention on the shared siglock this patch pushes the
+> > responsibility of acquiring and releasing the shared siglock down into
+> > the functions that need it. That way, if we don't call a function that
+> > needs to be run under the shared siglock, we can run without acquiring
+> > it at all.
+> 
+> This adds new races. And this time I do not even understand the intent.
+> I mean, it is not clear to me why this change can really help to speed
+> up get_signal_to_deliver().
 
-> Will the memory fragmentation be visible if I do kmalloc from
-> the kernel module????
+Again, it's not necessarily speeding up get_signal_to_deliver(), but
+rather it's reducing the contention on the shared siglock.
 
-It will be more visible in the sense that if you allocate 8 KiB, kernel  
-will
-have to find 8 KiB contiguous physical memory (ie. 1-order page).
+For example, without this patch, if you've got someone sending a signal
+to a task group, you can't run get_signal_to_deliver() in parallel
+because you'll be waiting for the sending thread to release the shared
+siglock. Which, if you were going to dequeue a private signal anyway
+and didn't need to access signal->shared_pending, is unnecessary
+overhead :-(
 
->> No.  When you call malloc() only virtual address space is allocated.
->> The actual allocation of physical space occurs when user space accesses
->> the memory (either reads or writes) and it happens page at a time.
->
-> Here, if I do memset then I am accessing the memory...right? That I am  
-> doing already in my sample program.
+As it turns out, the shared siglock protects more than just
+signal->shared_pending, so in certain cases you need to acquire it
+anyway (like the fatal signal code paths) so this isn't as optimised
+as it could be, which is a shame.
 
-Yes.  But note that even though it's a single memset() call, you are
-accessing page at a time and kernel is allocating page at a time.
+> > Note that this does not make signal delivery lockless. A signal must
+> > still be dequeued from either the shared or private signal
+> > queues. However, in the private signal case we can now get by with
+> > just acquiring the per-thread siglock
+> 
+> OK, we can dequeue the signal. But dequeue_signal()->recalc_sigpending()
+> becomes even more wrong. We do not hold any lock, we can race with both
+> shared/private signal sending.
 
-On some architectures (not ARM) you could access two pages with a single
-instructions but I think that would result in two page faults anyway.  I
-might be wrong though, the details are not important though.
+Yep, this was covered in the previous patch review.
+ 
+> > Also update tracehook.h to indicate it's not called with siglock held
+> > anymore.
+> 
+> Heh. This breaks this tracehook completely ;) OK, nobody cares about
+> the out-of-tree users, forget.
 
->> what really happens is that kernel allocates the 0-order
->> pages and when
->> it runs out of those, splits a 1-order page into two
->> 0-order pages and
->> takes one of those.
->
-> Actually, if I understand buddy allocator, it allocates pages from top  
-> to bottom.
+I was hoping you'd say that ;-)
 
-No.  If you want to allocate a single 0-order page, buddy looks for a
-a free 0-order page.  If one is not found, it will look for 1-order page
-and split it.  This goes up till buddy reaches (MAX_ORDER-1)-page.
+> Also. get_signal_to_deliver() does
+> 
+> 		signr = dequeue_signal(current, &current->blocked,
+> 					       info);
+> 		...
+> 
+> 		ka = &sighand->action[signr-1];
+> 
+> 		...
+> 
+> 		if (ka->sa.sa_handler != SIG_DFL) {
+> 			/* Run the handler.  */
+> 			*return_ka = *ka;
+> 
+> This memcpy() can race with sys_rt_sigaction(), we can't read *ka
+> atomically.
 
-> Is the memory fragmentation is always a cause of the kernel space  
-> program and not user space at all?
+Eek! I hadn't noticed that. Thanks.
+ 
+> Actually, even SIG_DFL/SIG_IGN checks can race, although this is minor...
+> But still not correct.
+> 
+> 			if (ka->sa.sa_flags & SA_ONESHOT) {
+> 				write_lock(&sighand->action_lock);
+> 				ka->sa.sa_handler = SIG_DFL;
+> 				write_unlock(&sighand->action_lock);
+> 
+> We should check SA_ONESHOT under ->action_lock. But even then this
+> will bw racy, although we can probably ignore this... Suppose that
+> SA_ONESHOT was set after we dequeued the signal.
 
-Well, no.  If you allocate memory in user space, kernel will have to
-allocate physical memory and *every* allocation may contribute to
-fragmentation.  The point is, that all allocations from user-space are
-single-page allocations even if you malloc() MiBs of memory.
+Right, most of this side is wrong wrt to the action_lock.
 
-> Can you provide me with some references for migitating memory  
-> fragmentation in linux?
-
-I'm not sure what you mean by that.
+Thanks Oleg.
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Matt Fleming, Intel Open Source Technology Center
