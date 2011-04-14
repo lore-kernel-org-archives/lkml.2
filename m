@@ -1,327 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab1DNFiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 01:38:16 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:53065 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753542Ab1DNFiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 01:38:12 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+	id S1754173Ab1DNFjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 01:39:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53003 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab1DNFjC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 01:39:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=o+l3NmXiJngHTIBhcwho/UWSRDeDgmJZZehqBa7C07gX0BXreMGm9ZiUpvGWyQIag9
+         YuKy1Ujb+VmqA2ajwFsp8nrb6I28LZP1dT8p8Dx1rCmHigi8e9kwUb1rUBhvSGiCbFAL
+         krPjFajYvibMBXV440pymcYWpK+BVldtHVBk8=
+Message-ID: <4DA68870.7090109@gmail.com>
+Date: Thu, 14 Apr 2011 09:38:56 +0400
+From: Igor Plyatov <plyatov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Daniel Halperin <dhalperi@cs.washington.edu>
+CC: Justin Piszcz <jpiszcz@lucidpixels.com>, Ivo Van Doorn <ivdoorn@gmail.com>,
+        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Subject: [PATCH] ptrace: unify show_regs() prototype
-Date: Thu, 14 Apr 2011 01:38:09 -0400
-Message-Id: <1302759489-10645-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.5.rc1
+Subject: Re: 2.6.38: rt2800usb: high latency (1000ms)?
+References: <alpine.DEB.2.02.1104131139380.11270@p34.internal.lan> <BANLkTi==Bw6mWWJidLi+ZRzz87ck4DAqVA@mail.gmail.com> <alpine.DEB.2.02.1104131200220.2954@p34.internal.lan> <BANLkTinxkXi6WnAyXoZLDR+uyL+TmevuPw@mail.gmail.com> <BANLkTin6mgFqrGQJz=zNG_buRiLKHOU_BA@mail.gmail.com> <alpine.DEB.2.02.1104131348530.16793@p34.internal.lan> <BANLkTinLRVyKwBA7ZbEXKqa18V=+a6+cZg@mail.gmail.com> <alpine.DEB.2.02.1104131605010.10727@p34.internal.lan> <BANLkTin5VwUryoMK=jYpbNTudPLufZ+RDw@mail.gmail.com>
+In-Reply-To: <BANLkTin5VwUryoMK=jYpbNTudPLufZ+RDw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- arch/alpha/include/asm/ptrace.h          |    1 -
- arch/avr32/include/asm/ptrace.h          |    2 --
- arch/blackfin/include/asm/ptrace.h       |    1 -
- arch/cris/include/arch-v10/arch/ptrace.h |    1 -
- arch/cris/include/arch-v32/arch/ptrace.h |    1 -
- arch/frv/include/asm/ptrace.h            |    1 -
- arch/h8300/include/asm/ptrace.h          |    1 -
- arch/ia64/include/asm/ptrace.h           |    1 -
- arch/m32r/include/asm/ptrace.h           |    2 --
- arch/m68k/include/asm/ptrace.h           |    1 -
- arch/microblaze/include/asm/ptrace.h     |    2 --
- arch/mn10300/include/asm/ptrace.h        |    1 -
- arch/parisc/include/asm/ptrace.h         |    1 -
- arch/powerpc/include/asm/system.h        |    1 -
- arch/s390/include/asm/ptrace.h           |    1 -
- arch/sh/include/asm/ptrace.h             |    2 --
- arch/sparc/include/asm/ptrace.h          |    2 --
- arch/tile/include/asm/ptrace.h           |    2 --
- arch/um/include/asm/ptrace-generic.h     |    2 --
- arch/x86/include/asm/kdebug.h            |    1 -
- arch/xtensa/include/asm/ptrace.h         |    1 -
- include/linux/ptrace.h                   |    1 +
- 22 files changed, 1 insertions(+), 28 deletions(-)
+Dear Daniel,
+> On Wed, Apr 13, 2011 at 1:13 PM, Justin Piszcz<jpiszcz@lucidpixels.com>  wrote:
+>>> (1) What is the AP's beacon period and DTIM? Typical values are 100
+>>> TUs for beacons (102.4 ms) and 2 for DTIM (2 beacons per power-save
+>>> wakeup) which should imply a mean of 100 and max of 200 ms delay even
+>>> on pings.
+>> I am using a WNDR3700 with default settings in terms of beacons/etc.  No
+>> issues with any device (laptop, computer, etc (in windows)), I have two
+>> wireless USB adapters (bought two) and in Windows, no problems, I don't
+>> think
+>> it is the WNDR3700.  As far as linux/wpa-supplicant, using default settings.
+> Not enough info. What does "iw dev wlan1 scan dump"  (it might not be
+> wlan1 for you) say for "beacon interval"?
+>
+> Does anyone know how to get the DTIM period out of iw?
+>
+# iw dev wlan0 scan dump
+BSS 74:ea:3a:e4:fa:6e (on wlan0) -- associated
+     TSF: 499843461 usec (0d, 00:08:19)
+     freq: 2442
+     beacon interval: 100
+     capability: ESS Privacy ShortPreamble ShortSlotTime (0x0431)
+     signal: -51.00 dBm
+     last seen: 510 ms ago
+     Information elements from Probe Response frame:
+     SSID: mynet2
+     Supported rates: 1.0* 2.0* 5.5* 11.0* 6.0 9.0 12.0 18.0
+     DS Parameter set: channel 7
+     RSN:     * Version: 1
+          * Group cipher: CCMP
+          * Pairwise ciphers: CCMP
+          * Authentication suites: PSK
+          * Capabilities: (0x0000)
+     ERP: <no flags>
+     Extended supported rates: 24.0 36.0 48.0 54.0
+     WMM:     * Parameter version 1
+          * u-APSD
+          * BE: CW 15-1023, AIFSN 3
+          * BK: CW 15-1023, AIFSN 7
+          * VI: CW 7-15, AIFSN 2, TXOP 3008 usec
+          * VO: acm CW 3-7, AIFSN 2, TXOP 1504 usec
+     HT capabilities:
+         Capabilities: 0x104e
+             HT20/HT40
+             SM Power Save disabled
+             RX HT40 SGI
+             No RX STBC
+             Max AMSDU length: 3839 bytes
+             DSSS/CCK HT40
+         Maximum RX AMPDU length 65535 bytes (exponent: 0x003)
+         Minimum RX AMPDU time spacing: 8 usec (0x06)
+         HT RX MCS rate indexes supported: 0-15
+         HT TX MCS rate indexes are undefined
+     WPS:     * Version: 1.0
+          * Wi-Fi Protected Setup State: 2 (Configured)
+          * Response Type: 3 (AP)
+          * Unknown TLV (0x1047, 16 bytes): 00 00 00 00 00 00 10 00 00 
+00 74 ea 3a e4 fa 6e
+          * Manufacturer: TP-LINK
+          * Model: TL-WR1043N
+          * Model Number: 1.0
+          * Serial Number: 1.0
+          * Primary Device Type: 6-0050f204-1
+          * Device name: Wireless Router TL-WR1043N
+          * Config methods: Ethernet, Label, PBC
+          * RF Bands: 0x1
 
-diff --git a/arch/alpha/include/asm/ptrace.h b/arch/alpha/include/asm/ptrace.h
-index 65cf3e2..fd698a1 100644
---- a/arch/alpha/include/asm/ptrace.h
-+++ b/arch/alpha/include/asm/ptrace.h
-@@ -72,7 +72,6 @@ struct switch_stack {
- #define user_mode(regs) (((regs)->ps & 8) != 0)
- #define instruction_pointer(regs) ((regs)->pc)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- 
- #define task_pt_regs(task) \
-   ((struct pt_regs *) (task_stack_page(task) + 2*PAGE_SIZE) - 1)
-diff --git a/arch/avr32/include/asm/ptrace.h b/arch/avr32/include/asm/ptrace.h
-index e53dd0d..c67a007 100644
---- a/arch/avr32/include/asm/ptrace.h
-+++ b/arch/avr32/include/asm/ptrace.h
-@@ -132,8 +132,6 @@ struct pt_regs {
- #define instruction_pointer(regs)       ((regs)->pc)
- #define profile_pc(regs)                instruction_pointer(regs)
- 
--extern void show_regs (struct pt_regs *);
--
- static __inline__ int valid_user_regs(struct pt_regs *regs)
- {
- 	/*
-diff --git a/arch/blackfin/include/asm/ptrace.h b/arch/blackfin/include/asm/ptrace.h
-index 1066d63..681a92c 100644
---- a/arch/blackfin/include/asm/ptrace.h
-+++ b/arch/blackfin/include/asm/ptrace.h
-@@ -105,7 +105,6 @@ struct pt_regs {
- #define instruction_pointer(regs) ((regs)->pc)
- #define user_stack_pointer(regs)  ((regs)->usp)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- 
- #define arch_has_single_step()	(1)
- /* common code demands this function */
-diff --git a/arch/cris/include/arch-v10/arch/ptrace.h b/arch/cris/include/arch-v10/arch/ptrace.h
-index 2f464ea..1a23273 100644
---- a/arch/cris/include/arch-v10/arch/ptrace.h
-+++ b/arch/cris/include/arch-v10/arch/ptrace.h
-@@ -112,7 +112,6 @@ struct switch_stack {
- #define user_mode(regs) (((regs)->dccr & 0x100) != 0)
- #define instruction_pointer(regs) ((regs)->irp)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- 
- #endif  /*  __KERNEL__  */
- 
-diff --git a/arch/cris/include/arch-v32/arch/ptrace.h b/arch/cris/include/arch-v32/arch/ptrace.h
-index ffca8d0..19773d3 100644
---- a/arch/cris/include/arch-v32/arch/ptrace.h
-+++ b/arch/cris/include/arch-v32/arch/ptrace.h
-@@ -111,7 +111,6 @@ struct switch_stack {
- #define arch_has_single_step() (1)
- #define user_mode(regs) (((regs)->ccs & (1 << (U_CCS_BITNR + CCS_SHIFT))) != 0)
- #define instruction_pointer(regs) ((regs)->erp)
--extern void show_regs(struct pt_regs *);
- #define profile_pc(regs) instruction_pointer(regs)
- 
- #endif  /*  __KERNEL__  */
-diff --git a/arch/frv/include/asm/ptrace.h b/arch/frv/include/asm/ptrace.h
-index 6bfad4c..ef6635c 100644
---- a/arch/frv/include/asm/ptrace.h
-+++ b/arch/frv/include/asm/ptrace.h
-@@ -78,7 +78,6 @@ register struct pt_regs *__frame asm("gr28");
- #define user_stack_pointer(regs)	((regs)->sp)
- 
- extern unsigned long user_stack(const struct pt_regs *);
--extern void show_regs(struct pt_regs *);
- #define profile_pc(regs) ((regs)->pc)
- 
- #define task_pt_regs(task) ((task)->thread.frame0)
-diff --git a/arch/h8300/include/asm/ptrace.h b/arch/h8300/include/asm/ptrace.h
-index d866c0e..d09c440 100644
---- a/arch/h8300/include/asm/ptrace.h
-+++ b/arch/h8300/include/asm/ptrace.h
-@@ -60,7 +60,6 @@ struct pt_regs {
- #define user_mode(regs) (!((regs)->ccr & PS_S))
- #define instruction_pointer(regs) ((regs)->pc)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- #endif /* __KERNEL__ */
- #endif /* __ASSEMBLY__ */
- #endif /* _H8300_PTRACE_H */
-diff --git a/arch/ia64/include/asm/ptrace.h b/arch/ia64/include/asm/ptrace.h
-index 7ae9c3f..f5cb276 100644
---- a/arch/ia64/include/asm/ptrace.h
-+++ b/arch/ia64/include/asm/ptrace.h
-@@ -286,7 +286,6 @@ static inline unsigned long user_stack_pointer(struct pt_regs *regs)
-   struct task_struct;			/* forward decl */
-   struct unw_frame_info;		/* forward decl */
- 
--  extern void show_regs (struct pt_regs *);
-   extern void ia64_do_show_stack (struct unw_frame_info *, void *);
-   extern unsigned long ia64_get_user_rbs_end (struct task_struct *, struct pt_regs *,
- 					      unsigned long *);
-diff --git a/arch/m32r/include/asm/ptrace.h b/arch/m32r/include/asm/ptrace.h
-index 840a123..5275275 100644
---- a/arch/m32r/include/asm/ptrace.h
-+++ b/arch/m32r/include/asm/ptrace.h
-@@ -138,8 +138,6 @@ extern void init_debug_traps(struct task_struct *);
- #define instruction_pointer(regs) ((regs)->bpc)
- #define profile_pc(regs) instruction_pointer(regs)
- 
--extern void show_regs(struct pt_regs *);
--
- extern void withdraw_debug_trap(struct pt_regs *regs);
- 
- #define task_pt_regs(task) \
-diff --git a/arch/m68k/include/asm/ptrace.h b/arch/m68k/include/asm/ptrace.h
-index 6e6e3ac..65322b1 100644
---- a/arch/m68k/include/asm/ptrace.h
-+++ b/arch/m68k/include/asm/ptrace.h
-@@ -85,7 +85,6 @@ struct switch_stack {
- #define user_mode(regs) (!((regs)->sr & PS_S))
- #define instruction_pointer(regs) ((regs)->pc)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- 
- #define arch_has_single_step()	(1)
- 
-diff --git a/arch/microblaze/include/asm/ptrace.h b/arch/microblaze/include/asm/ptrace.h
-index d74dbfb..a925cdf 100644
---- a/arch/microblaze/include/asm/ptrace.h
-+++ b/arch/microblaze/include/asm/ptrace.h
-@@ -61,8 +61,6 @@ struct pt_regs {
- #define instruction_pointer(regs)	((regs)->pc)
- #define profile_pc(regs)		instruction_pointer(regs)
- 
--void show_regs(struct pt_regs *);
--
- #else /* __KERNEL__ */
- 
- /* pt_regs offsets used by gdbserver etc in ptrace syscalls */
-diff --git a/arch/mn10300/include/asm/ptrace.h b/arch/mn10300/include/asm/ptrace.h
-index b696181..55b79ef 100644
---- a/arch/mn10300/include/asm/ptrace.h
-+++ b/arch/mn10300/include/asm/ptrace.h
-@@ -89,7 +89,6 @@ struct pt_regs {
- #define user_mode(regs)			(((regs)->epsw & EPSW_nSL) == EPSW_nSL)
- #define instruction_pointer(regs)	((regs)->pc)
- #define user_stack_pointer(regs)	((regs)->sp)
--extern void show_regs(struct pt_regs *);
- 
- #define arch_has_single_step()	(1)
- 
-diff --git a/arch/parisc/include/asm/ptrace.h b/arch/parisc/include/asm/ptrace.h
-index 7f09533..250ae35 100644
---- a/arch/parisc/include/asm/ptrace.h
-+++ b/arch/parisc/include/asm/ptrace.h
-@@ -56,7 +56,6 @@ struct pt_regs {
- #define instruction_pointer(regs)	((regs)->iaoq[0] & ~3)
- #define user_stack_pointer(regs)	((regs)->gr[30])
- unsigned long profile_pc(struct pt_regs *);
--extern void show_regs(struct pt_regs *);
- 
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/powerpc/include/asm/system.h b/arch/powerpc/include/asm/system.h
-index 5e474dd..92104de 100644
---- a/arch/powerpc/include/asm/system.h
-+++ b/arch/powerpc/include/asm/system.h
-@@ -120,7 +120,6 @@ extern void do_dabr(struct pt_regs *regs, unsigned long address,
- 		    unsigned long error_code);
- #endif
- extern void print_backtrace(unsigned long *);
--extern void show_regs(struct pt_regs * regs);
- extern void flush_instruction_cache(void);
- extern void hard_reset_now(void);
- extern void poweroff_now(void);
-diff --git a/arch/s390/include/asm/ptrace.h b/arch/s390/include/asm/ptrace.h
-index 9ad628a..62fd80c 100644
---- a/arch/s390/include/asm/ptrace.h
-+++ b/arch/s390/include/asm/ptrace.h
-@@ -539,7 +539,6 @@ struct user_regs_struct
-  * These are defined as per linux/ptrace.h, which see.
-  */
- #define arch_has_single_step()	(1)
--extern void show_regs(struct pt_regs * regs);
- 
- #define user_mode(regs) (((regs)->psw.mask & PSW_MASK_PSTATE) != 0)
- #define instruction_pointer(regs) ((regs)->psw.addr & PSW_ADDR_INSN)
-diff --git a/arch/sh/include/asm/ptrace.h b/arch/sh/include/asm/ptrace.h
-index de167d3..b219a08 100644
---- a/arch/sh/include/asm/ptrace.h
-+++ b/arch/sh/include/asm/ptrace.h
-@@ -44,8 +44,6 @@
- #define kernel_stack_pointer(_regs)	((unsigned long)(_regs)->regs[15])
- #define instruction_pointer(regs)	((unsigned long)(regs)->pc)
- 
--extern void show_regs(struct pt_regs *);
--
- #define arch_has_single_step()	(1)
- 
- /*
-diff --git a/arch/sparc/include/asm/ptrace.h b/arch/sparc/include/asm/ptrace.h
-index 30b0b79..4cb68df 100644
---- a/arch/sparc/include/asm/ptrace.h
-+++ b/arch/sparc/include/asm/ptrace.h
-@@ -212,7 +212,6 @@ extern unsigned long profile_pc(struct pt_regs *);
- #else
- #define profile_pc(regs) instruction_pointer(regs)
- #endif
--extern void show_regs(struct pt_regs *);
- #endif /* (__KERNEL__) */
- 
- #else /* __ASSEMBLY__ */
-@@ -256,7 +255,6 @@ static inline bool pt_regs_clear_syscall(struct pt_regs *regs)
- #define instruction_pointer(regs) ((regs)->pc)
- #define user_stack_pointer(regs) ((regs)->u_regs[UREG_FP])
- unsigned long profile_pc(struct pt_regs *);
--extern void show_regs(struct pt_regs *);
- #endif /* (__KERNEL__) */
- 
- #else /* (!__ASSEMBLY__) */
-diff --git a/arch/tile/include/asm/ptrace.h b/arch/tile/include/asm/ptrace.h
-index ac6d343..e3dc099 100644
---- a/arch/tile/include/asm/ptrace.h
-+++ b/arch/tile/include/asm/ptrace.h
-@@ -112,8 +112,6 @@ struct pt_regs *get_pt_regs(struct pt_regs *);
- /* Trace the current syscall. */
- extern void do_syscall_trace(void);
- 
--extern void show_regs(struct pt_regs *);
--
- #define arch_has_single_step()	(1)
- 
- /*
-diff --git a/arch/um/include/asm/ptrace-generic.h b/arch/um/include/asm/ptrace-generic.h
-index b7c5bab..ae084ad 100644
---- a/arch/um/include/asm/ptrace-generic.h
-+++ b/arch/um/include/asm/ptrace-generic.h
-@@ -47,8 +47,6 @@ extern int get_fpregs(struct user_i387_struct __user *buf,
- extern int set_fpregs(struct user_i387_struct __user *buf,
- 		      struct task_struct *child);
- 
--extern void show_regs(struct pt_regs *regs);
--
- extern int arch_copy_tls(struct task_struct *new);
- extern void clear_flushed_tls(struct task_struct *task);
- 
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index ca242d3..e8edc11 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -29,7 +29,6 @@ extern void show_registers(struct pt_regs *regs);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
- 		       unsigned long *sp);
- extern void __show_regs(struct pt_regs *regs, int all);
--extern void show_regs(struct pt_regs *regs);
- extern unsigned long oops_begin(void);
- extern void oops_end(unsigned long, struct pt_regs *, int signr);
- #ifdef CONFIG_KEXEC
-diff --git a/arch/xtensa/include/asm/ptrace.h b/arch/xtensa/include/asm/ptrace.h
-index 0d42c93..d85d38d 100644
---- a/arch/xtensa/include/asm/ptrace.h
-+++ b/arch/xtensa/include/asm/ptrace.h
-@@ -120,7 +120,6 @@ struct pt_regs {
-   (task_stack_page(tsk) + KERNEL_STACK_SIZE - (XCHAL_NUM_AREGS-16)*4) - 1)
- # define user_mode(regs) (((regs)->ps & 0x00000020)!=0)
- # define instruction_pointer(regs) ((regs)->pc)
--extern void show_regs(struct pt_regs *);
- 
- # ifndef CONFIG_SMP
- #  define profile_pc(regs) instruction_pointer(regs)
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index a1147e5..3434d56 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -100,6 +100,7 @@
- #include <linux/sched.h>		/* For struct task_struct.  */
- 
- 
-+extern void show_regs(struct pt_regs *);
- extern long arch_ptrace(struct task_struct *child, long request,
- 			unsigned long addr, unsigned long data);
- extern int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len);
--- 
-1.7.5.rc1
+>>> (2) How long does the client wait after waking up to go back to sleep?
+>>> It should be at least a few seconds. For ssh, then, you should see
+>>> something like a 100-200 ms delay for the first key and then nothing
+>>> at all unless you stop typing for a bit.
+>> It lags with each word I type, it is terrible.  If I run something like
+>> dmesg or ps auxww, the entire session freezes for 5-10 seconds before it
+>> comes back.
+> Sorry; I meant what is the software stack configured to do? Do some
+> looking around.
+What do you mean here?
 
+Best regards!
+--
+Igor Plyatov
