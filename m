@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758415Ab1DNCTb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 22:19:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44220 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab1DNCTa (ORCPT
+	id S1758467Ab1DNCVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 22:21:18 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:45316 "EHLO
+	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758322Ab1DNCVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 22:19:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Subject: Re: cpusets: randomize node rotor used in cpuset_mem_spread_node()
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        Jack Steiner <steiner@sgi.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20110413143539.GB11051@tiehlicka.suse.cz>
-References: <20110413143539.GB11051@tiehlicka.suse.cz>
-Message-Id: <20110414111939.0812.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Thu, 14 Apr 2011 11:19:24 +0900 (JST)
+	Wed, 13 Apr 2011 22:21:17 -0400
+X-ASG-Debug-ID: 1302747676-082e4d270001-xx1T2L
+X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
+From: Haojian Zhuang <haojian.zhuang@marvell.com>
+To: haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
+X-ASG-Orig-Subj: [PATCH 11/13] power_supply: max8925: use platform_data from cell
+Subject: [PATCH 11/13] power_supply: max8925: use platform_data from cell
+Date: Thu, 14 Apr 2011 10:16:20 +0800
+X-ASG-Orig-Subj: [PATCH 11/13] power_supply: max8925: use platform_data from cell
+Message-Id: <1302747380-22836-1-git-send-email-haojian.zhuang@marvell.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1302706264-25815-12-git-send-email-haojian.zhuang@marvell.com>
+References: <1302706264-25815-12-git-send-email-haojian.zhuang@marvell.com>
+X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
+X-Barracuda-Start-Time: 1302747676
+X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 959a8b8..8e57a72 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -93,6 +93,7 @@
->  
->  #include <asm/tlbflush.h>
->  #include <asm/uaccess.h>
-> +#include <linux/random.h>
->  
->  #include "internal.h"
->  
-> @@ -1649,6 +1650,21 @@ static inline unsigned interleave_nid(struct mempolicy *pol,
->  		return interleave_nodes(pol);
->  }
->  
-> +/*
-> + * Return the bit number of a random bit set in the nodemask.
-> + * (returns -1 if nodemask is empty)
-> + */
-> +int node_random(const nodemask_t *maskp)
-> +{
-> +	int w, bit = -1;
-> +
-> +	w = nodes_weight(*maskp);
-> +	if (w)
-> +		bit = bitmap_ord_to_pos(maskp->bits,
-> +			get_random_int() % w, MAX_NUMNODES);
-> +	return bit;
-> +}
-> +
->  #ifdef CONFIG_HUGETLBFS
->  /*
->   * huge_zonelist(@vma, @addr, @gfp_flags, @mpol)
+Avoid to get platform_data from parent device. Get it from mfd cell
+device instead.
 
-mempolicy.c is no best place for putting generic nodemask utility function.
-but unforunately we have no alternative. Gack.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ drivers/power/max8925_power.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-
+diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+index 8e5aec2..a70e16d 100644
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@ -425,16 +425,11 @@ static __devexit int max8925_deinit_charger(struct max8925_power_info *info)
+ static __devinit int max8925_power_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+-	struct max8925_platform_data *max8925_pdata;
+ 	struct max8925_power_pdata *pdata = NULL;
+ 	struct max8925_power_info *info;
+ 	int ret;
+ 
+-	if (pdev->dev.parent->platform_data) {
+-		max8925_pdata = pdev->dev.parent->platform_data;
+-		pdata = max8925_pdata->power;
+-	}
+-
++	pdata = pdev->dev.platform_data;
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "platform data isn't assigned to "
+ 			"power supply\n");
+@@ -447,6 +442,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+ 	info->chip = chip;
+ 	info->gpm = chip->i2c;
+ 	info->adc = chip->adc;
++	platform_set_drvdata(pdev, info);
+ 
+ 	info->ac.name = "max8925-ac";
+ 	info->ac.type = POWER_SUPPLY_TYPE_MAINS;
+@@ -482,8 +478,6 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+ 	info->topoff_threshold = pdata->topoff_threshold;
+ 	info->fast_charge = pdata->fast_charge;
+ 	info->set_charger = pdata->set_charger;
+-	dev_set_drvdata(&pdev->dev, info);
+-	platform_set_drvdata(pdev, info);
+ 
+ 	max8925_init_charger(chip, info);
+ 	return 0;
+-- 
+1.5.6.5
 
