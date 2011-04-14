@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab1DNNSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 09:18:20 -0400
-Received: from mail.academy.zt.ua ([82.207.120.245]:28350 "EHLO
-	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab1DNNST (ORCPT
+	id S1757149Ab1DNNVn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 09:21:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64649 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab1DNNVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 09:18:19 -0400
-X-MDAV-Processed: mail.academy.zt.ua, Thu, 14 Apr 2011 16:18:20 +0300
-X-Spam-Processed: mail.academy.zt.ua, Thu, 14 Apr 2011 16:18:19 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-Return-Path: george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: George Kashperko <george@znau.edu.ua>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arend van Spriel <arend@broadcom.com>,
-        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
-        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-	 <1302781431.21145.6.camel@dev.znau.edu.ua>
-	 <BANLkTinvpt5vs+rXd3WN-a2JpGtTV+=Gyg@mail.gmail.com>
-	 <4DA6E9BD.3090404@hauke-m.de>
-	 <BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Date: Thu, 14 Apr 2011 16:15:00 +0300
-Message-Id: <1302786900.21965.52.camel@dev.znau.edu.ua>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 8bit
+	Thu, 14 Apr 2011 09:21:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=uJZZufhCi90cFW8Xo8M8eotBZcPRd7mVFkDaDMRdLJwZtdVMoR/PDlqUxMajnMSPX9
+         s/fBMPfU04VN3sK4nHCxcOfVEQ70YcFYuIrA+dnIhohvLlMas7hy7/F3zXoe00ckZGm5
+         BUyf9WQLEQVz+juupEKi+jOp8nrXjgT1O1qO4=
+Message-ID: <4DA6F4E2.1060005@gmail.com>
+Date: Thu, 14 Apr 2011 09:21:38 -0400
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>
+CC: Michal Suchanek <hramrach@centrum.cz>, Ian Kent <ikent@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: Unionmount status?
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>	<4DA4B6A8.7030804@gmail.com>	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>	<4DA5DCB8.3040101@gmail.com>	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>	<4DA5F569.9020309@gmail.com>	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>	<1302756608.2854.10.camel@perseus.themaw.net>	<BANLkTinff1NQ-iYevjccO7ADB9h4RH+mOQ@mail.gmail.com> <BANLkTimD9WB_RP1j8yJR7GUn_NuDuM2SHw@mail.gmail.com>
+In-Reply-To: <BANLkTimD9WB_RP1j8yJR7GUn_NuDuM2SHw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/14/2011 05:40 AM, Miklos Szeredi wrote:
+> On Thu, Apr 14, 2011 at 11:32 AM, Michal Suchanek<hramrach@centrum.cz>  wrote:
+>> I guess overlayfs includes the better part of unionmount and achieves
+>> similar level of functionality in much smaller code size and is
+>> actively developed.
+>>
+>> This might make it the best candidate for inclusion so far.
+>>
+>> It does not (yet?) support NFS which is one of the options commonly
+>> used with union solutions, though.
+> NFS is supported as a lower (read-only) layer, but not as an upper
+> (read-write) layer.
+>
+> Thanks,
+> Miklos
+I am not that concerned with the state of Val's repo, her intention was to hand 
+off the project cleanly to others and have them drive the code (that hand off 
+was the posting of the patch set). Several people (Ian, David Howells and Al 
+Viro) had been involved with union mounts recently, so we do have reasonable 
+candidates for a hand off.
 
-> W dniu 14 kwietnia 2011 14:34 użytkownik Hauke Mehrtens
-> <hauke@hauke-m.de> napisał:
-> > On 04/14/2011 02:04 PM, Rafał Miłecki wrote:
-> >> Hauke: you were proposing integrating with drivers/amba. I really
-> >> expect you to comment on this, please tell us how do you see this now,
-> >> when we have better overview. I took your proposal seriously, you can
-> >> see the results above.
-> >
-> > I had no closer look at drivers/amba and this bus driver, I just saw
-> > that there was a discussion about drivers/amba and this implementation
-> > with no result. When the Bradcom cores are not directly connected to
-> > AMBA, but are using some sort of wrapper and there are no benefits in
-> > using drivers/amba, just leave it.
-> >
-> > As the implementation of the Braodcom AIX Bus contains some Broadcom
-> > extensions and there seams to be no normal AMBA device being connected
-> > to some Broadcom devices with this special interface number 3) "Broadcom
-> > specific bus (bcmai)" seams to the the best approach in my opinion.
-> 
-> Thanks for commenting.
-> 
-> Russell: you were asking:
-> > What does this do which the 'amba' bus support doesn't?
-> I believe I explained it well in this thread. Do you still think about
-> using amba/driver? Do you think we should use it?
-> 
-> Arnd: I found you saying:
-> > I believe the one thing we really want from this driver is the bus
-> > scan code, which is not present in the amba bus implementation,
-> I explained how it works, I believe scanning (EPROM in this case) it
-> Broadcom specific, not really AMBA standard. How do you see it?
-> 
-It might not Broadcom specific as EPROM core seems to be CoreLink one
-core and maybe is arm-developed. But it isn't documented publicly and we
-don't know yet if it is obligatory for all amba (or at least axi)
-interconnects or not.
+One of the concerns with unionfs is the duplication of data. Union mounts avoids 
+this with that implementation. That might make unionfs more of a burden for very 
+large file systems, but probably not a concern for many use cases.
 
-Have nice day,
-George
+The union mount patch set is certainly considerably larger.
+
+Christoph had expressed some concerns about locking that I think it would be 
+good to discuss again as well.
+
+Ric
+
 
 
