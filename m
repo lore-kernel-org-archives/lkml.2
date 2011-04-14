@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab1DNRpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:45:35 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37320 "EHLO
+	id S932609Ab1DNRpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:45:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37329 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab1DNRpa (ORCPT
+	with ESMTP id S932549Ab1DNRpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:45:30 -0400
+	Thu, 14 Apr 2011 13:45:31 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 016/209] block: limit vec count in bio_kmalloc() and bio_alloc_map_data()
-Date: Thu, 14 Apr 2011 13:40:46 -0400
-Message-Id: <1302803039-9400-17-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 014/209] udp: add rehash on connect()
+Date: Thu, 14 Apr 2011 13:40:44 -0400
+Message-Id: <1302803039-9400-15-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,50 +22,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Axboe <jaxboe@fusionio.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit f3f63c1c28bc861a931fac283b5bc3585efb8967 upstream.
+commit 719f835853a92f6090258114a72ffe41f09155cd upstream
 
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+commit 30fff923 introduced in linux-2.6.33 (udp: bind() optimisation)
+added a secondary hash on UDP, hashed on (local addr, local port).
+
+Problem is that following sequence :
+
+fd = socket(...)
+connect(fd, &remote, ...)
+
+not only selects remote end point (address and port), but also sets
+local address, while UDP stack stored in secondary hash table the socket
+while its local address was INADDR_ANY (or ipv6 equivalent)
+
+Sequence is :
+ - autobind() : choose a random local port, insert socket in hash tables
+              [while local address is INADDR_ANY]
+ - connect() : set remote address and port, change local address to IP
+              given by a route lookup.
+
+When an incoming UDP frame comes, if more than 10 sockets are found in
+primary hash table, we switch to secondary table, and fail to find
+socket because its local address changed.
+
+One solution to this problem is to rehash datagram socket if needed.
+
+We add a new rehash(struct socket *) method in "struct proto", and
+implement this method for UDP v4 & v6, using a common helper.
+
+This rehashing only takes care of secondary hash table, since primary
+hash (based on local port only) is not changed.
+
+Reported-by: Krzysztof Piotr Oledzki <ole@ans.pl>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Krzysztof Piotr Oledzki <ole@ans.pl>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/bio.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ include/net/sock.h  |    1 +
+ include/net/udp.h   |    1 +
+ net/ipv4/datagram.c |    5 ++++-
+ net/ipv4/udp.c      |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ net/ipv6/datagram.c |    7 ++++++-
+ net/ipv6/udp.c      |   10 ++++++++++
+ 6 files changed, 66 insertions(+), 2 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index e7bf6ca..75ea4c3 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -370,6 +370,9 @@ struct bio *bio_kmalloc(gfp_t gfp_mask, int nr_iovecs)
+diff --git a/include/net/sock.h b/include/net/sock.h
+index d910528..efb5730 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -697,6 +697,7 @@ struct proto {
+ 	/* Keeping track of sk's, looking them up, and port selection methods. */
+ 	void			(*hash)(struct sock *sk);
+ 	void			(*unhash)(struct sock *sk);
++	void			(*rehash)(struct sock *sk);
+ 	int			(*get_port)(struct sock *sk, unsigned short snum);
+ 
+ 	/* Keeping track of sockets in use */
+diff --git a/include/net/udp.h b/include/net/udp.h
+index 5348d80..4201dc8 100644
+--- a/include/net/udp.h
++++ b/include/net/udp.h
+@@ -151,6 +151,7 @@ static inline void udp_lib_hash(struct sock *sk)
+ }
+ 
+ extern void udp_lib_unhash(struct sock *sk);
++extern void udp_lib_rehash(struct sock *sk, u16 new_hash);
+ 
+ static inline void udp_lib_close(struct sock *sk, long timeout)
  {
- 	struct bio *bio;
+diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
+index fb24658..31cafd4 100644
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -62,8 +62,11 @@ int ip4_datagram_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	}
+ 	if (!inet->inet_saddr)
+ 		inet->inet_saddr = rt->rt_src;	/* Update source address */
+-	if (!inet->inet_rcv_saddr)
++	if (!inet->inet_rcv_saddr) {
+ 		inet->inet_rcv_saddr = rt->rt_src;
++		if (sk->sk_prot->rehash)
++			sk->sk_prot->rehash(sk);
++	}
+ 	inet->inet_daddr = rt->rt_dst;
+ 	inet->inet_dport = usin->sin_port;
+ 	sk->sk_state = TCP_ESTABLISHED;
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index c36522a..a4e2dee 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1256,6 +1256,49 @@ void udp_lib_unhash(struct sock *sk)
+ }
+ EXPORT_SYMBOL(udp_lib_unhash);
  
-+	if (nr_iovecs > UIO_MAXIOV)
-+		return NULL;
++/*
++ * inet_rcv_saddr was changed, we must rehash secondary hash
++ */
++void udp_lib_rehash(struct sock *sk, u16 newhash)
++{
++	if (sk_hashed(sk)) {
++		struct udp_table *udptable = sk->sk_prot->h.udp_table;
++		struct udp_hslot *hslot, *hslot2, *nhslot2;
 +
- 	bio = kmalloc(sizeof(struct bio) + nr_iovecs * sizeof(struct bio_vec),
- 		      gfp_mask);
- 	if (unlikely(!bio))
-@@ -697,8 +700,12 @@ static void bio_free_map_data(struct bio_map_data *bmd)
- static struct bio_map_data *bio_alloc_map_data(int nr_segs, int iov_count,
- 					       gfp_t gfp_mask)
++		hslot2 = udp_hashslot2(udptable, udp_sk(sk)->udp_portaddr_hash);
++		nhslot2 = udp_hashslot2(udptable, newhash);
++		udp_sk(sk)->udp_portaddr_hash = newhash;
++		if (hslot2 != nhslot2) {
++			hslot = udp_hashslot(udptable, sock_net(sk),
++					     udp_sk(sk)->udp_port_hash);
++			/* we must lock primary chain too */
++			spin_lock_bh(&hslot->lock);
++
++			spin_lock(&hslot2->lock);
++			hlist_nulls_del_init_rcu(&udp_sk(sk)->udp_portaddr_node);
++			hslot2->count--;
++			spin_unlock(&hslot2->lock);
++
++			spin_lock(&nhslot2->lock);
++			hlist_nulls_add_head_rcu(&udp_sk(sk)->udp_portaddr_node,
++						 &nhslot2->head);
++			nhslot2->count++;
++			spin_unlock(&nhslot2->lock);
++
++			spin_unlock_bh(&hslot->lock);
++		}
++	}
++}
++EXPORT_SYMBOL(udp_lib_rehash);
++
++static void udp_v4_rehash(struct sock *sk)
++{
++	u16 new_hash = udp4_portaddr_hash(sock_net(sk),
++					  inet_sk(sk)->inet_rcv_saddr,
++					  inet_sk(sk)->inet_num);
++	udp_lib_rehash(sk, new_hash);
++}
++
+ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
  {
--	struct bio_map_data *bmd = kmalloc(sizeof(*bmd), gfp_mask);
-+	struct bio_map_data *bmd;
+ 	int rc = sock_queue_rcv_skb(sk, skb);
+@@ -1831,6 +1874,7 @@ struct proto udp_prot = {
+ 	.backlog_rcv	   = __udp_queue_rcv_skb,
+ 	.hash		   = udp_lib_hash,
+ 	.unhash		   = udp_lib_unhash,
++	.rehash		   = udp_v4_rehash,
+ 	.get_port	   = udp_v4_get_port,
+ 	.memory_allocated  = &udp_memory_allocated,
+ 	.sysctl_mem	   = sysctl_udp_mem,
+diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
+index 6157388..fc9db30 100644
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -104,9 +104,12 @@ ipv4_connected:
+ 		if (ipv6_addr_any(&np->saddr))
+ 			ipv6_addr_set_v4mapped(inet->inet_saddr, &np->saddr);
+ 
+-		if (ipv6_addr_any(&np->rcv_saddr))
++		if (ipv6_addr_any(&np->rcv_saddr)) {
+ 			ipv6_addr_set_v4mapped(inet->inet_rcv_saddr,
+ 					       &np->rcv_saddr);
++			if (sk->sk_prot->rehash)
++				sk->sk_prot->rehash(sk);
++		}
+ 
+ 		goto out;
+ 	}
+@@ -191,6 +194,8 @@ ipv4_connected:
+ 	if (ipv6_addr_any(&np->rcv_saddr)) {
+ 		ipv6_addr_copy(&np->rcv_saddr, &fl.fl6_src);
+ 		inet->inet_rcv_saddr = LOOPBACK4_IPV6;
++		if (sk->sk_prot->rehash)
++			sk->sk_prot->rehash(sk);
+ 	}
+ 
+ 	ip6_dst_store(sk, dst,
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index 9082485..be5e5a1 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -111,6 +111,15 @@ int udp_v6_get_port(struct sock *sk, unsigned short snum)
+ 	return udp_lib_get_port(sk, snum, ipv6_rcv_saddr_equal, hash2_nulladdr);
+ }
+ 
++static void udp_v6_rehash(struct sock *sk)
++{
++	u16 new_hash = udp6_portaddr_hash(sock_net(sk),
++					  &inet6_sk(sk)->rcv_saddr,
++					  inet_sk(sk)->inet_num);
 +
-+	if (iov_count > UIO_MAXIOV)
-+		return NULL;
- 
-+	bmd = kmalloc(sizeof(*bmd), gfp_mask);
- 	if (!bmd)
- 		return NULL;
- 
++	udp_lib_rehash(sk, new_hash);
++}
++
+ static inline int compute_score(struct sock *sk, struct net *net,
+ 				unsigned short hnum,
+ 				struct in6_addr *saddr, __be16 sport,
+@@ -1430,6 +1439,7 @@ struct proto udpv6_prot = {
+ 	.backlog_rcv	   = udpv6_queue_rcv_skb,
+ 	.hash		   = udp_lib_hash,
+ 	.unhash		   = udp_lib_unhash,
++	.rehash		   = udp_v6_rehash,
+ 	.get_port	   = udp_v6_get_port,
+ 	.memory_allocated  = &udp_memory_allocated,
+ 	.sysctl_mem	   = sysctl_udp_mem,
 -- 
 1.7.4.4
 
