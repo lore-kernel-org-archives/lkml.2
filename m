@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732Ab1DNSB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:01:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42515 "EHLO
+	id S933737Ab1DNSBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:01:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42414 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933403Ab1DNR7o (ORCPT
+	with ESMTP id S965084Ab1DNR7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:59:44 -0400
+	Thu, 14 Apr 2011 13:59:19 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
-        Michael Tokarev <mjt@tls.msk.ru>, James Morris <jmorris@namei.org>,
+Cc: stable-review@kernel.org, Tavis Ormandy <taviso@cmpxchg8b.com>,
+        Tavis Ormandy <taviso@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 200/209] net: don't allow CAP_NET_ADMIN to load non-netdev kernel modules
-Date: Thu, 14 Apr 2011 13:55:58 -0400
-Message-Id: <1302803767-9715-87-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 184/209] install_special_mapping skips security_file_mmap check.
+Date: Thu, 14 Apr 2011 13:55:42 -0400
+Message-Id: <1302803767-9715-71-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,158 +24,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Tavis Ormandy <taviso@cmpxchg8b.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 8909c9ad8ff03611c9c96c9a92656213e4bb495b upstream.
+commit 462e635e5b73ba9a4c03913b77138cd57ce4b050 upstream.
 
-Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
-CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
-that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are
-limited to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't
-allow anybody load any module not related to networking.
+The install_special_mapping routine (used, for example, to setup the
+vdso) skips the security check before insert_vm_struct, allowing a local
+attacker to bypass the mmap_min_addr security restriction by limiting
+the available pages for special mappings.
 
-This patch restricts an ability of autoloading modules to netdev modules
-with explicit aliases.  This fixes CVE-2011-1019.
+bprm_mm_init() also skips the check, and although I don't think this can
+be used to bypass any restrictions, I don't see any reason not to have
+the security check.
 
-Arnd Bergmann suggested to leave untouched the old pre-v2.6.32 behavior
-of loading netdev modules by name (without any prefix) for processes
-with CAP_SYS_MODULE to maintain the compatibility with network scripts
-that use autoloading netdev modules by aliases like "eth0", "wlan0".
+  $ uname -m
+  x86_64
+  $ cat /proc/sys/vm/mmap_min_addr
+  65536
+  $ cat install_special_mapping.s
+  section .bss
+      resb BSS_SIZE
+  section .text
+      global _start
+      _start:
+          mov     eax, __NR_pause
+          int     0x80
+  $ nasm -D__NR_pause=29 -DBSS_SIZE=0xfffed000 -f elf -o install_special_mapping.o install_special_mapping.s
+  $ ld -m elf_i386 -Ttext=0x10000 -Tbss=0x11000 -o install_special_mapping install_special_mapping.o
+  $ ./install_special_mapping &
+  [1] 14303
+  $ cat /proc/14303/maps
+  0000f000-00010000 r-xp 00000000 00:00 0                                  [vdso]
+  00010000-00011000 r-xp 00001000 00:19 2453665                            /home/taviso/install_special_mapping
+  00011000-ffffe000 rwxp 00000000 00:00 0                                  [stack]
 
-Currently there are only three users of the feature in the upstream
-kernel: ipip, ip_gre and sit.
+It's worth noting that Red Hat are shipping with mmap_min_addr set to
+4096.
 
-    root@albatros:~# capsh --drop=$(seq -s, 0 11),$(seq -s, 13 34) --
-    root@albatros:~# grep Cap /proc/$$/status
-    CapInh:	0000000000000000
-    CapPrm:	fffffff800001000
-    CapEff:	fffffff800001000
-    CapBnd:	fffffff800001000
-    root@albatros:~# modprobe xfs
-    FATAL: Error inserting xfs
-    (/lib/modules/2.6.38-rc6-00001-g2bf4ca3/kernel/fs/xfs/xfs.ko): Operation not permitted
-    root@albatros:~# lsmod | grep xfs
-    root@albatros:~# ifconfig xfs
-    xfs: error fetching interface information: Device not found
-    root@albatros:~# lsmod | grep xfs
-    root@albatros:~# lsmod | grep sit
-    root@albatros:~# ifconfig sit
-    sit: error fetching interface information: Device not found
-    root@albatros:~# lsmod | grep sit
-    root@albatros:~# ifconfig sit0
-    sit0      Link encap:IPv6-in-IPv4
-	      NOARP  MTU:1480  Metric:1
-
-    root@albatros:~# lsmod | grep sit
-    sit                    10457  0
-    tunnel4                 2957  1 sit
-
-For CAP_SYS_MODULE module loading is still relaxed:
-
-    root@albatros:~# grep Cap /proc/$$/status
-    CapInh:	0000000000000000
-    CapPrm:	ffffffffffffffff
-    CapEff:	ffffffffffffffff
-    CapBnd:	ffffffffffffffff
-    root@albatros:~# ifconfig xfs
-    xfs: error fetching interface information: Device not found
-    root@albatros:~# lsmod | grep xfs
-    xfs                   745319  0
-
-Reference: https://lkml.org/lkml/2011/2/24/203
-
-[PG: in 2.6.34, the bare MODULE_ALIAS for ipip/tunl0 and ip_gre/gre0
-didn't exist, but this adds the limited scope MODULE_ALIAS_NETDEV ones]
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Kees Cook <kees.cook@canonical.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Signed-off-by: Tavis Ormandy <taviso@google.com>
+Acked-by: Kees Cook <kees@ubuntu.com>
+Acked-by: Robert Swiecki <swiecki@google.com>
+[ Changed to not drop the error code - akpm ]
+Reviewed-by: James Morris <jmorris@namei.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/netdevice.h |    3 +++
- net/core/dev.c            |   12 ++++++++++--
- net/ipv4/ip_gre.c         |    1 +
- net/ipv4/ipip.c           |    1 +
- net/ipv6/sit.c            |    2 +-
- 5 files changed, 16 insertions(+), 3 deletions(-)
+ fs/exec.c |    5 +++++
+ mm/mmap.c |   16 ++++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 4737996..0af14f2 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2214,6 +2214,9 @@ do {					  			\
- #define netif_info(priv, type, dev, fmt, args...)		\
- 	netif_printk(priv, type, KERN_INFO, (dev), fmt, ##args)
- 
-+#define MODULE_ALIAS_NETDEV(device) \
-+	MODULE_ALIAS("netdev-" device)
+diff --git a/fs/exec.c b/fs/exec.c
+index 8d4912f..5bc2413 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -268,6 +268,11 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
+ 	vma->vm_flags = VM_STACK_FLAGS;
+ 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
 +
- #if defined(DEBUG)
- #define netif_dbg(priv, type, dev, format, args...)		\
- 	netif_printk(priv, type, KERN_DEBUG, dev, format, ##args)
-diff --git a/net/core/dev.c b/net/core/dev.c
-index f664177..3095934 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1104,13 +1104,21 @@ EXPORT_SYMBOL(netdev_bonding_change);
- void dev_load(struct net *net, const char *name)
++	err = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
++	if (err)
++		goto err;
++
+ 	err = insert_vm_struct(mm, vma);
+ 	if (err)
+ 		goto err;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 10cb197..b42b469 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2443,6 +2443,7 @@ int install_special_mapping(struct mm_struct *mm,
+ 			    unsigned long addr, unsigned long len,
+ 			    unsigned long vm_flags, struct page **pages)
  {
- 	struct net_device *dev;
-+	int no_module;
++	int ret;
+ 	struct vm_area_struct *vma;
  
- 	rcu_read_lock();
- 	dev = dev_get_by_name_rcu(net, name);
- 	rcu_read_unlock();
+ 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+@@ -2460,16 +2461,23 @@ int install_special_mapping(struct mm_struct *mm,
+ 	vma->vm_ops = &special_mapping_vmops;
+ 	vma->vm_private_data = pages;
  
--	if (!dev && capable(CAP_NET_ADMIN))
--		request_module("%s", name);
-+	no_module = !dev;
-+	if (no_module && capable(CAP_NET_ADMIN))
-+		no_module = request_module("netdev-%s", name);
-+	if (no_module && capable(CAP_SYS_MODULE)) {
-+		if (!request_module("%s", name))
-+			pr_err("Loading kernel module for a network device "
-+"with CAP_SYS_MODULE (deprecated).  Use CAP_NET_ADMIN and alias netdev-%s "
-+"instead\n", name);
-+	}
+-	if (unlikely(insert_vm_struct(mm, vma))) {
+-		kmem_cache_free(vm_area_cachep, vma);
+-		return -ENOMEM;
+-	}
++	ret = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
++	if (ret)
++		goto out;
++
++	ret = insert_vm_struct(mm, vma);
++	if (ret)
++		goto out;
+ 
+ 	mm->total_vm += len >> PAGE_SHIFT;
+ 
+ 	perf_event_mmap(vma);
+ 
+ 	return 0;
++
++out:
++	kmem_cache_free(vm_area_cachep, vma);
++	return ret;
  }
- EXPORT_SYMBOL(dev_load);
  
-diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-index fe381d1..6be6fe7 100644
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -1709,3 +1709,4 @@ module_exit(ipgre_fini);
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_RTNL_LINK("gre");
- MODULE_ALIAS_RTNL_LINK("gretap");
-+MODULE_ALIAS_NETDEV("gre0");
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 0b27b14..8900fde 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -853,3 +853,4 @@ static void __exit ipip_fini(void)
- module_init(ipip_init);
- module_exit(ipip_fini);
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_NETDEV("tunl0");
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 5abae10..5316ce5 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1241,4 +1241,4 @@ static int __init sit_init(void)
- module_init(sit_init);
- module_exit(sit_cleanup);
- MODULE_LICENSE("GPL");
--MODULE_ALIAS("sit0");
-+MODULE_ALIAS_NETDEV("sit0");
+ static DEFINE_MUTEX(mm_all_locks_mutex);
 -- 
 1.7.4.4
 
