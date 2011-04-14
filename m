@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab1DNR5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:57:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41312 "EHLO
+	id S964960Ab1DNR6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:58:37 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42106 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933236Ab1DNR5h (ORCPT
+	with ESMTP id S933626Ab1DNR6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:57:37 -0400
+	Thu, 14 Apr 2011 13:58:32 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 118/209] x25: Prevent crashing when parsing bad X.25 facilities
-Date: Thu, 14 Apr 2011 13:54:36 -0400
-Message-Id: <1302803767-9715-5-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 161/209] nohz: Fix get_next_timer_interrupt() vs cpu hotplug
+Date: Thu, 14 Apr 2011 13:55:19 -0400
+Message-Id: <1302803767-9715-48-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,82 +23,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 5ef41308f94dcbb3b7afc56cdef1c2ba53fa5d2f upstream.
+commit dbd87b5af055a0cc9bba17795c9a2b0d17795389 upstream.
 
-Now with improved comma support.
+This fixes a bug as seen on 2.6.32 based kernels where timers got
+enqueued on offline cpus.
 
-On parsing malformed X.25 facilities, decrementing the remaining length
-may cause it to underflow.  Since the length is an unsigned integer,
-this will result in the loop continuing until the kernel crashes.
+If a cpu goes offline it might still have pending timers. These will
+be migrated during CPU_DEAD handling after the cpu is offline.
+However while the cpu is going offline it will schedule the idle task
+which will then call tick_nohz_stop_sched_tick().
 
-This patch adds checks to ensure decrementing the remaining length does
-not cause it to wrap around.
+That function in turn will call get_next_timer_intterupt() to figure
+out if the tick of the cpu can be stopped or not. If it turns out that
+the next tick is just one jiffy off (delta_jiffies == 1)
+tick_nohz_stop_sched_tick() incorrectly assumes that the tick should
+not stop and takes an early exit and thus it won't update the load
+balancer cpu.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Just afterwards the cpu will be killed and the load balancer cpu could
+be the offline cpu.
+
+On 2.6.32 based kernel get_nohz_load_balancer() gets called to decide
+on which cpu a timer should be enqueued (see __mod_timer()). Which
+leads to the possibility that timers get enqueued on an offline cpu.
+These will never expire and can cause a system hang.
+
+This has been observed 2.6.32 kernels. On current kernels
+__mod_timer() uses get_nohz_timer_target() which doesn't have that
+problem. However there might be other problems because of the too
+early exit tick_nohz_stop_sched_tick() in case a cpu goes offline.
+
+The easiest and probably safest fix seems to be to let
+get_next_timer_interrupt() just lie and let it say there isn't any
+pending timer if the current cpu is offline.
+
+I also thought of moving migrate_[hr]timers() from CPU_DEAD to
+CPU_DYING, but seeing that there already have been fixes at least in
+the hrtimer code in this area I'm afraid that this could add new
+subtle bugs.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101201091109.GA8984@osiris.boeblingen.de.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/x25/x25_facilities.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ kernel/timer.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/net/x25/x25_facilities.c b/net/x25/x25_facilities.c
-index 3a8c4c4..55187c8 100644
---- a/net/x25/x25_facilities.c
-+++ b/net/x25/x25_facilities.c
-@@ -61,6 +61,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 	while (len > 0) {
- 		switch (*p & X25_FAC_CLASS_MASK) {
- 		case X25_FAC_CLASS_A:
-+			if (len < 2)
-+				return 0;
- 			switch (*p) {
- 			case X25_FAC_REVERSE:
- 				if((p[1] & 0x81) == 0x81) {
-@@ -104,6 +106,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 			len -= 2;
- 			break;
- 		case X25_FAC_CLASS_B:
-+			if (len < 3)
-+				return 0;
- 			switch (*p) {
- 			case X25_FAC_PACKET_SIZE:
- 				facilities->pacsize_in  = p[1];
-@@ -125,6 +129,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 			len -= 3;
- 			break;
- 		case X25_FAC_CLASS_C:
-+			if (len < 4)
-+				return 0;
- 			printk(KERN_DEBUG "X.25: unknown facility %02X, "
- 			       "values %02X, %02X, %02X\n",
- 			       p[0], p[1], p[2], p[3]);
-@@ -132,6 +138,8 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 			len -= 4;
- 			break;
- 		case X25_FAC_CLASS_D:
-+			if (len < p[1] + 2)
-+				return 0;
- 			switch (*p) {
- 			case X25_FAC_CALLING_AE:
- 				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
-@@ -149,9 +157,7 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 				break;
- 			default:
- 				printk(KERN_DEBUG "X.25: unknown facility %02X,"
--					"length %d, values %02X, %02X, "
--					"%02X, %02X\n",
--					p[0], p[1], p[2], p[3], p[4], p[5]);
-+					"length %d\n", p[0], p[1]);
- 				break;
- 			}
- 			len -= p[1] + 2;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index aeb6a54..b7e3951 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1173,6 +1173,12 @@ unsigned long get_next_timer_interrupt(unsigned long now)
+ 	struct tvec_base *base = __get_cpu_var(tvec_bases);
+ 	unsigned long expires;
+ 
++	/*
++	 * Pretend that there is no timer pending if the cpu is offline.
++	 * Possible pending timers will be migrated later to an active cpu.
++	 */
++	if (cpu_is_offline(smp_processor_id()))
++		return now + NEXT_TIMER_MAX_DELTA;
+ 	spin_lock(&base->lock);
+ 	if (time_before_eq(base->next_timer, base->timer_jiffies))
+ 		base->next_timer = __next_timer_interrupt(base);
 -- 
 1.7.4.4
 
