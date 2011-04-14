@@ -1,45 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844Ab1DNS2R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:28:17 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:44889 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932959Ab1DNS2M (ORCPT
+	id S933126Ab1DNS2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:28:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38030 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933016Ab1DNRqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:28:12 -0400
-Date: Thu, 14 Apr 2011 20:28:01 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: George Spelvin <linux@horizon.com>, davej@redhat.com,
-        linux-kernel@vger.kernel.org, joro@8bytes.org
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110414182800.GA32000@ucw.cz>
-References: <20110413043246.24974.qmail@science.horizon.com>
- <BANLkTi=owU+pg299PPNryhL2DbEpBTDEoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=owU+pg299PPNryhL2DbEpBTDEoQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 14 Apr 2011 13:46:20 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 030/209] hpet: unmap unused I/O space
+Date: Thu, 14 Apr 2011 13:41:00 -0400
+Message-Id: <1302803039-9400-31-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Jiri Slaby <jslaby@suse.cz>
 
-> > Note that the discussion on the libmount mailing list revealed a possible
-> > kernel workaround: escape the hyphens as \055.  Damn hard to read for
-> > a human, but it does parse correctly, and the workaround can be fixed
-> > once the library updates have propagated.
-> 
-> I'd rather replace it with some non-dash character that is
-> human-readable, like '+' or some utf-8 sequence that _looks_ like a
-> dash.
+  =====================================================================
+  | This is a commit scheduled for the next v2.6.34 longterm release. |
+  | If you see a problem with using this for longterm, please comment.|
+  =====================================================================
 
-Just delete the dashes? IIRC UUIDs are fixed length binary numbers, so
-no info will be lost.
+commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
 
+When the initialization code in hpet finds a memory resource and does not
+find an IRQ, it does not unmap the memory resource previously mapped.
+
+There are buggy BIOSes which report resources exactly like this and what
+is worse the memory region bases point to normal RAM.  This normally would
+not matter since the space is not touched.  But when PAT is turned on,
+ioremap causes the page to be uncached and sets this bit in page->flags.
+
+Then when the page is about to be used by the allocator, it is reported
+as:
+
+BUG: Bad page state in process md5sum  pfn:3ed00
+page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
+page flags: 0x20000001000000(uncached)
+Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
+Call Trace:
+ [<ffffffff810df851>] bad_page+0xb1/0x100
+ [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
+ [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
+ [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
+...
+
+In this particular case:
+
+1) HPET returns 3ed00000 as memory region base, but it is not in
+reserved ranges reported by the BIOS (excerpt):
+ BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
+ BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
+
+2) there is no IRQ resource reported by HPET method. On the other
+hand, the Intel HPET specs (1.0a) says (3.2.5.1):
+_CRS (
+  // Report 1K of memory consumed by this Timer Block
+  memory range consumed
+  // Optional: only used if BIOS allocates Interrupts [1]
+  IRQs consumed
+)
+
+[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
+Legacy 8254/Legacy RTC hardware still exists, the device objects
+associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
+"consumed resources".
+
+So in theory we should check whether if it is the case and use those
+interrupts instead.
+
+Anyway the address reported by the BIOS here is bogus, so non-presence
+of IRQ doesn't mean the "optional" part in point 2).
+
+Since I got no reply previously, fix this by simply unmapping the space
+when IRQ is not found and memory region was mapped previously.  It would
+be probably more safe to walk the resources again and unmap appropriately
+depending on type.  But as we now use only ioremap for both 2 memory
+resource types, it is not necessarily needed right now.
+
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
+
+Reported-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/char/hpet.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index 7447ffa..1716177 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -981,6 +981,8 @@ static int hpet_acpi_add(struct acpi_device *device)
+ 		return -ENODEV;
+ 
+ 	if (!data.hd_address || !data.hd_nirqs) {
++		if (data.hd_address)
++			iounmap(data.hd_address);
+ 		printk("%s: no address or irqs in _CRS\n", __func__);
+ 		return -ENODEV;
+ 	}
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.4.4
+
