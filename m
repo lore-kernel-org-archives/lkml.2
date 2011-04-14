@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933862Ab1DNSUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:20:03 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48407 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933764Ab1DNST6 (ORCPT
+	id S933671Ab1DNR5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:57:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41431 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933236Ab1DNR5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:19:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=q/RpvLfVu+LXGmWMpMPARK0w70iP/VxvqKPaPnuoLhOnEJ/+gVVIv6pBojmUzejV9+
-         DBFfstvTKEI+lqPqu3ON6bUJUaIG4w5iOfEd4FMelupbeSlJicDl61CYRBC7EZgJukS7
-         dS0Cr9Kxu3Y2T7ijENNHFDeLFRAGJTZfPQ5/c=
-Message-ID: <4DA73AC9.6080901@gmail.com>
-Date: Thu, 14 Apr 2011 22:19:53 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Shaun Ruffell <sruffell@digium.com>
-CC: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] perf, x86: fix unknown NMIs on a Pentium4 box
-References: <4DA70950.3060102@openvz.org> <20110414174327.GA8863@elte.hu> <20110414174420.GA8950@elte.hu> <4DA733B1.1010702@gmail.com> <20110414181226.GA14390@digium.com>
-In-Reply-To: <20110414181226.GA14390@digium.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Apr 2011 13:57:44 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 117/209] V4L/DVB: ivtvfb: prevent reading uninitialized stack memory
+Date: Thu, 14 Apr 2011 13:54:35 -0400
+Message-Id: <1302803767-9715-4-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+ <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 10:12 PM, Shaun Ruffell wrote:
-> On Thu, Apr 14, 2011 at 09:49:37PM +0400, Cyrill Gorcunov wrote:
->> On 04/14/2011 09:44 PM, Ingo Molnar wrote:
->>>
->>> below is the commit which needs to be fixed - note that i improved the 
->>> changelog, please keep these fixes for future submissions.
->>
->> Yes, thanks, i'll ping back as only get nit resolved.
-> 
-> Cyrill, I had not been running perf when I was testing, but I was able to
-> reproduce what Ingo reported. I'll make sure to run that on any future tests
-> as well. My apologies.
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-Btw, Shaun, perf top wont work on P4 for a while (since it needs nmi-watchdog
-to be disabled).
+  =====================================================================
+  | This is a commit scheduled for the next v2.6.34 longterm release. |
+  | If you see a problem with using this for longterm, please comment.|
+  =====================================================================
 
+commit 405707985594169cfd0b1d97d29fcb4b4c6f2ac9 upstream.
+
+The FBIOGET_VBLANK device ioctl allows unprivileged users to read 16
+bytes of uninitialized stack memory, because the "reserved" member of
+the fb_vblank struct declared on the stack is not altered or zeroed
+before being copied back to the user.  This patch takes care of it.
+
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/media/video/ivtv/ivtvfb.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/ivtv/ivtvfb.c b/drivers/media/video/ivtv/ivtvfb.c
+index de2ff1c..e320b7e 100644
+--- a/drivers/media/video/ivtv/ivtvfb.c
++++ b/drivers/media/video/ivtv/ivtvfb.c
+@@ -458,6 +458,8 @@ static int ivtvfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
+ 			struct fb_vblank vblank;
+ 			u32 trace;
+ 
++			memset(&vblank, 0, sizeof(struct fb_vblank));
++
+ 			vblank.flags = FB_VBLANK_HAVE_COUNT |FB_VBLANK_HAVE_VCOUNT |
+ 					FB_VBLANK_HAVE_VSYNC;
+ 			trace = read_reg(0x028c0) >> 16;
 -- 
-    Cyrill
+1.7.4.4
+
