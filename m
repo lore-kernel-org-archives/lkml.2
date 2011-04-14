@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805Ab1DNKby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 06:31:54 -0400
-Received: from gmmr5.centrum.cz ([90.183.38.152]:46556 "EHLO gmmr5.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932726Ab1DNKbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 06:31:52 -0400
-To: "Eric Dumazet" <eric.dumazet@gmail.com>
-Subject: Re: Regression from 2.6.36
-Date: Thu, 14 Apr 2011 12:31:50 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Changli Gao" <xiaosuo@gmail.com>,
-        "=?UTF-8?Q?Am=C3=A9rico=20Wang?=" <xiyou.wangcong@gmail.com>,
-        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
-        "Jiri Slaby" <jirislaby@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>
-References: <20110315132527.130FB80018F1@mail1005.cent>	 <20110317001519.GB18911@kroah.com> <20110407120112.E08DCA03@pobox.sk>	 <4D9D8FAA.9080405@suse.cz>	 <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com>	 <1302177428.3357.25.camel@edumazet-laptop>	 <1302178426.3357.34.camel@edumazet-laptop>	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>	 <1302190586.3357.45.camel@edumazet-laptop>	 <20110412154906.70829d60.akpm@linux-foundation.org>	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>	 <20110412183132.a854bffc.akpm@linux-foundation.org>	 <1302662256.2811.27.camel@edumazet-laptop>	 <20110413141600.28793661.akpm@linux-foundation.org>	 <1302747058.3549.7.camel@edumazet-laptop>	 <20110413222803.38e42baf.akpm@linux-foundation.org>	 <1302762718.3549.229.camel@edumazet-laptop>	 <20110414110816.EA841944@pobox.sk> <1302776866.3248.2.camel@edumazet-laptop>
-In-Reply-To: <1302776866.3248.2.camel@edumazet-laptop>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
+	id S932790Ab1DNKcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 06:32:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42128 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932666Ab1DNKcq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 06:32:46 -0400
+Date: Thu, 14 Apr 2011 11:32:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
+Message-ID: <20110414103200.GF1611@n2100.arm.linux.org.uk>
+References: <1299134429.100626.661279191478.0.gpush@pororo> <1302754859.2767.30.camel@pororo> <20110414100048.GB1611@n2100.arm.linux.org.uk> <1302776705.28876.113.camel@pasglop>
 MIME-Version: 1.0
-Message-Id: <20110414123150.F96CAA51@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302776705.28876.113.camel@pasglop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 14, 2011 at 08:25:05PM +1000, Benjamin Herrenschmidt wrote:
+> On Thu, 2011-04-14 at 11:00 +0100, Russell King - ARM Linux wrote:
+> > 
+> > I will take it, but at the moment I'm rather unhappy about the response
+> > from the community to Linus' complaint.
+> > 
+> > If existing platform maintainers can show that moving over to this will
+> > result in a net reduction of code under arch/arm, then that will be good.
+> > What I don't want to see at the moment is arch/arm increasing in size as
+> > a result of any change.  We desperately need to see a reduction for the
+> > next merge window.
+> 
+> It's a chicken and egg... platform maintainers wait for you to take it
+> and you wait for them to take it :-)
+> 
+> It seems to me that this fits well into the category of "better common
+> abstractions" that was discussed in the thread initiated by Linus as one
+> of the ways to improve on the "clutter"...
 
-It's completely 64bit system.
+That depends - sometimes creating generic stuff results in a net increase
+in the overall size, and that's something that Linus also complained about.
 
+According to linux-next, where we are at the moment with arch/arm is a
+net increase of 6000 lines since the close of the last merge window,
+and arch/arm is responsible for almost 75% of arch/ changes.  It looks
+very much like the same situation which Linus complained about.
 
-
-______________________________________________________________
-> Od: "Eric Dumazet" <eric.dumazet@gmail.com>
-> Komu: azurIt <azurit@pobox.sk>
-> Dátum: 14.04.2011 12:28
-> Predmet: Re: Regression from 2.6.36
->
-> CC: "Andrew Morton" <akpm@linux-foundation.org>, "Changli Gao" <xiaosuo@gmail.com>, "Américo Wang" <xiyou.wangcong@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>
->Le jeudi 14 avril 2011 à 11:08 +0200, azurIt a écrit :
->> Here it is:
->> 
->> 
->> # ls /proc/31416/fd | wc -l
->> 5926
->
->Hmm, if its a 32bit kernel, I am afraid Andrew patch wont solve the
->problem...
->
->[On 32bit kernel, we still use kmalloc() up to 8192 files ]
->
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
->
+Can arch/arm continue to increase in size?  I think not.  We desperately
+need patches which reduce the size of arch/arm, and we desperately need
+them *now*.
