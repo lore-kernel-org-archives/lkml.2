@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758707Ab1DNPMz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 11:12:55 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55915 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763Ab1DNPMx convert rfc822-to-8bit (ORCPT
+	id S1758752Ab1DNPN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 11:13:59 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33643 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752167Ab1DNPN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 11:12:53 -0400
+	Thu, 14 Apr 2011 11:13:58 -0400
+Date: Thu, 14 Apr 2011 11:13:58 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Mike Frysinger <vapier@gentoo.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] freezer: should barriers be smp ?
+In-Reply-To: <BANLkTi=_+kYvs3_dsXifd_rkxfmFzJLttA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1104141104160.2487-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1301630392-20793-1-git-send-email-bgat@billgatliff.com>
-References: <1301630392-20793-1-git-send-email-bgat@billgatliff.com>
-Date: Thu, 14 Apr 2011 10:12:51 -0500
-Message-ID: <BANLkTik6Ftsy2yTA7LBKTUDJkqXPf4JeSA@mail.gmail.com>
-Subject: Re: [PWM v9 0/3] Implement a generic PWM framework
-From: Bill Gatliff <bgat@billgatliff.com>
-To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guys:
+On Wed, 13 Apr 2011, Mike Frysinger wrote:
 
+> > On Wed, Apr 13, 2011 at 18:49, Rafael J. Wysocki wrote:
 
-Anyone have any comment on this patch series?  Is it finally ready for Linus?
+> > In my opinion is an architecture problem, not the freezer code problem.
+> 
+> OK, we have a patch pending locally which populates all barriers with
+> this logic, but based on my understanding of things, that didnt seem
+> correct.  i guess i'm reading too much into the names ... i'd expect
+> the opposite behavior where "rmb" is only for UP needs while "smp_rmb"
+> is a rmb which additionally covers SMP.
 
-Thanks!
+You are misinterpreting the names and the concepts, both.
 
+First, you need to understand that memory barriers are needed only for
+purposes of synchronizing between two different entities capable of
+accessing memory (obviously it's not necessary to synchronize an entity
+with itself).  One of those entities is always a CPU, of course; the
+other entity could be a DMA-capable device or it could be another CPU.
 
-b.g.
+A device driver might need to use memory barriers even on a UP
+platform, because it might need to synchronize the CPU with the device
+it is driving.
 
+But core kernel code is concerned only with CPUs.  Therefore on UP 
+systems, core kernel code (such as the freezer) never needs to use 
+memory barriers.
 
-On Thu, Mar 31, 2011 at 10:59 PM, Bill Gatliff <bgat@billgatliff.com> wrote:
-> This patch series contains the ninth attempt at implementation of a
-> generic PWM device interface framework.  Think gpiolib, but for
-> devices and pseudo-devices that generate pulse-wave-modulated outputs.
->
-> Compared to the previous version, this patch series:
->
->  * Fixes an unbalanced get_device()/put_device()
->
-> A git tree containing these patches may be found here:
->
->    http://git.billgatliff.com/pwm.git
->
->
-> Regards,
->
->
-> b.g.
->
-> Bill Gatliff (3):
->  PWM: Implement a generic PWM framework
->  PWM: GPIO+hrtimer device emulation
->  PWM: Atmel PWMC driver
->
->  Documentation/pwm.txt    |  276 ++++++++++++++++++++++
->  MAINTAINERS              |    8 +
->  drivers/Kconfig          |    2 +
->  drivers/Makefile         |    2 +
->  drivers/pwm/Kconfig      |   29 +++
->  drivers/pwm/Makefile     |    7 +
->  drivers/pwm/atmel-pwmc.c |  452 ++++++++++++++++++++++++++++++++++++
->  drivers/pwm/gpio-pwm.c   |  332 ++++++++++++++++++++++++++
->  drivers/pwm/pwm.c        |  580 ++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pwm/pwm.h  |  143 ++++++++++++
->  10 files changed, 1831 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/pwm.txt
->  create mode 100644 drivers/pwm/Kconfig
->  create mode 100644 drivers/pwm/Makefile
->  create mode 100644 drivers/pwm/atmel-pwmc.c
->  create mode 100644 drivers/pwm/gpio-pwm.c
->  create mode 100644 drivers/pwm/pwm.c
->  create mode 100644 include/linux/pwm/pwm.h
->
-> --
-> 1.7.4.1
->
->
+That's the difference between rmb() and smp_rmb().  rmb() _always_ 
+generates a memory barrier, so it should be used only in device 
+drivers.  smp_rmb() generates a memory barrier only if CONFIG_SMP is 
+enabled; otherwise it merely generates a compiler barrier.
 
+In the freezer, there is no reason to use rmb() and wmb().  It should 
+use smp_rmb() and smp_wmb().
 
+Alan Stern
 
--- 
-Bill Gatliff
-bgat@billgatliff.com
