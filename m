@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab1DNS2j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:28:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38030 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933016Ab1DNRqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933011Ab1DNRqU (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Apr 2011 13:46:20 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37949 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932959Ab1DNRqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 13:46:16 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jiri Slaby <jslaby@suse.cz>,
+Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 030/209] hpet: unmap unused I/O space
-Date: Thu, 14 Apr 2011 13:41:00 -0400
-Message-Id: <1302803039-9400-31-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 045/209] sys_semctl: fix kernel stack leakage
+Date: Thu, 14 Apr 2011 13:41:15 -0400
+Message-Id: <1302803039-9400-46-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,95 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
+commit 982f7c2b2e6a28f8f266e075d92e19c0dd4c6e56 upstream.
 
-When the initialization code in hpet finds a memory resource and does not
-find an IRQ, it does not unmap the memory resource previously mapped.
+The semctl syscall has several code paths that lead to the leakage of
+uninitialized kernel stack memory (namely the IPC_INFO, SEM_INFO,
+IPC_STAT, and SEM_STAT commands) during the use of the older, obsolete
+version of the semid_ds struct.
 
-There are buggy BIOSes which report resources exactly like this and what
-is worse the memory region bases point to normal RAM.  This normally would
-not matter since the space is not touched.  But when PAT is turned on,
-ioremap causes the page to be uncached and sets this bit in page->flags.
+The copy_semid_to_user() function declares a semid_ds struct on the stack
+and copies it back to the user without initializing or zeroing the
+"sem_base", "sem_pending", "sem_pending_last", and "undo" pointers,
+allowing the leakage of 16 bytes of kernel stack memory.
 
-Then when the page is about to be used by the allocator, it is reported
-as:
+The code is still reachable on 32-bit systems - when calling semctl()
+newer glibc's automatically OR the IPC command with the IPC_64 flag, but
+invoking the syscall directly allows users to use the older versions of
+the struct.
 
-BUG: Bad page state in process md5sum  pfn:3ed00
-page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
-page flags: 0x20000001000000(uncached)
-Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
-Call Trace:
- [<ffffffff810df851>] bad_page+0xb1/0x100
- [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
- [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
- [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
-...
-
-In this particular case:
-
-1) HPET returns 3ed00000 as memory region base, but it is not in
-reserved ranges reported by the BIOS (excerpt):
- BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
- BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
-
-2) there is no IRQ resource reported by HPET method. On the other
-hand, the Intel HPET specs (1.0a) says (3.2.5.1):
-_CRS (
-  // Report 1K of memory consumed by this Timer Block
-  memory range consumed
-  // Optional: only used if BIOS allocates Interrupts [1]
-  IRQs consumed
-)
-
-[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
-Legacy 8254/Legacy RTC hardware still exists, the device objects
-associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
-"consumed resources".
-
-So in theory we should check whether if it is the case and use those
-interrupts instead.
-
-Anyway the address reported by the BIOS here is bogus, so non-presence
-of IRQ doesn't mean the "optional" part in point 2).
-
-Since I got no reply previously, fix this by simply unmapping the space
-when IRQ is not found and memory region was mapped previously.  It would
-be probably more safe to walk the resources again and unmap appropriately
-depending on type.  But as we now use only ioremap for both 2 memory
-resource types, it is not necessarily needed right now.
-
-Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
-
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/hpet.c |    2 ++
+ ipc/sem.c |    2 ++
  1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index 7447ffa..1716177 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -981,6 +981,8 @@ static int hpet_acpi_add(struct acpi_device *device)
- 		return -ENODEV;
+diff --git a/ipc/sem.c b/ipc/sem.c
+index dbef95b..b4c1641 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -608,6 +608,8 @@ static unsigned long copy_semid_to_user(void __user *buf, struct semid64_ds *in,
+ 	    {
+ 		struct semid_ds out;
  
- 	if (!data.hd_address || !data.hd_nirqs) {
-+		if (data.hd_address)
-+			iounmap(data.hd_address);
- 		printk("%s: no address or irqs in _CRS\n", __func__);
- 		return -ENODEV;
- 	}
++		memset(&out, 0, sizeof(out));
++
+ 		ipc64_perm_to_ipc_perm(&in->sem_perm, &out.sem_perm);
+ 
+ 		out.sem_otime	= in->sem_otime;
 -- 
 1.7.4.4
 
