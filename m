@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1DNWNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 18:13:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59571 "EHLO mga02.intel.com"
+	id S1754006Ab1DNWOO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 18:14:14 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:44985 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753885Ab1DNWNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 18:13:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,213,1301900400"; 
-   d="scan'208";a="733528573"
-Message-ID: <4DA7719F.4060905@linux.intel.com>
-Date: Thu, 14 Apr 2011 15:13:51 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1753906Ab1DNWOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 18:14:10 -0400
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Stable <stable@kernel.org>, John Kacur <jkacur@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [stable] [PATCH V4] futex: set FLAGS_HAS_TIMEOUT during demux
- for FUTEX_WAIT
-References: <ef361f98ac0e0771c14ec7facb5b41086eb4ba50.1302817381.git.dvhart@linux.intel.com> <20110414215656.GB14169@kroah.com>
-In-Reply-To: <20110414215656.GB14169@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <19879.29101.783037.726594@pilspetsen.it.uu.se>
+Date: Fri, 15 Apr 2011 00:14:05 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Hugh Dickins <hughd@google.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, Jens Axboe <jaxboe@fusionio.com>,
+        kevin diggs <diggskevin38@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michel Daenzer <michel@daenzer.net>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
+In-Reply-To: <BANLkTimykvKp=bwsFyNE9fWqcE9Ffws6bA@mail.gmail.com>
+References: <19876.35918.322649.256455@pilspetsen.it.uu.se>
+	<1302646173.28876.53.camel@pasglop>
+	<1302652502.28876.76.camel@pasglop>
+	<19877.23529.745123.819112@pilspetsen.it.uu.se>
+	<1302685102.28876.81.camel@pasglop>
+	<BANLkTimc84A8kddarnhvrcab3iKZc0HZAg@mail.gmail.com>
+	<1302736869.28876.91.camel@pasglop>
+	<BANLkTika8FY1dD_hOQ4wMhHzuQ2Qt8fg7A@mail.gmail.com>
+	<1302771756.15520.100.camel@thor.local>
+	<BANLkTimykvKp=bwsFyNE9fWqcE9Ffws6bA@mail.gmail.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 02:56 PM, Greg KH wrote:
-> On Thu, Apr 14, 2011 at 02:43:01PM -0700, Darren Hart wrote:
->> The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
->> restart futex_wait() without a timeout after a signal.
->>
->> Commit b41277dc7a18ee332d in 2.6.38 introduced the regression by accidentally
->> removing the the FLAGS_HAS_TIMEOUT assignment from futex_wait() during the setup
->> of the restart block. Restore the originaly behavior.
->>
->> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=32922
->>
->> V2: Added references to commit message.
->> V3: Set flag during restart block instead of do_futex()
->> V4: Correct stupid order of assignment mistake pointed out by Eric
->>
->> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
->> Reported-by: Tim Smith <tsmith201104@yahoo.com>
->> Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: Ingo Molnar <mingo@elte.hu>
->> CC: Eric Dumazet <eric.dumazet@gmail.com>
->> CC: John Kacur <jkacur@redhat.com>
->> ---
+On Thu, 14 Apr 2011 14:25:31 -0700, Hugh Dickins wrote:
+> Mikael,
 > 
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
+> Something worth trying: turn off CONFIG_IDE.  That's what I need to
+> boot 2.6.39-rc[1-3] on PowerPC G5.
+> 
+> I know Jens has been fixing problems with IDE versus his plug/unplug
+> changes, but it's still not fixed for me in rc3.
+> 
+> In other mail http://lkml.org/lkml/2011/4/14/614
+> I see Linus recommending his post-rc3 commit 6631e635c65d
+> but I've not tried that myself yet.
+> 
+> Hugh
 
-Sigh, apologies. Fixing, will add stable to CC: in changelog. Gives me a
-chance to improve the subject anyway.
+Hugh,
 
-Ingo, Greg, please ignore this and the previous V[123] patches.
+With CONFIG_IDE disabled I could finally boot 2.6.39-rc3 on my G5.
+I lost the DVD drive, but that's fine for now.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Thanks!
+
+/Mikael
