@@ -1,85 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670Ab1DNCoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 22:44:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56351 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758440Ab1DNCoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 22:44:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,208,1301900400"; 
-   d="scan'208";a="628296987"
-Subject: Re: [patch v3 2/3] percpu_counter: fix code for 32bit systems for
- UP
-From: Shaohua Li <shaohua.li@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tj@kernel.org" <tj@kernel.org>, "cl@linux.com" <cl@linux.com>
-In-Reply-To: <1302748530.3549.24.camel@edumazet-laptop>
-References: <20110414020447.979946152@sli10-conroe.sh.intel.com>
-	 <20110414020747.201728372@sli10-conroe.sh.intel.com>
-	 <1302748530.3549.24.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Apr 2011 10:44:04 +0800
-Message-ID: <1302749044.3981.183.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S932190Ab1DNCrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 22:47:41 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64191 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758379Ab1DNCrk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Apr 2011 22:47:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=xfIoarRwgAJXRgSolaa8N+M4AolYWXI7YOI6r05LyK3KvosuhayqbdiIwObmqvDg+n
+         aMnt2kBd+YR6EX4rRNYhwIgloMEzTibyeFm+XigZBp6BbQX6FNwePPXkM+BBmZughsnp
+         uTWey8ZSRGpDCGgQFR1ycnbiFqmoUW3VmN94I=
+From: Timothy Courrejou <timcour@gmail.com>
+To: viro@zeniv.linux.org.uk
+Cc: eparis@redhat.com, linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Timothy Courrejou <timcour@gmail.com>
+Subject: [PATCH] audit: fixed line length and space coding style issues.
+Date: Wed, 13 Apr 2011 19:47:25 -0700
+Message-Id: <1302749245-29303-1-git-send-email-timcour@gmail.com>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-14 at 10:35 +0800, Eric Dumazet wrote:
-> Le jeudi 14 avril 2011 à 10:04 +0800, shaohua.li@intel.com a écrit :
-> > pièce jointe document texte brut (percpu-counter-32bits.patch)
-> > percpu_counter.counter is a 's64'. Accessing it in 32-bit system is racing.
-> > we need some locking to protect it otherwise some very wrong value could be
-> > accessed.
-> > 
-> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > ---
-> >  include/linux/percpu_counter.h |   37 ++++++++++++++++++++++++++-----------
-> >  1 file changed, 26 insertions(+), 11 deletions(-)
-> > 
-> > Index: linux/include/linux/percpu_counter.h
-> > ===================================================================
-> > --- linux.orig/include/linux/percpu_counter.h	2011-04-14 08:50:45.000000000 +0800
-> > +++ linux/include/linux/percpu_counter.h	2011-04-14 09:09:14.000000000 +0800
-> > @@ -89,9 +89,20 @@ struct percpu_counter {
-> >  	s64 count;
-> >  };
-> >  
-> > -static inline int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
-> > +static inline void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
-> >  {
-> > +#if BITS_PER_LONG == 32
-> > +	preempt_disable();
-> >  	fbc->count = amount;
-> > +	preempt_enable();
-> > +#else
-> > +	fbc->count = amount;
-> > +#endif
-> > +}
-> > +
-> > +static inline int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
-> > +{
-> > +	percpu_counter_set(fbc, amount);
-> >  	return 0;
-> >  }
-> >  
-> 
-> Please dont do this and obfuscate the code.
-> 
-> percpu_counter_init() cannot be racy.
-> 
-> Its like saying spin_lock_init() could be racy.
-> 
-> No other thread/cpu is supposed to use the object if not yet
-> initialized.
-that's true. I just want the code looks consistent and this doesn't
-really obfuscate the code to me.
+Fixed coding style issues.
 
-Thanks,
-Shaohua
+Signed-off-by: Timothy Courrejou <timcour@gmail.com>
+---
+ kernel/audit_watch.c |   41 ++++++++++++++++++++++++-----------------
+ 1 files changed, 24 insertions(+), 17 deletions(-)
+
+diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
+index e683869..ffe2ee4 100644
+--- a/kernel/audit_watch.c
++++ b/kernel/audit_watch.c
+@@ -35,13 +35,14 @@
+ /*
+  * Reference counting:
+  *
+- * audit_parent: lifetime is from audit_init_parent() to receipt of an FS_IGNORED
+- * 	event.  Each audit_watch holds a reference to its associated parent.
++ * audit_parent: lifetime is from audit_init_parent() to receipt of an
++ *      FS_IGNORED event.  Each audit_watch holds a reference to its associated
++ *      parent.
+  *
+  * audit_watch: if added to lists, lifetime is from audit_init_watch() to
+- * 	audit_remove_watch().  Additionally, an audit_watch may exist
+- * 	temporarily to assist in searching existing filter data.  Each
+- * 	audit_krule holds a reference to its associated watch.
++ *      audit_remove_watch().  Additionally, an audit_watch may exist
++ *      temporarily to assist in searching existing filter data.  Each
++ *      audit_krule holds a reference to its associated watch.
+  */
+ 
+ struct audit_watch {
+@@ -158,7 +159,8 @@ static struct audit_parent *audit_init_parent(struct path *path)
+ 
+ 	fsnotify_init_mark(&parent->mark, audit_watch_free_mark);
+ 	parent->mark.mask = AUDIT_FS_WATCH;
+-	ret = fsnotify_add_mark(&parent->mark, audit_watch_group, inode, NULL, 0);
++	ret = fsnotify_add_mark(&parent->mark, audit_watch_group,
++				inode, NULL, 0);
+ 	if (ret < 0) {
+ 		audit_free_parent(parent);
+ 		return ERR_PTR(ret);
+@@ -235,7 +237,8 @@ out:
+ 	return new;
+ }
+ 
+-static void audit_watch_log_rule_change(struct audit_krule *r, struct audit_watch *w, char *op)
++static void audit_watch_log_rule_change(struct audit_krule *r,
++					struct audit_watch *w, char *op)
+ {
+ 	if (audit_enabled) {
+ 		struct audit_buffer *ab;
+@@ -306,7 +309,8 @@ static void audit_update_watch(struct audit_parent *parent,
+ 				audit_get_watch(nwatch);
+ 				nentry->rule.watch = nwatch;
+ 				list_add(&nentry->rule.rlist, &nwatch->rules);
+-				list_add_rcu(&nentry->list, &audit_inode_hash[h]);
++				list_add_rcu(&nentry->list,
++					     &audit_inode_hash[h]);
+ 				list_replace(&oentry->rule.list,
+ 					     &nentry->rule.list);
+ 			}
+@@ -481,12 +485,13 @@ void audit_remove_watch_rule(struct audit_krule *krule)
+ 	}
+ }
+ 
+-static bool audit_watch_should_send_event(struct fsnotify_group *group, struct inode *inode,
++static bool audit_watch_should_send_event(struct fsnotify_group *group,
++					  struct inode *inode,
+ 					  struct fsnotify_mark *inode_mark,
+ 					  struct fsnotify_mark *vfsmount_mark,
+ 					  __u32 mask, void *data, int data_type)
+ {
+-       return true;
++	return true;
+ }
+ 
+ /* Update watch data in audit rules based on fsnotify events. */
+@@ -518,9 +523,11 @@ static int audit_watch_handle_event(struct fsnotify_group *group,
+ 	};
+ 
+ 	if (mask & (FS_CREATE|FS_MOVED_TO) && inode)
+-		audit_update_watch(parent, dname, inode->i_sb->s_dev, inode->i_ino, 0);
++		audit_update_watch(parent, dname, inode->i_sb->s_dev,
++				   inode->i_ino, 0);
+ 	else if (mask & (FS_DELETE|FS_MOVED_FROM))
+-		audit_update_watch(parent, dname, (dev_t)-1, (unsigned long)-1, 1);
++		audit_update_watch(parent, dname,
++				   (dev_t)-1, (unsigned long)-1, 1);
+ 	else if (mask & (FS_DELETE_SELF|FS_UNMOUNT|FS_MOVE_SELF))
+ 		audit_remove_parent_watches(parent);
+ 
+@@ -528,11 +535,11 @@ static int audit_watch_handle_event(struct fsnotify_group *group,
+ }
+ 
+ static const struct fsnotify_ops audit_watch_fsnotify_ops = {
+-	.should_send_event = 	audit_watch_should_send_event,
+-	.handle_event = 	audit_watch_handle_event,
+-	.free_group_priv = 	NULL,
+-	.freeing_mark = 	NULL,
+-	.free_event_priv = 	NULL,
++	.should_send_event =    audit_watch_should_send_event,
++	.handle_event =         audit_watch_handle_event,
++	.free_group_priv =      NULL,
++	.freeing_mark =         NULL,
++	.free_event_priv =      NULL,
+ };
+ 
+ static int __init audit_watch_init(void)
+-- 
+1.7.4.2
 
