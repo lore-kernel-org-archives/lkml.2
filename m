@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab1DNAmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Apr 2011 20:42:24 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49110 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab1DNAmX (ORCPT
+	id S1757851Ab1DNAtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Apr 2011 20:49:00 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:58554 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756907Ab1DNAs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Apr 2011 20:42:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 14 Apr 2011 09:35:49 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        Andrey Vagin <avagin@openvz.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 0/4] forkbomb killer
-Message-Id: <20110414093549.80539260.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110414092033.0809.A69D9226@jp.fujitsu.com>
-References: <20110329101234.54d5d45a.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTi=pMapbVoUO6+7nUEg1bY4fb844-A@mail.gmail.com>
-	<20110414092033.0809.A69D9226@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 13 Apr 2011 20:48:58 -0400
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation
+ problem
+From: Mingming Cao <cmm@us.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Chris Mason <chris.mason@oracle.com>, Jeff Layton <jlayton@redhat.com>,
+        djwong <djwong@us.ibm.com>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <20110412005719.GA23077@infradead.org>
+References: <20110319000755.GD1110@tux1.beaverton.ibm.com>
+	 <20110321140451.GA7153@quack.suse.cz> <1300716666-sup-2087@think>
+	 <20110321164305.GC7153@quack.suse.cz>
+	 <20110406232938.GF1110@tux1.beaverton.ibm.com>
+	 <20110407165700.GB7363@quack.suse.cz>
+	 <20110408203135.GH1110@tux1.beaverton.ibm.com>
+	 <20110411124229.47bc28f6@corrin.poochiereds.net>
+	 <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop>
+	 <20110412005719.GA23077@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Apr 2011 17:48:48 -0700
+Message-ID: <1302742128.2586.274.camel@mingming-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Apr 2011 09:20:41 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-
-> Hi, Minchan, Kamezawa-san,
+On Mon, 2011-04-11 at 20:57 -0400, Christoph Hellwig wrote:
+> On Mon, Apr 11, 2011 at 05:46:52PM -0700, Mingming Cao wrote:
+> > Oh, right. Currently ext4_page_mkwrite drops the page lock before
+> > calling it's dirty the page (by write_begin() and write_end().  I
+> > suspect regrab the lock() after write_end() (with your proposed change)
+> > and returning with locked still leave the dirty by ext4_page_mkwrite
+> > unlocked.  We probably should to keep the page locked the page during
+> > the entire ext4_page_mkwrite() call. Any reason to drop the page lock()
+> > before calling aops->write_begin()?
 > 
-> > >> So whenever user push sysrq, older tasks would be killed and at last,
-> > >> root forkbomb task would be killed.
-> > >>
-> > >
-> > > Maybe good for a single user system and it can send Sysrq.
-> > > But I myself not very excited with this new feature becasuse I need to
-> > > run to push Sysrq ....
-> > >
-> > > Please do as you like, I think the idea itself is interesting.
-> > > But I love some automatic ones. I do other jobs.
-> > 
-> > Okay. Thanks for the comment, Kame.
-> > 
-> > I hope Andrew or someone gives feedback forkbomb problem itself before
-> > diving into this.
+> write_begin takes the page lock by itself.  That's one of the reasons why
+> block_page_mkwrite doesn't use plain ->write_begin / write_end, the
+> other beeing that we already get a page passed to use, so there's no
+> need to do the pagecache lookup or allocation done by
+> grab_cache_page_write_begin.
 > 
-> May I ask current status of this thread? I'm unhappy if our kernel keep 
-> to have forkbomb weakness. ;)
+> The best thing would be to completely drop ext4's current version
+> of page_mkwrite and start out with a copy of block_page_mkwrite which
+> has the journalling calls added back into it.
 
-I've stopped updating but can restart at any time. (And I found a bug ;)
+The problem is the locking order, we can't hold page lock then start the
+journal lock. Kjournald will need to hold the journal lock first, then
+commit, commit may need to callback writepages, which need to hold the
+page lock.
 
-> Can we consider to take either or both idea?
-> 
-I think yes, both idea can be used.
-One idea is
- - kill all recent threads by Sysrq. The user can use Sysrq multiple times
-   until forkbomb stops.
-Another(mine) is
- - kill all problematic in automatic. This adds some tracking costs but
-   can be configurable.
 
-Thanks,
--Kame
+I looked at ext3, in that case, ext3 even don't have ext3_page_mkwrite()
+to do the stable page yet. It requires some block reservation/delayed
+allocation for filling holes in mmaped IO case. Jan tried that before I
+don't think the proposal get far.
+
+
+Now looking back ext4_page_mkwrite(), it calls write_begin(), as long as
+we do wait in write_begin() things would be fine, right? It seems
+Darrick already did that wait per Dave Chinner's suggestion when grab
+the page and lock that page. But still a puzzle to me why that's not
+sufficient.
+
+
+Mingming
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
