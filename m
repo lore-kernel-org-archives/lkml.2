@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab1DNOmV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:42:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758881Ab1DNOmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:42:20 -0400
-Date: Thu, 14 Apr 2011 10:42:09 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        device-mapper development <dm-devel@redhat.com>
-Subject: Re: dm: improve block integrity support
-Message-ID: <20110414144208.GA26155@redhat.com>
-References: <alpine.LFD.2.00.1103290006070.2774@localhost6.localdomain6>
- <alpine.LFD.2.00.1103290040300.2774@localhost6.localdomain6>
- <20110328230319.GA12790@redhat.com>
- <4D918347.7050500@fusionio.com>
- <20110329132032.GA22921@redhat.com>
- <yq1lizyhwlr.fsf@sermon.lab.mkp.net>
- <20110329135800.GB23508@redhat.com>
- <20110401174259.GA22598@redhat.com>
- <20110414140925.GA25803@redhat.com>
+	id S1758931Ab1DNOnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:43:25 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:55639 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758881Ab1DNOnY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 10:43:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=VkToSnIy/F/hR1wOYVA5mOu2kmhwHZHSh7SVMPzFqU9ZfTOD7dpkaaJUzWkRxnNdbE
+         kgyvy/oHIKOmRb7PRkG0Jhih9tqIVfw3Vc5pF4Wq5xXEfE72iMNgTFDMd/qbc/m/1z6V
+         Y79cHvOOu4b6yJ0ll9gaBvUCThMGxxRb5C8HU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414140925.GA25803@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201104132150.05623.richard@nod.at>
+References: <201104132150.05623.richard@nod.at>
+Date: Thu, 14 Apr 2011 21:43:23 +0700
+Message-ID: <BANLkTinj1vtMk4qo-dc46KWXScjDDt4vCg@mail.gmail.com>
+Subject: Re: gcc-4.6.0 generates no code for sub_preempt_count()
+From: masterkom masterkom <masterkom33@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14 2011 at 10:09am -0400,
-Mike Snitzer <snitzer@redhat.com> wrote:
+Hi,, I have the project to make Operating System using linux kernel.
+That system is multiplatform, which is combine linux and window . This
+project hope All people that who has familiar with windows can use
+this operating system without sin. This project is free..
 
-> [trimming CCs so as not to pester as many people directly]
-> 
-> On Fri, Apr 01 2011 at  1:42pm -0400,
-> Mike Snitzer <snitzer@redhat.com> wrote:
-> 
-> > The current block integrity (DIF/DIX) support in DM is verifying that
-> > all devices' integrity profiles match during DM device resume (which
-> > is past the point of no return).  To some degree that is unavoidable
-> > (stacked DM devices force this late checking).  But for most DM
-> > devices (which aren't stacking on other DM devices) the ideal time to
-> > verify all integrity profiles match is during table load.
-> > 
-> > Introduce the notion of an "initialized" integrity profile: a profile
-> > that was blk_integrity_register()'d with a non-NULL 'blk_integrity'
-> > template.  Add blk_integrity_is_initialized() to allow checking if a
-> > profile was initialized.
-> > 
-> > Update DM integrity support to:
-> > - check all devices with _initialized_ integrity profiles match
-> >   during table load; uninitialized profiles (e.g. for underlying DM
-> >   device(s) of a stacked DM device) are ignored.
-> > - disallow a table load that would result in an integrity profile that
-> >   conflicts with a DM device's existing (in-use) integrity profile
-> > - avoid clearing an existing integrity profile
-> > - validate all integrity profiles match during resume; but if they
-> >   don't all we can do is report the mismatch (during resume we're past
-> >   the point of no return)
-> > 
-> > Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> > Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> 
-> Hi Martin,
-> 
-> Any chance you've had a look at this?  I'm most interested in whether
-> the code works with the various integrity profiles you have.
-> 
-> I'd really like to get this reviewed and queued for upstream so that it
-> doesn't die on the vine.
+I hape there people can help us to done this project ,, thx,,,
 
-Ah wow, just noticed this got in through the block tree over a week ago:
-http://git.kernel.org/linus/a63a5cf84dac7a23a57
-
-Thanks Jens!
-
-Martin,
-I've done enough testing that I am confident the DM integrity support is
-in a better place with this change.  But I'd still really appreciate it
-if you could verify all is well.
-
-Mike
+On 4/14/11, Richard Weinberger <richard@nod.at> wrote:
+> Hi,
+>
+> I'm facing a very strange issue with gcc-4.6.0 and UML.
+> Within __local_bh_enable() gcc generates no code for sub_preempt_count().
+>
+> See:
+> http://userweb.kernel.org/~rw/uml-gcc460/__local_bh_enable-gcc460.txt
+> vs.
+> http://userweb.kernel.org/~rw/uml-gcc460/__local_bh_enable-gcc431.txt
+>
+> Interestingly it generates code for add_preempt_count().
+> I can reproduce this on x86 and x86_64.
+>
+> The problem has to do with UML's current_thread_info() function.
+> When I replace it with arch/x86's (unportable) variant gcc generates code.
+>
+> Any ideas whether this is a gcc or a kernel issue?
+> Thanks,
+> //richard
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
