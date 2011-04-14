@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab1DNSCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:02:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42384 "EHLO
+	id S933768Ab1DNSCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:02:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42382 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965073Ab1DNR7M (ORCPT
+	with ESMTP id S965070Ab1DNR7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:59:12 -0400
+	Thu, 14 Apr 2011 13:59:11 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
+Cc: stable-review@kernel.org, Dave Airlie <airlied@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 205/209] block: check for proper length of iov entries earlier in blk_rq_map_user_iov()
-Date: Thu, 14 Apr 2011 13:56:03 -0400
-Message-Id: <1302803767-9715-92-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 199/209] drm: fix unsigned vs signed comparison issue in modeset ctl ioctl.
+Date: Thu, 14 Apr 2011 13:55:57 -0400
+Message-Id: <1302803767-9715-86-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,47 +22,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaotian Feng <dfeng@redhat.com>
+From: Dave Airlie <airlied@redhat.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 5478755616ae2ef1ce144dded589b62b2a50d575 upstream.
+commit 1922756124ddd53846877416d92ba4a802bc658f upstream.
 
-commit 9284bcf checks for proper length of iov entries in
-blk_rq_map_user_iov(). But if the map is unaligned, kernel
-will break out the loop without checking for the proper length.
-So we need to check the proper length before the unalign check.
+This fixes CVE-2011-1013.
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Reported-by: Matthiew Herrb (OpenBSD X.org team)
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- block/blk-map.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_irq.c |    3 ++-
+ include/drm/drmP.h        |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-map.c b/block/blk-map.c
-index 30a7e51..749effa 100644
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -201,12 +201,13 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
- 	for (i = 0; i < iov_count; i++) {
- 		unsigned long uaddr = (unsigned long)iov[i].iov_base;
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index a263b70..0ddd109 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -545,7 +545,8 @@ int drm_modeset_ctl(struct drm_device *dev, void *data,
+ 		    struct drm_file *file_priv)
+ {
+ 	struct drm_modeset_ctl *modeset = data;
+-	int crtc, ret = 0;
++	int ret = 0;
++	unsigned int crtc;
  
-+		if (!iov[i].iov_len)
-+			return -EINVAL;
-+
- 		if (uaddr & queue_dma_alignment(q)) {
- 			unaligned = 1;
- 			break;
- 		}
--		if (!iov[i].iov_len)
--			return -EINVAL;
- 	}
- 
- 	if (unaligned || (q->dma_pad_mask & len) || map_data)
+ 	/* If drm_vblank_init() hasn't been called yet, just no-op */
+ 	if (!dev->num_crtcs)
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 2f3b3a0..b447a35 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1022,7 +1022,7 @@ struct drm_device {
+ 	struct pci_controller *hose;
+ #endif
+ 	struct drm_sg_mem *sg;	/**< Scatter gather memory */
+-	int num_crtcs;                  /**< Number of CRTCs on this device */
++	unsigned int num_crtcs;                  /**< Number of CRTCs on this device */
+ 	void *dev_private;		/**< device private data */
+ 	void *mm_private;
+ 	struct address_space *dev_mapping;
 -- 
 1.7.4.4
 
