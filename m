@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab1DNJv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:51:58 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35658 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079Ab1DNJv4 convert rfc822-to-8bit (ORCPT
+	id S932635Ab1DNJ4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:56:06 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37203 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382Ab1DNJ4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:51:56 -0400
+	Thu, 14 Apr 2011 05:56:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Z7fqg80Yn6Z3E4sIaPQJOU4pJcKfdqcAx3vPhDFI9m/QmIV5PJaZNNK5TZuRzpeKDa
-         DDdcY6rywPLz24FKn+RghLgwLuYSUHftyYE8giXJVi/Dkg7De4cfMXmOqAG/6SOa99xg
-         lrfySde96DCzAir/elrfiiA3EqfG7QFqXgQfQ=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimcy16ggC0C66V-fbuaJwg4Sna4Qw@mail.gmail.com>
-References: <1302634375-2378-1-git-send-email-zajec5@gmail.com>
-	<20110413163113.GA24015@kroah.com>
-	<BANLkTin-4HrJzNrLOxRy_-a98S3ZF4aSQw@mail.gmail.com>
-	<1302726703.8015.1.camel@dev.znau.edu.ua>
-	<BANLkTimwZOJ0a5kVfaUzEcsMc39H999u0A@mail.gmail.com>
-	<1302727516.8015.9.camel@dev.znau.edu.ua>
-	<BANLkTi=wzzzeF-PmqLt9o8arW7nRaFRRJw@mail.gmail.com>
-	<1302729243.8479.1.camel@dev.znau.edu.ua>
-	<BANLkTinLn4Ug=gX4coHJbSzrkxdSMjgGeg@mail.gmail.com>
-	<BANLkTimcy16ggC0C66V-fbuaJwg4Sna4Qw@mail.gmail.com>
-Date: Thu, 14 Apr 2011 11:51:55 +0200
-Message-ID: <BANLkTika3oprbxqYJTq=Fzms+LMdnxtwYg@mail.gmail.com>
-Subject: Re: [RFC][PATCH V4] axi: add AXI bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Jonas Gorski <jonas.gorski@gmail.com>
-Cc: George Kashperko <george@znau.edu.ua>, Greg KH <greg@kroah.com>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        d=google.com; s=beta;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=dT5A9+AXRMx5Ao/n31gN/z24gNq1ZLeQ2l0Yh28yioAzniKMFnvreqJPfOvkagRbPo
+         kzCdncSn84V2fv8Mj/dA==
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: gadget: storage_common: use kstrto*() [bug fix]
+Date: Thu, 14 Apr 2011 11:55:43 +0200
+Message-Id: <6ae9c2910c59d7b8ce92e5293a3097e39485ac16.1302774745.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110414021635.GA13169@suse.de>
+References: <20110414021635.GA13169@suse.de>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/14 Jonas Gorski <jonas.gorski@gmail.com>:
-> On 13 April 2011 23:19, Rafał Miłecki <zajec5@gmail.com> wrote:
->> 2011/4/13 George Kashperko <george@znau.edu.ua>:
->>>> I had no idea what you were referring to. We do not dig into PCIe
->>>> functions yet, so I believe for now we need this "if".
->>> You are already deep inside. Your host code drives pci function.
->>
->> But I don't use multiple PCIe functions, do not focus on that at all.
->
-> I think what George meant is the following (please correct me if I
-> understood you wrong) and has nothing to do with PCIe functions:
-> <http://lxr.free-electrons.com/source/drivers/staging/brcm80211/util/aiutils.c#L522>
+This commit fixes an embarrassing bug in the "storage_common:
+use kstrto*()" patch which caused fsg_store_ro() to return
+zero instead of the length of the consumed buffer.
 
-Ahh, thanks, I though PCIe functions are something different, that we
-have to register for pci device differently to access them or sth.
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/usb/gadget/storage_common.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
+On Thu, 14 Apr 2011 04:16:35 +0200, Greg KH <gregkh@suse.de> wrote:
+> Ugh, I applied the first one already :(
+
+Yes, I hoped you could quickly replace the patch without anyone
+noticing.
+
+> Care to send a follow-on patch that fixes this properly?
+
+Natuarry.
+
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 109635a..1fa4f70 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -708,7 +708,7 @@ static ssize_t fsg_show_file(struct device *dev, struct device_attribute *attr,
+ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 			    const char *buf, size_t count)
+ {
+-	ssize_t		rc = count;
++	ssize_t		rc;
+ 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+ 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
+ 	unsigned	ro;
+@@ -729,6 +729,7 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 		curlun->ro = ro;
+ 		curlun->initially_ro = ro;
+ 		LDBG(curlun, "read-only status set to %d\n", curlun->ro);
++		rc = count;
+ 	}
+ 	up_read(filesem);
+ 	return rc;
 -- 
-Rafał
+1.7.3.1
+
