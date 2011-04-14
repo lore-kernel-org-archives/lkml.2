@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933567Ab1DNRrp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:47:45 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38660 "EHLO
+	id S933533Ab1DNRrh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:47:37 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38607 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933550Ab1DNRrm (ORCPT
+	with ESMTP id S933471Ab1DNRr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:47:42 -0400
+	Thu, 14 Apr 2011 13:47:27 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ken Sumrall <ksumrall@android.com>,
-        Anfei <anfei.zhou@gmail.com>, "Anand V. Avati" <avati@gluster.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Miller <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 089/209] fuse: fix attributes after open(O_TRUNC)
-Date: Thu, 14 Apr 2011 13:41:59 -0400
-Message-Id: <1302803039-9400-90-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 106/209] sysctl: min/max bounds are optional
+Date: Thu, 14 Apr 2011 13:42:16 -0400
+Message-Id: <1302803039-9400-107-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,64 +25,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ken Sumrall <ksumrall@android.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a0822c55779d9319939eac69f00bb729ea9d23da upstream.
+commit a9febbb4bd1302b6f01aa1203b0a804e4e5c9e25 upstream
 
-The attribute cache for a file was not being cleared when a file is opened
-with O_TRUNC.
+sysctl check complains with a WARN() when proc_doulongvec_minmax() or
+proc_doulongvec_ms_jiffies_minmax() are used by a vector of longs (with
+more than one element), with no min or max value specified.
 
-If the filesystem's open operation truncates the file ("atomic_o_trunc"
-feature flag is set) then the kernel should invalidate the cached st_mtime
-and st_ctime attributes.
+This is unexpected, given we had a bug on this min/max handling :)
 
-Also i_size should be explicitly be set to zero as it is used sometimes
-without refreshing the cache.
-
-Signed-off-by: Ken Sumrall <ksumrall@android.com>
-Cc: Anfei <anfei.zhou@gmail.com>
-Cc: "Anand V. Avati" <avati@gluster.com>
-Signed-off-by: Miklos Szeredi <miklos@szeredi.hu>
+Reported-by: Jiri Slaby <jirislaby@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Miller <davem@davemloft.net>
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/fuse/file.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/sysctl_check.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index a9f5e13..cbd2214 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -134,6 +134,7 @@ EXPORT_SYMBOL_GPL(fuse_do_open);
- void fuse_finish_open(struct inode *inode, struct file *file)
- {
- 	struct fuse_file *ff = file->private_data;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
- 
- 	if (ff->open_flags & FOPEN_DIRECT_IO)
- 		file->f_op = &fuse_direct_io_file_operations;
-@@ -141,6 +142,15 @@ void fuse_finish_open(struct inode *inode, struct file *file)
- 		invalidate_inode_pages2(inode->i_mapping);
- 	if (ff->open_flags & FOPEN_NONSEEKABLE)
- 		nonseekable_open(inode, file);
-+	if (fc->atomic_o_trunc && (file->f_flags & O_TRUNC)) {
-+		struct fuse_inode *fi = get_fuse_inode(inode);
-+
-+		spin_lock(&fc->lock);
-+		fi->attr_version = ++fc->attr_version;
-+		i_size_write(inode, 0);
-+		spin_unlock(&fc->lock);
-+		fuse_invalidate_attr(inode);
-+	}
- }
- 
- int fuse_open_common(struct inode *inode, struct file *file, bool isdir)
+diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
+index 04cdcf7..10b90d8 100644
+--- a/kernel/sysctl_check.c
++++ b/kernel/sysctl_check.c
+@@ -143,15 +143,6 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+ 				if (!table->maxlen)
+ 					set_fail(&fail, table, "No maxlen");
+ 			}
+-			if ((table->proc_handler == proc_doulongvec_minmax) ||
+-			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
+-				if (table->maxlen > sizeof (unsigned long)) {
+-					if (!table->extra1)
+-						set_fail(&fail, table, "No min");
+-					if (!table->extra2)
+-						set_fail(&fail, table, "No max");
+-				}
+-			}
+ #ifdef CONFIG_PROC_SYSCTL
+ 			if (table->procname && !table->proc_handler)
+ 				set_fail(&fail, table, "No proc_handler");
 -- 
 1.7.4.4
 
