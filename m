@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933882Ab1DNSQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 14:16:30 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51343 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933658Ab1DNSQZ (ORCPT
+	id S964909Ab1DNSQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:16:50 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41846 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964855Ab1DNR6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 14:16:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=OD/pfAqkjo4wsdLyLoE2A0wcqofW8jVYLARQYYDQtm3YLBsteHy5aBrLAfp1xwmfZu
-         BwQglQTXyCabdZ7jmRJkOJN529e3L6GRaHpm3xzNmPqyIwPULZUgTN2uHuCdD7H9kVG5
-         Le9tTVa58VRW0X4FLS92PC+TMn81tU615SGPs=
-MIME-Version: 1.0
-In-Reply-To: <20110414180936.GA20924@redhat.com>
-References: <1302760895-13459-1-git-send-email-vapier@gentoo.org>
- <1302760895-13459-2-git-send-email-vapier@gentoo.org> <20110414180936.GA20924@redhat.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 14 Apr 2011 14:16:03 -0400
-X-Google-Sender-Auth: qz7Fliv3A0Fs2fIAt5VlcxMvA1s
-Message-ID: <BANLkTikxq-xUhYmbE93+aGHoiEEbHWkoWQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] asm-generic/ptrace.h: start a common low level ptrace helper
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Apr 2011 13:58:09 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Joe Jin <joe.jin@oracle.com>,
+        Sathya Perla <sathyap@serverengines.com>,
+        Subbu Seetharaman <subbus@serverengines.com>,
+        Sarveshwar Bandi <sarveshwarb@serverengines.com>,
+        Ajit Khaparde <ajitk@serverengines.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 145/209] driver/net/benet: fix be_cmd_multicast_set() memcpy bug
+Date: Thu, 14 Apr 2011 13:55:03 -0400
+Message-Id: <1302803767-9715-32-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
+ <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 14:09, Oleg Nesterov wrote:
-> On 04/14, Mike Frysinger wrote:
->> +#ifndef GET_IP
->> +#define GET_IP(regs) ((regs)->pc)
->> +#endif
->
-> Could you explain this ifndef ?
->
-> IIUC, this should be included by arch/*/asm/ptrace.h. Isn't it better
-> to simply require that if you include asm-generic/ptrace.h you should
-> provide the necessary GET_* macros?
->
-> (regs)->pc looks a bit strange in asm-generic. But please feel free
-> to ignore.
+From: Joe Jin <joe.jin@oracle.com>
 
-my view of asm-generic is to put as much common/sane-defaults in there
-as possible to minimize code duplication in arch code.  when it comes
-to the register names, i looked at the arches to see what people used.
-while x86 uses "ip", the majority of ports use "pc", thus the
-majority of ports wont have to define their own GET_IP helper.
--mike
+  =====================================================================
+  | This is a commit scheduled for the next v2.6.34 longterm release. |
+  | If you see a problem with using this for longterm, please comment.|
+  =====================================================================
+
+commit 408cc293c29ada769ae772420a39961320da1854 upstream
+
+Regarding  benet be_cmd_multicast_set() function, now using
+netdev_for_each_mc_addr() helper for mac address copy, but
+when copying to req->mac[] did not increase of the index.
+
+Cc: Sathya Perla <sathyap@serverengines.com>
+Cc: Subbu Seetharaman <subbus@serverengines.com>
+Cc: Sarveshwar Bandi <sarveshwarb@serverengines.com>
+Cc: Ajit Khaparde <ajitk@serverengines.com>
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/net/benet/be_cmds.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/benet/be_cmds.c b/drivers/net/benet/be_cmds.c
+index d0ef4ac..e0578d1 100644
+--- a/drivers/net/benet/be_cmds.c
++++ b/drivers/net/benet/be_cmds.c
+@@ -1163,7 +1163,7 @@ int be_cmd_multicast_set(struct be_adapter *adapter, u32 if_id,
+ 
+ 		i = 0;
+ 		netdev_for_each_mc_addr(mc, netdev)
+-			memcpy(req->mac[i].byte, mc->dmi_addr, ETH_ALEN);
++			memcpy(req->mac[i++].byte, mc->dmi_addr, ETH_ALEN);
+ 	} else {
+ 		req->promiscuous = 1;
+ 	}
+-- 
+1.7.4.4
+
