@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759058Ab1DNOz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 10:55:27 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49895 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759025Ab1DNOzZ (ORCPT
+	id S1759040Ab1DNO5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 10:57:10 -0400
+Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:53304 "EHLO
+	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab1DNO5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 10:55:25 -0400
-Date: Thu, 14 Apr 2011 10:55:24 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Mike Frysinger <vapier@gentoo.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be smp?
-In-Reply-To: <201104140034.41727.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1104141040060.2487-100000@iolanthe.rowland.org>
+	Thu, 14 Apr 2011 10:57:09 -0400
+X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
+Message-ID: <4DA70B32.1090505@ise.pw.edu.pl>
+Date: Thu, 14 Apr 2011 16:56:50 +0200
+From: wzab <wzab@ise.pw.edu.pl>
+Reply-To: wzab@ise.pw.edu.pl
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: wzab@ise.pw.edu.pl
+CC: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: Screen corrupted in Xorg with KMS on 945GM/GMS, 943/940GML chipset
+ with kernel 2.6.38.2
+References: <4DA4243A.5030805@ise.pw.edu.pl> <20110412184143.27dbf34f@neptune.home> <4DA4832F.2090600@ise.pw.edu.pl>
+In-Reply-To: <4DA4832F.2090600@ise.pw.edu.pl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Apr 2011, Rafael J. Wysocki wrote:
+W dniu 12.04.2011 18:51, wzab pisze:
+> W dniu 12.04.2011 18:41, Bruno Prémont pisze:
+>> [CCing intel-gfx]
+>>
+>> On Tue, 12 April 2011 Wojciech Zabołotny<wzab@ise.pw.edu.pl>  wrote:
+>>> After I've upgraded my kernel to 2.6.38.2, I started to experience very
+>>> often screen corruption in X (it happened also earlier with 2.6.37.3,
+>>> but now is very often.
+>>> Hardware seems to be OK. I attach  sample screendumps, configuration of
+>>> my kernel, log of the X server and output of the lspci command.
+>>
+>> This looks similar to the xchat corruptions I see (on i855).
+>>
+>> Have a look at #34980 (also 945 family) and #35460 on 
+>> bugs.freedesktop.org.
+>>
+>> Bruno
+>
+> Yes, the similar symptoms have also been reported in Ubuntu
+>
+> https://bugs.launchpad.net/ubuntu/+source/xorg/+bug/737900
+>
+> I have yet another machine, with an older chipset - VGA compatible 
+> controller: Intel Corporation 82865G Integrated Graphics Controller 
+> (rev 02) no corruptions occur in this machine.
+Ooops, sorry, today I have noticed the same problems on the machine with 
+Intel Corporation 82865G Integrated Graphics Controller (rev 02).
 
-> On Thursday, April 14, 2011, Alan Stern wrote:
-> > On Wed, 13 Apr 2011, Rafael J. Wysocki wrote:
-> > 
-> > > The above means that smp_*mb() are defined as *mb() if CONFIG_SMP is set,
-> > > which basically means that *mb() are more restrictive than the corresponding
-> > > smp_*mb().  More precisely, they also cover the cases in which the CPU
-> > > reorders instructions on uniprocessor, which we definitely want to cover.
-> > > 
-> > > IOW, your patch would break things on uniprocessor where the CPU reorders
-> > > instructions.
-> > 
-> > How could anything break on a UP system?  CPUs don't reorder 
-> > instructions that drastically.  For example, no CPU will ever violate
-> > this assertion:
-> > 
-> > 	x = 0;
-> > 	y = x;
-> > 	x = 1;
-> > 	assert(y == 0);
-> > 
-> > even if it does reorder the second and third statements internally.  
-> > This is guaranteed by the C language specification.
-> 
-> Well, you conveniently removed the patch from your reply. :-)
-
-All the patch does is replace an instance of wmb() with smp_wmb() and 
-an instance of rmb() with smp_rmb().
-
-> For example, there's no reason why the CPU cannot reorder things so that
-> the "if (frozen(p))" is (speculatively) done before the "if (!freezing(p))"
-> if there's only a compiler barrier between them.
-
-That's true.  On an SMP system, smp_wmb() is identical to wmb(), so
-there will be a true memory barrier when it is needed.  On a UP system,
-reordering the instructions in this way will not change the final
-result -- in particular, it won't break anything.
-
-In your example, the two tests look at different flags in *p.  
-Speculative reordering of the tests won't make any difference unless
-one of the flags gets changed in between.  On a UP system, the only way
-the flag can be changed is for the CPU to change it, in which case
-the CPU would obviously know that the speculative result had to be
-invalidated.
-
-> > > > Documentation/memory-barriers.txt:
-> > > > SMP memory barriers are reduced to compiler barriers on uniprocessor compiled
-> > > > systems because it is assumed that a CPU will appear to be self-consistent,
-> > > > and will order overlapping accesses correctly with respect to itself.
-> > > 
-> > > Exactly, which is not guaranteed in general (e.g. on Alpha).  That is, some
-> > > CPUs can reorder instructions in such a way that a compiler barrier is not
-> > > sufficient to prevent breakage.
-> > 
-> > I don't think this is right.  You _can_ assume that Alphas appear to be
-> > self-consistent.  If they didn't, you wouldn't be able to use them at
-> > all.
-> 
-> I'm quite convinced that the statement "some CPUs can reorder instructions in
-> such a way that a compiler barrier is not sufficient to prevent breakage" is
-> correct.
-
-No.  The correct statement is "Some CPUs can reorder instructions in 
-such a way that a compiler barrier is not sufficient to prevent 
-breakage on SMP systems."
-
-Just for kicks...  Which was added to the kernel first: SMP support or 
-memory barriers?  I don't know the answer; it would take a fair amount 
-of digging to find out.
-
-Alan Stern
-
+Wojtek
