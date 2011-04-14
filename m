@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011Ab1DNRqU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:46:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37949 "EHLO
+	id S933935Ab1DNS25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 14:28:57 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38006 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932959Ab1DNRqQ (ORCPT
+	with ESMTP id S933003Ab1DNRqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:46:16 -0400
+	Thu, 14 Apr 2011 13:46:20 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 045/209] sys_semctl: fix kernel stack leakage
-Date: Thu, 14 Apr 2011 13:41:15 -0400
-Message-Id: <1302803039-9400-46-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 049/209] eCryptfs: Clear LOOKUP_OPEN flag when creating lower file
+Date: Thu, 14 Apr 2011 13:41:19 -0400
+Message-Id: <1302803039-9400-50-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,52 +21,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit 982f7c2b2e6a28f8f266e075d92e19c0dd4c6e56 upstream.
+commit 2e21b3f124eceb6ab5a07c8a061adce14ac94e14 upstream.
 
-The semctl syscall has several code paths that lead to the leakage of
-uninitialized kernel stack memory (namely the IPC_INFO, SEM_INFO,
-IPC_STAT, and SEM_STAT commands) during the use of the older, obsolete
-version of the semid_ds struct.
+eCryptfs was passing the LOOKUP_OPEN flag through to the lower file
+system, even though ecryptfs_create() doesn't support the flag. A valid
+filp for the lower filesystem could be returned in the nameidata if the
+lower file system's create() function supported LOOKUP_OPEN, possibly
+resulting in unencrypted writes to the lower file.
 
-The copy_semid_to_user() function declares a semid_ds struct on the stack
-and copies it back to the user without initializing or zeroing the
-"sem_base", "sem_pending", "sem_pending_last", and "undo" pointers,
-allowing the leakage of 16 bytes of kernel stack memory.
+However, this is only a potential problem in filesystems (FUSE, NFS,
+CIFS, CEPH, 9p) that eCryptfs isn't known to support today.
 
-The code is still reachable on 32-bit systems - when calling semctl()
-newer glibc's automatically OR the IPC command with the IPC_64 flag, but
-invoking the syscall directly allows users to use the older versions of
-the struct.
+https://bugs.launchpad.net/ecryptfs/+bug/641703
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Kevin Buhr
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- ipc/sem.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/ecryptfs/inode.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index dbef95b..b4c1641 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -608,6 +608,8 @@ static unsigned long copy_semid_to_user(void __user *buf, struct semid64_ds *in,
- 	    {
- 		struct semid_ds out;
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index 21801ee..31c8b2f 100644
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -70,15 +70,19 @@ ecryptfs_create_underlying_file(struct inode *lower_dir_inode,
+ 	struct vfsmount *lower_mnt = ecryptfs_dentry_to_lower_mnt(dentry);
+ 	struct dentry *dentry_save;
+ 	struct vfsmount *vfsmount_save;
++	unsigned int flags_save;
+ 	int rc;
  
-+		memset(&out, 0, sizeof(out));
-+
- 		ipc64_perm_to_ipc_perm(&in->sem_perm, &out.sem_perm);
+ 	dentry_save = nd->path.dentry;
+ 	vfsmount_save = nd->path.mnt;
++	flags_save = nd->flags;
+ 	nd->path.dentry = lower_dentry;
+ 	nd->path.mnt = lower_mnt;
++	nd->flags &= ~LOOKUP_OPEN;
+ 	rc = vfs_create(lower_dir_inode, lower_dentry, mode, nd);
+ 	nd->path.dentry = dentry_save;
+ 	nd->path.mnt = vfsmount_save;
++	nd->flags = flags_save;
+ 	return rc;
+ }
  
- 		out.sem_otime	= in->sem_otime;
 -- 
 1.7.4.4
 
