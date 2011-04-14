@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab1DNR5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:57:36 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41271 "EHLO
+	id S933664Ab1DNR5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:57:42 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41364 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933616Ab1DNR5e (ORCPT
+	with ESMTP id S933236Ab1DNR5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:57:34 -0400
+	Thu, 14 Apr 2011 13:57:40 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, andrew hendry <andrew.hendry@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 115/209] memory corruption in X.25 facilities parsing
-Date: Thu, 14 Apr 2011 13:54:33 -0400
-Message-Id: <1302803767-9715-2-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 119/209] crypto: padlock - Fix AES-CBC handling on odd-block-sized input
+Date: Thu, 14 Apr 2011 13:54:37 -0400
+Message-Id: <1302803767-9715-6-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1302803767-9715-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1302803039-9400-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,60 +22,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: andrew hendry <andrew.hendry@gmail.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
   =====================================================================
   | This is a commit scheduled for the next v2.6.34 longterm release. |
   | If you see a problem with using this for longterm, please comment.|
   =====================================================================
 
-commit a6331d6f9a4298173b413cf99a40cc86a9d92c37 upstream.
+commit c054a076a1bd4731820a9c4d638b13d5c9bf5935 upstream.
 
-Signed-of-by: Andrew Hendry <andrew.hendry@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+On certain VIA chipsets AES-CBC requires the input/output to be
+a multiple of 64 bytes.  We had a workaround for this but it was
+buggy as it sent the whole input for processing when it is meant
+to only send the initial number of blocks which makes the rest
+a multiple of 64 bytes.
+
+As expected this causes memory corruption whenever the workaround
+kicks in.
+
+Reported-by: Phil Sutter <phil@nwl.cc>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/x25/x25_facilities.c |    8 ++++----
- net/x25/x25_in.c         |    2 ++
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/crypto/padlock-aes.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/x25/x25_facilities.c b/net/x25/x25_facilities.c
-index 771bab0..3a8c4c4 100644
---- a/net/x25/x25_facilities.c
-+++ b/net/x25/x25_facilities.c
-@@ -134,15 +134,15 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 		case X25_FAC_CLASS_D:
- 			switch (*p) {
- 			case X25_FAC_CALLING_AE:
--				if (p[1] > X25_MAX_DTE_FACIL_LEN)
--					break;
-+				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
-+					return 0;
- 				dte_facs->calling_len = p[2];
- 				memcpy(dte_facs->calling_ae, &p[3], p[1] - 1);
- 				*vc_fac_mask |= X25_MASK_CALLING_AE;
- 				break;
- 			case X25_FAC_CALLED_AE:
--				if (p[1] > X25_MAX_DTE_FACIL_LEN)
--					break;
-+				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
-+					return 0;
- 				dte_facs->called_len = p[2];
- 				memcpy(dte_facs->called_ae, &p[3], p[1] - 1);
- 				*vc_fac_mask |= X25_MASK_CALLED_AE;
-diff --git a/net/x25/x25_in.c b/net/x25/x25_in.c
-index 372ac22..3b67027 100644
---- a/net/x25/x25_in.c
-+++ b/net/x25/x25_in.c
-@@ -119,6 +119,8 @@ static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametyp
- 						&x25->vc_facil_mask);
- 			if (len > 0)
- 				skb_pull(skb, len);
-+			else
-+				return -1;
- 			/*
- 			 *	Copy any Call User Data.
- 			 */
+diff --git a/drivers/crypto/padlock-aes.c b/drivers/crypto/padlock-aes.c
+index 2e992bc..8a515ba 100644
+--- a/drivers/crypto/padlock-aes.c
++++ b/drivers/crypto/padlock-aes.c
+@@ -286,7 +286,7 @@ static inline u8 *padlock_xcrypt_cbc(const u8 *input, u8 *output, void *key,
+ 	if (initial)
+ 		asm volatile (".byte 0xf3,0x0f,0xa7,0xd0"	/* rep xcryptcbc */
+ 			      : "+S" (input), "+D" (output), "+a" (iv)
+-			      : "d" (control_word), "b" (key), "c" (count));
++			      : "d" (control_word), "b" (key), "c" (initial));
+ 
+ 	asm volatile (".byte 0xf3,0x0f,0xa7,0xd0"	/* rep xcryptcbc */
+ 		      : "+S" (input), "+D" (output), "+a" (iv)
 -- 
 1.7.4.4
 
