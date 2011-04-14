@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab1DNILz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 04:11:55 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34550 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757127Ab1DNILw convert rfc822-to-8bit (ORCPT
+	id S1757433Ab1DNIOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 04:14:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45976 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756786Ab1DNIOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 04:11:52 -0400
-Date: Thu, 14 Apr 2011 09:09:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110414090914.2d643362@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
-	<20110412090207.GE19819@8bytes.org>
-	<BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
-	<20110412184433.GF19819@8bytes.org>
-	<20110413064609.GA18777@elte.hu>
-	<20110413172147.GI19819@8bytes.org>
-	<4DA5F62F.3030504@kernel.org>
-	<20110413193459.GL19819@8bytes.org>
-	<4DA60C30.4060606@kernel.org>
-	<BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
-	<4DA6145D.9070703@kernel.org>
-	<BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
-	<4DA655E7.3000904@zytor.com>
-	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
-	<BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Thu, 14 Apr 2011 04:14:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=YBFod4n2tYgqd/P10EQ7wzLReYnu1IoMTK0/WuWUgg9VbXy0ORCQjxUba6dpWTe952
+         1EuxV9sG3IefZjvwnLJEqoqiMdgj5XdvXkA8bVa1y0k02PdCCFgQ7T/ipEQzx0t6Cnns
+         zsnRcOO4U2h/0CWMQ+VOUP3bP6z+uM6gYZkZY=
+Subject: Re: 2.6.38 sbrk regression
+From: raz ben yehuda <raziebe@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20110413172127.GB5734@random.random>
+References: <1302692638.15225.14.camel@raz.scalemp.com>
+	 <20110413125146.GR29444@random.random>
+	 <1302703579.17536.1.camel@raz.scalemp.com>
+	 <20110413172127.GB5734@random.random>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Apr 2011 11:13:19 +0300
+Message-ID: <1302768799.2706.15.camel@raz.scalemp.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Apr 2011 19:33:40 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Andrea Hello
 
-> On Wednesday, April 13, 2011, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Wednesday, April 13, 2011, H. Peter Anvin <hpa@zytor.com> wrote:
-> >>
-> >> Yes.  However, even if we *do* revert (and the time is running short on
-> >> not reverting) I would like to understand this particular one, simply
-> >> because I think it may very well be a problem that is manifesting itself
-> >> in other ways on other systems.
-> 
->  sorry, fingerfart. Anyway, I agree 100%.
-> 
->  we definitely want to also understand the reason for things not
-> working, even if we do revert..
+I performed the second benchmark on 2.6.39-rc3, not 38. I am sorry for
+the typo ( dell keyboard is too small ).
 
-Definitely because if it fails when the "magic" involves the GART base it
-starts to sound like something may be hitting the wrong address space or
-not flushing properly.
+1. First benchmark was performed on 2.6.38, no compaction and with
+slab=y. regression of 13% compared to 2.6.27
+
+2. second benchmark was performed on 2.6.39-rc3, with compaction and
+slab. resulted like 2.6.38, 13% regression compared to 2.6.27. So the
+2.6.39-rc1 fix is probably related to something else.
+
+3. It does not matter if i disable thp or not.  regression still exits.
+
+I will update you more in following few days. 
+
+thank you for your help.
+
+
+
+On Wed, 2011-04-13 at 19:21 +0200, Andrea Arcangeli wrote:
+> On Wed, Apr 13, 2011 at 05:06:19PM +0300, raz ben yehuda wrote:
+> > ok, managed to build 38-rc3 ( keep forgetting make mrproper ).
+> > problem is still there:
+> 
+> Oops I thought it was typo on your prev email so I didn't answer
+> assuming you would test 39-rc like I suggested in my prev email, I
+> really meant 2.6.39-rc3.
+> 
+> The fix I refer to is d527caf22e48480b102c7c6ee5b9ba12170148f7 and
+> it's included in >= 2.6.39-rc1. 38-rc3 has THP but not this
+> changeset. We tried to push it for 38 final but it was a bit late so
+> it got merged immediately in 39-rc1 to stay on the safe side (it's
+> only a performance issue and the other longstanding irq/sched latency
+> issues in compaction that got fixed in 39-rc1 where actually more
+> relevant than the compaction-kswapd removal).
+
 
