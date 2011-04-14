@@ -1,93 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab1DNPrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 11:47:25 -0400
-Received: from www.sr71.net ([198.145.64.142]:45243 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab1DNPrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 11:47:23 -0400
-X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Apr 2011 11:47:23 EDT
-Subject: BUILD_BUG_ON() breaks sparse gfp_t checks
-From: Dave Hansen <dave@sr71.net>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jan Beulich <JBeulich@novell.com>, Christoph Lameter <cl@linux.com>,
-        akpm <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 14 Apr 2011 08:41:35 -0700
-Message-ID: <1302795695.14658.6801.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1759183Ab1DNPrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 11:47:31 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:52210 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759155Ab1DNPr2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 11:47:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=cvFp2emGzcgjMPTcmcdFeEjPjz2QIsJEQLt9s/YsR8dxjPM5x/0FMPQ6istll04nXO
+         kymZKIw5mUBa2W0ytsyA==
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCHv3] usb: core: Change usb_create_sysfs_intf_files()' return type to void
+Date: Thu, 14 Apr 2011 17:47:09 +0200
+Message-Id: <8443bc847f5daeb55abbeb779068e7ff7e7332c9.1302795943.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110413232315.GA9949@kroah.com>
+References: <20110413232315.GA9949@kroah.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running sparse on page_alloc.c today, it errors out:
-        
-        mm/page_alloc.c:96:5: warning: symbol 'percpu_pagelist_fraction' was not declared. Should it be static?
-        mm/page_alloc.c:175:5: warning: symbol 'min_free_kbytes' was not declared. Should it be static?
-        include/linux/gfp.h:254:17: error: bad constant expression
-        include/linux/gfp.h:254:17: error: cannot size expression
+The usb_create_sysfs_intf_files() function always returned zero even
+if it failed to create sysfs fails.  Since this is a desired behaviour
+there is no need to return return code at all.  This commit changes
+function's return type (form int) to void.
 
-which is a line in gfp_zone():
-
-	BUILD_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
-
-That's really unfortunate, because it ends up hiding all of the other
-legitimate sparse messages (like I introduced with the appended patch):
-
-        mm/page_alloc.c:96:5: warning: symbol 'percpu_pagelist_fraction' was not declared. Should it be static?
-        mm/page_alloc.c:175:5: warning: symbol 'min_free_kbytes' was not declared. Should it be static?
-        mm/page_alloc.c:3692:15: warning: symbol '__early_pfn_to_nid' was not declared. Should it be static?
-        mm/page_alloc.c:5315:59: warning: incorrect type in argument 1 (different base types)
-        mm/page_alloc.c:5315:59:    expected unsigned long [unsigned] [usertype] size
-        mm/page_alloc.c:5315:59:    got restricted gfp_t [usertype] <noident>
-...
-
-Is sparse broken, or is that ?  Even if it is, should we be working
-around this somehow?  It looks like we've basically crippled sparse in
-some spots.
-
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 ---
+ drivers/usb/core/sysfs.c |   13 +++++--------
+ drivers/usb/core/usb.c   |    3 +--
+ drivers/usb/core/usb.h   |    2 +-
+ 3 files changed, 7 insertions(+), 11 deletions(-)
 
- linux-2.6.git-dave/include/linux/gfp.h |    3 ++-
- linux-2.6.git-dave/mm/page_alloc.c     |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff -puN include/linux/gfp.h~fix-gfp_h-sparse include/linux/gfp.h
---- linux-2.6.git/include/linux/gfp.h~fix-gfp_h-sparse	2011-04-14 08:23:33.402280424 -0700
-+++ linux-2.6.git-dave/include/linux/gfp.h	2011-04-14 08:32:33.782224008 -0700
-@@ -249,7 +249,7 @@ static inline enum zone_type gfp_zone(gf
+On Thu, 14 Apr 2011 01:23:15 +0200, Greg KH <greg@kroah.com> wrote:
+> I can't find this version of the patch in my email archive anywhere.
+>
+> Michal, can you resend it so I can apply it?
+
+Here it is.
+
+
+diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+index 6781c36..cf05b97 100644
+--- a/drivers/usb/core/sysfs.c
++++ b/drivers/usb/core/sysfs.c
+@@ -842,22 +842,19 @@ const struct attribute_group *usb_interface_groups[] = {
+ 	NULL
+ };
  
- 	z = (GFP_ZONE_TABLE >> (bit * ZONES_SHIFT)) &
- 					 ((1 << ZONES_SHIFT) - 1);
--
-+/*
- 	if (__builtin_constant_p(bit))
- 		BUILD_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
- 	else {
-@@ -257,6 +257,7 @@ static inline enum zone_type gfp_zone(gf
- 		BUG_ON((GFP_ZONE_BAD >> bit) & 1);
- #endif
- 	}
-+	*/
- 	return z;
+-int usb_create_sysfs_intf_files(struct usb_interface *intf)
++void usb_create_sysfs_intf_files(struct usb_interface *intf)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(intf);
+ 	struct usb_host_interface *alt = intf->cur_altsetting;
+-	int retval;
+ 
+ 	if (intf->sysfs_files_created || intf->unregistering)
+-		return 0;
++		return;
+ 
+-	if (alt->string == NULL &&
+-			!(udev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
++	if (!alt->string && !(udev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
+ 		alt->string = usb_cache_string(udev, alt->desc.iInterface);
+-	if (alt->string)
+-		retval = device_create_file(&intf->dev, &dev_attr_interface);
++	if (alt->string && device_create_file(&intf->dev, &dev_attr_interface))
++		;	/* We don't actually care if the function fails. */
+ 	intf->sysfs_files_created = 1;
+-	return 0;
  }
  
-diff -puN mm/page_alloc.c~fix-gfp_h-sparse mm/page_alloc.c
---- linux-2.6.git/mm/page_alloc.c~fix-gfp_h-sparse	2011-04-14 08:24:20.806271357 -0700
-+++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-14 08:24:35.554268529 -0700
-@@ -5312,6 +5312,7 @@ void *__init alloc_large_system_hash(con
- 			 */
- 			if (get_order(size) < MAX_ORDER) {
- 				table = alloc_pages_exact(size, GFP_ATOMIC);
-+				table = alloc_pages_exact(GFP_ATOMIC, size);
- 				kmemleak_alloc(table, size, 1, GFP_ATOMIC);
- 			}
- 		}
-_
-
-
--- Dave
+ void usb_remove_sysfs_intf_files(struct usb_interface *intf)
+diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
+index d9d4b16..8706fc9 100644
+--- a/drivers/usb/core/usb.c
++++ b/drivers/usb/core/usb.c
+@@ -953,8 +953,7 @@ static int usb_bus_notify(struct notifier_block *nb, unsigned long action,
+ 		if (dev->type == &usb_device_type)
+ 			(void) usb_create_sysfs_dev_files(to_usb_device(dev));
+ 		else if (dev->type == &usb_if_device_type)
+-			(void) usb_create_sysfs_intf_files(
+-					to_usb_interface(dev));
++			usb_create_sysfs_intf_files(to_usb_interface(dev));
+ 		break;
+ 
+ 	case BUS_NOTIFY_DEL_DEVICE:
+diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
+index d450b74..d44d4b7 100644
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -4,7 +4,7 @@
+ 
+ extern int usb_create_sysfs_dev_files(struct usb_device *dev);
+ extern void usb_remove_sysfs_dev_files(struct usb_device *dev);
+-extern int usb_create_sysfs_intf_files(struct usb_interface *intf);
++extern void usb_create_sysfs_intf_files(struct usb_interface *intf);
+ extern void usb_remove_sysfs_intf_files(struct usb_interface *intf);
+ extern int usb_create_ep_devs(struct device *parent,
+ 				struct usb_host_endpoint *endpoint,
+-- 
+1.7.3.1
 
