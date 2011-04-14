@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab1DNRaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 13:30:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58316 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751281Ab1DNRaY (ORCPT
+	id S1758451Ab1DNRbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 13:31:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35812 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756804Ab1DNRbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 13:30:24 -0400
+	Thu, 14 Apr 2011 13:31:38 -0400
+Date: Thu, 14 Apr 2011 13:31:36 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+cc: gregkh@suse.de, <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        <balbi@ti.com>,
+        "open list:USB GADGET/PERIPH..." <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH v3 2/5] uas: MS UAS Gadget driver - Infrastructure
+In-Reply-To: <1302788176-27972-1-git-send-email-tlinder@codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1104141328390.2487-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <201104141914.23529.bonganilinux@mweb.co.za>
-References: <201104051858.20304.bonganilinux@mweb.co.za> <201104141914.23529.bonganilinux@mweb.co.za>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 14 Apr 2011 10:29:34 -0700
-Message-ID: <BANLkTin=xwfr5aVhzyL_FFo3K3SNMW9OQw@mail.gmail.com>
-Subject: Re: [Regression] 2.6.38 ncpfs
-To: Bongani Hlope <bonganilinux@mweb.co.za>
-Cc: npiggin@kernel.dk, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Greg KH <greg@kroah.com>,
-        "Dr. Bernd Feige" <bernd.feige@uniklinik-freiburg.de>,
-        Petr Vandrovec <petr@vandrovec.name>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 10:14 AM, Bongani Hlope <bonganilinux@mweb.co.za> wrote:
->
-> The bug is caused by commit fb2d5b86aff355a27ebfc132d3c99f4a940cc3fe, which
-> was committed by Nick. Can you please either revert Nick's changes or include
-> the attached patch (or a better version, because I'm not that clued up with
-> ncpfs).
+On Thu, 14 Apr 2011, Tatyana Brokhman wrote:
 
-Hmm. Your patch isn't correct. You can't just do
+> This patch implements the infrastructure for the UAS gadget driver.
+> The UAS gadget driver registers as a second configuration of the MS
+> gadet driver.
+> 
+> A new module parameter was added to the mass_storage module:
+> bool use_uasp. (default = 0)
+> If this parameter is set to true, the mass_storage module will register
+> with the UAS configuration as the devices first configuration and
+> operate according to the UAS protocol.
 
-   if (!mutex_is_locked(&dentry->d_inode->i_mutex)) {
-      mutex_lock(&inode->i_mutex);
+As I understand it, drives typically have only one configuration and
+one interface.  They implement Bulk-Only Transport on altsetting 0 and 
+UAS on altsetting 1.
 
-because code like that makes no sense - maybe it was locked by
-somebody _else_, and you would need to lock it.
+On the other hand, I don't think there's anything that says you _have_ 
+to do it that way...
 
-That said, I do think that the
+Alan Stern
 
-  BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
-
-is wrong, since even the comment above it talks about the _parent_
-dentry, not the dentry that is actually being modified.
-
-So there's clearly a bug somewhere, and the fix may be to just remove
-that BUG_ON().
-
-Added some more people to the cc.
-
-                                   Linus
