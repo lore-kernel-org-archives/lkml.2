@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab1DNJD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 05:03:26 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:47503 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932142Ab1DNJDO convert rfc822-to-8bit (ORCPT
+	id S932443Ab1DNJHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 05:07:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34760 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab1DNJHg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 05:03:14 -0400
-Subject: Re: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: kevin diggs <diggskevin38@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mikael Pettersson <mikpe@it.uu.se>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 14 Apr 2011 11:02:36 +0200
-In-Reply-To: <BANLkTika8FY1dD_hOQ4wMhHzuQ2Qt8fg7A@mail.gmail.com>
-References: <19876.35918.322649.256455@pilspetsen.it.uu.se>
-	 <1302646173.28876.53.camel@pasglop> <1302652502.28876.76.camel@pasglop>
-	 <19877.23529.745123.819112@pilspetsen.it.uu.se>
-	 <1302685102.28876.81.camel@pasglop>
-	 <BANLkTimc84A8kddarnhvrcab3iKZc0HZAg@mail.gmail.com>
-	 <1302736869.28876.91.camel@pasglop>
-	 <BANLkTika8FY1dD_hOQ4wMhHzuQ2Qt8fg7A@mail.gmail.com>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA
-	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 14 Apr 2011 05:07:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bDvT4lm6ZcEGiJ660+JZwXUpuMOuacRNLbpaH/o8ZVEkTrL1lwewkxqkn8c8ov3qVl
+         yXD6PA6FgCH3/Py5OgBs4F/3NI5Fse2woBQtfmo6ddcMYIV47bNVrlk3M7MJickqhoEU
+         6twI2DooQglbnliNiRgNOQIBFkNeUyy/2FpOk=
+MIME-Version: 1.0
+In-Reply-To: <20110414085624.GC18463@8bytes.org>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+	<20110412090207.GE19819@8bytes.org>
+	<BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
+	<20110412184433.GF19819@8bytes.org>
+	<20110413064609.GA18777@elte.hu>
+	<20110413172147.GI19819@8bytes.org>
+	<4DA5F62F.3030504@kernel.org>
+	<4DA654D6.2060103@zytor.com>
+	<20110414085624.GC18463@8bytes.org>
+Date: Thu, 14 Apr 2011 19:07:34 +1000
+Message-ID: <BANLkTi=m6xMV9uhhCH0SEsOc6xN4pWfhPQ@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+From: Dave Airlie <airlied@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Alex Deucher <alexdeucher@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.0- 
-Message-ID: <1302771756.15520.100.camel@thor.local>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2011-04-13 at 18:43 -0500, kevin diggs wrote: 
-> 
-> On Wed, Apr 13, 2011 at 6:21 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> > On Wed, 2011-04-13 at 12:52 -0500, kevin diggs wrote:
-> >> > Actually I do get a crash in X later on... something in the radeon
-> >> DRM
-> >> > interrupt code is getting what looks like a NULL dereference. I'll
-> >> try
-> >> > to dig that one later on. I don't know if it's related to your
-> >> problem
-> >> > at all though.
-> >> >
-> >> In this context, what does 'crash' mean? The X thingy goes down? Or
-> >> the whole OS?
-> >
-> > Depends, with xmon enabled you get into xmon :-) Dunno if the oops is
-> > fatal but it could be.
-> >
-> > Cheers,
-> > Ben.
-> >
-> >
-> 
-> As I think I have the same hardware as you (7,3, radeon 9600) If you
-> can tell me how to reproduce it maybe I can poke around a little.
-> Thus, at least temporarily, freeing you up for other stuff.
-> 
-> I kinda need a break from fighting with GCC.
+On Thu, Apr 14, 2011 at 6:56 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Wed, Apr 13, 2011 at 06:58:46PM -0700, H. Peter Anvin wrote:
+>> On 04/13/2011 12:14 PM, Yinghai Lu wrote:
+>> >
+>> > so looks bios program wrong address to the radon card?
+>> >
+>>
+>> Okay, staring at this, it definitely seems toxic to overlay the GART
+>> over memory areas reserved by the BIOS.  If I were to guess, I would say
+>> that the problem here seems to be that the kernel thinks it is
+>> overlaying 64 MiB of memory, but the actual GART is in fact 512 MiB in
+>> size -- 131072 CPU pages -- which now overlaps the BIOS reserved areas.
+>>
+>> Alex D., could you comment on the "num cpu pages" bit?
+>
+> Okay, I tried the debug-patch from Yinghai (posted to the bugzilla):
+>
+> --- a/drivers/gpu/drm/radeon/radeon_device.c
+> +++ b/drivers/gpu/drm/radeon/radeon_device.c
+> @@ -325,6 +325,8 @@ void radeon_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
+>                        mc->gtt_size = size_bf;
+>                }
+>                mc->gtt_start = (mc->vram_start & ~mc->gtt_base_align) - mc->gtt_size;
+> +               if (mc->gtt_start == 0xa0000000)
+> +                       mc->gtt_start = 0x80000000;
+>        } else {
+>                if (mc->gtt_size > size_af) {
+>                        dev_warn(rdev->dev, "limiting GTT\n");
+>
+> And this makes a difference, with this change on-top of -rc3 the box boots
+> fine. So there seems to be some dependency between the GART base and the GTT
+> base even when they are in different address spaces.
+>
+> Alex, can you comment on this?
 
-FWIW, the problem Ben refers to might be fixed in current mainline by
-commit d87dfdbfc91c5e37288e7e8f7afdd992ba61a60d which reverts
-69a07f0b117a40fcc1a479358d8e1f41793617f2 .
+Wierd either a hw bug or some access to the GTT is leaking out before,
+things are setup properly,
 
+I think the RS780/880 docs are on the website, but generally the
+address spaces are completely separate so anything getting through is
+very unusual.
 
--- 
-Earthling Michel DÃ¤nzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+Dave.
