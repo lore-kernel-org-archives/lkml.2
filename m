@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab1DOVG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 17:06:57 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59110 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757019Ab1DOVG4 convert rfc822-to-8bit (ORCPT
+	id S1757099Ab1DOVII (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 17:08:08 -0400
+Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:61387 "EHLO
+	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab1DOVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 17:06:56 -0400
-References: <1302816996-6345-1-git-send-email-natg@google.com>
-In-Reply-To: <1302816996-6345-1-git-send-email-natg@google.com>
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-Message-Id: <25810A23-EB28-4FBF-8CEB-487313F0E16E@wilsonet.com>
-Content-Transfer-Encoding: 8BIT
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Mike Waychison <mikew@google.com>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org,
-        =?iso-8859-1?Q?=22Juan_Jes=FAs_Garc=EDa_de_Soria=22?= 
-	<skandalfo@gmail.com>
-From: Jarod Wilson <jarod@wilsonet.com>
-Subject: Re: [PATCH v6 0/2] Make all it87 drivers SMP safe
-Date: Fri, 15 Apr 2011 17:07:03 -0400
-To: Nat Gurumoorthy <natg@google.com>
-X-Mailer: Apple Mail (2.1084)
+	Fri, 15 Apr 2011 17:08:07 -0400
+X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
+Message-ID: <4DA8B3A7.3010807@ise.pw.edu.pl>
+Date: Fri, 15 Apr 2011 23:07:51 +0200
+From: wzab <wzab@ise.pw.edu.pl>
+Reply-To: wzab@ise.pw.edu.pl
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: i915 drm GPU hung errors with kernel 2.6.38.2 on  82865G chipset
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 14, 2011, at 5:36 PM, Nat Gurumoorthy wrote:
+Today I have experienced two "GPU hungs" on machine with 82865G chipset 
+working with 2.6.38.2 kernel
+In the /var/log/syslog I have found the following errors:
 
-> There are 3 different drivers that touch the it87 hardware registers.
-> The 3 drivers have been written independently and access the it87 hardware
-> registers assuming they are the only driver accessing it. This change
-> attempts to serialize access to the hardware by using
-> "request_muxed_region" macro defined by Alan Cox. Call to this macro
-> will hold off the requestor if the resource is currently busy.
-> The use of the above macro makes it possible to get rid of
-> spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
-> This also greatly simplifies the implementation of it87_wdt.c driver.
-> 
-> 01 - Changes to it87 watchdog driver to use "request_muxed_region"
-> drivers/watchdog/it8712f_wdt.c
-> drivers/watchdog/it87_wdt.c
-> 
-> 02 - Chages to hwmon it87 driver to use "request_muxed_region"
-> drivers/hwmon/it87.c
-> 
-> drivers/hwmon/it87.c           |   30 +++++++++++++-
-> drivers/watchdog/it8712f_wdt.c |   50 +++++++++++++++++++++---
-> drivers/watchdog/it87_wdt.c    |   80 +++++++++++++++++++++------------------
-> 3 files changed, 113 insertions(+), 47 deletions(-)
+Apr 15 22:50:51 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
+Hangcheck timer elapsed... GPU hung
+Apr 15 22:50:51 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
+i915_do_wait_request returns -11 (awaiting 1352947 at 1352942, next 1352948)
+Apr 15 22:50:51 wzab kernel: [drm:init_ring_common] *ERROR* failed to 
+set render ring head to zero ctl 00000000 head 3280a54c tail 00000000 
+start 00000000
+Apr 15 22:50:51 wzab kernel: [drm:init_ring_common] *ERROR* render ring 
+initialization failed ctl 0001f003 head 3280a54c tail 00000000 start 
+00000000
+Apr 15 22:50:52 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
+Hangcheck timer elapsed... GPU hung
+Apr 15 22:50:52 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
+i915_do_wait_request returns -11 (awaiting 1353049 at 1352942, next 1353050)
 
-FYI,
+After reboot:
 
-$ head -n 4 drivers/media/rc/ite-cir.c
-/*
- * Driver for ITE Tech Inc. IT8712F/IT8512 CIR
- *
- * Copyright (C) 2010 Juan Jesús García de Soria <skandalfo@gmail.com>
-
+Apr 15 22:56:41 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
+Hangcheck timer elapsed... GPU hung
+Apr 15 22:56:41 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
+i915_do_wait_request returns -11 (awaiting 29134 at 29129, next 29135)
 
 -- 
-Jarod Wilson
-jarod@wilsonet.com
-
-
-
+Regards,
+Wojtek
