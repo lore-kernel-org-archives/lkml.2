@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab1DOUuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 16:50:52 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:44084 "HELO
+	id S1756566Ab1DOUrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 16:47:51 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:44053 "HELO
 	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756759Ab1DOUrz (ORCPT
+	by vger.kernel.org with SMTP id S1753200Ab1DOUrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 16:47:55 -0400
+	Fri, 15 Apr 2011 16:47:49 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Yu6PNwIVM1l2QHKzBbpihi7jyL3Xd8HC2g4p.68lYLN1sT1
- 63X6GMnFbcAZsKoNX_eRY4t0qLQhX_ZxHpst8e2bIV8V.9KRVyvwixjk9Qb0
- JCJ8f0RiTEXks8y9oCqE6sUBMKVkfTV1DOSSBnfTB6N_RhAalIUM7TE32Jmj
- .VelgRBcwzQErErfxQyVlMxCnwiGXgeV9RMdgTe.evtTrZX8f9UKMutLkWQL
- 62PXMJvkdj85XpKiQkyLRz.0Y_2hSnjf6eMUXemfaGwwkfZgzQD1SdHbzCw5
- ln60oX_X8XoN5BMTQ1BKR6MP1vNd7LH_H6T_wtLYfrx9QNbAe7.Ke.TnMT1O
- clmX8kkDEr0P4a11SPJUTBeln
+X-YMail-OSG: Zq4M7VsVM1mH_n4Kfef1vmk.pHi.FS638r5qzO2IbJWY3g7
+ qppKTiYB1c.b4BoDHNFSaIcpTv77RnJ0NST9Fk6g0v2LUUzF7MUF8_czNKdO
+ Xx8couYYnry7T394K3Imio4upKtpK7ST6WFAP4P09T8Mn_erhzINUb5rF94N
+ yyWADRM311BQhZgS9T4GiyTVXxm1WcnyhF4Q7ocHBfhj6.UJGO3sPgy9B58d
+ g65Al5CMmhPr7dMk8aGLD1_c42hI1kbCq1fEJchEg1i2Edw50q8AIluSpDQ5
+ L9pkmWsIqvnBVmighxiDMuypf6vSdYCdyvfPr1reVyY0p0bXY
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110415204753.017708128@linux.com>
+Message-Id: <20110415204730.326790555@linux.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 15 Apr 2011 15:47:42 -0500
+Date: Fri, 15 Apr 2011 15:47:30 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: David Rientjes <rientjes@google.com>
@@ -27,220 +26,57 @@ Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [slubllv3 12/21] slub: explicit list_lock taking
-References: <20110415204730.326790555@linux.com>
-Content-Disposition: inline; filename=unlock_list_ops
+Subject: [slubllv3 00/21] SLUB: Lockless freelists for objects V3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The allocator fastpath rework does change the usage of the list_lock.
-Remove the list_lock processing from the functions that hide them from the
-critical sections and move them into those critical sections.
+V2->V3
+	- Provide statistics
+	- Fallback logic to page lock if cmpxchg16b is not available.
+	- Better counter support
+	- More cleanups and clarifications
 
-This is turn simplifies the support functions (no __ variant needed anymore)
-and simplifies the lock handling on bootstrap.
+Well here is another result of my obsession with SLAB allocators. There must be
+some way to get an allocator done that is faster without queueing and I hope
+that we are now there (maybe only almost...).
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+This patchset implement wider lockless operations in slub affecting most of the
+slowpaths. In particular the patch decreases the overhead in the performance
+critical section of __slab_free.
 
----
- mm/slub.c |   74 ++++++++++++++++++++++++++++++--------------------------------
- 1 file changed, 36 insertions(+), 38 deletions(-)
+One test that I ran was "hackbench 200 process 200" on 2.6.29-rc3 under KVM
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2011-04-15 13:14:51.000000000 -0500
-+++ linux-2.6/mm/slub.c	2011-04-15 13:14:54.000000000 -0500
-@@ -905,25 +905,21 @@ static inline void slab_free_hook(struct
- /*
-  * Tracking of fully allocated slabs for debugging purposes.
-  */
--static void add_full(struct kmem_cache_node *n, struct page *page)
-+static void add_full(struct kmem_cache *s,
-+	struct kmem_cache_node *n, struct page *page)
- {
--	spin_lock(&n->list_lock);
-+	if (!(s->flags & SLAB_STORE_USER))
-+		return;
-+
- 	list_add(&page->lru, &n->full);
--	spin_unlock(&n->list_lock);
- }
- 
- static void remove_full(struct kmem_cache *s, struct page *page)
- {
--	struct kmem_cache_node *n;
--
- 	if (!(s->flags & SLAB_STORE_USER))
- 		return;
- 
--	n = get_node(s, page_to_nid(page));
--
--	spin_lock(&n->list_lock);
- 	list_del(&page->lru);
--	spin_unlock(&n->list_lock);
- }
- 
- /* Tracking of the number of slabs for debugging purposes */
-@@ -1048,8 +1044,13 @@ static noinline int free_debug_processin
- 	}
- 
- 	/* Special debug activities for freeing objects */
--	if (!page->frozen && !page->freelist)
-+	if (!page->frozen && !page->freelist) {
-+		struct kmem_cache_node *n = get_node(s, page_to_nid(page));
-+
-+		spin_lock(&n->list_lock);
- 		remove_full(s, page);
-+		spin_unlock(&n->list_lock);
-+	}
- 	if (s->flags & SLAB_STORE_USER)
- 		set_track(s, object, TRACK_FREE, addr);
- 	trace(s, page, object, 0);
-@@ -1400,36 +1401,26 @@ static __always_inline int slab_trylock(
- /*
-  * Management of partially allocated slabs
-  */
--static void add_partial(struct kmem_cache_node *n,
-+static inline void add_partial(struct kmem_cache_node *n,
- 				struct page *page, int tail)
- {
--	spin_lock(&n->list_lock);
- 	n->nr_partial++;
- 	if (tail)
- 		list_add_tail(&page->lru, &n->partial);
- 	else
- 		list_add(&page->lru, &n->partial);
--	spin_unlock(&n->list_lock);
- }
- 
--static inline void __remove_partial(struct kmem_cache_node *n,
-+static inline void remove_partial(struct kmem_cache_node *n,
- 					struct page *page)
- {
- 	list_del(&page->lru);
- 	n->nr_partial--;
- }
- 
--static void remove_partial(struct kmem_cache *s, struct page *page)
--{
--	struct kmem_cache_node *n = get_node(s, page_to_nid(page));
--
--	spin_lock(&n->list_lock);
--	__remove_partial(n, page);
--	spin_unlock(&n->list_lock);
--}
--
- /*
-- * Lock slab and remove from the partial list.
-+ * Lock slab, remove from the partial list and put the object into the
-+ * per cpu freelist.
-  *
-  * Must hold list_lock.
-  */
-@@ -1437,7 +1428,7 @@ static inline int lock_and_freeze_slab(s
- 							struct page *page)
- {
- 	if (slab_trylock(page)) {
--		__remove_partial(n, page);
-+		remove_partial(n, page);
- 		return 1;
- 	}
- 	return 0;
-@@ -1554,12 +1545,17 @@ static void unfreeze_slab(struct kmem_ca
- 	if (page->inuse) {
- 
- 		if (page->freelist) {
-+			spin_lock(&n->list_lock);
- 			add_partial(n, page, tail);
-+			spin_unlock(&n->list_lock);
- 			stat(s, tail ? DEACTIVATE_TO_TAIL : DEACTIVATE_TO_HEAD);
- 		} else {
- 			stat(s, DEACTIVATE_FULL);
--			if (kmem_cache_debug(s) && (s->flags & SLAB_STORE_USER))
--				add_full(n, page);
-+			if (kmem_cache_debug(s) && (s->flags & SLAB_STORE_USER)) {
-+				spin_lock(&n->list_lock);
-+				add_full(s, n, page);
-+				spin_unlock(&n->list_lock);
-+			}
- 		}
- 		slab_unlock(page);
- 	} else {
-@@ -1575,7 +1571,9 @@ static void unfreeze_slab(struct kmem_ca
- 			 * kmem_cache_shrink can reclaim any empty slabs from
- 			 * the partial list.
- 			 */
-+			spin_lock(&n->list_lock);
- 			add_partial(n, page, 1);
-+			spin_unlock(&n->list_lock);
- 			slab_unlock(page);
- 		} else {
- 			slab_unlock(page);
-@@ -2131,7 +2129,11 @@ static void __slab_free(struct kmem_cach
- 	 * then add it.
- 	 */
- 	if (unlikely(!prior)) {
-+		struct kmem_cache_node *n = get_node(s, page_to_nid(page));
-+
-+		spin_lock(&n->list_lock);
- 		add_partial(get_node(s, page_to_nid(page)), page, 1);
-+		spin_unlock(&n->list_lock);
- 		stat(s, FREE_ADD_PARTIAL);
- 	}
- 
-@@ -2147,7 +2149,11 @@ slab_empty:
- 		/*
- 		 * Slab still on the partial list.
- 		 */
--		remove_partial(s, page);
-+		struct kmem_cache_node *n = get_node(s, page_to_nid(page));
-+
-+		spin_lock(&n->list_lock);
-+		remove_partial(n, page);
-+		spin_unlock(&n->list_lock);
- 		stat(s, FREE_REMOVE_PARTIAL);
- 	}
- 	slab_unlock(page);
-@@ -2449,7 +2455,6 @@ static void early_kmem_cache_node_alloc(
- {
- 	struct page *page;
- 	struct kmem_cache_node *n;
--	unsigned long flags;
- 
- 	BUG_ON(kmem_cache_node->size < sizeof(struct kmem_cache_node));
- 
-@@ -2476,14 +2481,7 @@ static void early_kmem_cache_node_alloc(
- 	init_kmem_cache_node(n, kmem_cache_node);
- 	inc_slabs_node(kmem_cache_node, node, page->objects);
- 
--	/*
--	 * lockdep requires consistent irq usage for each lock
--	 * so even though there cannot be a race this early in
--	 * the boot sequence, we still disable irqs.
--	 */
--	local_irq_save(flags);
- 	add_partial(n, page, 0);
--	local_irq_restore(flags);
- }
- 
- static void free_kmem_cache_nodes(struct kmem_cache *s)
-@@ -2767,7 +2765,7 @@ static void free_partial(struct kmem_cac
- 	spin_lock_irqsave(&n->list_lock, flags);
- 	list_for_each_entry_safe(page, h, &n->partial, lru) {
- 		if (!page->inuse) {
--			__remove_partial(n, page);
-+			remove_partial(n, page);
- 			discard_slab(s, page);
- 		} else {
- 			list_slab_objects(s, page,
-@@ -3105,7 +3103,7 @@ int kmem_cache_shrink(struct kmem_cache
- 				 * may have freed the last object and be
- 				 * waiting to release the slab.
- 				 */
--				__remove_partial(n, page);
-+				remove_partial(n, page);
- 				slab_unlock(page);
- 				discard_slab(s, page);
- 			} else {
+Run	SLAB	SLUB	SLUB LL
+1st	35.2	35.9	31.9
+2nd	34.6	30.8	27.9
+3rd	33.8	29.9	28.8
+
+Note that the SLUB version in 2.6.29-rc1 already has an optimized allocation
+and free path using this_cpu_cmpxchg_double(). SLUB LL takes it to new heights
+by also using cmpxchg_double() in the slowpaths (especially in the kfree()
+case where we cannot queue).
+
+The patch uses a cmpxchg_double (also introduced here) to do an atomic change
+on the state of a slab page that includes the following pieces of information:
+
+1. Freelist pointer
+2. Number of objects inuse
+3. Frozen state of a slab
+
+Disabling of interrupts (which is a significant latency in the
+allocator paths) is avoided in the __slab_free case.
+
+There are some concerns with this patch. The use of cmpxchg_double on
+fields of the page struct requires alignment of the fields to double
+word boundaries. That can only be accomplished by adding some padding
+to struct page which blows it up to 64 byte  (on x86_64). Comments
+in the source describe these things in more detail.
+
+The cmpxchg_double() operation introduced here could also be used to
+update other doublewords in the page struct in a lockless fashion. One
+can envision page state changes that involved flags and mappings or
+maybe do list operations locklessly (but with the current scheme we
+would need to update two other words elsewhere at the same time too,
+so another scheme would be needed).
 
