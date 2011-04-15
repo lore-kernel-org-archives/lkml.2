@@ -1,163 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab1DOWNV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 18:13:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54984 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757159Ab1DOWNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 18:13:19 -0400
-Date: Sat, 16 Apr 2011 00:13:14 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
- time
-Message-ID: <20110415221314.GE5432@quack.suse.cz>
-References: <20110413085937.981293444@intel.com>
- <20110413090415.763161169@intel.com>
- <20110413220444.GF4648@quack.suse.cz>
- <20110413233122.GA6097@localhost>
- <20110413235211.GN31057@dastard>
- <20110414002301.GA9826@localhost>
- <20110414151424.GA367@localhost>
- <20110414181609.GH5054@quack.suse.cz>
- <20110415034300.GA23430@localhost>
- <20110415143711.GA17181@localhost>
+	id S932091Ab1DOWRg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 18:17:36 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:59966 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757159Ab1DOWRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 18:17:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6317"; a="86120192"
+Message-ID: <4DA8C3FC.5010102@codeaurora.org>
+Date: Fri, 15 Apr 2011 15:17:32 -0700
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415143711.GA17181@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Daney <ddaney@caviumnetworks.com>
+CC: tglx@linutronix.de, mathieu.desnoyers@efficios.com,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org, dwalker@fifo99.com,
+        linux-arm-msm-owner@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [RFC PATCH] genirq: implement read_irq_line for interrupt lines
+References: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org> <4DA899E3.30409@caviumnetworks.com>
+In-Reply-To: <4DA899E3.30409@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 15-04-11 22:37:11, Wu Fengguang wrote:
-> On Fri, Apr 15, 2011 at 11:43:00AM +0800, Wu Fengguang wrote:
-> > On Fri, Apr 15, 2011 at 02:16:09AM +0800, Jan Kara wrote:
-> > > On Thu 14-04-11 23:14:25, Wu Fengguang wrote:
-> > > > On Thu, Apr 14, 2011 at 08:23:02AM +0800, Wu Fengguang wrote:
-> > > > > On Thu, Apr 14, 2011 at 07:52:11AM +0800, Dave Chinner wrote:
-> > > > > > On Thu, Apr 14, 2011 at 07:31:22AM +0800, Wu Fengguang wrote:
-> > > > > > > On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
-> > > > > > > > On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
-> > > > > > > > > Reduce the dampening for the control system, yielding faster
-> > > > > > > > > convergence. The change is a bit conservative, as smaller values may
-> > > > > > > > > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
-> > > > > > > > > 
-> > > > > > > > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > > > > > > > CC: Richard Kennedy <richard@rsk.demon.co.uk>
-> > > > > > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > > > > >   Well, I have nothing against this change as such but what I don't like is
-> > > > > > > > that it just changes magical +2 for similarly magical +0. It's clear that
-> > > > > > > 
-> > > > > > > The patch tends to make the rampup time a bit more reasonable for
-> > > > > > > common desktops. From 100s to 25s (see below).
-> > > > > > > 
-> > > > > > > > this will lead to more rapid updates of proportions of bdi's share of
-> > > > > > > > writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
-> > > > > > > 
-> > > > > > > Yes, it will especially be a problem on _small memory_ JBOD setups.
-> > > > > > > Richard actually has requested for a much radical change (decrease by
-> > > > > > > 6) but that looks too much.
-> > > > > > > 
-> > > > > > > My team has a 12-disk JBOD with only 6G memory. The memory is pretty
-> > > > > > > small as a server, but it's a real setup and serves well as the
-> > > > > > > reference minimal setup that Linux should be able to run well on.
-> > > > > > 
-> > > > > > FWIW, linux runs on a lot of low power NAS boxes with jbod and/or
-> > > > > > raid setups that have <= 1GB of RAM (many of them run XFS), so even
-> > > > > > your setup could be considered large by a significant fraction of
-> > > > > > the storage world. Hence you need to be careful of optimising for
-> > > > > > what you think is a "normal" server, because there simply isn't such
-> > > > > > a thing....
-> > > > > 
-> > > > > Good point! This patch is likely to hurt a loaded 1GB 4-disk NAS box...
-> > > > > I'll test the setup.
-> > > > 
-> > > > Just did a comparison of the IO-less patches' performance with and
-> > > > without this patch. I hardly notice any differences besides some more
-> > > > bdi goal fluctuations in the attached graphs. The write throughput is
-> > > > a bit large with this patch (80MB/s vs 76MB/s), however the delta is
-> > > > within the even larger stddev range (20MB/s).
-> > >   Thanks for the test but I cannot find out from the numbers you provided
-> > > how much did the per-bdi thresholds fluctuate in this low memory NAS case?
-> > > You can gather current bdi threshold from /sys/kernel/debug/bdi/<dev>/stats
-> > > so it shouldn't be hard to get the numbers...
-> > 
-> > Hi Jan, attached are your results w/o this patch. The "bdi goal" (gray
-> > line) is calculated as (bdi_thresh - bdi_thresh/8) and is fluctuating
-> > all over the place.. and average wkB/s is only 49MB/s..
+David Daney wrote:
+> On 04/15/2011 11:42 AM, Abhijeet Dharmapurikar wrote:
+> [...]
+>>
+>> +/**
+>> + *    irq_read_line - read the value on an irq line
+>> + *    @irq: Interrupt number representing a hardware line
+>> + *
+>> + *    This function may be called from IRQ context only when
+>> + *    desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
 > 
-> I got the numbers for vanilla kernel: XFS can do 57MB/s and 63MB/s in
-> the two runs.  There are large fluctuations in the attached graphs, too.
-  Hmm, so the graphs from previous email are with longer "proportion
-period (without patch we discuss here)" and graphs from this email are
-with it?
+> What does it return?  I can see that -EINVAL is returned if it isn't 
+> applicable to this irq.  But what if chip->irq_read_line is implemented?
 
-> To summary it up, for a 1GB mem, 4 disks JBOD setup, running 1 dd per
-> disk:
+It returns the logical state of that line (0 when it is low or 1 when it 
+is high). Will add the return type in the comment.
+
 > 
-> vanilla: 57MB/s, 63MB/s
-> Jan:     49MB/s, 103MB/s
-> Wu:      76MB/s, 80MB/s
 > 
-> The balance_dirty_pages-task-bw-jan.png and
-> balance_dirty_pages-pages-jan.png shows very unfair allocation of
-> dirty pages and throughput among the disks...
-  Fengguang, can we please stay on topic? It's good to know that throughput
-fluctuates so much with my patches (although not that surprising seeing the
-fluctuations of bdi limits) but for the sake of this patch throughput
-numbers with different balance_dirty_pages() implementations do not seem
-that interesting.  What is interesting (at least to me) is how this
-particular patch changes fluctuations of bdi thresholds (fractions) in
-vanilla kernel. In the graphs, I can see only bdi goal - that is the
-per-bdi threshold we have in balance_dirty_pages() am I right? And it is
-there for only a single device, right?
+> 
+> 
+>> + */
+>> +int irq_read_line(unsigned int irq)
+>> +{
+>> +    struct irq_desc *desc = irq_to_desc(irq);
+>> +    unsigned long flags;
+>> +    int val;
+>> +
+>> +    if (!desc || !desc->irq_data.chip->irq_read_line)
+>> +        return -EINVAL;
 
-Anyway either with or without the patch, bdi thresholds are jumping rather
-wildly if I'm interpreting the graphs right. Hmm, which is not that surprising
-given that in ideal case we should have about 0.5s worth of writeback for
-each disk in the page cache. So with your patch the period for proportion
-estimation is also just about 0.5s worth of page writeback which is
-understandably susceptible to fluctuations. Thinking about it, the original
-period of 4*"dirty limit" on your machine is about 2.5 GB which is about
-50s worth of writeback on that machine so it is in match with your
-observation that it takes ~100s for bdi threshold to climb up.
+It returns -EINVAL is irq_read_line is not implemented.
 
-So what is a takeaway from this for me is that scaling the period
-with the dirty limit is not the right thing. If you'd have 4-times more
-memory, your choice of "dirty limit" as the period would be as bad as
-current 4*"dirty limit". What would seem like a better choice of period
-to me would be to have the period in an order of a few seconds worth of
-writeback. That would allow the bdi limit to scale up reasonably fast when
-new bdi starts to be used and still not make it fluctuate that much
-(hopefully).
+>> +
+>> +    chip_bus_lock(desc);
+>> +    raw_spin_lock_irqsave(&desc->lock, flags);
 
-Looking at math in lib/proportions.c, nothing really fundamental requires
-that each period has the same length. So it shouldn't be hard to actually
-create proportions calculator that would have timer triggered periods -
-simply whenever the timer fires, we would declare a new period. The only
-things which would be broken by this are (t represents global counter of
-events):
-a) counting of periods as t/period_len - we would have to maintain global
-period counter but that's trivial
-b) trick that we don't do t=t/2 for each new period but rather use
-period_len/2+(t % (period_len/2)) when calculating fractions - again we
-would have to bite the bullet and divide the global counter when we declare
-new period but again it's not a big deal in our case.
 
-Peter what do you think about this? Do you (or anyone else) think it makes
-sense?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
+Innovation Center, Inc. is a member of the Code Aurora Forum.
