@@ -1,47 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab1DOQhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:37:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60680 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab1DOQhw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:37:52 -0400
-Date: Fri, 15 Apr 2011 12:37:46 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: liubo <liubo2009@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] Trace: add __print_symbolic_u64 to avoid warnings on
- 32bit machine
-Message-ID: <20110415163746.GA14185@infradead.org>
-References: <4D9573DB.4010009@cn.fujitsu.com>
- <1301665762.2160.22.camel@gandalf.stny.rr.com>
- <4D9C2FF6.7090607@cn.fujitsu.com>
- <20110415092418.b18fd6fe.randy.dunlap@oracle.com>
+	id S1753408Ab1DOQiV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:38:21 -0400
+Received: from proxima.lp0.eu ([81.2.80.65]:41999 "EHLO proxima.lp0.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753126Ab1DOQiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 12:38:19 -0400
+Message-ID: <4DA86FE5.8080507@simon.arlott.org.uk>
+Date: Fri, 15 Apr 2011 17:18:45 +0100
+From: Simon Arlott <simon@fire.lp0.eu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110116 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415092418.b18fd6fe.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Netfilter Development Mailinglist 
+	<netfilter-devel@vger.kernel.org>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 000002c0
+  / IP: [<c04c70f2>] in6_dev_finish_destroy+0x35/0x8c
+References: <4DA77AE5.9060501@simon.arlott.org.uk>	 <0b5f315dd0f6e8eefabbd8b38b1d43e181fdd728@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>	 <1302872983.3613.10.camel@edumazet-laptop> <1302873876.3613.11.camel@edumazet-laptop>
+In-Reply-To: <1302873876.3613.11.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 09:24:18AM -0700, Randy Dunlap wrote:
-> Can this also be used to stop this warning that has been around
-> like forever (on i386)?
+On 15/04/11 14:24, Eric Dumazet wrote:
+> Hmm.. a more complete patch :
 > 
-> linux-next-20110415/fs/xfs/linux-2.6/./xfs_trace.h:1354: warning: format '%llx' expects type 'long long unsigned int', but argument 22 has type 'xfs_fsblock_t'
+> diff --git a/net/ipv6/netfilter/nf_conntrack_reasm.c b/net/ipv6/netfilter/nf_conntrack_reasm.c
+> index 0857272..6f0bed0 100644
 
-What about reporting the bug?  And no, it won't help.  The only
-thing that helps would be casting the argument to (long long).  If you
-send me (and/or the xfs list) a list of the warnings you see I'm happy
-to fix them, although I don't see them during my x86 builds.  Could it
-be that you have CONFIG_LBD disabled?  That's surely not a popular
-option with XFS users.
+I applied the patch by recompiling and then reloading the nf_conntrack_ipv6
+module (temporarily flushing and then restoring all ip6tables rules).
+Then this happened 10 minutes later:
 
+[33876.950100] BUG: unable to handle kernel NULL pointer dereference at 00000014
+[33876.951060] IP: [<f9b012bb>] nf_ct_frag6_gather+0x864/0x881 [nf_conntrack_ipv6]
+[33876.951060] *pdpt = 0000000033491001 *pde = 0000000000000000 
+[33876.951060] Oops: 0002 [#1] PREEMPT SMP 
+[33876.951060] last sysfs file: /sys/devices/platform/it87.552/cpu0_vid
+[33876.951060] Modules linked in: nf_conntrack_ipv6 xt_tcpmss xt_length xt_TCPMSS ppp_synctty sch_sfq xt_u32 xt_CLASSIFY sch_htb ppp_async nfsd lockd sunrpc bnep exportfs rfcomm l2cap crc16 xt_state ip6t_LOG ip]
+[33876.951060] 
+[33876.951060] Pid: 7, comm: ksoftirqd/1 Not tainted 2.6.35.4-git+ #git+ GA-MA69VM-S2/GA-MA69VM-S2
+[33876.951060] EIP: 0060:[<f9b012bb>] EFLAGS: 00010246 CPU: 1
+[33876.951060] EIP is at nf_ct_frag6_gather+0x864/0x881 [nf_conntrack_ipv6]
+[33877.071165] EAX: f68e1800 EBX: 00000000 ECX: f560f3c0 EDX: f74921a0
+[33877.071165] ESI: 00000000 EDI: f636f200 EBP: f7495e34 ESP: f7495ddc
+[33877.071165]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+[33877.071165] Process ksoftirqd/1 (pid: 7, ti=f7494000 task=f74921a0 task.ti=f7494000)
+[33877.071165] Stack:
+[33877.071165]  00000001 f5d6c8c0 f636f218 726b4c79 f68e1800 062c1158 f226d06c f560f3c0
+[33877.071165] <0> f560f3d4 000005a8 00000000 f74921a0 00000001 00000000 00000000 726b4c79
+[33877.071165] <0> 00000001 f226d04c f226d05c f5d6c8c0 00000000 f68e1800 f7495e48 f9b0043e
+[33877.071165] Call Trace:
+[33877.071165]  [<f9b0043e>] ? ipv6_defrag+0x69/0x9f [nf_conntrack_ipv6]
+[33877.071165]  [<c046ee87>] ? nf_iterate+0x2f/0x62
+[33877.071165]  [<c04c46ea>] ? ip6_rcv_finish+0x0/0x8e
+[33877.071165]  [<c046f088>] ? nf_hook_slow+0x63/0xeb
+[33877.071165]  [<c04c46ea>] ? ip6_rcv_finish+0x0/0x8e
+[33877.071165]  [<c04c4aff>] ? ipv6_rcv+0x387/0x47c
+[33877.071165]  [<c04c46ea>] ? ip6_rcv_finish+0x0/0x8e
+[33877.071165]  [<c0455065>] ? __netif_receive_skb+0x367/0x3b6
+[33877.071165]  [<c0455142>] ? process_backlog+0x8e/0x146
+[33877.071165]  [<c0455c3b>] ? net_rx_action+0x62/0x119
+[33877.071165]  [<c0232750>] ? __do_softirq+0x8b/0x10a
+[33877.071165]  [<c02327fa>] ? do_softirq+0x2b/0x43
+[33877.071165]  [<c0232885>] ? run_ksoftirqd+0x73/0x155
+[33877.071165]  [<c0232812>] ? run_ksoftirqd+0x0/0x155
+[33877.071165]  [<c023fdbd>] ? kthread+0x61/0x66
+[33877.071165]  [<c023fd5c>] ? kthread+0x0/0x66
+[33877.071165]  [<c0202c7a>] ? kernel_thread_helper+0x6/0x1a
+[33877.071165] Code: 02 31 db 8b 45 c8 e8 8f 2c a1 c6 8b 4d c4 f0 ff 49 30 0f 94 c0 84 c0 74 0f 8b 45 c4 31 c9 ba 78 1a b0 f9 e8 38 fe 99 c6 8b 45 b8 <89> 43 14 89 5d ac eb 07 89 f8 e8 11 e3 94 c6 8b 45 ac 8d 6 
+[33877.071165] EIP: [<f9b012bb>] nf_ct_frag6_gather+0x864/0x881 [nf_conntrack_ipv6] SS:ESP 0068:f7495ddc
+[33877.071165] CR2: 0000000000000014
+[33877.253064] ---[ end trace 91cffe982fd021cc ]---
+[33877.257847] Kernel panic - not syncing: Fatal exception in interrupt
+[33877.264339] Pid: 7, comm: ksoftirqd/1 Tainted: G      D     2.6.35.4-git+ #git+
+[33877.271842] Call Trace:
+[33877.274420]  [<c0511194>] ? printk+0xf/0x13
+[33877.278743]  [<c0511116>] panic+0x55/0xc4
+[33877.282860]  [<c02050ed>] oops_end+0x6e/0x7c
+[33877.287239]  [<c021a514>] no_context+0x13f/0x149
+[33877.291988]  [<c021a657>] __bad_area_nosemaphore+0x139/0x141
+[33877.297802]  [<c0224fb6>] ? task_rq_lock+0x36/0x60
+[33877.302760]  [<c021a66c>] bad_area_nosemaphore+0xd/0x10
+[33877.308107]  [<c021a910>] do_page_fault+0x14e/0x302
+[33877.313119]  [<c0513a46>] ? _raw_spin_lock_irqsave+0x35/0x3e
+[33877.318985]  [<c0513fe0>] ? _raw_spin_unlock_irqrestore+0x42/0x58
+[33877.325261]  [<c021a7c2>] ? do_page_fault+0x0/0x302
+[33877.330306]  [<c051499b>] error_code+0x6b/0x70
+[33877.334854]  [<c021a7c2>] ? do_page_fault+0x0/0x302
+[33877.339926]  [<f9b012bb>] ? nf_ct_frag6_gather+0x864/0x881 [nf_conntrack_ipv6]
+[33877.347451]  [<f9b0043e>] ipv6_defrag+0x69/0x9f [nf_conntrack_ipv6]
+[33877.353958]  [<c046ee87>] nf_iterate+0x2f/0x62
+[33877.358560]  [<c04c46ea>] ? ip6_rcv_finish+0x0/0x8e
+[33877.363588]  [<c046f088>] nf_hook_slow+0x63/0xeb
+[33877.368322]  [<c04c46ea>] ? ip6_rcv_finish+0x0/0x8e
+[33877.373388]  [<c04c4aff>] ipv6_rcv+0x387/0x47c
+[33877.377965]  [<c04c46ea>] ? ip6_rcv_finish+0x0/0x8e
+[33877.383022]  [<c0455065>] __netif_receive_skb+0x367/0x3b6
+[33877.388558]  [<c0455142>] process_backlog+0x8e/0x146
+[33877.393715]  [<c0455c3b>] net_rx_action+0x62/0x119
+[33877.398664]  [<c0232750>] __do_softirq+0x8b/0x10a
+[33877.403554]  [<c02327fa>] do_softirq+0x2b/0x43
+[33877.408154]  [<c0232885>] run_ksoftirqd+0x73/0x155
+[33877.413051]  [<c0232812>] ? run_ksoftirqd+0x0/0x155
+[33877.418053]  [<c023fdbd>] kthread+0x61/0x66
+[33877.422360]  [<c023fd5c>] ? kthread+0x0/0x66
+[33877.426735]  [<c0202c7a>] kernel_thread_helper+0x6/0x1a
+
+-- 
+Simon Arlott
