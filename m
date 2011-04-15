@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab1DOBHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 21:07:36 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:54374 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752167Ab1DOBHf (ORCPT
+	id S1755081Ab1DOBTB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 21:19:01 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45205 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755014Ab1DOBTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 21:07:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAGSZp01Ld/sX/2dsb2JhbAAMhEPVR5FAgSmDTXgE
-X-IronPort-AV: E=Sophos;i="4.64,214,1301889600"; 
-   d="scan'208";a="106470993"
-Message-ID: <4DA79A55.4040507@teksavvy.com>
-Date: Thu, 14 Apr 2011 21:07:33 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Thu, 14 Apr 2011 21:19:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=mX9reiLa5lkK1Z1XNrNvxV7plreKOMZbcf932phR0lHl5F8u8Z4SFtqlRZT3EbIJLn
+         XcCIvZwUNbuzolJdSwug==
 MIME-Version: 1.0
-To: Milton Miller <miltonm@bga.com>
-CC: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Joel Becker <jlbec@evilplan.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        John Stoffel <john@stoffel.org>, Ric Wheeler <ricwheeler@gmail.com>
-Subject: Re: [PATCH] ext4: register ext2 and ext3 alias after ext4
-References: <4DA48AF4.5080803@teksavvy.com>	<20110413004938.GE3682@thunk.org>	<4DA5ADA6.5060301@teksavvy.com>	<5A35771F-49B6-491E-B012-DBE68907E382@mit.edu> <ext4-masq@mdm.bga.com>
-In-Reply-To: <ext4-masq@mdm.bga.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1302821370.26780.585.camel@groeck-laptop>
+References: <1302816996-6345-1-git-send-email-natg@google.com>
+	<1302817069-6389-1-git-send-email-natg@google.com>
+	<1302821370.26780.585.camel@groeck-laptop>
+Date: Thu, 14 Apr 2011 18:18:57 -0700
+Message-ID: <BANLkTin6M0R4d+HMovbRwqthSHowUEKFow@mail.gmail.com>
+Subject: Re: [PATCH v6 1/2] Use "request_muxed_region" in it87 watchdog drivers
+From: Natarajan Gurumoorthy <natg@google.com>
+To: guenter.roeck@ericsson.com
+Cc: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Mike Waychison <mikew@google.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-14 11:41 AM, Milton Miller wrote:
-> The intent of CONFIG_EXT4_USE_FOR_EXT23 is to provide an alias so
-> that the ext4 module is sufficient even if user space calls out ext2.
-> However, it currently registers the alias names before registering ext4.
-> This means they show up first in /proc/filesystems and ext3 and ext4
-> formatted file systems show up in the mount list as ext4.
+On Thu, Apr 14, 2011 at 3:49 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+> This is way too complicated. Just return an error if
+> request_muxed_region fails, like all other callers of
+> request_muxed_region do.
+>
+Guenter,
+      This maybe a little complicated but it is a solution that will
+correctly deal with the following scenario:
+      Hardware: it8712f
+      cpu: Multicore
+      kernel: smp
+      Modules being loaded during initialization: it8712f_wtd and w83697hf
 
-Shouldn't that say:
+The problem is one of the cores is halfway through initializing
+it8712f_wdt and another core is just starting to run the
+"w83697hf_check_wdt" which is going to call "request_region" to
+reserve 0x2e 0x2f region. Just after that call on the other core
+it8712f_wdt_init calls it8712f_wdt_disable which calls superio_enter
+which will call "request_muxed_region" for the exact same region. This
+is  guaranteed to fail because as of now w83697hf is one of the many
+non compliant drivers who are calling "request_region". The w83697hf
+will do the probe and conclude there is no w83697hf chip in the system
+and abort rest of the driver initialization. Meanwhile the it8712f_wtd
+driver initialization will fail. This will be one of those
+intermittent failures that make most kernel device driver writers
+prematurely bald :-).
 
-  This means they show up first in /proc/filesystems, causing ext3 and
-  ext4 formatted file systems to show up in the mount list as ext2.
+The way I have reworked the driver will survive the above scenario.
 
-Thanks.  Other than that, it all looks good here with ext2 and ext4
-file systems.  I didn't try an ext3 filesystem, but with it being between
-the other two, I expect it to also be fine.
+Regards
+Nat
 
-> Register the filesystem aliases after ext4 so they show as ext4 until the
-> filesystems is filtered.  This will avoid users or tools configuring a
-> kernel with just ext2 and wondering why there system broke.  Also register
-> in the same order as listed in fs/Makefile.
-> 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-> ---
-> 
-> Untested but simple code movement.  Mark will you please test?
-> 
-> Is it safe to initialize ext4_li_info and ext4_li_mtx after we register
-> the filesystem?  What keeps the init after the first call to mount
-> a filesystem?
-> 
-> I checked unregister_filesystem and it is safe when the file system
-> type is and is not registered.
-> 
-> Index: work.git/fs/ext4/super.c
-> ===================================================================
-> --- work.git.orig/fs/ext4/super.c	2011-04-14 09:26:43.250066794 -0500
-> +++ work.git/fs/ext4/super.c	2011-04-14 09:29:53.220061521 -0500
-> @@ -4898,11 +4898,11 @@ static int __init ext4_init_fs(void)
->  	err = init_inodecache();
->  	if (err)
->  		goto out1;
-> -	register_as_ext2();
-> -	register_as_ext3();
->  	err = register_filesystem(&ext4_fs_type);
->  	if (err)
->  		goto out;
-> +	register_as_ext3();
-> +	register_as_ext2();
->  
->  	ext4_li_info = NULL;
->  	mutex_init(&ext4_li_mtx);
+> Guenter
+>
+>
+>
+
+
+
+-- 
+Regards
+Nat Gurumoorthy AB6SJ
