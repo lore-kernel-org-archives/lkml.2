@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab1DOUuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 16:50:17 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:40194 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756763Ab1DOUrz (ORCPT
-	<rfc822;groupwise-jlee@novell.com:5:1>);
+	id S1756819Ab1DOUuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 16:50:40 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25110 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756761Ab1DOUrz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Apr 2011 16:47:55 -0400
-Message-Id: <4DA93B93020000230002B633@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Fri, 15 Apr 2011 14:47:47 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <kristoffer.ericson@gmail.com>
-Cc: <jp@df5ea.net>, <devel@driverdev.osuosl.org>, "Joey Lee" <JLee@novell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: backlight control broken on Sony VGN-P21Z with
- staging/gma500
-References: <BANLkTikq34nGQU=1U4uvrSu_mRPf-UjLRg@mail.gmail.com>
- <20110415153046.GA10704@Boggieman>
-In-Reply-To: <20110415153046.GA10704@Boggieman>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: zkaC0QwVM1k12XQnlHvWYtWxvbAFH.RpiKg4iKSlf7Pxkhz
+ B39RtZBPebWZQd3FhbpcTV4XMkCP9cH9qVyqTVxyJkGNjB_XPcJwV3yi.p0p
+ Wv5hJNd2TXSnOngPGHDhNjMBqQGxqQ36GQKZDdY84dVFSBWV2xtwqVacwjfo
+ IK4n9kOenXwPAY0X0ZD8CBQ4iydmrs565qutw80_DQeRAFaI2wDw5Z_W7p.U
+ iFQjivjZrZ4z9sTEcDzO8UZ7_LCLGhf6vk29nNNs_GD9iXOq2mPpk7RVXj9N
+ yYIF0P91wpQSwC.TZmzkez1nPLachsPQ3yvkDGA3EqDToh5J9Y0hIAyMRWu8
+ intNLZCtVXcvVdjWPv9SThSWR
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20110415204753.595072920@linux.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 15 Apr 2011 15:47:43 -0500
+From: Christoph Lameter <cl@linux.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [slubllv3 13/21] slub: Pass kmem_cache struct to lock and freeze slab
+References: <20110415204730.326790555@linux.com>
+Content-Disposition: inline; filename=pass_kmem_cache_to_lock_and_freeze
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kristoffer,
+We need more information about the slab for the cmpxchg implementation.
 
-於 五，2011-04-15 於 17:30 +0200，Kristoffer Ericson 提到：
-> On Wed, Apr 13, 2011 at 09:54:45PM +0200, Joost Pjotr Vermeer wrote:
-> > Hi,
-> > 
-> > I tried the new gma500 driver from staging on my Sony VGN-P21Z. It
-> > seems to work very nice.
-> > 
-> > But backlight control does not work. It has worked with a previous
-> > version of the staging/gma500 driver. I can solve it by removing the
-> > call to acpi_video_register() from psb_driver_load() in psb_drv.c.
-> > 
-> > Can I try anything to find a more specific cause for this?
-> > 
-> 
-> Got same hardware, and the backlight isnt working properly yet. 
-> As the driver is very new and alan is working away at bits and pieces I wouldnt expect to much yet.
-> 
-> Oh and I assume you already grabbed the psb-bl "error" at bootup:
-> [    1.507066] fbcon: psbfb (fb0) is primary device
-> [    1.982816] fb0: psbfb frame buffer device
-> [    1.982871] psb-bl: invalid backlight type
-> [    1.982951]  [<c131e603>] ? psb_backlight_init+0x32/0x185
-> [    1.982960]  [<c1320467>] ? psb_driver_load+0x47f/0x4b6
-> kristoffer@Boggieman:~$ 
-> 
-> See what it expects for backlight type at init.
-> Btw, if you are lazy then just clone my git repository with latest and greatest for gma500.
-> 
-> Best wishes
-> Kristoffer
-> 
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Matthew's patch added backlight type: Documentation/ABI/stable/sysfs-class-backlight
-
-Could you Please try the folllowing patch? 
-
-
->From 71893f42dfe7fdc1fa81adc5c9ad49079603dcbd Mon Sep 17 00:00:00 2001
-From: Lee, Chun-Yi <jlee@novell.com>
-Date: Sat, 16 Apr 2011 04:44:12 +0800
-Subject: [PATCH] gma500: add backlight type
-
-
-Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
 ---
- drivers/staging/gma500/psb_bl.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ mm/slub.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_bl.c b/drivers/staging/gma500/psb_bl.c
-index 70c17b3..05487de 100644
---- a/drivers/staging/gma500/psb_bl.c
-+++ b/drivers/staging/gma500/psb_bl.c
-@@ -136,6 +136,7 @@ int psb_backlight_init(struct drm_device *dev)
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-04-15 14:29:01.000000000 -0500
++++ linux-2.6/mm/slub.c	2011-04-15 14:29:35.000000000 -0500
+@@ -1424,8 +1424,8 @@ static inline void remove_partial(struct
+  *
+  * Must hold list_lock.
+  */
+-static inline int lock_and_freeze_slab(struct kmem_cache_node *n,
+-							struct page *page)
++static inline int lock_and_freeze_slab(struct kmem_cache *s,
++		struct kmem_cache_node *n, struct page *page)
+ {
+ 	if (slab_trylock(page)) {
+ 		remove_partial(n, page);
+@@ -1437,7 +1437,8 @@ static inline int lock_and_freeze_slab(s
+ /*
+  * Try to allocate a partial slab from a specific node.
+  */
+-static struct page *get_partial_node(struct kmem_cache_node *n)
++static struct page *get_partial_node(struct kmem_cache *s,
++					struct kmem_cache_node *n)
+ {
+ 	struct page *page;
  
- 	struct backlight_properties props;
- 	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = BRIGHTNESS_MAX_LEVEL;
+@@ -1452,7 +1453,7 @@ static struct page *get_partial_node(str
  
- 	psb_backlight_device = backlight_device_register("psb-bl", NULL,
--- 
-1.6.0.2
-
-
+ 	spin_lock(&n->list_lock);
+ 	list_for_each_entry(page, &n->partial, lru)
+-		if (lock_and_freeze_slab(n, page))
++		if (lock_and_freeze_slab(s, n, page))
+ 			goto out;
+ 	page = NULL;
+ out:
+@@ -1503,7 +1504,7 @@ static struct page *get_any_partial(stru
+ 
+ 		if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
+ 				n->nr_partial > s->min_partial) {
+-			page = get_partial_node(n);
++			page = get_partial_node(s, n);
+ 			if (page) {
+ 				put_mems_allowed();
+ 				return page;
 
