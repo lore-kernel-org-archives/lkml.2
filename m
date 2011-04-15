@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab1DOUG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 16:06:57 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:55011 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab1DOUGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 16:06:55 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, adilger.kernel@dilger.ca, tytso@mit.edu,
-        mfasheh@suse.com, jlbec@evilplan.org, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, hch@infradead.org,
-        ngupta@vflare.org, jeremy@goop.org, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        Dave Mccracken <dave.mccracken@oracle.com>, riel@redhat.com,
-        avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        yinghan@google.com, gthelen@google.com, torvalds@linux-foundation.org
-Subject: Re: [PATCH V8 1/8] mm/fs: cleancache documentation
-References: <67d72d8f-9809-4e43-9e90-417d4eb14db1@default>
-Date: Sat, 16 Apr 2011 05:06:45 +0900
-In-Reply-To: <67d72d8f-9809-4e43-9e90-417d4eb14db1@default> (Dan Magenheimer's
-	message of "Fri, 15 Apr 2011 12:37:11 -0700 (PDT)")
-Message-ID: <87ipuf46ui.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1754263Ab1DOUJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 16:09:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51794 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751489Ab1DOUJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 16:09:06 -0400
+Message-ID: <4DA8A5CE.2010004@zytor.com>
+Date: Fri, 15 Apr 2011 13:08:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] x86: allow ZONE_DMA to be configurable
+References: <alpine.DEB.2.00.1104141134260.386@chino.kir.corp.google.com> <4DA82F33.7080403@ladisch.de>
+In-Reply-To: <4DA82F33.7080403@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Magenheimer <dan.magenheimer@oracle.com> writes:
+On 04/15/2011 04:42 AM, Clemens Ladisch wrote:
+> David Rientjes wrote:
+>> ZONE_DMA is unnecessary for a large number of machines that do not
+>> require addressing in the lower 16MB of memory because they do not use
+>> ISA devices with 16-bit address registers (plus one page byte register).
+>>
+>> This patch allows users to disable ZONE_DMA for x86 if they know they
+>> will not be using such devices with their kernel.
+>> ...
+>>  config ZONE_DMA
+>> -	def_bool y
+>> +	bool "DMA memory allocation support" if EXPERT
+> 
+> Better call it "ISA/LPC DMA memory allocation support".
+> 
+>> +	default y
+> 
+> Does it make sense to have this without CONFIG_ISA_DMA_API?
+> 
+>> +	help
+>> +	  DMA memory allocation support allows old ISA devices with 16-bit
+>> +	  address registers to allocate memory within the first 16MB of
+>> +	  address space.  Disable if no such devices will be used.
+> 
+> "Old ISA devices" might be misleading because ISA does not imply actual
+> ISA slots; please mention LPC devices like the floppy controller and the
+> parallel port in ECP mode.
+> 
 
->> Well, anyway, I guess force enabling this for mostly unused sb can just
->> add cache-write overhead and call for unpleasing reclaim to backend
->> (because of limited space of backend) like updatedb.
->
-> If the sb is mostly unused, there should be few puts.  But you
-> are correct that if the backend has only very limited space,
-> cleancache adds cost and has little value.  On these systems,
-> cleancache should probably be disabled.  However, the cost
-> is very small so leaving it enabled may not even show a
-> measureable performance impact.
+This isn't really a very good edit, as ZONE_DMA isn't inherently limited
+to ISA/LPC devices (and LPC devices which do LPC-native bus mastering
+DMA are not affected.)  ZONE_DMA is used even for some PCI devices which
+have restrictions on the DMA address mask.
 
-Ah, mostly unused sb meant read once for all data pages on that sb for
-each few days (updatedb might be wrong example, because it's meta
-data. Umm... maybe likely example is backup process). I guess it will be
-"put" all pages into backend, and would "flush" useful caches. So, I
-think overhead and reclaim pressure are noticeable impact.
+	-hpa
 
-Ok, but if now it's concentrating on interface for backend of this, I
-think it can be later.
 
->> And already there is in FAQ though, I also have interest about async
->> interface because of SDD backend (I'm not sure for now though). Is
->> there any plan like SSD backend?
->
-> Yes, I think an SSD backend is very interesting, especially
-> if the SSD is "very near" to the processor so that it can
-> be used as a RAM extension rather than as an I/O device.
->
-> The existing cleancache hooks will work for this and I am
-> working on a cleancache backend called RAMster that will
-> be a good foundation to access other asynchronous devices.
-> See: http://marc.info/?l=linux-mm&m=130013567810410&w=2 
-
-Thanks for info.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
