@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1DOQ3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:29:40 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:36050 "EHLO
+	id S1753056Ab1DOQaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:30:05 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:36071 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751306Ab1DOQ3j (ORCPT
+	by vger.kernel.org with ESMTP id S1751395Ab1DOQaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:29:39 -0400
-Date: Fri, 15 Apr 2011 18:29:38 +0200
+	Fri, 15 Apr 2011 12:30:03 -0400
+Date: Fri, 15 Apr 2011 18:30:02 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be
-	smp ?
-Message-ID: <20110415162938.GA11454@atrey.karlin.mff.cuni.cz>
-References: <BANLkTinj3y+-VhzFAPz8Gzb5vAbtUFU6Aw@mail.gmail.com> <Pine.LNX.4.44L0.1104131757430.2005-100000@iolanthe.rowland.org>
+To: Timothy Courrejou <timcour@gmail.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ACPI: ac: fixed indentation, commenting and line
+	length coding style issues
+Message-ID: <20110415163001.GD11454@atrey.karlin.mff.cuni.cz>
+References: <1302580763-11859-1-git-send-email-timcour@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104131757430.2005-100000@iolanthe.rowland.org>
+In-Reply-To: <1302580763-11859-1-git-send-email-timcour@gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,26 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi!
 
-> > > I believe the code is correct as is.
-> > 
-> > that isnt what the code / documentation says.  unless i'm reading them
-> > wrong, both seem to indicate that the proposed patch is what we
-> > actually want.
+> Fixed coding style issues.
 > 
-> The existing code is correct but it isn't optimal.
+> Signed-off-by: Timothy Courrejou <timcour@gmail.com>
+> ---
+>  drivers/acpi/ac.c |   36 ++++++++++++++++++------------------
+>  1 files changed, 18 insertions(+), 18 deletions(-)
 > 
-> wmb() and rmb() are heavy-duty operations, and you don't want to call
-> them when they aren't needed.  That's exactly what smp_wmb() and
-> smp_rmb() are for -- they call wmb() and rmb(), but only in SMP 
-> kernels.
-> 
-> Unless you need to synchronize with another processor (not necessarily 
-> a CPU, it could be something embedded within a device), you should 
-> always use smp_wmb() and smp_rmb() rather than wmb() and rmb().
+> diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
+> index 183a035..58c3f74 100644
+> --- a/drivers/acpi/ac.c
+> +++ b/drivers/acpi/ac.c
+> @@ -85,7 +85,7 @@ static struct acpi_driver acpi_ac_driver = {
+>  
+>  struct acpi_ac {
+>  	struct power_supply charger;
+> -	struct acpi_device *device;
+> +	struct acpi_device * device;
+>  	unsigned long long state;
 
-Maybe; but this code is not performance critical and I believe being
-obvious here is better...
+This _adds_ coding style issue.
+
+
+>  };
+>  
+> @@ -101,9 +101,10 @@ static const struct file_operations acpi_ac_fops = {
+>  };
+>  #endif
+>  
+> -/*
+> - * AC Adapter Management
+> - */
+> +/* --------------------------------------------------------------------------
+> +                               AC Adapter Management
+> +   -------------------------------------------------------------------------- */
+> +
+>  static int acpi_ac_get_state(struct acpi_ac *ac)
+>  {
+>  	acpi_status status = AE_OK;
+
+Reversed patch?
 									Pavel
+
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
