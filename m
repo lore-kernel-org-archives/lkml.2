@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab1DOPRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:17:50 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:34591 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab1DOPRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:17:49 -0400
-From: Richard Weinberger <richard@nod.at>
-To: James McMechan <james_mcmechan@hotmail.com>
-Subject: Re: [uml-devel] gcc-4.6.0 generates no code for sub_preempt_count()
-Date: Fri, 15 Apr 2011 17:17:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-Cc: mikpe@it.uu.se, linux-kernel@vger.kernel.org,
-        uml devel <user-mode-linux-devel@lists.sourceforge.net>
-References: <201104132150.05623.richard@nod.at> <201104141552.42213.richard@nod.at> <COL101-W165ED5CB17434202CE273DE2AD0@phx.gbl>
-In-Reply-To: <COL101-W165ED5CB17434202CE273DE2AD0@phx.gbl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104151717.42534.richard@nod.at>
+	id S1753173Ab1DOPUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 11:20:53 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53109 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab1DOPUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 11:20:52 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: EDAC devel <linux-edac@vger.kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [RFC PATCH 1/4] x86, MCE: Add a HW injection flag
+Date: Fri, 15 Apr 2011 17:20:24 +0200
+Message-Id: <1302880827-22457-2-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1302880827-22457-1-git-send-email-bp@amd64.org>
+References: <1302880827-22457-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 14 April 2011, 21:50:13 schrieb James McMechan:
-> > > > Any ideas whether this is a gcc or a kernel issue?
-> 
-> It looks like a gcc error with one of the optimization passes
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-I've submitted a bug report.
+Add an mce->inject_flag to denote that we're doing HW injection.
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48623
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/include/asm/mce.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks,
-//richard
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index eb16e94..a2e3dcf 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -49,6 +49,7 @@
+ #define MCJ_CTX_IRQ		2    /* inject context: IRQ */
+ #define MCJ_NMI_BROADCAST	4    /* do NMI broadcasting */
+ #define MCJ_EXCEPTION		8    /* raise as exception */
++#define MCJ_HW_INJECT		16   /* do a HW MCE inject, i.e. INT18 */
+ 
+ /* Fields are zero when not available */
+ struct mce {
+-- 
+1.7.4.rc2
+
