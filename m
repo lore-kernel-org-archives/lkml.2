@@ -1,92 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab1DOCKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 22:10:38 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:8687 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab1DOCKh (ORCPT
+	id S1755210Ab1DOCLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 22:11:51 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17966 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069Ab1DOCLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 22:10:37 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6316"; a="85719757"
-Message-ID: <4DA7A914.5020804@codeaurora.org>
-Date: Thu, 14 Apr 2011 19:10:28 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Dave Martin <dave.martin@linaro.org>, Simon Glass <sjg@google.com>
-Subject: Re: [PATCH v4] ARM: Use generic BUG() handler
-References: <1302822031-6752-1-git-send-email-sjg@chromium.org>
-In-Reply-To: <1302822031-6752-1-git-send-email-sjg@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Apr 2011 22:11:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:organization;
+	b=KhD1JtBhGi71fvIzQiIbmu9TV53cL8VlfWJqaQumKr8gqz12xoYLMfAA4EkpYtN+E
+	1DjC1Fr17AHWQjuRi4+LQ==
+From: David Decotigny <decot@google.com>
+To: Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: David Decotigny <decot@google.com>
+Subject: [PATCH] bnx2x: cosmetics: Using ethtool_cmd_speed() API
+Date: Thu, 14 Apr 2011 19:11:34 -0700
+Message-Id: <1302833494-22266-1-git-send-email-decot@google.com>
+X-Mailer: git-send-email 1.7.3.1
+Organization: Google, Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 04:00 PM, Simon Glass wrote:
-> From: Simon Glass <sjg@google.com>
->
-> ARM uses its own BUG() handler which makes its output slightly different
-> from other archtectures.
->
-> One of the problems is that the ARM implementation doesn't report the function
-> with the BUG() in it, but always reports the PC being in __bug(). The generic
-> implementation doesn't have this problem.
->
-> Currently we get something like:
->
-> kernel BUG at fs/proc/breakme.c:35!
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> ...
-> PC is at __bug+0x20/0x2c
->
-> With this patch it displays:
->
-> kernel BUG at fs/proc/breakme.c:35!
-> Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
-> ...
-> PC is at write_breakme+0xd0/0x1b4
->
-> This implementation uses an undefined instruction to implement BUG, and sets up
-> a bug table containing the relevant information. Many versions of gcc do not
-> support %c properly for ARM (inserting a # when they shouldn't) so we work
-> around this using distasteful macro magic.
->
-> v1: Initial version to replace existing ARM BUG() implementation with something
-> more similar to other architectures.
->
-> v2: Add Thumb support, remove backtrace whitespace output changes. Change to
-> use macros instead of requiring the asm %d flag to work (thanks to
-> Dave Martin <dave.martin@linaro.org>)
->
-> v3: Remove old BUG() implementation in favor of this one.
-> Remove the Backtrace: message (will submit this separately).
-> Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
-> thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
-> define GENERIC_BUG this might be academic.)
-> Rebase to linux-2.6.git master.
->
-> v4: Allow BUGS in modules (these were not reported correctly in v3)
-> (thanks to Stephen Boyd <sboyd@codeaurora.org> for suggesting that.)
-> Remove __bug() as this is no longer needed.
->
-> Signed-off-by: Simon Glass <sjg@chromium.org>
+This updates bnx2x to use the ethtool_cmd_speed() family of functions
+(see b11f8d8c in 2.6.27-rc3 aka. "ethtool: Expand ethtool_cmd.speed to
+32 bits") to get and set the link speed via ethtool. This allows to
+avoid manually accessing ethtool_cmd's speed_hi field.
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: David Decotigny <decot@google.com>
+---
+ drivers/net/bnx2x/bnx2x_ethtool.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/net/bnx2x/bnx2x_ethtool.c b/drivers/net/bnx2x/bnx2x_ethtool.c
+index f505015..afe9c73 100644
+--- a/drivers/net/bnx2x/bnx2x_ethtool.c
++++ b/drivers/net/bnx2x/bnx2x_ethtool.c
+@@ -167,6 +167,7 @@ static int bnx2x_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ {
+ 	struct bnx2x *bp = netdev_priv(dev);
+ 	int cfg_idx = bnx2x_get_link_cfg_idx(bp);
++
+ 	/* Dual Media boards present all available port types */
+ 	cmd->supported = bp->port.supported[cfg_idx] |
+ 		(bp->port.supported[cfg_idx ^ 1] &
+@@ -176,16 +177,16 @@ static int bnx2x_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	if ((bp->state == BNX2X_STATE_OPEN) &&
+ 	    !(bp->flags & MF_FUNC_DIS) &&
+ 	    (bp->link_vars.link_up)) {
+-		cmd->speed = bp->link_vars.line_speed;
++		ethtool_cmd_speed_set(cmd, bp->link_vars.line_speed);
+ 		cmd->duplex = bp->link_vars.duplex;
+ 	} else {
+-
+-		cmd->speed = bp->link_params.req_line_speed[cfg_idx];
++		ethtool_cmd_speed_set(
++			cmd, bp->link_params.req_line_speed[cfg_idx]);
+ 		cmd->duplex = bp->link_params.req_duplex[cfg_idx];
+ 	}
+ 
+ 	if (IS_MF(bp))
+-		cmd->speed = bnx2x_get_mf_speed(bp);
++		ethtool_cmd_speed_set(cmd, bnx2x_get_mf_speed(bp));
+ 
+ 	if (bp->port.supported[cfg_idx] & SUPPORTED_TP)
+ 		cmd->port = PORT_TP;
+@@ -206,10 +207,11 @@ static int bnx2x_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	cmd->maxrxpkt = 0;
+ 
+ 	DP(NETIF_MSG_LINK, "ethtool_cmd: cmd %d\n"
+-	   DP_LEVEL "  supported 0x%x  advertising 0x%x  speed %d\n"
++	   DP_LEVEL "  supported 0x%x  advertising 0x%x  speed %u\n"
+ 	   DP_LEVEL "  duplex %d  port %d  phy_address %d  transceiver %d\n"
+ 	   DP_LEVEL "  autoneg %d  maxtxpkt %d  maxrxpkt %d\n",
+-	   cmd->cmd, cmd->supported, cmd->advertising, cmd->speed,
++	   cmd->cmd, cmd->supported, cmd->advertising,
++	   ethtool_cmd_speed(cmd),
+ 	   cmd->duplex, cmd->port, cmd->phy_address, cmd->transceiver,
+ 	   cmd->autoneg, cmd->maxtxpkt, cmd->maxrxpkt);
+ 
+@@ -226,16 +228,15 @@ static int bnx2x_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 		return 0;
+ 
+ 	DP(NETIF_MSG_LINK, "ethtool_cmd: cmd %d\n"
+-	   "  supported 0x%x  advertising 0x%x  speed %d speed_hi %d\n"
++	   "  supported 0x%x  advertising 0x%x  speed %u\n"
+ 	   "  duplex %d  port %d  phy_address %d  transceiver %d\n"
+ 	   "  autoneg %d  maxtxpkt %d  maxrxpkt %d\n",
+-	   cmd->cmd, cmd->supported, cmd->advertising, cmd->speed,
+-	   cmd->speed_hi,
++	   cmd->cmd, cmd->supported, cmd->advertising,
++	   ethtool_cmd_speed(cmd),
+ 	   cmd->duplex, cmd->port, cmd->phy_address, cmd->transceiver,
+ 	   cmd->autoneg, cmd->maxtxpkt, cmd->maxrxpkt);
+ 
+-	speed = cmd->speed;
+-	speed |= (cmd->speed_hi << 16);
++	speed = ethtool_cmd_speed(cmd);
+ 
+ 	if (IS_MF_SI(bp)) {
+ 		u32 part;
+@@ -439,7 +440,7 @@ static int bnx2x_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 			break;
+ 
+ 		default:
+-			DP(NETIF_MSG_LINK, "Unsupported speed %d\n", speed);
++			DP(NETIF_MSG_LINK, "Unsupported speed %u\n", speed);
+ 			return -EINVAL;
+ 		}
+ 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.3.1
 
