@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab1DOVaX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 17:30:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60041 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757064Ab1DOVaW (ORCPT
+	id S1757262Ab1DOVdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 17:33:17 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:38168 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756907Ab1DOVdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 17:30:22 -0400
+	Fri, 15 Apr 2011 17:33:16 -0400
+Date: Fri, 15 Apr 2011 23:33:15 +0200
+From: Cyril Hrubis <metan@ucw.cz>
+To: Chris Ball <cjb@laptop.org>
+Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org, marek.vasut@gmail.com,
+        linux-mmc@vger.kernel.org
+Subject: Re: zaurus: mmcblk0: error -110
+Message-ID: <20110415213315.GA4420@atrey.karlin.mff.cuni.cz>
+References: <20110412151547.GC20815@atrey.karlin.mff.cuni.cz> <m3aafvz30t.fsf@pullcord.laptop.org> <20110412193944.GC2665@atrey.karlin.mff.cuni.cz> <m3oc4bxne1.fsf@pullcord.laptop.org> <20110412205421.GD2665@atrey.karlin.mff.cuni.cz> <m3fwpnxj1w.fsf@pullcord.laptop.org> <20110412224333.GA22640@atrey.karlin.mff.cuni.cz> <m339lnxes6.fsf@pullcord.laptop.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimg+sVCAE17jLE9oz301oruVZbdbw@mail.gmail.com>
-References: <20110415201652.GA5131@redhat.com> <BANLkTi=ctr7tQLArfbdHRU3uUvEPh6KbwQ@mail.gmail.com>
- <20110415205712.GA13049@infradead.org> <1302901766.2035.39.camel@laptop> <BANLkTimg+sVCAE17jLE9oz301oruVZbdbw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 15 Apr 2011 14:27:47 -0700
-Message-ID: <BANLkTinSytqYA6ozOQEQ16VkRU4gFYpqvg@mail.gmail.com>
-Subject: Re: hugetlb locking bug.
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        William Irwin <wli@holomorphy.com>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m339lnxes6.fsf@pullcord.laptop.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 2:19 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> (Warning: whitespace damage and TOTALLY UNTESTED)
+Hi!
+> >> > mmc0: error -95 whilst initialising SD card
+> >> 
+> >> That's interesting.  Would you mind trying to bisect?  (Knowing whether
+> >> 2.6.38 final does it, for example, would be very helpful.)
+> >
+> > It may need one or two tries on 2.6.38 but it's there too.
+> >
+> >> There aren't many -EOPNOTSUPP returns in the stack.  I see:
+> >> 
+> >> card/block.c: mmc_blk_issue_secdiscard_rq and mmc_blk_issue_discard_rq
+> >> card/core.c: mmc_erase
+> >> core/sd_ops.c: mmc_app_cmd
+> >> 
+> >> Mind doing some instrumentation to figure out which it is?
+> >
+> > Fails in the mmc_app_cmd.
+> 
+> Okay.  mmc_app_cmd() hasn't changed for years, so I'm afraid I don't
+> have any strong leads for you -- further bisection (you're pretty
+> sure this is a regression?) would be very useful.
 
-Gaah. That won't work. Or rather, it probably may work, but while
-working it will spam the logs with that
+Well, I was using some old kernel there and updated to the 2.6.38 recently so
+only clue I do have is that it was working on like 2 years old kernel.
 
-    WARN_ON(!(inode->i_state & I_NEW));
+And bisection is quite complicated, as number of kernel images simply doesn't
+boot there. :(
 
-thing from unlock_new_inode.
+I will look on this next week (hopefully) thanks anyway for your help so far.
 
-So the sane thing to do would be apparently one of
-
- (a) ignore the whole thing, and just accept the false lockdep warning.
-
-      which I'd be willing to do, but it might be hiding some real
-ones, so we probably shouldn't.
-
- (b) just remove that WARN_ON(), and use the one-liner I suggested
-
- (c) extract the "set directory i_mutex key" logic into a new helper
-function for the case of filesystems like hugetlbfs that don't want to
-use unlock_new_inode() for one reason or another.
-
-Personally, I don't have any really strong preferences and would
-probably just go for (b) to keep the patch small and simple. Anybody?
-
-                     Linus
+-- 
+metan
