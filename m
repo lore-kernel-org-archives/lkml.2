@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab1DOKgV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 06:36:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38587 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755545Ab1DOKgU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 06:36:20 -0400
-Date: Fri, 15 Apr 2011 11:36:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Subject: Re: [PATCHv1 5/11] REGULATOR: Regulator module of DA9052 PMIC driver
-Message-ID: <20110415103555.GF23466@opensource.wolfsonmicro.com>
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B619753@KCINPUNHJCMS01.kpit.com>
+	id S1755725Ab1DOKjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 06:39:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26445 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755545Ab1DOKjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 06:39:16 -0400
+Date: Fri, 15 Apr 2011 16:09:10 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
+Message-ID: <20110415103910.GL27428@amit-x200.redhat.com>
+References: <20110407174325.ED21C82B@kernel>
+ <20110411110131.GA23123@redhat.com>
+ <1302559871.7286.16749.camel@nimitz>
+ <20110412054330.GH26678@amit-x200.redhat.com>
+ <1302625352.8321.2126.camel@nimitz>
+ <20110412164341.GQ13631@amit-x200.redhat.com>
+ <1302812897.16562.809.camel@nimitz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151B619753@KCINPUNHJCMS01.kpit.com>
-X-Cookie: You too can wear a nose mitten.
+In-Reply-To: <1302812897.16562.809.camel@nimitz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 05:42:08PM +0530, Ashish Jangam wrote:
+On (Thu) 14 Apr 2011 [13:28:17], Dave Hansen wrote:
+> On Tue, 2011-04-12 at 22:13 +0530, Amit Shah wrote:
+> > On (Tue) 12 Apr 2011 [09:22:32], Dave Hansen wrote:
+> > > On Tue, 2011-04-12 at 11:13 +0530, Amit Shah wrote:
+> > > > Sure, the only contention was on the commit message, where you stated
+> > > > modern qemus set this... qemu doesn't, and it should.  Care to do a
+> > > > patch for that? 
+> > > 
+> > > If Rusty hasn't pushed the commit out anywhere, we can still amend the
+> > > commit.  Otherwise, we're in a _bit_ of a pickle since you can't patch
+> > > git logs. :)
+> > 
+> > I should've been clearer: care to do the qemu patch? :-)
+> 
+> What do we want to do to qemu, though?  Set the bit?
 
-> Changes made since last submission:
-> . Change the regulator registration method
-> . Ported the driver to Linux kernel 2.6.38.2 
+Yes, that should ensure older guests behave fine too.
 
-> Linux Kernel Version: 2.6.38.2
-
-As I've repeatedly told you you should submit patches against -next.
-Please stop doing this, it's getting repetitive.  A few comments from a
-breif scan through:
-
-> +static struct regulator_consumer_supply da9052_vddarm_consumers[] = {
-> +	{
-> +		.supply = "vcc",
-> +	}
-> +};
-
-Supplies are connected to regulators using the machine driver not
-drivers for specific regulators.
-
-> +	if (offset == DA9052_BUCK_PERI) {
-> +		if (regval >= DA9052_BUCK_PERI_REG_MAP_UPTO_3uV) {
-> +			regval_uV = ((DA9052_BUCK_PERI_REG_MAP_UPTO_3uV *
-> +				da9052_regulator_info[offset].step_uV)
-> +				+ constraints->min_uV);
-> +			regval_uV += (regval -
-> +				DA9052_BUCK_PERI_REG_MAP_UPTO_3uV)
-> +				*(DA9052_BUCK_PERI_3uV_STEP);
-> +		} else {
-> +			regval_uV =
-> +				(regval * da9052_regulator_info[offset].step_uV)
-> +				+ constraints->min_uV;
-> +		}
-
-Given this and the number of other differences it seems like you should
-just define separate ops for BUCK_PERI.
-
-> +static int da9052_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
-> +				 int max_uV, unsigned *selector)
-> +{
-> +	struct da9052 *da9052 = to_da9052(rdev);
-> +	int offset = rdev_get_id(rdev);
-> +	int ret;
-> +	int reg_val = 0;
-> +
-> +	reg_val = da9052_regulator_uvolts_to_regVal(rdev, min_uV);
-
-You're completely ignoring the max_uV constraint here.
-
-> +static int da9052_list_voltage(struct regulator_dev *rdev, unsigned selector)
-> +{
-> +	struct regulation_constraints *constraints = rdev->constraints;
-> +	struct da9052_regulator_info *info = rdev_get_drvdata(rdev);
-> +	int ret;
-> +
-> +	ret = constraints->min_uV + info->step_uV * selector;
-> +	if (ret > constraints->max_uV)
-> +		return -EINVAL;
-
-This looks *very* broken.  Why are you looking at the constraints to
-determine what the selector means?
+		Amit
