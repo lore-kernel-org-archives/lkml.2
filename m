@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1DOIJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 04:09:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab1DOIJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 04:09:10 -0400
-From: =?UTF-8?q?Petr=20P=C3=ADsa=C5=99?= <ppisar@redhat.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>, "Chris Ball" <cjb@laptop.org>,
-        "Daniel Taylor" <Daniel.Taylor@wdc.com>,
-        =?UTF-8?q?Petr=20P=C3=ADsa=C5=99?= <ppisar@redhat.com>
-Subject: [PATCH] Clean console safely
-Date: Fri, 15 Apr 2011 10:08:08 +0200
-Message-Id: <1302854888-3606-1-git-send-email-ppisar@redhat.com>
-In-Reply-To: <25B374CC0D9DFB4698BB331F82CD0CF2E3EC04@wdscexbe08.sc.wdc.com>
-References: <25B374CC0D9DFB4698BB331F82CD0CF2E3EC04@wdscexbe08.sc.wdc.com>
+	id S1751794Ab1DOINV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 04:13:21 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47165 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab1DOINS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 04:13:18 -0400
+Date: Fri, 15 Apr 2011 09:12:54 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, Ramesh Gupta <grgupta@ti.com>,
+        Hari Kanigeri <h-kanigeri2@ti.com>
+Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2
+	cache
+Message-ID: <20110415081253.GA18952@n2100.arm.linux.org.uk>
+References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com> <20110414223036.GA7335@n2100.arm.linux.org.uk> <BANLkTikfXbtsqaw5ZuP_BbDCtsxXOHZs_w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikfXbtsqaw5ZuP_BbDCtsxXOHZs_w@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Traditional \E[2J sequence erases console display but scroll-back
-buffer and underlying device (frame) buffer keep data that can be
-accessed by scrolling console back.
+On Fri, Apr 15, 2011 at 11:24:16AM +0900, KyongHo Cho wrote:
+> That means we need to translate logical to physical address and it is
+> sometimes not trivial.
 
-This patch introduce new \E[J parameter 3 that allows to scramble
-scroll-back buffer explicitly. Session locking programs (screen,
-vlock) can use it to prevent attacker to browse locked console
-history.
+What do you mean "sometimes not trivial" ?  The DMA does nothing more
+than virt_to_phys(virt) to get the physical address.  It's _that_ simple.
 
-Signed-off-by: Petr Písař <ppisar@redhat.com>
----
- drivers/tty/vt/vt.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+If virt_to_phys(virt) is likely to fail, there's protection in the DMA API
+to BUG_ON() in that case.
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 4bea1ef..cb661ca 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -1197,6 +1197,13 @@ static void csi_J(struct vc_data *vc, int vpar)
- 					      vc->vc_x + 1);
- 			}
- 			break;
-+		case 3: /* erase scroll-back buffer (and whole display) */
-+			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
-+				    vc->vc_screenbuf_size >> 1);
-+			set_origin(vc);
-+			if (CON_IS_VISIBLE(vc))
-+				update_screen(vc);
-+			/* fall through */
- 		case 2: /* erase whole display */
- 			count = vc->vc_cols * vc->vc_rows;
- 			start = (unsigned short *)vc->vc_origin;
--- 
-1.7.4.4
+> Finally, the kernel will contain many similar routines that do same thing.
 
+So when we get coherent DMA, you won't care that the DMA API functions
+start doing nothing with caches?
