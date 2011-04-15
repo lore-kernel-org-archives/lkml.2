@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab1DODXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 23:23:55 -0400
-Received: from swm.pp.se ([212.247.200.143]:49022 "EHLO uplift.swm.pp.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602Ab1DODXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 23:23:54 -0400
-X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Apr 2011 23:23:54 EDT
-Date: Fri, 15 Apr 2011 05:15:43 +0200 (CEST)
-From: Mikael Abrahamsson <swmike@swm.pp.se>
-To: Bruce Stenning <b.stenning@indigovision.com>
-cc: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
-Message-ID: <alpine.DEB.2.00.1104150510181.14027@uplift.swm.pp.se>
-References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com> <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com> <4D9CD275.9000002@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Organization: People's Front Against WWW
+	id S1755462Ab1DOD01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 23:26:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52358 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755350Ab1DOD0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 23:26:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <20110415035451@it-loops.com>
+References: <20110415035451@it-loops.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 14 Apr 2011 20:25:33 -0700
+Message-ID: <BANLkTi=50A4f_d0a0oESd3DMMaK1za5BWg@mail.gmail.com>
+Subject: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with 2.6.39-rc[123]]
+To: Michael Guntsche <mike@it-loops.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Apr 2011, Bruce Stenning wrote:
+On Thu, Apr 14, 2011 at 7:06 PM, Michael Guntsche <mike@it-loops.com> wrote:
+>
+> After talking to Dave Chinner I looked at the block layer merges. I ended
+> up on
+>
+> 6c510389005 Merge branch 'for-2.6.39/core' of git://git.kernel.dk/linux-2.6-block
+>
+> Starting with this merge I see the problems.
 
-> The 2.6.38.2 kernel still exhibits the same lockups that we see with the 
-> 2.6.26 kernel.
+Ok, so that's not very surprising. It's the new per-thread plugging,
+and yes, there's clearly something broken with regards to MD/DM.
 
-Hi.
+And I have a suspicion.
 
-I have some input on this. I have one of these controllers and had 
-problems with one channel where if I had a drive in that hotswap bay, the 
-controller wouldn't even POST at boot. It just stuck in the detection 
-phase in the controller BIOS.
+Jens - tell me if I'm wrong, but look at the crazy plug flushing code:
 
-When I tested hotplugging into that bay when the system was running, I 
-received a kernel warning (it's not powered on at the moment so I can't 
-provide the output, if it's important I can get it).
+  void __blk_flush_plug(struct task_struct *tsk, struct blk_plug *plug)
+  {
+        __blk_finish_plug(tsk, plug);
+        tsk->plug = plug;
+  }
 
-My point is that there might be a problem with this controller hw or 
-firmware that doesn't handle all behaviour/situations properly. I 
-re-seated the SATA cable at both ends and after that couldn't reproduce 
-the problem (which was reproduced with two different make harddrives 
-several times before re-seating the cable).
+and explain that idiotic __blk_finish_plug() logic to me:
 
-This was with the 2.6.32 debian stable kernel, AMD64 version.
+  static void __blk_finish_plug(struct task_struct *tsk, struct blk_plug *plug)
+  {
+          flush_plug_list(plug);
 
--- 
-Mikael Abrahamsson    email: swmike@swm.pp.se
+          if (plug == tsk->plug)
+                  tsk->plug = NULL;
+  }
+
+and in particular the "set it to NULL, only to then set it back
+again". That code makes no sense. __blk_finish_plug() is only ever
+called with "plug" being "tsk->plug", and afaik nothing will ever
+modify a non-NULL plug (if it is a nested plug, it would never be
+added to the task) _except_ for that __blk_finish_plug(). No? So it
+sets it to NULL, and then immediately the caller will set it back
+again.
+
+What's the thinking there? It looks very confused to me.
+
+Now, clearly RAID seems to be involved in the problem? The main thing
+with that would be that the execution of the requests would tend to
+generate new requests, that go back on the plug queue. Yes? And the
+loop in flush_plug_list() means that they all should get flushed out,
+I assume. But something clearly isn't working, and it does seem to be
+about the RAID kind of setup. So either they didn't get put on the
+plug queue, or the task got a new plug (which _wasn't_ flushed).
+
+Because we're clearly waiting for some request that hasn't completed.
+Where in the plug queues would it be hiding?
+
+The whole block layer plugging looks to be the major problem of the 39
+cycle. Jens, pls explain.
+
+                      Linus
