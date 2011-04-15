@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab1DOUvc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 16:51:32 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:27759 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756233Ab1DOUrv (ORCPT
+	id S1756997Ab1DOUv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 16:51:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61655 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988Ab1DOUvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 16:47:51 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Mjw0H_4VM1kVGjaKjeZ9Mm3r.M.jF57r6JH.Dor3Mux6R4x
- lbg5RwDqHLnvOBAMqlQdGDJspZLY0wqpLwb2oJIqelgjbKgPK5ANsMWCfoa8
- pkqB8rPEz00A2RsbZl9rMlS72vABIXg8tDfcftrENtO8e08yDigws3igPm5z
- MSE_1HCoEwPF9fSFCZRE3E5Bvb0kRwbyLpK9UgjC18Avq.e7jTQ3dYiCvAMh
- gp5ps5sGKXgOTiwFhW.k7CQkGGtIXfszyZu5cfpHDAf0xVfg9yw7soFIzRor
- 6AEtE1Hy_zJQ0zqyb3BjPbRruVZyHb2Sfax5fwlz0vJo24BRU6odVMPhzIEE
- -
-X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110415204748.949166441@linux.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 15 Apr 2011 15:47:35 -0500
-From: Christoph Lameter <cl@linux.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [slubllv3 05/21] slub: Move debug handlign in __slab_free
-References: <20110415204730.326790555@linux.com>
-Content-Disposition: inline; filename=move_debug
+	Fri, 15 Apr 2011 16:51:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=PEdwd1C7/gIwxuv31kNZc/yR9hyTUMAWkfoxAqflQ59AhzWMhT/ciuG5HJXSj5eNeH
+         KLXT8DMhXY0eOPt8QYSIoAeqCch4xkMKB7rVfqChj4Wq6xTe7ic3Sk3QZ7ajSFTYXq9d
+         4tBBpbiFw+eaDj5IKy13cqU2wnQ5wUNUFVVAg=
+Date: Fri, 15 Apr 2011 23:51:48 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kstrtox: reuse functions from ctype.h
+Message-ID: <20110415205148.GA6132@p183>
+References: <b266439c1f03640c677f911cb82f4d0e131d2e7d.1302785632.git.mina86@mina86.com>
+ <BANLkTikk3Zof1Go8xLBeq2qyxGo6AFuv1g@mail.gmail.com>
+ <op.vtxmkrzr3l0zgt@mnazarewicz-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <op.vtxmkrzr3l0zgt@mnazarewicz-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Its easier to read if its with the check for debugging flags.
+On Thu, Apr 14, 2011 at 04:30:17PM +0200, Michal Nazarewicz wrote:
+> On Thu, 14 Apr 2011 16:06:34 +0200, Alexey Dobriyan <adobriyan@gmail.com>  
+> wrote:
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+> >> @@ -47,8 +42,8 @@ static int _kstrtoull(const char *s, unsigned int  
+> >> base, unsigned long long *res)
+> >>
+> >>                if ('0' <= *s && *s <= '9')
+> >>                        val = *s - '0';
+> >> -               else if ('a' <= _tolower(*s) && _tolower(*s) <= 'f')
+> >> -                       val = _tolower(*s) - 'a' + 10;
+> >> +               else if (isxdigit(*s))
+> >
+> > [0-9] are isxdigit() as well, so the code sort of logically duplicate.
+> 
+> Yes, so? ;)
+> 
+> I think isxdigit(*s) looks nicer than “'a' <= _tolower(*s) &&
+> _tolower(*s) <= 'f'”.
 
----
- mm/slub.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+If you write isxdigit(*s) you have to write some other expression for
+"val = " to be nicer.
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2011-04-15 12:54:21.000000000 -0500
-+++ linux-2.6/mm/slub.c	2011-04-15 12:54:21.000000000 -0500
-@@ -2057,10 +2057,9 @@ static void __slab_free(struct kmem_cach
- 	slab_lock(page);
- 	stat(s, FREE_SLOWPATH);
- 
--	if (kmem_cache_debug(s))
--		goto debug;
-+	if (kmem_cache_debug(s) && !free_debug_processing(s, page, x, addr))
-+		goto out_unlock;
- 
--checks_ok:
- 	prior = page->freelist;
- 	set_freepointer(s, object, prior);
- 	page->freelist = object;
-@@ -2104,12 +2103,6 @@ slab_empty:
- #endif
- 	stat(s, FREE_SLAB);
- 	discard_slab(s, page);
--	return;
--
--debug:
--	if (!free_debug_processing(s, page, x, addr))
--		goto out_unlock;
--	goto checks_ok;
- }
- 
- /*
-
+The point it's doesn't matter, compiler will optimize all those _tolower().
