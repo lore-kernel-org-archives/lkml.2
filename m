@@ -1,88 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1DOJyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 05:54:37 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:36313 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1DOJyf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 05:54:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=R9vzBtiaI2NJO8Rk/xFABgCkV7d/O5FyCdCi056oOxrrm+1Khra3l8sXKKsSfa8o3Y
-         nd0LDm+cVwN4xeiT0tnZMGE7VFyKrY/IpT/51Q2/O7sFqxNppsst7BNtWeFAwYXm79q+
-         oTw5cNw/sDSJ4j9SjkKEpKaOOF+DdqcgSCqLA=
-Subject: Re: [PATCH 2/2] mtd: msm_nand: Add initial msm nand driver support.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Murali Nalajala <mnalajal@codeaurora.org>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Dima Zavin <dima@android.com>,
-        Brian Swetland <swetland@google.com>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <1298940450-27365-2-git-send-email-mnalajal@codeaurora.org>
-References: <1298940450-27365-1-git-send-email-mnalajal@codeaurora.org>
-	 <1298940450-27365-2-git-send-email-mnalajal@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Apr 2011 12:51:37 +0300
-Message-ID: <1302861097.3220.12.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	id S1754313Ab1DOJ7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 05:59:08 -0400
+Received: from gmmr4.centrum.cz ([90.183.38.143]:58317 "EHLO gmmr4.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab1DOJ7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 05:59:06 -0400
+To: "Mel Gorman" <mel@csn.ul.ie>, "Andrew Morton" <akpm@linux-foundation.org>
+Subject: Re: Regression from 2.6.36
+Date: Fri, 15 Apr 2011 11:59:03 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: "Eric Dumazet" <eric.dumazet@gmail.com>, "Changli Gao" <xiaosuo@gmail.com>,
+        "Am?rico Wang" <xiyou.wangcong@gmail.com>,
+        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
+        "Jiri Slaby" <jirislaby@gmail.com>
+References: <BANLkTinnTnjZvQ9S1AmudZcZBokMy8-93w@mail.gmail.com> <1302177428.3357.25.camel@edumazet-laptop> <1302178426.3357.34.camel@edumazet-laptop> <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com> <1302190586.3357.45.camel@edumazet-laptop> <20110412154906.70829d60.akpm@linux-foundation.org> <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com> <20110412183132.a854bffc.akpm@linux-foundation.org> <1302662256.2811.27.camel@edumazet-laptop> <20110413141600.28793661.akpm@linux-foundation.org> <20110414102501.GE11871@csn.ul.ie>
+In-Reply-To: <20110414102501.GE11871@csn.ul.ie>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+MIME-Version: 1.0
+Message-Id: <20110415115903.315DEAA1@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 06:17 +0530, Murali Nalajala wrote:
-> +#define pr_fmt(fmt) "%s:" fmt, __func__
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/mtd/mtd.h>
-> +#include <linux/mtd/nand.h>
-> +#include <linux/mtd/partitions.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/sched.h>
-> +#include <linux/slab.h>
-> +#include <linux/dma-mapping.h>
-> +#include <asm/mach/flash.h>
-> +#include <mach/dma.h>
-> +
-> +#include "msm_nand.h"
-> +
-> +unsigned long msm_nand_phys;
 
-No global variables like this please. Here is how you use them:
+Also this new patch is working fine and fixing the problem.
 
-+extern unsigned long msm_nand_phys;
-+#define MSM_NAND_REG(off) (msm_nand_phys + (off))
-+
-+#define MSM_NAND_FLASH_CMD            MSM_NAND_REG(0x0000)
-+#define MSM_NAND_ADDR0                MSM_NAND_REG(0x0004)
+Mel, I cannot run your script:
+# perl watch-highorder-latency.pl
+Failed to open /sys/kernel/debug/tracing/set_ftrace_filter for writing at watch-highorder-latency.pl line 17.
 
-Could you please make the macros to take the "struct msm_nand_chip
-*chip" argument instead, and store the pase address there. Do not hide
-the fact that those macros are actually functions, not constant - this
-is error prone.
-
-Besides, I'm do not know your HW, but if you have several controllers
-with various base addresses - your driver won't work.
-
-> +	pr_info("Save cfg0 = %x cfg1 = %x\n", chip->cfg0, chip->cfg1);
-> +	pr_info("cfg0: cw/page=%d ud_sz=%d ecc_sz=%d spare_sz=%d "
-> +		"num_addr_cycles=%d\n", (chip->cfg0 >> 6) & 7,
-> +		(chip->cfg0 >> 9) & 0x3ff, (chip->cfg0 >> 19) & 15,
-> +		(chip->cfg0 >> 23) & 15, (chip->cfg0 >> 27) & 7);
-
-Please, revise all your pr_info() calls and turn most of them into
-dev_dbg() or pr_debug. Your driver should be completely silent by
-default, except of error messages and some information messages when it
-is initialized.
+# ls -ld /sys/kernel/debug/
+ls: cannot access /sys/kernel/debug/: No such file or directory
 
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+azur
 
+______________________________________________________________
+> Od: "Mel Gorman" <mel@csn.ul.ie>
+> Komu: Andrew Morton <akpm@linux-foundation.org>
+> Dátum: 14.04.2011 12:25
+> Predmet: Re: Regression from 2.6.36
+>
+> CC: "Eric Dumazet" <eric.dumazet@gmail.com>, "Changli Gao" <xiaosuo@gmail.com>, "Am?rico Wang" <xiyou.wangcong@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>
+>On Wed, Apr 13, 2011 at 02:16:00PM -0700, Andrew Morton wrote:
+>> On Wed, 13 Apr 2011 04:37:36 +0200
+>> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> 
+>> > Le mardi 12 avril 2011 __ 18:31 -0700, Andrew Morton a __crit :
+>> > > On Wed, 13 Apr 2011 09:23:11 +0800 Changli Gao <xiaosuo@gmail.com> wrote:
+>> > > 
+>> > > > On Wed, Apr 13, 2011 at 6:49 AM, Andrew Morton
+>> > > > <akpm@linux-foundation.org> wrote:
+>> > > > >
+>> > > > > It's somewhat unclear (to me) what caused this regression.
+>> > > > >
+>> > > > > Is it because the kernel is now doing large kmalloc()s for the fdtable,
+>> > > > > and this makes the page allocator go nuts trying to satisfy high-order
+>> > > > > page allocation requests?
+>> > > > >
+>> > > > > Is it because the kernel now will usually free the fdtable
+>> > > > > synchronously within the rcu callback, rather than deferring this to a
+>> > > > > workqueue?
+>> > > > >
+>> > > > > The latter seems unlikely, so I'm thinking this was a case of
+>> > > > > high-order-allocations-considered-harmful?
+>> > > > >
+>> > > > 
+>> > > > Maybe, but I am not sure. Maybe my patch causes too many inner
+>> > > > fragments. For example, when asking for 5 pages, get 8 pages, and 3
+>> > > > pages are wasted, then memory thrash happens finally.
+>> > > 
+>> > > That theory sounds less likely, but could be tested by using
+>> > > alloc_pages_exact().
+>> > > 
+>> > 
+>> > Very unlikely, since fdtable sizes are powers of two, unless you hit
+>> > sysctl_nr_open and it was changed (default value being 2^20)
+>> > 
+>> 
+>> So am I correct in believing that this regression is due to the
+>> high-order allocations putting excess stress onto page reclaim?
+>> 
+>
+>This is very plausible but it would be nice to get confirmation on
+>what the size of the fdtable was to be sure. If it's big enough for
+>high-order allocations and it's a fork-heavy workload with memory
+>mostly in use, the fork() latencies could be getting very high. In
+>addition, each fork is potentially kicking kswapd awake (to rebalance
+>the zone for higher orders). I do not see CONFIG_COMPACTION enabled
+>meaning that if I'm right in that kswapd is awake and fork() is
+>entering direct reclaim, then we are lumpy reclaiming as well which
+>can stall pretty severely.
+>
+>> If so, then how large _are_ these allocations?  This perhaps can be
+>> determined from /proc/slabinfo.  They must be pretty huge, because slub
+>> likes to do excessively-large allocations and the system handles that
+>> reasonably well.
+>> 
+>
+>I'd be interested in finding out the value of /proc/sys/fs/file-max and
+>the output of ulimit -n (max open files) for the main server is. This
+>should help us determine what the size of the fdtable is.
+>
+>> I suppose that a suitable fix would be
+>> 
+>> 
+>> From: Andrew Morton <akpm@linux-foundation.org>
+>> 
+>> Azurit reports large increases in system time after 2.6.36 when running
+>> Apache.  It was bisected down to a892e2d7dcdfa6c76e6 ("vfs: use kmalloc()
+>> to allocate fdmem if possible").
+>> 
+>> That patch caused the vfs to use kmalloc() for very large allocations and
+>> this is causing excessive work (and presumably excessive reclaim) within
+>> the page allocator.
+>> 
+>> Fix it by falling back to vmalloc() earlier - when the allocation attempt
+>> would have been considered "costly" by reclaim.
+>> 
+>> Reported-by: azurIt <azurit@pobox.sk>
+>> Cc: Changli Gao <xiaosuo@gmail.com>
+>> Cc: Americo Wang <xiyou.wangcong@gmail.com>
+>> Cc: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>> ---
+>> 
+>>  fs/file.c |   17 ++++++++++-------
+>>  1 file changed, 10 insertions(+), 7 deletions(-)
+>> 
+>> diff -puN fs/file.c~a fs/file.c
+>> --- a/fs/file.c~a
+>> +++ a/fs/file.c
+>> @@ -39,14 +39,17 @@ int sysctl_nr_open_max = 1024 * 1024; /*
+>>   */
+>>  static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
+>>  
+>> -static inline void *alloc_fdmem(unsigned int size)
+>> +static void *alloc_fdmem(unsigned int size)
+>>  {
+>> -	void *data;
+>> -
+>> -	data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+>> -	if (data != NULL)
+>> -		return data;
+>> -
+>> +	/*
+>> +	 * Very large allocations can stress page reclaim, so fall back to
+>> +	 * vmalloc() if the allocation size will be considered "large" by the VM.
+>> +	 */
+>> +	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER) {
+>
+>The reporter will need to retest this is really ok. The patch that was
+>reported to help avoided high-order allocations entirely. If fork-heavy
+>workloads are really entering direct reclaim and increasing fork latency
+>enough to ruin performance, then this patch will also suffer. How much
+>it helps depends on how big fdtable.
+>
+>> +		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+>> +		if (data != NULL)
+>> +			return data;
+>> +	}
+>>  	return vmalloc(size);
+>>  }
+>>  
+>
+>I'm attaching a primitive perl script that reports high-order allocation
+>latencies. I'd be interesting to see what the output of it looks like,
+>particularly when the server is in trouble if the bug reporter as the
+>time.
+>
+>-- 
+>Mel Gorman
+>SUSE Labs
+>
+>
