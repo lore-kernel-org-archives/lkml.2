@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab1DOTxi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 15:53:38 -0400
-Received: from mail.academy.zt.ua ([82.207.120.245]:10143 "EHLO
-	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1DOTxh (ORCPT
+	id S1752990Ab1DOT4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 15:56:19 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:44597 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750726Ab1DOT4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 15:53:37 -0400
-X-MDAV-Processed: mail.academy.zt.ua, Fri, 15 Apr 2011 22:53:38 +0300
-X-Spam-Processed: mail.academy.zt.ua, Fri, 15 Apr 2011 22:53:38 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-Return-Path: george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: George Kashperko <george@znau.edu.ua>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arend van Spriel <arend@broadcom.com>,
-        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
-        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-	 <1302781431.21145.6.camel@dev.znau.edu.ua>
-	 <BANLkTinvpt5vs+rXd3WN-a2JpGtTV+=Gyg@mail.gmail.com>
-	 <4DA6E9BD.3090404@hauke-m.de>
-	 <BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
-	 <1302786900.21965.52.camel@dev.znau.edu.ua>
-	 <BANLkTimM8=-pX+Ea8Eyp4XyvP1APbUof9w@mail.gmail.com>
-	 <1302892585.30441.12.camel@dev.znau.edu.ua>
-	 <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Date: Fri, 15 Apr 2011 22:50:10 +0300
-Message-Id: <1302897010.30441.42.camel@dev.znau.edu.ua>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 8bit
+	Fri, 15 Apr 2011 15:56:18 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: X6X1sHoVM1k5rt..wFsn86V8MC.n4Sa7yeAmpztvOzBSg2w
+ 28OfR064p60DaGoyER7Xs.HCiEKBzKaD6og.zzSOyC.EqZn2Sv6SRmrYI4VT
+ 1qXJPTh1Gt8ubRAPcoILVAUuT32aYXZf3F2slcQ66fLqwu_JfQrl8UFZxqA0
+ nOH1fFlXJ6zpN0ybvh6s1d9MncKTw6zf_P919Jit0iQWY5PskXHG06tkDsdc
+ cNAegDQqvOPCHmmYp02ETHXkQdPg_aFjKcx5oFDMe3OqMI4gTVC60aLRFk6E
+ oIF7QdgbJfGajPfQ701yGIT3K9ooV2ouxFJjYWBqhczKmc46X
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 15 Apr 2011 14:56:14 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [RFC] slub: Per object NUMA support
+Message-ID: <alpine.DEB.2.00.1104151449370.12627@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I am not sure if such a feature is needed/wanted/desired. It would make
+the object allocation method similar to SLAB instead of relying on page
+based policy application (which IMHO was the intend of the memory policy
+system before Paul Jackson got that changed in SLAB).
 
-> W dniu 15 kwietnia 2011 20:36 użytkownik George Kashperko
-> <george@znau.edu.ua> napisał:
-> >> >> Arnd: I found you saying:
-> >> >> > I believe the one thing we really want from this driver is the bus
-> >> >> > scan code, which is not present in the amba bus implementation,
-> >> >> I explained how it works, I believe scanning (EPROM in this case) it
-> >> >> Broadcom specific, not really AMBA standard. How do you see it?
-> >> >>
-> >> > It might not Broadcom specific as EPROM core seems to be CoreLink one
-> >> > core and maybe is arm-developed. But it isn't documented publicly and we
-> >> > don't know yet if it is obligatory for all amba (or at least axi)
-> >> > interconnects or not.
-> >>
-> >> Maybe EPROM is not Broadcom specific, but I suspect the content we
-> >> deal with in bcmai/axi is Broadcom specific. I didn't see any notes of
-> >> manuf/id/rev/class we deal with. So I guess everything *we* (out
-> >> driver) read from EPROM is Bcm specific.
-> >>
-> >
-> > Played around amba registers on bcm4716. For all amba cores present
-> > (under all I mean broadcom ip core agents, oob router core, erom core,
-> > and other I-dont-know-what-for cores present at 0x18100000). All those
-> > feature AMBA_CID (0xb105f00d) as PrimeCell ID, and slightly different
-> > PrimeCell PeripheralIDs:
-> > * vendor 0xBB, part_number 0x368 for broadcom cores' agents;
-> > * vendor 0xBB, part_number 0x367 for OOB router core (don't ask me wth
-> > is this please);
-> > * vendor 0xBB, part_number 0x366 for EROM core;
-> >
-> > ARM vendor id is 0x41. Might 0xBB is Broadcom vendor id but I've found
-> > no evidence for that with google.
-> 
-> Yeah, as I suspected, everything except Broadcom specific cores
-> matches AMBA standards quite nicely. Still, I don't see anything in it
-> we could use for driver.
-> 
-> Let's wait for Russell and Arnd to comment.
-> 
-
-Btw, googling for PL366, PL367, PL368 gives nothing relevant except one
-reference to "NIC-301 Interconnect Device Management (PL368)" which is
-restricted to arm partners. Think it have something to do with that
-magic "DMP - Device Management Plugin" Broadcom guys mentioned earlier.
-Might those 0xBB/0x368 cores are produced with that "plugin".
-
-Have nice day,
-George
+Anyways the implementation is rather simple.
 
 
+
+
+
+Currently slub applies NUMA policies per allocated slab page. Change
+that to apply memory policies for each individual object allocated.
+
+F.e. before this patch MPOL_INTERLEAVE would return objects from the
+same slab page until a new slab page was allocated. Now an object
+from a different page is taken for each allocation.
+
+This increases the overhead of the fastpath under NUMA.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+---
+ mm/slub.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-04-15 12:54:42.000000000 -0500
++++ linux-2.6/mm/slub.c	2011-04-15 13:11:25.000000000 -0500
+@@ -1887,6 +1887,21 @@ debug:
+ 	goto unlock_out;
+ }
+
++static __always_inline int alternate_slab_node(struct kmem_cache *s,
++						gfp_t flags, int node)
++{
++#ifdef CONFIG_NUMA
++	if (unlikely(node == NUMA_NO_NODE &&
++			!(flags & __GFP_THISNODE) &&
++			!in_interrupt())) {
++		if ((s->flags & SLAB_MEM_SPREAD) && cpuset_do_slab_mem_spread())
++			node = cpuset_slab_spread_node();
++		else if (current->mempolicy)
++		node = slab_node(current->mempolicy);
++	}
++#endif
++	return node;
++}
+ /*
+  * Inlined fastpath so that allocation functions (kmalloc, kmem_cache_alloc)
+  * have the fastpath folded into their functions. So no function call
+@@ -1911,6 +1926,7 @@ static __always_inline void *slab_alloc(
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+ 		return NULL;
+
++	node = alternate_slab_node(s, gfpflags, node);
+ #ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
+ #else
