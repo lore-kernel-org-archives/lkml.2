@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1DOUsD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 16:48:03 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:35160 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756750Ab1DOUrx (ORCPT
+	id S1756824Ab1DOUsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 16:48:01 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:26720 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756756Ab1DOUry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 16:47:53 -0400
+	Fri, 15 Apr 2011 16:47:54 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 9mX_PmoVM1laQRI.ia7b7MX.m2UA5TxWJG58zemSws1sEE2
- 6XtNs0rxG_YgN402ZhF65suBfzH7xUSmnwT36BzPA86H3eeexn54yFGRpAy0
- OaFB04D_5IbOhcioTFcX43syvplVRchWei.aT4OwnEeNLzvHW.BY_6l2LOlk
- CifLEvtc09i8fB_HVN1W3uzS0hWRmfKKeZLbtSKOPBr9XBQL7M0NGdWMYGQu
- l3J_ddXG98HfMG0sJaXXZhrHS_iT4gnzbWP8wHq0oukd8fYwF94zBN6RbWbZ
- FXUKYSNOf1ZT4EQmW_o3aDBA9SY3qJp4zh237nnl4IwMqMQqYzhNsEsvyfZB
- skuzT3OXVEUzoTA7E
+X-YMail-OSG: K7.fWTEVM1nLZB5PTyCZMX_PFFG.KgClQfc5e7GzWhjgBr.
+ _zk8E5ebjnGPWNYDkC2qn9cFO45hm8SL7Jfmd7YYJXjrda78l08gTyEvy1v6
+ uDFWf9Ccu4GxD1DLcG3XaX5Or2nt85Gvbfz5tBn6e6MbDONk9F8Fahf6n2ou
+ 9vHS4DCCfpVw_DXNZz2_woo2ro4WPJ5eQzzLwiTLYWQmWV5VV5CXadQZ9nUm
+ QXATpaSwjkSQpEdeAWyM4EYkM.1e5W6L.VeSL3IhJp9bhTgLQ127xnmuyJjk
+ Nzllxwd7gFX3uKZCn.0m4g1dy5JuSxMBVRsli9w0Da1gi.XBp2JlmQtMElcD
+ 2TM8AWUPBfZLIjh4P
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110415204751.280107734@linux.com>
+Message-Id: <20110415204752.445029138@linux.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 15 Apr 2011 15:47:39 -0500
+Date: Fri, 15 Apr 2011 15:47:41 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: David Rientjes <rientjes@google.com>
@@ -27,166 +27,124 @@ Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [slubllv3 09/21] x86: Add support for cmpxchg_double
+Subject: [slubllv3 11/21] slub: Add cmpxchg_double_slab()
 References: <20110415204730.326790555@linux.com>
-Content-Disposition: inline; filename=cmpxchg_double_x86
+Content-Disposition: inline; filename=cmpxchg_double_slab
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A simple implementation that only supports the word size and does not
-have a fallback mode (would require a spinlock).
-
-And 32 and 64 bit support for cmpxchg_double. cmpxchg double uses
-the cmpxchg8b or cmpxchg16b instruction on x86 processors to compare
-and swap 2 machine words. This allows lockless algorithms to move more
-context information through critical sections.
-
-Set a flag CONFIG_CMPXCHG_DOUBLE to signal the support of that feature
-during kernel builds.
+Add a function that operates on the second doubleword in the page struct
+and manipulates the object counters, the freelist and the frozen attribute.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- arch/x86/Kconfig.cpu              |    3 ++
- arch/x86/include/asm/cmpxchg_32.h |   46 ++++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/cmpxchg_64.h |   45 +++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/cpufeature.h |    1 
- 4 files changed, 95 insertions(+)
+ include/linux/slub_def.h |    1 +
+ mm/slub.c                |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 46 insertions(+)
 
-Index: linux-2.6/arch/x86/include/asm/cmpxchg_64.h
+Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/arch/x86/include/asm/cmpxchg_64.h	2011-04-13 15:19:53.000000000 -0500
-+++ linux-2.6/arch/x86/include/asm/cmpxchg_64.h	2011-04-15 13:14:45.000000000 -0500
-@@ -151,4 +151,49 @@ extern void __cmpxchg_wrong_size(void);
- 	cmpxchg_local((ptr), (o), (n));					\
- })
+--- linux-2.6.orig/mm/slub.c	2011-04-15 13:14:40.000000000 -0500
++++ linux-2.6/mm/slub.c	2011-04-15 13:14:51.000000000 -0500
+@@ -131,6 +131,9 @@ static inline int kmem_cache_debug(struc
+ /* Enable to test recovery from slab corruption on boot */
+ #undef SLUB_RESILIENCY_TEST
  
-+#define cmpxchg16b(ptr, o1, o2, n1, n2)				\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __junk;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile(LOCK_PREFIX_HERE "lock; cmpxchg16b (%%rsi);setz %1" \
-+		       : "=d"(__junk), "=a"(__ret)		\
-+		       : "S"(ptr), "b"(__new1),	"c"(__new2),	\
-+		         "a"(__old1), "d"(__old2));		\
-+	__ret; })
++/* Enable to log cmpxchg failures */
++#undef SLUB_DEBUG_CMPXCHG
 +
-+
-+#define cmpxchg16b_local(ptr, o1, o2, n1, n2)			\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __junk;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile("cmpxchg16b (%%rsi)\n\t\tsetz %1\n\t"	\
-+		       : "=d"(__junk)_, "=a"(__ret)		\
-+		       : "S"((ptr)), "b"(__new1), "c"(__new2),	\
-+ 		         "a"(__old1), "d"(__old2));		\
-+	__ret; })
-+
-+#define cmpxchg_double(ptr, o1, o2, n1, n2)				\
-+({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-+	VM_BUG_ON((unsigned long)(ptr) % 16);				\
-+	cmpxchg16b((ptr), (o1), (o2), (n1), (n2));			\
-+})
-+
-+#define cmpxchg_double_local(ptr, o1, o2, n1, n2)			\
-+({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-+	VM_BUG_ON((unsigned long)(ptr) % 16);				\
-+	cmpxchg16b_local((ptr), (o1), (o2), (n1), (n2));		\
-+})
-+
-+#define system_has_cmpxchg_double() cpu_has_cx16
-+
- #endif /* _ASM_X86_CMPXCHG_64_H */
-Index: linux-2.6/arch/x86/include/asm/cmpxchg_32.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/cmpxchg_32.h	2011-04-13 15:19:53.000000000 -0500
-+++ linux-2.6/arch/x86/include/asm/cmpxchg_32.h	2011-04-15 13:14:45.000000000 -0500
-@@ -280,4 +280,50 @@ static inline unsigned long cmpxchg_386(
+ /*
+  * Mininum number of partial slabs. These will be left on the partial
+  * lists even if they are empty. kmem_cache_shrink may reclaim them.
+@@ -170,6 +173,7 @@ static inline int kmem_cache_debug(struc
  
+ /* Internal SLUB flags */
+ #define __OBJECT_POISON		0x80000000UL /* Poison object */
++#define __CMPXCHG_DOUBLE	0x40000000UL /* Use cmpxchg_double */
+ 
+ static int kmem_size = sizeof(struct kmem_cache);
+ 
+@@ -326,6 +330,37 @@ static inline int oo_objects(struct kmem
+ 	return x.x & OO_MASK;
+ }
+ 
++static inline bool cmpxchg_double_slab(struct kmem_cache *s, struct page *page,
++		void *freelist_old, unsigned long counters_old,
++		void *freelist_new, unsigned long counters_new,
++		const char *n)
++{
++#ifdef CONFIG_CMPXCHG_DOUBLE
++	if (s->flags & __CMPXCHG_DOUBLE) {
++		if (cmpxchg_double(&page->freelist,
++			freelist_old, counters_old,
++			freelist_new, counters_new))
++		return 1;
++	} else
++#endif
++	{
++		if (page->freelist == freelist_old && page->counters == counters_old) {
++			page->freelist = freelist_new;
++			page->counters = counters_new;
++			return 1;
++		}
++	}
++
++	cpu_relax();
++	stat(s, CMPXCHG_DOUBLE_FAIL);
++
++#ifdef SLUB_DEBUG_CMPXCHG
++	printk(KERN_INFO "%s %s: cmpxchg double redo ", n, s->name);
++#endif
++
++	return 0;
++}
++
+ /*
+  * Determine a map of object in use on a page.
+  *
+@@ -2654,6 +2689,12 @@ static int kmem_cache_open(struct kmem_c
+ 		}
+ 	}
+ 
++#ifdef CONFIG_CMPXCHG_DOUBLE
++	if (system_has_cmpxchg_double() && (s->flags & SLAB_DEBUG_FLAGS) == 0)
++		/* Enable fast mode */
++		s->flags |= __CMPXCHG_DOUBLE;
++#endif
++
+ 	/*
+ 	 * The larger the object size is, the more pages we want on the partial
+ 	 * list to avoid pounding the page allocator excessively.
+@@ -4551,6 +4592,8 @@ STAT_ATTR(DEACTIVATE_TO_HEAD, deactivate
+ STAT_ATTR(DEACTIVATE_TO_TAIL, deactivate_to_tail);
+ STAT_ATTR(DEACTIVATE_REMOTE_FREES, deactivate_remote_frees);
+ STAT_ATTR(ORDER_FALLBACK, order_fallback);
++STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
++STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
  #endif
  
-+#define cmpxchg8b(ptr, o1, o2, n1, n2)				\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __dummy;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile(LOCK_PREFIX_HERE "lock; cmpxchg8b (%%esi); setz %1"\
-+		       : "d="(__dummy), "=a" (__ret) 		\
-+		       : "S" ((ptr)), "a" (__old1), "d"(__old2),	\
-+		         "b" (__new1), "c" (__new2)		\
-+		       : "memory");				\
-+	__ret; })
-+
-+
-+#define cmpxchg8b_local(ptr, o1, o2, n1, n2)			\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __dummy;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile("cmpxchg8b (%%esi); tsetz %1"		\
-+		       : "d="(__dummy), "=a"(__ret)		\
-+		       : "S" ((ptr)), "a" (__old), "d"(__old2),	\
-+		         "b" (__new1), "c" (__new2),		\
-+		       : "memory");				\
-+	__ret; })
-+
-+
-+#define cmpxchg_double(ptr, o1, o2, n1, n2)				\
-+({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 4);				\
-+	VM_BUG_ON((unsigned long)(ptr) % 8);				\
-+	cmpxchg8b((ptr), (o1), (o2), (n1), (n2));			\
-+})
-+
-+#define cmpxchg_double_local(ptr, o1, o2, n1, n2)			\
-+({									\
-+       BUILD_BUG_ON(sizeof(*(ptr)) != 4);				\
-+       VM_BUG_ON((unsigned long)(ptr) % 8);				\
-+       cmpxchg16b_local((ptr), (o1), (o2), (n1), (n2));			\
-+})
-+
- #endif /* _ASM_X86_CMPXCHG_32_H */
-Index: linux-2.6/arch/x86/Kconfig.cpu
+ static struct attribute *slab_attrs[] = {
+@@ -4608,6 +4651,8 @@ static struct attribute *slab_attrs[] =
+ 	&deactivate_to_tail_attr.attr,
+ 	&deactivate_remote_frees_attr.attr,
+ 	&order_fallback_attr.attr,
++	&cmpxchg_double_fail_attr.attr,
++	&cmpxchg_double_cpu_fail_attr.attr,
+ #endif
+ #ifdef CONFIG_FAILSLAB
+ 	&failslab_attr.attr,
+Index: linux-2.6/include/linux/slub_def.h
 ===================================================================
---- linux-2.6.orig/arch/x86/Kconfig.cpu	2011-04-13 15:19:53.000000000 -0500
-+++ linux-2.6/arch/x86/Kconfig.cpu	2011-04-15 13:14:45.000000000 -0500
-@@ -308,6 +308,9 @@ config X86_CMPXCHG
- config CMPXCHG_LOCAL
- 	def_bool X86_64 || (X86_32 && !M386)
+--- linux-2.6.orig/include/linux/slub_def.h	2011-04-13 15:19:53.000000000 -0500
++++ linux-2.6/include/linux/slub_def.h	2011-04-15 13:14:51.000000000 -0500
+@@ -33,6 +33,7 @@ enum stat_item {
+ 	DEACTIVATE_REMOTE_FREES,/* Slab contained remotely freed objects */
+ 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
+ 	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
++	CMPXCHG_DOUBLE_FAIL,	/* Number of times that cmpxchg double did not match */
+ 	NR_SLUB_STAT_ITEMS };
  
-+config CMPXCHG_DOUBLE
-+	def_bool X86_64 || (X86_32 && !M386)
-+
- config X86_L1_CACHE_SHIFT
- 	int
- 	default "7" if MPENTIUM4 || MPSC
-Index: linux-2.6/arch/x86/include/asm/cpufeature.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/cpufeature.h	2011-04-15 12:51:51.000000000 -0500
-+++ linux-2.6/arch/x86/include/asm/cpufeature.h	2011-04-15 13:14:45.000000000 -0500
-@@ -286,6 +286,7 @@ extern const char * const x86_power_flag
- #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
- #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
- #define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
-+#define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- 
- #if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
- # define cpu_has_invlpg		1
+ struct kmem_cache_cpu {
 
