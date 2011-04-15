@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1DOSm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 14:42:56 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:32000 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab1DOSmz (ORCPT
+	id S1756439Ab1DOSyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 14:54:55 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:60111 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab1DOSyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 14:42:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6317"; a="86078499"
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-To: tglx@linutronix.de
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        mathieu.desnoyers@efficios.com, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        dwalker@fifo99.com, linux-arm-msm-owner@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [RFC PATCH] genirq: implement read_irq_line for interrupt lines
-Date: Fri, 15 Apr 2011 11:42:32 -0700
-Message-Id: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org>
-X-Mailer: git-send-email 1.7.1
+	Fri, 15 Apr 2011 14:54:53 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
+        jlbec@evilplan.org, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+        linux-mm@kvack.org, hch@infradead.org, ngupta@vflare.org,
+        jeremy@goop.org, JBeulich@novell.com, kurt.hackel@oracle.com,
+        npiggin@kernel.dk, dave.mccracken@oracle.com, riel@redhat.com,
+        avi@redhat.com, konrad.wilk@oracle.com, mel@csn.ul.ie,
+        yinghan@google.com, gthelen@google.com, torvalds@linux-foundation.org
+Subject: Re: [PATCH V8 1/8] mm/fs: cleancache documentation
+References: <20110414211601.GA27691@ca-server1.us.oracle.com>
+Date: Sat, 16 Apr 2011 03:54:39 +0900
+In-Reply-To: <20110414211601.GA27691@ca-server1.us.oracle.com> (Dan
+	Magenheimer's message of "Thu, 14 Apr 2011 14:16:01 -0700")
+Message-ID: <87mxjr4a6o.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers need to know what the status of the interrupt line is.
-This is especially true for drivers that register a handler with
-IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING and in the handler they
-need to know which edge transition it was invoked for.
+Dan Magenheimer <dan.magenheimer@oracle.com> writes:
 
-The irq_read_line callback in the chip allows the controller to provide
-the real time status of this line. Controllers that can read the status
-of an interrupt line should implement this by doing necessary
-hardware reads and return the logical state of the line.
+> [PATCH V8 1/8] mm/fs: cleancache documentation
+>
+> This patchset introduces cleancache, an optional new feature exposed
+> by the VFS layer that potentially dramatically increases page cache
+> effectiveness for many workloads in many environments at a negligible
+> cost.  It does this by providing an interface to transcendent memory,
+> which is memory/storage that is not otherwise visible to and/or directly
+> addressable by the kernel.
+>
+> Instead of being discarded, hooks in the reclaim code "put" clean
+> pages to cleancache.  Filesystems that "opt-in" may "get" pages 
+> from cleancache that were previously put, but pages in cleancache are 
+> "ephemeral", meaning they may disappear at any time. And the size
+> of cleancache is entirely dynamic and unknowable to the kernel.
+> Filesystems currently supported by this patchset include ext3, ext4,
+> btrfs, and ocfs2.  Other filesystems (especially those built entirely
+> on VFS) should be easy to add, but should first be thoroughly tested to
+> ensure coherency.
+>
+> Details and a FAQ are provided in Documentation/vm/cleancache.txt
+>
+> This first patch of eight in this cleancache series only adds two
+> new documentation files.
 
-Interrupt controllers based on the slow bus architecture should conduct
-the transaction in this callback. The genirq code will call the chip's
-bus lock prior to calling irq_read_line. Obviously since the transaction
-would be completed before returning from irq_read_line it need not do
-any transactions in the bus unlock call.
+Another question: why can't this enable/disable per sb, e.g. via mount
+options? (I have the interest the cache stuff like this by SSD on
+physical systems like dragonfly's swapcache.)
 
-Drivers need to be aware whether the interrupt controller is a slow bus
-and call read_irq_line in proper context.
+Well, anyway, I guess force enabling this for mostly unused sb can just
+add cache-write overhead and call for unpleasing reclaim to backend
+(because of limited space of backend) like updatedb.
 
-Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
----
- include/linux/interrupt.h |    1 +
- include/linux/irq.h       |    2 ++
- kernel/irq/manage.c       |   25 +++++++++++++++++++++++++
- 3 files changed, 28 insertions(+), 0 deletions(-)
+And already there is in FAQ though, I also have interest about async
+interface because of SDD backend (I'm not sure for now though). Is there
+any plan like SSD backend?
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 59b72ca..0722576 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -337,6 +337,7 @@ static inline void enable_irq_lockdep_irqrestore(unsigned int irq, unsigned long
- 
- /* IRQ wakeup (PM) control: */
- extern int irq_set_irq_wake(unsigned int irq, unsigned int on);
-+extern int irq_read_line(unsigned int irq);
- 
- #ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
- /* Please do not use: Use the replacement functions instead */
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 2a375a7..52198b6 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -298,6 +298,7 @@ static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
-  * @irq_retrigger:	resend an IRQ to the CPU
-  * @irq_set_type:	set the flow type (IRQ_TYPE_LEVEL/etc.) of an IRQ
-  * @irq_set_wake:	enable/disable power-management wake-on of an IRQ
-+ * @irq_read_line:	return the current value on the irq line
-  * @irq_bus_lock:	function to lock access to slow bus (i2c) chips
-  * @irq_bus_sync_unlock:function to sync and unlock slow bus (i2c) chips
-  * @irq_cpu_online:	configure an interrupt source for a secondary CPU
-@@ -324,6 +325,7 @@ struct irq_chip {
- 	int		(*irq_retrigger)(struct irq_data *data);
- 	int		(*irq_set_type)(struct irq_data *data, unsigned int flow_type);
- 	int		(*irq_set_wake)(struct irq_data *data, unsigned int on);
-+	int		(*irq_read_line)(struct irq_data *data);
- 
- 	void		(*irq_bus_lock)(struct irq_data *data);
- 	void		(*irq_bus_sync_unlock)(struct irq_data *data);
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 12a80fd..6667052 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -518,6 +518,31 @@ int irq_set_irq_wake(unsigned int irq, unsigned int on)
- }
- EXPORT_SYMBOL(irq_set_irq_wake);
- 
-+/**
-+ *	irq_read_line - read the value on an irq line
-+ *	@irq: Interrupt number representing a hardware line
-+ *
-+ *	This function may be called from IRQ context only when
-+ *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
-+ */
-+int irq_read_line(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long flags;
-+	int val;
-+
-+	if (!desc || !desc->irq_data.chip->irq_read_line)
-+		return -EINVAL;
-+
-+	chip_bus_lock(desc);
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+	val = desc->irq_data.chip->irq_read_line(&desc->irq_data);
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	chip_bus_sync_unlock(desc);
-+	return val;
-+}
-+EXPORT_SYMBOL(irq_read_line);
-+
- /*
-  * Internal function that tells the architecture code whether a
-  * particular irq has been exclusively allocated or is available
+Thanks.
 -- 
-1.7.1
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
