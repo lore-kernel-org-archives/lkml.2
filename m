@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1DOJB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 05:01:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47994 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab1DOJBY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 05:01:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TmcZgnb/pxYyxAKdgih3hA/bPfo1nEtATY21UnM+u+whP7/mpbb51/WgnuOzi9fxZI
-         8iWFxUsL3f0eX3L3VuAEd2zOHyQvYaRFSQ5u5bvS/CoG9eYBanoyvIECz2lEjLz5pJwB
-         5K11jxwJA963J3oHeRgITJgwKNiqJihS4cHns=
-Date: Fri, 15 Apr 2011 18:01:18 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
-Message-ID: <20110415090118.GA3315@mtj.dyndns.org>
-References: <20110404211604.GB6133@sucs.org>
- <20110406130423.GE4142@mtj.dyndns.org>
- <20110406212611.GA5131@sucs.org>
- <20110406213718.GA14139@mtj.dyndns.org>
- <20110409093449.GA10016@sucs.org>
- <20110410145920.GA3408@sucs.org>
- <20110413200000.GG3987@mtj.dyndns.org>
+	id S1753973Ab1DOJML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 05:12:11 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:41688 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753590Ab1DOJMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 05:12:09 -0400
+Date: Fri, 15 Apr 2011 10:11:38 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: raz ben yehuda <raziebe@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        akpm@linux-foundation.org
+Subject: Re: 2.6.38 page_test regression
+Message-ID: <20110415091138.GB30898@csn.ul.ie>
+References: <1302692638.15225.14.camel@raz.scalemp.com>
+ <20110413125146.GR29444@random.random>
+ <1302703579.17536.1.camel@raz.scalemp.com>
+ <20110413172127.GB5734@random.random>
+ <1302781754.5098.13.camel@raz.scalemp.com>
+ <20110414150925.GD15707@random.random>
+ <1302811643.10051.8.camel@raz.scalemp.com>
+ <20110414215327.GI11871@csn.ul.ie>
+ <20110414233226.GI15707@random.random>
+ <20110414234444.GK15707@random.random>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110413200000.GG3987@mtj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110414234444.GK15707@random.random>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 05:00:00AM +0900, Tejun Heo wrote:
-> Thanks a lot for finding out the test case.  I'll see whether I can
-> reproduce the problem in qemu.
+On Fri, Apr 15, 2011 at 01:44:44AM +0200, Andrea Arcangeli wrote:
+> On Fri, Apr 15, 2011 at 01:32:26AM +0200, Andrea Arcangeli wrote:
+> > On Thu, Apr 14, 2011 at 10:53:27PM +0100, Mel Gorman wrote:
+> > > On Thu, Apr 14, 2011 at 11:07:23PM +0300, raz ben yehuda wrote:
+> > > > bah. Mel is correct. I did mean page_test  ( in my defense it is in the
+> > > > msg ).
+> > > > Here some more information:
+> > > > 1. I manage to lower the regression to 2 sha1's:
+> > > >     	32dba98e085f8b2b4345887df9abf5e0e93bfc12 to
+> > > > 71e3aac0724ffe8918992d76acfe3aad7d8724a5. 
+> > > > 	though I had to remark wait_split_huge_page for the sake of
+> > > > compilation. up to 32dba98e085f8b2b4345887df9abf5e0e93bfc12 there is no
+> > > > regression.
+> > > > 
+> > > > 2. I booted 2.6.37-rc5 you gave me. same regression is there. 
+> > > 
+> > > Extremely long shot - try this patch.
+> > > 
+> > > diff --git a/mm/memory.c b/mm/memory.c
+> > > index c50a195..a39baaf 100644
+> > > --- a/mm/memory.c
+> > > +++ b/mm/memory.c
+> > > @@ -3317,7 +3317,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> > >  	 * run pte_offset_map on the pmd, if an huge pmd could
+> > >  	 * materialize from under us from a different thread.
+> > >  	 */
+> > > -	if (unlikely(__pte_alloc(mm, vma, pmd, address)))
+> > > +	if (unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, vma, pmd, address))
+> 
+> Actually reading this again this should be pmd_none.
 
-Hmm... can't reproduce the problem with qemu.  Can you please apply
-the following patch and see which warning messages trigger?
+You're right.
 
-Thanks.
+> This is one
+> change I had to make across the board because for an tiny amount of
+> time during the pmd teardown I have to mark an pmd_trans_splitting pte
+> not present in order to flush it away from the 2m tlb before the 4k
+> tlb can be loaded (for errata), but when it's being splitted it's
+> definitely not null. Now it's not buggy because then __pte_alloc would
+> then check it against pmd_none, but it's not worth calling into
+> __pte_alloc if it's not pmd_none. It just makes it confusing when
+> everything has been updated to check pmd_none.
+> 
+> Just a nitpick of course (not even a bug).
+> 
 
-diff --git a/block/genhd.c b/block/genhd.c
-index b364bd0..f061975 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1377,6 +1377,8 @@ struct disk_events {
- 
- 	long			poll_msecs;	/* interval, -1 for default */
- 	struct delayed_work	dwork;
-+	struct mutex		mutex;
-+	atomic_t		cnt;
- };
- 
- static const char *disk_events_strs[] = {
-@@ -1572,6 +1574,9 @@ static void disk_events_workfn(struct work_struct *work)
- 	unsigned long intv;
- 	int nr_events = 0, i;
- 
-+	WARN_ON_ONCE(atomic_add_return(1, &ev->cnt) != 1);
-+	mutex_lock(&ev->mutex);
-+
- 	/* check events */
- 	events = disk->fops->check_events(disk, clearing);
- 
-@@ -1595,6 +1600,9 @@ static void disk_events_workfn(struct work_struct *work)
- 
- 	if (nr_events)
- 		kobject_uevent_env(&disk_to_dev(disk)->kobj, KOBJ_CHANGE, envp);
-+
-+	mutex_unlock(&ev->mutex);
-+	WARN_ON_ONCE(atomic_add_return(-1, &ev->cnt) != 0);
- }
- 
- /*
-@@ -1749,6 +1757,8 @@ static void disk_add_events(struct gendisk *disk)
- 	ev->block = 1;
- 	ev->poll_msecs = -1;
- 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
-+	mutex_init(&ev->mutex);
-+	atomic_set(&ev->cnt, 0);
- 
- 	mutex_lock(&disk_events_mutex);
- 	list_add_tail(&ev->node, &disk_events);
+A fairly important nitpick. Otherwise the inconsistency is confusing.
+
+-- 
+Mel Gorman
+SUSE Labs
