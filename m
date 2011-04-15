@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab1DOA6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 20:58:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39593 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509Ab1DOA6F (ORCPT
+	id S1754981Ab1DOBHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 21:07:36 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:54374 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752167Ab1DOBHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 20:58:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=dP5GHHIRvHeYKeY/RIPuJM2c5Cx2LgEHTilyPer8TsAEqrYNmiaZxMVa58tLKzZUKr
-         8n7CHIjkFMQgEc6vtukVAeAyCuy9GY2hvZGSQI8RR1p56ebsD3mD2WoKOrd9QMrIBpNk
-         XQT1h4T5MsPm71eVkyDH+PipLr4dMmRTutYfs=
-Subject: [PATCH] regulator: Group TI TPSxxxxx regulators together
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Rapoport <mike@compulab.co.il>, Cyril Chemparathy <cyril@ti.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Apr 2011 08:57:58 +0800
-Message-ID: <1302829078.2752.6.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 14 Apr 2011 21:07:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAGSZp01Ld/sX/2dsb2JhbAAMhEPVR5FAgSmDTXgE
+X-IronPort-AV: E=Sophos;i="4.64,214,1301889600"; 
+   d="scan'208";a="106470993"
+Message-ID: <4DA79A55.4040507@teksavvy.com>
+Date: Thu, 14 Apr 2011 21:07:33 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Milton Miller <miltonm@bga.com>
+CC: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Joel Becker <jlbec@evilplan.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        John Stoffel <john@stoffel.org>, Ric Wheeler <ricwheeler@gmail.com>
+Subject: Re: [PATCH] ext4: register ext2 and ext3 alias after ext4
+References: <4DA48AF4.5080803@teksavvy.com>	<20110413004938.GE3682@thunk.org>	<4DA5ADA6.5060301@teksavvy.com>	<5A35771F-49B6-491E-B012-DBE68907E382@mit.edu> <ext4-masq@mdm.bga.com>
+In-Reply-To: <ext4-masq@mdm.bga.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Group TI TPSxxxxx regulators together and sort in alphabetical order.
-This change make it easier for users to find the config options.
+On 11-04-14 11:41 AM, Milton Miller wrote:
+> The intent of CONFIG_EXT4_USE_FOR_EXT23 is to provide an alias so
+> that the ext4 module is sufficient even if user space calls out ext2.
+> However, it currently registers the alias names before registering ext4.
+> This means they show up first in /proc/filesystems and ext3 and ext4
+> formatted file systems show up in the mount list as ext4.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/Kconfig |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+Shouldn't that say:
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index b9f29e0..44528f6 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -248,6 +248,22 @@ config REGULATOR_TPS6507X
- 	  three step-down converters and two general-purpose LDO voltage regulators.
- 	  It supports TI's software based Class-2 SmartReflex implementation.
- 
-+config REGULATOR_TPS6524X
-+	tristate "TI TPS6524X Power regulators"
-+	depends on SPI
-+	help
-+	  This driver supports TPS6524X voltage regulator chips. TPS6524X
-+	  provides three step-down converters and two general-purpose LDO
-+	  voltage regulators.  This device is interfaced using a customized
-+	  serial interface currently supported on the sequencer serial
-+	  port controller.
-+
-+config REGULATOR_TPS6586X
-+	tristate "TI TPS6586X Power regulators"
-+	depends on MFD_TPS6586X
-+	help
-+	  This driver supports TPS6586X voltage regulator chips.
-+
- config REGULATOR_88PM8607
- 	bool "Marvell 88PM8607 Power regulators"
- 	depends on MFD_88PM860X=y
-@@ -274,21 +290,5 @@ config REGULATOR_AB8500
- 	  This driver supports the regulators found on the ST-Ericsson mixed
- 	  signal AB8500 PMIC
- 
--config REGULATOR_TPS6586X
--	tristate "TI TPS6586X Power regulators"
--	depends on MFD_TPS6586X
--	help
--	  This driver supports TPS6586X voltage regulator chips.
--
--config REGULATOR_TPS6524X
--	tristate "TI TPS6524X Power regulators"
--	depends on SPI
--	help
--	  This driver supports TPS6524X voltage regulator chips. TPS6524X
--	  provides three step-down converters and two general-purpose LDO
--	  voltage regulators.  This device is interfaced using a customized
--	  serial interface currently supported on the sequencer serial
--	  port controller.
--
- endif
- 
--- 
-1.7.1
+  This means they show up first in /proc/filesystems, causing ext3 and
+  ext4 formatted file systems to show up in the mount list as ext2.
 
+Thanks.  Other than that, it all looks good here with ext2 and ext4
+file systems.  I didn't try an ext3 filesystem, but with it being between
+the other two, I expect it to also be fine.
 
-
+> Register the filesystem aliases after ext4 so they show as ext4 until the
+> filesystems is filtered.  This will avoid users or tools configuring a
+> kernel with just ext2 and wondering why there system broke.  Also register
+> in the same order as listed in fs/Makefile.
+> 
+> Signed-off-by: Milton Miller <miltonm@bga.com>
+> ---
+> 
+> Untested but simple code movement.  Mark will you please test?
+> 
+> Is it safe to initialize ext4_li_info and ext4_li_mtx after we register
+> the filesystem?  What keeps the init after the first call to mount
+> a filesystem?
+> 
+> I checked unregister_filesystem and it is safe when the file system
+> type is and is not registered.
+> 
+> Index: work.git/fs/ext4/super.c
+> ===================================================================
+> --- work.git.orig/fs/ext4/super.c	2011-04-14 09:26:43.250066794 -0500
+> +++ work.git/fs/ext4/super.c	2011-04-14 09:29:53.220061521 -0500
+> @@ -4898,11 +4898,11 @@ static int __init ext4_init_fs(void)
+>  	err = init_inodecache();
+>  	if (err)
+>  		goto out1;
+> -	register_as_ext2();
+> -	register_as_ext3();
+>  	err = register_filesystem(&ext4_fs_type);
+>  	if (err)
+>  		goto out;
+> +	register_as_ext3();
+> +	register_as_ext2();
+>  
+>  	ext4_li_info = NULL;
+>  	mutex_init(&ext4_li_mtx);
