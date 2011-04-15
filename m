@@ -1,37 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab1DOM32 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 08:29:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52388 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab1DOM31 convert rfc822-to-8bit (ORCPT
+	id S1752291Ab1DOMek (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 08:34:40 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48920 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab1DOMei convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 08:29:27 -0400
+	Fri, 15 Apr 2011 08:34:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=mime-version:x-originating-ip:in-reply-to:references:date
-         :message-id:subject:from:to:cc:content-type
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
          :content-transfer-encoding;
-        b=NAbCXYLQgo+OBSS1JtJ7Hs1aJ1oLK7iVvwdfdvsjY/0/jeiE8E/4eUkqW/bfXd0OjX
-         Ub9Ae37x5Yu0XQlysHL/X2xUIInw3BrBDFcc78Cg1Ume/xs9xiEzkx9Nv8Hlo62IvXLo
-         cGw7afgtQqvfpMHsgmV0b9VRUWiAxFn1laJKE=
+        b=HP/zaPOQ4mpjWo/ztotSQDpUD7UDPTLKqafz3SFEkdkbU9Qfbcf5ySVqnBCmK90UaJ
+         aDdGGrNU2mR4Eg9j7XEhtoSDi5IGfeeJbxGK/cONWaKtB1zH8A62jtGwZNLrXUASCxqd
+         uT/IfsxOL3hbX+u+RUX97FyniH0OO4qFcQnEE=
 MIME-Version: 1.0
-X-Originating-IP: [88.209.222.127]
-In-Reply-To: <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
+In-Reply-To: <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
 References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
-	<BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
-	<BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
-	<BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
-	<BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com>
-	<BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
-Date: Fri, 15 Apr 2011 14:29:25 +0200
-Message-ID: <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+ <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
+ <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
+ <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Fri, 15 Apr 2011 14:34:18 +0200
+X-Google-Sender-Auth: UmegOqUNWJ_9lyd7-49atoZ6mg8
+Message-ID: <BANLkTikHKGLQvShJBL0P7XJ9XQ3EpgYxuQ@mail.gmail.com>
 Subject: Re: Unionmount status?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Michal Suchanek <hramrach@centrum.cz>
+To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: Jiri Kosina <jkosina@suse.cz>, Ric Wheeler <ricwheeler@gmail.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         David Howells <dhowells@redhat.com>, Ian Kent <ikent@redhat.com>,
@@ -42,32 +39,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 1:51 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
-> On 15 April 2011 13:31, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> On Fri, Apr 15, 2011 at 1:22 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
+On 15 April 2011 14:29, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Fri, Apr 15, 2011 at 1:51 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
+>> On 15 April 2011 13:31, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>> On Fri, Apr 15, 2011 at 1:22 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
+>>>>
+>>>> Cleaning up temporary files...
+>>>> [    nn.nnnnnn] overlayfs: ERROR - failed to whiteout 'motd'
+>>>> find: cannot delete `./motd': Operation not supported
 >>>
->>> Cleaning up temporary files...
->>> [    nn.nnnnnn] overlayfs: ERROR - failed to whiteout 'motd'
->>> find: cannot delete `./motd': Operation not supported
+>>> What is the upper filesystem type?  Is xattr support enabled?
+>>>
 >>
->> What is the upper filesystem type?  Is xattr support enabled?
->>
+>> The upper filesystem is tmpfs and there is not option regarding XATTR
+>> in the config.
 >
-> The upper filesystem is tmpfs and there is not option regarding XATTR
-> in the config.
+> Apparently tmpfs does not support generic xattr.  I understand why
+> tmpfs is an attractive choice for an upper filesystem, so this should
+> be addressed.
+>
+> I see two options here:
+>
+> 1) implement generic xattr in tmpfs
 
-Apparently tmpfs does not support generic xattr.  I understand why
-tmpfs is an attractive choice for an upper filesystem, so this should
-be addressed.
+IMHO this is a general feature that keeps overlayfs in itself clean
+and small and can benefit other uses of tmpfs.
 
-I see two options here:
+> 2) take whiteout/opaque support from union mounts and use that
 
-1) implement generic xattr in tmpfs
-2) take whiteout/opaque support from union mounts and use that
+How far from importing full unionmount is that?
 
-Both have advantages and disadvantages.
+Thanks
 
-Any thoughts?
-
-Thanks,
-Miklos
+Michal
