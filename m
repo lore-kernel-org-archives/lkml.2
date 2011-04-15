@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab1DOPq5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:46:57 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:33123 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab1DOPq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:46:56 -0400
-Date: Fri, 15 Apr 2011 08:46:08 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "wni@nvidia.com" <wni@nvidia.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "olofj@chromium.org" <olofj@chromium.org>,
-        "achew@nvidia.com" <achew@nvidia.com>
-Subject: Re: [PATCH 2/3] hwmon (lm90) Support to configure nct1008 from
- platform data
-Message-ID: <20110415154608.GA24844@ericsson.com>
-References: <1302865228-7185-1-git-send-email-wni@nvidia.com>
- <1302865228-7185-3-git-send-email-wni@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1302865228-7185-3-git-send-email-wni@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752225Ab1DOPuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 11:50:04 -0400
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:53960 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751096Ab1DOPuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 11:50:03 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=UTyF80Tt6peTWB70oLKS2xb+q4lZVoPhwUy27MEWrOHt0xzsufyYpLYkk2kP9ZZIo1/3elbj0bivFPlU1fs0+6tBOBsZuWHRvL8m0Yz4qPWWggGmp+nefcq7FBpWU/nb;
+Date: Fri, 15 Apr 2011 08:50:00 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Esben Haabendal <eha@doredevelopment.dk>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: mmotm 2011-04-14-15-08 uploaded (leds)
+Message-Id: <20110415085000.3f057fec.rdunlap@xenotime.net>
+In-Reply-To: <201104142244.p3EMiWTC010977@imap1.linux-foundation.org>
+References: <201104142244.p3EMiWTC010977@imap1.linux-foundation.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 07:00:27AM -0400, wni@nvidia.com wrote:
-> From: Wei Ni <wni@nvidia.com>
+On Thu, 14 Apr 2011 15:08:47 -0700 akpm@linux-foundation.org wrote:
+
+> The mm-of-the-moment snapshot 2011-04-14-15-08 has been uploaded to
 > 
-> This patch add support to configure nct1008 from platform data.
+>    http://userweb.kernel.org/~akpm/mmotm/
 > 
+> and will soon be available at
+> 
+>    git://zen-kernel.org/kernel/mmotm.git
 
-In my opinion those enhancments should not only be for nct1008 but
-apply to all chips, ie be made generic. Not even supporting the functionally
-identical chips does not make sense to me at all.
 
-Guenter
+from leds-support-automatic-start-of-blinking-with-ledtrig-timer.patch:
 
+This build error happened several times when
+CONFIG_LEDS_TRIGGERS is not enabled:
+
+drivers/leds/led-class.c:134: error: 'struct led_classdev' has no member named 'trigger_data'
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
