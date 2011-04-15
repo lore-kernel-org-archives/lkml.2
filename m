@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab1DNX7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 19:59:19 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36214 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab1DNX7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 19:59:18 -0400
-Message-ID: <4DA78A44.1000704@windriver.com>
-Date: Thu, 14 Apr 2011 19:59:00 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
+	id S1754858Ab1DOAYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 20:24:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42037 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754749Ab1DOAYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 20:24:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,214,1301900400"; 
+   d="scan'208";a="909793505"
+Message-ID: <4DA7903B.5030508@intel.com>
+Date: Fri, 15 Apr 2011 08:24:27 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
 MIME-Version: 1.0
-To: Shaun Ruffell <sruffell@digium.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] powerpc: Define 'crash_kexec_wait_realmode' for Non-SMP
- systems.
-References: <20110414222719.GA16256@digium.com>
-In-Reply-To: <20110414222719.GA16256@digium.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 14 Apr 2011 23:59:02.0118 (UTC) FILETIME=[EDAAA860:01CBFAFF]
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -v3 3/4] lib, Make gen_pool memory allocator lockless
+References: <1302684835-14133-1-git-send-email-ying.huang@intel.com> <1302684835-14133-4-git-send-email-ying.huang@intel.com> <20110413210757.GA11683@Krystal>
+In-Reply-To: <20110413210757.GA11683@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-14 06:27 PM, Shaun Ruffell wrote:
-> This fixes a regression from b987812b3fcaf70fdf0037589e5d2f5f2453e6ce
-
-A fix was already sent yesterday:
-
-http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-April/089559.html
-
-which relocates the stub function to where it needs to be.  Your fix
-below would end up making duplicate stub functions.
-
-Thanks,
-Paul.
-
-> "powerpc/kexec: Fix mismatched ifdefs for PPC64/SMP" which resulted in
+On 04/14/2011 05:07 AM, Mathieu Desnoyers wrote:
+> * Huang Ying (ying.huang@intel.com) wrote:
+> [...]
+>> + * rcu_read_lock and rcu_read_unlock is not used int gen_pool_alloc,
+>> + * gen_pool_free, gen_pool_avail and gen_pool_size etc, because chunks
+>> + * are only added into pool, not deleted from pool unless the pool
+>> + * itself is destroyed.  If chunk will be deleted from pool,
+>> + * rcu_read_lock and rcu_read_unlock should be uses in these
+>> + * functions.
 > 
-> arch/powerpc/kernel/crash.c: In function ‘default_machine_crash_shutdown’:
->   arch/powerpc/kernel/crash.c:349: error: implicit declaration of function
->   ‘crash_kexec_wait_realmode’
-> 
-> message on when compiling on Blue&White G3 and CONFIG_SMP is not defined.
-> 
-> Signed-off-by: Shaun Ruffell <sruffell@digium.com>
-> ---
->  arch/powerpc/kernel/crash.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/crash.c b/arch/powerpc/kernel/crash.c
-> index 3d3d416..5e6e37f 100644
-> --- a/arch/powerpc/kernel/crash.c
-> +++ b/arch/powerpc/kernel/crash.c
-> @@ -255,6 +255,9 @@ void crash_kexec_secondary(struct pt_regs *regs)
->  {
->  	cpus_in_sr = CPU_MASK_NONE;
->  }
-> +
-> +static inline void crash_kexec_wait_realmode(int cpu) {}
-> +
->  #endif
->  
->  /*
+> So how do you protect between pool destruction and adding chunks into
+> the pool ?
+
+Because the pool itself will be freed when destruction, we need some
+mechanism outside of pool.  For example, if gen_pool_add() is called via
+device file IOCTL, we must un-register the device file first, and
+destroy the pool after the last reference to device has gone.
+
+Best Regards,
+Huang Ying
