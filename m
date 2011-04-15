@@ -1,246 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab1DOIVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 04:21:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53830 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab1DOIU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 04:20:57 -0400
-Date: Fri, 15 Apr 2011 10:20:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH v2] cpusets: randomize node rotor used in
- cpuset_mem_spread_node()
-Message-ID: <20110415082051.GB8828@tiehlicka.suse.cz>
-References: <20110414065146.GA19685@tiehlicka.suse.cz>
- <20110414160145.0830.A69D9226@jp.fujitsu.com>
- <20110415161831.12F8.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415161831.12F8.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751410Ab1DOI1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 04:27:13 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:37820 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750802Ab1DOI1K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 04:27:10 -0400
+Subject: Re: Linux 2.6.39-rc3
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Alex Deucher <alexdeucher@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 15 Apr 2011 10:26:34 +0200
+In-Reply-To: <20110414210932.GG18463@8bytes.org>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+	 <20110412090207.GE19819@8bytes.org>
+	 <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
+	 <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu>
+	 <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org>
+	 <4DA654D6.2060103@zytor.com> <20110414085624.GC18463@8bytes.org>
+	 <BANLkTintewt4kadNLEZ-RAew0Gx6=gUOfQ@mail.gmail.com>
+	 <20110414210932.GG18463@8bytes.org>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA
+	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.0- 
+Message-ID: <1302855994.15520.158.camel@thor.local>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I just realized that I forgot to CC mm mailing list]
-
-On Fri 15-04-11 16:18:45, KOSAKI Motohiro wrote:
-> Oops.
-> I should have look into !mempolicy part too.
-> I'm sorry.
+On Don, 2011-04-14 at 23:09 +0200, Joerg Roedel wrote: 
+> On Thu, Apr 14, 2011 at 10:28:43AM -0400, Alex Deucher wrote:
+> > On Thu, Apr 14, 2011 at 4:56 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> > > And this makes a difference, with this change on-top of -rc3 the box boots
+> > > fine. So there seems to be some dependency between the GART base and the GTT
+> > > base even when they are in different address spaces.
+> > >
+> > > Alex, can you comment on this?
+> > 
+> > As Dave said, they are completely different addresses spaces.  You
+> > could put the GPU aperture at 0 if you wanted (in fact we do on some
+> > chips).  Perhaps there's some strange interaction with the nb gart
+> > since the nb gart on that chipset was designed to be used for graphics
+> > and the rs780/880 can be configured to use an agp aperture.
+> > Unfortunately, I'm not that familiar with the nb gart.
 > 
-[...]
-> Michal, I think this should be
+> Actually, the nb gart is part of the cpu. It is part of the cpu north
+> bridge and can translate io and cpu accesses. In fact, it is a remapper
+> of physical memory addresses.
 > 
-> #ifdef CONFIG_CPUSETS
-> 	if (cpuset_do_page_mem_spread())
-> 		p->cpuset_mem_spread_rotor = node_random(&p->mems_allowed);
-> 	if (cpuset_do_slab_mem_spread())
-> 		p->cpuset_slab_spread_rotor = node_random(&p->mems_allowed);
-> #endif
-> 
-> because 99.999% people don't use cpuset's spread mem/slab feature and
-> get_random_int() isn't zero cost.
-> 
-> What do you think?
+> The problem seems to be related to specific gpu chips. On another
+> notebook with an hd3000 card gtt and the nb gart aperture are both on
+> 0xa0000000 too but the box works fine.
 
-You are right. I was thinking about lazy approach and initialize those
-values when they are used for the first time. What about the patch
-below?
-
-Change from v1:
-- initialize cpuset_{mem,slab}_spread_rotor lazily
-
----
->From 46da525789a41cb10096aa09c5bc0e7dcc3ce6db Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 13 Apr 2011 16:29:36 +0200
-Subject: [PATCH] cpusets: randomize node rotor used in cpuset_mem_spread_node()
-
-[This patch has already been accepted as 0ac0c0d but later reverted
-(35926ff) because it itroduced arch specific __node_random which was
-defined only for x86 code so it broke other archs.
-This is a followup without any arch specific code. Other than that there
-are no functional changes.]
-
-Some workloads that create a large number of small files tend to assign
-too many pages to node 0 (multi-node systems).  Part of the reason is that
-the rotor (in cpuset_mem_spread_node()) used to assign nodes starts at
-node 0 for newly created tasks.
-
-This patch changes the rotor to be initialized to a random node number of
-the cpuset. We are initializating it lazily in cpuset_mem_spread_node
-resp. cpuset_slab_spread_node.
-
-[akpm@linux-foundation.org: fix layout]
-[Lee.Schermerhorn@hp.com: Define stub numa_random() for !NUMA configuration]
-[mhocko@suse.cz: Make it arch independent + lazy initialization]
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Paul Menage <menage@google.com>
-Cc: Jack Steiner <steiner@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
----
- include/linux/bitmap.h   |    1 +
- include/linux/nodemask.h |    7 +++++++
- kernel/cpuset.c          |    8 ++++++++
- kernel/fork.c            |    5 +++++
- lib/bitmap.c             |    2 +-
- mm/mempolicy.c           |   16 ++++++++++++++++
- 6 files changed, 38 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index daf8c48..6fb2720 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -141,6 +141,7 @@ extern int bitmap_find_free_region(unsigned long *bitmap, int bits, int order);
- extern void bitmap_release_region(unsigned long *bitmap, int pos, int order);
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
-+extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int bits);
- 
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
-diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
-index dba35e4..66ccda9 100644
---- a/include/linux/nodemask.h
-+++ b/include/linux/nodemask.h
-@@ -66,6 +66,8 @@
-  * int num_online_nodes()		Number of online Nodes
-  * int num_possible_nodes()		Number of all possible Nodes
-  *
-+ * int node_random(mask)		Random node with set bit in mask
-+ *
-  * int node_online(node)		Is some node online?
-  * int node_possible(node)		Is some node possible?
-  *
-@@ -430,6 +432,9 @@ static inline void node_set_offline(int nid)
- 	node_clear_state(nid, N_ONLINE);
- 	nr_online_nodes = num_node_state(N_ONLINE);
- }
-+
-+extern int node_random(const nodemask_t *maskp);
-+
- #else
- 
- static inline int node_state(int node, enum node_states state)
-@@ -460,6 +465,8 @@ static inline int num_node_state(enum node_states state)
- 
- #define node_set_online(node)	   node_set_state((node), N_ONLINE)
- #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
-+
-+static inline int node_random(const nodemask_t *mask) { return 0; }
- #endif
- 
- #define node_online_map 	node_states[N_ONLINE]
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 33eee16..5376478 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2465,11 +2465,19 @@ static int cpuset_spread_node(int *rotor)
- 
- int cpuset_mem_spread_node(void)
- {
-+	if (current->cpuset_mem_spread_rotor == -1)
-+		current->cpuset_mem_spread_rotor =
-+			node_random(&current->mems_allowed);
-+
- 	return cpuset_spread_node(&current->cpuset_mem_spread_rotor);
- }
- 
- int cpuset_slab_spread_node(void)
- {
-+	if (current->cpuset_slab_spread_rotor == -1)
-+		current->cpuset_slab_spread_rotor
-+			= node_random(&current->mems_allowed);
-+
- 	return cpuset_spread_node(&current->cpuset_slab_spread_rotor);
- }
- 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index e7548de..0883cff 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1119,6 +1119,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
-  	}
- 	mpol_fix_fork_child_flag(p);
- #endif
-+#ifdef CONFIG_CPUSETS
-+	/* Will be initialized lazily when first used */
-+	p->cpuset_mem_spread_rotor = -1;
-+	p->cpuset_slab_spread_rotor = -1;
-+#endif
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	p->irq_events = 0;
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 91e0ccf..a4b5217 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -671,7 +671,7 @@ static int bitmap_pos_to_ord(const unsigned long *buf, int pos, int bits)
-  *
-  * The bit positions 0 through @bits are valid positions in @buf.
-  */
--static int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
-+int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
- {
- 	int pos = 0;
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 959a8b8..8e57a72 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -93,6 +93,7 @@
- 
- #include <asm/tlbflush.h>
- #include <asm/uaccess.h>
-+#include <linux/random.h>
- 
- #include "internal.h"
- 
-@@ -1649,6 +1650,21 @@ static inline unsigned interleave_nid(struct mempolicy *pol,
- 		return interleave_nodes(pol);
- }
- 
-+/*
-+ * Return the bit number of a random bit set in the nodemask.
-+ * (returns -1 if nodemask is empty)
-+ */
-+int node_random(const nodemask_t *maskp)
-+{
-+	int w, bit = -1;
-+
-+	w = nodes_weight(*maskp);
-+	if (w)
-+		bit = bitmap_ord_to_pos(maskp->bits,
-+			get_random_int() % w, MAX_NUMNODES);
-+	return bit;
-+}
-+
- #ifdef CONFIG_HUGETLBFS
- /*
-  * huge_zonelist(@vma, @addr, @gfp_flags, @mpol)
--- 
-1.7.4.1
+Wasn't the working theory that the problem occurs if those two values
+aren't the same?
 
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
