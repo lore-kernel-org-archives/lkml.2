@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1DOKSC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 06:18:02 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47431 "EHLO mx2.mail.elte.hu"
+	id S1755584Ab1DOKTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 06:19:53 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45047 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752096Ab1DOKSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 06:18:00 -0400
-Date: Fri, 15 Apr 2011 12:17:12 +0200
+	id S1751967Ab1DOKTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 06:19:52 -0400
+Date: Fri, 15 Apr 2011 12:19:38 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Len Brown <lenb@kernel.org>
-Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
-Message-ID: <20110415101712.GB28007@elte.hu>
-References: <alpine.LFD.2.02.1103301819250.31342@x980>
- <20110414090854.GB9248@elte.hu>
- <alpine.LFD.2.02.1104150202310.29365@x980>
+To: Florian Mickler <florian@mickler.org>, Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kurup_avinash@yahoo.com,
+        maciej.rutecki@gmail.com, rjw@sisk.pl, sedat.dilek@gmail.com,
+        "# .34+" <stable@kernel.org>
+Subject: Re: [PATCH 2/2 v2] x86, ioapic: move acpi_get_override_irq to acpi.c
+Message-ID: <20110415101938.GC28007@elte.hu>
+References: <20110412215350.50fb5cfa@schatten.dmk.lab>
+ <1302638465-1030-1-git-send-email-florian@mickler.org>
+ <1302638465-1030-2-git-send-email-florian@mickler.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1104150202310.29365@x980>
+In-Reply-To: <1302638465-1030-2-git-send-email-florian@mickler.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,81 +35,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Len Brown <lenb@kernel.org> wrote:
+* Florian Mickler <florian@mickler.org> wrote:
 
+> In order to get rid of the ugly CONFIG_ACPI ifdef, we move
+> the function acpi_get_override_irq into acpi.c and add a new
+> helper function ioapic_get_irq to io_apic.c.
 > 
-> > > From: Len Brown <len.brown@intel.com>
-> > > 
-> > > Since 2.6.35 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
-> > > Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility is available
-> > > in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
-> > > 
-> > > However, the typical BIOS fails to initialize the MSR,
-> > > and the typical Linux distro neglects to invoke x86_energy_perf_policy(8).
-> > > 
-> > > The result is that some modern hardware is running in hardware default,
-> > > which is "performance" mode, rather than the intended design default
-> > > of "normal" mode.
-> > > 
-> > > Initialize the MSR to the "normal" setting during kernel boot.
-> > > 
-> > > Of course, x86_energy_perf_policy(8) is available to change
-> > > the default after boot, should the user have a policy preference.
-> > > 
-> > > cc: stable@kernel.org
-> > > Signed-off-by: Len Brown <len.brown@intel.com>
-> > > ---
-> > >  arch/x86/include/asm/msr-index.h |    3 +++
-> > >  arch/x86/kernel/cpu/intel.c      |   14 ++++++++++++++
-> > >  2 files changed, 17 insertions(+), 0 deletions(-)
-> > > 
-> ...
-> > 
-> > Dunno, this patch appears to silently modify the system to be slower than it 
-> > was before under Linux.
-> > 
-> > Won't people report this as a regression if this change reduces performance for 
-> > them?
-> > 
-> > They wont be able to see your comments in the code and in the changelog either, 
-> > when this happens to them. They might look into /proc/cpuinfo and see 'epb' 
-> > there but it wont tell them anything. They wont know about a utility available 
-> > in tools/power/x86/ either.
+> Signed-off-by: Florian Mickler <florian@mickler.org>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: kurup_avinash@yahoo.com
+> Cc: maciej.rutecki@gmail.com
+> Cc: rjw@sisk.pl
+> Cc: sedat.dilek@gmail.com
+> Cc: # .34+ <stable@kernel.org>
+> LKML-Reference: <1301558489-4198-1-git-send-email-florian@mickler.org>
+> ---
+> [v2: removed the acpi_get_override_irq macro in acpi.h] 
 > 
-> This patch makes no change to the epb feature indicator
-> /proc/cpuinfo.
-
-I know. I reacted to this bit in the changelog:
-
-> > > Since 2.6.35 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
-
-Printing the existence of a CPU feature does nothing to inform users.
-
-> > So this patch has 'future trouble' written all over it i'm afraid.
 > 
-> EPB is limited to SNB and later.
-> So the installed base as yet is small.
-> (it also exists on WSM-EP, but doesn't do so much there)
-> EPB will have a more significant effect on future hardware.
-> 
-> Linux currently trails competing operating systems in energy
-> efficiency on SNB due to this setting, and Linux will trail
-> competing operating systems even more on future hardware
-> if this default is not fixed.
-> 
-> Will it be possible to measure a performance difference between
-> "performance" and "normal"?  Yes, it will be possible.
-> Will 99.9% of users notice?  Nope.  More likely they'll notice
-> the the power savings that are disabled in "performance" mode.
-> 
-> I should have called it "benchmark" mode instead of "performance" mode...
+>  arch/x86/include/asm/io_apic.h |    8 +++++++-
+>  arch/x86/kernel/apic/io_apic.c |   40 ++++++++++++----------------------------
+>  arch/x86/pci/acpi.c            |   24 ++++++++++++++++++++++++
+>  include/linux/acpi.h           |    6 ++++++
+>  4 files changed, 49 insertions(+), 29 deletions(-)
 
-That's all fair but does not address the concerns i raised. A silent change 
-during bootup is asking for trouble.
-
-So how about informing users, how about making it non-silent? An informative 
-printk that also mentions the power configuration tool, etc. This solves the 
-concerns i mentioned.
+Len, is this change fine to you?
 
 Thanks,
 
