@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab1DOKjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 06:39:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26445 "EHLO mx1.redhat.com"
+	id S1755767Ab1DOKoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 06:44:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53533 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755545Ab1DOKjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 06:39:16 -0400
-Date: Fri, 15 Apr 2011 16:09:10 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
-Message-ID: <20110415103910.GL27428@amit-x200.redhat.com>
-References: <20110407174325.ED21C82B@kernel>
- <20110411110131.GA23123@redhat.com>
- <1302559871.7286.16749.camel@nimitz>
- <20110412054330.GH26678@amit-x200.redhat.com>
- <1302625352.8321.2126.camel@nimitz>
- <20110412164341.GQ13631@amit-x200.redhat.com>
- <1302812897.16562.809.camel@nimitz>
+	id S1755631Ab1DOKoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 06:44:06 -0400
+Date: Fri, 15 Apr 2011 11:44:01 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 08/12] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20110415104401.GC22688@suse.de>
+References: <1302777698-28237-1-git-send-email-mgorman@suse.de>
+ <1302777698-28237-9-git-send-email-mgorman@suse.de>
+ <20110414.143335.104052252.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1302812897.16562.809.camel@nimitz>
+In-Reply-To: <20110414.143335.104052252.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) 14 Apr 2011 [13:28:17], Dave Hansen wrote:
-> On Tue, 2011-04-12 at 22:13 +0530, Amit Shah wrote:
-> > On (Tue) 12 Apr 2011 [09:22:32], Dave Hansen wrote:
-> > > On Tue, 2011-04-12 at 11:13 +0530, Amit Shah wrote:
-> > > > Sure, the only contention was on the commit message, where you stated
-> > > > modern qemus set this... qemu doesn't, and it should.  Care to do a
-> > > > patch for that? 
-> > > 
-> > > If Rusty hasn't pushed the commit out anywhere, we can still amend the
-> > > commit.  Otherwise, we're in a _bit_ of a pickle since you can't patch
-> > > git logs. :)
-> > 
-> > I should've been clearer: care to do the qemu patch? :-)
+On Thu, Apr 14, 2011 at 02:33:35PM -0700, David Miller wrote:
+> From: Mel Gorman <mgorman@suse.de>
+> Date: Thu, 14 Apr 2011 11:41:34 +0100
 > 
-> What do we want to do to qemu, though?  Set the bit?
+> > +extern int memalloc_socks;
+> > +static inline int sk_memalloc_socks(void)
+> > +{
+> > +	return memalloc_socks;
+> > +}
+> > +
+>  ...
+> > +static DEFINE_MUTEX(memalloc_socks_lock);
+> > +int memalloc_socks __read_mostly;
+> 
+> Please use an atomic_t, it has to be more efficient than this mutex
+> business.
 
-Yes, that should ensure older guests behave fine too.
+Will fix.
 
-		Amit
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
