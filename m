@@ -1,56 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab1DOTKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 15:10:50 -0400
-Received: from 30.mail-out.ovh.net ([213.186.62.213]:58780 "HELO
-	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751127Ab1DOTKr (ORCPT
+	id S1756634Ab1DOTLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 15:11:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51416 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab1DOTLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 15:10:47 -0400
-Date: Fri, 15 Apr 2011 21:02:13 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+	Fri, 15 Apr 2011 15:11:48 -0400
+Date: Fri, 15 Apr 2011 21:11:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+cc: mathieu.desnoyers@efficios.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        dwalker@fifo99.com, linux-arm-msm-owner@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] atmel_serial: keep the platform_device unchanged
-Message-ID: <20110415190213.GA3981@game.jcrosoft.org>
-References: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
- <20110413225818.39ce5104@bob.linux.org.uk>
+Subject: Re: [RFC PATCH] genirq: implement read_irq_line for interrupt
+ lines
+In-Reply-To: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org>
+Message-ID: <alpine.LFD.2.00.1104152058050.2744@localhost6.localdomain6>
+References: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110413225818.39ce5104@bob.linux.org.uk>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 10967390993979059140
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22:58 Wed 13 Apr     , Alan Cox wrote:
-> On Wed, 13 Apr 2011 21:47:18 +0200
-> Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
-> 
-> > specify the port num via platform_data this will allow to match the
-> > clock with the plaform_dev staticly
-> > 
-> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD
-> > <plagnioj@jcrosoft.com> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > Cc: Patrice Vilchez <patrice.vilchez@atmel.com>
-> > Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> > Cc: Alan Cox <alan@linux.intel.com>
-> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> Ack for the serial side, its really an arch patch though as far as I
-> can see..
-applied in at91-l2
+On Fri, 15 Apr 2011, Abhijeet Dharmapurikar wrote:
 
-Best Regards,
-J.
+> Some drivers need to know what the status of the interrupt line is.
+> This is especially true for drivers that register a handler with
+> IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING and in the handler they
+> need to know which edge transition it was invoked for.
+
+What's the purpose of this? How is that going to be used?
+
+> The irq_read_line callback in the chip allows the controller to provide
+> the real time status of this line. Controllers that can read the status
+> of an interrupt line should implement this by doing necessary
+> hardware reads and return the logical state of the line.
+> 
+> Interrupt controllers based on the slow bus architecture should conduct
+> the transaction in this callback. The genirq code will call the chip's
+> bus lock prior to calling irq_read_line. Obviously since the transaction
+> would be completed before returning from irq_read_line it need not do
+> any transactions in the bus unlock call.
+> 
+> Drivers need to be aware whether the interrupt controller is a slow bus
+> and call read_irq_line in proper context.
+> 
+> Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+> ---
+>  include/linux/interrupt.h |    1 +
+>  include/linux/irq.h       |    2 ++
+>  kernel/irq/manage.c       |   25 +++++++++++++++++++++++++
+>  3 files changed, 28 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index 59b72ca..0722576 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -337,6 +337,7 @@ static inline void enable_irq_lockdep_irqrestore(unsigned int irq, unsigned long
+>  
+>  /* IRQ wakeup (PM) control: */
+>  extern int irq_set_irq_wake(unsigned int irq, unsigned int on);
+> +extern int irq_read_line(unsigned int irq);
+>  
+>  #ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
+
+That hunk does not apply.
+
+>  /* Please do not use: Use the replacement functions instead */
+> diff --git a/include/linux/irq.h b/include/linux/irq.h
+> index 2a375a7..52198b6 100644
+> --- a/include/linux/irq.h
+> +++ b/include/linux/irq.h
+> @@ -298,6 +298,7 @@ static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
+>   * @irq_retrigger:	resend an IRQ to the CPU
+>   * @irq_set_type:	set the flow type (IRQ_TYPE_LEVEL/etc.) of an IRQ
+>   * @irq_set_wake:	enable/disable power-management wake-on of an IRQ
+> + * @irq_read_line:	return the current value on the irq line
+>   * @irq_bus_lock:	function to lock access to slow bus (i2c) chips
+>   * @irq_bus_sync_unlock:function to sync and unlock slow bus (i2c) chips
+>   * @irq_cpu_online:	configure an interrupt source for a secondary CPU
+> @@ -324,6 +325,7 @@ struct irq_chip {
+>  	int		(*irq_retrigger)(struct irq_data *data);
+>  	int		(*irq_set_type)(struct irq_data *data, unsigned int flow_type);
+>  	int		(*irq_set_wake)(struct irq_data *data, unsigned int on);
+> +	int		(*irq_read_line)(struct irq_data *data);
+>  
+>  	void		(*irq_bus_lock)(struct irq_data *data);
+>  	void		(*irq_bus_sync_unlock)(struct irq_data *data);
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 12a80fd..6667052 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -518,6 +518,31 @@ int irq_set_irq_wake(unsigned int irq, unsigned int on)
+>  }
+>  EXPORT_SYMBOL(irq_set_irq_wake);
+>  
+> +/**
+> + *	irq_read_line - read the value on an irq line
+> + *	@irq: Interrupt number representing a hardware line
+> + *
+> + *	This function may be called from IRQ context only when
+> + *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
+> + */
+> +int irq_read_line(unsigned int irq)
+> +{
+> +	struct irq_desc *desc = irq_to_desc(irq);
+> +	unsigned long flags;
+> +	int val;
+
+Please use irq_get_desc_buslock()
+
+> +	if (!desc || !desc->irq_data.chip->irq_read_line)
+> +		return -EINVAL;
+> +
+> +	chip_bus_lock(desc);
+> +	raw_spin_lock_irqsave(&desc->lock, flags);
+> +	val = desc->irq_data.chip->irq_read_line(&desc->irq_data);
+> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
+> +	chip_bus_sync_unlock(desc);
+> +	return val;
+> +}
+> +EXPORT_SYMBOL(irq_read_line);
+
+EXPORT_SYMBOL_GPL() please.
+
+Thanks,
+
+	tglx
