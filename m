@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1DOOJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 10:09:31 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45822 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755436Ab1DOOJ3 (ORCPT
+	id S1753110Ab1DOOPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 10:15:08 -0400
+Received: from ulysses.noc.ntua.gr ([147.102.222.230]:51697 "EHLO
+	ulysses.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab1DOOPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 10:09:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=v6oVkesb9s8nFaSSRSZTckH9cpDvZvb15yv9QH952Yp1d1cSLJFtfCHtMWmBbwkgFm
-         kDMZ5MsK700+ApsordHP/i5lrhli596G3/lmeEsqwPv6ex+yLmNCAmGOx3ql/ybq8ggv
-         vp4tr+Ug+dffSO1x+ZrwudjOU2w/MqrYt9hyo=
-Subject: Re: [PATCH v2 2/2] kbuild: move KALLSYMS_EXTRA_PASS from Kconfig
- to Makefile
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paulo Marques <pmarques@grupopie.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-In-Reply-To: <4DA8515C.4050905@suse.cz>
-References: <1301999098-21412-1-git-send-email-dedekind1@gmail.com>
-	 <1301999098-21412-2-git-send-email-dedekind1@gmail.com>
-	 <4DA8515C.4050905@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Apr 2011 17:06:33 +0300
-Message-ID: <1302876393.3220.63.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Fri, 15 Apr 2011 10:15:07 -0400
+Message-ID: <4DA852E3.9080702@ece.ntua.gr>
+Date: Fri, 15 Apr 2011 17:14:59 +0300
+From: Stratos Psomadakis <psomas@ece.ntua.gr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110407 Lightning/1.0b3pre Lanikai/3.1.9
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Two questions about paravirt boot sequence(head_32.S)
+References: <4DA6CD8F.6080206@ece.ntua.gr> <8762qhavaa.fsf@rustcorp.com.au> <20110415140846.GA32334@dumpdata.com>
+In-Reply-To: <20110415140846.GA32334@dumpdata.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (ulysses.noc.ntua.gr [147.102.222.230]); Fri, 15 Apr 2011 17:15:01 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-15 at 16:08 +0200, Michal Marek wrote:
-> I merged the patches, but removed the make help text. Rationale: People 
-> who don't need it don't need the help text, for those that need it the 
-> help text wouldn't provide more information than the error message. Is 
-> this OK with you?
-
-Yes, fine, thank you!
+On 04/15/2011 05:08 PM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Apr 14, 2011 at 09:40:05PM +0930, Rusty Russell wrote:
+>> On Thu, 14 Apr 2011 13:33:51 +0300, Stratos Psomadakis <psomas@ece.ntua.gr> wrote:
+>>> 2)I think that xen doesn't use any more the hardware subarch boot
+>>> parameter, and uses a 'different' path/boot sequence, hence the
+>>> xen_entry in head_32.S is not needed any more. Am I missing something?
+>> Yep, Xen never actually used it.
+> Does lguest use it? It looked like a neat idea - what happened?
+yeap, afaik, lguest uses the subarch field to jump to its own 'entry
+point'...
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Stratos Psomadakis
+<psomas@ece.ntua.gr>
 
