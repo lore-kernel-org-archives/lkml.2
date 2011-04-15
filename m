@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab1DOWCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 18:02:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43342 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755470Ab1DOWCR (ORCPT
+	id S1757481Ab1DOWCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 18:02:44 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:3087 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757387Ab1DOWC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 18:02:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Uj6fjCYLb/PwsPAvh7X/C1FkmCqe0Xn2VVXDk91AmO34LUHAjOe+YtxTJgOuX2XLuD
-         bBbPTBSNBeavb7f4n7Ukgunf/hDy4hoCyOT1HjMNc4YLf6EYSDnrrIzzLfVnC4E+3Y9i
-         kkES0GjG0Gdy6LOO8mMc0AP6x5hIoZcdTWaxg=
+	Fri, 15 Apr 2011 18:02:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6317"; a="86117920"
+Message-ID: <4DA8C072.3030705@codeaurora.org>
+Date: Fri, 15 Apr 2011 15:02:26 -0700
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
 MIME-Version: 1.0
-Date: Fri, 15 Apr 2011 17:02:16 -0500
-Message-ID: <BANLkTikrEVch9jmwpg4x3NGn03p1hHyC-w@mail.gmail.com>
-Subject: [GIT PULL] 9p: fixes for -rc3
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: tglx@linutronix.de, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        dwalker@fifo99.com, linux-arm-msm-owner@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [RFC PATCH] genirq: implement read_irq_line for interrupt lines
+References: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org> <20110415190319.GA24111@Krystal>
+In-Reply-To: <20110415190319.GA24111@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-   Here's some fixes for the -rc stream, sorry these have been a bit
-delayed due to a new baby killing my productivity and my normal sleep
-patterns :)
+Mathieu Desnoyers wrote:
+> * Abhijeet Dharmapurikar (adharmap@codeaurora.org) wrote:
+>> Drivers need to be aware whether the interrupt controller is a slow bus
+>> and call read_irq_line in proper context.
+> 
+> Hrm, this strikes me as odd. Is there any way this generic API could
+> handle the corner-cases without needed the caller to know this ?
 
-The following changes since commit 5853b4f06f7b9b56f37f457d7923f7b96496074e:
+Usually, a slow bus irq controller marks its irq as nested and has its 
+irq handler running in thread context. In that case it will be safe to 
+call irq_read_line from thread context. For the usual (non slow bus) irq 
+controller we can always call irq_read_line within irq context.
 
-  Merge branch 'for-linus' of git://git.kernel.dk/linux-2.6-block
-(2011-04-15 08:01:13 -0700)
 
-are available in the git repository at:
+This function is intended to be called from within the handler, to know 
+if a rising edge or a falling edge caused the interrupt. It can be used 
+in other places too, but then the driver needs to be careful about the 
+interrupt controller slowbus nature.
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
+The problem happens when this function is called from interrupt context 
+when irq controller is slowbus. For example one has taken a spin_lock 
+with interrupts disabled and now it wants to know the real time status 
+on a pin that is controlled by a slow bus controller. The slowbus 
+controller could end up sleeping and things go bad.
 
-Aneesh Kumar K.V (5):
-      fs/9p: Fix revalidate to return correct value
-      fs/9p: Use write_inode for data sync on server
-      9p: revert tsyncfs related changes
-      fs/9p: Fix error reported by coccicheck
-      9p: Fix sparse error
+I should explain this more in the commit text. Will do so in the next 
+revision of this patch.
 
-Harsh Prateek Bora (1):
-      net/9p: nwname should be an unsigned int
+>> + *	This function may be called from IRQ context only when
+>> + *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
+> 
+> The comment here seems to imply "be careful when using this extremely
+> fragile interface", which does not give me the warm safety feeling I
+> would come to expect from a generic kernel API.
+> 
+> Any ideas on how to improve that ?
 
- fs/9p/fid.c             |   15 +-------
- fs/9p/v9fs.h            |    1 -
- fs/9p/vfs_dentry.c      |    4 ++-
- fs/9p/vfs_inode_dotl.c  |    2 +-
- fs/9p/vfs_super.c       |   80 +++++++++++++++++++++++++++++++++--------------
- include/net/9p/9p.h     |    2 -
- include/net/9p/client.h |    5 +--
- net/9p/client.c         |   29 ++--------------
- net/9p/protocol.c       |    7 ++--
- net/9p/trans_common.c   |    2 +-
- net/9p/trans_virtio.c   |   15 ++++++--
- 11 files changed, 84 insertions(+), 78 deletions(-)
+Well, even the enable_irq() and disable_irq_nosync() have the same 
+calling restrictions. I picked this line from the comment block in 
+enable_irq() function. You think I should explain it more in the 
+upcoming patch?
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
+Innovation Center, Inc. is a member of the Code Aurora Forum.
