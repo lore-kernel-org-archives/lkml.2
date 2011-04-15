@@ -1,31 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab1DONGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 09:06:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:41375 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271Ab1DONGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 09:06:24 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stratos Psomadakis <psomas@ece.ntua.gr>, linux-kernel@vger.kernel.org
-Subject: Re: Two questions about paravirt boot sequence(head_32.S)
-In-Reply-To: <4DA6CD8F.6080206@ece.ntua.gr>
-References: <4DA6CD8F.6080206@ece.ntua.gr>
-User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Thu, 14 Apr 2011 21:40:05 +0930
-Message-ID: <8762qhavaa.fsf@rustcorp.com.au>
+	id S1754379Ab1DONJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 09:09:28 -0400
+Received: from [190.85.9.90] ([190.85.9.90]:59592 "EHLO mzcs.distrimas.com.co"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753948Ab1DONJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 09:09:27 -0400
+Date: Fri, 15 Apr 2011 08:00:25 -0500 (COT)
+From: Inter-Switch ATM-Card <info@distrimas.com.co>
+Reply-To: Inter-Switch ATM-Card <verificationoffice24@yahoo.com>
+Message-ID: <5723745.1862.1302872425458.JavaMail.root@mzcs.distrimas.com.co>
+Subject: Unpaid beneficiary
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.1.99]
+X-Mailer: Zimbra 6.0.4_GA_2038.RHEL5 (zclient/6.0.4_GA_2038.RHEL5)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Apr 2011 13:33:51 +0300, Stratos Psomadakis <psomas@ece.ntua.gr> wrote:
-> 2)I think that xen doesn't use any more the hardware subarch boot
-> parameter, and uses a 'different' path/boot sequence, hence the
-> xen_entry in head_32.S is not needed any more. Am I missing something?
 
-Yep, Xen never actually used it.
+Unpaid beneficiary
 
-Cheers,
-Rusty.
+
+We do officially inform you that an Inter-Switch ATM-Card Valued at 550,000 GBP  has been accredited in your favour by the UK Inter Switch ATM Organization.Your  Personal Identification Number is ATM-5078.
+
+
+You are advice to contact Mr.Charles via Email:verificationoffice24@yahoo.com
+Please provide the following details for processing:
+
+* Full Name:
+* Delivery Address:
+* Sex:
+* Age:
+* Occupation:
+* Phone Number:
+* Country of Residence:
+* Means Of Identification:
+
+
+Regards
+Mr Charles
