@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1DODAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 23:00:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61813 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755059Ab1DODAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 23:00:06 -0400
-Message-ID: <4DA7B575.7090805@cn.fujitsu.com>
-Date: Fri, 15 Apr 2011 11:03:17 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] Btrfs: fix FS_IOC_SETFLAGS ioctl
-References: <4DA7B559.8060800@cn.fujitsu.com>
-In-Reply-To: <4DA7B559.8060800@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-15 11:00:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-04-15 11:00:42,
-	Serialize complete at 2011-04-15 11:00:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1755144Ab1DODMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 23:12:16 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:3642 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126Ab1DODMN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Apr 2011 23:12:13 -0400
+X-IronPort-AV: E=Sophos;i="4.64,215,1301900400"; 
+   d="scan'208";a="541506071"
+Subject: Re: [BUG 2.6.39-rc3] NFS spinlock recursion
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110415024758.GA20420@localhost>
+References: <20110415024758.GA20420@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Thu, 14 Apr 2011 23:12:09 -0400
+Message-ID: <1302837129.24028.190.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 15 Apr 2011 03:12:10.0737 (UTC) FILETIME=[E9059610:01CBFB1A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steps to reproduce the bug:
+On Fri, 2011-04-15 at 10:47 +0800, Wu Fengguang wrote:
+> Hi Trond,
+> 
+> I got these errors when testing writeback, did you see it before?
+> (I've removed all local changes to NFS code..)
+> 
+> Thanks,
+> Fengguang
+> ---
+> [   15.463942] XFS (sda5): Mounting Filesystem
+> [   15.468446] XFS: Mounting Filesystem
+> [   15.548984] XFS (sda5): Ending clean mount
+> [   15.553347] XFS: Ending clean mount
+> [   89.917428] BUG: spinlock recursion on CPU#3, flush-0:24/2548
+> [   89.923647]  lock: ffff8801223c9240, .magic: dead4ead, .owner: flush-0:24/2548, .owner_cpu: 3
+> [   89.932677] Pid: 2548, comm: flush-0:24 Not tainted 2.6.39-rc3-dt7+ #175
+> [   89.939649] Call Trace:
+> [   89.942356]  [<ffffffff813b3d2d>] spin_bug+0x9c/0xa3
+> [   89.947584]  [<ffffffff813b3e1b>] do_raw_spin_lock+0x47/0x137
+> [   89.953600]  [<ffffffff818f97fb>] _raw_spin_lock+0x56/0x69
+> [   89.959345]  [<ffffffff8115d388>] ? __mark_inode_dirty+0x66/0x1d0
+> [   89.965734]  [<ffffffff8115d388>] __mark_inode_dirty+0x66/0x1d0
+> [   89.971952]  [<ffffffff81238955>] nfs_commit_inode+0xf1/0x1c1
+> [   89.978022]  [<ffffffff81238a63>] nfs_write_inode+0x3e/0x93
+> [   89.983913]  [<ffffffff818fa1a3>] ? _raw_spin_unlock+0x2b/0x2f
+> [   89.990068]  [<ffffffff8115c8de>] writeback_single_inode+0x17a/0x267
+> [   89.996739]  [<ffffffff8115cdac>] writeback_sb_inodes+0xcf/0x157
+> [   90.003032]  [<ffffffff8115d7a2>] writeback_inodes_wb+0x131/0x143
+> [   90.009415]  [<ffffffff8115da2e>] wb_writeback+0x27a/0x3c3
+> [   90.015166]  [<ffffffff8115dd32>] wb_do_writeback+0x1bb/0x1d6
+> [   90.021206]  [<ffffffff8115ddd8>] bdi_writeback_thread+0x8b/0x212
+> [   90.027572]  [<ffffffff8115dd4d>] ? wb_do_writeback+0x1d6/0x1d6
+> [   90.033758]  [<ffffffff8108c4cc>] kthread+0x8e/0x96
+> [   90.038906]  [<ffffffff81901ee4>] kernel_thread_helper+0x4/0x10
+> [   90.045115]  [<ffffffff818fa414>] ? retint_restore_args+0x13/0x13
+> [   90.051494]  [<ffffffff8108c43e>] ? __init_kthread_worker+0x5b/0x5b
+> [   90.058047]  [<ffffffff81901ee0>] ? gs_change+0x13/0x13
 
-  - Call FS_IOC_SETLFAGS ioctl with flags=FS_COMPR_FL
-  - Call FS_IOC_SETFLAGS ioctl with flags=0
-  - Call FS_IOC_GETFLAGS ioctl, and you'll see FS_COMPR_FL is still set!
+Hi Fengguang,
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- fs/btrfs/ioctl.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Are you testing with a kernel that contains commit
+0d88f6e804c824454b5ed0d3034ed3dcf7467a87 (nfs: don't call
+__mark_inode_dirty while holding i_lock)?
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index aeabf6b..3e7031d 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -238,6 +238,8 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
- 	} else if (flags & FS_COMPR_FL) {
- 		ip->flags |= BTRFS_INODE_COMPRESS;
- 		ip->flags &= ~BTRFS_INODE_NOCOMPRESS;
-+	} else {
-+		ip->flags &= ~(BTRFS_INODE_COMPRESS | BTRFS_INODE_NOCOMPRESS);
- 	}
- 
- 	trans = btrfs_join_transaction(root, 1);
+The locking scheme for __mark_inode_dirty was changed in commit
+250df6ed274d767da844a5d9f05720b804240197 (in the 2.6.39 merge window),
+but as far as I can tell all the NFS users of that function should now
+have now been fixed except for the case of one pNFS user for which I do
+have a patch in my 'bugfixes' branch on linux-nfs.org.
+
+Cheers
+  Trond
+
 -- 
-1.7.3.1
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
