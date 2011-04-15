@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab1DOPgm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:36:42 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:54374 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754497Ab1DOPgk (ORCPT
+	id S1756345Ab1DOPiB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 11:38:01 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:35410 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab1DOPh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:36:40 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBADxlqE1Ld/sX/2dsb2JhbAAMhEOrGqoSkSiBKYNNeASUKw
-X-IronPort-AV: E=Sophos;i="4.64,219,1301889600"; 
-   d="scan'208";a="106518292"
-Message-ID: <4DA86606.308@teksavvy.com>
-Date: Fri, 15 Apr 2011 11:36:38 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Fri, 15 Apr 2011 11:37:59 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
+        adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
+        jlbec@evilplan.org, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+        linux-mm@kvack.org, hch@infradead.org, ngupta@vflare.org,
+        jeremy@goop.org, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        Dave Mccracken <dave.mccracken@oracle.com>, riel@redhat.com,
+        avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
+        yinghan@google.com, gthelen@google.com, torvalds@linux-foundation.org
+Subject: Re: [PATCH V8 4/8] mm/fs: add hooks to support cleancache
+References: <83ef8b69-f041-43e6-a5a9-880ff3da26f2@default>
+	<20110415081054.79a164d3.akpm@linux-foundation.org>
+Date: Sat, 16 Apr 2011 00:37:36 +0900
+In-Reply-To: <20110415081054.79a164d3.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Fri, 15 Apr 2011 08:10:54 -0700")
+Message-ID: <871v135xvj.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-To: Bruce Stenning <b.stenning@indigovision.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Justin Maggard <jmaggard10@gmail.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com> <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com> <4D9CD275.9000002@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com> <4D9FACC9.7020200@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com> <4DA5BCF3.5080205@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C772DA491@gretna.indigovision.com> <4DA79134.1010508@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C772DA5DD@gretna.indigovision.com>
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C772DA5DD@gretna.indigovision.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-15 09:21 AM, Bruce Stenning wrote:
-..
-> sata_mv 0000:00:04.0: Gen-II 32 slots 4 ports SCSI mode IRQ via INTx
-..
-> 
-> I had noticed occasional messages similar to the following earlier in the week:
-> 
-> ata4.00: limiting speed to UDMA/100:PIO4
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-Ugh.   Tejun:  that's just plain silly.
-Why would we EVER EVER EVER fall back to "PIO" for SATA ???
+>> > Before I suggested a thing about cleancache_flush_page,
+>> > cleancache_flush_inode.
+>> > 
+>> > what's the meaning of flush's semantic?
+>> > I thought it means invalidation.
+>> > AFAIC, how about change flush with invalidate?
+>> 
+>> I'm not sure the words "flush" and "invalidate" are defined
+>> precisely or used consistently everywhere in computer
+>> science, but I think that "invalidate" is to destroy
+>> a "pointer" to some data, but not necessarily destroy the
+>> data itself.   And "flush" means to actually remove
+>> the data.  So one would "invalidate a mapping" but one
+>> would "flush a cache".
+>> 
+>> Since cleancache_flush_page and cleancache_flush_inode
+>> semantically remove data from cleancache, I think flush
+>> is a better name than invalidate.
+>> 
+>> Does that make sense?
+>> 
+>
+> nope ;)
+>
+> Kernel code freely uses "flush" to refer to both invalidation and to
+> writeback, sometimes in confusing ways.  In this case,
+> cleancache_flush_inode and cleancache_flush_page rather sound like they
+> might write those things to backing store.  
 
+I'd like to mention about *_{get,put}_page too. In linux get/put is not
+meaning read/write. There is {get,put}_page those are refcount stuff
+(Yeah, and I felt those methods does refcount by quick read. But it
+seems to be false. There is no xen codes, so I don't know actually
+though.).
 
-> I am building with CONFIG_ARCH_SUPPORTS_MSI=y, but also with CONFIG_PCI_MSI
-> not set.
-> 
-> With all this discussion of SATA link speed, I ought to say that we limit our
-> SATA links to 1.5Gbps with the following kernel parameter:
-> 
-> libata.force=1.5g
+And I agree, I also think the needing thing is consistency on the linux
+codes (term).
 
-Mmm... I suppose it could be getting stuck at 1.5g,
-and not transitioning back to "auto detect" or something.
-
-That part of sata_mv involves a bit of voo-doo,
-because I was reluctant to cut/paste the 200 lines or so
-of generic code just for the sake of changing five lines.
-
-Perhaps the generic code has changed since this was originally working,
-and now no longer always works for sata_mv..
-
-I suppose you have a good reason for using "libata.force=1.5g" there?
-
-Cheers
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
