@@ -1,101 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab1DOLgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 07:36:47 -0400
-Received: from gmmr1.centrum.cz ([90.183.38.157]:43789 "EHLO gmmr1.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404Ab1DOLgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 07:36:46 -0400
-To: "Mel Gorman" <mgorman@suse.de>
-Subject: Re: Regression from 2.6.36
-Date: Fri, 15 Apr 2011 13:36:44 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Changli Gao" <xiaosuo@gmail.com>,
-        "Am?rico Wang" <xiyou.wangcong@gmail.com>,
-        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
-        "Jiri Slaby" <jirislaby@gmail.com>
-References: <1302178426.3357.34.camel@edumazet-laptop>	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>	 <1302190586.3357.45.camel@edumazet-laptop>	 <20110412154906.70829d60.akpm@linux-foundation.org>	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>	 <20110412183132.a854bffc.akpm@linux-foundation.org>	 <1302662256.2811.27.camel@edumazet-laptop>	 <20110413141600.28793661.akpm@linux-foundation.org>	 <20110414102501.GE11871@csn.ul.ie> <20110415115903.315DEAA1@pobox.sk>	 <20110415104700.GD22688@suse.de>  <20110415125651.68156745@pobox.sk> <1302866247.12428.25.camel@machina.109elm.lan>
-In-Reply-To: <1302866247.12428.25.camel@machina.109elm.lan>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
+	id S1755921Ab1DOLjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 07:39:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49974 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab1DOLjG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 07:39:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Subject: [PATCH v3] x86-64, NUMA: fix fakenuma boot failure
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Brian Gerst <brgerst@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Shaohui Zheng <shaohui.zheng@intel.com>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+In-Reply-To: <20110414150551.GC21397@mtj.dyndns.org>
+References: <20110414095059.080E.A69D9226@jp.fujitsu.com> <20110414150551.GC21397@mtj.dyndns.org>
+Message-Id: <20110415203928.1303.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Message-Id: <20110415133644.12504ADB@pobox.sk>
-X-Maser: brud
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Fri, 15 Apr 2011 20:39:01 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-sysfs was already mounted:
+> Hello,
+> 
+> On Thu, Apr 14, 2011 at 09:51:00AM +0900, KOSAKI Motohiro wrote:
+> > hmm...  My carbon copy is not corrupted. Maybe crappy intermediate
+> > server override it ?
+> 
+> Sorry about that.  Problem was on my side.
+> 
+> The patch itself looks good to me now, so,
+> 
+>  Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> but I have some nitpicky comments and it would be nice if you can
+> respin the patch with the suggested updates.
 
-# mount
-sysfs on /sys type sysfs (rw,noexec,nosuid,nodev)
+Reflected.
 
 
-I have enabled all of the options you suggested and also CONFIG_DEBUG_FS ;) I will boot new kernel this night. Hope it won't degraded performance much..
+>From 38f7fa6d48f2025bf620f1b8b27ccc7e0698d653 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed, 13 Apr 2011 15:47:12 +0900
+Subject: [PATCH] x86-64, NUMA: fix fakenuma boot failure
+
+Currently, numa=fake boot parameter is broken. If it's used, kernel
+may panic due to devide by zero error depending on CPU configuration
+
+Call Trace:
+ [<ffffffff8104ad4c>] find_busiest_group+0x38c/0xd30
+ [<ffffffff81086aff>] ? local_clock+0x6f/0x80
+ [<ffffffff81050533>] load_balance+0xa3/0x600
+ [<ffffffff81050f53>] idle_balance+0xf3/0x180
+ [<ffffffff81550092>] schedule+0x722/0x7d0
+ [<ffffffff81550538>] ? wait_for_common+0x128/0x190
+ [<ffffffff81550a65>] schedule_timeout+0x265/0x320
+ [<ffffffff81095815>] ? lock_release_holdtime+0x35/0x1a0
+ [<ffffffff81550538>] ? wait_for_common+0x128/0x190
+ [<ffffffff8109bb6c>] ? __lock_release+0x9c/0x1d0
+ [<ffffffff815534e0>] ? _raw_spin_unlock_irq+0x30/0x40
+ [<ffffffff815534e0>] ? _raw_spin_unlock_irq+0x30/0x40
+ [<ffffffff81550540>] wait_for_common+0x130/0x190
+ [<ffffffff81051920>] ? try_to_wake_up+0x510/0x510
+ [<ffffffff8155067d>] wait_for_completion+0x1d/0x20
+ [<ffffffff8107f36c>] kthread_create_on_node+0xac/0x150
+ [<ffffffff81077bb0>] ? process_scheduled_works+0x40/0x40
+ [<ffffffff8155045f>] ? wait_for_common+0x4f/0x190
+ [<ffffffff8107a283>] __alloc_workqueue_key+0x1a3/0x590
+ [<ffffffff81e0cce2>] cpuset_init_smp+0x6b/0x7b
+ [<ffffffff81df3d07>] kernel_init+0xc3/0x182
+ [<ffffffff8155d5e4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81553cd4>] ? retint_restore_args+0x13/0x13
+ [<ffffffff81df3c44>] ? start_kernel+0x400/0x400
+ [<ffffffff8155d5e0>] ? gs_change+0x13/0x13
+
+The divede by zero is caused following line. (ie group->cpu_power==0)
+
+kernel/sched_fair.c::update_sg_lb_stats()
+        /* Adjust by relative CPU power of the group */
+        sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
+
+This is regression by commit e23bba6044 (x86-64, NUMA: Unify emulated
+distance mapping) because it changes cpu -> node mapping in the process
+of dropping fake_physnodes().
+
+  old) all cpus are assinged node 0
+  now) cpus are assigned round robin
+       (the logic is implemented by numa_init_array())
+
+  Note: The change is heppen only if the system doesn't have neigher
+	ACPI srat table nor AMD northbridge NUMA information.
+
+Why round robin assignment doesn't work? Because init_numa_sched_groups_power()
+assumes all logical cpus in the same physical cpu share the same node
+(Then it only accounts for group_first_cpu()), and the simple round robin
+breaks the above assumption.
+
+Thus, this patch implement to reassign node-id if buggy firmware or numa
+emulation makes wrong cpu node map. it enforce all logical cpus in the
+same physical cpu share the same node.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Brian Gerst <brgerst@gmail.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Shaohui Zheng <shaohui.zheng@intel.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/smpboot.c |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c2871d3..8ed8908 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -312,6 +312,26 @@ void __cpuinit smp_store_cpu_info(int id)
+ 		identify_secondary_cpu(c);
+ }
+ 
++static void __cpuinit check_cpu_siblings_on_same_node(int cpu1, int cpu2)
++{
++	int node1 = early_cpu_to_node(cpu1);
++	int node2 = early_cpu_to_node(cpu2);
++
++	/*
++	 * Our CPU scheduler assumes all logical cpus in the same physical cpu
++	 * share the same node. But, buggy ACPI or NUMA emulation might assign
++	 * them to different node. Fix it.
++	 */
++	if (node1 != node2) {
++		pr_warning("CPU %d in node %d and CPU %d in node %d are in the same physical CPU. forcing same node %d\n",
++			   cpu1, node1, cpu2, node2, node2);
++
++		numa_remove_cpu(cpu1);
++		numa_set_node(cpu1, node2);
++		numa_add_cpu(cpu1);
++	}
++}
++
+ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
+ {
+ 	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
+@@ -320,6 +340,7 @@ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
+ 	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
+ 	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
+ 	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
++	check_cpu_siblings_on_same_node(cpu1, cpu2);
+ }
+ 
+ 
+@@ -361,10 +382,12 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
+ 			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
++			check_cpu_siblings_on_same_node(cpu, i);
+ 		}
+ 		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
+ 			cpumask_set_cpu(i, cpu_core_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_core_mask(i));
++			check_cpu_siblings_on_same_node(cpu, i);
+ 			/*
+ 			 *  Does this new cpu bringup a new core?
+ 			 */
+-- 
+1.7.3.1
 
 
-______________________________________________________________
-> Od: "Mel Gorman" <mgorman@suse.de>
-> Komu: azurIt <azurit@pobox.sk>
-> Dátum: 15.04.2011 13:17
-> Predmet: Re: Regression from 2.6.36
->
-> CC: "Andrew Morton" <akpm@linux-foundation.org>, "Eric Dumazet" <eric.dumazet@gmail.com>, "Changli Gao" <xiaosuo@gmail.com>, "Am?rico Wang" <xiyou.wangcong@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>
->On Fri, 2011-04-15 at 12:56 +0200, azurIt wrote:
->> # mount -t debugfs none /sys/kernel/debug
->> mount: mount point /sys/kernel/debug does not exist
->> 
->> # mkdir /sys/kernel/debug
->> mkdir: cannot create directory `/sys/kernel/debug': No such file or directory
->> 
->
->Mount sysfs first
->
->mount -t sysfs none /sys
->
->> 
->> config file used for testing is here:
->> http://watchdog.sk/lkml/config
->> 
->
->Try setting the following
->
->CONFIG_TRACEPOINTS=y
->CONFIG_STACKTRACE=y
->CONFIG_USER_STACKTRACE_SUPPORT=y
->CONFIG_NOP_TRACER=y
->CONFIG_TRACER_MAX_TRACE=y
->CONFIG_FTRACE_NMI_ENTER=y
->CONFIG_CONTEXT_SWITCH_TRACER=y
->CONFIG_GENERIC_TRACER=y
->CONFIG_FTRACE=y
->CONFIG_FUNCTION_TRACER=y
->CONFIG_FUNCTION_GRAPH_TRACER=y
->CONFIG_IRQSOFF_TRACER=y
->CONFIG_SCHED_TRACER=y
->CONFIG_FTRACE_SYSCALLS=y
->CONFIG_STACK_TRACER=y
->CONFIG_BLK_DEV_IO_TRACE=y
->CONFIG_DYNAMIC_FTRACE=y
->CONFIG_FTRACE_MCOUNT_RECORD=y
->CONFIG_FTRACE_SELFTEST=y
->CONFIG_FTRACE_STARTUP_TEST=y
->CONFIG_MMIOTRACE=y
->CONFIG_HAVE_MMIOTRACE_SUPPORT=y
->
->-- 
->Mel Gorman
->SUSE Labs
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
->
+
