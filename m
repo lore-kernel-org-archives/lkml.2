@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab1DOQuV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:50:21 -0400
-Received: from kroah.org ([198.145.64.141]:50298 "EHLO coco.kroah.org"
+	id S1753879Ab1DOQua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:50:30 -0400
+Received: from kroah.org ([198.145.64.141]:50304 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab1DOQuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:50:18 -0400
-Date: Fri, 15 Apr 2011 09:49:14 -0700
+	id S1753546Ab1DOQuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 12:50:20 -0400
+Date: Fri, 15 Apr 2011 09:49:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@kernel.org
 Cc: lwn@lwn.net
-Subject: Linux 2.6.32.37
-Message-ID: <20110415164914.GA10357@kroah.com>
+Subject: Linux 2.6.33.10
+Message-ID: <20110415164950.GC10357@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,14 +21,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm announcing the release of the 2.6.32.37 kernel.
+I'm announcing the release of the 2.6.33.10 kernel.
 
-All users of the 2.6.32 series must upgrade.
+This is primarily for the use of those people who are stuck using the
+.33-rt kernel.  Anyone else who really wants to use the .33 kernel tree
+is welcome to use this one as well.
 
-The updated 2.6.32.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.32.y.git
+I'll be maintaining it for a while longer as it looks like the -rt tree
+isn't moving forward to any newer kernel any time soon.
+
+The updated 2.6.33.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.33.y.git
 and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=summary
+        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.33.y.git;a=summary
 
 thanks,
 
@@ -36,101 +41,97 @@ greg k-h
 
 ------------
 
- Makefile                              |    2 
- arch/powerpc/kernel/crash.c           |    4 +
- arch/x86/kernel/cpu/mtrr/main.c       |   20 ++++++---
- arch/x86/kernel/head64.c              |    3 +
- arch/x86/kernel/microcode_amd.c       |   72 ++++++++++++++++++++-------------
- arch/x86/kernel/setup.c               |    5 --
- arch/x86/mm/init.c                    |   19 ++++++++
- arch/x86/mm/init_64.c                 |   11 ++---
- drivers/atm/solos-pci.c               |    9 +++-
- drivers/block/cciss.h                 |    1 
- drivers/bluetooth/btusb.c             |    3 +
- drivers/char/tpm/tpm.c                |    2 
- drivers/mfd/ab3100-core.c             |    4 -
- drivers/misc/ep93xx_pwm.c             |    6 +-
- drivers/net/myri10ge/myri10ge.c       |    1 
- drivers/net/wireless/ath/ath9k/main.c |    4 +
- drivers/net/wireless/b43/dma.c        |    2 
- drivers/net/wireless/b43/dma.h        |    2 
- drivers/net/wireless/p54/p54usb.c     |    2 
- drivers/rtc/rtc-ds1511.c              |    2 
- drivers/scsi/ses.c                    |    4 -
- drivers/staging/hv/Channel.c          |    8 +--
- drivers/staging/hv/Connection.c       |    6 +-
- drivers/staging/hv/Vmbus.c            |    2 
- drivers/staging/hv/VmbusPrivate.h     |    1 
- drivers/staging/hv/netvsc_drv.c       |   24 +++++++++++
- drivers/staging/usbip/stub_rx.c       |   40 ++++++------------
- drivers/staging/usbip/stub_tx.c       |   74 +++++++++++++++++++++++++++-------
- drivers/staging/usbip/usbip_common.c  |   64 ++++++++++++++++++++++++++++-
- drivers/staging/usbip/usbip_common.h  |    2 
- drivers/staging/usbip/vhci_rx.c       |    3 +
- fs/btrfs/ctree.h                      |    4 +
- fs/btrfs/disk-io.c                    |    4 +
- fs/btrfs/ioctl.c                      |    4 +
- fs/btrfs/root-tree.c                  |   18 ++++++++
- fs/btrfs/transaction.c                |    1 
- fs/compat.c                           |   28 ++++++------
- fs/ecryptfs/keystore.c                |    1 
- fs/ecryptfs/mmap.c                    |    5 ++
- fs/exec.c                             |   32 ++++++++++++--
- fs/ext4/inode.c                       |   11 ++---
- fs/nfsd/lockd.c                       |    1 
- fs/nilfs2/file.c                      |   12 ++---
- fs/ocfs2/aops.c                       |    6 ++
- fs/quota/dquot.c                      |   13 +----
- fs/squashfs/dir.c                     |    9 ++++
- fs/squashfs/namei.c                   |   12 +++++
- fs/ubifs/commit.c                     |    2 
- fs/ubifs/debug.c                      |   41 ++++++++++++++++--
- fs/ubifs/lpt.c                        |    7 +--
- fs/xfs/linux-2.6/xfs_ioctl.c          |   11 +++--
- fs/xfs/xfs_fsops.c                    |    3 +
- include/linux/binfmts.h               |    5 ++
- include/scsi/scsi_device.h            |    2 
- include/sound/soc-dapm.h              |   16 +++----
- kernel/kgdb.c                         |    9 +---
- kernel/perf_event.c                   |    3 -
- kernel/signal.c                       |    4 -
- mm/mremap.c                           |   11 ++++-
- net/ax25/af_ax25.c                    |    2 
- net/bluetooth/bnep/sock.c             |    1 
- net/bluetooth/sco.c                   |    1 
- net/bridge/netfilter/ebtables.c       |    2 
- net/can/bcm.c                         |    4 -
- net/core/dev.c                        |    2 
- net/econet/af_econet.c                |    8 ++-
- net/ipv4/inet_diag.c                  |   27 +++++++-----
- net/ipv4/netfilter/arp_tables.c       |    3 +
- net/ipv4/netfilter/ip_tables.c        |    3 +
- net/ipv4/netfilter/ipt_CLUSTERIP.c    |    5 +-
- net/ipv6/netfilter/ip6_tables.c       |    3 +
- net/irda/af_irda.c                    |   16 ++++---
- net/irda/iriap.c                      |    6 ++
- net/irda/irnet/irnet_ppp.c            |    3 +
- net/mac80211/sta_info.c               |    1 
- net/packet/af_packet.c                |    3 -
- net/rds/rdma.c                        |    8 +++
- net/rose/rose_subr.c                  |   18 +++++++-
- net/sctp/sm_make_chunk.c              |   17 ++++---
- net/tipc/socket.c                     |    1 
- sound/core/init.c                     |    4 +
- sound/oss/dev_table.h                 |    2 
- sound/oss/midi_synth.c                |   34 +++++++--------
- sound/oss/midi_synth.h                |    2 
- sound/oss/opl3.c                      |   23 ++++++----
- sound/oss/sequencer.c                 |    2 
- sound/pci/ens1370.c                   |   23 ++++++++--
- sound/pci/hda/patch_realtek.c         |    2 
- 88 files changed, 659 insertions(+), 244 deletions(-)
+ Makefile                               |    2 
+ arch/powerpc/kernel/crash.c            |    4 +
+ arch/x86/kernel/cpu/mtrr/main.c        |   20 +++++--
+ arch/x86/kernel/head64.c               |    3 +
+ arch/x86/kernel/setup.c                |    5 -
+ arch/x86/mm/init.c                     |   19 +++++++
+ arch/x86/mm/init_64.c                  |   11 +---
+ drivers/atm/solos-pci.c                |    9 ++-
+ drivers/block/cciss.h                  |    1 
+ drivers/bluetooth/btusb.c              |    3 +
+ drivers/char/tpm/tpm.c                 |    2 
+ drivers/mfd/ab3100-core.c              |    4 -
+ drivers/misc/ep93xx_pwm.c              |    6 +-
+ drivers/net/myri10ge/myri10ge.c        |    1 
+ drivers/net/wireless/ath/ath9k/main.c  |    4 +
+ drivers/net/wireless/b43/dma.c         |    2 
+ drivers/net/wireless/b43/dma.h         |    2 
+ drivers/net/wireless/p54/p54usb.c      |    2 
+ drivers/rtc/rtc-ds1511.c               |    2 
+ drivers/scsi/ses.c                     |    4 -
+ drivers/staging/hv/Channel.c           |    8 +-
+ drivers/staging/hv/Connection.c        |    6 +-
+ drivers/staging/hv/Vmbus.c             |    2 
+ drivers/staging/hv/VmbusPrivate.h      |    1 
+ drivers/staging/usbip/stub_rx.c        |   40 +++++---------
+ drivers/staging/usbip/stub_tx.c        |   74 ++++++++++++++++++++++-----
+ drivers/staging/usbip/usbip_common.c   |   64 +++++++++++++++++++++++
+ drivers/staging/usbip/usbip_common.h   |    2 
+ drivers/staging/usbip/vhci_rx.c        |    3 +
+ fs/btrfs/ctree.h                       |    4 +
+ fs/btrfs/disk-io.c                     |    4 +
+ fs/btrfs/ioctl.c                       |    4 +
+ fs/btrfs/root-tree.c                   |   18 ++++++
+ fs/btrfs/transaction.c                 |    1 
+ fs/compat.c                            |   28 +++++-----
+ fs/ecryptfs/keystore.c                 |    1 
+ fs/ecryptfs/mmap.c                     |    5 +
+ fs/exec.c                              |   32 ++++++++++-
+ fs/ext4/inode.c                        |   11 +---
+ fs/nfsd/lockd.c                        |    1 
+ fs/nilfs2/file.c                       |   12 ++--
+ fs/ocfs2/aops.c                        |    6 ++
+ fs/quota/dquot.c                       |   13 +---
+ fs/squashfs/dir.c                      |    9 +++
+ fs/squashfs/namei.c                    |   12 ++++
+ fs/ubifs/commit.c                      |    2 
+ fs/ubifs/debug.c                       |   41 +++++++++++++--
+ fs/ubifs/lpt.c                         |    7 +-
+ fs/xfs/linux-2.6/xfs_ioctl.c           |   11 ++--
+ fs/xfs/xfs_fsops.c                     |    3 +
+ include/linux/binfmts.h                |    5 +
+ include/scsi/scsi_device.h             |    2 
+ include/sound/soc-dapm.h               |   16 ++---
+ kernel/kgdb.c                          |    9 +--
+ kernel/perf_event.c                    |    3 -
+ kernel/signal.c                        |    4 -
+ mm/mremap.c                            |   11 +++-
+ net/ax25/af_ax25.c                     |    2 
+ net/bluetooth/bnep/sock.c              |    1 
+ net/bluetooth/sco.c                    |    1 
+ net/bridge/netfilter/ebtables.c        |    2 
+ net/can/bcm.c                          |    4 -
+ net/core/dev.c                         |    2 
+ net/econet/af_econet.c                 |    8 ++
+ net/ipv4/inet_diag.c                   |   27 +++++-----
+ net/ipv4/netfilter/arp_tables.c        |    3 +
+ net/ipv4/netfilter/ip_tables.c         |    3 +
+ net/ipv4/netfilter/ipt_CLUSTERIP.c     |    5 +
+ net/ipv6/netfilter/ip6_tables.c        |    3 +
+ net/irda/af_irda.c                     |   16 +++--
+ net/irda/iriap.c                       |    6 ++
+ net/irda/irnet/irnet_ppp.c             |    3 +
+ net/mac80211/sta_info.c                |    1 
+ net/netfilter/nf_conntrack_h323_asn1.c |    2 
+ net/packet/af_packet.c                 |    3 -
+ net/rds/rdma.c                         |    8 ++
+ net/rose/rose_subr.c                   |   18 +++++-
+ net/tipc/socket.c                      |    1 
+ sound/core/init.c                      |    4 +
+ sound/oss/dev_table.h                  |    2 
+ sound/oss/midi_synth.c                 |   34 +++++-------
+ sound/oss/midi_synth.h                 |    2 
+ sound/oss/opl3.c                       |   23 +++++---
+ sound/oss/sequencer.c                  |    2 
+ sound/pci/ens1370.c                    |   23 +++++++-
+ sound/pci/hda/patch_analog.c           |   89 +++++++++++++++++++++++++++++++++
+ sound/pci/hda/patch_realtek.c          |    2 
+ 87 files changed, 670 insertions(+), 211 deletions(-)
 
 Alex Elder (1):
       xfs: zero proper structure size for geometry calls
-
-Andreas Herrmann (1):
-      x86, amd-ucode: Remove needless log messages
 
 Andy Gospodarek (1):
       gro: reset skb_iif on reuse
@@ -144,9 +145,6 @@ Artem Bityutskiy (3):
       UBIFS: do not read flash unnecessarily
       UBIFS: fix oops on error path in read_pnode
       UBIFS: fix debugging failure in dbg_check_space_info
-
-Borislav Petkov (1):
-      x86, microcode, AMD: Extend ucode size verification
 
 Bud Brown (1):
       cciss: fix lost command issue
@@ -167,8 +165,14 @@ Dan Rosenberg (8):
       irda: prevent integer underflow in IRLMP_ENUMDEVICES
       CAN: Use inode instead of kernel address for /proc file
 
+David Henningsson (1):
+      ALSA: HDA: New AD1984A model for Dell Precision R5500
+
 David S. Miller (1):
       econet: Fix crash in aun_incoming().
+
+David Sterba (1):
+      netfilter: h323: bug in parsing of ASN1 SEQOF field
 
 Felix Fietkau (2):
       mac80211: initialize sta->last_rx in sta_info_alloc
@@ -182,10 +186,7 @@ Goldwyn Rodrigues (1):
 
 Greg Kroah-Hartman (2):
       Revert "x86: Cleanup highmap after brk is concluded"
-      Linux 2.6.32.37
-
-Haiyang Zhang (1):
-      staging: hv: Fix GARP not sent after Quick Migration
+      Linux 2.6.33.10
 
 Herbert Xu (1):
       gro: Reset dev pointer on reuse
@@ -284,9 +285,6 @@ Vasiliy Kulikov (13):
       econet: 4 byte infoleak to the network
       net: ax25: fix information leak to userland
       net: packet: fix information leak to userland
-
-Wei Yongjun (1):
-      sctp: fix to calc the INIT/INIT-ACK chunk length correctly is set
 
 Yongqiang Yang (1):
       ext4: fix credits computing for indirect mapped files
