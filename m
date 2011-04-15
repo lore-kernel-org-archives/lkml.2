@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab1DOFEu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 01:04:50 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34177
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753748Ab1DOFEq (ORCPT
+	id S1753432Ab1DOFHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 01:07:55 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37952 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab1DOFHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 01:04:46 -0400
-Date: Thu, 14 Apr 2011 22:04:11 -0700 (PDT)
-Message-Id: <20110414.220411.183045866.davem@davemloft.net>
-To: decot@google.com
-Cc: fubar@us.ibm.com, andy@greyhouse.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] net-bonding: Adding support for throughputs larger
- than 65536 Mbps
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1302744151-12452-3-git-send-email-decot@google.com>
-References: <1302744151-12452-1-git-send-email-decot@google.com>
-	<1302744151-12452-3-git-send-email-decot@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 15 Apr 2011 01:07:54 -0400
+Subject: Re: [PATCH] make sparse happy with gfp.h
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110415121424.F7A6.A69D9226@jp.fujitsu.com>
+References: <20110414234216.9E31DBD9@kernel>
+	 <20110415121424.F7A6.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 14 Apr 2011 22:07:46 -0700
+Message-ID: <1302844066.16562.1953.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@google.com>
-Date: Wed, 13 Apr 2011 18:22:31 -0700
-
-> This updates the bonding driver to support v2.6.27-rc3 enhancements
-> (b11f8d8c aka. "ethtool: Expand ethtool_cmd.speed to 32 bits") which
-> allow to encode the Mbps link speed on 32-bits (Max 4 Pbps) instead of
-> 16 (Max 65536 Mbps).
+On Fri, 2011-04-15 at 12:14 +0900, KOSAKI Motohiro wrote:
+> >  #ifdef CONFIG_DEBUG_VM
+> > -             BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+> > +     BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+> >  #endif
+> > -     }
+> >       return z;
 > 
-> This patch also attempts to compact struct slave by reordering its
-> fields.
-> 
-> Signed-off-by: David Decotigny <decot@google.com>
+> Why don't you use VM_BUG_ON?
 
-Applied.
+I was just trying to make a minimal patch that did a single thing.
+
+Feel free to submit another one that does that.  I'm sure there are a
+couple more places that could use similar love.
+
+-- Dave
+
