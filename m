@@ -1,102 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab1DOITu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 04:19:50 -0400
-Received: from mail32.mimecast.co.za ([41.208.19.110]:40852 "EHLO
-	mail32.mimecast.co.za" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab1DOITs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 04:19:48 -0400
-X-Greylist: delayed 1520 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Apr 2011 04:19:47 EDT
-Message-Id: <4DA815B6020000AC0004595E@CLU_MAIL.BANKSERV.CO.ZA>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1
-Date: Fri, 15 Apr 2011 09:53:58 +0200
-From: "Bongani Hlope" <bonganih@bankservafrica.com>
-To: <torvalds@linux-foundation.org>
-Cc: <arnd@arndb.de>, <npiggin@kernel.dk>, <greg@kroah.com>, <hch@lst.de>,
-        <bonganilinux@mweb.co.za>, <rjw@sisk.pl>,
-        <bernd.feige@uniklinik-freiburg.de>, <petr@vandrovec.name>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Regression] 2.6.38 ncpfs
-Mime-Version: 1.0
-X-MC-Unique: 111041509541702801
-Content-Type: multipart/mixed; boundary="=__PartFDD11A86.9__="
+	id S1752033Ab1DOIVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 04:21:00 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53830 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901Ab1DOIU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 04:20:57 -0400
+Date: Fri, 15 Apr 2011 10:20:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: [PATCH v2] cpusets: randomize node rotor used in
+ cpuset_mem_spread_node()
+Message-ID: <20110415082051.GB8828@tiehlicka.suse.cz>
+References: <20110414065146.GA19685@tiehlicka.suse.cz>
+ <20110414160145.0830.A69D9226@jp.fujitsu.com>
+ <20110415161831.12F8.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415161831.12F8.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+[I just realized that I forgot to CC mm mailing list]
 
---=__PartFDD11A86.9__=
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
+On Fri 15-04-11 16:18:45, KOSAKI Motohiro wrote:
+> Oops.
+> I should have look into !mempolicy part too.
+> I'm sorry.
+> 
+[...]
+> Michal, I think this should be
+> 
+> #ifdef CONFIG_CPUSETS
+> 	if (cpuset_do_page_mem_spread())
+> 		p->cpuset_mem_spread_rotor = node_random(&p->mems_allowed);
+> 	if (cpuset_do_slab_mem_spread())
+> 		p->cpuset_slab_spread_rotor = node_random(&p->mems_allowed);
+> #endif
+> 
+> because 99.999% people don't use cpuset's spread mem/slab feature and
+> get_random_int() isn't zero cost.
+> 
+> What do you think?
 
-Hi Linus
+You are right. I was thinking about lazy approach and initialize those
+values when they are used for the first time. What about the patch
+below?
 
-On Thu, 2011-04-14 at 13:22 -0700, Linus Torvalds wrote:
-> On Thu, Apr 14, 2011 at 1:17 PM, Bongani Hlope
-<bonganilinux@mweb.co.za> wrote:
-> >
-> > Looking at the changes,  you are right. The BUG_ON() seems to be
-what is not
-> > suppose to be there. The attached patch only removes the BUG_ON().
-I'll test
-> > on my work PC tomorrow and see if that also fixes the bug.
->=20
-> You might also try to replace it with
->=20
->     BUG_ON(!mutex_is_locked(&dentry->d_parent->d_inode->i_mutex))
->=20
-> ie add that "d_parent" there. Just for testing - I think the real fix
-> really is to remove it, but I'd personally be happier knowing that
-> _if_ it were to have that d_parent there, it would have worked.
+Change from v1:
+- initialize cpuset_{mem,slab}_spread_rotor lazily
 
-I've made that change and ncpfs works fine with it. I've attached a
-patch that changes the BUG_ON to look at the parent.
+---
+>From 46da525789a41cb10096aa09c5bc0e7dcc3ce6db Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 13 Apr 2011 16:29:36 +0200
+Subject: [PATCH] cpusets: randomize node rotor used in cpuset_mem_spread_node()
 
->=20
-> It would also be interesting to hear if that name length could
-> possibly ever change, and we'd hit that test too. It looks like the
-> original code actually checked that the length was the same before
-> doing the overwrite.
->=20
-> ncpfs doesn't seem to be very actively maintained, I suspect Petr
-> isn't really using it any more.
->=20
->                    Linus
->=20
->                 Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->=20
+[This patch has already been accepted as 0ac0c0d but later reverted
+(35926ff) because it itroduced arch specific __node_random which was
+defined only for x86 code so it broke other archs.
+This is a followup without any arch specific code. Other than that there
+are no functional changes.]
+
+Some workloads that create a large number of small files tend to assign
+too many pages to node 0 (multi-node systems).  Part of the reason is that
+the rotor (in cpuset_mem_spread_node()) used to assign nodes starts at
+node 0 for newly created tasks.
+
+This patch changes the rotor to be initialized to a random node number of
+the cpuset. We are initializating it lazily in cpuset_mem_spread_node
+resp. cpuset_slab_spread_node.
+
+[akpm@linux-foundation.org: fix layout]
+[Lee.Schermerhorn@hp.com: Define stub numa_random() for !NUMA configuration]
+[mhocko@suse.cz: Make it arch independent + lazy initialization]
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Paul Menage <menage@google.com>
+Cc: Jack Steiner <steiner@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ include/linux/bitmap.h   |    1 +
+ include/linux/nodemask.h |    7 +++++++
+ kernel/cpuset.c          |    8 ++++++++
+ kernel/fork.c            |    5 +++++
+ lib/bitmap.c             |    2 +-
+ mm/mempolicy.c           |   16 ++++++++++++++++
+ 6 files changed, 38 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
+index daf8c48..6fb2720 100644
+--- a/include/linux/bitmap.h
++++ b/include/linux/bitmap.h
+@@ -141,6 +141,7 @@ extern int bitmap_find_free_region(unsigned long *bitmap, int bits, int order);
+ extern void bitmap_release_region(unsigned long *bitmap, int pos, int order);
+ extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
+ extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
++extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int bits);
+ 
+ #define BITMAP_LAST_WORD_MASK(nbits)					\
+ (									\
+diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
+index dba35e4..66ccda9 100644
+--- a/include/linux/nodemask.h
++++ b/include/linux/nodemask.h
+@@ -66,6 +66,8 @@
+  * int num_online_nodes()		Number of online Nodes
+  * int num_possible_nodes()		Number of all possible Nodes
+  *
++ * int node_random(mask)		Random node with set bit in mask
++ *
+  * int node_online(node)		Is some node online?
+  * int node_possible(node)		Is some node possible?
+  *
+@@ -430,6 +432,9 @@ static inline void node_set_offline(int nid)
+ 	node_clear_state(nid, N_ONLINE);
+ 	nr_online_nodes = num_node_state(N_ONLINE);
+ }
++
++extern int node_random(const nodemask_t *maskp);
++
+ #else
+ 
+ static inline int node_state(int node, enum node_states state)
+@@ -460,6 +465,8 @@ static inline int num_node_state(enum node_states state)
+ 
+ #define node_set_online(node)	   node_set_state((node), N_ONLINE)
+ #define node_set_offline(node)	   node_clear_state((node), N_ONLINE)
++
++static inline int node_random(const nodemask_t *mask) { return 0; }
+ #endif
+ 
+ #define node_online_map 	node_states[N_ONLINE]
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 33eee16..5376478 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2465,11 +2465,19 @@ static int cpuset_spread_node(int *rotor)
+ 
+ int cpuset_mem_spread_node(void)
+ {
++	if (current->cpuset_mem_spread_rotor == -1)
++		current->cpuset_mem_spread_rotor =
++			node_random(&current->mems_allowed);
++
+ 	return cpuset_spread_node(&current->cpuset_mem_spread_rotor);
+ }
+ 
+ int cpuset_slab_spread_node(void)
+ {
++	if (current->cpuset_slab_spread_rotor == -1)
++		current->cpuset_slab_spread_rotor
++			= node_random(&current->mems_allowed);
++
+ 	return cpuset_spread_node(&current->cpuset_slab_spread_rotor);
+ }
+ 
+diff --git a/kernel/fork.c b/kernel/fork.c
+index e7548de..0883cff 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1119,6 +1119,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+  	}
+ 	mpol_fix_fork_child_flag(p);
+ #endif
++#ifdef CONFIG_CPUSETS
++	/* Will be initialized lazily when first used */
++	p->cpuset_mem_spread_rotor = -1;
++	p->cpuset_slab_spread_rotor = -1;
++#endif
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	p->irq_events = 0;
+ #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 91e0ccf..a4b5217 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -671,7 +671,7 @@ static int bitmap_pos_to_ord(const unsigned long *buf, int pos, int bits)
+  *
+  * The bit positions 0 through @bits are valid positions in @buf.
+  */
+-static int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
++int bitmap_ord_to_pos(const unsigned long *buf, int ord, int bits)
+ {
+ 	int pos = 0;
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 959a8b8..8e57a72 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -93,6 +93,7 @@
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/uaccess.h>
++#include <linux/random.h>
+ 
+ #include "internal.h"
+ 
+@@ -1649,6 +1650,21 @@ static inline unsigned interleave_nid(struct mempolicy *pol,
+ 		return interleave_nodes(pol);
+ }
+ 
++/*
++ * Return the bit number of a random bit set in the nodemask.
++ * (returns -1 if nodemask is empty)
++ */
++int node_random(const nodemask_t *maskp)
++{
++	int w, bit = -1;
++
++	w = nodes_weight(*maskp);
++	if (w)
++		bit = bitmap_ord_to_pos(maskp->bits,
++			get_random_int() % w, MAX_NUMNODES);
++	return bit;
++}
++
+ #ifdef CONFIG_HUGETLBFS
+ /*
+  * huge_zonelist(@vma, @addr, @gfp_flags, @mpol)
+-- 
+1.7.4.1
 
 
-
-=20
-=20
-This e-mail and its attachments, if any, are subject to BankservAfrica's
-e-mail disclaimer which is available on
-http://www.bankservafrica.com/Contactus/EmailDisclaimer.aspx.
-=20
-Please consider the environment before printing this e-mail!
---=__PartFDD11A86.9__=
-Content-Type: text/plain; name=ncpfs.patch
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="ncpfs.patch"
-
---- linux-2.6.33/fs/dcache.c.org=092011-04-04 08:20:20.382107296 +0200=0A++=
-+ linux-2.6.33/fs/dcache.c=092011-04-15 08:23:45.530530995 +0200=0A@@ -2123=
-,7 +2123,7 @@=0A  */=0A void dentry_update_name_case(struct dentry *dentry,=
- struct qstr *name)=0A {=0A-=09BUG_ON(!mutex_is_locked(&dentry->d_inode->i_=
-mutex));=0A+=09BUG_ON(!mutex_is_locked(&dentry->d_parent->d_inode->i_mutex)=
-);=0A =09BUG_ON(dentry->d_name.len !=3D name->len); /* d_lookup gives this =
-*/=0A=20=0A =09spin_lock(&dentry->d_lock);=0A
---=__PartFDD11A86.9__=--
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
