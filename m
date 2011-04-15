@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab1DOOiv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 10:38:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42631 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751219Ab1DOOis (ORCPT
+	id S1756092Ab1DOOjD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 10:39:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46717 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab1DOOjA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 10:38:48 -0400
-Date: Fri, 15 Apr 2011 10:38:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Tino Keitel <tino.keitel@tikei.de>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] /proc/acpi/wakeup regression in 2.6.39-rc3
-In-Reply-To: <201104150053.37037.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1104151034580.2051-100000@iolanthe.rowland.org>
+	Fri, 15 Apr 2011 10:39:00 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201104150112.24722.rjw@sisk.pl>
+References: <201104130205.26988.rjw@sisk.pl> <Pine.LNX.4.44L0.1104130954270.2005-100000@iolanthe.rowland.org>
+ <BANLkTiknpAkUQMaq3WZSTHy2cs-vXkv08Q@mail.gmail.com> <201104150112.24722.rjw@sisk.pl>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 15 Apr 2011 08:38:39 -0600
+X-Google-Sender-Auth: wbpBHwsrfZSCyOdn1uf9PzNE8lU
+Message-ID: <BANLkTi=+7n76OABAgRr+FEjbuF6N4Z8c3w@mail.gmail.com>
+Subject: Re: [RFC][PATCH] PM: Make power domain callbacks take precedence over
+ subsystem ones
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, linux-sh@vger.kernel.org,
+        lethal@linux-sh.org, Magnus Damm <magnus.damm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
+On Thu, Apr 14, 2011 at 5:12 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, April 13, 2011, Grant Likely wrote:
+>> On Wed, Apr 13, 2011 at 8:17 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> > On Wed, 13 Apr 2011, Rafael J. Wysocki wrote:
+>> >
+>> >> From: Rafael J. Wysocki <rjw@sisk.pl>
+>> >>
+>> >> Change the PM core's behavior related to power domains in such a way
+>> >> that, if a power domain is defined for a given device, its callbacks
+>> >> will be executed instead of and not in addition to the device
+>> >> subsystem's PM callbacks.
+>> >>
+>> >> The idea behind the initial implementation of power domains handling
+>> >> by the PM core was that power domain callbacks would be executed in
+>> >> addition to subsystem callbacks, so that it would be possible to
+>> >> extend the subsystem callbacks by using power domains.  It turns out,
+>> >> however, that this wouldn't be really convenient in some important
+>> >> situations.
+>> >>
+>> >> For example, there are systems in which power can only be removed
+>> >> from entire power domains.  On those systems it is not desirable to
+>> >> execute device drivers' PM callbacks until it is known that power is
+>> >> going to be removed from the devices in question, which means that
+>> >> they should be executed by power domain callbacks rather then by
+>> >> subsystem (e.g. bus type) PM callbacks, because subsystems generally
+>> >> have no information about what devices belong to which power domain.
+>> >> Thus, for instance, if the bus type in question is the platform bus
+>> >> type, its PM callbacks generally should not be called in addition to
+>> >> power domain callbacks, because they run device drivers' callbacks
+>> >> unconditionally if defined.
+>> >
+>> > What about systems where it makes sense to execute the subsystem
+>> > callbacks even if power isn't going to be removed from the device?
+>> > It's quite possible that the subsystem could reduce the device's power
+>> > consumption even when the device isn't powered down completely.
+>>
+>> The understanding Rafael and I came to was that if a power domain is
+>> attached to a device, then the power domain becomes the responsible
+>> party.  Normally this means it will turn around and immediately call
+>> the bus_type pm ops, but it has the option to not call them if for a
+>> particular system it knows better, or to defer calling them.
+>>
+>> Basically, if you're using a power domain, it is assumed that the
+>> power domain has particular knowledge about the system, and it should
+>> have the option to override the default behaviour.
+>>
+>> >
+>> > Is the extra overhead of invoking the subsystem callback really all
+>> > that troublesome?
+>>
+>> It isn't an overhead problem.  It's a control & complexity problem.
+>> We could try to implement a heuristic or api to control when the bus
+>> type PM ops should be overridden, but I think it is cleaner to make it
+>> a rule that if you implement a power domain, then that power domain
+>> becomes responsible for all PM operations.
+>
+> Well said. :-)
+>
+> I'm taking that as an ACK for my patch if you don't mind.
 
-> On Friday, April 15, 2011, Tino Keitel wrote:
-> > Hi,
-> > 
-> > with 2.6.38, I enabled wakeup from suspend to RAM with the USB keyboard
-> > this way:
-> > 
-> > echo USB2 > /proc/acpi/wakeup
-> > 
-> > This does not work anymore with 2.6.39-rc3. Wakeup using the keyboard
-> > won't work, and the USB2 line in /proc/acpi/wakeup doesn't change to
-> > "enabled" after the echo command.
-> > 
-> > Is this intended? If yes, what is the new way to enable keyboard
-> > wakeup?
-> 
-> No, it's supposed to work IIRC.  I'll have a look at that code tomorrow.
+And so you should.
 
-Tino, can you check the contents of the power/wakeup files in the
-appropriate sysfs directories?  That would be the directory for the
-keyboard device itself and the directory for the USB host controller
-for the bus the keyboard is on.
-
-By default, power/wakeup should be "enabled" for the keyboard device 
-and "disabled" for the host controller.  If you write "enabled" into 
-the host controller's file by hand, does that fix the problem?
-
-Alan Stern
-
+g.
