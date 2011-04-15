@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab1DONRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 09:17:10 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33267 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab1DONRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 09:17:08 -0400
-Date: Fri, 15 Apr 2011 15:16:50 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        alexandre.f.demers@gmail.com
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110415131650.GB18660@elte.hu>
-References: <4DA5F62F.3030504@kernel.org>
- <20110413193459.GL19819@8bytes.org>
- <4DA60C30.4060606@kernel.org>
- <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
- <4DA6145D.9070703@kernel.org>
- <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
- <4DA655E7.3000904@zytor.com>
- <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
- <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
- <20110415131152.GJ18463@8bytes.org>
+	id S1754675Ab1DONRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 09:17:54 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59893 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab1DONRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 09:17:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=JFqsaWrQaLv10W7WQK9eelXA+WfnWoq67tIwWDL0r3UaPbba740YVm82npo4Kvtr9L
+         YZxBNaLgR1ti8l9XpR+lhgt0jAe7uB34XuGRjaH1cbL3jHiTMAWm34tndLtowPNatH+R
+         Z/MdzVKXhrvLSE9MYK6MvePBrDlRhR9JXYsVQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415131152.GJ18463@8bytes.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110414103254.GC14319@legolas.emea.dhcp.ti.com>
+References: <1302766303-1157-1-git-send-email-J.Kilb@phytec.de>
+	<20110414103254.GC14319@legolas.emea.dhcp.ti.com>
+Date: Fri, 15 Apr 2011 06:17:51 -0700
+Message-ID: <BANLkTinNpMcuk0dpobM1Nu4zeU3yo8QQvw@mail.gmail.com>
+Subject: Re: [PATCH] Fixed gpio polarity of gpio USB-phy reset.
+From: Steve Sakoman <sakoman@gmail.com>
+To: balbi@ti.com
+Cc: Juergen Kilb <J.Kilb@phytec.de>, linux-arm-kernel@lists.infradead.org,
+        gregkh@suse.de, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 14, 2011 at 3:32 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Apr 14, 2011 at 09:31:43AM +0200, Juergen Kilb wrote:
+>> With commit 19403165 a main part of ehci-omap.c moved to
+>> drivers/mfd/omap-usb-host.c created by commit 17cdd29d.
+>> Due to this reorganisation the polarity used to reset the
+>> external USB phy changed and USB host doesn't recognize
+>> any devices.
+>>
+>> Signed-off-by: Juergen Kilb <J.Kilb@phytec.de>
+>
+> Judging by how ehci-omap.c was before moving the code:
+>
+> Acked-by: Felipe Balbi <balbi@ti.com>
 
-* Joerg Roedel <joro@8bytes.org> wrote:
+This fixes the issue on Overo:
 
-> On Wed, Apr 13, 2011 at 07:33:40PM -0700, Linus Torvalds wrote:
-> >  we definitely want to also understand the reason for things not
-> > working, even if we do revert..
-> 
-> Okay, here it is.
-> 
-> After experimenting with different configurations for the north-bridge
-> it turned out that a GART related MCE fires at the time the machine
-> reboots. BIOSes configure the machine to sync-flood in that case which
-> causes a reboot.
-> 
-> After decoding the MCE it turned out to be a GART TBL Wlk Error. Such
-> errors can happen if devices (speculativly) access GART ranges mapped
-> invalid. The AMD BKDG for Fam10h CPUs recommends to disable these errors
-> at all. But unfortunatly some BIOSes (including the one on my laptop)
-> forget to do this.
-> 
-> Below is a patch which disables these errors if the BIOS didn't do it.
-> It fixes the problem on my site.
+Tested-by: Steve Sakoman <steve@sakoman.com>
 
-Ok, but how did the allocation changes start triggering this error in 
-v2.6.39-rc1? There must still be some layout specific thing here, right?
-Do we understand the details of that as well?
-
-Thanks,
-
-	Ingo
+Steve
