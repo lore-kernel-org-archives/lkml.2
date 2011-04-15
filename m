@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab1DOWCo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 18:02:44 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:3087 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387Ab1DOWC1 (ORCPT
+	id S1757461Ab1DOWCm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 18:02:42 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:64568 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab1DOWCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 18:02:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6317"; a="86117920"
-Message-ID: <4DA8C072.3030705@codeaurora.org>
-Date: Fri, 15 Apr 2011 15:02:26 -0700
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
+	Fri, 15 Apr 2011 18:02:18 -0400
+X-IronPort-AV: E=Sophos;i="4.64,221,1301875200"; 
+   d="scan'208";a="5332531"
+Subject: Re: [PATCH] xen: cleancache shim to Xen Transcendent Memory
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: <chris.mason@oracle.com>, <viro@zeniv.linux.org.uk>,
+        <akpm@linux-foundation.org>, <adilger.kernel@dilger.ca>,
+        <tytso@mit.edu>, <mfasheh@suse.com>, <jlbec@evilplan.org>,
+        <matthew@wil.cx>, <linux-btrfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>, <ocfs2-devel@oss.oracle.com>,
+        <linux-mm@kvack.org>, <hch@infradead.org>, <ngupta@vflare.org>,
+        <jeremy@goop.org>, <JBeulich@novell.com>, <kurt.hackel@oracle.com>,
+        <npiggin@kernel.dk>, <dave.mccracken@oracle.com>, <riel@redhat.com>,
+        <avi@redhat.com>, <konrad.wilk@oracle.com>, <mel@csn.ul.ie>,
+        <yinghan@google.com>, <gthelen@google.com>,
+        <torvalds@linux-foundation.org>
+In-Reply-To: <20110414212002.GA27846@ca-server1.us.oracle.com>
+References: <20110414212002.GA27846@ca-server1.us.oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Fri, 15 Apr 2011 23:02:15 +0100
+Message-ID: <1302904935.22658.9.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: tglx@linutronix.de, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        dwalker@fifo99.com, linux-arm-msm-owner@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [RFC PATCH] genirq: implement read_irq_line for interrupt lines
-References: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org> <20110415190319.GA24111@Krystal>
-In-Reply-To: <20110415190319.GA24111@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Desnoyers wrote:
-> * Abhijeet Dharmapurikar (adharmap@codeaurora.org) wrote:
->> Drivers need to be aware whether the interrupt controller is a slow bus
->> and call read_irq_line in proper context.
+On Thu, 2011-04-14 at 14:20 -0700, Dan Magenheimer wrote:
+> [PATCH] xen: cleancache shim to Xen Transcendent Memory
 > 
-> Hrm, this strikes me as odd. Is there any way this generic API could
-> handle the corner-cases without needed the caller to know this ?
+> This patch provides a shim between the kernel-internal cleancache
+> API (see Documentation/mm/cleancache.txt) and the Xen Transcendent
+> Memory ABI (see http://oss.oracle.com/projects/tmem).
 
-Usually, a slow bus irq controller marks its irq as nested and has its 
-irq handler running in thread context. In that case it will be safe to 
-call irq_read_line from thread context. For the usual (non slow bus) irq 
-controller we can always call irq_read_line within irq context.
+There's no need to build this into a kernel which doesn't have
+cleancache (or one of the other frontends), is there? I think there
+should be a Kconfig option (even if its not a user visible one) with the
+appropriate depends/selects.
 
+Ian.
 
-This function is intended to be called from within the handler, to know 
-if a rising edge or a falling edge caused the interrupt. It can be used 
-in other places too, but then the driver needs to be careful about the 
-interrupt controller slowbus nature.
-
-The problem happens when this function is called from interrupt context 
-when irq controller is slowbus. For example one has taken a spin_lock 
-with interrupts disabled and now it wants to know the real time status 
-on a pin that is controlled by a slow bus controller. The slowbus 
-controller could end up sleeping and things go bad.
-
-I should explain this more in the commit text. Will do so in the next 
-revision of this patch.
-
->> + *	This function may be called from IRQ context only when
->> + *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
-> 
-> The comment here seems to imply "be careful when using this extremely
-> fragile interface", which does not give me the warm safety feeling I
-> would come to expect from a generic kernel API.
-> 
-> Any ideas on how to improve that ?
-
-Well, even the enable_irq() and disable_irq_nosync() have the same 
-calling restrictions. I picked this line from the comment block in 
-enable_irq() function. You think I should explain it more in the 
-upcoming patch?
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc. is a member of the Code Aurora Forum.
