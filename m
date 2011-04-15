@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1DOWRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 18:17:36 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:59966 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757159Ab1DOWRf (ORCPT
+	id S932104Ab1DOWSs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 18:18:48 -0400
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:38853 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757215Ab1DOWSr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 18:17:35 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6317"; a="86120192"
-Message-ID: <4DA8C3FC.5010102@codeaurora.org>
-Date: Fri, 15 Apr 2011 15:17:32 -0700
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
-MIME-Version: 1.0
-To: David Daney <ddaney@caviumnetworks.com>
-CC: tglx@linutronix.de, mathieu.desnoyers@efficios.com,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org, dwalker@fifo99.com,
-        linux-arm-msm-owner@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [RFC PATCH] genirq: implement read_irq_line for interrupt lines
-References: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org> <4DA899E3.30409@caviumnetworks.com>
-In-Reply-To: <4DA899E3.30409@caviumnetworks.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Apr 2011 18:18:47 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=sOeZmqKXo9QeAvPHcA4bYEQFU2ce9l+aXDqfA8Y5Yr0= c=1 sm=1
+ a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17
+ a=20KFwNOVAAAA:8 a=BOhMrgHjEJcJcAUfB2cA:9 a=CjuIK1q_8ugA:10
+ a=jEp0ucaQiEUA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: Unionmount status?
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
+Date: Fri, 15 Apr 2011 16:18:43 -0600
+Cc: Michal Suchanek <hramrach@centrum.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com> <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com> <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com> <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com> <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Daney wrote:
-> On 04/15/2011 11:42 AM, Abhijeet Dharmapurikar wrote:
-> [...]
->>
->> +/**
->> + *    irq_read_line - read the value on an irq line
->> + *    @irq: Interrupt number representing a hardware line
->> + *
->> + *    This function may be called from IRQ context only when
->> + *    desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
+On 2011-04-15, at 6:29 AM, Miklos Szeredi wrote:
+> Apparently tmpfs does not support generic xattr.  I understand why
+> tmpfs is an attractive choice for an upper filesystem, so this should
+> be addressed.
 > 
-> What does it return?  I can see that -EINVAL is returned if it isn't 
-> applicable to this irq.  But what if chip->irq_read_line is implemented?
-
-It returns the logical state of that line (0 when it is low or 1 when it 
-is high). Will add the return type in the comment.
-
+> I see two options here:
 > 
-> 
-> 
-> 
->> + */
->> +int irq_read_line(unsigned int irq)
->> +{
->> +    struct irq_desc *desc = irq_to_desc(irq);
->> +    unsigned long flags;
->> +    int val;
->> +
->> +    if (!desc || !desc->irq_data.chip->irq_read_line)
->> +        return -EINVAL;
+> 1) implement generic xattr in tmpfs
 
-It returns -EINVAL is irq_read_line is not implemented.
+There was a patch posted recently to add xattr support to tmpfs, so that it can use security labels:
 
->> +
->> +    chip_bus_lock(desc);
->> +    raw_spin_lock_irqsave(&desc->lock, flags);
+From: Eric Paris <eparis@redhat.com>
+Subject: [PATCH] tmpfs: implement xattr support for the entire security namespace
+Date: March 29, 2011 12:56:49 PM MDT
+
+Cheers, Andreas
 
 
 
---
-Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
