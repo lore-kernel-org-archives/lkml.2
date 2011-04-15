@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab1DOSUO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 14:20:14 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:55728 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab1DOSUN (ORCPT
+	id S1756168Ab1DOS1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 14:27:31 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47684 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755631Ab1DOS1a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 14:20:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PaGQDxoyVhS3FhwDD7KONZYbDCx3m3eJwTglJseDMululWArVa+/VfIW+r24V4/n+e
-         YEn+27hN/T3o/d491JSDenUkmFZs+iLeivhoiA+obROMd8K6QPXfWC3x0CvANxk3pIh0
-         2ZH+pM0tAizFDzDXx7gKH2ZRf6QR3b0/oDkQM=
-Date: Sat, 16 Apr 2011 03:20:06 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at block/genhd.c:1556 disk_clear_events+0xdc/0xf0()
-Message-ID: <20110415182006.GA15916@mtj.dyndns.org>
-References: <20110404211604.GB6133@sucs.org>
- <20110406130423.GE4142@mtj.dyndns.org>
- <20110406212611.GA5131@sucs.org>
- <20110406213718.GA14139@mtj.dyndns.org>
- <20110409093449.GA10016@sucs.org>
- <20110410145920.GA3408@sucs.org>
- <20110413200000.GG3987@mtj.dyndns.org>
- <20110415090118.GA3315@mtj.dyndns.org>
+	Fri, 15 Apr 2011 14:27:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415090118.GA3315@mtj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110414230955.GB32110@sortiz-mobl>
+References: <BANLkTik1wb6Px+K+bBkzkt=dEMi_Xx3T3Q@mail.gmail.com>
+	<loom.20110414T113238-377@post.gmane.org>
+	<BANLkTi=T42zgY0hy4_u7YKboYuuUiRg_Yw@mail.gmail.com>
+	<20110414230955.GB32110@sortiz-mobl>
+Date: Fri, 15 Apr 2011 15:27:29 -0300
+Message-ID: <BANLkTinRcRqPDXY-A6CF_qdU_gPprE981g@mail.gmail.com>
+Subject: Re: [RFC] NFC subsystem prototype
+From: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please try the following patch instead.  Thanks.
+2011/4/14 Samuel Ortiz <sameo@linux.intel.com>:
+> Hi Lauro,
+>
+> On Thu, Apr 14, 2011 at 07:57:57PM -0300, Lauro Ramos Venancio wrote:
+>> 2011/4/14 Samuel Ortiz <sameo@linux.intel.com>:
+>>
+>> >> Subsystem Operations:
+>> >>       - start poll - start polling for targets using the protocols given as
+>> >> parameter
+>> >>       - stop poll - stop polling
+>> >>       - activate target - activate a target for communication using a
+>> >> specific protocol
+>> >>       - deactivate target - deactivate a target
+>> >>       - reset device - put the adapter in idle mode
+>> >>       - data exchange - low level data exchange (send and receive data)
+>> > I suppose the data_exchange hook is sitting at the NFCIP level ? As I agree
+>> > with your further comment that this one should not be part of the netlink
+>> > API but should be done through sockets instead, I think this one should be
+>> > defined as the netdev start_xmit hook.
+>> > So this matches quite well the pn533 API, but I'm wondering how you're
+>> > planning to support the HCI based devices (pn544, microread). We clearly
+>> > have 2 kind of devices here, and it reminds me of the soft MAC vs full MAC
+>> > problem in the 802.11 subsystem.
+>> > I think we should have a kernel NFC HCI layer that would implement those
+>> > hooks by following the HCP protocol. Then devices that only take HCI
+>> > commands (kind of soft MAC NFC devices) would register against the NFC HCI
+>> > layer and use those hooks. Other devices (e.g. pn533) would register at a
+>> > higher level (The NFC core layer) and provide their own hooks. This would be
+>> > similar to what 802.11 drivers do by registering against mac80211 (soft MACs)
+>> > or directly against cfg80211 (full MACs).
+>>
+>> I fully agree. The prototype was designed with pn533 and pn544 in
+>> mind. When the pn544 device driver is implemented, we will need
+>> another layer for the HCI implementation.
+> Are you guys planning to start working on the pn544 driver ? In theory the HCI
+> layer should be implemented first but I suppose those 2 can be done in
+> parallel, and I can start looking at the HCI parts. At least all the
+> registration one and the netdev interaction as well.
 
-diff --git a/block/genhd.c b/block/genhd.c
-index b364bd0..6ed0c17 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1377,6 +1377,8 @@ struct disk_events {
- 
- 	long			poll_msecs;	/* interval, -1 for default */
- 	struct delayed_work	dwork;
-+	struct mutex		mutex;
-+	atomic_t		cnt;
- };
- 
- static const char *disk_events_strs[] = {
-@@ -1540,6 +1542,9 @@ unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask)
- 		return 0;
- 	}
- 
-+	WARN_ON_ONCE(atomic_add_return(1, &ev->cnt) != 1);
-+	mutex_lock(&ev->mutex);
-+
- 	/* tell the workfn about the events being cleared */
- 	spin_lock_irq(&ev->lock);
- 	ev->clearing |= mask;
-@@ -1558,6 +1563,9 @@ unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask)
- 	ev->pending &= ~mask;
- 	spin_unlock_irq(&ev->lock);
- 
-+	WARN_ON_ONCE(atomic_add_return(-1, &ev->cnt) != 0);
-+	mutex_unlock(&ev->mutex);
-+
- 	return pending;
- }
- 
-@@ -1749,6 +1757,8 @@ static void disk_add_events(struct gendisk *disk)
- 	ev->block = 1;
- 	ev->poll_msecs = -1;
- 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
-+	mutex_init(&ev->mutex);
-+	atomic_set(&ev->cnt, 0);
- 
- 	mutex_lock(&disk_events_mutex);
- 	list_add_tail(&ev->node, &disk_events);
+We are not implementing the pn544 device driver. So, it would be very
+nice if you can implement the HCI part.
+
+Our short term plans are:
+- Decide the best name for the subsystem (nfc or rfid).
+- Improve the data exchange operation using sockets (2nd prototype)
+- Send the patches
+
+
+>> >> Further work:
+>> >>       - Define subsystem operations for adapters in "target mode"
+>> > I am not sure we need any specific additional hook for the target mode. In
+>> > this mode, we mostly would be sending events (RF field ON, card activated
+>> > or deactivated). After that, afaiu, the card would be expecting data
+>> > reception, and then sending responses to it.
+>>
+>> I think the main part is the handling of timing constraints between
+>> the data reception and the response using a socket interface.
+> What are those constraints ?
+The response must be sent before the timeout (about 5ms).
+
+
+>> > We probably need to add a mode setting hook in the ops structure. And also,
+>> > according to NFCIP-2, NFC devices should by default be in target mode.
+>>
+>> The selection between proximity and vicinity is partially covered by
+>> the protocols selection in start_poll operation.
+>>
+>> Probably, the polling loop needs to have an initiator mode phase and a
+>> target mode phase in a cycle (as the PN544 Polling management).
+> That is something that is still not clear to me, to be honest with you. When
+> in initiator mode, are we suppose to run regular polling cycles ?
+It's not mandatory. The pn533 looks for targets only once using only
+one protocol. The pn544 implements a polling cycle looking for targets
+using many protocols.
+In the subsystem, we decided to use a polling cycle (start poll/stop
+poll) that receive as parameter the protocols to be used. For the
+pn533, we implemented the polling cycle in the device driver as the
+device does not support it.
+When implementing the target mode in the subsystem, we may add a
+target mode phase in the polling cycle.
+
+
+Regards,
+
+Lauro Ramos Venancio
+INdT - Instituto Nokia de Tecnologia
