@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab1DOUta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 16:49:30 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:26774 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756754Ab1DOUsA (ORCPT
+	id S1756868Ab1DOUt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 16:49:28 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:27828 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756807Ab1DOUsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Apr 2011 16:48:00 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: tPtHsysVM1lu_PBpNgS1CVJVUNR4Z3FsF_qSOjE1O14M7Qz
- syWCHtLiD1H2hHc8rRgosmFLA4ySTPxljiHvPVvfA428qHAw__YYPz6izdJ1
- LLV3YTHcJeQJKjKoVGO840asQm2cOBPB_tsSiJeRsYzamIEf085wxJxasPyy
- pHGndWwgA_6JK_vv_7daxyKLpsTXVWXu_1rRb4uh8L8H0y0yh6MSTmPXz3kF
- nsdVn1tftN9IX00qPo5_F4ndbsukmMkmS8kvw1GBmPp8wgqJ0KaU.TSOsGQm
- _N3pmSwaODn1lMrUO_7d8NUGgbZQkfqD8eW2qTdfjpqyKRzb3
+X-YMail-OSG: oPZ5JBQVM1ntlTXg0V_ZOJxOwmvgEMma4ZOg7bRPrw3joKT
+ Uw1X7DLGPbUQXn2eLMDi5tcp1EjBUPC_oiyFZNnPkkCGGwUy7ceQnmSvdsaO
+ FhcUc6E.ylet.TNpSt01mHvb4U44O72UyqgMcxWOlh8DcNRvoOwTbD64Mcnn
+ .I.D9viFBEvf63VX6JZ1IKqeEjjaA4Mh.e0Dnu9Gbro3fiuMpFyHjhq7ZB4t
+ d2bFNDYKCdGOme250Cb_xK_Dw8LWQ7Zh.m4.E8ReNO06cZ7.02e6q32.eKX0
+ 7lzDRsc7Jdu2o_K2GFUjHJhLiugddgQGHvlJgptWd.bX4oY401B1_gBbay30
+ -
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110415204758.229862637@linux.com>
+Message-Id: <20110415204757.654119035@linux.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 15 Apr 2011 15:47:51 -0500
+Date: Fri, 15 Apr 2011 15:47:50 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: David Rientjes <rientjes@google.com>
@@ -26,261 +27,39 @@ Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [slubllv3 21/21] slub: update statistics for cmpxchg handling
+Subject: [slubllv3 20/21] slub: Not necessary to check for empty slab on load_freelist
 References: <20110415204730.326790555@linux.com>
-Content-Disposition: inline; filename=statfixes
+Content-Disposition: inline; filename=goto_load_freelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the statistics handling and the slabinfo tool to include the new
-statistics in the reports it generates.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
+Load freelist is now only branched to if there are objects available.
+So no need to check.
 
 ---
- include/linux/slub_def.h |    2 +
- mm/slub.c                |   15 +++++++++---
- tools/slub/slabinfo.c    |   57 ++++++++++++++++++++++++++++++++---------------
- 3 files changed, 52 insertions(+), 22 deletions(-)
+ mm/slub.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/include/linux/slub_def.h
-===================================================================
---- linux-2.6.orig/include/linux/slub_def.h	2011-04-15 14:29:00.000000000 -0500
-+++ linux-2.6/include/linux/slub_def.h	2011-04-15 14:30:23.000000000 -0500
-@@ -24,6 +24,7 @@ enum stat_item {
- 	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from partial list */
- 	ALLOC_SLAB,		/* Cpu slab acquired from page allocator */
- 	ALLOC_REFILL,		/* Refill cpu slab from slab freelist */
-+	ALLOC_NODE_MISMATCH,	/* Switching cpu slab */
- 	FREE_SLAB,		/* Slab freed to the page allocator */
- 	CPUSLAB_FLUSH,		/* Abandoning of the cpu slab */
- 	DEACTIVATE_FULL,	/* Cpu slab was full when deactivated */
-@@ -31,6 +32,7 @@ enum stat_item {
- 	DEACTIVATE_TO_HEAD,	/* Cpu slab was moved to the head of partials */
- 	DEACTIVATE_TO_TAIL,	/* Cpu slab was moved to the tail of partials */
- 	DEACTIVATE_REMOTE_FREES,/* Slab contained remotely freed objects */
-+	DEACTIVATE_BYPASS,	/* Implicit deactivation */
- 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
- 	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
- 	CMPXCHG_DOUBLE_FAIL,	/* Number of times that cmpxchg double did not match */
 Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2011-04-15 14:30:16.000000000 -0500
-+++ linux-2.6/mm/slub.c	2011-04-15 14:30:23.000000000 -0500
-@@ -1782,6 +1782,7 @@ redo:
- 		spin_unlock(&n->list_lock);
- 
- 	if (m == M_FREE) {
-+		stat(s, DEACTIVATE_EMPTY);
- 		discard_slab(s, page);
- 		stat(s, FREE_SLAB);
- 	}
-@@ -1939,12 +1940,12 @@ static void *__slab_alloc(struct kmem_ca
- 		goto new_slab;
- 
- 	if (unlikely(!node_match(c, node))) {
-+		stat(s, ALLOC_NODE_MISMATCH);
- 		deactivate_slab(s, c);
- 		goto new_slab;
+--- linux-2.6.orig/mm/slub.c	2011-04-01 10:22:56.000000000 -0500
++++ linux-2.6/mm/slub.c	2011-04-01 10:22:58.000000000 -0500
+@@ -1976,14 +1976,13 @@ static void *__slab_alloc(struct kmem_ca
+ 				"__slab_alloc"));
  	}
  
--	stat(s, ALLOC_REFILL);
+-load_freelist:
+-	VM_BUG_ON(!page->frozen);
 -
-+	stat(s, ALLOC_SLOWPATH);
- 	{
- 		struct page new;
- 		unsigned long counters;
-@@ -1976,9 +1977,12 @@ static void *__slab_alloc(struct kmem_ca
- 
  	if (unlikely(!object)) {
  		c->page = NULL;
-+		stat(s, DEACTIVATE_BYPASS);
  		goto new_slab;
  	}
  
-+	stat(s, ALLOC_REFILL);
-+
- load_freelist:
- 	VM_BUG_ON(!page->frozen);
++load_freelist:
++	VM_BUG_ON(!page->frozen);
  	c->freelist = get_freepointer(s, object);
-@@ -1987,7 +1991,6 @@ load_freelist:
- 	c->tid = next_tid(c->tid);
- 	local_irq_restore(flags);
- #endif
--	stat(s, ALLOC_SLOWPATH);
- 	return object;
  
- new_slab:
-@@ -4737,6 +4740,7 @@ STAT_ATTR(FREE_REMOVE_PARTIAL, free_remo
- STAT_ATTR(ALLOC_FROM_PARTIAL, alloc_from_partial);
- STAT_ATTR(ALLOC_SLAB, alloc_slab);
- STAT_ATTR(ALLOC_REFILL, alloc_refill);
-+STAT_ATTR(ALLOC_NODE_MISMATCH, alloc_node_mismatch);
- STAT_ATTR(FREE_SLAB, free_slab);
- STAT_ATTR(CPUSLAB_FLUSH, cpuslab_flush);
- STAT_ATTR(DEACTIVATE_FULL, deactivate_full);
-@@ -4744,6 +4748,7 @@ STAT_ATTR(DEACTIVATE_EMPTY, deactivate_e
- STAT_ATTR(DEACTIVATE_TO_HEAD, deactivate_to_head);
- STAT_ATTR(DEACTIVATE_TO_TAIL, deactivate_to_tail);
- STAT_ATTR(DEACTIVATE_REMOTE_FREES, deactivate_remote_frees);
-+STAT_ATTR(DEACTIVATE_BYPASS, deactivate_bypass);
- STAT_ATTR(ORDER_FALLBACK, order_fallback);
- STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
- STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
-@@ -4796,6 +4801,7 @@ static struct attribute *slab_attrs[] =
- 	&alloc_from_partial_attr.attr,
- 	&alloc_slab_attr.attr,
- 	&alloc_refill_attr.attr,
-+	&alloc_node_mismatch_attr.attr,
- 	&free_slab_attr.attr,
- 	&cpuslab_flush_attr.attr,
- 	&deactivate_full_attr.attr,
-@@ -4803,6 +4809,7 @@ static struct attribute *slab_attrs[] =
- 	&deactivate_to_head_attr.attr,
- 	&deactivate_to_tail_attr.attr,
- 	&deactivate_remote_frees_attr.attr,
-+	&deactivate_bypass_attr.attr,
- 	&order_fallback_attr.attr,
- 	&cmpxchg_double_fail_attr.attr,
- 	&cmpxchg_double_cpu_fail_attr.attr,
-Index: linux-2.6/tools/slub/slabinfo.c
-===================================================================
---- linux-2.6.orig/tools/slub/slabinfo.c	2011-04-15 14:27:16.000000000 -0500
-+++ linux-2.6/tools/slub/slabinfo.c	2011-04-15 14:30:23.000000000 -0500
-@@ -2,8 +2,9 @@
-  * Slabinfo: Tool to get reports about slabs
-  *
-  * (C) 2007 sgi, Christoph Lameter
-+ * (C) 2011 Linux Foundation, Christoph Lameter
-  *
-- * Compile by:
-+ * Compile with:
-  *
-  * gcc -o slabinfo slabinfo.c
-  */
-@@ -39,6 +40,8 @@ struct slabinfo {
- 	unsigned long cpuslab_flush, deactivate_full, deactivate_empty;
- 	unsigned long deactivate_to_head, deactivate_to_tail;
- 	unsigned long deactivate_remote_frees, order_fallback;
-+	unsigned long cmpxchg_double_cpu_fail, cmpxchg_double_fail;
-+	unsigned long alloc_node_mismatch, deactivate_bypass;
- 	int numa[MAX_NODES];
- 	int numa_partial[MAX_NODES];
- } slabinfo[MAX_SLABS];
-@@ -99,7 +102,7 @@ static void fatal(const char *x, ...)
- 
- static void usage(void)
- {
--	printf("slabinfo 5/7/2007. (c) 2007 sgi.\n\n"
-+	printf("slabinfo 4/15/2011. (c) 2007 sgi/(c) 2011 Linux Foundation.\n\n"
- 		"slabinfo [-ahnpvtsz] [-d debugopts] [slab-regexp]\n"
- 		"-a|--aliases           Show aliases\n"
- 		"-A|--activity          Most active slabs first\n"
-@@ -293,7 +296,7 @@ int line = 0;
- static void first_line(void)
- {
- 	if (show_activity)
--		printf("Name                   Objects      Alloc       Free   %%Fast Fallb O\n");
-+		printf("Name                   Objects      Alloc       Free   %%Fast Fallb O CmpX   UL\n");
- 	else
- 		printf("Name                   Objects Objsize    Space "
- 			"Slabs/Part/Cpu  O/S O %%Fr %%Ef Flg\n");
-@@ -379,14 +382,14 @@ static void show_tracking(struct slabinf
- 	printf("\n%s: Kernel object allocation\n", s->name);
- 	printf("-----------------------------------------------------------------------\n");
- 	if (read_slab_obj(s, "alloc_calls"))
--		printf(buffer);
-+		printf("%s", buffer);
- 	else
- 		printf("No Data\n");
- 
- 	printf("\n%s: Kernel object freeing\n", s->name);
- 	printf("------------------------------------------------------------------------\n");
- 	if (read_slab_obj(s, "free_calls"))
--		printf(buffer);
-+		printf("%s", buffer);
- 	else
- 		printf("No Data\n");
- 
-@@ -400,7 +403,7 @@ static void ops(struct slabinfo *s)
- 	if (read_slab_obj(s, "ops")) {
- 		printf("\n%s: kmem_cache operations\n", s->name);
- 		printf("--------------------------------------------\n");
--		printf(buffer);
-+		printf("%s", buffer);
- 	} else
- 		printf("\n%s has no kmem_cache operations\n", s->name);
- }
-@@ -462,19 +465,32 @@ static void slab_stats(struct slabinfo *
- 	if (s->cpuslab_flush)
- 		printf("Flushes %8lu\n", s->cpuslab_flush);
- 
--	if (s->alloc_refill)
--		printf("Refill %8lu\n", s->alloc_refill);
--
- 	total = s->deactivate_full + s->deactivate_empty +
--			s->deactivate_to_head + s->deactivate_to_tail;
-+			s->deactivate_to_head + s->deactivate_to_tail + s->deactivate_bypass;
- 
--	if (total)
--		printf("Deactivate Full=%lu(%lu%%) Empty=%lu(%lu%%) "
--			"ToHead=%lu(%lu%%) ToTail=%lu(%lu%%)\n",
--			s->deactivate_full, (s->deactivate_full * 100) / total,
--			s->deactivate_empty, (s->deactivate_empty * 100) / total,
--			s->deactivate_to_head, (s->deactivate_to_head * 100) / total,
-+	if (total) {
-+		printf("\nSlab Deactivation             Ocurrences  %%\n");
-+		printf("-------------------------------------------------\n");
-+		printf("Slab full                     %7lu  %3lu%%\n",
-+			s->deactivate_full, (s->deactivate_full * 100) / total);
-+		printf("Slab empty                    %7lu  %3lu%%\n",
-+			s->deactivate_empty, (s->deactivate_empty * 100) / total);
-+		printf("Moved to head of partial list %7lu  %3lu%%\n",
-+			s->deactivate_to_head, (s->deactivate_to_head * 100) / total);
-+		printf("Moved to tail of partial list %7lu  %3lu%%\n",
- 			s->deactivate_to_tail, (s->deactivate_to_tail * 100) / total);
-+		printf("Deactivation bypass           %7lu  %3lu%%\n",
-+			s->deactivate_bypass, (s->deactivate_bypass * 100) / total);
-+		printf("Refilled from foreign frees   %7lu  %3lu%%\n",
-+			s->alloc_refill, (s->alloc_refill * 100) / total);
-+		printf("Node mismatch                 %7lu  %3lu%%\n",
-+			s->alloc_node_mismatch, (s->alloc_node_mismatch * 100) / total);
-+	}
-+
-+	if (s->cmpxchg_double_fail || s->cmpxchg_double_cpu_fail)
-+		printf("\nCmpxchg_double Looping\n------------------------\n");
-+		printf("Locked Cmpxchg Double redos   %lu\nUnlocked Cmpxchg Double redos %lu\n",
-+			s->cmpxchg_double_fail, s->cmpxchg_double_cpu_fail);
- }
- 
- static void report(struct slabinfo *s)
-@@ -573,12 +589,13 @@ static void slabcache(struct slabinfo *s
- 		total_alloc = s->alloc_fastpath + s->alloc_slowpath;
- 		total_free = s->free_fastpath + s->free_slowpath;
- 
--		printf("%-21s %8ld %10ld %10ld %3ld %3ld %5ld %1d\n",
-+		printf("%-21s %8ld %10ld %10ld %3ld %3ld %5ld %1d %4ld %4ld\n",
- 			s->name, s->objects,
- 			total_alloc, total_free,
- 			total_alloc ? (s->alloc_fastpath * 100 / total_alloc) : 0,
- 			total_free ? (s->free_fastpath * 100 / total_free) : 0,
--			s->order_fallback, s->order);
-+			s->order_fallback, s->order, s->cmpxchg_double_fail,
-+			s->cmpxchg_double_cpu_fail);
- 	}
- 	else
- 		printf("%-21s %8ld %7d %8s %14s %4d %1d %3ld %3ld %s\n",
-@@ -1190,6 +1207,10 @@ static void read_slab_dir(void)
- 			slab->deactivate_to_tail = get_obj("deactivate_to_tail");
- 			slab->deactivate_remote_frees = get_obj("deactivate_remote_frees");
- 			slab->order_fallback = get_obj("order_fallback");
-+			slab->cmpxchg_double_cpu_fail = get_obj("cmpxchg_double_cpu_fail");
-+			slab->cmpxchg_double_fail = get_obj("cmpxchg_double_fail");
-+			slab->alloc_node_mismatch = get_obj("alloc_node_mismatch");
-+			slab->deactivate_bypass = get_obj("deactivate_bypass");
- 			chdir("..");
- 			if (slab->name[0] == ':')
- 				alias_targets++;
+ #ifdef CONFIG_CMPXCHG_LOCAL
 
