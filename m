@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab1DONkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 09:40:22 -0400
-Received: from [190.85.9.90] ([190.85.9.90]:56956 "EHLO mzcs.distrimas.com.co"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755010Ab1DONkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 09:40:21 -0400
-Date: Fri, 15 Apr 2011 08:39:59 -0500 (COT)
-From: Inter-Switch ATM-Card <info@distrimas.com.co>
-Reply-To: Inter-Switch ATM-Card <verificationoffice24@yahoo.com>
-Message-ID: <17652516.2106.1302874799079.JavaMail.root@mzcs.distrimas.com.co>
-Subject: Unpaid beneficiary
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1755127Ab1DONle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 09:41:34 -0400
+Received: from mail.tricorecenter.de ([217.6.246.34]:39434 "EHLO
+	root.phytec.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754800Ab1DONld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 09:41:33 -0400
+Subject: Re: [PATCH] leds: leds-pca9532 add support pca9530, pca9531 and
+ pca9533
+From: Jan Weitzel <J.Weitzel@phytec.de>
+Reply-To: J.Weitzel@phytec.de
+To: riku.voipio@iki.fi, rpurdie@rpsys.net
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1301992043-9552-1-git-send-email-j.weitzel@phytec.de>
+References: <1301992043-9552-1-git-send-email-j.weitzel@phytec.de>
+Organization: PHYTEC Messtechnik GmbH
+Date: Fri, 15 Apr 2011 15:41:31 +0200
+Message-ID: <1302874891.7246.15.camel@lws-weitzel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+X-MIMETrack: Itemize by SMTP Server on Idefix/Phytec(Release 8.5.2 HF194|November 09, 2010) at
+ 15.04.2011 15:41:31,
+	Serialize by Router on Idefix/Phytec(Release 8.5.2 HF194|November 09, 2010) at
+ 15.04.2011 15:41:32,
+	Serialize complete at 15.04.2011 15:41:32
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.1.99]
-X-Mailer: Zimbra 6.0.4_GA_2038.RHEL5 (zclient/6.0.4_GA_2038.RHEL5)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Dienstag, den 05.04.2011, 10:27 +0200 schrieb Jan Weitzel:
+> Adding chipinfo to use driver with pca953x family
+> Rename driver to pca953x, but left files and platformflags named pca9532
+> 
+> Tested with pca9530 and pca9533
+> 
+> Tested-by: Juergen Kilb <j.kilb@phytec.de>
+> Signed-off-by: Jan Weitzel <j.weitzel@phytec.de>
+> ---
+>  drivers/leds/leds-pca9532.c |   80 ++++++++++++++++++++++++++++++++-----------
 
-Unpaid beneficiary
+Is there any rework needed? 
 
+Regards, Jan
 
-We do officially inform you that an Inter-Switch ATM-Card Valued at 550,000 GBP  has been accredited in your favour by the UK Inter Switch ATM Organization.Your  Personal Identification Number is ATM-5078.
-
-
-You are advice to contact Mr.Charles via Email:verificationoffice24@yahoo.com
-Please provide the following details for processing:
-
-* Full Name:
-* Delivery Address:
-* Sex:
-* Age:
-* Occupation:
-* Phone Number:
-* Country of Residence:
-* Means Of Identification:
-
-
-Regards
-Mr Charles
