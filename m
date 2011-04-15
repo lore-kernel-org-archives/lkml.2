@@ -1,210 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab1DOGIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:08:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63658 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab1DOGIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:08:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=rz/Eb/hUgKj1D9jjdD1o8fW/WRmlu1l9bvV+lr03OIAiZChzRzm8/lq5rHe4v+opmv
-         nzbYJwwpa0xvWq+Mxs2zipiE4SVGYCsl2uk1xag0AwtOVvZKNnN+F9TfpBQVkNF7DWIT
-         UWDw8I7mxPykBj1R42fO+K5tMea+DBZfA6ObA=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] mempolicy: reduce references to the current
-Date: Fri, 15 Apr 2011 15:08:08 +0900
-Message-Id: <1302847688-8076-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <BANLkTinDFrbUNPnUmed2aBTu1_QHFQie-w@mail.gmail.com>
-References: <BANLkTinDFrbUNPnUmed2aBTu1_QHFQie-w@mail.gmail.com>
+	id S1752676Ab1DOGLj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 02:11:39 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:40834 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751744Ab1DOGLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 02:11:38 -0400
+Date: Fri, 15 Apr 2011 08:11:36 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        mjg@redhat.com, maciej.rutecki@gmail.com,
+        nouveau@lists.freedesktop.org
+Subject: Re: 2.6.39-rc1 nouveau regression (bisected)
+Message-ID: <20110415061136.GA21979@isilmar-3.linta.de>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Marcin Slusarz <marcin.slusarz@gmail.com>,
+	Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	mjg@redhat.com, maciej.rutecki@gmail.com,
+	nouveau@lists.freedesktop.org
+References: <20110403181206.GA19291@comet.dominikbrodowski.net> <20110407151129.GA24977@comet.dominikbrodowski.net> <20110414170559.GA10768@comet.dominikbrodowski.net> <20110414190117.GA3493@joi.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110414190117.GA3493@joi.lan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove duplicated reference to the 'current' task using a local
-variable. Since refering the current can be a burden, it'd better
-cache the reference, IMHO. At least this saves some bytes on x86_64.
+On Thu, Apr 14, 2011 at 09:02:01PM +0200, Marcin Slusarz wrote:
+> On Thu, Apr 14, 2011 at 07:05:59PM +0200, Dominik Brodowski wrote:
+> > Thought about CCing Linus to show him that 2.6.39-rcX isn't as "calm"
+> > to everyone, but then chose to CC Maciej instead: Would you be so kind and
+> > add this to your regression list? Thanks!
+> > 
+> > Since commit 38f1cff
+> > 
+> >     From: Dave Airlie <airlied@redhat.com>
+> >     Date: Wed, 16 Mar 2011 11:34:41 +1000
+> >     Subject: [PATCH] Merge commit '5359533801e3dd3abca5b7d3d985b0b33fd9fe8b' into dr
+> > 
+> >     This commit changed an internal radeon structure, that meant a new driver
+> >     in -next had to be fixed up, merge in the commit and fix up the driver.
+> > 
+> >     Also fixes a trivial nouveau merge.
+> > 
+> >     Conflicts:
+> >         drivers/gpu/drm/nouveau/nouveau_mem.c
+> > 
+> > booting my atom/NM10/ION2 system crashes hard during boot, right after
+> > blanking the screen, and before the initramfs gets loaded. I just
+> > re-checked: both parent commits ( 5359533 and 4819d2e ) do indeed work
+> > just fine, but the merge commit ( 38f1cff ) fails, same as tip ( 85f2e68 ).
+> 
+> Can you activate netconsole and check whether kernel spits anything interesting?
+> You might try to load nouveau module after boot - maybe something will be saved
+> to /var/log or you could even ssh into the box and check dmesg...
 
-  $ size mempolicy-{old,new}.o
-     text    data    bss     dec     hex filename
-    25203    2448   9176   36827    8fdb mempolicy-old.o
-    25136    2448   9184   36768    8fa0 mempolicy-new.o
+Compiling it as a module seems to work fine. When I do so, no regression is
+obvious from what gets reported in "dmesg". However, somehow I now do get
+some output: The last message I see is
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- mm/mempolicy.c |   58 +++++++++++++++++++++++++++++--------------------------
- 1 files changed, 31 insertions(+), 27 deletions(-)
+[drm] nouveau 0000:01:00.0: allocated 1680x1050, fb 0x40.... b0 <some pointer value>
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 959a8b8c7350..5a30065590aa 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -304,6 +304,7 @@ static void mpol_rebind_nodemask(struct mempolicy *pol, const nodemask_t *nodes,
- 				 enum mpol_rebind_step step)
- {
- 	nodemask_t tmp;
-+	struct task_struct *tsk = current;
- 
- 	if (pol->flags & MPOL_F_STATIC_NODES)
- 		nodes_and(tmp, pol->w.user_nodemask, *nodes);
-@@ -335,12 +336,12 @@ static void mpol_rebind_nodemask(struct mempolicy *pol, const nodemask_t *nodes,
- 	else
- 		BUG();
- 
--	if (!node_isset(current->il_next, tmp)) {
--		current->il_next = next_node(current->il_next, tmp);
--		if (current->il_next >= MAX_NUMNODES)
--			current->il_next = first_node(tmp);
--		if (current->il_next >= MAX_NUMNODES)
--			current->il_next = numa_node_id();
-+	if (!node_isset(tsk->il_next, tmp)) {
-+		tsk->il_next = next_node(tsk->il_next, tmp);
-+		if (tsk->il_next >= MAX_NUMNODES)
-+			tsk->il_next = first_node(tmp);
-+		if (tsk->il_next >= MAX_NUMNODES)
-+			tsk->il_next = numa_node_id();
- 	}
- }
- 
-@@ -714,7 +715,8 @@ static long do_set_mempolicy(unsigned short mode, unsigned short flags,
- 			     nodemask_t *nodes)
- {
- 	struct mempolicy *new, *old;
--	struct mm_struct *mm = current->mm;
-+	struct task_struct *tsk = current;
-+	struct mm_struct *mm = tsk->mm;
- 	NODEMASK_SCRATCH(scratch);
- 	int ret;
- 
-@@ -734,22 +736,22 @@ static long do_set_mempolicy(unsigned short mode, unsigned short flags,
- 	 */
- 	if (mm)
- 		down_write(&mm->mmap_sem);
--	task_lock(current);
-+	task_lock(tsk);
- 	ret = mpol_set_nodemask(new, nodes, scratch);
- 	if (ret) {
--		task_unlock(current);
-+		task_unlock(tsk);
- 		if (mm)
- 			up_write(&mm->mmap_sem);
- 		mpol_put(new);
- 		goto out;
- 	}
--	old = current->mempolicy;
--	current->mempolicy = new;
-+	old = tsk->mempolicy;
-+	tsk->mempolicy = new;
- 	mpol_set_task_struct_flag();
- 	if (new && new->mode == MPOL_INTERLEAVE &&
- 	    nodes_weight(new->v.nodes))
--		current->il_next = first_node(new->v.nodes);
--	task_unlock(current);
-+		tsk->il_next = first_node(new->v.nodes);
-+	task_unlock(tsk);
- 	if (mm)
- 		up_write(&mm->mmap_sem);
- 
-@@ -805,9 +807,10 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 			     unsigned long addr, unsigned long flags)
- {
- 	int err;
--	struct mm_struct *mm = current->mm;
-+	struct task_struct *tsk = current;
-+	struct mm_struct *mm = tsk->mm;
- 	struct vm_area_struct *vma = NULL;
--	struct mempolicy *pol = current->mempolicy;
-+	struct mempolicy *pol = tsk->mempolicy;
- 
- 	if (flags &
- 		~(unsigned long)(MPOL_F_NODE|MPOL_F_ADDR|MPOL_F_MEMS_ALLOWED))
-@@ -817,9 +820,9 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 		if (flags & (MPOL_F_NODE|MPOL_F_ADDR))
- 			return -EINVAL;
- 		*policy = 0;	/* just so it's initialized */
--		task_lock(current);
-+		task_lock(tsk);
- 		*nmask  = cpuset_current_mems_allowed;
--		task_unlock(current);
-+		task_unlock(tsk);
- 		return 0;
- 	}
- 
-@@ -851,9 +854,9 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 			if (err < 0)
- 				goto out;
- 			*policy = err;
--		} else if (pol == current->mempolicy &&
-+		} else if (pol == tsk->mempolicy &&
- 				pol->mode == MPOL_INTERLEAVE) {
--			*policy = current->il_next;
-+			*policy = tsk->il_next;
- 		} else {
- 			err = -EINVAL;
- 			goto out;
-@@ -869,7 +872,7 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 	}
- 
- 	if (vma) {
--		up_read(&current->mm->mmap_sem);
-+		up_read(&mm->mmap_sem);
- 		vma = NULL;
- 	}
- 
-@@ -878,16 +881,16 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 		if (mpol_store_user_nodemask(pol)) {
- 			*nmask = pol->w.user_nodemask;
- 		} else {
--			task_lock(current);
-+			task_lock(tsk);
- 			get_policy_nodemask(pol, nmask);
--			task_unlock(current);
-+			task_unlock(tsk);
- 		}
- 	}
- 
-  out:
- 	mpol_cond_put(pol);
- 	if (vma)
--		up_read(&current->mm->mmap_sem);
-+		up_read(&mm->mmap_sem);
- 	return err;
- }
- 
-@@ -1912,22 +1915,23 @@ EXPORT_SYMBOL(alloc_pages_current);
- /* Slow path of a mempolicy duplicate */
- struct mempolicy *__mpol_dup(struct mempolicy *old)
- {
-+	struct task_struct *tsk = current;
- 	struct mempolicy *new = kmem_cache_alloc(policy_cache, GFP_KERNEL);
- 
- 	if (!new)
- 		return ERR_PTR(-ENOMEM);
- 
- 	/* task's mempolicy is protected by alloc_lock */
--	if (old == current->mempolicy) {
--		task_lock(current);
-+	if (old == tsk->mempolicy) {
-+		task_lock(tsk);
- 		*new = *old;
--		task_unlock(current);
-+		task_unlock(tsk);
- 	} else
- 		*new = *old;
- 
- 	rcu_read_lock();
- 	if (current_cpuset_is_being_rebound()) {
--		nodemask_t mems = cpuset_mems_allowed(current);
-+		nodemask_t mems = cpuset_mems_allowed(tsk);
- 		if (new->flags & MPOL_F_REBINDING)
- 			mpol_rebind_policy(new, &mems, MPOL_REBIND_STEP2);
- 		else
--- 
-1.7.4
+Then, nothing more. However, it really is quite strange why this error only
+appears in the CONFIG_NOUVEAU=y case, not in the =m case...
 
+Best,
+	Dominik
