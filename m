@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1DOTjS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 15:39:18 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:39593 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab1DOTjQ (ORCPT
+	id S1751731Ab1DOTps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 15:45:48 -0400
+Received: from mail.academy.zt.ua ([82.207.120.245]:10037 "EHLO
+	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab1DOTpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 15:39:16 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2011-04-14 - hangs during boot.
-In-Reply-To: Your message of "Fri, 15 Apr 2011 21:06:22 +0200."
-             <1302894382.2035.35.camel@laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <201104142244.p3EMiWTC010977@imap1.linux-foundation.org> <9629.1302879429@localhost> <6325.1302893631@localhost>
-            <1302894382.2035.35.camel@laptop>
+	Fri, 15 Apr 2011 15:45:47 -0400
+X-MDAV-Processed: mail.academy.zt.ua, Fri, 15 Apr 2011 22:45:48 +0300
+X-Spam-Processed: mail.academy.zt.ua, Fri, 15 Apr 2011 22:45:48 +0300
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: george@academy.zt.ua
+X-Return-Path: george@znau.edu.ua
+X-Envelope-From: george@znau.edu.ua
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
+From: George Kashperko <george@znau.edu.ua>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arend van Spriel <arend@broadcom.com>,
+        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
+        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+In-Reply-To: <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
+	 <1302781431.21145.6.camel@dev.znau.edu.ua>
+	 <BANLkTinvpt5vs+rXd3WN-a2JpGtTV+=Gyg@mail.gmail.com>
+	 <4DA6E9BD.3090404@hauke-m.de>
+	 <BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
+	 <1302786900.21965.52.camel@dev.znau.edu.ua>
+	 <BANLkTimM8=-pX+Ea8Eyp4XyvP1APbUof9w@mail.gmail.com>
+	 <1302892585.30441.12.camel@dev.znau.edu.ua>
+	 <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Date: Fri, 15 Apr 2011 22:42:21 +0300
+Message-Id: <1302896541.30441.33.camel@dev.znau.edu.ua>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1302896313_5065P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 15 Apr 2011 15:38:33 -0400
-Message-ID: <9034.1302896313@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.4DA89EBB.0063,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1302896313_5065P
-Content-Type: text/plain; charset=us-ascii
 
-On Fri, 15 Apr 2011 21:06:22 +0200, Peter Zijlstra said:
-> Does your kernel contain c2f7115e2e52a6c187b8c1f54f0e4970bb677be0 ? If
-> not, mmotm is based on an old -next and should upgrade ;-)
- 
-https://git.kernel.org/?p=linux%2Fkernel%2Fgit%2Fsfr%2Flinux-next.git&a=search&h=HEAD&st=commit&s=c2f7115e2e52a6c187b8c1f54f0e4970bb677be0
+> W dniu 15 kwietnia 2011 20:36 użytkownik George Kashperko
+> <george@znau.edu.ua> napisał:
+> >> >> Arnd: I found you saying:
+> >> >> > I believe the one thing we really want from this driver is the bus
+> >> >> > scan code, which is not present in the amba bus implementation,
+> >> >> I explained how it works, I believe scanning (EPROM in this case) it
+> >> >> Broadcom specific, not really AMBA standard. How do you see it?
+> >> >>
+> >> > It might not Broadcom specific as EPROM core seems to be CoreLink one
+> >> > core and maybe is arm-developed. But it isn't documented publicly and we
+> >> > don't know yet if it is obligatory for all amba (or at least axi)
+> >> > interconnects or not.
+> >>
+> >> Maybe EPROM is not Broadcom specific, but I suspect the content we
+> >> deal with in bcmai/axi is Broadcom specific. I didn't see any notes of
+> >> manuf/id/rev/class we deal with. So I guess everything *we* (out
+> >> driver) read from EPROM is Bcm specific.
+> >>
+> >
+> > Played around amba registers on bcm4716. For all amba cores present
+> > (under all I mean broadcom ip core agents, oob router core, erom core,
+> > and other I-dont-know-what-for cores present at 0x18100000). All those
+> > feature AMBA_CID (0xb105f00d) as PrimeCell ID, and slightly different
+> > PrimeCell PeripheralIDs:
+> > * vendor 0xBB, part_number 0x368 for broadcom cores' agents;
+> > * vendor 0xBB, part_number 0x367 for OOB router core (don't ask me wth
+> > is this please);
+> > * vendor 0xBB, part_number 0x366 for EROM core;
+> >
+> > ARM vendor id is 0x41. Might 0xBB is Broadcom vendor id but I've found
+> > no evidence for that with google.
+> 
+> Yeah, as I suspected, everything except Broadcom specific cores
+> matches AMBA standards quite nicely. Still, I don't see anything in it
+> we could use for driver.
+> 
+> Let's wait for Russell and Arnd to comment.
 
-says 'no match' against 20110415, so I think you and Steve Rothwell need to chat. ;)
+Summarising the differences and similarities in broadcom core management
+for ssb and amba I think on another possibility on making bus-related
+things.
+SSB-attached cores were OCP-compliant ones. This resulted in OCP device
+identification with 16-bit vendor id, 12-bit core id with all IDs
+starting with 0x800. 4-bit revision code. Also seems this implied
+status/control registers.
+AMBA-attached broadcom cores seems to follow this reusing their
+OCP-compliant cores on axi.
 
---==_Exmh_1302896313_5065P
-Content-Type: application/pgp-signature
+So, we could start with introducing virtual "ocp" bus (which could be of
+some use for other vendors utilising ocp model) with additional
+library/module for broadcom-specific extensions (accounting for
+buscommon/buscore/etc.).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+On other hand just broadcom-specific bus looks like good alternative too
+but here I just fail to decide on relevant naming.
 
-iD8DBQFNqJ65cC3lWbTT17ARAnmvAJ0fgXu86r03lTDsnHnOp+mm2kmDQwCgldhx
-XeFEsdzFIm+VcVd5KduYWXo=
-=cI6Q
------END PGP SIGNATURE-----
+Have nice day,
+George
 
---==_Exmh_1302896313_5065P--
 
