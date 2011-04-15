@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab1DOVua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 17:50:30 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:33082 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757160Ab1DOVu2 (ORCPT
+	id S1757392Ab1DOVw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 17:52:58 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:42471 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757160Ab1DOVw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 17:50:28 -0400
-Date: Fri, 15 Apr 2011 23:50:15 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: wzab@ise.pw.edu.pl
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: i915 drm GPU hung errors with kernel 2.6.38.2 on  82865G
- chipset
-Message-ID: <20110415235015.1e315688@neptune.home>
-In-Reply-To: <4DA8B3A7.3010807@ise.pw.edu.pl>
-References: <4DA8B3A7.3010807@ise.pw.edu.pl>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Apr 2011 17:52:56 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19gqxppDUxgW7jJAyjVDR3Y0tWFFIxPIrsG2D0CS1
+	MNS+ay6LFVQGiM
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Daniel Drake <dsd@laptop.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH] viafb: fix OLPC DCON refresh rate
+Date: Fri, 15 Apr 2011 22:08:31 +0000
+Message-Id: <1302905311-3821-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <4DA62C4D.8070407@gmx.de>
+References: <4DA62C4D.8070407@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wojtek,
+This patch fixes a regression introduced by
+	fd3cc69848b7e1873e5f12bbcdd572b20277ecf3a
+	"viafb: remove duplicated clock storage"
+caused by an incosistent mode which pretended to have a higher
+refresh rate than it actually had. The wrong refresh rate resulted
+in a calculated higher pixclock which the OLPC DCON could not handle.
+By reducing the refresh rate to 50Hz we get close to the old
+pixclock which makes the OLPC display usable again.
+Minor other adjustments are needed as 60Hz is assumed to be a safe
+value which is not true for OLPC DCON. This is no problem as we only
+support 1200x900 on the OLPC.
 
-Your best chance to see the bugs fixed is to report a bug following
-guidelines at http://intellinuxgraphics.org/how_to_report_bug.html
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Reported-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/video/via/hw.c      |    8 ++++++--
+ drivers/video/via/viamode.c |    2 +-
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-For GPU hangs, collecting the error state (while GPU is hung) under
-debugfs is very helpful.
-Report contents of (as well as details on your software stack and
-if know what kind of action triggered the hung):
-  /sys/kernel/debug/dri/0/i915_error_state
+diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
+index dc4c778..980e263 100644
+--- a/drivers/video/via/hw.c
++++ b/drivers/video/via/hw.c
+@@ -2598,8 +2598,12 @@ int viafb_get_refresh(int hres, int vres, u32 long_refresh)
+ 			best = &vmode->crtc[i];
+ 	}
+ 
+-	if (abs(best->refresh_rate - long_refresh) > 3)
+-		return 60;
++	if (abs(best->refresh_rate - long_refresh) > 3) {
++		if (hres == 1200 && vres == 900)
++			return 50; /* OLPC DCON only supports 50 Hz */
++		else
++			return 60;
++	}
+ 
+ 	return best->refresh_rate;
+ }
+diff --git a/drivers/video/via/viamode.c b/drivers/video/via/viamode.c
+index 8c5bc41..260d339 100644
+--- a/drivers/video/via/viamode.c
++++ b/drivers/video/via/viamode.c
+@@ -606,7 +606,7 @@ static struct crt_mode_table CRTM1200x720[] = {
+ /* 1200x900 (DCON) */
+ static struct crt_mode_table DCON1200x900[] = {
+ 	/* r_rate,               hsp,               vsp   */
+-	{REFRESH_60, M1200X900_R60_HSP, M1200X900_R60_VSP,
++	{REFRESH_50, M1200X900_R60_HSP, M1200X900_R60_VSP,
+ 	/* The correct htotal is 1240, but this doesn't raster on VX855. */
+ 	/* Via suggested changing to a multiple of 16, hence 1264.       */
+ 	/*  HT,   HA,  HBS, HBE,  HSS, HSE,  VT,  VA, VBS, VBE, VSS, VSE */
+-- 
+1.6.3.2
 
-Also you should CC intel-gfx@lists.freedesktop.org and Chris Wilson
-<chris@chris-wilson.co.uk> for all issues regarding intel GPUs as
-thats the place it has better chance of being seen by someone who
-can help out. (intel-gfx is subscribers-only but at least part of the
-thread would reach it)
-
-Regards,
-Bruno
-
-
-On Fri, 15 April 2011 wzab <wzab@ise.pw.edu.pl> wrote:
-> Today I have experienced two "GPU hungs" on machine with 82865G chipset 
-> working with 2.6.38.2 kernel
-> In the /var/log/syslog I have found the following errors:
-> 
-> Apr 15 22:50:51 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
-> Hangcheck timer elapsed... GPU hung
-> Apr 15 22:50:51 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
-> i915_do_wait_request returns -11 (awaiting 1352947 at 1352942, next 1352948)
-> Apr 15 22:50:51 wzab kernel: [drm:init_ring_common] *ERROR* failed to 
-> set render ring head to zero ctl 00000000 head 3280a54c tail 00000000 
-> start 00000000
-> Apr 15 22:50:51 wzab kernel: [drm:init_ring_common] *ERROR* render ring 
-> initialization failed ctl 0001f003 head 3280a54c tail 00000000 start 
-> 00000000
-> Apr 15 22:50:52 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
-> Hangcheck timer elapsed... GPU hung
-> Apr 15 22:50:52 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
-> i915_do_wait_request returns -11 (awaiting 1353049 at 1352942, next 1353050)
-> 
-> After reboot:
-> 
-> Apr 15 22:56:41 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
-> Hangcheck timer elapsed... GPU hung
-> Apr 15 22:56:41 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
-> i915_do_wait_request returns -11 (awaiting 29134 at 29129, next 29135)
-> 
