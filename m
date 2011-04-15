@@ -1,82 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1DOK4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 06:56:54 -0400
-Received: from gmmr1.centrum.cz ([90.183.38.157]:33364 "EHLO gmmr1.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870Ab1DOK4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 06:56:53 -0400
-To: "Mel Gorman" <mgorman@suse.de>
-Subject: Re: Regression from 2.6.36
-Date: Fri, 15 Apr 2011 12:56:51 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: "Mel Gorman" <mel@csn.ul.ie>, "Andrew Morton" <akpm@linux-foundation.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Changli Gao" <xiaosuo@gmail.com>,
-        "Am?rico Wang" <xiyou.wangcong@gmail.com>,
-        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
-        "Jiri Slaby" <jirislaby@gmail.com>
-References: <1302178426.3357.34.camel@edumazet-laptop> <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com> <1302190586.3357.45.camel@edumazet-laptop> <20110412154906.70829d60.akpm@linux-foundation.org> <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com> <20110412183132.a854bffc.akpm@linux-foundation.org> <1302662256.2811.27.camel@edumazet-laptop> <20110413141600.28793661.akpm@linux-foundation.org> <20110414102501.GE11871@csn.ul.ie> <20110415115903.315DEAA1@pobox.sk> <20110415104700.GD22688@suse.de>
-In-Reply-To: <20110415104700.GD22688@suse.de>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-MIME-Version: 1.0
-Message-Id: <20110415125651.68156745@pobox.sk>
-X-Maser: brud
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755889Ab1DOLBF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 07:01:05 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6812 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab1DOLBE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 07:01:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 15 Apr 2011 04:01:02 -0700
+From: wni@nvidia.com
+To: khali@linux-fr.org, guenter.roeck@ericsson.com
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, achew@nvidia.com, Wei Ni <wni@nvidia.com>
+Subject: [PATCH 0/3] hwmon (lm90) add some function for lm90.
+Date: Fri, 15 Apr 2011 19:00:25 +0800
+Message-Id: <1302865228-7185-1-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Wei Ni <wni@nvidia.com>
 
-# mount -t debugfs none /sys/kernel/debug
-mount: mount point /sys/kernel/debug does not exist
+*** BLURB HERE ***
 
-# mkdir /sys/kernel/debug
-mkdir: cannot create directory `/sys/kernel/debug': No such file or directory
+Wei Ni (3):
+  hwmon: (lm90) Add suspend/resume support
+  hwmon (lm90) Support to configure nct1008 from platform data
+  hwmon (lm90) Add alarm function for nct1008
 
+ drivers/hwmon/lm90.c    |  161 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/nct1008.h |   39 +++++++++++
+ 2 files changed, 200 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/nct1008.h
 
-config file used for testing is here:
-http://watchdog.sk/lkml/config
-
-
-azur
-
-
-______________________________________________________________
-> Od: "Mel Gorman" <mgorman@suse.de>
-> Komu: azurIt <azurit@pobox.sk>
-> Dátum: 15.04.2011 12:47
-> Predmet: Re: Regression from 2.6.36
->
-> CC: "Mel Gorman" <mel@csn.ul.ie>, "Andrew Morton" <akpm@linux-foundation.org>, "Eric Dumazet" <eric.dumazet@gmail.com>, "Changli Gao" <xiaosuo@gmail.com>, "Am?rico Wang" <xiyou.wangcong@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>
->On Fri, Apr 15, 2011 at 11:59:03AM +0200, azurIt wrote:
->> 
->> Also this new patch is working fine and fixing the problem.
->> 
->> Mel, I cannot run your script:
->> # perl watch-highorder-latency.pl
->> Failed to open /sys/kernel/debug/tracing/set_ftrace_filter for writing at watch-highorder-latency.pl line 17.
->> 
->> # ls -ld /sys/kernel/debug/
->> ls: cannot access /sys/kernel/debug/: No such file or directory
->> 
->
->mount -t debugfs none /sys/kernel/debug
->
->If it still doesn't work, sysfs or the necessary FTRACE options are
->not enabled on your .config. I'll give you a list if that is the case.
->
->Thanks.
->
->-- 
->Mel Gorman
->SUSE Labs
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
->
