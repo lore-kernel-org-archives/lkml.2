@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1DOVSY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 17:18:24 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:40131 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757026Ab1DOVSX (ORCPT
+	id S1757223Ab1DOVUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 17:20:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35195 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757127Ab1DOVUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 17:18:23 -0400
-Date: Fri, 15 Apr 2011 23:18:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: Zaurus CF tests -- ok
-Message-ID: <20110415211822.GB21111@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 15 Apr 2011 17:20:42 -0400
+Subject: Re: hugetlb locking bug.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        William Irwin <wli@holomorphy.com>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20110415211334.GA24870@infradead.org>
+References: <20110415201652.GA5131@redhat.com>
+	 <BANLkTi=ctr7tQLArfbdHRU3uUvEPh6KbwQ@mail.gmail.com>
+	 <20110415205712.GA13049@infradead.org> <1302901766.2035.39.camel@laptop>
+	 <20110415211334.GA24870@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Apr 2011 23:23:03 +0200
+Message-ID: <1302902583.2035.40.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, 2011-04-15 at 17:13 -0400, Christoph Hellwig wrote:
+> On Fri, Apr 15, 2011 at 11:09:26PM +0200, Peter Zijlstra wrote:
+> > Is there a sane reason they do their own magic, and thus need a copy of
+> > the logic, instead of using the generic code that already has it?
+> 
+> There is not need to use the inode hash for purely in-memory
+> filesystem.  The dcache tells us if an entry already exists,
+> so there is no need to a lru list, hash or other overhead.
 
-After getting _good_ power supply, I was able to untar and rm ltp tree
-100 times so far. 2.6.38, ext3. (So metan no, I do not see any weird
-ext3 problems).
+OK makes sense, should we then make some common code to share between
+these in-memory filesystems so as to limit the number of copies of this
+logic?
 
-Another strange thing is... I see lots of duplicated keystrokes --
-like type "pavel" but machine understands "paavel". But it only seems
-to happen when I'm _not_ trying to debug it?!
-
-(
-So... just because something needs 5V does not mean you should charge
-it from USB.
-
-Yes, I'm talking about zaurus. I noticed that it crashed rather
-quickly when connected to USB power. (For example in tar/rm test).
-So I took multimeter, and there was 4.15..4.5V on USB :-(.
-
-With power from USB extension cable, it crashes in <5 minutes. It
-seems to toggle charger a lot, as voltage on the cable is only
-4.2..4.5V. I guess it is software problem in the charging code.
-)
-									Pavel 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
