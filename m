@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab1DOWSs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 18:18:48 -0400
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:38853 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757215Ab1DOWSr convert rfc822-to-8bit (ORCPT
+	id S1753084Ab1DOWj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 18:39:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60922 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab1DOWj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 18:18:47 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=sOeZmqKXo9QeAvPHcA4bYEQFU2ce9l+aXDqfA8Y5Yr0= c=1 sm=1
- a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17
- a=20KFwNOVAAAA:8 a=BOhMrgHjEJcJcAUfB2cA:9 a=CjuIK1q_8ugA:10
- a=jEp0ucaQiEUA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: Unionmount status?
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
-Date: Fri, 15 Apr 2011 16:18:43 -0600
-Cc: Michal Suchanek <hramrach@centrum.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com> <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com> <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com> <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com> <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-X-Mailer: Apple Mail (2.1082)
+	Fri, 15 Apr 2011 18:39:56 -0400
+Date: Sat, 16 Apr 2011 00:39:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+cc: mathieu.desnoyers@efficios.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        dwalker@fifo99.com, linux-arm-msm-owner@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [RFC PATCH] genirq: implement read_irq_line for interrupt
+ lines
+In-Reply-To: <4DA8C1E2.3020205@codeaurora.org>
+Message-ID: <alpine.LFD.2.00.1104160030480.2744@localhost6.localdomain6>
+References: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org> <alpine.LFD.2.00.1104152058050.2744@localhost6.localdomain6> <4DA8C1E2.3020205@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-15, at 6:29 AM, Miklos Szeredi wrote:
-> Apparently tmpfs does not support generic xattr.  I understand why
-> tmpfs is an attractive choice for an upper filesystem, so this should
-> be addressed.
+On Fri, 15 Apr 2011, Abhijeet Dharmapurikar wrote:
+
+> Thomas Gleixner wrote:
+> > On Fri, 15 Apr 2011, Abhijeet Dharmapurikar wrote:
+> > 
+> > > Some drivers need to know what the status of the interrupt line is.
+> > > This is especially true for drivers that register a handler with
+> > > IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING and in the handler they
+> > > need to know which edge transition it was invoked for.
+> > 
+> > What's the purpose of this? How is that going to be used?
 > 
-> I see two options here:
-> 
-> 1) implement generic xattr in tmpfs
+> The main purpose is to know in the handler if it was invoked becuase of a
+> rising edge or the falling edge.
 
-There was a patch posted recently to add xattr support to tmpfs, so that it can use security labels:
+Come on. That's not an explanation. I know that already and it does
+not answer my question how this is going to be used. IOW: What does
+the driver do aside of knowing that it was a rising falling edge?
+ 
+> Now one could say that the driver should maintain some state and toggle it
+> upon each invocation of this handler. That scheme quickly goes out of sync
+> because we might ignore interrupts while suspended.
 
-From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH] tmpfs: implement xattr support for the entire security namespace
-Date: March 29, 2011 12:56:49 PM MDT
+Suspend is a totaly different issue. I have the impression that you
+are trying to solve some basic issue at the driver level again - just
+this time you add some core helper to get it solved.
 
-Cheers, Andreas
+Can you please show _AND_ explain the code which is going to use this?
 
+Thanks,
 
-
-
-
+	tglx
