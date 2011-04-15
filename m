@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab1DOM0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 08:26:36 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47436 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab1DOM0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 08:26:34 -0400
-Message-ID: <4DA83971.7010903@parallels.com>
-Date: Fri, 15 Apr 2011 07:26:25 -0500
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1751838Ab1DOM32 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 08:29:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52388 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab1DOM31 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 08:29:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=szeredi.hu; s=google;
+        h=mime-version:x-originating-ip:in-reply-to:references:date
+         :message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NAbCXYLQgo+OBSS1JtJ7Hs1aJ1oLK7iVvwdfdvsjY/0/jeiE8E/4eUkqW/bfXd0OjX
+         Ub9Ae37x5Yu0XQlysHL/X2xUIInw3BrBDFcc78Cg1Ume/xs9xiEzkx9Nv8Hlo62IvXLo
+         cGw7afgtQqvfpMHsgmV0b9VRUWiAxFn1laJKE=
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <jpirko@redhat.com>, <eric.dumazet@gmail.com>
-Subject: [PATCH] minor cleanup to net_namespace.c.
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.54.86.190]
+X-Originating-IP: [88.209.222.127]
+In-Reply-To: <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+	<4DA4B6A8.7030804@gmail.com>
+	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+	<alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
+	<BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+	<BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
+	<BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
+	<BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com>
+	<BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
+Date: Fri, 15 Apr 2011 14:29:25 +0200
+Message-ID: <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
+Subject: Re: Unionmount status?
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Michal Suchanek <hramrach@centrum.cz>
+Cc: Jiri Kosina <jkosina@suse.cz>, Ric Wheeler <ricwheeler@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Ian Kent <ikent@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Landley <rlandley@parallels.com>
+On Fri, Apr 15, 2011 at 1:51 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
+> On 15 April 2011 13:31, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> On Fri, Apr 15, 2011 at 1:22 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
+>>>
+>>> Cleaning up temporary files...
+>>> [    nn.nnnnnn] overlayfs: ERROR - failed to whiteout 'motd'
+>>> find: cannot delete `./motd': Operation not supported
+>>
+>> What is the upper filesystem type?  Is xattr support enabled?
+>>
+>
+> The upper filesystem is tmpfs and there is not option regarding XATTR
+> in the config.
 
-Inline a small static function that's only ever called from one place.
+Apparently tmpfs does not support generic xattr.  I understand why
+tmpfs is an attractive choice for an upper filesystem, so this should
+be addressed.
 
-Signed-off-by: Rob Landley <rlandley@parallels.com>
----
+I see two options here:
 
- net/core/net_namespace.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+1) implement generic xattr in tmpfs
+2) take whiteout/opaque support from union mounts and use that
 
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 3f86026..1abb508 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -216,11 +216,14 @@ static void net_free(struct net *net)
- 	kmem_cache_free(net_cachep, net);
- }
+Both have advantages and disadvantages.
 
--static struct net *net_create(void)
-+struct net *copy_net_ns(unsigned long flags, struct net *old_net)
- {
- 	struct net *net;
- 	int rv;
+Any thoughts?
 
-+	if (!(flags & CLONE_NEWNET))
-+		return get_net(old_net);
-+
- 	net = net_alloc();
- 	if (!net)
- 		return ERR_PTR(-ENOMEM);
-@@ -239,13 +242,6 @@ static struct net *net_create(void)
- 	return net;
- }
-
--struct net *copy_net_ns(unsigned long flags, struct net *old_net)
--{
--	if (!(flags & CLONE_NEWNET))
--		return get_net(old_net);
--	return net_create();
--}
--
- static DEFINE_SPINLOCK(cleanup_list_lock);
- static LIST_HEAD(cleanup_list);  /* Must hold cleanup_list_lock to touch */
-
+Thanks,
+Miklos
