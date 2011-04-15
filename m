@@ -1,39 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab1DOOaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 10:30:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46127 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab1DOOaO (ORCPT
+	id S1756134Ab1DOOdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 10:33:03 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43626 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756092Ab1DOOdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 10:30:14 -0400
-Date: Fri, 15 Apr 2011 16:30:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhart@linux.intel.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        John Kacur <jkacur@redhat.com>, stable@kernel.org
-Subject: Re: [PATCH V5] futex: set FLAGS_HAS_TIMEOUT during futex_wait restart
- setup
-In-Reply-To: <4DA85114.3010501@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1104151629340.2744@localhost6.localdomain6>
-References: <daac0eb3af607f72b9a4d3126b2ba8fb5ed3b883.1302820917.git.dvhart@linux.intel.com> <alpine.LFD.2.00.1104151027260.2744@localhost6.localdomain6> <4DA85114.3010501@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 15 Apr 2011 10:33:01 -0400
+Date: Fri, 15 Apr 2011 10:32:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Mike Frysinger <vapier@gentoo.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be smp?
+In-Reply-To: <201104150034.21937.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1104151017300.2051-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Apr 2011, Darren Hart wrote:
-> I believe I asked you the same question when I was adding the
-> FLAGS_HAS_TIMEOUT. :-) The problem is distinguishing between no timeout
-> and an expired timer. The above always passes a non-null address for
-> abs_time to futex_wait(), which will then always schedule a timer.
+On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
 
-Duh, correct.
+> > > For example, there's no reason why the CPU cannot reorder things so that
+> > > the "if (frozen(p))" is (speculatively) done before the "if (!freezing(p))"
+> > > if there's only a compiler barrier between them.
+> > 
+> > That's true.  On an SMP system, smp_wmb() is identical to wmb(), so
+> > there will be a true memory barrier when it is needed.  On a UP system,
+> > reordering the instructions in this way will not change the final
+> > result -- in particular, it won't break anything.
+> > 
+> > In your example, the two tests look at different flags in *p.  
+> > Speculative reordering of the tests won't make any difference unless
+> > one of the flags gets changed in between.  On a UP system, the only way
+> > the flag can be changed is for the CPU to change it, in which case
+> > the CPU would obviously know that the speculative result had to be
+> > invalidated.
+> 
+> Note, however, that preemption may happen basically at any time, so the
+> task that executes the two "if" statements can be preempted after it has
+> loaded p->flags into a register and before it checks the TIF_FREEZE (if
+> they are reordered).  In that case the p->flags (in memory) may be
+> changed by another task in the meantime.
+
+That's okay, because on a UP system there's only one CPU involved.  
+
+When the other task changes p->flags, the CPU will realize that the
+register containing the speculative p->flags value is now invalid.  
+This will force it to re-read p->flags before testing TIF_FREEZE.
+
+In principle, the sequence of events is no different from single-line
+code doing:
+
+	p->a = 1;
+	if (p->b)
+		...
+	if (p->a)
+		...
+
+No CPU is ever going to mess this up, even if it does speculatively
+load p->a before executing any of the other statements.
+
+A problem can arise only when the "p->a = 1" statement is executed by a 
+_different_ CPU.  In that case the original CPU has no way to tell that 
+the speculative value is invalid, so a memory barrier is needed to 
+prevent the speculative load.
+
+> > > I'm quite convinced that the statement "some CPUs can reorder instructions in
+> > > such a way that a compiler barrier is not sufficient to prevent breakage" is
+> > > correct.
+> > 
+> > No.  The correct statement is "Some CPUs can reorder instructions in 
+> > such a way that a compiler barrier is not sufficient to prevent 
+> > breakage on SMP systems."
+> 
+> That's if preemption is not taken into account.
+
+It's true even with preemption.
+
+Besides, if this helps to convince you, recall that the task-switch
+code (i.e., the scheduler) contains its own memory barriers.  If one
+task gets preempted by another, these barriers will defeat instruction
+reordering across the preemption boundary.
+
+Alan Stern
 
