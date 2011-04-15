@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377Ab1DOVsd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 17:48:33 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54106 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757160Ab1DOVsc convert rfc822-to-8bit (ORCPT
+	id S1757382Ab1DOVua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 17:50:30 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:33082 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757160Ab1DOVu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 17:48:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kNQUtT17vNceN00/RplrGErg8s0NGldncVukKaEcIWgiwomuHCvUS0k906AOtqxFme
-         1q5ulzEcM/ot2stgTD0A==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
-	<BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
-	<BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
-	<BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
-	<BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com>
-	<BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
-	<BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
-Date: Fri, 15 Apr 2011 14:48:26 -0700
-Message-ID: <BANLkTimNkLZzeRRMyFSp+m8WWtqp_zjFCg@mail.gmail.com>
-Subject: Re: Unionmount status?
-From: Hugh Dickins <hughd@google.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Michal Suchanek <hramrach@centrum.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Eric Paris <eparis@redhat.com>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 15 Apr 2011 17:50:28 -0400
+Date: Fri, 15 Apr 2011 23:50:15 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: wzab@ise.pw.edu.pl
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: i915 drm GPU hung errors with kernel 2.6.38.2 on  82865G
+ chipset
+Message-ID: <20110415235015.1e315688@neptune.home>
+In-Reply-To: <4DA8B3A7.3010807@ise.pw.edu.pl>
+References: <4DA8B3A7.3010807@ise.pw.edu.pl>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 5:29 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Fri, Apr 15, 2011 at 1:51 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
->> On 15 April 2011 13:31, Miklos Szeredi <miklos@szeredi.hu> wrote:
->>> On Fri, Apr 15, 2011 at 1:22 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
->>>>
->>>> Cleaning up temporary files...
->>>> [    nn.nnnnnn] overlayfs: ERROR - failed to whiteout 'motd'
->>>> find: cannot delete `./motd': Operation not supported
->>>
->>> What is the upper filesystem type?  Is xattr support enabled?
->>>
->>
->> The upper filesystem is tmpfs and there is not option regarding XATTR
->> in the config.
->
-> Apparently tmpfs does not support generic xattr.  I understand why
-> tmpfs is an attractive choice for an upper filesystem, so this should
-> be addressed.
->
-> I see two options here:
->
-> 1) implement generic xattr in tmpfs
-> 2) take whiteout/opaque support from union mounts and use that
->
-> Both have advantages and disadvantages.
->
-> Any thoughts?
+Hi Wojtek,
 
-Please get together with Eric: he's having trouble whipping up
-enthusiasm for his tmpfs xattr patch, he and I would both appreciate
-your support (and if I've persuaded him to leave out a part of it that
-you would need, join forces to call me an idiot).  Mainly I'm hoping
-to hear from hch and jmorris on it, being xattr-illiterate myself.
+Your best chance to see the bugs fixed is to report a bug following
+guidelines at http://intellinuxgraphics.org/how_to_report_bug.html
 
-https://lkml.org/lkml/2011/3/29/302
+For GPU hangs, collecting the error state (while GPU is hung) under
+debugfs is very helpful.
+Report contents of (as well as details on your software stack and
+if know what kind of action triggered the hung):
+  /sys/kernel/debug/dri/0/i915_error_state
 
-Hugh
+Also you should CC intel-gfx@lists.freedesktop.org and Chris Wilson
+<chris@chris-wilson.co.uk> for all issues regarding intel GPUs as
+thats the place it has better chance of being seen by someone who
+can help out. (intel-gfx is subscribers-only but at least part of the
+thread would reach it)
+
+Regards,
+Bruno
+
+
+On Fri, 15 April 2011 wzab <wzab@ise.pw.edu.pl> wrote:
+> Today I have experienced two "GPU hungs" on machine with 82865G chipset 
+> working with 2.6.38.2 kernel
+> In the /var/log/syslog I have found the following errors:
+> 
+> Apr 15 22:50:51 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
+> Hangcheck timer elapsed... GPU hung
+> Apr 15 22:50:51 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
+> i915_do_wait_request returns -11 (awaiting 1352947 at 1352942, next 1352948)
+> Apr 15 22:50:51 wzab kernel: [drm:init_ring_common] *ERROR* failed to 
+> set render ring head to zero ctl 00000000 head 3280a54c tail 00000000 
+> start 00000000
+> Apr 15 22:50:51 wzab kernel: [drm:init_ring_common] *ERROR* render ring 
+> initialization failed ctl 0001f003 head 3280a54c tail 00000000 start 
+> 00000000
+> Apr 15 22:50:52 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
+> Hangcheck timer elapsed... GPU hung
+> Apr 15 22:50:52 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
+> i915_do_wait_request returns -11 (awaiting 1353049 at 1352942, next 1353050)
+> 
+> After reboot:
+> 
+> Apr 15 22:56:41 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
+> Hangcheck timer elapsed... GPU hung
+> Apr 15 22:56:41 wzab kernel: [drm:i915_do_wait_request] *ERROR* 
+> i915_do_wait_request returns -11 (awaiting 29134 at 29129, next 29135)
+> 
