@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab1DOPiB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:38:01 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:35410 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab1DOPh7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:37:59 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        adilger.kernel@dilger.ca, tytso@mit.edu, mfasheh@suse.com,
-        jlbec@evilplan.org, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, hch@infradead.org, ngupta@vflare.org,
-        jeremy@goop.org, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        Dave Mccracken <dave.mccracken@oracle.com>, riel@redhat.com,
-        avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        yinghan@google.com, gthelen@google.com, torvalds@linux-foundation.org
-Subject: Re: [PATCH V8 4/8] mm/fs: add hooks to support cleancache
-References: <83ef8b69-f041-43e6-a5a9-880ff3da26f2@default>
-	<20110415081054.79a164d3.akpm@linux-foundation.org>
-Date: Sat, 16 Apr 2011 00:37:36 +0900
-In-Reply-To: <20110415081054.79a164d3.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Fri, 15 Apr 2011 08:10:54 -0700")
-Message-ID: <871v135xvj.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1756373Ab1DOPqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 11:46:07 -0400
+Received: from 8bytes.org ([88.198.83.132]:49347 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753861Ab1DOPqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 11:46:06 -0400
+Date: Fri, 15 Apr 2011 17:46:04 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        alexandre.f.demers@gmail.com
+Subject: Re: Linux 2.6.39-rc3
+Message-ID: <20110415154604.GN18463@8bytes.org>
+References: <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com> <4DA6145D.9070703@kernel.org> <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com> <4DA655E7.3000904@zytor.com> <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com> <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com> <20110415131152.GJ18463@8bytes.org> <20110415131650.GB18660@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415131650.GB18660@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Fri, Apr 15, 2011 at 03:16:50PM +0200, Ingo Molnar wrote:
+> Ok, but how did the allocation changes start triggering this error in 
+> v2.6.39-rc1? There must still be some layout specific thing here, right?
+> Do we understand the details of that as well?
 
->> > Before I suggested a thing about cleancache_flush_page,
->> > cleancache_flush_inode.
->> > 
->> > what's the meaning of flush's semantic?
->> > I thought it means invalidation.
->> > AFAIC, how about change flush with invalidate?
->> 
->> I'm not sure the words "flush" and "invalidate" are defined
->> precisely or used consistently everywhere in computer
->> science, but I think that "invalidate" is to destroy
->> a "pointer" to some data, but not necessarily destroy the
->> data itself.   And "flush" means to actually remove
->> the data.  So one would "invalidate a mapping" but one
->> would "flush a cache".
->> 
->> Since cleancache_flush_page and cleancache_flush_inode
->> semantically remove data from cleancache, I think flush
->> is a better name than invalidate.
->> 
->> Does that make sense?
->> 
->
-> nope ;)
->
-> Kernel code freely uses "flush" to refer to both invalidation and to
-> writeback, sometimes in confusing ways.  In this case,
-> cleancache_flush_inode and cleancache_flush_page rather sound like they
-> might write those things to backing store.  
+Well, thinking again about this, the GPU likely generated this DMA
+request before too (which has an address in the range configured for the
+GTT on the card), but nobody noticed because they just hit main memory.
+And with the allocation changes in 39-rc1 the GART aperture started to
+be on the same address as the GTT (in their respective address spaces)
+so that the DMA request hit the GART. This caused the MCE and the
+sync-flood.
+The open question is why the GPU generates a DMA request with an address
+that is configured as the GTT base (+1 page) on the card.
 
-I'd like to mention about *_{get,put}_page too. In linux get/put is not
-meaning read/write. There is {get,put}_page those are refcount stuff
-(Yeah, and I felt those methods does refcount by quick read. But it
-seems to be false. There is no xen codes, so I don't know actually
-though.).
+	Joerg
 
-And I agree, I also think the needing thing is consistency on the linux
-codes (term).
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
