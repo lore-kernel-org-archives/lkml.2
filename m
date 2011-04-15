@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab1DOJU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 05:20:27 -0400
-Received: from skl2.ukl.uni-freiburg.de ([193.196.199.2]:54264 "EHLO
-	relay2.uniklinik-freiburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753847Ab1DOJUZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 05:20:25 -0400
-X-Greylist: delayed 1587 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Apr 2011 05:20:25 EDT
-Subject: Re: [Regression] 2.6.38 ncpfs
-From: "Dr. Bernd Feige" <bernd.feige@uniklinik-freiburg.de>
-To: Bongani Hlope <bonganih@bankservafrica.com>
-Cc: torvalds@linux-foundation.org, arnd@arndb.de, npiggin@kernel.dk,
-        greg@kroah.com, hch@lst.de, bonganilinux@mweb.co.za, rjw@sisk.pl,
-        petr@vandrovec.name, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4DA815B6020000AC0004595E@CLU_MAIL.BANKSERV.CO.ZA>
-References: <4DA815B6020000AC0004595E@CLU_MAIL.BANKSERV.CO.ZA>
+	id S1754444Ab1DOJ16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 05:27:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52172 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab1DOJ14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 05:27:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wUDVdcQHeM4G+mdS4w6blN5ov1fsUJYyaao8kLTqMy+PCTeI9xwaETWN9lqVtlxngu
+         IyU4fGMo6zKAFzIdwy1s7y95P9xYeUgGZQ5vxILy4ww8JtlKBjFvpjL+ZhcLXOLdnmHp
+         s1sur4eHR1YqIdREH19IOsmMR23TE3B88ZVCA=
+Subject: Re: [PATCH V5] futex: set FLAGS_HAS_TIMEOUT during futex_wait
+ restart setup
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        John Kacur <jkacur@redhat.com>, stable@kernel.org
+In-Reply-To: <alpine.LFD.2.00.1104151027260.2744@localhost6.localdomain6>
+References: <daac0eb3af607f72b9a4d3126b2ba8fb5ed3b883.1302820917.git.dvhart@linux.intel.com>
+	 <alpine.LFD.2.00.1104151027260.2744@localhost6.localdomain6>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Apr 2011 10:53:50 +0200
-Message-ID: <1302857630.2798.0.camel@pst15.ukl.uni-freiburg.de>
+Date: Fri, 15 Apr 2011 11:27:51 +0200
+Message-ID: <1302859671.5374.2.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-NAI-Spam-Flag: NO
-X-NAI-Spam-Level: *
-X-NAI-Spam-Threshold: 5
-X-NAI-Spam-Score: 1.2
-X-NAI-Spam-Report: 3 Rules triggered
-	*  1 -- FROM_ALIAS_QUOTES_EVOL_2
-	*  0.2 -- RCVD_FROM_BY_ENVFRM_1_AT_2
-	*  0 -- RV3827
-X-NAI-Spam-Version: 2.2.0.9286 : core <3827> : streams <621546> : uri
- <851501>
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bongani, Linus et al.
-
-> > You might also try to replace it with
-> > 
-> >     BUG_ON(!mutex_is_locked(&dentry->d_parent->d_inode->i_mutex))
-> > 
-> > ie add that "d_parent" there. Just for testing - I think the real fix
-> > really is to remove it, but I'd personally be happier knowing that
-> > _if_ it were to have that d_parent there, it would have worked.
+Le vendredi 15 avril 2011 à 10:33 +0200, Thomas Gleixner a écrit :
+> On Thu, 14 Apr 2011, Darren Hart wrote:
 > 
-> I've made that change and ncpfs works fine with it. I've attached a
-> patch that changes the BUG_ON to look at the parent.
+> > The FLAGS_HAS_TIMEOUT flag was not getting set, causing the restart_block to
+> > restart futex_wait() without a timeout after a signal.
+> > 
+> > Commit b41277dc7a18ee332d in 2.6.38 introduced the regression by accidentally
+> > removing the the FLAGS_HAS_TIMEOUT assignment from futex_wait() during the setup
+> > of the restart block. Restore the originaly behavior.
+> > 
+> > Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=32922
+> > 
+> > V2: Added references to commit message.
+> > V3: Set flag during restart block instead of do_futex()
+> > V4: Correct stupid order of assignment mistake pointed out by Eric
+> > V5: Correct subject to match implementation, correct stable submission
+> > 
+> > Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > Reported-by: Tim Smith <tsmith201104@yahoo.com>
+> > Reported-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: John Kacur <jkacur@redhat.com>
+> > Cc: stable@kernel.org
+> > ---
+> >  kernel/futex.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/futex.c b/kernel/futex.c
+> > index bda4157..abd5324 100644
+> > --- a/kernel/futex.c
+> > +++ b/kernel/futex.c
+> > @@ -1886,7 +1886,7 @@ retry:
+> >  	restart->futex.val = val;
+> >  	restart->futex.time = abs_time->tv64;
+> >  	restart->futex.bitset = bitset;
+> > -	restart->futex.flags = flags;
+> > +	restart->futex.flags = flags | FLAGS_HAS_TIMEOUT;
+> 
+> We only get here when a timeout is pending. So why don't we just do
+> the obvious:
+> 
+> --- linux-2.6.orig/kernel/futex.c
+> +++ linux-2.6/kernel/futex.c
+> @@ -1902,16 +1902,13 @@ out:
+>  static long futex_wait_restart(struct restart_block *restart)
+>  {
+>  	u32 __user *uaddr = restart->futex.uaddr;
+> -	ktime_t t, *tp = NULL;
+> +	ktime_t t;
+>  
+> -	if (restart->futex.flags & FLAGS_HAS_TIMEOUT) {
+> -		t.tv64 = restart->futex.time;
+> -		tp = &t;
+> -	}
+> +	t.tv64 = restart->futex.time;
+>  	restart->fn = do_no_restart_syscall;
+>  
+>  	return (long)futex_wait(uaddr, restart->futex.flags,
+> -				restart->futex.val, tp, restart->futex.bitset);
+> +				restart->futex.val, &t, restart->futex.bitset);
+>  }
+>  
 
-Seconded, checked it with the Novell servers in our clinic and it works
-like a charm - even with the large directories for which I still have to
-revert commit 3825bdb7ed920845961f32f364454bee5f469abb from 2.6.37.6
-(https://lkml.org/lkml/2011/1/26/302). Thanks a lot!
+Because its not suitable for stable ?
 
-Bernd
+This is basically reverting a72188d8a64ebe74, so why do you keep
+FUTEX_HAS_TIMEOUT definition ?
+
 
 
