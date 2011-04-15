@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1DONgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 09:36:52 -0400
-Received: from [190.85.9.90] ([190.85.9.90]:44546 "EHLO mzcs.distrimas.com.co"
+	id S1755078Ab1DONkW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 09:40:22 -0400
+Received: from [190.85.9.90] ([190.85.9.90]:56956 "EHLO mzcs.distrimas.com.co"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754607Ab1DONgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 09:36:51 -0400
-Date: Fri, 15 Apr 2011 08:35:23 -0500 (COT)
+	id S1755010Ab1DONkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 09:40:21 -0400
+Date: Fri, 15 Apr 2011 08:39:59 -0500 (COT)
 From: Inter-Switch ATM-Card <info@distrimas.com.co>
 Reply-To: Inter-Switch ATM-Card <verificationoffice24@yahoo.com>
-Message-ID: <12475591.2068.1302874523837.JavaMail.root@mzcs.distrimas.com.co>
+Message-ID: <17652516.2106.1302874799079.JavaMail.root@mzcs.distrimas.com.co>
 Subject: Unpaid beneficiary
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
