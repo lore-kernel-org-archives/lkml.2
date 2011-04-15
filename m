@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1DOGqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:46:45 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:49778 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753846Ab1DOGqo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:46:44 -0400
-Message-ID: <4DA7E997.3080402@st.com>
-Date: Fri, 15 Apr 2011 12:15:43 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1754327Ab1DOGuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 02:50:19 -0400
+Received: from 8bytes.org ([88.198.83.132]:40224 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab1DOGuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 02:50:19 -0400
+Date: Fri, 15 Apr 2011 08:50:17 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Linux 2.6.39-rc3
+Message-ID: <20110415065017.GH18463@8bytes.org>
+References: <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <4DA654D6.2060103@zytor.com> <20110414085624.GC18463@8bytes.org> <BANLkTintewt4kadNLEZ-RAew0Gx6=gUOfQ@mail.gmail.com> <20110414210932.GG18463@8bytes.org> <BANLkTimRrx-QLPWwJx37qWhtwhdC8RTpsQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>, amitgoel <amit.goel@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: dmaengine: Can we schedule new transfer from dma callback	routine??
-References: <4DA2B3D8.6060707@st.com> <20110411085603.GA13041@n2100.arm.linux.org.uk>
-In-Reply-To: <20110411085603.GA13041@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimRrx-QLPWwJx37qWhtwhdC8RTpsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2011 02:26 PM, Russell King - ARM Linux wrote:
-> On Mon, Apr 11, 2011 at 01:25:04PM +0530, viresh kumar wrote:
->>
->> Hello,
->>
->> In dw_dmac.c driver, dwc_descriptor_complete() routine, following is
->> mentioned before calling callback:
->>
->> 	/*
->> 	 * The API requires that no submissions are done from a
->> 	 * callback, so we don't need to drop the lock here
->> 	 */
->> 	if (callback)
->> 		callback(param);
->>
->> Does this hold true for dmaengine??
+On Thu, Apr 14, 2011 at 05:34:46PM -0400, Alex Deucher wrote:
+> On Thu, Apr 14, 2011 at 5:09 PM, Joerg Roedel <joro@8bytes.org> wrote:
+
+> > Actually, the nb gart is part of the cpu. It is part of the cpu north
+> > bridge and can translate io and cpu accesses. In fact, it is a remapper
+> > of physical memory addresses.
 > 
-> Not for slave devices - see Dan's reply:
+> I know what it's for.  In the IGP graphics chip is also part of the
+> north bridge, but it may not be related at all.
+
+Okay, just wanted to make clear that it is part of the CPU and not of
+the chipset :)
+
+> > The problem seems to be related to specific gpu chips. On another
+> > notebook with an hd3000 card gtt and the nb gart aperture are both on
+> > 0xa0000000 too but the box works fine. I havn't tested with an hd5000
+> > yet. The failing notebook has an hd4200 mobility.
 > 
-> http://lists.arm.linux.org.uk/lurker/message/20101223.005313.a38d7bf0.en.html
+> What exact model is the hd3000?   Is it IGP GPU or a discrete GPU?  It
+> it's an IGP, it's identical to the hd4200 programming-wise.
+
+It is an IGP card, an 
+
+	"ATI Technologies Inc RS780M/RS780MN [Radeon HD 3200 Graphics]"
+
+according to lspci.
+
+> > Btw. what happens if the gpu accesses an unmapped address in the gtt
+> > range?
 > 
-> As the slave API hasn't been well documented, there's a lot of
-> inconsistency of behaviour between DMA engine slave implementations.
-> I'd suggest at least fixing slave DMA engine drivers to ensure that:
-> 
-> (a) the callback is always called in tasklet context
-> (b) the callback can submit new slave transactions (iow, the spinlock
->     which prep_slave_sg takes must not be held during the callback.)
-> 
-> The way that others solve this is to move the completed txd structures
-> to a local 'completed' list, and then walk this list after the spinlocks
-> have been dropped.
-> 
+> It's redirected to a dummy page.
 
-Hello,
+So there should be no issue too, this is a very weird bug.
 
-There is one more issue in the current DW_DMAC driver.
-As most of interrupt processing is done in tasklet, spin_lock_bh() is used in almost
-every routine.
+	Joerg
 
-Now, if some driver is calling these routines from interrupt context or with interrupt
-disabled, we get KERN_WARN() messages due to following in kernel/softirq.c:
-
-static inline void _local_bh_enable_ip(unsigned long ip)
-{
-	WARN_ON_ONCE(in_irq() || irqs_disabled());
-	...
-}
-
-Should i minimize processing in tasklets, so that spin_lock_bh is not required anymore,
-as in drivers/dma/amba-pl08x.c (tasklet for every channel) or is there some other way of
-doing it.
-
-Currently, drivers/tty/serial/amba-pl011.c is calling from interrupt context or with
-interrupt disabled.
-
--- 
-viresh
