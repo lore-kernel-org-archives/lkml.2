@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1DOG0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:26:06 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:58961 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1DOG0E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:26:04 -0400
-Date: Fri, 15 Apr 2011 02:25:53 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
-In-reply-to: <20110414090854.GB9248@elte.hu>
-Message-id: <alpine.LFD.2.02.1104150202310.29365@x980>
-References: <alpine.LFD.2.02.1103301819250.31342@x980>
- <20110414090854.GB9248@elte.hu>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1753540Ab1DOGeQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 02:34:16 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:51372 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752898Ab1DOGeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 02:34:14 -0400
+X-ASG-Debug-ID: 1302849251-01de284cf814e240001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DA7E6E2.5000902@fusionio.com>
+Date: Fri, 15 Apr 2011 08:34:10 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: "hch@infradead.org" <hch@infradead.org>
+CC: NeilBrown <neilb@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <20110310005810.GA17911@redhat.com> <20110405130541.6c2b5f86@notabene.brown> <20110411145022.710c30e9@notabene.brown> <4DA2C7BE.6060804@fusionio.com> <20110411205928.13915719@notabene.brown> <4DA2E03A.2080607@fusionio.com> <20110411212635.7959de70@notabene.brown> <4DA2E7F0.9010904@fusionio.com> <20110411220505.1028816e@notabene.brown> <4DA2F00E.6010907@fusionio.com> <20110415042611.GA3116@infradead.org>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <20110415042611.GA3116@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1302849251
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60903
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011-04-15 06:26, hch@infradead.org wrote:
+> Btw, "block: move queue run on unplug to kblockd" currently moves
+> the __blk_run_queue call to kblockd unconditionally currently.  But
+> I'm not sure that's correct - if we do an explicit blk_finish_plug
+> there's no point in forcing the context switch.
 
-> > From: Len Brown <len.brown@intel.com>
-> > 
-> > Since 2.6.35 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
-> > Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility is available
-> > in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
-> > 
-> > However, the typical BIOS fails to initialize the MSR,
-> > and the typical Linux distro neglects to invoke x86_energy_perf_policy(8).
-> > 
-> > The result is that some modern hardware is running in hardware default,
-> > which is "performance" mode, rather than the intended design default
-> > of "normal" mode.
-> > 
-> > Initialize the MSR to the "normal" setting during kernel boot.
-> > 
-> > Of course, x86_energy_perf_policy(8) is available to change
-> > the default after boot, should the user have a policy preference.
-> > 
-> > cc: stable@kernel.org
-> > Signed-off-by: Len Brown <len.brown@intel.com>
-> > ---
-> >  arch/x86/include/asm/msr-index.h |    3 +++
-> >  arch/x86/kernel/cpu/intel.c      |   14 ++++++++++++++
-> >  2 files changed, 17 insertions(+), 0 deletions(-)
-> > 
-...
-> 
-> Dunno, this patch appears to silently modify the system to be slower than it 
-> was before under Linux.
-> 
-> Won't people report this as a regression if this change reduces performance for 
-> them?
-> 
-> They wont be able to see your comments in the code and in the changelog either, 
-> when this happens to them. They might look into /proc/cpuinfo and see 'epb' 
-> there but it wont tell them anything. They wont know about a utility available 
-> in tools/power/x86/ either.
+It's correct, but yes it's not optimal for the explicit unplug. Well I
+think it really depends - for the single sync case, it's not ideal to
+punt to kblockd. But if you have a bunch of threads doing IO, you
+probably DO want to punt it to kblockd to avoid too many threads
+hammering on the queue lock at the same time. Would need testing to be
+sure, the below would a way to accomplish that.
 
-This patch makes no change to the epb feature indicator
-/proc/cpuinfo.
 
-> So this patch has 'future trouble' written all over it i'm afraid.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index b598fa7..995e995 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2662,16 +2662,16 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
+ 	return !(rqa->q <= rqb->q);
+ }
+ 
+-static void queue_unplugged(struct request_queue *q, unsigned int depth)
++static void queue_unplugged(struct request_queue *q, unsigned int depth, bool run_from_wq)
+ {
+ 	trace_block_unplug_io(q, depth);
+-	__blk_run_queue(q, true);
++	__blk_run_queue(q, run_from_wq);
+ 
+ 	if (q->unplugged_fn)
+ 		q->unplugged_fn(q);
+ }
+ 
+-void blk_flush_plug_list(struct blk_plug *plug)
++void blk_flush_plug_list(struct blk_plug *plug, bool run_from_wq)
+ {
+ 	struct request_queue *q;
+ 	unsigned long flags;
+@@ -2706,7 +2706,7 @@ void blk_flush_plug_list(struct blk_plug *plug)
+ 		BUG_ON(!rq->q);
+ 		if (rq->q != q) {
+ 			if (q) {
+-				queue_unplugged(q, depth);
++				queue_unplugged(q, depth, run_from_wq);
+ 				spin_unlock(q->queue_lock);
+ 			}
+ 			q = rq->q;
+@@ -2727,7 +2727,7 @@ void blk_flush_plug_list(struct blk_plug *plug)
+ 	}
+ 
+ 	if (q) {
+-		queue_unplugged(q, depth);
++		queue_unplugged(q, depth, run_from_wq);
+ 		spin_unlock(q->queue_lock);
+ 	}
+ 
+@@ -2737,7 +2737,7 @@ EXPORT_SYMBOL(blk_flush_plug_list);
+ 
+ void blk_finish_plug(struct blk_plug *plug)
+ {
+-	blk_flush_plug_list(plug);
++	blk_flush_plug_list(plug, false);
+ 
+ 	if (plug == current->plug)
+ 		current->plug = NULL;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index ffe48ff..1c76506 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -865,14 +865,14 @@ struct blk_plug {
+ 
+ extern void blk_start_plug(struct blk_plug *);
+ extern void blk_finish_plug(struct blk_plug *);
+-extern void blk_flush_plug_list(struct blk_plug *);
++extern void blk_flush_plug_list(struct blk_plug *, bool);
+ 
+ static inline void blk_flush_plug(struct task_struct *tsk)
+ {
+ 	struct blk_plug *plug = tsk->plug;
+ 
+ 	if (plug)
+-		blk_flush_plug_list(plug);
++		blk_flush_plug_list(plug, true);
+ }
+ 
+ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
 
-EPB is limited to SNB and later.
-So the installed base as yet is small.
-(it also exists on WSM-EP, but doesn't do so much there)
-EPB will have a more significant effect on future hardware.
 
-Linux currently trails competing operating systems in energy
-efficiency on SNB due to this setting, and Linux will trail
-competing operating systems even more on future hardware
-if this default is not fixed.
-
-Will it be possible to measure a performance difference between
-"performance" and "normal"?  Yes, it will be possible.
-Will 99.9% of users notice?  Nope.  More likely they'll notice
-the the power savings that are disabled in "performance" mode.
-
-I should have called it "benchmark" mode instead of "performance" mode...
-
-thanks,
-Len Brown, Intel Open Source Technology Center
+-- 
+Jens Axboe
 
