@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab1DOS7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 14:59:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59214 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab1DOS7v (ORCPT
+	id S1756541Ab1DOTDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 15:03:25 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:40309 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751926Ab1DOTDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 14:59:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=TSJw0gvAOvYwvfErNN2ALgFvpRo1QFx/sMg7kO1DMp+13+rrTA+iiOh6ANX3sJm9ud
-         ZgoozCEj+k2D9RiVx0YRSTpH9I9jrnmYm3s6qKneOL6rwPumshCqhcmbLoSu1j3UHSwW
-         FfGP9dS0NHJeiEucZNEczOSeE70KsmIUdNT3U=
-Message-ID: <4DA895A2.4060307@gmail.com>
-Date: Fri, 15 Apr 2011 14:59:46 -0400
-From: Alexandre Demers <alexandre.f.demers@gmail.com>
-Reply-To: alexandre.f.demers@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110411 Lightning/1.0b2 Thunderbird/3.1.9
+	Fri, 15 Apr 2011 15:03:24 -0400
+Date: Fri, 15 Apr 2011 15:03:19 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Cc: tglx@linutronix.de, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        dwalker@fifo99.com, linux-arm-msm-owner@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [RFC PATCH] genirq: implement read_irq_line for interrupt lines
+Message-ID: <20110415190319.GA24111@Krystal>
+References: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-References: <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com> <4DA6145D.9070703@kernel.org> <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com> <4DA655E7.3000904@zytor.com> <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com> <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com> <20110415131152.GJ18463@8bytes.org> <4DA8535B.4080901@gmail.com> <20110415142724.GK18463@8bytes.org>
-In-Reply-To: <20110415142724.GK18463@8bytes.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:59:22 up 143 days, 2 min,  4 users,  load average: 0.00, 0.03,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-04-15 10:27 AM, Joerg Roedel wrote:
-> On Fri, Apr 15, 2011 at 10:16:59AM -0400, Alexandre Demers wrote:
->> Ok, I'll test it today. Should I apply it on a clean rc3 without any of
->> the other patches?
-> Yes, apply it just on -rc3 without any other patch.
->
->> BTW, may I suggest adding the info under bug 33012 in kernel bugzilla?
->> This could be useful in the future.
-> Cool, thanks
->
->
-> 	Joerg
-The patch was applied and tested. It looks fine, I'm able to boot
-without problem.
+* Abhijeet Dharmapurikar (adharmap@codeaurora.org) wrote:
+> Some drivers need to know what the status of the interrupt line is.
+> This is especially true for drivers that register a handler with
+> IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING and in the handler they
+> need to know which edge transition it was invoked for.
+> 
+> The irq_read_line callback in the chip allows the controller to provide
+> the real time status of this line. Controllers that can read the status
+> of an interrupt line should implement this by doing necessary
+> hardware reads and return the logical state of the line.
+> 
+> Interrupt controllers based on the slow bus architecture should conduct
+> the transaction in this callback. The genirq code will call the chip's
+> bus lock prior to calling irq_read_line. Obviously since the transaction
+> would be completed before returning from irq_read_line it need not do
+> any transactions in the bus unlock call.
+> 
+> Drivers need to be aware whether the interrupt controller is a slow bus
+> and call read_irq_line in proper context.
+
+Hrm, this strikes me as odd. Is there any way this generic API could
+handle the corner-cases without needed the caller to know this ?
+
+[...]
+
+> +/**
+> + *	irq_read_line - read the value on an irq line
+> + *	@irq: Interrupt number representing a hardware line
+> + *
+> + *	This function may be called from IRQ context only when
+> + *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
+
+The comment here seems to imply "be careful when using this extremely
+fragile interface", which does not give me the warm safety feeling I
+would come to expect from a generic kernel API.
+
+Any ideas on how to improve that ?
+
+Thanks,
+
+Mathieu
+
+> + */
+> +int irq_read_line(unsigned int irq)
+> +{
+> +	struct irq_desc *desc = irq_to_desc(irq);
+> +	unsigned long flags;
+> +	int val;
+> +
+> +	if (!desc || !desc->irq_data.chip->irq_read_line)
+> +		return -EINVAL;
+> +
+> +	chip_bus_lock(desc);
+> +	raw_spin_lock_irqsave(&desc->lock, flags);
+> +	val = desc->irq_data.chip->irq_read_line(&desc->irq_data);
+> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
+> +	chip_bus_sync_unlock(desc);
+> +	return val;
+> +}
+> +EXPORT_SYMBOL(irq_read_line);
+> +
+>  /*
+>   * Internal function that tells the architecture code whether a
+>   * particular irq has been exclusively allocated or is available
+> -- 
+> 1.7.1
+> 
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
 -- 
-Alexandre Demers
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
