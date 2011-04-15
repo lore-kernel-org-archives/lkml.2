@@ -1,38 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751025Ab1DOEAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 00:00:33 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40192 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1DOEAV (ORCPT
+	id S1751276Ab1DOEBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 00:01:13 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34060 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1DOEBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 00:00:21 -0400
+	Fri, 15 Apr 2011 00:01:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=E/tzJq2I9JWVktNXjHKyEULSzaumURbbtBTY8U3qW93PRRWiVwUizaWnvlGiGFPtoh
-         8hU/8U5b9qWkOpCnFVfoRyC/xwEl/3n4Y81OPCUJhHBa9pjGJRn2Q1ahTv3FVtkf+5ys
-         xyihaAykr6MATA7BXnP1sPsF9mR6KjjGQJizY=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimnjkV_df2QfirWqjW9g_tkp_pPiA@mail.gmail.com>
-References: <BANLkTimnjkV_df2QfirWqjW9g_tkp_pPiA@mail.gmail.com>
-Date: Fri, 15 Apr 2011 12:00:20 +0800
-Message-ID: <BANLkTikZ1m-wurBVUrTjfLOK_CjdAeTwhA@mail.gmail.com>
-Subject: Re: 2.6.37+ for kernel version, what is this + sign?
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Xianghua Xiao <xiaoxianghua@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=b7rV1GCn+b9Vrv5t0eiWFqz/92zf4J4Z8FWw38X03efbVjbAXYsP9kLKtLIUCiBXqm
+         +6XXIs7y0HusOqV7/IkXqC3N5diU4K1K/fK1Dtg1/r1i13bkDYgMRT7oExJgu503eJx9
+         w54tyPmLgfuRHcVCHFNPlpCvozx6jJL2sFkxg=
+Subject: Re: [PATCH] shmem: factor out remove_indirect_page()
+From: Namhyung Kim <namhyung@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTin4mOMZqq4Sg04hj8Ep2XiCcZOBLg@mail.gmail.com>
+References: <1302524879-4737-1-git-send-email-namhyung@gmail.com>
+	 <BANLkTin4mOMZqq4Sg04hj8Ep2XiCcZOBLg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Apr 2011 13:01:04 +0900
+Message-ID: <1302840064.1537.14.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 10:12 PM, Xianghua Xiao <xiaoxianghua@gmail.com> wrote:
-> After I disabled LOCALVERSION_AUTO and MODVERSIONS now the kernel
-> image is 2.6.37+
-> where is the + sign coming from? how can I get rid of it?
->
+2011-04-14 (목), 18:27 -0700, Hugh Dickins:
+> On Mon, Apr 11, 2011 at 5:27 AM, Namhyung Kim <namhyung@gmail.com> wrote:
+> > Split out some common code in shmem_truncate_range() in order to
+> > improve readability (hopefully) and to reduce code duplication.
+> >
+> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> 
+> Thank you for taking the trouble to do this.
+> 
+> However... all that shmem_swp index code is irredeemably unreadable
+> (my fault, dating from when I converted it to use highmem with kmaps),
+> and I'd rather leave it untouched until we simply delete it
+> completely.
+> 
+> I have a patch/set (good for my testing but not yet good for final
+> submission) which removes all that code, and the need to allocate
+> shmem_swp index pages (even when CONFIG_SWAP is not set!): instead
+> saving the swp_entries in the standard pagecache radix_tree for the
+> file, so no extra allocations are needed at all.
+> 
+> It is possible that my patch/set will not be accepted (extending the
+> radix_tree in that way may meet some resistance); but I do think
+> that's the right way forward.
+> 
 
-It comes from Makefile, which means your git tree is dirty.
-You can override it by, e.g. make LOCALVERSION="" bzImage
+Looks reasonable. Please feel free to ignore this then, I'll look
+forward to your patches.
+
+Thanks.
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
