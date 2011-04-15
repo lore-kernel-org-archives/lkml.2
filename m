@@ -1,184 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab1DOSzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 14:55:15 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53019 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482Ab1DOSzL convert rfc822-to-8bit (ORCPT
+	id S1756453Ab1DOS4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 14:56:36 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:33251 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab1DOS4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 14:55:11 -0400
-MIME-Version: 1.0
-Message-ID: <040a7fa3-14dd-4960-a296-cfdd061e015f@default>
-Date: Fri, 15 Apr 2011 11:53:28 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        viro@zeniv.linux.org.uk, adilger.kernel@dilger.ca, tytso@mit.edu,
-        mfasheh@suse.com, jlbec@evilplan.org, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, hch@infradead.org,
-        ngupta@vflare.org, jeremy@goop.org, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        Dave Mccracken <dave.mccracken@oracle.com>, riel@redhat.com,
-        avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        yinghan@google.com, gthelen@google.com, torvalds@linux-foundation.org
-Subject: RE: [PATCH V8 4/8] mm/fs: add hooks to support cleancache
-References: <83ef8b69-f041-43e6-a5a9-880ff3da26f2@default>
- <20110415081054.79a164d3.akpm@linux-foundation.org
- 871v135xvj.fsf@devron.myhome.or.jp>
-In-Reply-To: <871v135xvj.fsf@devron.myhome.or.jp>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6550.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4DA89438.001F:SCFSTAT5015188,ss=1,fgs=0
+	Fri, 15 Apr 2011 14:56:35 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2011-04-14 - hangs during boot.
+In-Reply-To: Your message of "Fri, 15 Apr 2011 10:57:09 EDT."
+             <9629.1302879429@localhost>
+From: Valdis.Kletnieks@vt.edu
+References: <201104142244.p3EMiWTC010977@imap1.linux-foundation.org>
+            <9629.1302879429@localhost>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1302893631_5065P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 15 Apr 2011 14:53:51 -0400
+Message-ID: <6325.1302893631@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4DA89442.0014,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: OGAWA Hirofumi [mailto:hirofumi@mail.parknet.co.jp]
-> 
-> Andrew Morton <akpm@linux-foundation.org> writes:
-> 
-> >> > Before I suggested a thing about cleancache_flush_page,
-> >> > cleancache_flush_inode.
-> >> >
-> >> > what's the meaning of flush's semantic?
-> >> > I thought it means invalidation.
-> >> > AFAIC, how about change flush with invalidate?
-> >>
-> >> I'm not sure the words "flush" and "invalidate" are defined
-> >> precisely or used consistently everywhere in computer
-> >> science, but I think that "invalidate" is to destroy
-> >> a "pointer" to some data, but not necessarily destroy the
-> >> data itself.   And "flush" means to actually remove
-> >> the data.  So one would "invalidate a mapping" but one
-> >> would "flush a cache".
-> >>
-> >> Since cleancache_flush_page and cleancache_flush_inode
-> >> semantically remove data from cleancache, I think flush
-> >> is a better name than invalidate.
-> >>
-> >> Does that make sense?
-> >
-> > nope ;)
-> >
-> > Kernel code freely uses "flush" to refer to both invalidation and to
-> > writeback, sometimes in confusing ways.  In this case,
-> > cleancache_flush_inode and cleancache_flush_page rather sound like
-> they
-> > might write those things to backing store.
-> 
-> I'd like to mention about *_{get,put}_page too. In linux get/put is not
-> meaning read/write. There is {get,put}_page those are refcount stuff
-> (Yeah, and I felt those methods does refcount by quick read. But it
-> seems to be false. There is no xen codes, so I don't know actually
-> though.).
-> 
-> And I agree, I also think the needing thing is consistency on the linux
-> codes (term).
-> 
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+--==_Exmh_1302893631_5065P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Hmmm, yes, that's a point of confusion also.  No, cleancache put/get
-do not have any relationship with reference counting.
+On Fri, 15 Apr 2011 10:57:09 EDT, Valdis.Kletnieks=40vt.edu said:
+> On Thu, 14 Apr 2011 15:08:47 PDT, akpm=40linux-foundation.org said:
+> > The mm-of-the-moment snapshot 2011-04-14-15-08 has been uploaded to
+> >=20
+> >    http://userweb.kernel.org/=7Eakpm/mmotm/
+>=20
+> This throws at least two complaints about lockdep on the way up.  I've =
+had
+> several complete hangs as well last night during boot=20
 
-Andrew, I wonder if you would be so kind as to read the following
-and make a "ruling".  If you determine a preferable set of names,
-I will abide by your decision and repost (if necessary).
+Caught them.  Not sure how the WARN_ON_ONCE it's hitting just before it h=
+angs
+is related to the actual hang, but I'm betting it's the kernel's last pla=
+intive
+cry for help before everything grinds to a halt.
 
-The problem is this: The English language has a limited number
-of words that can be used to represent data motion and mapping
-and most/all of them are already used in the kernel, often,
-to quote Andrew, "in confusing ways."  Complicating this, I
-think the semantics of the cleancache operations are different
-from the semantics of any other kernel operation... intentionally
-so, because the value of cleancache is a direct result of those
-differing semantics.  And the cleancache semantics
-are fairly complex (again intentionally) so a single function
-name can't possibly describe the semantics.
+First boot:
 
-The cleancache operations are:
-- put (page)
-- get (page)
-- flush page
-- flush inode
-- init fs
-- flush fs
+=5B    3.852927=5D input: PS/2 Generic Mouse as /devices/platform/i8042/s=
+erio1/input/input10
+=5B    3.859723=5D ------------=5B cut here =5D------------
+=5B    3.859859=5D WARNING: at kernel/workqueue.c:1217 worker_enter_idle+=
+0x168/0x19f()
+=5B    3.859984=5D Hardware name: Latitude E6500
+=5B    3.860089=5D Modules linked in:
+=5B    3.860308=5D Pid: 11, comm: kworker/1:0 Not tainted 2.6.39-rc3-mmot=
+m0414 =231
+=5B    3.860428=5D Call Trace:
+=5B    3.860531=5D  =5B<ffffffff81037c62>=5D warn_slowpath_common+0x7e/0x=
+96
+=5B    3.860640=5D  =5B<ffffffff81037c8f>=5D warn_slowpath_null+0x15/0x17=
 
-I think these names are reasonable representations of the
-semantics of the operations performed... but I'm not a kernel
-expert so there is certainly room for disagreement.  Though I
-absolutely recognize the importance of a "name", I am primarily
-interested in merging the semantics of the operations and
-would happily accept any name that kernel developers could
-agree on.  However, I fear that there will be NO name that
-will satisfy all, so would prefer to keep the existing names.
-If some renaming is eventually agreed upon, this could be done
-post-merge.
+=5B    3.860677=5D  =5B<ffffffff8104e12d>=5D worker_enter_idle+0x168/0x19=
+f
+=5B    3.860677=5D  =5B<ffffffff81050d3f>=5D worker_thread+0x1ed/0x206
+=5B    3.860677=5D  =5B<ffffffff81050b52>=5D ? manage_workers+0xc0/0xc0
+=5B    3.860677=5D  =5B<ffffffff8105472e>=5D kthread+0x7f/0x87
+=5B    3.860677=5D  =5B<ffffffff8156bb94>=5D kernel_thread_helper+0x4/0x1=
+0
+=5B    3.860677=5D  =5B<ffffffff81564d84>=5D ? retint_restore_args+0xe/0x=
+e
+=5B    3.860677=5D  =5B<ffffffff810546af>=5D ? __init_kthread_worker+0x55=
+/0x55
+=5B    3.860677=5D  =5B<ffffffff8156bb90>=5D ? gs_change+0xb/0xb
+=5B    3.860677=5D ---=5B end trace 64d29d8be7ad450b =5D---
 
-Here's a brief description of the semantics:
+and wham it was dead hard at that point,no further output.  Next boot, it=
+ hit again,
+and lived a while longer:
 
-The cleancache operation currently known as "put" has the
-following semantics:  If *possible*, please take the data
-contained in the pageframe referred to by this struct page
-into cleancache and associate it with the filesystem-determined
-"handle" derived from the struct page.
+=5B    3.983798=5D input: PS/2 Generic Mouse as /devices/platform/i8042/s=
+erio1/input/input10
+=5B    3.993411=5D ------------=5B cut here =5D------------
+=5B    3.993531=5D WARNING: at kernel/workqueue.c:1217 worker_enter_idle+=
+0x168/0x19f()
+=5B    3.993658=5D Hardware name: Latitude E6500
+=5B    3.993764=5D Modules linked in:
+=5B    3.993951=5D Pid: 482, comm: kworker/1:1 Not tainted 2.6.39-rc3-mmo=
+tm0414 =231
+=5B    3.994065=5D Call Trace:
+=5B    3.994173=5D  =5B<ffffffff81037c62>=5D warn_slowpath_common+0x7e/0x=
+96
+=5B    3.994282=5D  =5B<ffffffff81037c8f>=5D warn_slowpath_null+0x15/0x17=
 
-The cleancache operation currently known as "get" has the
-following semantics:  Derive the filesystem-determined handle
-from this struct page.  If cleancache contains a page matching
-that handle, recreate the page of data from cleancache and
-place the results in the pageframe referred to by the
-struct page.  Then delete in cleancache any record of the
-handle and any data associated with it, so that a
-subsequent "get" will no longer find a match for the handle;
-any space used for the data can also be freed.
+=5B    3.994381=5D  =5B<ffffffff8104e12d>=5D worker_enter_idle+0x168/0x19=
+f
+=5B    3.994381=5D  =5B<ffffffff81050d3f>=5D worker_thread+0x1ed/0x206
+=5B    3.994381=5D  =5B<ffffffff81050b52>=5D ? manage_workers+0xc0/0xc0
+=5B    3.994381=5D  =5B<ffffffff8105472e>=5D kthread+0x7f/0x87
+=5B    3.994381=5D  =5B<ffffffff8156bb94>=5D kernel_thread_helper+0x4/0x1=
+0
+=5B    3.994381=5D  =5B<ffffffff81564d84>=5D ? retint_restore_args+0xe/0x=
+e
+=5B    3.994381=5D  =5B<ffffffff810546af>=5D ? __init_kthread_worker+0x55=
+/0x55
+=5B    3.994381=5D  =5B<ffffffff8156bb90>=5D ? gs_change+0xb/0xb
+=5B    3.994381=5D ---=5B end trace 604fcd3646d16bcd =5D---
+=5B    4.141467=5D udevadm used greatest stack depth: 4352 bytes left
+=5B    4.225220=5D usb 1-4.1: new low speed USB device number 5 using ehc=
+i_hcd
+=5B    4.326710=5D usb 1-4.1: New USB device found, idVendor=3D045e, idPr=
+oduct=3D0023
+=5B    4.326831=5D usb 1-4.1: New USB device strings: Mfr=3D1, Product=3D=
+2, SerialNumber=3D0
+=5B    4.326959=5D usb 1-4.1: Product: Microsoft Trackball Optical=C2=AE
+=5B    4.327105=5D usb 1-4.1: Manufacturer: Microsoft
+=5B    4.338620=5D input: Microsoft Microsoft Trackball Optical=C2=AE as =
+/devices/pci0000:00/0000:00:1a.7/sb1/1-4/1-4.1/1-4.1:1.0/input/input11
+=5B    4.339775=5D generic-usb 0003:045E:0023.0001: input,hidraw0: USB HI=
+D v1.00 Mouse =5BMicrosoft Micr
+osoft Trackball Optical=C2=AE=5D on usb-0000:00:1a.7-4.1/input0
+=5B    4.413229=5D usb 1-4.2: new full speed USB device number 6 using eh=
+ci_hcd
+=5B    4.467320=5D dracut: luksOpen /dev/sda2 luks-715ceabf-6f58-4251-937=
+3-ed29e8629a7c
+=5B    4.498856=5D usb 1-4.2: New USB device found, idVendor=3D0451, idPr=
+oduct=3D1446
+=5B    4.498998=5D usb 1-4.2: New USB device strings: Mfr=3D0, Product=3D=
+0, SerialNumber=3D0
+=5B    4.500490=5D hub 1-4.2:1.0: USB hub found
+=5B    4.500704=5D hub 1-4.2:1.0: 4 ports detected
+=5B    4.707088=5D usb 5-1: new full speed USB device number 2 using uhci=
+_hcd
+=5B    4.875565=5D usb 5-1: New USB device found, idVendor=3D0a5c, idProd=
+uct=3D5800
+=5B    4.875684=5D usb 5-1: New USB device strings: Mfr=3D1, Product=3D2,=
+ SerialNumber=3D3
+=5B    4.875805=5D usb 5-1: Product: 5880
 
-(Note that "take the data" and "recreate the page of data" are
-similar in semantics to "copy to" and "copy from", but since
-the cleancache operation may perform an "inflight" transformation
-on the data, and "copy" usually means a byte-for-byte replication,
-the word "copy" is also misleading.)
+but it then didn't accept keyboard input from the USB keyboard and acted =
+pretty dead.
 
-The cleancache operation currently known as "flush" has the
-following semantics:  Derive the filesystem-determined handle
-from this struct page and struct mapping.  If cleancache
-contains a page matching that handle, delete in cleancache any
-record of the handle and any data associated with it, so that a
-subsequent "get" will no longer find a match for the handle;
-any space used for the data can also be freed
+Any ideas, or am I looking at a weekend of bisecting? ;)
 
-The cleancache operation currently known as "flush inode" has
-the following semantics: Derive the filesystem-determined filekey
-from this struct mapping.  If cleancache contains ANY handles
-matching that filekey, delete in cleancache any record of
-any matching handle and any data associated with those handles;
-any space used for the data can also be freed.
 
-The cleancache operation currently known as "init fs" has
-the following semantics: Create a unique poolid to refer
-to this filesystem and save it in the superblock's
-cleancache_poolid field.
 
-The cleancache operation currently known as "flush fs" has
-the following semantics: Get the cleancache_poolid field
-from this superblock.  If cleancache contains ANY handles
-associated with that poolid, delete in cleancache any
-record of any matching handles and any data associated with
-those handles; any space used for the data can also be freed.
-Also, set the superblock's cleancache_poolid to be invalid
-and, in cleancache, recycle the poolid so a subsequent init_fs
-operation can reuse it.
+--==_Exmh_1302893631_5065P
+Content-Type: application/pgp-signature
 
-That's all!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Thanks,
-Dan
+iD8DBQFNqJQ/cC3lWbTT17ARAt8LAJ9rnm0X5Jxw+/NQqU1bWRIFEKXsEwCdGJMY
+D1e1C0EJPTh8oEjViYE60pc=
+=Ist+
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1302893631_5065P--
+
