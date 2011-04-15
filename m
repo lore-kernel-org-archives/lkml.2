@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab1DOKab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 06:30:31 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36971 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab1DOKa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 06:30:29 -0400
-Date: Fri, 15 Apr 2011 06:30:28 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: xfs@oss.sgi.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: XFS status update for March 2011
-Message-ID: <20110415103028.GA19528@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755680Ab1DOKbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 06:31:17 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:51226 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755624Ab1DOKbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 06:31:16 -0400
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 15 Apr 2011 13:34:33 +0300
+Message-Id: <20110415103433.5187.44052.sendpatchset@localhost.localdomain>
+Subject: [GIT PULL] UBIFS changes for 2.6.39
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-March saw the release of Linux 2.6.39, which included a sizable XFS update.
-The most prominent new features of XFS in Linux 2.6.39 is support for the
-FITRIM ioctl that allows discarding unused space on the filesystem
-periodically, better handling of persistent preallocations especially on
-NFS servers, and further scalability improvements in the buffer cache
-and log code.  In additions to that the release includes a wide range
-of fixes and cleanups to the code base.  The diff stat for XFS in the
-Linux 2.6.39 release is:
+Hi Linus,
 
-  57 files changed, 2964 insertions(+), 2528 deletions(-)
+please pull a couple of UBIFS fixes. One of them fixes a really bad bug
+where UBIFS just oopses if one calls 'fsync()' when UBIFS is R/O-mounted.
 
-Which means the XFS code base actually had a minor growth in code size
-this time around.  In the second half of March the XFS development
-tree got merged into Linus' tree for Linux 2.6.39.  Linux 2.6.39 is going
-to be a rather quiet release for XFS, mostly concentrating on settling
-the large changes that went into the last releases and smaller cleanups.
-The only user visible change will be that the delaylog option which
-improves metadata performance and scalability is now turned on by default,
-and a couple of fixes that make the realtime subvolume support usable
-again.
+I do not know why VFS does not filter out ->fsync() if the underlying
+FS is R/O, but we simply missed this fact. And I won't be suprized if this
+is an issue for some other FSes.
 
-On the user space side both xfsprogs and xfsdump saw new releases in March.
-The xfsprogs 3.1.5 release contains various smaller updates to xfs_repair,
-xfs_metadump and xfs_quota, as well as support for the new generic hole
-punching in the falloc system call in the xfs_io tool.  The xfsdump 3.0.5
-release now supports up to 4 billion directory entries, has much better
-performance for large dumps, and some improvements to the inventory code
-and dumping of quota information, as well as long overdue updates to the
-build system.  The xfstests repository has seen various build system
-improvements, better FIEMAP testing, falloc support for fsx and a few
-cleanups.
+The second patch fixes compilation warnings.
+
+
+The following changes since commit a6360dd37e1a144ed11e6548371bade559a1e4df:
+
+  Linux 2.6.39-rc3 (2011-04-11 17:21:51 -0700)
+
+are available in the git repository at:
+  git://git.infradead.org/ubifs-2.6.git linux-next
+
+Artem Bityutskiy (1):
+      UBIFS: fix oops when R/O file-system is fsync'ed
+
+Maksim Rayskiy (1):
+      UBIFS: fix compilation warnings when compiling with gcc 4.5
+
+ fs/ubifs/debug.h |  152 +++++++++++++++++++++++++++++++++---------------------
+ fs/ubifs/file.c  |    3 +
+ 2 files changed, 97 insertions(+), 58 deletions(-)
+
+
+Thanks,
+Artem.
