@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1DOQZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:25:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21165 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab1DOQZ3 (ORCPT
+	id S1752397Ab1DOQ3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:29:40 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:36050 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751306Ab1DOQ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:25:29 -0400
-Date: Fri, 15 Apr 2011 09:24:18 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: liubo <liubo2009@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] Trace: add __print_symbolic_u64 to avoid warnings on
- 32bit machine
-Message-Id: <20110415092418.b18fd6fe.randy.dunlap@oracle.com>
-In-Reply-To: <4D9C2FF6.7090607@cn.fujitsu.com>
-References: <4D9573DB.4010009@cn.fujitsu.com>
-	<1301665762.2160.22.camel@gandalf.stny.rr.com>
-	<4D9C2FF6.7090607@cn.fujitsu.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020202.4DA87171.0080:SCFSTAT5015188,ss=1,fgs=0
+	Fri, 15 Apr 2011 12:29:39 -0400
+Date: Fri, 15 Apr 2011 18:29:38 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be
+	smp ?
+Message-ID: <20110415162938.GA11454@atrey.karlin.mff.cuni.cz>
+References: <BANLkTinj3y+-VhzFAPz8Gzb5vAbtUFU6Aw@mail.gmail.com> <Pine.LNX.4.44L0.1104131757430.2005-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1104131757430.2005-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Apr 2011 17:18:46 +0800 liubo wrote:
+Hi!
 
+> > > I believe the code is correct as is.
+> > 
+> > that isnt what the code / documentation says.  unless i'm reading them
+> > wrong, both seem to indicate that the proposed patch is what we
+> > actually want.
 > 
-> Btrfs has some "ULL" macros, and when these macros are passed to tracepoints'
-> __print_symbolic(), there will be 64->32 truncate WARNINGS during compiling
-> on 32bit box.
+> The existing code is correct but it isn't optimal.
+> 
+> wmb() and rmb() are heavy-duty operations, and you don't want to call
+> them when they aren't needed.  That's exactly what smp_wmb() and
+> smp_rmb() are for -- they call wmb() and rmb(), but only in SMP 
+> kernels.
+> 
+> Unless you need to synchronize with another processor (not necessarily 
+> a CPU, it could be something embedded within a device), you should 
+> always use smp_wmb() and smp_rmb() rather than wmb() and rmb().
 
-Hi,
-
-Can this also be used to stop this warning that has been around
-like forever (on i386)?
-
-linux-next-20110415/fs/xfs/linux-2.6/./xfs_trace.h:1354: warning: format '%llx' expects type 'long long unsigned int', but argument 22 has type 'xfs_fsblock_t'
-
-
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Maybe; but this code is not performance critical and I believe being
+obvious here is better...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
