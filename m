@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1DOLEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 07:04:52 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3328 "EHLO
+	id S1755977Ab1DOLE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 07:04:58 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3337 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab1DOLEv (ORCPT
+	with ESMTP id S1755944Ab1DOLEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 07:04:51 -0400
+	Fri, 15 Apr 2011 07:04:55 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 15 Apr 2011 04:04:10 -0700
+	by hqnvupgp06.nvidia.com on Fri, 15 Apr 2011 04:04:14 -0700
 From: wni@nvidia.com
 To: khali@linux-fr.org, guenter.roeck@ericsson.com
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
         olofj@chromium.org, achew@nvidia.com, Wei Ni <wni@nvidia.com>
-Subject: [PATCH 2/3] hwmon (lm90) Support to configure nct1008 from platform data
-Date: Fri, 15 Apr 2011 19:00:27 +0800
-Message-Id: <1302865228-7185-3-git-send-email-wni@nvidia.com>
+Subject: [PATCH 3/3] hwmon (lm90) Add alarm function for nct1008
+Date: Fri, 15 Apr 2011 19:00:28 +0800
+Message-Id: <1302865228-7185-4-git-send-email-wni@nvidia.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1302865228-7185-1-git-send-email-wni@nvidia.com>
 References: <1302865228-7185-1-git-send-email-wni@nvidia.com>
@@ -25,150 +25,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Ni <wni@nvidia.com>
 
-This patch add support to configure nct1008 from platform data.
+This patch add alarm function for nct1008.
 
 Signed-off-by: Wei Ni <wni@nvidia.com>
 ---
- drivers/hwmon/lm90.c    |   66 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/nct1008.h |   38 +++++++++++++++++++++++++++
- 2 files changed, 104 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/nct1008.h
+ drivers/hwmon/lm90.c    |   59 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/nct1008.h |    1 +
+ 2 files changed, 60 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-index 1c2ee3f..8b639b0 100644
+index 8b639b0..11a0a9d 100644
 --- a/drivers/hwmon/lm90.c
 +++ b/drivers/hwmon/lm90.c
 @@ -83,6 +83,7 @@
  #include <linux/err.h>
  #include <linux/mutex.h>
  #include <linux/sysfs.h>
-+#include <linux/nct1008.h>
++#include <linux/interrupt.h>
+ #include <linux/nct1008.h>
  
  /*
-  * Addresses to scan
-@@ -1358,6 +1359,67 @@ static void lm90_init_client(struct i2c_client *client)
- 		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+@@ -275,6 +276,8 @@ static const struct lm90_params lm90_params[] = {
+ struct lm90_data {
+ 	struct device *hwmon_dev;
+ 	struct mutex update_lock;
++	struct work_struct work;
++	struct i2c_client *client;
+ 	char valid; /* zero until following fields are valid */
+ 	unsigned long last_updated; /* in jiffies */
+ 	int kind;
+@@ -308,6 +311,7 @@ struct lm90_data {
+ 			   7: remote 2 high limit (ma6695/96 only) */
+ 	u8 temp_hyst;
+ 	u16 alarms; /* bitvector (upper 8 bits for max6695/96) */
++	void (*alarm_fn)(int irq);
+ };
+ 
+ /*
+@@ -1104,6 +1108,27 @@ static void lm90_disable(struct i2c_client *client)
+ 	i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, value);
  }
  
-+static void lm90_configure_client(struct i2c_client *client)
++static void lm90_work_func(struct work_struct *work)
 +{
-+	struct lm90_data *data = i2c_get_clientdata(client);
-+	u8 value;
-+	u16 value16;
++	struct lm90_data *data = container_of(work, struct lm90_data, work);
++	int irq = data->client->irq;
 +
-+	if (strcmp(client->name, "nct1008")) {
-+		struct nct1008_platform_data *pdata = client->dev.platform_data;
++	mutex_lock(&data->update_lock);
 +
-+		/*
-+		 * Initial Configuration - device is placed in standby and
-+		 * ALERT/THERM2 pin is configured as THERM2
-+		 */
-+		lm90_read_reg(client, LM90_REG_R_CONFIG1, &value);
-+		if (pdata->ext_range)
-+			value |= 0x24;
-+		else
-+			value |= 0x20;
-+		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, value);
++	if (data->alarm_fn)
++		data->alarm_fn(irq);
 +
-+		/* Check Temperature Range Select */
-+		if (value & 0x04)
-+			data->flags |= LM90_FLAG_ADT7461_EXT;
++	mutex_unlock(&data->update_lock);
++}
 +
-+		/* Temperature conversion rate */
-+		value = pdata->conv_rate;
-+		i2c_smbus_write_byte_data(client, LM90_REG_W_CONVRATE, value);
++static irqreturn_t lm90_irq(int irq, void *dev_id)
++{
++	struct lm90_data *data = dev_id;
++	schedule_work(&data->work);
 +
-+		/* External temperature h/w shutdown limit */
-+		value = temp_to_u8_adt7461(data, pdata->shutdown_ext_limit);
-+		i2c_smbus_write_byte_data(client, LM90_REG_W_REMOTE_CRIT,
-+					  value);
++	return IRQ_HANDLED;
++}
 +
-+		/* Local temperature h/w shutdown limit */
-+		value = temp_to_u8_adt7461(data, pdata->shutdown_local_limit);
-+		i2c_smbus_write_byte_data(client, LM90_REG_W_LOCAL_CRIT, value);
+ /* Return 0 if detection is successful, -ENODEV otherwise */
+ static int lm90_detect(struct i2c_client *new_client,
+ 		       struct i2c_board_info *info)
+@@ -1417,9 +1442,22 @@ static void lm90_configure_client(struct i2c_client *client)
+ 		/* THERM hysteresis */
+ 		value = pdata->hysteresis;
+ 		i2c_smbus_write_byte_data(client, LM90_REG_W_TCRIT_HYST, value);
 +
-+		/* External Temperature Throttling limit */
-+		value16 = temp_to_u16_adt7461(data, pdata->throttle_ext_limit);
-+		i2c_smbus_write_byte_data(client, LM90_REG_W_REMOTE_HIGHH,
-+					  value16 >> 8);
-+		if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
-+			i2c_smbus_write_byte_data(client,
-+						  LM90_REG_W_REMOTE_HIGHL,
-+						  value16 & 0xff);
-+
-+		/* Local Temperature Throttling limit */
-+		value = pdata->ext_range ? 191 : 127;
-+		i2c_smbus_write_byte_data(client, LM90_REG_W_LOCAL_HIGH, value);
-+
-+		/* Remote channel offset */
-+		value = pdata->offset;
-+		i2c_smbus_write_byte_data(client,
-+					  LM90_REG_W_REMOTE_OFFSH, value);
-+
-+		/* THERM hysteresis */
-+		value = pdata->hysteresis;
-+		i2c_smbus_write_byte_data(client, LM90_REG_W_TCRIT_HYST, value);
-+	}
++		data->alarm_fn = pdata->alarm_fn;
+ 	}
+ }
+ 
++static int lm90_configure_irq(struct lm90_data *data)
++{
++	if (data->alarm_fn && data->client->irq) {
++		INIT_WORK(&data->work, lm90_work_func);
++		return request_irq(data->client->irq, lm90_irq,
++				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				"lm90", data);
++	} else
++		return 0;
 +}
 +
  static int lm90_probe(struct i2c_client *new_client,
  		      const struct i2c_device_id *id)
  {
-@@ -1393,6 +1455,10 @@ static int lm90_probe(struct i2c_client *new_client,
- 	/* Initialize the LM90 chip */
- 	lm90_init_client(new_client);
+@@ -1432,6 +1470,7 @@ static int lm90_probe(struct i2c_client *new_client,
+ 		err = -ENOMEM;
+ 		goto exit;
+ 	}
++	data->client = new_client;
+ 	i2c_set_clientdata(new_client, data);
+ 	mutex_init(&data->update_lock);
  
-+	/* Configure the LM90 chip from platform_data */
-+	if (new_client->dev.platform_data)
-+		lm90_configure_client(new_client);
+@@ -1459,6 +1498,10 @@ static int lm90_probe(struct i2c_client *new_client,
+ 	if (new_client->dev.platform_data)
+ 		lm90_configure_client(new_client);
+ 
++	err = lm90_configure_irq(data);
++	if (err)
++		goto exit_free;
 +
  	/* Register sysfs hooks */
  	err = sysfs_create_group(&new_client->dev.kobj, &lm90_group);
  	if (err)
+@@ -1499,6 +1542,9 @@ static int lm90_probe(struct i2c_client *new_client,
+ 		goto exit_remove_files;
+ 	}
+ 
++	if (data->alarm_fn && client->irq)
++		schedule_work(&data->work);
++
+ 	return 0;
+ 
+ exit_remove_files:
+@@ -1513,6 +1559,8 @@ static int lm90_remove(struct i2c_client *client)
+ {
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 
++	if (data->alarm_fn && client->irq)
++		cancel_work_sync(&data->work);
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	lm90_remove_files(client, data);
+ 
+@@ -1569,13 +1617,24 @@ static void lm90_alert(struct i2c_client *client, unsigned int flag)
+ #ifdef CONFIG_PM
+ static int lm90_suspend(struct i2c_client *client, pm_message_t state)
+ {
++	if (client->irq)
++		disable_irq(client->irq);
+ 	lm90_disable(client);
++
+ 	return 0;
+ }
+ 
+ static int lm90_resume(struct i2c_client *client)
+ {
++	struct lm90_data *data = i2c_get_clientdata(client);
++
+ 	lm90_enable(client);
++	if (client->irq) {
++		enable_irq(client->irq);
++		if (data->alarm_fn)
++			schedule_work(&data->work);
++	}
++
+ 	return 0;
+ }
+ #endif
 diff --git a/include/linux/nct1008.h b/include/linux/nct1008.h
-new file mode 100644
-index 0000000..3a6ed69
---- /dev/null
+index 3a6ed69..8e36860 100644
+--- a/include/linux/nct1008.h
 +++ b/include/linux/nct1008.h
-@@ -0,0 +1,38 @@
-+/*
-+ * include/linux/nct1008.h
-+ *
-+ * NCT1008, temperature monitoring device from ON Semiconductors
-+ *
-+ * Copyright (c) 2010, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+
-+#ifndef _LINUX_NCT1008_H
-+#define _LINUX_NCT1008_H
-+
-+#include <linux/types.h>
-+
-+struct nct1008_platform_data {
-+	bool ext_range;
-+	u8 conv_rate;
-+	u8 offset;
-+	u8 hysteresis;
-+	long shutdown_ext_limit;
-+	long shutdown_local_limit;
-+	long throttle_ext_limit;
-+};
-+
-+#endif /* _LINUX_NCT1008_H */
+@@ -33,6 +33,7 @@ struct nct1008_platform_data {
+ 	long shutdown_ext_limit;
+ 	long shutdown_local_limit;
+ 	long throttle_ext_limit;
++	void (*alarm_fn)(int irq);
+ };
+ 
+ #endif /* _LINUX_NCT1008_H */
 -- 
 1.7.0
 
