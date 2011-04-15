@@ -1,81 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab1DOD01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Apr 2011 23:26:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52358 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755350Ab1DOD0Z (ORCPT
+	id S1755493Ab1DOD2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Apr 2011 23:28:10 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63707 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab1DOD2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Apr 2011 23:26:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110415035451@it-loops.com>
-References: <20110415035451@it-loops.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 14 Apr 2011 20:25:33 -0700
-Message-ID: <BANLkTi=50A4f_d0a0oESd3DMMaK1za5BWg@mail.gmail.com>
-Subject: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with 2.6.39-rc[123]]
-To: Michael Guntsche <mike@it-loops.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 14 Apr 2011 23:28:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=ksplice.com; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=fK/zqP4/VNXWdCk84I1YNHEYbIZlAQUk0ZYSseg5/vL1fbSn/Q9/9/0cNnjutGQSHf
+         X8yTE8vpxo8DRJJ07sTlcT2/bDrDYteg1qEAJDaF+7Zu2YOaQiQRLgXgEtO3/PpPHObz
+         77++EO6kCLzUSDSdKWEy1nXPTZkUBcf85INi8=
+From: Nelson Elhage <nelhage@ksplice.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nelson Elhage <nelhage@ksplice.com>
+Subject: [PATCH] KVM: emulator: Use linearize() when fetching instructions.
+Date: Thu, 14 Apr 2011 23:27:52 -0400
+Message-Id: <1302838072-16717-1-git-send-email-nelhage@ksplice.com>
+X-Mailer: git-send-email 1.7.2.43.g36c08.dirty
+In-Reply-To: <4DA5CA0E.8050102@redhat.com>
+References: <4DA5CA0E.8050102@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 7:06 PM, Michael Guntsche <mike@it-loops.com> wrote:
->
-> After talking to Dave Chinner I looked at the block layer merges. I ended
-> up on
->
-> 6c510389005 Merge branch 'for-2.6.39/core' of git://git.kernel.dk/linux-2.6-block
->
-> Starting with this merge I see the problems.
+This means that the truncation behavior in linearize needs to grow an additional
+slight piece of complexity: when fetching, truncation is dependent on the
+execution mode, instead of the current address size.
 
-Ok, so that's not very surprising. It's the new per-thread plugging,
-and yes, there's clearly something broken with regards to MD/DM.
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+---
+ arch/x86/include/asm/kvm_emulate.h |    1 -
+ arch/x86/kvm/emulate.c             |   23 ++++++++++++-----------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-And I have a suspicion.
+diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
+index 0818448..9b760c8 100644
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -265,7 +265,6 @@ struct x86_emulate_ctxt {
+ 	unsigned long eip; /* eip before instruction emulation */
+ 	/* Emulated execution mode, represented by an X86EMUL_MODE value. */
+ 	int mode;
+-	u32 cs_base;
+ 
+ 	/* interruptibility state, as a result of execution of STI or MOV SS */
+ 	int interruptibility;
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index a5f63d4..d3d43a7 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -542,7 +542,7 @@ static int emulate_nm(struct x86_emulate_ctxt *ctxt)
+ 
+ static int linearize(struct x86_emulate_ctxt *ctxt,
+ 		     struct segmented_address addr,
+-		     unsigned size, bool write,
++		     unsigned size, bool write, bool fetch,
+ 		     ulong *linear)
+ {
+ 	struct decode_cache *c = &ctxt->decode;
+@@ -602,7 +602,7 @@ static int linearize(struct x86_emulate_ctxt *ctxt,
+ 		}
+ 		break;
+ 	}
+-	if (c->ad_bytes != 8)
++	if (fetch ? ctxt->mode != X86EMUL_MODE_PROT64 : c->ad_bytes != 8)
+ 		la &= (u32)-1;
+ 	*linear = la;
+ 	return X86EMUL_CONTINUE;
+@@ -621,7 +621,7 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
+ 	int rc;
+ 	ulong linear;
+ 
+-	rc = linearize(ctxt, addr, size, false, &linear);
++	rc = linearize(ctxt, addr, size, false, false, &linear);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	return ctxt->ops->read_std(linear, data, size, ctxt->vcpu,
+@@ -637,11 +637,13 @@ static int do_fetch_insn_byte(struct x86_emulate_ctxt *ctxt,
+ 	int size, cur_size;
+ 
+ 	if (eip == fc->end) {
+-		unsigned long linear = eip + ctxt->cs_base;
+-		if (ctxt->mode != X86EMUL_MODE_PROT64)
+-			linear &= (u32)-1;
++		unsigned long linear;
++		struct segmented_address addr = {VCPU_SREG_CS, eip};
+ 		cur_size = fc->end - fc->start;
+ 		size = min(15UL - cur_size, PAGE_SIZE - offset_in_page(eip));
++		rc = linearize(ctxt, addr, size, false, true, &linear);
++		f (rc != X86EMUL_CONTINUE)
++			return rc;
+ 		rc = ops->fetch(linear, fc->data + cur_size,
+ 				size, ctxt->vcpu, &ctxt->exception);
+ 		if (rc != X86EMUL_CONTINUE)
+@@ -1047,7 +1049,7 @@ static int segmented_read(struct x86_emulate_ctxt *ctxt,
+ 	int rc;
+ 	ulong linear;
+ 
+-	rc = linearize(ctxt, addr, size, false, &linear);
++	rc = linearize(ctxt, addr, size, false, false, &linear);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	return read_emulated(ctxt, ctxt->ops, linear, data, size);
+@@ -1061,7 +1063,7 @@ static int segmented_write(struct x86_emulate_ctxt *ctxt,
+ 	int rc;
+ 	ulong linear;
+ 
+-	rc = linearize(ctxt, addr, size, true, &linear);
++	rc = linearize(ctxt, addr, size, true, false, &linear);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	return ctxt->ops->write_emulated(linear, data, size,
+@@ -1076,7 +1078,7 @@ static int segmented_cmpxchg(struct x86_emulate_ctxt *ctxt,
+ 	int rc;
+ 	ulong linear;
+ 
+-	rc = linearize(ctxt, addr, size, true, &linear);
++	rc = linearize(ctxt, addr, size, true, false, &linear);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	return ctxt->ops->cmpxchg_emulated(linear, orig_data, data,
+@@ -2576,7 +2578,7 @@ static int em_invlpg(struct x86_emulate_ctxt *ctxt)
+ 	int rc;
+ 	ulong linear;
+ 
+-	rc = linearize(ctxt, c->src.addr.mem, 1, false, &linear);
++	rc = linearize(ctxt, c->src.addr.mem, 1, false, false, &linear);
+ 	if (rc == X86EMUL_CONTINUE)
+ 		emulate_invlpg(ctxt->vcpu, linear);
+ 	/* Disable writeback. */
+@@ -3154,7 +3156,6 @@ x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
+ 	c->fetch.end = c->fetch.start + insn_len;
+ 	if (insn_len > 0)
+ 		memcpy(c->fetch.data, insn, insn_len);
+-	ctxt->cs_base = seg_base(ctxt, ops, VCPU_SREG_CS);
+ 
+ 	switch (mode) {
+ 	case X86EMUL_MODE_REAL:
+-- 
+1.7.2.43.g36c08.dirty
 
-Jens - tell me if I'm wrong, but look at the crazy plug flushing code:
-
-  void __blk_flush_plug(struct task_struct *tsk, struct blk_plug *plug)
-  {
-        __blk_finish_plug(tsk, plug);
-        tsk->plug = plug;
-  }
-
-and explain that idiotic __blk_finish_plug() logic to me:
-
-  static void __blk_finish_plug(struct task_struct *tsk, struct blk_plug *plug)
-  {
-          flush_plug_list(plug);
-
-          if (plug == tsk->plug)
-                  tsk->plug = NULL;
-  }
-
-and in particular the "set it to NULL, only to then set it back
-again". That code makes no sense. __blk_finish_plug() is only ever
-called with "plug" being "tsk->plug", and afaik nothing will ever
-modify a non-NULL plug (if it is a nested plug, it would never be
-added to the task) _except_ for that __blk_finish_plug(). No? So it
-sets it to NULL, and then immediately the caller will set it back
-again.
-
-What's the thinking there? It looks very confused to me.
-
-Now, clearly RAID seems to be involved in the problem? The main thing
-with that would be that the execution of the requests would tend to
-generate new requests, that go back on the plug queue. Yes? And the
-loop in flush_plug_list() means that they all should get flushed out,
-I assume. But something clearly isn't working, and it does seem to be
-about the RAID kind of setup. So either they didn't get put on the
-plug queue, or the task got a new plug (which _wasn't_ flushed).
-
-Because we're clearly waiting for some request that hasn't completed.
-Where in the plug queues would it be hiding?
-
-The whole block layer plugging looks to be the major problem of the 39
-cycle. Jens, pls explain.
-
-                      Linus
