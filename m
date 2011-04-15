@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab1DOPVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:21:08 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53138 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab1DOPVF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:21:05 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: EDAC devel <linux-edac@vger.kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [RFC PATCH 4/4] EDAC, MCE, AMD: Add an injector function
-Date: Fri, 15 Apr 2011 17:20:27 +0200
-Message-Id: <1302880827-22457-5-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <1302880827-22457-1-git-send-email-bp@amd64.org>
-References: <1302880827-22457-1-git-send-email-bp@amd64.org>
+	id S1755278Ab1DOPVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 11:21:18 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38248 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754969Ab1DOPVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 11:21:14 -0400
+Subject: Re: [PATCH] fix sparse happy borkage when including gfp.h
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-sparse@vger.kernel.org
+In-Reply-To: <20110415143259.F7BD.A69D9226@jp.fujitsu.com>
+References: <20110415121424.F7A6.A69D9226@jp.fujitsu.com>
+	 <1302844066.16562.1953.camel@nimitz>
+	 <20110415143259.F7BD.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 15 Apr 2011 07:27:54 -0700
+Message-ID: <1302877674.16562.3089.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Fri, 2011-04-15 at 14:33 +0900, KOSAKI Motohiro wrote:
+> Hello,
+> > On Fri, 2011-04-15 at 12:14 +0900, KOSAKI Motohiro wrote:
+> > > >  #ifdef CONFIG_DEBUG_VM
+> > > > -             BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+> > > > +     BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+> > > >  #endif
+> > > > -     }
+> > > >       return z;
+> > > 
+> > > Why don't you use VM_BUG_ON?
+> > 
+> > I was just trying to make a minimal patch that did a single thing.
+> > 
+> > Feel free to submit another one that does that.  I'm sure there are a
+> > couple more places that could use similar love.
+> 
+> I posted another approach patches a second ago. Could you please see it?
 
-Selectively inject either a real MCE or a sw-only version to verify only
-the decoding code. The hardware-injected MCE triggers the machine check
-exception so that the MCE handler can be exercised too.
+Those both look sane to me.  Those weren't biting me in particular, and
+they don't fix the issue I was seeing.  But, they do seem necessary to
+reduce some of the noise.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- drivers/edac/mce_amd_inj.c |   39 ++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 38 insertions(+), 1 deletions(-)
+CC'ing the sparse mailing list.  We're seeing a couple of cases where
+some gcc-isms are either stopping sparse from finding real bugs:
 
-diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
-index 3a50e0c..1a05d45 100644
---- a/drivers/edac/mce_amd_inj.c
-+++ b/drivers/edac/mce_amd_inj.c
-@@ -160,6 +160,43 @@ static ssize_t edac_cpu_store(struct kobject *kobj, struct edac_mce_attr *attr,
- 
- EDAC_MCE_ATTR(cpu, 0644, edac_cpu_show, edac_cpu_store);
- 
-+static void trigger_mce(void *info)
-+{
-+	asm volatile("int $18");
-+}
-+
-+static void do_inject(void)
-+{
-+	unsigned int cpu = i_mce.extcpu;
-+	int this_cpu;
-+	u8 b = i_mce.bank;
-+
-+
-+	/* HW injection */
-+	if (!(i_mce.inject_flags & MCJ_HW_INJECT)) {
-+		amd_decode_mce(NULL, 0, &i_mce);
-+		return;
-+	}
-+
-+	this_cpu = get_cpu();
-+
-+	toggle_hw_mce_inject(cpu, true);
-+	wrmsr_on_cpu(cpu, MSR_IA32_MCx_STATUS(b),
-+		     (u32)i_mce.status, (u32)(i_mce.status >> 32));
-+
-+	wrmsr_on_cpu(cpu, MSR_IA32_MCx_ADDR(b),
-+		     (u32)i_mce.addr, (u32)(i_mce.addr >> 32));
-+
-+	wrmsr_on_cpu(cpu, MSR_IA32_MCx_MISC(b),
-+		     (u32)i_mce.misc, (u32)(i_mce.misc >> 32));
-+	toggle_hw_mce_inject(cpu, false);
-+
-+	smp_call_function_single(cpu, trigger_mce, NULL, 0);
-+
-+	put_cpu();
-+
-+}
-+
- /*
-  * This denotes into which bank we're injecting and triggers
-  * the injection, at the same time.
-@@ -185,7 +222,7 @@ static ssize_t edac_inject_bank_store(struct kobject *kobj,
- 
- 	i_mce.bank = value;
- 
--	amd_decode_mce(NULL, 0, &i_mce);
-+	do_inject();
- 
- 	return count;
- }
--- 
-1.7.4.rc2
+	http://marc.info/?l=linux-mm&m=130282454732689&w=2
+
+or creating a lot of noise on some builds:
+
+	http://marc.info/?l=linux-mm&m=130284428614058&w=2
+	http://marc.info/?l=linux-mm&m=130284431014077&w=2
+
+-- Dave
 
