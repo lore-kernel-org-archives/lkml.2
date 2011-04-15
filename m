@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab1DOLRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 07:17:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54361 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755982Ab1DOLR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 07:17:29 -0400
-Subject: Re: Regression from 2.6.36
-From: Mel Gorman <mgorman@suse.de>
-To: azurIt <azurit@pobox.sk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Changli Gao <xiaosuo@gmail.com>,
-        Am?rico Wang <xiyou.wangcong@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-In-Reply-To: <20110415125651.68156745@pobox.sk>
-References: <1302178426.3357.34.camel@edumazet-laptop>
-	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>
-	 <1302190586.3357.45.camel@edumazet-laptop>
-	 <20110412154906.70829d60.akpm@linux-foundation.org>
-	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>
-	 <20110412183132.a854bffc.akpm@linux-foundation.org>
-	 <1302662256.2811.27.camel@edumazet-laptop>
-	 <20110413141600.28793661.akpm@linux-foundation.org>
-	 <20110414102501.GE11871@csn.ul.ie> <20110415115903.315DEAA1@pobox.sk>
-	 <20110415104700.GD22688@suse.de>  <20110415125651.68156745@pobox.sk>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 15 Apr 2011 12:17:27 +0100
-Message-ID: <1302866247.12428.25.camel@machina.109elm.lan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1755998Ab1DOLXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 07:23:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45637 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755691Ab1DOLXB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 07:23:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=WolMlWb9KTmtQ9vlnxEfovuV+Kne7VoEmkqlIgJSfS0TjWHS4QcObggVfKBNUa6iK1
+         9SrJ7pZQBDSULvLfjGg7ijoI8bwAg/rhnClbOF0XLrl+yoAArecTyC2QUNwdjEdb3OT5
+         +TnARgJ7vLrAxR0VjBsyWCFdQJ5g6K4dC21JY=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+ <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Fri, 15 Apr 2011 13:22:41 +0200
+X-Google-Sender-Auth: xJnsvWeWoh67LOCRNhaY4IX9RKQ
+Message-ID: <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
+Subject: Re: Unionmount status?
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Jiri Kosina <jkosina@suse.cz>, Ric Wheeler <ricwheeler@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Ian Kent <ikent@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-15 at 12:56 +0200, azurIt wrote:
-> # mount -t debugfs none /sys/kernel/debug
-> mount: mount point /sys/kernel/debug does not exist
-> 
-> # mkdir /sys/kernel/debug
-> mkdir: cannot create directory `/sys/kernel/debug': No such file or directory
-> 
+On 14 April 2011 10:38, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Wed, Apr 13, 2011 at 5:13 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
+>> On 13 April 2011 16:18, Jiri Kosina <jkosina@suse.cz> wrote:
+>>> https://lkml.org/lkml/2011/3/22/222
+>>>
+>>
+>> Thanks for pointing out this announcement.
+>>
+>> However, neither this announcement nor the document
+>> Documentation/filesystems/overlayfs.txt included in the git tree
+>> details how to mount the filesystem. Without that it is kind of
+>> useless.
+>
+> Oh, I'll fix that in the docs.  Thanks for pointing it out.
+>
+> Here's how to mount:
+>
+>  mount -t overlayfs overlayfs -olowerdir=/lower -oupperdir=/upper /overlay
+>
 
-Mount sysfs first
+OK, I built a small live CD with the v7 patch and I can boot it but I
+get errors like
 
-mount -t sysfs none /sys
+Cleaning up temporary files...
+[    nn.nnnnnn] overlayfs: ERROR - failed to whiteout 'motd'
+find: cannot delete `./motd': Operation not supported
 
-> 
-> config file used for testing is here:
-> http://watchdog.sk/lkml/config
-> 
+Thanks
 
-Try setting the following
-
-CONFIG_TRACEPOINTS=y
-CONFIG_STACKTRACE=y
-CONFIG_USER_STACKTRACE_SUPPORT=y
-CONFIG_NOP_TRACER=y
-CONFIG_TRACER_MAX_TRACE=y
-CONFIG_FTRACE_NMI_ENTER=y
-CONFIG_CONTEXT_SWITCH_TRACER=y
-CONFIG_GENERIC_TRACER=y
-CONFIG_FTRACE=y
-CONFIG_FUNCTION_TRACER=y
-CONFIG_FUNCTION_GRAPH_TRACER=y
-CONFIG_IRQSOFF_TRACER=y
-CONFIG_SCHED_TRACER=y
-CONFIG_FTRACE_SYSCALLS=y
-CONFIG_STACK_TRACER=y
-CONFIG_BLK_DEV_IO_TRACE=y
-CONFIG_DYNAMIC_FTRACE=y
-CONFIG_FTRACE_MCOUNT_RECORD=y
-CONFIG_FTRACE_SELFTEST=y
-CONFIG_FTRACE_STARTUP_TEST=y
-CONFIG_MMIOTRACE=y
-CONFIG_HAVE_MMIOTRACE_SUPPORT=y
-
--- 
-Mel Gorman
-SUSE Labs
-
+Michal
