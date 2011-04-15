@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab1DOGuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:50:19 -0400
-Received: from 8bytes.org ([88.198.83.132]:40224 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab1DOGuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:50:19 -0400
-Date: Fri, 15 Apr 2011 08:50:17 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110415065017.GH18463@8bytes.org>
-References: <BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com> <20110412184433.GF19819@8bytes.org> <20110413064609.GA18777@elte.hu> <20110413172147.GI19819@8bytes.org> <4DA5F62F.3030504@kernel.org> <4DA654D6.2060103@zytor.com> <20110414085624.GC18463@8bytes.org> <BANLkTintewt4kadNLEZ-RAew0Gx6=gUOfQ@mail.gmail.com> <20110414210932.GG18463@8bytes.org> <BANLkTimRrx-QLPWwJx37qWhtwhdC8RTpsQ@mail.gmail.com>
+	id S1754916Ab1DOG5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 02:57:18 -0400
+Received: from fep21.mx.upcmail.net ([62.179.121.41]:63295 "EHLO
+	fep21.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111Ab1DOG5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 02:57:17 -0400
+X-Greylist: delayed 1082 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Apr 2011 02:57:12 EDT
+X-SourceIP: 77.58.148.40
+Message-ID: <4DA7E83A.8080007@odi.ch>
+Date: Fri, 15 Apr 2011 08:39:54 +0200
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimRrx-QLPWwJx37qWhtwhdC8RTpsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Pavel Machek <pavel@ucw.cz>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: High latency in wine after suspend
+References: <4D89E99F.30808@odi.ch> <20110415054026.GA1484@ucw.cz>
+In-Reply-To: <20110415054026.GA1484@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=vUpxTctd+kpWCBtSXXIkt5ll4Z8E5Qu9nLREXC/hfIo= c=1 sm=0 a=I24HDECOQz4A:10 a=XV0QBAHWQGoA:10 a=8nJEP1OIZ-IA:10 a=ULRV9qDADAjPEBY8bRcA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 05:34:46PM -0400, Alex Deucher wrote:
-> On Thu, Apr 14, 2011 at 5:09 PM, Joerg Roedel <joro@8bytes.org> wrote:
-
-> > Actually, the nb gart is part of the cpu. It is part of the cpu north
-> > bridge and can translate io and cpu accesses. In fact, it is a remapper
-> > of physical memory addresses.
+>> After a suspend/resume cycle I see intermittent high latency in
+>> poll_schedule_timeout (latencytop). This leads to the mouse cursor
+>> freezing for several seconds sometimes when switching to/from a window
+>> of a wine process. The problem never occurs before suspend, but always
+>> occurs after. Any ideas what could cause such behaviour? Kernel is
+>> vanilla 2.6.38 x86_64 running on a recent HP laptop with Intel chipset.
 > 
-> I know what it's for.  In the IGP graphics chip is also part of the
-> north bridge, but it may not be related at all.
+> Was this solved somehow? Can you try to  find "smaller" testcase --
+> anything less complex than wine? What about hibernation?
 
-Okay, just wanted to make clear that it is part of the CPU and not of
-the chipset :)
+Yes, I made an educated guess and applied
 
-> > The problem seems to be related to specific gpu chips. On another
-> > notebook with an hd3000 card gtt and the nb gart aperture are both on
-> > 0xa0000000 too but the box works fine. I havn't tested with an hd5000
-> > yet. The failing notebook has an hd4200 mobility.
-> 
-> What exact model is the hd3000?   Is it IGP GPU or a discrete GPU?  It
-> it's an IGP, it's identical to the hd4200 programming-wise.
+84ac7c
+x86, mtrr, pat: Fix one cpu getting out of sync during resume
 
-It is an IGP card, an 
+With that the problem is gone.
 
-	"ATI Technologies Inc RS780M/RS780MN [Radeon HD 3200 Graphics]"
 
-according to lspci.
-
-> > Btw. what happens if the gpu accesses an unmapped address in the gtt
-> > range?
-> 
-> It's redirected to a dummy page.
-
-So there should be no issue too, this is a very weird bug.
-
-	Joerg
 
