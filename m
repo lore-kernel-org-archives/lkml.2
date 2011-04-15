@@ -1,131 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1DORoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 13:44:32 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37203 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616Ab1DORob (ORCPT
+	id S1755700Ab1DORpD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 13:45:03 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:52986 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752264Ab1DORpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 13:44:31 -0400
-Subject: [PATCH 2/2] print vmalloc() state after allocation failures
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>, akpm@osdl.org
-In-Reply-To: <op.vtzo4ejf3l0zgt@mnazarewicz-glaptop>
-References: <20110415170437.17E1AF36@kernel>
-	 <20110415170438.D5C317D5@kernel>  <op.vtzo4ejf3l0zgt@mnazarewicz-glaptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 15 Apr 2011 10:44:01 -0700
-Message-ID: <1302889441.16562.3525.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Apr 2011 13:45:00 -0400
+Date: Fri, 15 Apr 2011 13:44:51 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -v3 3/4] lib, Make gen_pool memory allocator lockless
+Message-ID: <20110415174451.GB19644@Krystal>
+References: <1302684835-14133-1-git-send-email-ying.huang@intel.com> <1302684835-14133-4-git-send-email-ying.huang@intel.com> <20110413210757.GA11683@Krystal> <4DA7903B.5030508@intel.com> <20110415164629.GA13983@Krystal> <20110415174320.GA2283@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415174320.GA2283@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:44:29 up 142 days, 22:47,  4 users,  load average: 0.00, 0.03,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-15 at 19:20 +0200, Michal Nazarewicz wrote:
-> On Fri, 15 Apr 2011 19:04:38 +0200, Dave Hansen wrote:
-> > diff -puN mm/vmalloc.c~vmalloc-warn mm/vmalloc.c
-> > --- linux-2.6.git/mm/vmalloc.c~vmalloc-warn	2011-04-15  
-> > 08:49:06.823306620 -0700
-> > +++ linux-2.6.git-dave/mm/vmalloc.c	2011-04-15 09:20:17.926460283 -0700
-> > @@ -1534,6 +1534,7 @@ static void *__vmalloc_node(unsigned lon
-> >  static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
-> >  				 pgprot_t prot, int node, void *caller)
-> >  {
-> > +	int order = 0;
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Fri, Apr 15, 2011 at 12:46:29PM -0400, Mathieu Desnoyers wrote:
+> > * Huang Ying (ying.huang@intel.com) wrote:
+> > > On 04/14/2011 05:07 AM, Mathieu Desnoyers wrote:
+> > > > * Huang Ying (ying.huang@intel.com) wrote:
+> > > > [...]
+> > > >> + * rcu_read_lock and rcu_read_unlock is not used int gen_pool_alloc,
+> > > >> + * gen_pool_free, gen_pool_avail and gen_pool_size etc, because chunks
+> > > >> + * are only added into pool, not deleted from pool unless the pool
+> > > >> + * itself is destroyed.  If chunk will be deleted from pool,
+> > > >> + * rcu_read_lock and rcu_read_unlock should be uses in these
+> > > >> + * functions.
+> > > > 
+> > > > So how do you protect between pool destruction and adding chunks into
+> > > > the pool ?
+> > > 
+> > > Because the pool itself will be freed when destruction, we need some
+> > > mechanism outside of pool.  For example, if gen_pool_add() is called via
+> > > device file IOCTL, we must un-register the device file first, and
+> > > destroy the pool after the last reference to device has gone.
+> > 
+> > I am concerned about the list_for_each_entry_rcu() (and thus
+> > rcu_dereference_raw()) used outside of rcu_read_lock/unlock pairs.
+> > Validation infrastructure as recently been added to RCU: it triggers
+> > warnings when these situations are encountered in some RCU debugging
+> > configurations. The case of RCU list iteration is not covered by the
+> > checks, but it would make sense to be aware of it.
+> > 
+> > So although it seems like your code does not require rcu read lock
+> > critical sections, I'd prefer to let Paul McKenney have a look.
 > 
-> Could we make that const?
+> As long as you add elements and never remove them, then you can get
+> away with using list_for_each_entry_rcu() outside of an RCU read-side
+> critical section.  But please comment this -- it is all too easy
+> for someone to decide later to start deleting elements without also
+> inserting the needed rcu_read_lock() and rcu_read_unlock() pairs.
+> 
+> But I have lost the thread -- what code am I supposed to look at?
 
-Sure.  Here's a replacement patch.  Compiles and boots for me.
+You can have a look at https://lkml.org/lkml/2011/4/13/56
 
---
+Thanks!
 
-I was tracking down a page allocation failure that ended up in vmalloc().
-Since vmalloc() uses 0-order pages, if somebody asks for an insane amount
-of memory, we'll still get a warning with "order:0" in it.  That's not
-very useful.
+Mathieu
 
-During recovery, vmalloc() also nicely frees all of the memory that it
-got up to the point of the failure.  That is wonderful, but it also
-quickly hides any issues.  We have a much different sitation if vmalloc()
-repeatedly fails 10GB in to:
+> 
+> 							Thanx, Paul
 
-	vmalloc(100 * 1<<30);
-
-versus repeatedly failing 4096 bytes in to a:
-
-	vmalloc(8192);
-
-This patch will print out messages that look like this:
-
-[   68.123503] vmalloc: allocation failure, allocated 6680576 of 13426688 bytes
-[   68.124218] bash: page allocation failure: order:0, mode:0xd2
-[   68.124811] Pid: 3770, comm: bash Not tainted 2.6.39-rc3-00082-g85f2e68-dirty #333
-[   68.125579] Call Trace:
-[   68.125853]  [<ffffffff810f6da6>] warn_alloc_failed+0x146/0x170
-[   68.126464]  [<ffffffff8107e05c>] ? printk+0x6c/0x70
-[   68.126791]  [<ffffffff8112b5d4>] ? alloc_pages_current+0x94/0xe0
-[   68.127661]  [<ffffffff8111ed37>] __vmalloc_node_range+0x237/0x290
-...
-
-The 'order' variable is added for clarity when calling
-warn_alloc_failed() to avoid having an unexplained '0' as an argument.
-The 'tmp_mask' is there to keep the alloc_pages_node() looking sane.
-Adding __GFP_NOWARN is done because we now have our own, full error
-message in vmalloc code.
-
-As a side issue, I also noticed that ctl_ioctl() does vmalloc() based
-solely on an unverified value passed in from userspace.  Granted, it's
-under CAP_SYS_ADMIN, but it still frightens me a bit.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/mm/vmalloc.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff -puN mm/vmalloc.c~vmalloc-warn mm/vmalloc.c
---- linux-2.6.git/mm/vmalloc.c~vmalloc-warn	2011-04-15 10:39:05.928793559 -0700
-+++ linux-2.6.git-dave/mm/vmalloc.c	2011-04-15 10:39:18.716789177 -0700
-@@ -1534,6 +1534,7 @@ static void *__vmalloc_node(unsigned lon
- static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
- 				 pgprot_t prot, int node, void *caller)
- {
-+	const int order = 0;
- 	struct page **pages;
- 	unsigned int nr_pages, array_size, i;
- 	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
-@@ -1560,11 +1561,12 @@ static void *__vmalloc_area_node(struct 
- 
- 	for (i = 0; i < area->nr_pages; i++) {
- 		struct page *page;
-+		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
- 
- 		if (node < 0)
--			page = alloc_page(gfp_mask);
-+			page = alloc_page(tmp_mask);
- 		else
--			page = alloc_pages_node(node, gfp_mask, 0);
-+			page = alloc_pages_node(node, tmp_mask, order);
- 
- 		if (unlikely(!page)) {
- 			/* Successfully allocated i pages, free them in __vunmap() */
-@@ -1579,6 +1581,9 @@ static void *__vmalloc_area_node(struct 
- 	return area->addr;
- 
- fail:
-+	warn_alloc_failed(gfp_mask, order, "vmalloc: allocation failure, "
-+			  "allocated %ld of %ld bytes\n",
-+			  (area->nr_pages*PAGE_SIZE), area->size);
- 	vfree(area->addr);
- 	return NULL;
- }
-_
-
-
--- Dave
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
