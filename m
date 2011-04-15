@@ -1,61 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab1DOSHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 14:07:15 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:35921 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756169Ab1DOSHO (ORCPT
+	id S1755989Ab1DOSMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 14:12:44 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:39469 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab1DOSMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 14:07:14 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: irq allocation for pci drivers
-Thread-Topic: irq allocation for pci drivers
-Thread-Index: Acv5bA6y3omTgUXWSZGM+Uf9MemaiwAWy52AAHQehRA=
-Date: Fri, 15 Apr 2011 18:07:12 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481CBBD5@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <6E21E5352C11B742B20C142EB499E0481CB17E@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20110413034043.GA813@suse.de>
-In-Reply-To: <20110413034043.GA813@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.78]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Fri, 15 Apr 2011 14:12:43 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: benh@kernel.crashing.org
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, anton@samba.org, David.Laight@ACULAB.COM,
+        Eric B Munson <emunson@mgebm.net>, stable@kernel.org
+Subject: [PATCH V4] POWER: perf_event: Skip updating kernel counters if register value shrinks
+Date: Fri, 15 Apr 2011 14:12:30 -0400
+Message-Id: <1302891150-8121-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3FI7Oug028811
 
+Because of speculative event roll back, it is possible for some event coutners
+to decrease between reads on POWER7.  This causes a problem with the way that
+counters are updated.  Delta calues are calculated in a 64 bit value and the
+top 32 bits are masked.  If the register value has decreased, this leaves us
+with a very large positive value added to the kernel counters.  This patch
+protects against this by skipping the update if the delta would be negative.
+This can lead to a lack of precision in the coutner values, but from my testing
+the value is typcially fewer than 10 samples at a time.
 
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Cc: stable@kernel.org
+---
+Changes from V3:
+ Fix delta checking so that only roll backs are discarded
+Changes from V2:
+ Create a helper that should handle counter roll back as well as registers that
+might be allowed to roll over
+Changes from V1:
+ Updated patch leader
+ Added stable CC
+ Use an s32 to hold delta values and discard any values that are less than 0
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Tuesday, April 12, 2011 11:41 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org
-> Subject: Re: irq allocation for pci drivers
-> 
-> On Tue, Apr 12, 2011 at 11:57:22PM +0000, KY Srinivasan wrote:
-> > Greg,
-> 
-> Anyway, I have no idea, please use 'git bisect' to track down the
-> problem commit that causes this.
+ arch/powerpc/kernel/perf_event.c |   37 ++++++++++++++++++++++++++++++-------
+ 1 files changed, 30 insertions(+), 7 deletions(-)
 
-Greg,
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index c4063b7..822f630 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -398,6 +398,25 @@ static int check_excludes(struct perf_event **ctrs, unsigned int cflags[],
+ 	return 0;
+ }
+ 
++static u64 check_and_compute_delta(u64 prev, u64 val)
++{
++	u64 delta = (val - prev) & 0xfffffffful;
++
++	/*
++	 * POWER7 can roll back counter values, if the new value is smaller
++	 * than the previous value it will cause the delta and the counter to
++	 * have bogus values unless we rolled a counter over.  If a coutner is
++	 * rolled back, it will be smaller, but within 256, which is the maximum
++	 * number of events to rollback at once.  If we dectect a rollback
++	 * return 0.  This can lead to a small lack of precision in the
++	 * counters.
++	 */
++	if (prev > val && (prev - val) < 256)
++		delta = 0;
++
++	return delta;
++}
++
+ static void power_pmu_read(struct perf_event *event)
+ {
+ 	s64 val, delta, prev;
+@@ -416,10 +435,11 @@ static void power_pmu_read(struct perf_event *event)
+ 		prev = local64_read(&event->hw.prev_count);
+ 		barrier();
+ 		val = read_pmc(event->hw.idx);
++		delta = check_and_compute_delta(prev, val);
++		if (!delta)
++			return;
+ 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
+ 
+-	/* The counters are only 32 bits wide */
+-	delta = (val - prev) & 0xfffffffful;
+ 	local64_add(delta, &event->count);
+ 	local64_sub(delta, &event->hw.period_left);
+ }
+@@ -449,8 +469,9 @@ static void freeze_limited_counters(struct cpu_hw_events *cpuhw,
+ 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+ 		prev = local64_read(&event->hw.prev_count);
+ 		event->hw.idx = 0;
+-		delta = (val - prev) & 0xfffffffful;
+-		local64_add(delta, &event->count);
++		delta = check_and_compute_delta(prev, val);
++		if (delta)
++			local64_add(delta, &event->count);
+ 	}
+ }
+ 
+@@ -458,14 +479,16 @@ static void thaw_limited_counters(struct cpu_hw_events *cpuhw,
+ 				  unsigned long pmc5, unsigned long pmc6)
+ {
+ 	struct perf_event *event;
+-	u64 val;
++	u64 val, prev;
+ 	int i;
+ 
+ 	for (i = 0; i < cpuhw->n_limited; ++i) {
+ 		event = cpuhw->limited_counter[i];
+ 		event->hw.idx = cpuhw->limited_hwidx[i];
+ 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
+-		local64_set(&event->hw.prev_count, val);
++		prev = local64_read(&event->hw.prev_count);
++		if (check_and_compute_delta(prev, val))
++			local64_set(&event->hw.prev_count, val);
+ 		perf_event_update_userpage(event);
+ 	}
+ }
+@@ -1197,7 +1220,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 
+ 	/* we don't have to worry about interrupts here */
+ 	prev = local64_read(&event->hw.prev_count);
+-	delta = (val - prev) & 0xfffffffful;
++	delta = check_and_compute_delta(prev, val);
+ 	local64_add(delta, &event->count);
+ 
+ 	/*
+-- 
+1.7.1
 
-This problem turned out to be on the host side. We don't have any issue with dynamic
-irq allocation on the win2k8 r2 hosts. Some older hosts have an issue and in any event
-it does not look like it is a  Linux issue.
-
-Regards,
-
-K. Y
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
