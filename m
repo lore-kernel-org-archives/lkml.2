@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab1DOGLj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:11:39 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:40834 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751744Ab1DOGLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:11:38 -0400
-Date: Fri, 15 Apr 2011 08:11:36 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        mjg@redhat.com, maciej.rutecki@gmail.com,
-        nouveau@lists.freedesktop.org
-Subject: Re: 2.6.39-rc1 nouveau regression (bisected)
-Message-ID: <20110415061136.GA21979@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Marcin Slusarz <marcin.slusarz@gmail.com>,
-	Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	mjg@redhat.com, maciej.rutecki@gmail.com,
-	nouveau@lists.freedesktop.org
-References: <20110403181206.GA19291@comet.dominikbrodowski.net> <20110407151129.GA24977@comet.dominikbrodowski.net> <20110414170559.GA10768@comet.dominikbrodowski.net> <20110414190117.GA3493@joi.lan>
+	id S1752728Ab1DOGNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 02:13:24 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:33920 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751502Ab1DOGNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 02:13:23 -0400
+X-ASG-Debug-ID: 1302848002-03d6a569fbb7ad0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DA7E202.4000307@fusionio.com>
+Date: Fri, 15 Apr 2011 08:13:22 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414190117.GA3493@joi.lan>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Guntsche <mike@it-loops.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with  2.6.39-rc[123]]
+References: <20110415035451@it-loops.com> <BANLkTi=50A4f_d0a0oESd3DMMaK1za5BWg@mail.gmail.com> <20110415042255.GC27928@infradead.org>
+X-ASG-Orig-Subj: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with  2.6.39-rc[123]]
+In-Reply-To: <20110415042255.GC27928@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1302848002
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60900
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 09:02:01PM +0200, Marcin Slusarz wrote:
-> On Thu, Apr 14, 2011 at 07:05:59PM +0200, Dominik Brodowski wrote:
-> > Thought about CCing Linus to show him that 2.6.39-rcX isn't as "calm"
-> > to everyone, but then chose to CC Maciej instead: Would you be so kind and
-> > add this to your regression list? Thanks!
-> > 
-> > Since commit 38f1cff
-> > 
-> >     From: Dave Airlie <airlied@redhat.com>
-> >     Date: Wed, 16 Mar 2011 11:34:41 +1000
-> >     Subject: [PATCH] Merge commit '5359533801e3dd3abca5b7d3d985b0b33fd9fe8b' into dr
-> > 
-> >     This commit changed an internal radeon structure, that meant a new driver
-> >     in -next had to be fixed up, merge in the commit and fix up the driver.
-> > 
-> >     Also fixes a trivial nouveau merge.
-> > 
-> >     Conflicts:
-> >         drivers/gpu/drm/nouveau/nouveau_mem.c
-> > 
-> > booting my atom/NM10/ION2 system crashes hard during boot, right after
-> > blanking the screen, and before the initramfs gets loaded. I just
-> > re-checked: both parent commits ( 5359533 and 4819d2e ) do indeed work
-> > just fine, but the merge commit ( 38f1cff ) fails, same as tip ( 85f2e68 ).
+On 2011-04-15 06:22, Christoph Hellwig wrote:
+> On Thu, Apr 14, 2011 at 08:25:33PM -0700, Linus Torvalds wrote:
+>> What's the thinking there? It looks very confused to me.
 > 
-> Can you activate netconsole and check whether kernel spits anything interesting?
-> You might try to load nouveau module after boot - maybe something will be saved
-> to /var/log or you could even ssh into the box and check dmesg...
+> It is.  I sent a patch a couple of days ago to fix it.
 
-Compiling it as a module seems to work fine. When I do so, no regression is
-obvious from what gets reported in "dmesg". However, somehow I now do get
-some output: The last message I see is
+Yeah thanks for that, I agree it looks a bit confusing as-is. I'll queue
+it up.
 
-[drm] nouveau 0000:01:00.0: allocated 1680x1050, fb 0x40.... b0 <some pointer value>
+>> Now, clearly RAID seems to be involved in the problem? The main thing
+>> with that would be that the execution of the requests would tend to
+>> generate new requests, that go back on the plug queue. Yes? And the
+>> loop in flush_plug_list() means that they all should get flushed out,
+>> I assume. But something clearly isn't working, and it does seem to be
+>> about the RAID kind of setup. So either they didn't get put on the
+>> plug queue, or the task got a new plug (which _wasn't_ flushed).
+>>
+>> Because we're clearly waiting for some request that hasn't completed.
+>> Where in the plug queues would it be hiding?
+> 
+> There's a thread where Neil explains what the problem with MD is - it
+> needs a callback on unplug time to generate e.g. the write intent bitmap
+> or as large as possible writes for RAID5.  Jens and Neil have been
+> looking into it.
 
-Then, nothing more. However, it really is quite strange why this error only
-appears in the CONFIG_NOUVEAU=y case, not in the =m case...
+I think we are done, Neil just needs to rebase around the current
+for-linus and then we should expedite things in.
 
-Best,
-	Dominik
+-- 
+Jens Axboe
+
