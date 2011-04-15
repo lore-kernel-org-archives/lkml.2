@@ -1,176 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab1DOPwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:52:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58010 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab1DOPwn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:52:43 -0400
-Subject: Re: mmotm 2011-04-14 - lockdep splats in sched.c during boot
-From: Peter Zijlstra <peterz@infradead.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+	id S1751565Ab1DOQDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:03:49 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:32740 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973Ab1DOQDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 12:03:48 -0400
+Date: Fri, 15 Apr 2011 18:59:16 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Andrea Arcangeli <aarcange@redhat.com>
+Cc: akpm@linux-foundation.org, cl@linux-foundation.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <9629.1302879429@localhost>
-References: <201104142244.p3EMiWTC010977@imap1.linux-foundation.org>
-	 <9629.1302879429@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Apr 2011 17:52:21 +0200
-Message-ID: <1302882741.2388.241.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Subject: Re: [PATCH 0/1] mm: make read-only accessors take const pointer
+	parameters
+Message-ID: <20110415155916.GD7112@esdhcp04044.research.nokia.com>
+References: <1302861377-8048-1-git-send-email-ext-phil.2.carmody@nokia.com> <20110415145133.GO15707@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415145133.GO15707@random.random>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-15 at 10:57 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 14 Apr 2011 15:08:47 PDT, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2011-04-14-15-08 has been uploaded to
+On 15/04/11 16:51 +0200, ext Andrea Arcangeli wrote:
+> Hello Phil,
+> 
+> On Fri, Apr 15, 2011 at 12:56:16PM +0300, Phil Carmody wrote:
 > > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
+> > Sending this one its own as it either becomes an enabler for further
+> > related patches, or if nacked, shuts the door on them. Better to test
+> > the water before investing too much time on such things.
+> > 
+> > Whilst following a few static code analysis warnings, it became clear
+> > that either the tool (which I believe is considered practically state of
+> > the art) was very dumb when sniffing into called functions, or that a
+> > simple const flag would either help it not make the incorrect paranoid
+> > assumptions that it did, or help me dismiss the report as a false
+> > positive more quickly.
+> > 
+> > Of course, this is core core code, and shouldn't be diddled with lightly,
+> > but it's because it's core code that it's an enabler.
+> > 
+> > Awaiting the judgement of the Solomons,
 > 
-> This throws at least two complaints about lockdep on the way up.  I've had
-> several complete hangs as well last night during boot following a WARN in
-> sched.c, but didn't have netconsole or a camera handy at the time.  Will follow up if I
-> catch one. 
+> What's the benefit of having it const other than shutdown the warnings
+> from the static code analysis? I doubt gcc can generate any better
+> output from this change because it's all inline anyway.
 
-That would be most appreciated, I merged two large series of scheduler
-patches.
+Yup, the only improvement occurs if there's an opaque layer between this
+lower level code and a client that could benefit from making a const
+assumption, and that opaque layer could also inherit/propagate the
+constness.
 
-> Both whinges point at a 'for_each_domain()'. Not sure why I
-> haven't seen mention on lkml before - what am I doing different?
+> I guess the only chance this could help is if we call an extern
+> function and we read the pointer before and after the external call,
+> in that case gcc could assume the memory didn't change across the
+> extern function and just cache the value in callee-saved register
+> without having to re-read memory after the extern function
+> returns. But there isn't any extern function there...
 
-Probably running a very fresh kernel..
+Yup, that direction's a dead end, but there is potential for clients of
+clients. I'm unfortunately unable to find the example that prompted me
+to look down this path, as it would depend on an as-yet-unwritten client
+of these functions to propagate constness up another layer. It was
+probably in FUSE, as that's the warning at the top of my screen
+currently.
 
-> Splat number 1:
-> [    0.044382] smpboot cpu 1: start_ip = 99000
-> [    0.002999] calibrate_delay_direct() timer_rate_max=2526877 timer_rate_min=2526840 pre_start=520283431585 pre_end=520308700132
-> [    0.002999] calibrate_delay_direct() timer_rate_max=2526857 timer_rate_min=2526829 pre_start=520313753438 pre_end=520339021871
-> [    0.002999] calibrate_delay_direct() timer_rate_max=2526851 timer_rate_min=2526824 pre_start=520344075709 pre_end=520369344094
-> [    0.002999] calibrate_delay_direct() timer_rate_max=2526862 timer_rate_min=2526834 pre_start=520374397819 pre_end=520399666308
-> [    0.002999] calibrate_delay_direct() timer_rate_max=2526864 timer_rate_min=2526836 pre_start=520404719957 pre_end=520429988465
-> [    0.116010] 
-> [    0.116011] ===================================================
-> [    0.116989] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [    0.116989] ---------------------------------------------------
-> [    0.116989] kernel/sched.c:2426 invoked rcu_dereference_check() without protection!
-> [    0.116989] 
-> [    0.116989] other info that might help us debug this:
-> [    0.116989] 
-> [    0.116989] 
-> [    0.116989] rcu_scheduler_active = 1, debug_locks = 1
-> [    0.116989] 2 locks held by swapper/1:
-> [    0.116989]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810394d2>] cpu_maps_update_begin+0x12/0x14
-> [    0.116989]  #1:  (&p->pi_lock){-.....}, at: [<ffffffff81032959>] try_to_wake_up+0x29/0x1aa
-> [    0.116989] 
-> [    0.116989] stack backtrace:
-> [    0.116989] Pid: 1, comm: swapper Not tainted 2.6.39-rc3-mmotm0414 #1
-> [    0.116989] Call Trace:
-> [    0.116989]  [<ffffffff81065bfc>] lockdep_rcu_dereference+0x9b/0xa4
-> [    0.116989]  [<ffffffff8102acd0>] ttwu_stat+0xcc/0xf5
-> [    0.116989]  [<ffffffff81032ab5>] try_to_wake_up+0x185/0x1aa
-> [    0.116989]  [<ffffffff81b5540a>] ? migration_call+0x9e/0xd0
-> [    0.116989]  [<ffffffff81564643>] ? _raw_spin_unlock_irqrestore+0x46/0x80
-> [    0.116989]  [<ffffffff81032b06>] wake_up_process+0x10/0x12
-> [    0.116989]  [<ffffffff81b56207>] cpu_stop_cpu_callback+0xe5/0x11b
-> [    0.116989]  [<ffffffff81567abe>] notifier_call_chain+0x54/0x81
-> [    0.116989]  [<ffffffff810596bc>] __raw_notifier_call_chain+0x9/0xb
-> [    0.116989]  [<ffffffff815434d1>] __cpu_notify+0x1b/0x2d
-> [    0.116989]  [<ffffffff81b55709>] _cpu_up.constprop.0+0xd1/0xe5
-> [    0.116989]  [<ffffffff81b55757>] cpu_up+0x3a/0x47
-> [    0.116989]  [<ffffffff81b2f3d2>] smp_init+0x41/0x93
-> [    0.116989]  [<ffffffff81b1dbc5>] kernel_init+0x9d/0x15b
-> [    0.116989]  [<ffffffff8156bb94>] kernel_thread_helper+0x4/0x10
-> [    0.116989]  [<ffffffff81564d84>] ? retint_restore_args+0xe/0xe
-> [    0.116989]  [<ffffffff81b1db28>] ? start_kernel+0x394/0x394
-> [    0.116989]  [<ffffffff8156bb90>] ? gs_change+0xb/0xb
-> [    0.117089] NMI watchdog enabled, takes one hw-pmu counter.
-> [    0.119006] Brought up 2 CPUs
+> I guess the static code analysis shouldn't suggest a const if it's all
+> inline and gcc has full visibility on everything that is done inside
+> those functions at build time.
 > 
-> Splat number 2:
-> [    1.179319] netconsole: remote ethernet address 00:b0:d0:c3:bd:a7
-> [    1.179430] netconsole: device eth0 not up yet, forcing it
-> [    1.247705] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> [    1.298111] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> [    1.298312] 
-> [    1.298313] ===================================================
-> [    1.298516] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [    1.298623] ---------------------------------------------------
-> [    1.298731] kernel/sched.c:1211 invoked rcu_dereference_check() without protection!
-> [    1.298858] 
-> [    1.298858] other info that might help us debug this:
-> [    1.298859] 
-> [    1.299152] 
-> [    1.299152] rcu_scheduler_active = 1, debug_locks = 1
-> [    1.299294] 1 lock held by swapper/0:
-> [    1.299294]  #0:  (&(&base->lock)->rlock){-.-.-.}, at: [<ffffffff810443fd>] lock_timer_base+0x49/0x92
-> [    1.299294] 
-> [    1.299294] stack backtrace:
-> [    1.299294] Pid: 0, comm: swapper Not tainted 2.6.39-rc3-mmotm0414 #1
-> [    1.299294] Call Trace:
-> [    1.299294]  <IRQ>  [<ffffffff81065bfc>] lockdep_rcu_dereference+0x9b/0xa4
-> [    1.299294]  [<ffffffff810337a7>] get_nohz_timer_target+0x79/0xbe
-> [    1.299294]  [<ffffffff810452ec>] __mod_timer+0xc7/0x16d
-> [    1.299294]  [<ffffffff810454bf>] mod_timer+0x87/0x8e
-> [    1.299294]  [<ffffffff8130814c>] e1000_intr_msi+0xa2/0xef
-> [    1.299294]  [<ffffffff8108acab>] handle_irq_event_percpu+0xba/0x29f
-> [    1.299294]  [<ffffffff8108aecc>] handle_irq_event+0x3c/0x5c
-> [    1.299294]  [<ffffffff810193c6>] ? ack_APIC_irq+0x10/0x12
-> [    1.299294]  [<ffffffff8108d197>] handle_edge_irq+0xf4/0x121
-> [    1.299294]  [<ffffffff810031aa>] handle_irq+0x122/0x133
-> [    1.299294]  [<ffffffff81002fdf>] do_IRQ+0x48/0xa0
-> [    1.299294]  [<ffffffff81564cd3>] common_interrupt+0x13/0x13
-> [    1.299294]  <EOI>  [<ffffffff81008009>] ? default_idle+0x52/0x89
-> [    1.299294]  [<ffffffff81008007>] ? default_idle+0x50/0x89
-> [    1.299294]  [<ffffffff8100084c>] cpu_idle+0x87/0x102
-> [    1.299294]  [<ffffffff81535587>] rest_init+0xcb/0xd2
-> [    1.299294]  [<ffffffff815354bc>] ? csum_partial_copy_generic+0x16c/0x16c
-> [    1.299294]  [<ffffffff81b1db1d>] start_kernel+0x389/0x394
-> [    1.299294]  [<ffffffff81b1d29f>] x86_64_start_reservations+0xaf/0xb3
-> [    1.299294]  [<ffffffff81b1d393>] x86_64_start_kernel+0xf0/0xf7
-> [    1.309814] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> 
+> But maybe I'm missing something gcc could do better with const that it
+> can't now.
 
+I think gcc itself is smart enough to have already concluded what it 
+can and it will not immediately benefit the build from just this change.
 
-The below should cure those two I think.
+I don't think the static analysis tools are as smart as gcc though, by
+any means. GCC actually inlines, so everything is visible to it. The
+static analysis tools only remember the subset of information that they
+think is useful, and apparently 'didn't change anything, even though it 
+could' isn't considered so useful.
 
----
- kernel/sched.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+I'm just glad this wasn't an insta-nack, as I am quite a fan of consts,
+and hopefully something can be worked out.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 0cfe031..cd06b53 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1208,11 +1208,13 @@ int get_nohz_timer_target(void)
- 	int i;
- 	struct sched_domain *sd;
- 
-+	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		for_each_cpu(i, sched_domain_span(sd))
- 			if (!idle_cpu(i))
- 				return i;
- 	}
-+	rcu_read_unlock();
- 	return cpu;
- }
- /*
-@@ -2415,12 +2417,14 @@ ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
- 		struct sched_domain *sd;
- 
- 		schedstat_inc(p, se.statistics.nr_wakeups_remote);
-+		rcu_read_lock();
- 		for_each_domain(this_cpu, sd) {
- 			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
- 				schedstat_inc(sd, ttwu_wake_remote);
- 				break;
- 			}
- 		}
-+		rcu_read_unlock();
- 	}
- #endif /* CONFIG_SMP */
- 
-
+Thanks for your input,
+Phil
