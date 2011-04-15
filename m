@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab1DOXUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 19:20:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34477 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab1DOXUa (ORCPT
+	id S1754929Ab1DOXWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 19:22:22 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46929 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753221Ab1DOXWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 19:20:30 -0400
-Date: Fri, 15 Apr 2011 16:20:05 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linville@tuxdriver.com
-Subject: [PATCH -next] mac80211: fix debugfs printk format warning
-Message-Id: <20110415162005.eba5e8f3.randy.dunlap@oracle.com>
-In-Reply-To: <20110415142852.1c745499.sfr@canb.auug.org.au>
-References: <20110415142852.1c745499.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4DA8D2A9.003E:SCFSTAT5015188,ss=1,fgs=0
+	Fri, 15 Apr 2011 19:22:20 -0400
+X-Sasl-enc: pWtLwCuIAArjL45olahHH3hZJuH73EErI9s5PVpLo4bf 1302909740
+Date: Fri, 15 Apr 2011 20:22:12 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@suse.de>, Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [Stable-review] [56/74] x86, microcode, AMD: Extend ucode size
+ verification
+Message-ID: <20110415232212.GA12829@khazad-dum.debian.net>
+References: <20110413155148.974006996@clark.kroah.org>
+ <1302752223.5282.674.camel@localhost>
+ <20110414074125.GA8575@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110414074125.GA8575@aftab>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, 14 Apr 2011, Borislav Petkov wrote:
+> > Good thing nothing important depends on this validation, oh wait...
+> 
+> Oh wait, please don't tell me that you really think that the CPU relies
+> completely on software to do its ucode validation and accepts the "good"
+> ucode binary patch blindly...
 
-Fix printf() format warning (tm_year is long int):
+http://www.securiteam.com/securityreviews/5FP0M1PDFO.html
 
-net/mac80211/debugfs_sta.c:113: warning: format '%d' expects type 'int', but argument 4 has type 'long int'
+If it is not a hoax, circa 2004 K8s would accept any crap that passed a
+simple checksum test.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- net/mac80211/debugfs_sta.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I don't trust the claims of strong crypto usage by Intel either,
+especially since AFAIK Intel itself never claimed to use anything strong,
+just that its microcode was "encrypted".
 
---- linux-next-20110415.orig/net/mac80211/debugfs_sta.c
-+++ linux-next-20110415/net/mac80211/debugfs_sta.c
-@@ -108,7 +108,7 @@ static ssize_t sta_connected_time_read(s
- 	result.tm_year -= 70;
- 	result.tm_mday -= 1;
- 	res = scnprintf(buf, sizeof(buf),
--		"years  - %d\nmonths - %d\ndays   - %d\nclock  - %d:%d:%d\n\n",
-+		"years  - %ld\nmonths - %d\ndays   - %d\nclock  - %d:%d:%d\n\n",
- 			result.tm_year, result.tm_mon, result.tm_mday,
- 			result.tm_hour, result.tm_min, result.tm_sec);
- 	return simple_read_from_buffer(userbuf, count, ppos, buf, res);
+I sure hope real crypto is used on the more recent cores from both
+vendors, though.  Too bad we cannot lock down further microcode updates
+until the next hard reset...
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
