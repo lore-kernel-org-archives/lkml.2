@@ -1,76 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab1DOKMy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 06:12:54 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57412 "EHLO mx1.suse.de"
+	id S1755557Ab1DOKSC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 06:18:02 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47431 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752651Ab1DOKMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 06:12:53 -0400
-Date: Fri, 15 Apr 2011 11:12:48 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: akpm@linux-foundation.org
-Cc: Andrea Arcangeli <aarcange@redhat.com>, raz ben yehuda <raziebe@gmail.com>,
-        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        stable@kernel.org
-Subject: [PATCH] mm: Check if PTE is already allocated during page fault
-Message-ID: <20110415101248.GB22688@suse.de>
+	id S1752096Ab1DOKSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 06:18:00 -0400
+Date: Fri, 15 Apr 2011 12:17:12 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Len Brown <lenb@kernel.org>
+Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
+Message-ID: <20110415101712.GB28007@elte.hu>
+References: <alpine.LFD.2.02.1103301819250.31342@x980>
+ <20110414090854.GB9248@elte.hu>
+ <alpine.LFD.2.02.1104150202310.29365@x980>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1104150202310.29365@x980>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With transparent hugepage support, handle_mm_fault() has to be careful
-that a normal PMD has been established before handling a PTE fault. To
-achieve this, it used __pte_alloc() directly instead of pte_alloc_map
-as pte_alloc_map is unsafe to run against a huge PMD. pte_offset_map()
-is called once it is known the PMD is safe.
 
-pte_alloc_map() is smart enough to check if a PTE is already present
-before calling __pte_alloc but this check was lost. As a consequence,
-PTEs may be allocated unnecessarily and the page table lock taken.
-Thi useless PTE does get cleaned up but it's a performance hit which
-is visible in page_test from aim9.
+* Len Brown <lenb@kernel.org> wrote:
 
-This patch simply re-adds the check normally done by pte_alloc_map to
-check if the PTE needs to be allocated before taking the page table
-lock. The effect is noticable in page_test from aim9.
+> 
+> > > From: Len Brown <len.brown@intel.com>
+> > > 
+> > > Since 2.6.35 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
+> > > Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility is available
+> > > in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
+> > > 
+> > > However, the typical BIOS fails to initialize the MSR,
+> > > and the typical Linux distro neglects to invoke x86_energy_perf_policy(8).
+> > > 
+> > > The result is that some modern hardware is running in hardware default,
+> > > which is "performance" mode, rather than the intended design default
+> > > of "normal" mode.
+> > > 
+> > > Initialize the MSR to the "normal" setting during kernel boot.
+> > > 
+> > > Of course, x86_energy_perf_policy(8) is available to change
+> > > the default after boot, should the user have a policy preference.
+> > > 
+> > > cc: stable@kernel.org
+> > > Signed-off-by: Len Brown <len.brown@intel.com>
+> > > ---
+> > >  arch/x86/include/asm/msr-index.h |    3 +++
+> > >  arch/x86/kernel/cpu/intel.c      |   14 ++++++++++++++
+> > >  2 files changed, 17 insertions(+), 0 deletions(-)
+> > > 
+> ...
+> > 
+> > Dunno, this patch appears to silently modify the system to be slower than it 
+> > was before under Linux.
+> > 
+> > Won't people report this as a regression if this change reduces performance for 
+> > them?
+> > 
+> > They wont be able to see your comments in the code and in the changelog either, 
+> > when this happens to them. They might look into /proc/cpuinfo and see 'epb' 
+> > there but it wont tell them anything. They wont know about a utility available 
+> > in tools/power/x86/ either.
+> 
+> This patch makes no change to the epb feature indicator
+> /proc/cpuinfo.
 
-AIM9
-                2.6.38-vanilla 2.6.38-checkptenone
-creat-clo      446.10 ( 0.00%)   424.47 (-5.10%)
-page_test       38.10 ( 0.00%)    42.04 ( 9.37%)
-brk_test        52.45 ( 0.00%)    51.57 (-1.71%)
-exec_test      382.00 ( 0.00%)   456.90 (16.39%)
-fork_test       60.11 ( 0.00%)    67.79 (11.34%)
-MMTests Statistics: duration
-Total Elapsed Time (seconds)                611.90    612.22
+I know. I reacted to this bit in the changelog:
 
-(While this affects 2.6.38, it is a performance rather than a
-functional bug and normally outside the rules -stable. While the big
-performance differences are to a microbench, the difference in fork
-and exec performance may be significant enough that -stable wants to
-consider the patch)
+> > > Since 2.6.35 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
 
-Reported-by: Raz Ben Yehuda <raziebe@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
--- 
- mm/memory.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Printing the existence of a CPU feature does nothing to inform users.
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 5823698..1659574 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * run pte_offset_map on the pmd, if an huge pmd could
- 	 * materialize from under us from a different thread.
- 	 */
--	if (unlikely(__pte_alloc(mm, vma, pmd, address)))
-+	if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
- 		return VM_FAULT_OOM;
- 	/* if an huge pmd materialized from under us just retry later */
- 	if (unlikely(pmd_trans_huge(*pmd)))
+> > So this patch has 'future trouble' written all over it i'm afraid.
+> 
+> EPB is limited to SNB and later.
+> So the installed base as yet is small.
+> (it also exists on WSM-EP, but doesn't do so much there)
+> EPB will have a more significant effect on future hardware.
+> 
+> Linux currently trails competing operating systems in energy
+> efficiency on SNB due to this setting, and Linux will trail
+> competing operating systems even more on future hardware
+> if this default is not fixed.
+> 
+> Will it be possible to measure a performance difference between
+> "performance" and "normal"?  Yes, it will be possible.
+> Will 99.9% of users notice?  Nope.  More likely they'll notice
+> the the power savings that are disabled in "performance" mode.
+> 
+> I should have called it "benchmark" mode instead of "performance" mode...
+
+That's all fair but does not address the concerns i raised. A silent change 
+during bootup is asking for trouble.
+
+So how about informing users, how about making it non-silent? An informative 
+printk that also mentions the power configuration tool, etc. This solves the 
+concerns i mentioned.
+
+Thanks,
+
+	Ingo
