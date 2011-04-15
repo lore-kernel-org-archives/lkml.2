@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab1DOOdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 10:33:03 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43626 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756092Ab1DOOdB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 10:33:01 -0400
-Date: Fri, 15 Apr 2011 10:32:59 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Mike Frysinger <vapier@gentoo.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [uclinux-dist-devel] freezer: should barriers be smp?
-In-Reply-To: <201104150034.21937.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1104151017300.2051-100000@iolanthe.rowland.org>
+	id S1756157Ab1DOOdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 10:33:52 -0400
+Received: from 8bytes.org ([88.198.83.132]:57938 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756092Ab1DOOdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 10:33:51 -0400
+Date: Fri, 15 Apr 2011 16:33:50 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        alexandre.f.demers@gmail.com
+Subject: Re: Linux 2.6.39-rc3
+Message-ID: <20110415143350.GM18463@8bytes.org>
+References: <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com> <4DA6145D.9070703@kernel.org> <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com> <4DA655E7.3000904@zytor.com> <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com> <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com> <20110415131152.GJ18463@8bytes.org> <20110415131650.GB18660@elte.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415131650.GB18660@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
+On Fri, Apr 15, 2011 at 03:16:50PM +0200, Ingo Molnar wrote:
+> Ok, but how did the allocation changes start triggering this error in 
+> v2.6.39-rc1? There must still be some layout specific thing here, right?
+> Do we understand the details of that as well?
 
-> > > For example, there's no reason why the CPU cannot reorder things so that
-> > > the "if (frozen(p))" is (speculatively) done before the "if (!freezing(p))"
-> > > if there's only a compiler barrier between them.
-> > 
-> > That's true.  On an SMP system, smp_wmb() is identical to wmb(), so
-> > there will be a true memory barrier when it is needed.  On a UP system,
-> > reordering the instructions in this way will not change the final
-> > result -- in particular, it won't break anything.
-> > 
-> > In your example, the two tests look at different flags in *p.  
-> > Speculative reordering of the tests won't make any difference unless
-> > one of the flags gets changed in between.  On a UP system, the only way
-> > the flag can be changed is for the CPU to change it, in which case
-> > the CPU would obviously know that the speculative result had to be
-> > invalidated.
-> 
-> Note, however, that preemption may happen basically at any time, so the
-> task that executes the two "if" statements can be preempted after it has
-> loaded p->flags into a register and before it checks the TIF_FREEZE (if
-> they are reordered).  In that case the p->flags (in memory) may be
-> changed by another task in the meantime.
+No, I must admit that I lack enough knowledge about the GPU hardware to
+make an guess how this tanslation-request happened. All I can tell is
+the address that was reported in the MCE, it is 0xa0001000 (==the second
+page of the GART aperture).
 
-That's okay, because on a UP system there's only one CPU involved.  
+Maybe Alex can help here. Alex, may it be possible that the GPU
+generates DMA requests in the GTT area before the GTT is activated (or
+the activation is completed)? Or can you imagine any other reason?
 
-When the other task changes p->flags, the CPU will realize that the
-register containing the speculative p->flags value is now invalid.  
-This will force it to re-read p->flags before testing TIF_FREEZE.
-
-In principle, the sequence of events is no different from single-line
-code doing:
-
-	p->a = 1;
-	if (p->b)
-		...
-	if (p->a)
-		...
-
-No CPU is ever going to mess this up, even if it does speculatively
-load p->a before executing any of the other statements.
-
-A problem can arise only when the "p->a = 1" statement is executed by a 
-_different_ CPU.  In that case the original CPU has no way to tell that 
-the speculative value is invalid, so a memory barrier is needed to 
-prevent the speculative load.
-
-> > > I'm quite convinced that the statement "some CPUs can reorder instructions in
-> > > such a way that a compiler barrier is not sufficient to prevent breakage" is
-> > > correct.
-> > 
-> > No.  The correct statement is "Some CPUs can reorder instructions in 
-> > such a way that a compiler barrier is not sufficient to prevent 
-> > breakage on SMP systems."
-> 
-> That's if preemption is not taken into account.
-
-It's true even with preemption.
-
-Besides, if this helps to convince you, recall that the task-switch
-code (i.e., the scheduler) contains its own memory barriers.  If one
-task gets preempted by another, these barriers will defeat instruction
-reordering across the preemption boundary.
-
-Alan Stern
+	Joerg
 
