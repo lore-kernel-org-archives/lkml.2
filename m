@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab1DOJho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 05:37:44 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:55658 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960Ab1DOJhm (ORCPT
+	id S1753205Ab1DOJyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 05:54:37 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36313 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab1DOJyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 05:37:42 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjjAQFTOA
-X-RZG-CLASS-ID: mo00
-Date: Fri, 15 Apr 2011 11:37:38 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: dtor@mail.ru, linux-kernel@vger.kernel.org,
-        Igor Mammedov <imammedo@redhat.com>, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] [PATCH] [PV Xen] Mouse stuck after save/restore of
- guest.
-Message-ID: <20110415093737.GA15122@aepfle.de>
-References: <1302795907-321-1-git-send-email-imammedo@redhat.com>
- <20110414155915.GA23629@dumpdata.com>
- <20110414172649.GA7569@aepfle.de>
- <20110414183804.GB1467@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110414183804.GB1467@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 15 Apr 2011 05:54:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=R9vzBtiaI2NJO8Rk/xFABgCkV7d/O5FyCdCi056oOxrrm+1Khra3l8sXKKsSfa8o3Y
+         nd0LDm+cVwN4xeiT0tnZMGE7VFyKrY/IpT/51Q2/O7sFqxNppsst7BNtWeFAwYXm79q+
+         oTw5cNw/sDSJ4j9SjkKEpKaOOF+DdqcgSCqLA=
+Subject: Re: [PATCH 2/2] mtd: msm_nand: Add initial msm nand driver support.
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Murali Nalajala <mnalajal@codeaurora.org>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Dima Zavin <dima@android.com>,
+        Brian Swetland <swetland@google.com>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+In-Reply-To: <1298940450-27365-2-git-send-email-mnalajal@codeaurora.org>
+References: <1298940450-27365-1-git-send-email-mnalajal@codeaurora.org>
+	 <1298940450-27365-2-git-send-email-mnalajal@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Apr 2011 12:51:37 +0300
+Message-ID: <1302861097.3220.12.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, Konrad Rzeszutek Wilk wrote:
+On Tue, 2011-03-01 at 06:17 +0530, Murali Nalajala wrote:
+> +#define pr_fmt(fmt) "%s:" fmt, __func__
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/mtd/mtd.h>
+> +#include <linux/mtd/nand.h>
+> +#include <linux/mtd/partitions.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/sched.h>
+> +#include <linux/slab.h>
+> +#include <linux/dma-mapping.h>
+> +#include <asm/mach/flash.h>
+> +#include <mach/dma.h>
+> +
+> +#include "msm_nand.h"
+> +
+> +unsigned long msm_nand_phys;
 
-> On Thu, Apr 14, 2011 at 07:26:50PM +0200, Olaf Hering wrote:
-> > On Thu, Apr 14, Konrad Rzeszutek Wilk wrote:
-> > 
-> > > On Thu, Apr 14, 2011 at 05:45:07PM +0200, Igor Mammedov wrote:
-> > > >     Mouse stuck after restore of PV guest but buttons are
-> > > >     in working condition.
-> > > >     If driver has been configured for ABS coordinates at
-> > > >     start it will get XENKBD_TYPE_POS events and then
-> > > >     suddenly after restore it'll start getting
-> > > >     XENKBD_TYPE_MOTION events, that will be dropped later
-> > > >     and they won't get into user-space.
-> > > > 
-> > > >     Regression was introduced by hunk 5 and 6 of 5ea5254
-> > > >     in upstream.
-> > > > 
-> > > >     Driver on restore should ask xen for request-abs-pointer
-> > > >     again if it's available. So restore parts that did it 
-> > > >     before 5ea5254.
-> > > 
-> > > Olaf?
-> > 
-> > This change is correct. Thanks for spotting, Igor.
-> 
-> Dmitry,
-> 
-> Was wondering if you are OK pushing this for 2.6.39-rc3 or whether you are OK
-> with me doing. It fixes a regression introduced by the last hunk of 
-> 5ea5254aa0ad269cfbd2875c973ef25ab5b5e9db
+No global variables like this please. Here is how you use them:
 
-Looking through my backlog, I noticed that the patch went also to
-stable@kernel.org and is now in various trees already.
-So please forward this revert also to stable@suse.de
++extern unsigned long msm_nand_phys;
++#define MSM_NAND_REG(off) (msm_nand_phys + (off))
++
++#define MSM_NAND_FLASH_CMD            MSM_NAND_REG(0x0000)
++#define MSM_NAND_ADDR0                MSM_NAND_REG(0x0004)
 
-Olaf
+Could you please make the macros to take the "struct msm_nand_chip
+*chip" argument instead, and store the pase address there. Do not hide
+the fact that those macros are actually functions, not constant - this
+is error prone.
+
+Besides, I'm do not know your HW, but if you have several controllers
+with various base addresses - your driver won't work.
+
+> +	pr_info("Save cfg0 = %x cfg1 = %x\n", chip->cfg0, chip->cfg1);
+> +	pr_info("cfg0: cw/page=%d ud_sz=%d ecc_sz=%d spare_sz=%d "
+> +		"num_addr_cycles=%d\n", (chip->cfg0 >> 6) & 7,
+> +		(chip->cfg0 >> 9) & 0x3ff, (chip->cfg0 >> 19) & 15,
+> +		(chip->cfg0 >> 23) & 15, (chip->cfg0 >> 27) & 7);
+
+Please, revise all your pr_info() calls and turn most of them into
+dev_dbg() or pr_debug. Your driver should be completely silent by
+default, except of error messages and some information messages when it
+is initialized.
+
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
