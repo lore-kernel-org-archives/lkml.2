@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab1DOOdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 10:33:52 -0400
-Received: from 8bytes.org ([88.198.83.132]:57938 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756092Ab1DOOdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 10:33:51 -0400
-Date: Fri, 15 Apr 2011 16:33:50 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        alexandre.f.demers@gmail.com
-Subject: Re: Linux 2.6.39-rc3
-Message-ID: <20110415143350.GM18463@8bytes.org>
-References: <20110413193459.GL19819@8bytes.org> <4DA60C30.4060606@kernel.org> <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com> <4DA6145D.9070703@kernel.org> <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com> <4DA655E7.3000904@zytor.com> <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com> <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com> <20110415131152.GJ18463@8bytes.org> <20110415131650.GB18660@elte.hu>
+	id S1756124Ab1DOOeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 10:34:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47858 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754271Ab1DOOes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 10:34:48 -0400
+Date: Fri, 15 Apr 2011 10:34:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        <linux-sh@vger.kernel.org>, <lethal@linux-sh.org>
+Subject: Re: [RFC][PATCH] PM: Make power domain callbacks take precedence
+ over subsystem ones
+In-Reply-To: <201104150045.54904.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1104151033020.2051-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415131650.GB18660@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 03:16:50PM +0200, Ingo Molnar wrote:
-> Ok, but how did the allocation changes start triggering this error in 
-> v2.6.39-rc1? There must still be some layout specific thing here, right?
-> Do we understand the details of that as well?
+On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
 
-No, I must admit that I lack enough knowledge about the GPU hardware to
-make an guess how this tanslation-request happened. All I can tell is
-the address that was reported in the MCE, it is 0xa0001000 (==the second
-page of the GART aperture).
+> On Thursday, April 14, 2011, Magnus Damm wrote:
 
-Maybe Alex can help here. Alex, may it be possible that the GPU
-generates DMA requests in the GTT area before the GTT is activated (or
-the activation is completed)? Or can you imagine any other reason?
+> > My only thought on this is if we really want to limit ourselves to
+> > only control power domains using these callbacks. I can imagine that
+> > some SoCs want to do other non-power domain specific operations with
+> > these callbacks, and if so, perhaps using the term power domain as
+> > name of the pointer in struct device would be somewhat odd. OTOH, I
+> > really dislike naming discussions in general and I can't really think
+> > of any good names. So it all looks more like a set of system specific
+> > PM override hooks.
+> > 
+> > Or is there something that is really power domain specific with these hooks?
+> 
+> Not in principle, but I think there is.  Namely, if there are two groups
+> of devices belonging to the same bus type (e.g. platform) that each require
+> different PM handling, it is legitimate to call them "power domains" (where
+> "domain" means "a set of devices related to each other because of the way
+> they need to be handled"), even if they don't share power resources.
+> 
+> Of course, if they do share power resources, the term is just right. :-)
 
-	Joerg
+They could be called "PM domains" instead of "power domains".  That's 
+legitimate because they do get used by the PM core, even if they don't 
+literally involve groups of devices sharing the same power supply.
+
+Alan Stern
 
