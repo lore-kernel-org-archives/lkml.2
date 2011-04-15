@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab1DONvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 09:51:47 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36106 "EHLO mx1.suse.de"
+	id S1755334Ab1DON43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 09:56:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab1DONvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 09:51:46 -0400
-Date: Fri, 15 Apr 2011 15:51:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: make expand_downwards symmetrical to expand_upwards
-Message-ID: <20110415135144.GE8828@tiehlicka.suse.cz>
+	id S1755241Ab1DON42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 09:56:28 -0400
+Message-ID: <4DA84E5D.6040300@redhat.com>
+Date: Fri, 15 Apr 2011 15:55:41 +0200
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: QEMU Developers <qemu-devel@nongnu.org>, xen-devel@lists.xensource.com,
+        KVM General <kvm@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org,
+        "libvir-list@redhat.com" <libvir-list@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: LPC2011 Virtualization Micro Conf
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
-the following patch is just a cleanup for better readability without any
-functional changes. What do you think about it?
----
->From 71de71aaa725ee87459b3a256e8bb0af7de4abeb Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 15 Apr 2011 14:56:26 +0200
-Subject: [PATCH] mm: make expand_downwards symmetrical to expand_upwards
 
-Currently we have expand_upwards exported while expand_downwards is
-accessible only via expand_stack.
+With the success of last year's Virtualization micro-conference track
+at Linux Plumbers 2010, I have accepted to organize a similar track
+for Linux Plumbers 2011 in Santa Rosa. Please see the official Linux
+Plumbers 2011 website for full details about the conference:
+http://www.linuxplumbersconf.org/2011/
 
-check_stack_guard_page is a nice example of the asymmetry. It uses
-expand_stack for VM_GROWSDOWN while expand_upwards is called for
-VM_GROWSUP case. Let's make this consistent and export expand_downwards
-same way we do with expand_upwards.
+The Linux Plumbers 2011 Virtualization track is focusing on general
+free software Linux Virtualization. It is not reserved for a specific
+hypervisor, but will focus on general virtualization issues and in
+particular collaboration amongst projects. This would include KVM,
+Xen, QEMU, containers etc.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/mm.h |    2 ++
- mm/memory.c        |    2 +-
- mm/mmap.c          |    2 +-
- 3 files changed, 4 insertions(+), 2 deletions(-)
+Deadline:
+---------
+The deadline for submissions is April 30th. Please visit the following
+link to submit your proposal:
+http://www.linuxplumbersconf.org/2011/ocw/events/LPC2011MC/proposals
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 692dbae..765cf4e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1498,8 +1498,10 @@ unsigned long ra_submit(struct file_ra_state *ra,
- extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
- #if VM_GROWSUP
- extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
-+  #define expand_downwards(vma, address) do { } while (0)
- #else
-   #define expand_upwards(vma, address) do { } while (0)
-+extern int expand_downwards(struct vm_area_struct *vma, unsigned long address);
- #endif
- extern int expand_stack_downwards(struct vm_area_struct *vma,
- 				  unsigned long address);
-diff --git a/mm/memory.c b/mm/memory.c
-index ce22a25..f404fb6 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2969,7 +2969,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
- 		if (prev && prev->vm_end == address)
- 			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
- 
--		expand_stack(vma, address - PAGE_SIZE);
-+		expand_downwards(vma, address - PAGE_SIZE);
- 	}
- 	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
- 		struct vm_area_struct *next = vma->vm_next;
-diff --git a/mm/mmap.c b/mm/mmap.c
-index e27e0cf..6b2a817 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1782,7 +1782,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- /*
-  * vma is the first one with address < vma->vm_start.  Have to extend vma.
-  */
--static int expand_downwards(struct vm_area_struct *vma,
-+int expand_downwards(struct vm_area_struct *vma,
- 				   unsigned long address)
- {
- 	int error;
--- 
-1.7.4.1
+Example topics:
+---------------
+- Kernel and Hypervisor KVM/QEMU/Xen interaction
+- QEMU integration, sharing of code between the different projects
+- IO Performance and scalability
+- Live Migration
+- Managing and supporting enterprise storage
+- Support for new hardware features, and/or provide guest access to
+  these features.
+- Guest agents
+- Virtualization management tools, libvirt, etc.
+- Desktop integration
+- Consumer Electronics device emulation
+- Custom platform configuration and coordination with the kernel
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Audience:
+---------
+Virtualization hypervisor developers, developers of virtualization
+management tools and applications, embedded virtualization developers,
+vendors and others.
+
+Best regards,
+Jes
