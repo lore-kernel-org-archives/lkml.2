@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab1DOQbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:31:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59578 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab1DOQbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:31:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=sdS4Hcp6iBLNIgF0oCrdS4xlm0+qzStp3v0NV2lXxLzI6jDBrLts/Pf2u0IZB8yV8o
-         tFm0dMctB0WM/s6/5wMnyRgvr+E/36VkYs58kPeensjuUPgYGePicMiau0ElKDP8+eCe
-         iftTVbEJ21HnAinj2xiBZr4yY4tm0y7nf2rRI=
-Message-ID: <4DA872F1.8080101@gmail.com>
-Date: Fri, 15 Apr 2011 12:31:45 -0400
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Thunderbird/3.1.9
+	id S1753166Ab1DOQdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:33:06 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:26273 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731Ab1DOQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 12:33:04 -0400
+Date: Fri, 15 Apr 2011 19:28:24 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Michal Nazarewicz <mina86@mina86.com>
+Cc: ext Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
+        cl@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] mm: make read-only accessors take const pointer
+	parameters
+Message-ID: <20110415162824.GF7112@esdhcp04044.research.nokia.com>
+References: <1302861377-8048-1-git-send-email-ext-phil.2.carmody@nokia.com> <20110415145133.GO15707@random.random> <20110415155916.GD7112@esdhcp04044.research.nokia.com> <op.vtzly7dk3l0zgt@mnazarewicz-glaptop>
 MIME-Version: 1.0
-To: Michal Suchanek <hramrach@centrum.cz>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
-        Ian Kent <ikent@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: Unionmount status?
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com> <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com> <4DA5F569.9020309@gmail.com> <BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com> <1302756608.2854.10.camel@perseus.themaw.net> <BANLkTinff1NQ-iYevjccO7ADB9h4RH+mOQ@mail.gmail.com> <BANLkTimD9WB_RP1j8yJR7GUn_NuDuM2SHw@mail.gmail.com> <4DA6F4E2.1060005@gmail.com> <BANLkTik8uQ8keNHnmQCf=MTQK1Q-6=BK4Q@mail.gmail.com>
-In-Reply-To: <BANLkTik8uQ8keNHnmQCf=MTQK1Q-6=BK4Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <op.vtzly7dk3l0zgt@mnazarewicz-glaptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2011 10:54 AM, Michal Suchanek wrote:
-> On 14 April 2011 15:21, Ric Wheeler<ricwheeler@gmail.com>  wrote:
->> On 04/14/2011 05:40 AM, Miklos Szeredi wrote:
->>> On Thu, Apr 14, 2011 at 11:32 AM, Michal Suchanek<hramrach@centrum.cz>
->>>   wrote:
->>>> I guess overlayfs includes the better part of unionmount and achieves
->>>> similar level of functionality in much smaller code size and is
->>>> actively developed.
->>>>
->>>> This might make it the best candidate for inclusion so far.
->>>>
->>>> It does not (yet?) support NFS which is one of the options commonly
->>>> used with union solutions, though.
->>> NFS is supported as a lower (read-only) layer, but not as an upper
->>> (read-write) layer.
->>>
->>> Thanks,
->>> Miklos
->> I am not that concerned with the state of Val's repo, her intention was to
->> hand off the project cleanly to others and have them drive the code (that
->> hand off was the posting of the patch set). Several people (Ian, David
->> Howells and Al Viro) had been involved with union mounts recently, so we do
->> have reasonable candidates for a hand off.
->>
->> One of the concerns with unionfs is the duplication of data. Union mounts
->> avoids this with that implementation. That might make unionfs more of a
->> burden for very large file systems, but probably not a concern for many use
->> cases.
-> Just to make things clear, what is a very large filesystem?
+On 15/04/11 18:12 +0200, ext Michal Nazarewicz wrote:
+> On Fri, 15 Apr 2011 17:59:16 +0200, Phil Carmody wrote:
+>> I'm just glad this wasn't an insta-nack, as I am quite a fan of
+>> consts, and hopefully something can be worked out.
 >
-> A heavily compressed DVD image?
+> I feel you man.  Unfortunately, I think that const, since it's an
+> after-thought, is not very usable in C.
 >
-> Tens or hundreds  of gigabytes? Terabytes?
+> For instance, as you've pointed in your patch, the "_ro" suffix
+> is sort of dumb, but without it compound_head would have to take
+> const and return non-const (like strchr() does) which is kinda
+> stupid as well.
 >
-> Hundreds, thousands or hundreds of thousands of inodes?
->
-> Or is testing required to determine at what size the performance
-> becomes unacceptable?
->
-> Thanks
->
-> Michal
+> What's more, because of lack of encapsulation, “const struct page”
+> only means that the object is const but thighs it points to aren't.
+> As such, const does not really play that well with structs anyway.
 
-Very large in the number of inodes more so than fs size...
+I'm very glad you've mentioned that point, I forgot to. I've taken
+the view that in the absense of inside knowledge, const should be
+inherited down all pointers. So not only will I not change you, but
+I will not change anything you point to. No hidden side effects of
+any kind. That reduces where it can be used, but is a much stronger
+statement when it can be made.
 
-Ric
+> const is, in my opinion, one of those things C++ actually got
+> right (or close to right).
 
+I shouldn't be seen to agree with you on that, lest any fellow Nokians
+notice that I've implied something positive about C++ after my rant on
+our core chat channel a few days back. ;-)
+
+Cheers,
+Phil
