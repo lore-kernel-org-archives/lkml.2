@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab1DOTUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 15:20:06 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30185 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab1DOTUE (ORCPT
+	id S1756711Ab1DOTWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 15:22:13 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36471 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756554Ab1DOTWL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 15:20:04 -0400
-Message-ID: <4DA899EA.8010602@kernel.org>
-Date: Fri, 15 Apr 2011 12:18:02 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Fri, 15 Apr 2011 15:22:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=syPbhzaxQVSaQO3nmjM/+Cy0gr78uCEhEDyUwDqJIZV1BfcoRT7N7kMjIX50DRLxyS
+         ivQZHtXBi7bRV/zSAvQ+A/bfz6QN8u5806Sd0nysmwf0GEhjfzVNmlyytXXm6GezD00x
+         Zk+WoQH3DHVDUPk8b8cVPqP9XxrRpSNm7sK2Y=
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Alexandre Demers <alexandre.f.demers@gmail.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: Linux 2.6.39-rc3
-References: <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com> <4DA6145D.9070703@kernel.org> <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com> <4DA655E7.3000904@zytor.com> <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com> <BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com> <20110415131152.GJ18463@8bytes.org> <4DA8535B.4080901@gmail.com> <20110415142724.GK18463@8bytes.org> <4DA895A2.4060307@gmail.com> <20110415190641.GA20770@elte.hu>
-In-Reply-To: <20110415190641.GA20770@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DA89A30.005C,ss=1,fgs=0
+In-Reply-To: <1302892585.30441.12.camel@dev.znau.edu.ua>
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
+	<1302781431.21145.6.camel@dev.znau.edu.ua>
+	<BANLkTinvpt5vs+rXd3WN-a2JpGtTV+=Gyg@mail.gmail.com>
+	<4DA6E9BD.3090404@hauke-m.de>
+	<BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
+	<1302786900.21965.52.camel@dev.znau.edu.ua>
+	<BANLkTimM8=-pX+Ea8Eyp4XyvP1APbUof9w@mail.gmail.com>
+	<1302892585.30441.12.camel@dev.znau.edu.ua>
+Date: Fri, 15 Apr 2011 21:21:44 +0200
+Message-ID: <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: George Kashperko <george@znau.edu.ua>
+Cc: Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arend van Spriel <arend@broadcom.com>,
+        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
+        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2011 12:06 PM, Ingo Molnar wrote:
+W dniu 15 kwietnia 2011 20:36 użytkownik George Kashperko
+<george@znau.edu.ua> napisał:
+>> >> Arnd: I found you saying:
+>> >> > I believe the one thing we really want from this driver is the bus
+>> >> > scan code, which is not present in the amba bus implementation,
+>> >> I explained how it works, I believe scanning (EPROM in this case) it
+>> >> Broadcom specific, not really AMBA standard. How do you see it?
+>> >>
+>> > It might not Broadcom specific as EPROM core seems to be CoreLink one
+>> > core and maybe is arm-developed. But it isn't documented publicly and we
+>> > don't know yet if it is obligatory for all amba (or at least axi)
+>> > interconnects or not.
+>>
+>> Maybe EPROM is not Broadcom specific, but I suspect the content we
+>> deal with in bcmai/axi is Broadcom specific. I didn't see any notes of
+>> manuf/id/rev/class we deal with. So I guess everything *we* (out
+>> driver) read from EPROM is Bcm specific.
+>>
+>
+> Played around amba registers on bcm4716. For all amba cores present
+> (under all I mean broadcom ip core agents, oob router core, erom core,
+> and other I-dont-know-what-for cores present at 0x18100000). All those
+> feature AMBA_CID (0xb105f00d) as PrimeCell ID, and slightly different
+> PrimeCell PeripheralIDs:
+> * vendor 0xBB, part_number 0x368 for broadcom cores' agents;
+> * vendor 0xBB, part_number 0x367 for OOB router core (don't ask me wth
+> is this please);
+> * vendor 0xBB, part_number 0x366 for EROM core;
+>
+> ARM vendor id is 0x41. Might 0xBB is Broadcom vendor id but I've found
+> no evidence for that with google.
 
-> 
-> Joerg, mind submitting it with a changelog that includes everything we learned 
-> about this bug and all the Tested-by's in place?
-> 
-> Is anyone of the opinion that we should try to revert the allocation 
-> order/alignment changes in addition to this fix?
+Yeah, as I suspected, everything except Broadcom specific cores
+matches AMBA standards quite nicely. Still, I don't see anything in it
+we could use for driver.
 
-We should figure out what is written to 0xa0001000 (main memory) by GPU before internal GART is setup.
+Let's wait for Russell and Arnd to comment.
 
-Joerg,
-can you insert some dump code in the drm/radon code to find out which function cause the problem?
-
-Thanks
-
-Yinghai
+-- 
+Rafał
