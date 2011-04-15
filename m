@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1DOGNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:13:24 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:33920 "EHLO mx1.fusionio.com"
+	id S1752953Ab1DOGXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 02:23:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37138 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab1DOGNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:13:23 -0400
-X-ASG-Debug-ID: 1302848002-03d6a569fbb7ad0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DA7E202.4000307@fusionio.com>
-Date: Fri, 15 Apr 2011 08:13:22 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Guntsche <mike@it-loops.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with  2.6.39-rc[123]]
-References: <20110415035451@it-loops.com> <BANLkTi=50A4f_d0a0oESd3DMMaK1za5BWg@mail.gmail.com> <20110415042255.GC27928@infradead.org>
-X-ASG-Orig-Subj: Re: 2.6.39 Block layer regression was [Bug] Boot hangs with  2.6.39-rc[123]]
-In-Reply-To: <20110415042255.GC27928@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752607Ab1DOGXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 02:23:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,217,1301900400"; 
+   d="scan'208";a="679380846"
+Subject: Re: [PATCH] sched:make ads.avg_load update in time
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Vladimir Davydov <VDavydov@parallels.com>
+Cc: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>
+In-Reply-To: <ACA3447D-4BC5-45A1-B2C4-47A53F6094F7@parallels.com>
+References: <1302833497-19506-1-git-send-email-alex.shi@intel.com>
+	 <ACA3447D-4BC5-45A1-B2C4-47A53F6094F7@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Apr 2011 14:24:32 +0800
+Message-ID: <1302848672.15889.8403.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1302848002
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.60900
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-15 06:22, Christoph Hellwig wrote:
-> On Thu, Apr 14, 2011 at 08:25:33PM -0700, Linus Torvalds wrote:
->> What's the thinking there? It looks very confused to me.
+
+On Fri, 2011-04-15 at 14:13 +0800, Vladimir Davydov wrote:
+> http://git.kernel.org/tip/b0432d8f162c7d5d9537b4cb749d44076b76a783
 > 
-> It is.  I sent a patch a couple of days ago to fix it.
 
-Yeah thanks for that, I agree it looks a bit confusing as-is. I'll queue
-it up.
+oops, did not see it in time. forget my patch. sorry! 
 
->> Now, clearly RAID seems to be involved in the problem? The main thing
->> with that would be that the execution of the requests would tend to
->> generate new requests, that go back on the plug queue. Yes? And the
->> loop in flush_plug_list() means that they all should get flushed out,
->> I assume. But something clearly isn't working, and it does seem to be
->> about the RAID kind of setup. So either they didn't get put on the
->> plug queue, or the task got a new plug (which _wasn't_ flushed).
->>
->> Because we're clearly waiting for some request that hasn't completed.
->> Where in the plug queues would it be hiding?
-> 
-> There's a thread where Neil explains what the problem with MD is - it
-> needs a callback on unplug time to generate e.g. the write intent bitmap
-> or as large as possible writes for RAID5.  Jens and Neil have been
-> looking into it.
-
-I think we are done, Neil just needs to rebase around the current
-for-linus and then we should expedite things in.
-
--- 
-Jens Axboe
 
