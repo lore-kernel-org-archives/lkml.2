@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab1DOQqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:46:40 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:50726 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753341Ab1DOQqi (ORCPT
+	id S1753605Ab1DOQre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:47:34 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:38056 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753287Ab1DOQrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:46:38 -0400
-Date: Fri, 15 Apr 2011 12:46:29 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Huang Ying <ying.huang@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -v3 3/4] lib, Make gen_pool memory allocator lockless
-Message-ID: <20110415164629.GA13983@Krystal>
-References: <1302684835-14133-1-git-send-email-ying.huang@intel.com> <1302684835-14133-4-git-send-email-ying.huang@intel.com> <20110413210757.GA11683@Krystal> <4DA7903B.5030508@intel.com>
+	Fri, 15 Apr 2011 12:47:32 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJPDB2-01-133-02
+X-M-MSG: 
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: <hpa@zytor.com>
+CC: <brgerst@gmail.com>, <tglx@linutronix.de>, <mingo@elte.hu>,
+        <suresh.b.siddha@intel.com>, <eranian@google.com>,
+        <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>
+Subject: [PATCH 1/1] x86, xsave: fix non-lazy allocation of the xsave area
+Date: Fri, 15 Apr 2011 18:47:22 +0200
+Message-ID: <1302886042-612207-1-git-send-email-hans.rosenfeld@amd.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <4DA63012.2090307@zytor.com>
+References: <4DA63012.2090307@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DA7903B.5030508@intel.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:18:18 up 142 days, 21:21,  4 users,  load average: 0.14, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Huang Ying (ying.huang@intel.com) wrote:
-> On 04/14/2011 05:07 AM, Mathieu Desnoyers wrote:
-> > * Huang Ying (ying.huang@intel.com) wrote:
-> > [...]
-> >> + * rcu_read_lock and rcu_read_unlock is not used int gen_pool_alloc,
-> >> + * gen_pool_free, gen_pool_avail and gen_pool_size etc, because chunks
-> >> + * are only added into pool, not deleted from pool unless the pool
-> >> + * itself is destroyed.  If chunk will be deleted from pool,
-> >> + * rcu_read_lock and rcu_read_unlock should be uses in these
-> >> + * functions.
-> > 
-> > So how do you protect between pool destruction and adding chunks into
-> > the pool ?
-> 
-> Because the pool itself will be freed when destruction, we need some
-> mechanism outside of pool.  For example, if gen_pool_add() is called via
-> device file IOCTL, we must un-register the device file first, and
-> destroy the pool after the last reference to device has gone.
+A single static xsave area just for init is not enough, since there are
+more user processes that are directly executed by kernel threads. Add a
+call to a new arch-specific function to flush_old_exec(), which will in
+turn call fpu_alloc() to allocate a xsave area if necessary.
 
-I am concerned about the list_for_each_entry_rcu() (and thus
-rcu_dereference_raw()) used outside of rcu_read_lock/unlock pairs.
-Validation infrastructure as recently been added to RCU: it triggers
-warnings when these situations are encountered in some RCU debugging
-configurations. The case of RCU list iteration is not covered by the
-checks, but it would make sense to be aware of it.
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+---
+ arch/x86/include/asm/i387.h |    6 ------
+ arch/x86/kernel/process.c   |    7 +++++++
+ fs/exec.c                   |    9 +++++++++
+ 3 files changed, 16 insertions(+), 6 deletions(-)
 
-So although it seems like your code does not require rcu read lock
-critical sections, I'd prefer to let Paul McKenney have a look.
-
-Thanks,
-
-Mathieu
-
-> 
-> Best Regards,
-> Huang Ying
-
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 989c0ac..0448f45 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -329,15 +329,9 @@ static inline void fpu_copy(struct fpu *dst, struct fpu *src)
+ }
+ 
+ extern void fpu_finit(struct fpu *fpu);
+-static union thread_xstate __init_xstate, *init_xstate = &__init_xstate;
+ 
+ static inline void fpu_clear(struct fpu *fpu)
+ {
+-	if (!fpu_allocated(fpu)) {
+-		BUG_ON(init_xstate == NULL);
+-		fpu->state = init_xstate;
+-		init_xstate = NULL;
+-	}
+ 	memset(fpu->state, 0, xstate_size);
+ 	fpu_finit(fpu);
+ 	set_used_math();
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 0382f98..3edfbf2 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -26,6 +26,13 @@
+ struct kmem_cache *task_xstate_cachep;
+ EXPORT_SYMBOL_GPL(task_xstate_cachep);
+ 
++int arch_prealloc_fpu(struct task_struct *tsk)
++{
++	if (!fpu_allocated(&tsk->thread.fpu))
++		return fpu_alloc(&tsk->thread.fpu);
++	return 0;
++}
++
+ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
+ {
+ 	int ret;
+diff --git a/fs/exec.c b/fs/exec.c
+index 5e62d26..c5b5c1e 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1022,10 +1022,19 @@ void set_task_comm(struct task_struct *tsk, char *buf)
+ 	perf_event_comm(tsk);
+ }
+ 
++int __attribute__((weak)) arch_prealloc_fpu(struct task_struct *tsk)
++{
++	return 0;
++}
++
+ int flush_old_exec(struct linux_binprm * bprm)
+ {
+ 	int retval;
+ 
++	retval = arch_prealloc_fpu(current);
++	if (retval)
++		goto out;
++
+ 	/*
+ 	 * Make sure we have a private signal table and that
+ 	 * we are unassociated from the previous thread group.
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.5.6.5
+
+
