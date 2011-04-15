@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab1DOFdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 01:33:07 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33468 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361Ab1DOFdE (ORCPT
+	id S1751206Ab1DOFkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 01:40:49 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:50088 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750720Ab1DOFks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 01:33:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH] make sparse happy with gfp.h
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1302844066.16562.1953.camel@nimitz>
-References: <20110415121424.F7A6.A69D9226@jp.fujitsu.com> <1302844066.16562.1953.camel@nimitz>
-Message-Id: <20110415143259.F7BD.A69D9226@jp.fujitsu.com>
+	Fri, 15 Apr 2011 01:40:48 -0400
+Date: Fri, 15 Apr 2011 07:40:31 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Ortwin Gl?ck <odi@odi.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: High latency in wine after suspend
+Message-ID: <20110415054026.GA1484@ucw.cz>
+References: <4D89E99F.30808@odi.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Fri, 15 Apr 2011 14:33:01 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D89E99F.30808@odi.ch>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi!
 
-> On Fri, 2011-04-15 at 12:14 +0900, KOSAKI Motohiro wrote:
-> > >  #ifdef CONFIG_DEBUG_VM
-> > > -             BUG_ON((GFP_ZONE_BAD >> bit) & 1);
-> > > +     BUG_ON((GFP_ZONE_BAD >> bit) & 1);
-> > >  #endif
-> > > -     }
-> > >       return z;
-> > 
-> > Why don't you use VM_BUG_ON?
-> 
-> I was just trying to make a minimal patch that did a single thing.
-> 
-> Feel free to submit another one that does that.  I'm sure there are a
-> couple more places that could use similar love.
+> After a suspend/resume cycle I see intermittent high latency in
+> poll_schedule_timeout (latencytop). This leads to the mouse cursor
+> freezing for several seconds sometimes when switching to/from a window
+> of a wine process. The problem never occurs before suspend, but always
+> occurs after. Any ideas what could cause such behaviour? Kernel is
+> vanilla 2.6.38 x86_64 running on a recent HP laptop with Intel chipset.
 
-I posted another approach patches a second ago. Could you please see it?
+Was this solved somehow? Can you try to  find "smaller" testcase --
+anything less complex than wine? What about hibernation?
 
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
