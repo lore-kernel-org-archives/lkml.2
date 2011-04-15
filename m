@@ -1,77 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab1DOSj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 14:39:59 -0400
-Received: from mail.academy.zt.ua ([82.207.120.245]:8746 "EHLO
-	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab1DOSj5 (ORCPT
+	id S1752733Ab1DOSm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 14:42:56 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:32000 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab1DOSmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 14:39:57 -0400
-X-MDAV-Processed: mail.academy.zt.ua, Fri, 15 Apr 2011 21:39:58 +0300
-X-Spam-Processed: mail.academy.zt.ua, Fri, 15 Apr 2011 21:39:58 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-Return-Path: george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: George Kashperko <george@znau.edu.ua>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arend van Spriel <arend@broadcom.com>,
-        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
-        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <BANLkTimM8=-pX+Ea8Eyp4XyvP1APbUof9w@mail.gmail.com>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-	 <1302781431.21145.6.camel@dev.znau.edu.ua>
-	 <BANLkTinvpt5vs+rXd3WN-a2JpGtTV+=Gyg@mail.gmail.com>
-	 <4DA6E9BD.3090404@hauke-m.de>
-	 <BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
-	 <1302786900.21965.52.camel@dev.znau.edu.ua>
-	 <BANLkTimM8=-pX+Ea8Eyp4XyvP1APbUof9w@mail.gmail.com>
-Content-Type: text/plain
-Date: Fri, 15 Apr 2011 21:36:25 +0300
-Message-Id: <1302892585.30441.12.camel@dev.znau.edu.ua>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Apr 2011 14:42:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6317"; a="86078499"
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+To: tglx@linutronix.de
+Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        mathieu.desnoyers@efficios.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        dwalker@fifo99.com, linux-arm-msm-owner@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [RFC PATCH] genirq: implement read_irq_line for interrupt lines
+Date: Fri, 15 Apr 2011 11:42:32 -0700
+Message-Id: <1302892952-7090-1-git-send-email-adharmap@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Arnd: I found you saying:
-> >> > I believe the one thing we really want from this driver is the bus
-> >> > scan code, which is not present in the amba bus implementation,
-> >> I explained how it works, I believe scanning (EPROM in this case) it
-> >> Broadcom specific, not really AMBA standard. How do you see it?
-> >>
-> > It might not Broadcom specific as EPROM core seems to be CoreLink one
-> > core and maybe is arm-developed. But it isn't documented publicly and we
-> > don't know yet if it is obligatory for all amba (or at least axi)
-> > interconnects or not.
-> 
-> Maybe EPROM is not Broadcom specific, but I suspect the content we
-> deal with in bcmai/axi is Broadcom specific. I didn't see any notes of
-> manuf/id/rev/class we deal with. So I guess everything *we* (out
-> driver) read from EPROM is Bcm specific.
-> 
+Some drivers need to know what the status of the interrupt line is.
+This is especially true for drivers that register a handler with
+IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING and in the handler they
+need to know which edge transition it was invoked for.
 
-Played around amba registers on bcm4716. For all amba cores present
-(under all I mean broadcom ip core agents, oob router core, erom core,
-and other I-dont-know-what-for cores present at 0x18100000). All those
-feature AMBA_CID (0xb105f00d) as PrimeCell ID, and slightly different
-PrimeCell PeripheralIDs:
-* vendor 0xBB, part_number 0x368 for broadcom cores' agents;
-* vendor 0xBB, part_number 0x367 for OOB router core (don't ask me wth
-is this please);
-* vendor 0xBB, part_number 0x366 for EROM core;
+The irq_read_line callback in the chip allows the controller to provide
+the real time status of this line. Controllers that can read the status
+of an interrupt line should implement this by doing necessary
+hardware reads and return the logical state of the line.
 
-ARM vendor id is 0x41. Might 0xBB is Broadcom vendor id but I've found
-no evidence for that with google.
+Interrupt controllers based on the slow bus architecture should conduct
+the transaction in this callback. The genirq code will call the chip's
+bus lock prior to calling irq_read_line. Obviously since the transaction
+would be completed before returning from irq_read_line it need not do
+any transactions in the bus unlock call.
 
-Have nice day,
-George
+Drivers need to be aware whether the interrupt controller is a slow bus
+and call read_irq_line in proper context.
 
+Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+---
+ include/linux/interrupt.h |    1 +
+ include/linux/irq.h       |    2 ++
+ kernel/irq/manage.c       |   25 +++++++++++++++++++++++++
+ 3 files changed, 28 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 59b72ca..0722576 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -337,6 +337,7 @@ static inline void enable_irq_lockdep_irqrestore(unsigned int irq, unsigned long
+ 
+ /* IRQ wakeup (PM) control: */
+ extern int irq_set_irq_wake(unsigned int irq, unsigned int on);
++extern int irq_read_line(unsigned int irq);
+ 
+ #ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
+ /* Please do not use: Use the replacement functions instead */
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 2a375a7..52198b6 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -298,6 +298,7 @@ static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
+  * @irq_retrigger:	resend an IRQ to the CPU
+  * @irq_set_type:	set the flow type (IRQ_TYPE_LEVEL/etc.) of an IRQ
+  * @irq_set_wake:	enable/disable power-management wake-on of an IRQ
++ * @irq_read_line:	return the current value on the irq line
+  * @irq_bus_lock:	function to lock access to slow bus (i2c) chips
+  * @irq_bus_sync_unlock:function to sync and unlock slow bus (i2c) chips
+  * @irq_cpu_online:	configure an interrupt source for a secondary CPU
+@@ -324,6 +325,7 @@ struct irq_chip {
+ 	int		(*irq_retrigger)(struct irq_data *data);
+ 	int		(*irq_set_type)(struct irq_data *data, unsigned int flow_type);
+ 	int		(*irq_set_wake)(struct irq_data *data, unsigned int on);
++	int		(*irq_read_line)(struct irq_data *data);
+ 
+ 	void		(*irq_bus_lock)(struct irq_data *data);
+ 	void		(*irq_bus_sync_unlock)(struct irq_data *data);
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 12a80fd..6667052 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -518,6 +518,31 @@ int irq_set_irq_wake(unsigned int irq, unsigned int on)
+ }
+ EXPORT_SYMBOL(irq_set_irq_wake);
+ 
++/**
++ *	irq_read_line - read the value on an irq line
++ *	@irq: Interrupt number representing a hardware line
++ *
++ *	This function may be called from IRQ context only when
++ *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
++ */
++int irq_read_line(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	unsigned long flags;
++	int val;
++
++	if (!desc || !desc->irq_data.chip->irq_read_line)
++		return -EINVAL;
++
++	chip_bus_lock(desc);
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	val = desc->irq_data.chip->irq_read_line(&desc->irq_data);
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++	chip_bus_sync_unlock(desc);
++	return val;
++}
++EXPORT_SYMBOL(irq_read_line);
++
+ /*
+  * Internal function that tells the architecture code whether a
+  * particular irq has been exclusively allocated or is available
+-- 
+1.7.1
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
