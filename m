@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab1DOVyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 17:54:36 -0400
-Received: from eastrmfepi201.cox.net ([68.230.241.205]:51616 "EHLO
-	eastrmfepi201.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757077Ab1DOVyf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 17:54:35 -0400
-X-Greylist: delayed 670 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Apr 2011 17:54:34 EDT
-X-CT-Score: NA
-X-Authority-Analysis: v=1.1 cv=Bnpb4GFFHmxHbnugVe6AhTieCXSJHGjj7jZaTnsJi/Y=
- c=1 sm=1 a=9dA7xjtCB_wA:10 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10
- a=ous62m1dbVwA:10 a=IkcTkHD0fZMA:10 a=W4FTSIjT55UdHar1SjKJ/g==:17
- a=69EAbJreAAAA:8 a=Oh3jfBlJrFB2ZjdssNAA:9 a=AC4Ymp7RgbnnWrCnYS0A:7
- a=QEXdDO2ut3YA:10 a=GLgvxpQwa5YA:10 a=dj1fixmOfTgA:10 a=EfJqPEOeqlMA:10
- a=mwH6dMT9rGRTeH48:21 a=8e2lbE5C3xwHMVOu:21 a=W4FTSIjT55UdHar1SjKJ/g==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110415174324.Z19WM.129162.imail@eastrmwml32>
-Date: Fri, 15 Apr 2011 14:43:24 -0700
-From: <asdfgnb@cox.net>
-Reply-To: dfkb210@aol.com
-Subject: Attention Winner, YOUR WINNING CHECK OF $750,000 JUST ARRIVED USA.
+	id S1757427Ab1DOVzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 17:55:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59257 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757077Ab1DOVzQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 17:55:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <4DA8B3FB.5020401@linux.intel.com>
+References: <1302892769.2577.24.camel@schen9-DESK> <4DA8B3FB.5020401@linux.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 15 Apr 2011 14:54:23 -0700
+Message-ID: <BANLkTi=Z4N4BmjHZkAFev85YL0a=fji4BA@mail.gmail.com>
+Subject: Re: [PATCH] vfs: Fix RCU path walk failiures due to uninitialized
+ nameidata seq number for root directory
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shaohua.li@intel.com, alex.shi@intel.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention winner,
+On Fri, Apr 15, 2011 at 2:09 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> On 4/15/2011 11:39 AM, Tim Chen wrote:
+>>
+>> During RCU walk in path_lookupat and path_openat, the rcu lookup
+>> frequently failed because when root directory was looked up, seq number
+>> was not properly set in nameidata.  We dropped out of RCU walk in
+>> nameidata_drop_rcu due to mismatch in directory entry's seq number.  We
+>> reverted to slow path walk that need to take references.
+>
+> Thanks Tim. Adding Andrew, Linus too. IMHO this fix is quite important to
+> actually make the fabled RCU dcache work -- without it it's just slower
+> because
+> it will fallback nearly allways.
 
-We the management and staffs of Chevron Texaco Promotions 2010/2011 winnings Multinationals Oil Company wishes to 
+Well, only for absolute paths, but yes.
 
-congratulates you once more. I am presently at the airport now with the airport customs agents here in JFK International 
+I think all my benchmarking was for thing like "git diff", which are
+all about the relative paths and wouldn't have triggered this case.
 
-Airport, U.S.A with your Free Chevron Texaco Promotions 2010/2011 winnings. 
+So this patch does look correct, and yes, should also be stable material for 38.
 
-I have a certified bank check of $750,000 here with me,issued in your name by CATER ALLEN PRIVATE BANK. please call the
+And it's pretty fundamental. But I'd like to get a few more acks
+exactly because it's so fundamental. Al and Nick sadly are both gone.
+Anybody else feel like they know something about the path lookup code?
 
- airport customs authority with the phone number below for further instructions on how to recieve your winning check. 
-
-Name: Mr Michael Wellington
-
-Direct Email: michaelwellington210@hotmail.com 
-
-Direct Phone: +1 9402388798
-
-Please call him immediately, to know how you can recieve your payment immediately.
-
-Thank You And Remain Blessed.
+                             Linus
