@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab1DOWCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 18:02:42 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:64568 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080Ab1DOWCS (ORCPT
+	id S1757421Ab1DOWET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 18:04:19 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53419 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757149Ab1DOWES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 18:02:18 -0400
-X-IronPort-AV: E=Sophos;i="4.64,221,1301875200"; 
-   d="scan'208";a="5332531"
-Subject: Re: [PATCH] xen: cleancache shim to Xen Transcendent Memory
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: <chris.mason@oracle.com>, <viro@zeniv.linux.org.uk>,
-        <akpm@linux-foundation.org>, <adilger.kernel@dilger.ca>,
-        <tytso@mit.edu>, <mfasheh@suse.com>, <jlbec@evilplan.org>,
-        <matthew@wil.cx>, <linux-btrfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <ocfs2-devel@oss.oracle.com>,
-        <linux-mm@kvack.org>, <hch@infradead.org>, <ngupta@vflare.org>,
-        <jeremy@goop.org>, <JBeulich@novell.com>, <kurt.hackel@oracle.com>,
-        <npiggin@kernel.dk>, <dave.mccracken@oracle.com>, <riel@redhat.com>,
-        <avi@redhat.com>, <konrad.wilk@oracle.com>, <mel@csn.ul.ie>,
-        <yinghan@google.com>, <gthelen@google.com>,
-        <torvalds@linux-foundation.org>
-In-Reply-To: <20110414212002.GA27846@ca-server1.us.oracle.com>
-References: <20110414212002.GA27846@ca-server1.us.oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Fri, 15 Apr 2011 23:02:15 +0100
-Message-ID: <1302904935.22658.9.camel@localhost.localdomain>
+	Fri, 15 Apr 2011 18:04:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=QztBlK7MRs11B5V/pMHb+E5AqlE5BMwryGkkiPHd0TEKDhogWjVkFqzkhL3Jn9ci6H
+         x0mf3fLcox0xsYWsaLtVIjq+FKd1fDiurvcZ08i8ngiVzFyEo588iboOg8LufqLNhr4X
+         BoH5ViPgCGHorh1fpHjrsdlm01Q1vVumnj1uM=
+Message-ID: <4DA8C0DD.8090003@lwfinger.net>
+Date: Fri, 15 Apr 2011 17:04:13 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+To: LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>
+Subject: Strange build error with new driver on 2.6.39-rc3
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-14 at 14:20 -0700, Dan Magenheimer wrote:
-> [PATCH] xen: cleancache shim to Xen Transcendent Memory
-> 
-> This patch provides a shim between the kernel-internal cleancache
-> API (see Documentation/mm/cleancache.txt) and the Xen Transcendent
-> Memory ABI (see http://oss.oracle.com/projects/tmem).
+When building a new driver on kernel 2.6.39-rc3 when using a 32-bit system, I 
+get the following error:
 
-There's no need to build this into a kernel which doesn't have
-cleancache (or one of the other frontends), is there? I think there
-should be a Kconfig option (even if its not a user visible one) with the
-appropriate depends/selects.
+   MODPOST 511 modules
+FATAL: drivers/net/wireless/rtlwifi/rtl8192se/rtl8192se: sizeof(struct 
+usb_device_id)=20 is not a modulo of the size of section __mod_usb_device_table=168.
+Fix definition of struct usb_device_id in mod_devicetable.h
 
-Ian.
+This error is strange in that this device is PCI based and contains no mention 
+of usb_device_id. There is a USB-based driver in the rtlwifi tree, but there is 
+also another PCI driver and it does not get this error.
 
+Thanks,
+
+Larry
