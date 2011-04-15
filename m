@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1DOG5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:57:18 -0400
-Received: from fep21.mx.upcmail.net ([62.179.121.41]:63295 "EHLO
-	fep21.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab1DOG5R (ORCPT
+	id S1753770Ab1DOG7R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 02:59:17 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:40087 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab1DOG7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:57:17 -0400
-X-Greylist: delayed 1082 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Apr 2011 02:57:12 EDT
-X-SourceIP: 77.58.148.40
-Message-ID: <4DA7E83A.8080007@odi.ch>
-Date: Fri, 15 Apr 2011 08:39:54 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Thunderbird/3.1.9
+	Fri, 15 Apr 2011 02:59:16 -0400
+Date: Fri, 15 Apr 2011 08:59:14 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Martin Teufel <teufel@informatik.uni-frankfurt.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: bug in radeon driver module of linux 2.6.38 (since 2.6.35)
+Message-ID: <20110415065914.GA1652@x4.trippels.de>
+References: <20110414215118.GA30387@hekate.rbi.informatik.uni-frankfurt.de>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: High latency in wine after suspend
-References: <4D89E99F.30808@odi.ch> <20110415054026.GA1484@ucw.cz>
-In-Reply-To: <20110415054026.GA1484@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=vUpxTctd+kpWCBtSXXIkt5ll4Z8E5Qu9nLREXC/hfIo= c=1 sm=0 a=I24HDECOQz4A:10 a=XV0QBAHWQGoA:10 a=8nJEP1OIZ-IA:10 a=ULRV9qDADAjPEBY8bRcA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110414215118.GA30387@hekate.rbi.informatik.uni-frankfurt.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> After a suspend/resume cycle I see intermittent high latency in
->> poll_schedule_timeout (latencytop). This leads to the mouse cursor
->> freezing for several seconds sometimes when switching to/from a window
->> of a wine process. The problem never occurs before suspend, but always
->> occurs after. Any ideas what could cause such behaviour? Kernel is
->> vanilla 2.6.38 x86_64 running on a recent HP laptop with Intel chipset.
+On 2011.04.14 at 23:51 +0200, Martin Teufel wrote:
 > 
-> Was this solved somehow? Can you try to  find "smaller" testcase --
-> anything less complex than wine? What about hibernation?
+> I encountered a bug in the radeon driver module of 2.6.37 which still
+> exists in 2.6.38.
+> I have a mainboard called M2A-VM which has VGA, DVI and display port as
+> graphic output ports. When I boot Debian GNU/Linux with Linux 2.6.37 or
+> 2.6.38 I get every 10 seconds:
+> 
+> radeon 0000:01:05.0: HDMI-A-1: EDID block 0 invalid.
+> [drm:radeon_dvi_detect] *ERROR* HDMI-A-1: probed a monitor but no|invalid EDID
+> 
+> This error message is spamming to tty1 (and because of my configuration
+> to ttyS0 too). With radeon.modeset=0 set, I get rid of this messages by
+> disabling KMS for this driver.
 
-Yes, I made an educated guess and applied
+drm_kms_helper.poll=0 is what I use locally here. Maybe it helps in your
+case, too.
 
-84ac7c
-x86, mtrr, pat: Fix one cpu getting out of sync during resume
-
-With that the problem is gone.
-
-
-
+-- 
+Markus
