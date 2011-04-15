@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab1DOVzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 17:55:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59257 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757077Ab1DOVzQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 17:55:16 -0400
+	id S1757328Ab1DOWCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 18:02:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43342 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755470Ab1DOWCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 18:02:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Uj6fjCYLb/PwsPAvh7X/C1FkmCqe0Xn2VVXDk91AmO34LUHAjOe+YtxTJgOuX2XLuD
+         bBbPTBSNBeavb7f4n7Ukgunf/hDy4hoCyOT1HjMNc4YLf6EYSDnrrIzzLfVnC4E+3Y9i
+         kkES0GjG0Gdy6LOO8mMc0AP6x5hIoZcdTWaxg=
 MIME-Version: 1.0
-In-Reply-To: <4DA8B3FB.5020401@linux.intel.com>
-References: <1302892769.2577.24.camel@schen9-DESK> <4DA8B3FB.5020401@linux.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 15 Apr 2011 14:54:23 -0700
-Message-ID: <BANLkTi=Z4N4BmjHZkAFev85YL0a=fji4BA@mail.gmail.com>
-Subject: Re: [PATCH] vfs: Fix RCU path walk failiures due to uninitialized
- nameidata seq number for root directory
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shaohua.li@intel.com, alex.shi@intel.com,
-        akpm@linux-foundation.org
+Date: Fri, 15 Apr 2011 17:02:16 -0500
+Message-ID: <BANLkTikrEVch9jmwpg4x3NGn03p1hHyC-w@mail.gmail.com>
+Subject: [GIT PULL] 9p: fixes for -rc3
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 2:09 PM, Andi Kleen <ak@linux.intel.com> wrote:
-> On 4/15/2011 11:39 AM, Tim Chen wrote:
->>
->> During RCU walk in path_lookupat and path_openat, the rcu lookup
->> frequently failed because when root directory was looked up, seq number
->> was not properly set in nameidata.  We dropped out of RCU walk in
->> nameidata_drop_rcu due to mismatch in directory entry's seq number.  We
->> reverted to slow path walk that need to take references.
->
-> Thanks Tim. Adding Andrew, Linus too. IMHO this fix is quite important to
-> actually make the fabled RCU dcache work -- without it it's just slower
-> because
-> it will fallback nearly allways.
+Linus,
+   Here's some fixes for the -rc stream, sorry these have been a bit
+delayed due to a new baby killing my productivity and my normal sleep
+patterns :)
 
-Well, only for absolute paths, but yes.
+The following changes since commit 5853b4f06f7b9b56f37f457d7923f7b96496074e:
 
-I think all my benchmarking was for thing like "git diff", which are
-all about the relative paths and wouldn't have triggered this case.
+  Merge branch 'for-linus' of git://git.kernel.dk/linux-2.6-block
+(2011-04-15 08:01:13 -0700)
 
-So this patch does look correct, and yes, should also be stable material for 38.
+are available in the git repository at:
 
-And it's pretty fundamental. But I'd like to get a few more acks
-exactly because it's so fundamental. Al and Nick sadly are both gone.
-Anybody else feel like they know something about the path lookup code?
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
 
-                             Linus
+Aneesh Kumar K.V (5):
+      fs/9p: Fix revalidate to return correct value
+      fs/9p: Use write_inode for data sync on server
+      9p: revert tsyncfs related changes
+      fs/9p: Fix error reported by coccicheck
+      9p: Fix sparse error
+
+Harsh Prateek Bora (1):
+      net/9p: nwname should be an unsigned int
+
+ fs/9p/fid.c             |   15 +-------
+ fs/9p/v9fs.h            |    1 -
+ fs/9p/vfs_dentry.c      |    4 ++-
+ fs/9p/vfs_inode_dotl.c  |    2 +-
+ fs/9p/vfs_super.c       |   80 +++++++++++++++++++++++++++++++++--------------
+ include/net/9p/9p.h     |    2 -
+ include/net/9p/client.h |    5 +--
+ net/9p/client.c         |   29 ++--------------
+ net/9p/protocol.c       |    7 ++--
+ net/9p/trans_common.c   |    2 +-
+ net/9p/trans_virtio.c   |   15 ++++++--
+ 11 files changed, 84 insertions(+), 78 deletions(-)
