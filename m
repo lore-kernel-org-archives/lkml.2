@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1DOQdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:33:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60192 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab1DOQdf convert rfc822-to-8bit (ORCPT
+	id S1753277Ab1DOQhy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:37:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60680 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126Ab1DOQhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:33:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=cVJhur/ecsXZiy77Ca4qGRlvJRGhZLo4ZBUWkX5oaL1PyIpmYN3f0qy3EPeJgMAl54
-         f+W1W6n7A4eB+RLNNObNsnoxm9Kuc8hPJwAUq3q4nqB1G/VGzK1D2CwgivVrkBrBOTV3
-         EWoW3DDFkaggnMX3qLxLY02RoQ6kPTZKwm/Z4=
+	Fri, 15 Apr 2011 12:37:52 -0400
+Date: Fri, 15 Apr 2011 12:37:46 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: liubo <liubo2009@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH] Trace: add __print_symbolic_u64 to avoid warnings on
+ 32bit machine
+Message-ID: <20110415163746.GA14185@infradead.org>
+References: <4D9573DB.4010009@cn.fujitsu.com>
+ <1301665762.2160.22.camel@gandalf.stny.rr.com>
+ <4D9C2FF6.7090607@cn.fujitsu.com>
+ <20110415092418.b18fd6fe.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20110415162938.GA11454@atrey.karlin.mff.cuni.cz>
-References: <BANLkTinj3y+-VhzFAPz8Gzb5vAbtUFU6Aw@mail.gmail.com>
- <Pine.LNX.4.44L0.1104131757430.2005-100000@iolanthe.rowland.org> <20110415162938.GA11454@atrey.karlin.mff.cuni.cz>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 15 Apr 2011 12:33:12 -0400
-X-Google-Sender-Auth: fDrODyun4bvZojtoHmh4EM-HJbk
-Message-ID: <BANLkTikaymG-5-YoTnG2SPJCnBtXPpfHBQ@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [linux-pm] freezer: should barriers be smp ?
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415092418.b18fd6fe.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 12:29, Pavel Machek wrote:
->> > > I believe the code is correct as is.
->> >
->> > that isnt what the code / documentation says.  unless i'm reading them
->> > wrong, both seem to indicate that the proposed patch is what we
->> > actually want.
->>
->> The existing code is correct but it isn't optimal.
->>
->> wmb() and rmb() are heavy-duty operations, and you don't want to call
->> them when they aren't needed.  That's exactly what smp_wmb() and
->> smp_rmb() are for -- they call wmb() and rmb(), but only in SMP
->> kernels.
->>
->> Unless you need to synchronize with another processor (not necessarily
->> a CPU, it could be something embedded within a device), you should
->> always use smp_wmb() and smp_rmb() rather than wmb() and rmb().
->
-> Maybe; but this code is not performance critical and I believe being
-> obvious here is better...
+On Fri, Apr 15, 2011 at 09:24:18AM -0700, Randy Dunlap wrote:
+> Can this also be used to stop this warning that has been around
+> like forever (on i386)?
+> 
+> linux-next-20110415/fs/xfs/linux-2.6/./xfs_trace.h:1354: warning: format '%llx' expects type 'long long unsigned int', but argument 22 has type 'xfs_fsblock_t'
 
-isnt it though ?  especially when we talk about suspending/resuming on
-embedded systems to get more savings over just cpu idle ?  we want
-that latency to be as low as possible.
--mike
+What about reporting the bug?  And no, it won't help.  The only
+thing that helps would be casting the argument to (long long).  If you
+send me (and/or the xfs list) a list of the warnings you see I'm happy
+to fix them, although I don't see them during my x86 builds.  Could it
+be that you have CONFIG_LBD disabled?  That's surely not a popular
+option with XFS users.
+
