@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab1DOPCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:02:11 -0400
-Received: from eazy.amigager.de ([213.239.192.238]:58147 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab1DOPCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:02:10 -0400
-X-Greylist: delayed 433 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Apr 2011 11:02:10 EDT
-Date: Fri, 15 Apr 2011 16:54:57 +0200
-From: Tino Keitel <tino.keitel@gmx.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] /proc/acpi/wakeup regression in 2.6.39-rc3
-Message-ID: <20110415145457.GA27650@eazy.amigager.de>
-Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-	Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-References: <201104150053.37037.rjw@sisk.pl> <Pine.LNX.4.44L0.1104151034580.2051-100000@iolanthe.rowland.org>
+	id S1754524Ab1DOPGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 11:06:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12105 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754105Ab1DOPGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 11:06:18 -0400
+Date: Fri, 15 Apr 2011 17:06:06 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: akpm@linux-foundation.org, raz ben yehuda <raziebe@gmail.com>,
+        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        stable@kernel.org
+Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
+Message-ID: <20110415150606.GP15707@random.random>
+References: <20110415101248.GB22688@suse.de>
+ <20110415143916.GN15707@random.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1104151034580.2051-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110415143916.GN15707@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 10:38:47 -0400, Alan Stern wrote:
-> On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
-> 
-> > On Friday, April 15, 2011, Tino Keitel wrote:
-> > > Hi,
-> > > 
-> > > with 2.6.38, I enabled wakeup from suspend to RAM with the USB keyboard
-> > > this way:
-> > > 
-> > > echo USB2 > /proc/acpi/wakeup
-> > > 
-> > > This does not work anymore with 2.6.39-rc3. Wakeup using the keyboard
-> > > won't work, and the USB2 line in /proc/acpi/wakeup doesn't change to
-> > > "enabled" after the echo command.
-> > > 
-> > > Is this intended? If yes, what is the new way to enable keyboard
-> > > wakeup?
-> > 
-> > No, it's supposed to work IIRC.  I'll have a look at that code tomorrow.
-> 
-> Tino, can you check the contents of the power/wakeup files in the
-> appropriate sysfs directories?  That would be the directory for the
-> keyboard device itself and the directory for the USB host controller
-> for the bus the keyboard is on.
-> 
-> By default, power/wakeup should be "enabled" for the keyboard device 
-> and "disabled" for the host controller.  If you write "enabled" into 
-> the host controller's file by hand, does that fix the problem?
+On Fri, Apr 15, 2011 at 04:39:16PM +0200, Andrea Arcangeli wrote:
+> On Fri, Apr 15, 2011 at 11:12:48AM +0100, Mel Gorman wrote:
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 5823698..1659574 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  	 * run pte_offset_map on the pmd, if an huge pmd could
+> >  	 * materialize from under us from a different thread.
+> >  	 */
+> > -	if (unlikely(__pte_alloc(mm, vma, pmd, address)))
+> > +	if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
 
-I already tried to write "enable" into all USB related wakeup files
-yesterday, not change.
+I started hacking on this and I noticed it'd be better to extend the
+unlikely through the end. At first review I didn't notice the
+parenthesis closure stops after pte_none and __pte_alloc is now
+uncovered. I'd prefer this:
 
-I'll check again how these files look like in 2.6.38, what sysfs
-wakeup files change when writing into /proc/acpi/wakeup, and what
-differences to 2.6.39-rc can be seen.
+    if (unlikely(pmd_none(*pmd) && __pte_alloc(mm, vma, pmd, address)))
 
-Regards,
-Tino
+I mean the real unlikely thing is that we return VM_FAULT_OOM, if we
+end up calling __pte_alloc or not, depends on the app. Generally it
+sounds more frequent that the pte is not none, so it's not wrong, but
+it's even less likely that __pte_alloc fails so that can be taken into
+account too, and __pte_alloc runs still quite frequently. So either
+above or:
+
+    if (unlikely(pmd_none(*pmd)) && unlikely(__pte_alloc(mm, vma, pmd, address)))
+
+I generally prefer unlikely only when it's 100% sure thing it's less
+likely (like the VM_FAULT_OOM), so the first version I guess it's
+enough (I'm afraid unlikely for pte_none too, may make gcc generate a
+far away jump possibly going out of l1 icache for a case that is only
+512 times less likely at best). My point is that it's certainly hugely
+more unlikely that __pte_alloc fails than the pte is none.
+
+This is a real nitpick though ;).
