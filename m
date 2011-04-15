@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab1DORz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 13:55:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64323 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753487Ab1DORz1 convert rfc822-to-8bit (ORCPT
+	id S1755925Ab1DOR5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 13:57:32 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44473 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755570Ab1DOR5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 13:55:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,220,1301900400"; 
-   d="scan'208";a="629364049"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>,
-        Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-CC: Prarit Bhargava <prarit@redhat.com>, Russ Anderson <rja@sgi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Date: Fri, 15 Apr 2011 10:55:24 -0700
-Subject: RE: [PATCH 1/2] x86, MCE: Do not taint when handling correctable
- errors
-Thread-Topic: [PATCH 1/2] x86, MCE: Do not taint when handling correctable
- errors
-Thread-Index: Acv7Sb5+wp4M42bST86xiVWye1EbcgARSqewAACkfeA=
-Message-ID: <987664A83D2D224EAE907B061CE93D5301A97B097C@orsmsx505.amr.corp.intel.com>
-References: <1302857141-17580-1-git-send-email-bp@amd64.org>
- <66D9D2F0CDB5C9428E6166B01EC85EE162EF92B0F3@GVW0676EXC.americas.hpqcorp.net>
-In-Reply-To: <66D9D2F0CDB5C9428E6166B01EC85EE162EF92B0F3@GVW0676EXC.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Apr 2011 13:57:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Argp8/KSxAVyImtlzg9HY0BpnKKc2NVNlkotRmPRjXIoTfJwAQzd244sEROewcPIub
+         ArVRKjXHLsFLZVWBGX77LHIj69X+CNJSTU7kBTXI98gTIWootjX8cyPXabDIq/gLfi/V
+         WpVraiy3qk/jwRGXlALA4ZfjfO6IigOUrQX9I=
+Message-ID: <4DA88707.4060704@garzik.org>
+Date: Fri, 15 Apr 2011 13:57:27 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: Ben Greear <greearb@candelatech.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux IDE mailing list <linux-ide@vger.kernel.org>
+Subject: Re: WARNING at libata-core.c:5015 in 2.6.39-rc3-wl+, then lockup.
+ (bisected)
+References: <4DA5CF81.4070908@candelatech.com> <4DA5D5D8.8070301@candelatech.com> <4DA5F3BA.3060404@candelatech.com> <4DA87A72.50809@candelatech.com>
+In-Reply-To: <4DA87A72.50809@candelatech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Would it be okay to extend this reasoning and also remove the tainting 
-> caused by TM1/TM2 thermal events:
+On 04/15/2011 01:03 PM, Ben Greear wrote:
+> Ok, it took a while, but I think I have this thing somewhat bisected.
+>
+> Starting at commit 4cc4d24efce4672f9b0e7fa27963770ae602998f, I see
+> hard-drive
+> issues. Commits right before this (in git bisect) crash in the
+> networking code
+> quite often, but the hard-drive logic seems to work at least.
+>
+> In later builds (ie, -rc3), the crashes and warnings are different, but
+> they have something to do with the file system. It's difficult to bisect
+> it any better because of all the instability...
+>
+>
+> Here are some console logs from a
+> 4cc4d24efce4672f9b0e7fa27963770ae602998f boot:
 
-Looks good to me - crossing a thermal threshold doesn't sound (by
-itself) worthy of a TAINT.  Nothing has been corrupted.
+(linux-ide added to CC)
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+hmmm...  that's a merge commit.  Any chance you could mark an individual 
+commit bad, to narrow things down a bit more?  Run "git help bisect" and 
+check out helpful sections "Avoiding testing a commit" and "Bisect skip".
+
+	Jeff
+
+
