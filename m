@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab1DOLb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 07:31:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37548 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab1DOLb2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 07:31:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=mime-version:x-originating-ip:in-reply-to:references:date
-         :message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=N5TJgcpD5bcEJvi2/5wMGkDHmPyWGjyd8yZNVcCSL+xPwh6jrDcUpB7cYAmZOfjCDV
-         DnP1oabd1x+GnQ2cW75IAaUrjHrLRj2au/Heu8VjyCqIezG8xDtei89rOLSOMwY1IzaQ
-         KIduqV/pQeJAbQiHPg7gvMTpMcxC51rTQpq5I=
+	id S1753767Ab1DOLgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 07:36:47 -0400
+Received: from gmmr1.centrum.cz ([90.183.38.157]:43789 "EHLO gmmr1.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751404Ab1DOLgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 07:36:46 -0400
+To: "Mel Gorman" <mgorman@suse.de>
+Subject: Re: Regression from 2.6.36
+Date: Fri, 15 Apr 2011 13:36:44 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Changli Gao" <xiaosuo@gmail.com>,
+        "Am?rico Wang" <xiyou.wangcong@gmail.com>,
+        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
+        "Jiri Slaby" <jirislaby@gmail.com>
+References: <1302178426.3357.34.camel@edumazet-laptop>	 <BANLkTikxWy-Pw1PrcAJMHs2R7JKksyQzMQ@mail.gmail.com>	 <1302190586.3357.45.camel@edumazet-laptop>	 <20110412154906.70829d60.akpm@linux-foundation.org>	 <BANLkTincoaxp5Soe6O-eb8LWpgra=k2NsQ@mail.gmail.com>	 <20110412183132.a854bffc.akpm@linux-foundation.org>	 <1302662256.2811.27.camel@edumazet-laptop>	 <20110413141600.28793661.akpm@linux-foundation.org>	 <20110414102501.GE11871@csn.ul.ie> <20110415115903.315DEAA1@pobox.sk>	 <20110415104700.GD22688@suse.de>  <20110415125651.68156745@pobox.sk> <1302866247.12428.25.camel@machina.109elm.lan>
+In-Reply-To: <1302866247.12428.25.camel@machina.109elm.lan>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
 MIME-Version: 1.0
-X-Originating-IP: [88.209.222.127]
-In-Reply-To: <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
-References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz>
-	<BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
-	<BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com>
-	<BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
-Date: Fri, 15 Apr 2011 13:31:26 +0200
-Message-ID: <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com>
-Subject: Re: Unionmount status?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Michal Suchanek <hramrach@centrum.cz>
-Cc: Jiri Kosina <jkosina@suse.cz>, Ric Wheeler <ricwheeler@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Ian Kent <ikent@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>
+Message-Id: <20110415133644.12504ADB@pobox.sk>
+X-Maser: brud
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 1:22 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
-> On 14 April 2011 10:38, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> On Wed, Apr 13, 2011 at 5:13 PM, Michal Suchanek <hramrach@centrum.cz> wrote:
->>> On 13 April 2011 16:18, Jiri Kosina <jkosina@suse.cz> wrote:
->>>> https://lkml.org/lkml/2011/3/22/222
->>>>
->>>
->>> Thanks for pointing out this announcement.
->>>
->>> However, neither this announcement nor the document
->>> Documentation/filesystems/overlayfs.txt included in the git tree
->>> details how to mount the filesystem. Without that it is kind of
->>> useless.
->>
->> Oh, I'll fix that in the docs.  Thanks for pointing it out.
->>
->> Here's how to mount:
->>
->>  mount -t overlayfs overlayfs -olowerdir=/lower -oupperdir=/upper /overlay
->>
->
-> OK, I built a small live CD with the v7 patch and I can boot it but I
-> get errors like
->
-> Cleaning up temporary files...
-> [    nn.nnnnnn] overlayfs: ERROR - failed to whiteout 'motd'
-> find: cannot delete `./motd': Operation not supported
 
-What is the upper filesystem type?  Is xattr support enabled?
+sysfs was already mounted:
 
-Thanks,
-Miklos
+# mount
+sysfs on /sys type sysfs (rw,noexec,nosuid,nodev)
+
+
+I have enabled all of the options you suggested and also CONFIG_DEBUG_FS ;) I will boot new kernel this night. Hope it won't degraded performance much..
+
+
+______________________________________________________________
+> Od: "Mel Gorman" <mgorman@suse.de>
+> Komu: azurIt <azurit@pobox.sk>
+> Dátum: 15.04.2011 13:17
+> Predmet: Re: Regression from 2.6.36
+>
+> CC: "Andrew Morton" <akpm@linux-foundation.org>, "Eric Dumazet" <eric.dumazet@gmail.com>, "Changli Gao" <xiaosuo@gmail.com>, "Am?rico Wang" <xiyou.wangcong@gmail.com>, "Jiri Slaby" <jslaby@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, "Jiri Slaby" <jirislaby@gmail.com>
+>On Fri, 2011-04-15 at 12:56 +0200, azurIt wrote:
+>> # mount -t debugfs none /sys/kernel/debug
+>> mount: mount point /sys/kernel/debug does not exist
+>> 
+>> # mkdir /sys/kernel/debug
+>> mkdir: cannot create directory `/sys/kernel/debug': No such file or directory
+>> 
+>
+>Mount sysfs first
+>
+>mount -t sysfs none /sys
+>
+>> 
+>> config file used for testing is here:
+>> http://watchdog.sk/lkml/config
+>> 
+>
+>Try setting the following
+>
+>CONFIG_TRACEPOINTS=y
+>CONFIG_STACKTRACE=y
+>CONFIG_USER_STACKTRACE_SUPPORT=y
+>CONFIG_NOP_TRACER=y
+>CONFIG_TRACER_MAX_TRACE=y
+>CONFIG_FTRACE_NMI_ENTER=y
+>CONFIG_CONTEXT_SWITCH_TRACER=y
+>CONFIG_GENERIC_TRACER=y
+>CONFIG_FTRACE=y
+>CONFIG_FUNCTION_TRACER=y
+>CONFIG_FUNCTION_GRAPH_TRACER=y
+>CONFIG_IRQSOFF_TRACER=y
+>CONFIG_SCHED_TRACER=y
+>CONFIG_FTRACE_SYSCALLS=y
+>CONFIG_STACK_TRACER=y
+>CONFIG_BLK_DEV_IO_TRACE=y
+>CONFIG_DYNAMIC_FTRACE=y
+>CONFIG_FTRACE_MCOUNT_RECORD=y
+>CONFIG_FTRACE_SELFTEST=y
+>CONFIG_FTRACE_STARTUP_TEST=y
+>CONFIG_MMIOTRACE=y
+>CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+>
+>-- 
+>Mel Gorman
+>SUSE Labs
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
+>
