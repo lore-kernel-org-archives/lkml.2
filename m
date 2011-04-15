@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab1DOQKh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 12:10:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab1DOQKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 12:10:36 -0400
-Date: Fri, 15 Apr 2011 18:09:57 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: akpm@linux-foundation.org, cl@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] mm: make read-only accessors take const pointer
- parameters
-Message-ID: <20110415160957.GV15707@random.random>
-References: <1302861377-8048-1-git-send-email-ext-phil.2.carmody@nokia.com>
- <20110415145133.GO15707@random.random>
- <20110415155916.GD7112@esdhcp04044.research.nokia.com>
+	id S1752408Ab1DOQLH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 12:11:07 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:65095 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab1DOQLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 12:11:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=oSqANv9fezbbf7wfrIX+Uky8/zoHoX3vlp1Vh87Oq2rQDFOGeqSiu8wUfBFkRoNnve
+         vBxcspg2WLiEqcUjMhqp2t+N88lg+GQEy5wvZDXWnnzTvC25D3noFsuCvpVHM/apKjgj
+         +beUkSosdQfDb618W5TT0Pfqy3zc4Km0SEy94=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415155916.GD7112@esdhcp04044.research.nokia.com>
+In-Reply-To: <20110415143350.GM18463@8bytes.org>
+References: <20110413193459.GL19819@8bytes.org>
+	<4DA60C30.4060606@kernel.org>
+	<BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
+	<4DA6145D.9070703@kernel.org>
+	<BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
+	<4DA655E7.3000904@zytor.com>
+	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
+	<BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
+	<20110415131152.GJ18463@8bytes.org>
+	<20110415131650.GB18660@elte.hu>
+	<20110415143350.GM18463@8bytes.org>
+Date: Fri, 15 Apr 2011 12:11:04 -0400
+Message-ID: <BANLkTikd2nUO+Obn_Ez0HqjbE5KO3Yt6CQ@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        alexandre.f.demers@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 06:59:16PM +0300, Phil Carmody wrote:
-> of these functions to propagate constness up another layer. It was
-> probably in FUSE, as that's the warning at the top of my screen
-> currently.
+On Fri, Apr 15, 2011 at 10:33 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Fri, Apr 15, 2011 at 03:16:50PM +0200, Ingo Molnar wrote:
+>> Ok, but how did the allocation changes start triggering this error in
+>> v2.6.39-rc1? There must still be some layout specific thing here, right?
+>> Do we understand the details of that as well?
+>
+> No, I must admit that I lack enough knowledge about the GPU hardware to
+> make an guess how this tanslation-request happened. All I can tell is
+> the address that was reported in the MCE, it is 0xa0001000 (==the second
+> page of the GART aperture).
+>
+> Maybe Alex can help here. Alex, may it be possible that the GPU
+> generates DMA requests in the GTT area before the GTT is activated (or
+> the activation is completed)? Or can you imagine any other reason?
 
-These function themselfs are inline too, so gcc already can see if
-memory has been modified inside the inline function, so it shouldn't
-provide an advantage. It would provide an advantage if page_count and
-friends weren't inline.
+It shouldn't.  The driver binds a dummy page to all entries in the
+table at init time and whenever the actual pages are unbound.
 
-> I think gcc itself is smart enough to have already concluded what it 
-> can and it will not immediately benefit the build from just this change.
-
-Hmm not sure... but I would hope it is smart enough already with
-inline (it should never be worse to inline than encoding the whole
-thing by hand in the caller, so skipping the function call
-alltogether which then wouldn't require any const).
-
-> I don't think the static analysis tools are as smart as gcc though, by
-> any means. GCC actually inlines, so everything is visible to it. The
-> static analysis tools only remember the subset of information that they
-> think is useful, and apparently 'didn't change anything, even though it 
-> could' isn't considered so useful.
-> 
-> I'm just glad this wasn't an insta-nack, as I am quite a fan of consts,
-> and hopefully something can be worked out.
-
-I'm not against it if it's from code strict point of view, I was
-mostly trying to understand if this could have any impact, in which
-case it wouldn't be false positive. I think it's a false positive if
-gcc is as smart as I hope it to be. If we want it from coding style
-reasons to keep the code more strict that's fine with me of course.
+Alex
