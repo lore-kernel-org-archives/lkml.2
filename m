@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab1DOG7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 02:59:17 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:40087 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368Ab1DOG7Q (ORCPT
+	id S1753452Ab1DOHSv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 03:18:51 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56248 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab1DOHSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 02:59:16 -0400
-Date: Fri, 15 Apr 2011 08:59:14 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Martin Teufel <teufel@informatik.uni-frankfurt.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: bug in radeon driver module of linux 2.6.38 (since 2.6.35)
-Message-ID: <20110415065914.GA1652@x4.trippels.de>
-References: <20110414215118.GA30387@hekate.rbi.informatik.uni-frankfurt.de>
+	Fri, 15 Apr 2011 03:18:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: cpusets: randomize node rotor used in cpuset_mem_spread_node()
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20110414160145.0830.A69D9226@jp.fujitsu.com>
+References: <20110414065146.GA19685@tiehlicka.suse.cz> <20110414160145.0830.A69D9226@jp.fujitsu.com>
+Message-Id: <20110415161831.12F8.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414215118.GA30387@hekate.rbi.informatik.uni-frankfurt.de>
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Fri, 15 Apr 2011 16:18:45 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.04.14 at 23:51 +0200, Martin Teufel wrote:
-> 
-> I encountered a bug in the radeon driver module of 2.6.37 which still
-> exists in 2.6.38.
-> I have a mainboard called M2A-VM which has VGA, DVI and display port as
-> graphic output ports. When I boot Debian GNU/Linux with Linux 2.6.37 or
-> 2.6.38 I get every 10 seconds:
-> 
-> radeon 0000:01:05.0: HDMI-A-1: EDID block 0 invalid.
-> [drm:radeon_dvi_detect] *ERROR* HDMI-A-1: probed a monitor but no|invalid EDID
-> 
-> This error message is spamming to tty1 (and because of my configuration
-> to ttyS0 too). With radeon.modeset=0 set, I get rid of this messages by
-> disabling KMS for this driver.
+Oops.
+I should have look into !mempolicy part too.
+I'm sorry.
 
-drm_kms_helper.poll=0 is what I use locally here. Maybe it helps in your
-case, too.
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index e7548de..f59c686 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1119,6 +1119,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>   	}
+>  	mpol_fix_fork_child_flag(p);
+>  #endif
+> +#ifdef CONFIG_CPUSETS
+> +	p->cpuset_mem_spread_rotor = node_random(&p->mems_allowed);
+> +	p->cpuset_slab_spread_rotor = node_random(&p->mems_allowed);
+> +#endif
 
--- 
-Markus
+Michal, I think this should be
+
+#ifdef CONFIG_CPUSETS
+	if (cpuset_do_page_mem_spread())
+		p->cpuset_mem_spread_rotor = node_random(&p->mems_allowed);
+	if (cpuset_do_slab_mem_spread())
+		p->cpuset_slab_spread_rotor = node_random(&p->mems_allowed);
+#endif
+
+because 99.999% people don't use cpuset's spread mem/slab feature and
+get_random_int() isn't zero cost.
+
+What do you think?
+
+
+
