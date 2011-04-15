@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab1DOR0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 13:26:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40891 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab1DOR0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 13:26:53 -0400
-Date: Fri, 15 Apr 2011 10:26:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andy Grover <andy.grover@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [74/74] net: fix rds_iovec page count overflow
-Message-ID: <20110415172645.GA11669@suse.de>
-References: <20110413155406.GA22568@kroah.com>
- <20110413155150.984826556@clark.kroah.org>
- <BANLkTikJDeYPAFeei6DtKPcfvxP1ZeiQaQ@mail.gmail.com>
+	id S1755344Ab1DORaP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 13:30:15 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:33072 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab1DORaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 13:30:12 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>,
+        Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
+Cc: linux-fsdevel@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V9fs-developer] [PATCH 3/5] 9p: revert tsyncfs related changes
+In-Reply-To: <AANLkTik1nw839sfza143jRgc3_w6dDtrxUC+_w7O3Okn@mail.gmail.com>
+References: <1301052651-21440-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1301052651-21440-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4D8D0704.7080106@linux.vnet.ibm.com> <877hbl0xxq.fsf@linux.vnet.ibm.com> <4D8FB93A.6020508@linux.vnet.ibm.com> <AANLkTik1nw839sfza143jRgc3_w6dDtrxUC+_w7O3Okn@mail.gmail.com>
+User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Fri, 15 Apr 2011 23:00:03 +0530
+Message-ID: <87oc474e3o.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikJDeYPAFeei6DtKPcfvxP1ZeiQaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 10:10:13AM -0700, Linus Torvalds wrote:
-> On Wed, Apr 13, 2011 at 8:51 AM, Greg KH <gregkh@suse.de> wrote:
-> > +
-> > +               /*
-> > +                * nr_pages for one entry is limited to (UINT_MAX>>PAGE_SHIFT)+1,
-> > +                * so tot_pages cannot overflow without first going negative.
-> > +                */
-> > +               if ((int)nr_pages < 0)
-> > +                       ret = -EINVAL;
-> > +                       goto out;
-> >        }
+On Tue, 29 Mar 2011 11:05:08 -0500, Eric Van Hensbergen <ericvh@gmail.com> wrote:
+> On Sun, Mar 27, 2011 at 5:24 PM, Venkateswararao Jujjuri
+> <jvrao@linux.vnet.ibm.com> wrote:
+> >
+> > Nice explanation. I looked at NFS and realized that they also follow
+> > write_inode approach.
+> > So I think you should make it explict that this will be helpful to dotl
+> > also and may and TFSYNCFS
+> > in the future if needed. With that I ack this.
+> >
 > 
-> Yeah, what the heck happened there. That won't work.
+> If this is something we really think we'll be adding back in the
+> future, is there someway we can conditionalize its use (default off
+> perhaps) so that if a particular server wanted to take advantage of
+> it, they could.  This would seem preferable to just backing out the
+> whole patch.
+
+It would be a nice feature to request the server for feature bits and
+then use different 9p operations with .L. ie if we can query the server
+and find out whether it supports tsyncfs then we can probably skip fsync
+during write_inode. The feature set is also useful to figure out which
+acl model the client should enforce if we start supporting multiple acl
+models and also to find out whether server also acl evaluation.
+So i guess we should do this once we have something similar to
+TFEATURE 9p operation
+
 > 
-> As Paul says, the original was just a "return -EINVAL", and when the
-> backport changed it into a "ret = " + "goto out", it really needs a
-> couple of braces.
+> Another aspect which I didn't consider when we added it is what it
+> would do to older versions of the servers which didn't have TFSYNCFS
+> -- maybe this is a good case study for the .L graceful degredation
+> plan we had talked about in the past where you try a tfsyncfs and if
+> the server returns an error that it doesn't implement it you back off
+> to another solution.
 > 
-> As it is, the patch is just broken. Think about it.
 
-Ah crap, that's my fault, I did the backport totally wrong here.
+With the current Qemu server, the server aborts when it gets a 9p
+request that it didn't implement. That need to be fixed. Do you like to
+see the above done as a part of new set of operations that we are going
+to do, or are you suggesting that we need to do it for the existing set
+looking at when we added the 9p operations ?.
 
-I'll fix this up and push an updated version out in a few hours when I
-get back from my daughter's earth-day field trip...
-
-thanks,
-
-greg k-h
+-aneesh
