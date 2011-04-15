@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab1DOPZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 11:25:24 -0400
+	id S1755491Ab1DOPZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 11:25:27 -0400
 Received: from mail1.elettra.trieste.it ([140.105.4.201]:56573 "EHLO
 	elettra.trieste.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754281Ab1DOPZV (ORCPT
+	with ESMTP id S1755140Ab1DOPZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 11:25:21 -0400
+	Fri, 15 Apr 2011 11:25:25 -0400
 From: Alessio Igor Bogani <abogani@kernel.org>
 To: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
         Anders Kaseorg <andersk@ksplice.com>,
@@ -14,135 +14,136 @@ To: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
         Tim Bird <tim.bird@am.sony.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Linux Embedded <linux-embedded@vger.kernel.org>,
+        Tim Abbott <tabbott@ksplice.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
         Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH 1/4] module: Split the find_symbol_in_section function
-Date: Fri, 15 Apr 2011 17:24:54 +0200
-Message-Id: <1302881097-563-2-git-send-email-abogani@kernel.org>
+Subject: [PATCH 3/4] lib: Add generic binary search function to the kernel.
+Date: Fri, 15 Apr 2011 17:24:56 +0200
+Message-Id: <1302881097-563-4-git-send-email-abogani@kernel.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1302881097-563-1-git-send-email-abogani@kernel.org>
 References: <1302881097-563-1-git-send-email-abogani@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the find_symbol_in_section() in two: the first one
-(that is compare_symbol_in_section()) for compare values during the search and
-the second one (that is found_symbol_in_section()) executed when values will be
-found. Rename each_symbol() in search_symbol() to let its' users notice
-the change.
+From: Tim Abbott <tabbott@ksplice.com>
 
-This work was supported by a hardware donation from the CE Linux Forum.
+There a large number hand-coded binary searches in the kernel (run
+"git grep search | grep binary" to find many of them).  Since in my
+experience, hand-coding binary searches can be error-prone, it seems
+worth cleaning this up by providing a generic binary search function.
 
+This generic binary search implementation comes from Ksplice.  It has
+the same basic API as the C library bsearch() function.  Ksplice uses
+it in half a dozen places with 4 different comparison functions, and I
+think our code is substantially cleaner because of this.
+
+Signed-off-by: Tim Abbott <tabbott@ksplice.com>
+Extra-bikeshedding-by: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
+Extra-bikeshedding-by: André Goddard Rosa <andre.goddard@gmail.com>
+Extra-bikeshedding-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
 ---
- include/linux/module.h |    3 ++-
- kernel/module.c        |   29 ++++++++++++++++++-----------
- 2 files changed, 20 insertions(+), 12 deletions(-)
+ include/linux/bsearch.h |    9 ++++++++
+ lib/Makefile            |    3 +-
+ lib/bsearch.c           |   53 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 64 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/bsearch.h
+ create mode 100644 lib/bsearch.c
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 5de4204..b62f0a2 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -475,7 +475,8 @@ const struct kernel_symbol *find_symbol(const char *name,
- 					bool warn);
- 
- /* Walk the exported symbol table */
--bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
-+bool search_symbol(int (*cmp) (const void *va, const void *vb),
-+				bool (*fn)(const struct symsearch *arr, struct module *owner,
- 			    unsigned int symnum, void *data), void *data);
- 
- /* Returns 0 and fills in value, defined and namebuf, or -ERANGE if
-diff --git a/kernel/module.c b/kernel/module.c
-index d5938a5..8845a0b 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -238,6 +238,7 @@ extern const unsigned long __start___kcrctab_unused_gpl[];
- static bool each_symbol_in_section(const struct symsearch *arr,
- 				   unsigned int arrsize,
- 				   struct module *owner,
-+				   int (*cmp) (const void *va, const void *vb),
- 				   bool (*fn)(const struct symsearch *syms,
- 					      struct module *owner,
- 					      unsigned int symnum, void *data),
-@@ -247,15 +248,16 @@ static bool each_symbol_in_section(const struct symsearch *arr,
- 
- 	for (j = 0; j < arrsize; j++) {
- 		for (i = 0; i < arr[j].stop - arr[j].start; i++)
--			if (fn(&arr[j], owner, i, data))
--				return true;
-+			if (cmp(data, &arr[j].start[i]) == 0)
-+				return fn(&arr[j], owner, i, data);
- 	}
- 
- 	return false;
- }
- 
- /* Returns true as soon as fn returns true, otherwise false. */
--bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
-+bool search_symbol(int (*cmp) (const void *va, const void *data),
-+				bool (*fn)(const struct symsearch *arr, struct module *owner,
- 			    unsigned int symnum, void *data), void *data)
- {
- 	struct module *mod;
-@@ -278,7 +280,7 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
- #endif
- 	};
- 
--	if (each_symbol_in_section(arr, ARRAY_SIZE(arr), NULL, fn, data))
-+	if (each_symbol_in_section(arr, ARRAY_SIZE(arr), NULL, cmp, fn, data))
- 		return true;
- 
- 	list_for_each_entry_rcu(mod, &modules, list) {
-@@ -304,12 +306,12 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
- #endif
- 		};
- 
--		if (each_symbol_in_section(arr, ARRAY_SIZE(arr), mod, fn, data))
-+		if (each_symbol_in_section(arr, ARRAY_SIZE(arr), mod, cmp, fn, data))
- 			return true;
- 	}
- 	return false;
- }
--EXPORT_SYMBOL_GPL(each_symbol);
-+EXPORT_SYMBOL_GPL(search_symbol);
- 
- struct find_symbol_arg {
- 	/* Input */
-@@ -323,15 +325,20 @@ struct find_symbol_arg {
- 	const struct kernel_symbol *sym;
- };
- 
--static bool find_symbol_in_section(const struct symsearch *syms,
-+static int compare_symbol_in_section(const void *va, const void *vb)
-+{
-+	const struct find_symbol_arg *a;
-+	const struct kernel_symbol *b;
-+	a = va; b = vb;
-+	return strcmp(a->name, b->name);
-+}
+diff --git a/include/linux/bsearch.h b/include/linux/bsearch.h
+new file mode 100644
+index 0000000..90b1aa8
+--- /dev/null
++++ b/include/linux/bsearch.h
+@@ -0,0 +1,9 @@
++#ifndef _LINUX_BSEARCH_H
++#define _LINUX_BSEARCH_H
 +
-+static bool found_symbol_in_section(const struct symsearch *syms,
- 				   struct module *owner,
- 				   unsigned int symnum, void *data)
- {
- 	struct find_symbol_arg *fsa = data;
++#include <linux/types.h>
++
++void *bsearch(const void *key, const void *base, size_t num, size_t size,
++	      int (*cmp)(const void *key, const void *elt));
++
++#endif /* _LINUX_BSEARCH_H */
+diff --git a/lib/Makefile b/lib/Makefile
+index ef0f285..4b49a24 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -21,7 +21,8 @@ lib-y	+= kobject.o kref.o klist.o
  
--	if (strcmp(syms->start[symnum].name, fsa->name) != 0)
--		return false;
--
- 	if (!fsa->gplok) {
- 		if (syms->licence == GPL_ONLY)
- 			return false;
-@@ -379,7 +386,7 @@ const struct kernel_symbol *find_symbol(const char *name,
- 	fsa.gplok = gplok;
- 	fsa.warn = warn;
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+-	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o
++	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o \
++	 bsearch.o
+ obj-y += kstrtox.o
+ obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
  
--	if (each_symbol(find_symbol_in_section, &fsa)) {
-+	if (search_symbol(compare_symbol_in_section, found_symbol_in_section, &fsa)) {
- 		if (owner)
- 			*owner = fsa.owner;
- 		if (crc)
+diff --git a/lib/bsearch.c b/lib/bsearch.c
+new file mode 100644
+index 0000000..5b54758
+--- /dev/null
++++ b/lib/bsearch.c
+@@ -0,0 +1,53 @@
++/*
++ * A generic implementation of binary search for the Linux kernel
++ *
++ * Copyright (C) 2008-2009 Ksplice, Inc.
++ * Author: Tim Abbott <tabbott@ksplice.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; version 2.
++ */
++
++#include <linux/module.h>
++#include <linux/bsearch.h>
++
++/*
++ * bsearch - binary search an array of elements
++ * @key: pointer to item being searched for
++ * @base: pointer to first element to search
++ * @num: number of elements
++ * @size: size of each element
++ * @cmp: pointer to comparison function
++ *
++ * This function does a binary search on the given array.  The
++ * contents of the array should already be in ascending sorted order
++ * under the provided comparison function.
++ *
++ * Note that the key need not have the same type as the elements in
++ * the array, e.g. key could be a string and the comparison function
++ * could compare the string with the struct's name field.  However, if
++ * the key and elements in the array are of the same type, you can use
++ * the same comparison function for both sort() and bsearch().
++ */
++void *bsearch(const void *key, const void *base, size_t num, size_t size,
++	      int (*cmp)(const void *key, const void *elt))
++{
++	size_t start = 0, end = num;
++	int result;
++
++	while (start < end) {
++		size_t mid = start + (end - start) / 2;
++
++		result = cmp(key, base + mid * size);
++		if (result < 0)
++			end = mid;
++		else if (result > 0)
++			start = mid + 1;
++		else
++			return (void *)base + mid * size;
++	}
++
++	return NULL;
++}
++EXPORT_SYMBOL(bsearch);
 -- 
 1.7.0.4
 
