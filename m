@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760450Ab1DPXLy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 19:11:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55848 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab1DPXLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 19:11:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [RFC][PATCH] PM: Make power domain callbacks take precedence over subsystem ones
-Date: Sun, 17 Apr 2011 01:12:08 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org
-References: <Pine.LNX.4.44L0.1104151033020.2051-100000@iolanthe.rowland.org> <201104160118.24113.rjw@sisk.pl> <1302974133.2719.31.camel@vence>
-In-Reply-To: <1302974133.2719.31.camel@vence>
+	id S1760468Ab1DPXfu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 19:35:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:35332 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab1DPXfp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 19:35:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=q+YwkCMBsRE1AXfGYQicAd6RoPArnCHgTHTKnfbwHMeXS3Kf+lbrbfOgIp9xoHUtqQ
+         pYN8OTSXe+Sota3/bkM07GYBblBWqqjuCEkpgcBpUTh24YnkYzhfdw89o3kpHFQjZdh1
+         Ct6zMHJTecDCLoTvcfVBsHpprGPA3X8kVIugg=
+Message-ID: <4DAA27C8.7060800@gmail.com>
+Date: Sat, 16 Apr 2011 16:35:36 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Gottfried Haider <gottfried.haider@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [Regression] Bluetooth pairing does not work anymore in 2.6.39-rc3
+ (works in 2.6.38.3)
+References: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com> <4DA9CB83.4050000@gmail.com> <BANLkTi=avo9yvpQ0VRPRv1uroF3ZnJzfAg@mail.gmail.com>
+In-Reply-To: <BANLkTi=avo9yvpQ0VRPRv1uroF3ZnJzfAg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104170112.08292.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, April 16, 2011, Kevin Hilman wrote:
-> On Sat, 2011-04-16 at 01:18 +0200, Rafael J. Wysocki wrote:
-> > On Friday, April 15, 2011, Alan Stern wrote:
-> > > On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
-> > > 
-> > > > On Thursday, April 14, 2011, Magnus Damm wrote:
-> > > 
-> > > > > My only thought on this is if we really want to limit ourselves to
-> > > > > only control power domains using these callbacks. I can imagine that
-> > > > > some SoCs want to do other non-power domain specific operations with
-> > > > > these callbacks, and if so, perhaps using the term power domain as
-> > > > > name of the pointer in struct device would be somewhat odd. OTOH, I
-> > > > > really dislike naming discussions in general and I can't really think
-> > > > > of any good names. So it all looks more like a set of system specific
-> > > > > PM override hooks.
-> > > > > 
-> > > > > Or is there something that is really power domain specific with these hooks?
-> > > > 
-> > > > Not in principle, but I think there is.  Namely, if there are two groups
-> > > > of devices belonging to the same bus type (e.g. platform) that each require
-> > > > different PM handling, it is legitimate to call them "power domains" (where
-> > > > "domain" means "a set of devices related to each other because of the way
-> > > > they need to be handled"), even if they don't share power resources.
-> > > > 
-> > > > Of course, if they do share power resources, the term is just right. :-)
-> > > 
-> > > They could be called "PM domains" instead of "power domains".  That's 
-> > > legitimate because they do get used by the PM core, even if they don't 
-> > > literally involve groups of devices sharing the same power supply.
-> > 
-> > Well, "power domain" can be regarded as a short form of "power management
-> > domain", which makes the point kind of moot. ;-)
-> 
-> Except that on most embedded SoCs, the term power domain has specific
-> meaning in hardware, so using something other than that is preferred
-> IMO.
-> 
-> What this really is is just per-device dev_pm_ops, which platform code
-> can use to group devices however it likes.
-> 
-> So rather than call it a power domain, or a PM domain, we could also
-> just add a struct dev_pm_ops to struct device. 
+On 04/16/2011 03:43 PM, Gottfried Haider wrote:
+> Hi Justin,
+>
+>> I'm wondering if you are hitting what I was hitting a few days ago.. the
+>> commit below got things working over here:
+>> (not sure if this is in the stable yet)
+>> http://git.kernel.org/?p=linux/kernel/git/padovan/bluetooth-next-2.6.git;a=commitdiff;h=b99faf1b798d6d0e33526fd2cef55a405c08ff09;hp=58b6e124aac64bebb2e9e1a136cbd21a5ab0485a
+>
+> I checked: I have this commit in -rc3, so it must be something else here.
+>
+> greetings,
+>
+> gohai
+>
 
-Well, right.  But in the future this thing will be necessary to provide
-additional information to _real_ power domain PM callbacks.  So it will
-be more than just struct dev_pm_ops.
+hmm... seems to be working over here with the latest Mainline. one thing 
+  I have notice though is the daemon is not starting during 
+boot(systemd), manually starting bluetoothd gets me to connect.(system 
+is fedora 15).
 
-Thanks,
-Rafael
+Justin P. Mattock
