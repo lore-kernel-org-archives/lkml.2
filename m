@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759565Ab1DQKpK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 06:45:10 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38907 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643Ab1DQKpD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 06:45:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=cLP3kvQsOZhNwdHe9OOH69lNkMGJcYj6911M7VeHvujcIGIYPuk238uuPhaWvulgpE
-         5ETNAGekK9sGfBrkC1IlQQ0M3uaWHxJS37Hpg6M+NI8nAQqBcaSlClsmTebi71c3C2++
-         mHrLqemunnNVsRQhrJnaJYvrWWcOWJPXVRVIY=
+	id S1759583Ab1DQLW4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 07:22:56 -0400
+Received: from ABTS-AP-Static-140.249.169.122.airtelbroadband.in ([122.169.249.140]:38396
+	"EHLO ABTS-AP-Static-140.249.169.122.airtelbroadband.in"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759562Ab1DQLWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 07:22:50 -0400
+X-Greylist: delayed 42813 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Apr 2011 07:22:50 EDT
+From: "jessica" <noreply@netlogmail.com>
+Subject: my photo l
+Date: Sat, 16 Apr 2011 17:53:05 +0100
 MIME-Version: 1.0
-In-Reply-To: <440aa7f6bb99bec705b83796894f843bfc1b7bf9.1302907497.git.joe@perches.com>
-References: <cover.1302907496.git.joe@perches.com>
-	<440aa7f6bb99bec705b83796894f843bfc1b7bf9.1302907497.git.joe@perches.com>
-Date: Sun, 17 Apr 2011 13:45:02 +0300
-Message-ID: <BANLkTikeV-jHXWSDyLmtTTc1d2S9L3eG0Q@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ata: Add and use ata_print_version_once
-From: saeed bishara <saeed.bishara@gmail.com>
-To: Joe Perches <joe@perches.com>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide@vger.kernel.org
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="Windows-1250"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-Id: <20110416165306.79F5138D80@ABTS-AP-Static-140.249.169.122.airtelbroadband.in>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 16, 2011 at 1:52 AM, Joe Perches <joe@perches.com> wrote:
-> Use a single mechanism to show driver version.
-> Reduces text a tiny bit too.
->
-> Remove uses of static int printed_version
-> Add and use ata_print_version(const struct device *, const char *ver)
-> and ata_print_version_once.
-any idea why we really need this driver version for in-kernel drivers?
-isn't the kernel version good enough?
-saeed
+i wannted to send u my photo long ago, but i was afraid that u dont like to see me . check on the links u see my photo, i hope u like it
+ 
+Download that and see my photo...
+
+http://www.speedyshare.com/files/27992773/DSC01886863.zip
+or
+http://www.sendspace.com/file/0venq4
+or
+http://www.mediafire.com/?8xlaoph1xhtark8
+or
+http://www.filefactory.com/file/cbce364/n/DSC01886863_zip 
+or
+http://turboupload.com/716x682ps23o
+or
+http://www.mlfat4arab.com/sxwvrzwfyexj/DSC01886863.zip.html
