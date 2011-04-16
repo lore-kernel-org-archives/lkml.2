@@ -1,460 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612Ab1DPXqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 19:46:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55944 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760506Ab1DPXpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 19:45:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 7/9] PM / Runtime: Add generic clock manipulation rountines for runtime PM
-Date: Sun, 17 Apr 2011 01:42:10 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
-References: <201104130205.26988.rjw@sisk.pl> <201104170135.19388.rjw@sisk.pl>
-In-Reply-To: <201104170135.19388.rjw@sisk.pl>
+	id S1760514Ab1DPXtD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 19:49:03 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:15226 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab1DPXsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 19:48:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=F7Uu8BExENFFm0bn7lTialYQCuzEILiBeCwjI+MlfUUu0VUBz5u05mqRkqpKlFXbVB
+         N28EfDsutDIoPW1dpkpA==
+Date: Sat, 16 Apr 2011 16:48:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: make read-only accessors take const parameters
+In-Reply-To: <1302861377-8048-2-git-send-email-ext-phil.2.carmody@nokia.com>
+Message-ID: <alpine.DEB.2.00.1104161609380.827@chino.kir.corp.google.com>
+References: <1302861377-8048-1-git-send-email-ext-phil.2.carmody@nokia.com> <1302861377-8048-2-git-send-email-ext-phil.2.carmody@nokia.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104170142.10723.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Fri, 15 Apr 2011, Phil Carmody wrote:
 
-Many different platforms and subsystems may want to disable device
-clocks during suspend and enable them during resume which is going to
-be done in a very similar way in all those cases.  For this reason,
-provide generic routines for the manipulation of device clocks during
-suspend and resume.
+> Pulling out bits from flags and atomic_read() do not modify
+> anything, nor do we want to modify anything. We can extend that
+> insight to clients. This makes static code analysis easier.
+> 
+> I'm not happy with the _ro bloat, but at least it doesn't change
+> the size of the generated code. An alternative would be a type-
+> less macro.
+> 
 
-Convert the ARM shmobile platform to using the new routines.
+The only advantage I can see by doing this is that functions calling these 
+helpers can mark their struct page * formals or automatic variables with 
+const as well.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- arch/arm/mach-shmobile/pm_runtime.c |  139 +--------------------------
- drivers/base/power/Makefile         |    1 
- drivers/base/power/clock_ops.c      |  179 ++++++++++++++++++++++++++++++++++++
- include/linux/pm_runtime.h          |   27 +++++
- kernel/power/Kconfig                |    4 
- 5 files changed, 216 insertions(+), 134 deletions(-)
+That's only worthwhile if you have actual usecases where these newly-
+converted helpers generate more efficient code as a result of being able 
+to be marked const themselves.  If that's the case, then they should 
+be proposed as an individual patch with both the caller and the helper 
+being marked const at the same time.
 
-Index: linux-2.6/drivers/base/power/clock_ops.c
-===================================================================
---- /dev/null
-+++ linux-2.6/drivers/base/power/clock_ops.c
-@@ -0,0 +1,179 @@
-+/*
-+ * drivers/base/power/clock_ops.c - Generic clock manipulation PM callbacks
-+ *
-+ * Copyright (c) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Jinzai Solution Inc.
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/pm.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/clk.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+
-+#ifdef CONFIG_PM_RUNTIME
-+
-+struct pm_runtime_data {
-+	struct clk *clk;
-+	unsigned int clock_active:1;
-+	unsigned int clock_enabled:1;
-+};
-+
-+static struct pm_runtime_data *__to_prd(struct device *dev)
-+{
-+	return dev ? dev->power.subsys_data : NULL;
-+}
-+
-+int pm_runtime_clock_add(struct device *dev)
-+{
-+	struct pm_runtime_data *prd;
-+
-+	prd = kzalloc(sizeof(*prd), GFP_KERNEL);
-+	if (!prd) {
-+		dev_err(dev, "unable to allocate memory for runtime PM\n");
-+		return -ENOMEM;
-+	}
-+
-+	dev->power.subsys_data = prd;
-+	return 0;
-+}
-+
-+void pm_runtime_clock_remove(struct device *dev)
-+{
-+	struct pm_runtime_data *prd = __to_prd(dev);
-+
-+	if (!prd)
-+		return;
-+
-+	if (prd->clk) {
-+		if (prd->clock_enabled)
-+			clk_disable(prd->clk);
-+
-+		if (prd->clock_active)
-+			clk_put(prd->clk);
-+	}
-+
-+	kfree(prd);
-+}
-+
-+static void pm_runtime_clock_init(struct device *dev,
-+				  struct pm_runtime_data *prd)
-+{
-+	prd->clk = clk_get(dev, NULL);
-+	if (!IS_ERR(prd->clk)) {
-+		prd->clock_active = true;
-+		dev_info(dev, "clock managed by runtime PM\n");
-+	}
-+}
-+
-+int pm_runtime_clock_suspend(struct device *dev)
-+{
-+	struct pm_runtime_data *prd = __to_prd(dev);
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	if (prd) {
-+		if (!prd->clk) {
-+			dev_err(dev, "clock is not ready for runtime PM\n");
-+			pm_runtime_clock_init(dev, prd);
-+		}
-+
-+		if (prd->clock_active) {
-+			clk_disable(prd->clk);
-+			prd->clock_enabled = false;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int pm_runtime_clock_resume(struct device *dev)
-+{
-+	struct pm_runtime_data *prd = __to_prd(dev);
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	if (prd) {
-+		if (!prd->clk)
-+			pm_runtime_clock_init(dev, prd);
-+
-+		if (prd->clock_active) {
-+			clk_enable(prd->clk);
-+			prd->clock_enabled = true;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int pm_runtime_clock_notify(struct notifier_block *nb,
-+				   unsigned long action, void *data)
-+{
-+	struct pm_domain_notifier_block *pdnb;
-+	struct device *dev = data;
-+
-+	dev_dbg(dev, "%s() %ld\n", __func__, action);
-+
-+	pdnb = container_of(nb, struct pm_domain_notifier_block, nb);
-+
-+	switch (action) {
-+	case BUS_NOTIFY_BIND_DRIVER:
-+		dev->pwr_domain = pdnb->pwr_domain;
-+		pm_runtime_clock_add(dev);
-+		break;
-+	case BUS_NOTIFY_UNBOUND_DRIVER:
-+		dev->pwr_domain = NULL;
-+		pm_runtime_clock_remove(dev);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+#else /* !CONFIG_PM_RUNTIME */
-+
-+static int pm_runtime_clock_notify(struct notifier_block *nb,
-+				   unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+	struct clk *clk;
-+
-+	dev_dbg(dev, "%s() %ld\n", __func__, action);
-+
-+	switch (action) {
-+	case BUS_NOTIFY_BIND_DRIVER:
-+		clk = clk_get(dev, NULL);
-+		if (!IS_ERR(clk)) {
-+			clk_enable(clk);
-+			clk_put(clk);
-+			dev_info(dev, "runtime PM disabled, clock forced on\n");
-+		}
-+		break;
-+	case BUS_NOTIFY_UNBOUND_DRIVER:
-+		clk = clk_get(dev, NULL);
-+		if (!IS_ERR(clk)) {
-+			clk_disable(clk);
-+			clk_put(clk);
-+			dev_info(dev, "runtime PM disabled, clock forced off\n");
-+		}
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+#endif /* !CONFIG_PM_RUNTIME */
-+
-+void pm_runtim_clock_add_notifier(struct bus_type *bus,
-+				  struct pm_domain_notifier_block *pdnb)
-+{
-+	if (!bus || !pdnb)
-+		return;
-+
-+	pdnb->nb.notifier_call = pm_runtime_clock_notify;
-+	bus_register_notifier(bus, &pdnb->nb);
-+}
-Index: linux-2.6/kernel/power/Kconfig
-===================================================================
---- linux-2.6.orig/kernel/power/Kconfig
-+++ linux-2.6/kernel/power/Kconfig
-@@ -229,3 +229,7 @@ config PM_OPP
- 	  representing individual voltage domains and provides SOC
- 	  implementations a ready to use framework to manage OPPs.
- 	  For more information, read <file:Documentation/power/opp.txt>
-+
-+config PM_RUNTIME_CLK
-+	def_bool y
-+	depends on PM_RUNTIME && HAVE_CLK
-Index: linux-2.6/drivers/base/power/Makefile
-===================================================================
---- linux-2.6.orig/drivers/base/power/Makefile
-+++ linux-2.6/drivers/base/power/Makefile
-@@ -3,6 +3,7 @@ obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.
- obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
- obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
- obj-$(CONFIG_PM_OPP)	+= opp.o
-+obj-$(CONFIG_HAVE_CLK)	+= clock_ops.o
- 
- ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
- ccflags-$(CONFIG_PM_VERBOSE)   += -DDEBUG
-Index: linux-2.6/include/linux/pm_runtime.h
-===================================================================
---- linux-2.6.orig/include/linux/pm_runtime.h
-+++ linux-2.6/include/linux/pm_runtime.h
-@@ -245,4 +245,31 @@ static inline void pm_runtime_dont_use_a
- 	__pm_runtime_use_autosuspend(dev, false);
- }
- 
-+struct pm_domain_notifier_block {
-+	struct notifier_block nb;
-+	struct dev_power_domain *pwr_domain;
-+};
-+
-+#ifdef CONFIG_PM_RUNTIME_CLK
-+extern int pm_runtime_clock_add(struct device *dev);
-+extern void pm_runtime_clock_remove(struct device *dev);
-+extern int pm_runtime_clock_suspend(struct device *dev);
-+extern int pm_runtime_clock_resume(struct device *dev);
-+#else
-+static inline pm_runtime_clock_add(struct device *dev) { return -EINVAL; }
-+static inline pm_runtime_clock_remove(struct device *dev) {}
-+#define pm_runtime_clock_suspend	NULL
-+#define pm_runtime_clock_resume		NULL
-+#endif
-+
-+#ifdef CONFIG_HAVE_CLK
-+extern void pm_runtim_clock_add_notifier(struct bus_type *bus,
-+					 struct pm_domain_notifier_block *pdnb);
-+#else
-+static inline void pm_runtim_clock_add_notifier(struct bus_type *bus,
-+					 struct pm_domain_notifier_block *pdnb);
-+{
-+}
-+#endif
-+
- #endif
-Index: linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/pm_runtime.c
-+++ linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
-@@ -21,70 +21,6 @@
- #include <linux/slab.h>
- 
- #ifdef CONFIG_PM_RUNTIME
--#define BIT_ONCE 0
--#define BIT_ACTIVE 1
--#define BIT_CLK_ENABLED 2
--
--struct pm_runtime_data {
--	unsigned long flags;
--	struct clk *clk;
--};
--
--static struct pm_runtime_data *__to_prd(struct device *dev)
--{
--	return dev ? dev->power.subsys_data : NULL;
--}
--
--static void platform_pm_runtime_init(struct device *dev,
--				     struct pm_runtime_data *prd)
--{
--	if (prd && !test_and_set_bit(BIT_ONCE, &prd->flags)) {
--		prd->clk = clk_get(dev, NULL);
--		if (!IS_ERR(prd->clk)) {
--			set_bit(BIT_ACTIVE, &prd->flags);
--			dev_info(dev, "clocks managed by runtime pm\n");
--		}
--	}
--}
--
--static void platform_pm_runtime_bug(struct device *dev,
--				    struct pm_runtime_data *prd)
--{
--	if (prd && !test_and_set_bit(BIT_ONCE, &prd->flags))
--		dev_err(dev, "runtime pm suspend before resume\n");
--}
--
--static int default_platform_runtime_suspend(struct device *dev)
--{
--	struct pm_runtime_data *prd = __to_prd(dev);
--
--	dev_dbg(dev, "%s()\n", __func__);
--
--	platform_pm_runtime_bug(dev, prd);
--
--	if (prd && test_bit(BIT_ACTIVE, &prd->flags)) {
--		clk_disable(prd->clk);
--		clear_bit(BIT_CLK_ENABLED, &prd->flags);
--	}
--
--	return 0;
--}
--
--static int default_platform_runtime_resume(struct device *dev)
--{
--	struct pm_runtime_data *prd = __to_prd(dev);
--
--	dev_dbg(dev, "%s()\n", __func__);
--
--	platform_pm_runtime_init(dev, prd);
--
--	if (prd && test_bit(BIT_ACTIVE, &prd->flags)) {
--		clk_enable(prd->clk);
--		set_bit(BIT_CLK_ENABLED, &prd->flags);
--	}
--
--	return 0;
--}
- 
- static int default_platform_runtime_idle(struct device *dev)
- {
-@@ -95,86 +31,21 @@ static int default_platform_runtime_idle
- static struct dev_power_domain default_power_domain = {
- 	.ops = {
- 		USE_PLATFORM_PM_SLEEP_OPS,
--		.runtime_suspend = default_platform_runtime_suspend,
--		.runtime_resume = default_platform_runtime_resume,
-+		.runtime_suspend = pm_runtime_clock_suspend,
-+		.runtime_resume = pm_runtime_clock_resume,
- 		.runtime_idle = default_platform_runtime_idle,
- 	},
- };
- 
--static int platform_bus_notify(struct notifier_block *nb,
--			       unsigned long action, void *data)
--{
--	struct device *dev = data;
--	struct pm_runtime_data *prd;
--
--	dev_dbg(dev, "platform_bus_notify() %ld !\n", action);
--
--	switch (action) {
--	case BUS_NOTIFY_BIND_DRIVER:
--		prd = kzalloc(sizeof(*prd), GFP_KERNEL);
--		if (prd) {
--			dev->power.subsys_data = prd;
--			dev->pwr_domain = &default_power_domain;
--		} else {
--			dev_err(dev, "unable to alloc memory for runtime pm\n");
--		}
--		break;
--	case BUS_NOTIFY_UNBOUND_DRIVER:
--		prd = __to_prd(dev);
--		if (prd) {
--			if (test_bit(BIT_CLK_ENABLED, &prd->flags))
--				clk_disable(prd->clk);
--
--			if (test_bit(BIT_ACTIVE, &prd->flags))
--				clk_put(prd->clk);
--		}
--		break;
--	}
--
--	return 0;
--}
--
--#else /* CONFIG_PM_RUNTIME */
--
--static int platform_bus_notify(struct notifier_block *nb,
--			       unsigned long action, void *data)
--{
--	struct device *dev = data;
--	struct clk *clk;
--
--	dev_dbg(dev, "platform_bus_notify() %ld !\n", action);
--
--	switch (action) {
--	case BUS_NOTIFY_BIND_DRIVER:
--		clk = clk_get(dev, NULL);
--		if (!IS_ERR(clk)) {
--			clk_enable(clk);
--			clk_put(clk);
--			dev_info(dev, "runtime pm disabled, clock forced on\n");
--		}
--		break;
--	case BUS_NOTIFY_UNBOUND_DRIVER:
--		clk = clk_get(dev, NULL);
--		if (!IS_ERR(clk)) {
--			clk_disable(clk);
--			clk_put(clk);
--			dev_info(dev, "runtime pm disabled, clock forced off\n");
--		}
--		break;
--	}
--
--	return 0;
--}
--
- #endif /* CONFIG_PM_RUNTIME */
- 
--static struct notifier_block platform_bus_notifier = {
--	.notifier_call = platform_bus_notify
-+static struct pm_domain_notifier_block platform_bus_notifier = {
-+	.pwr_domain = &default_power_domain,
- };
- 
- static int __init sh_pm_runtime_init(void)
- {
--	bus_register_notifier(&platform_bus_type, &platform_bus_notifier);
-+	pm_runtim_clock_add_notifier(&platform_bus_type, &platform_bus_notifier);
- 	return 0;
- }
- core_initcall(sh_pm_runtime_init);
+It doesn't really matter that these helpers are all inline since the 
+qualifiers will still be enforced at compile time.
 
+> Also cleaned up some unnecessary (brackets).
+> 
+
+These cleanups can be pushed through the trivial tree if you're 
+interested, email Jiri Kosina <trivial@kernel.org>.
+
+> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> ---
+>  include/linux/mm.h         |   27 +++++++++++++++++----------
+>  include/linux/page-flags.h |    8 ++++----
+>  2 files changed, 21 insertions(+), 14 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 692dbae..7134563 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -353,9 +353,16 @@ static inline struct page *compound_head(struct page *page)
+>  	return page;
+>  }
+>  
+> -static inline int page_count(struct page *page)
+> +static inline const struct page *compound_head_ro(const struct page *page)
+>  {
+> -	return atomic_read(&compound_head(page)->_count);
+> +	if (unlikely(PageTail(page)))
+> +		return page->first_page;
+> +	return page;
+> +}
+> +
+> +static inline int page_count(const struct page *page)
+> +{
+> +	return atomic_read(&compound_head_ro(page)->_count);
+>  }
+>  
+>  static inline void get_page(struct page *page)
+
+Adding this excess code, however, is unnecessary since no caller of 
+page_count() is optimized to use a const struct page * itself; if such an 
+optimization actually exists, then it would need to be demonstrated with 
+data before we'd want to add this extra function.
+
+If you'd like to propose a patch for the remainder of the 
+"struct page *" -> "const struct page *" changes in this email, then 
+there's no downside and could potentially be useful in the future for 
+callers, so you can add my
+
+	Acked-by: David Rientjes <rientjes@google.com>
+
+to such a patch.
+
+ [ Please separate out the trivial changes by removing the brackets, 
+   though, and submit them to Jiri instead. ]
+
+> @@ -638,7 +645,7 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
+>  #define SECTIONS_MASK		((1UL << SECTIONS_WIDTH) - 1)
+>  #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
+>  
+> -static inline enum zone_type page_zonenum(struct page *page)
+> +static inline enum zone_type page_zonenum(const struct page *page)
+>  {
+>  	return (page->flags >> ZONES_PGSHIFT) & ZONES_MASK;
+>  }
+> @@ -651,7 +658,7 @@ static inline enum zone_type page_zonenum(struct page *page)
+>   * We guarantee only that it will return the same value for two
+>   * combinable pages in a zone.
+>   */
+> -static inline int page_zone_id(struct page *page)
+> +static inline int page_zone_id(const struct page *page)
+>  {
+>  	return (page->flags >> ZONEID_PGSHIFT) & ZONEID_MASK;
+>  }
+> @@ -786,7 +793,7 @@ static inline void *page_rmapping(struct page *page)
+>  	return (void *)((unsigned long)page->mapping & ~PAGE_MAPPING_FLAGS);
+>  }
+>  
+> -static inline int PageAnon(struct page *page)
+> +static inline int PageAnon(const struct page *page)
+>  {
+>  	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
+>  }
+> @@ -809,20 +816,20 @@ static inline pgoff_t page_index(struct page *page)
+>   */
+>  static inline void reset_page_mapcount(struct page *page)
+>  {
+> -	atomic_set(&(page)->_mapcount, -1);
+> +	atomic_set(&page->_mapcount, -1);
+>  }
+>  
+> -static inline int page_mapcount(struct page *page)
+> +static inline int page_mapcount(const struct page *page)
+>  {
+> -	return atomic_read(&(page)->_mapcount) + 1;
+> +	return atomic_read(&page->_mapcount) + 1;
+>  }
+>  
+>  /*
+>   * Return true if this page is mapped into pagetables.
+>   */
+> -static inline int page_mapped(struct page *page)
+> +static inline int page_mapped(const struct page *page)
+>  {
+> -	return atomic_read(&(page)->_mapcount) >= 0;
+> +	return atomic_read(&page->_mapcount) >= 0;
+>  }
+>  
+>  /*
+> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+> index 811183d..7f8e553 100644
+> --- a/include/linux/page-flags.h
+> +++ b/include/linux/page-flags.h
+> @@ -135,7 +135,7 @@ enum pageflags {
+>   * Macros to create function definitions for page flags
+>   */
+>  #define TESTPAGEFLAG(uname, lname)					\
+> -static inline int Page##uname(struct page *page) 			\
+> +static inline int Page##uname(const struct page *page)			\
+>  			{ return test_bit(PG_##lname, &page->flags); }
+>  
+>  #define SETPAGEFLAG(uname, lname)					\
+> @@ -173,7 +173,7 @@ static inline int __TestClearPage##uname(struct page *page)		\
+>  	__SETPAGEFLAG(uname, lname)  __CLEARPAGEFLAG(uname, lname)
+>  
+>  #define PAGEFLAG_FALSE(uname) 						\
+> -static inline int Page##uname(struct page *page) 			\
+> +static inline int Page##uname(const struct page *page)			\
+>  			{ return 0; }
+>  
+>  #define TESTSCFLAG(uname, lname)					\
+> @@ -345,7 +345,7 @@ static inline void set_page_writeback(struct page *page)
+>  __PAGEFLAG(Head, head) CLEARPAGEFLAG(Head, head)
+>  __PAGEFLAG(Tail, tail)
+>  
+> -static inline int PageCompound(struct page *page)
+> +static inline int PageCompound(const struct page *page)
+>  {
+>  	return page->flags & ((1L << PG_head) | (1L << PG_tail));
+>  
+> @@ -379,7 +379,7 @@ __PAGEFLAG(Head, compound)
+>   */
+>  #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
+>  
+> -static inline int PageTail(struct page *page)
+> +static inline int PageTail(const struct page *page)
+>  {
+>  	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
+>  }
