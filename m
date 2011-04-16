@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760602Ab1DPXqK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 19:46:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55936 "EHLO ogre.sisk.pl"
+	id S1760574Ab1DPXpu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 19:45:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55926 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760507Ab1DPXpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 19:45:06 -0400
+	id S1760501Ab1DPXpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 19:45:04 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 9/9] PM: Revert "driver core: platform_bus: allow runtime override of dev_pm_ops"
-Date: Sun, 17 Apr 2011 01:44:14 +0200
+Subject: [PATCH 6/9] PM / Runtime: Add subsystem data field to struct dev_pm_info
+Date: Sun, 17 Apr 2011 01:40:40 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
@@ -22,83 +22,103 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104170144.15043.rjw@sisk.pl>
+Message-Id: <201104170140.40557.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@ti.com>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The platform_bus_set_pm_ops() operation is deprecated in favor of the
-new device power domain infrastructre implemented in commit
-7538e3db6e015e890825fbd9f8659952896ddd5b (PM: add support for device
-power domains)
+Some subsystems need to attach PM-related data to struct device and
+they need to use devres for this purpose.  For their convenience
+and to make code more straightforward, add a new field called
+subsys_data to struct dev_pm_info and let subsystems use it for
+attaching PM-related information to devices.
 
-Signed-off-by: Kevin Hilman <khilman@ti.com>
+Convert the ARM shmobile platform to using the new field.
+
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/platform.c         |   35 -----------------------------------
- include/linux/platform_device.h |    3 ---
- 2 files changed, 38 deletions(-)
+ arch/arm/mach-shmobile/pm_runtime.c |   34 +++++++++++++++++-----------------
+ include/linux/pm.h                  |    1 +
+ 2 files changed, 18 insertions(+), 17 deletions(-)
 
-Index: linux-2.6/drivers/base/platform.c
+Index: linux-2.6/include/linux/pm.h
 ===================================================================
---- linux-2.6.orig/drivers/base/platform.c
-+++ linux-2.6/drivers/base/platform.c
-@@ -916,41 +916,6 @@ struct bus_type platform_bus_type = {
+--- linux-2.6.orig/include/linux/pm.h
++++ linux-2.6/include/linux/pm.h
+@@ -460,6 +460,7 @@ struct dev_pm_info {
+ 	unsigned long		active_jiffies;
+ 	unsigned long		suspended_jiffies;
+ 	unsigned long		accounting_timestamp;
++	void			*subsys_data;  /* Owned by the subsystem. */
+ #endif
  };
- EXPORT_SYMBOL_GPL(platform_bus_type);
  
--/**
-- * platform_bus_get_pm_ops() - return pointer to busses dev_pm_ops
-- *
-- * This function can be used by platform code to get the current
-- * set of dev_pm_ops functions used by the platform_bus_type.
-- */
--const struct dev_pm_ops * __init platform_bus_get_pm_ops(void)
--{
--	return platform_bus_type.pm;
--}
--
--/**
-- * platform_bus_set_pm_ops() - update dev_pm_ops for the platform_bus_type
-- *
-- * @pm: pointer to new dev_pm_ops struct to be used for platform_bus_type
-- *
-- * Platform code can override the dev_pm_ops methods of
-- * platform_bus_type by using this function.  It is expected that
-- * platform code will first do a platform_bus_get_pm_ops(), then
-- * kmemdup it, then customize selected methods and pass a pointer to
-- * the new struct dev_pm_ops to this function.
-- *
-- * Since platform-specific code is customizing methods for *all*
-- * devices (not just platform-specific devices) it is expected that
-- * any custom overrides of these functions will keep existing behavior
-- * and simply extend it.  For example, any customization of the
-- * runtime PM methods should continue to call the pm_generic_*
-- * functions as the default ones do in addition to the
-- * platform-specific behavior.
-- */
--void __init platform_bus_set_pm_ops(const struct dev_pm_ops *pm)
--{
--	platform_bus_type.pm = pm;
--}
--
- int __init platform_bus_init(void)
- {
- 	int error;
-Index: linux-2.6/include/linux/platform_device.h
+Index: linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
 ===================================================================
---- linux-2.6.orig/include/linux/platform_device.h
-+++ linux-2.6/include/linux/platform_device.h
-@@ -150,9 +150,6 @@ extern struct platform_device *platform_
- 					struct resource *res, unsigned int n_res,
- 					const void *data, size_t size);
+--- linux-2.6.orig/arch/arm/mach-shmobile/pm_runtime.c
++++ linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
+@@ -18,6 +18,7 @@
+ #include <linux/clk.h>
+ #include <linux/sh_clk.h>
+ #include <linux/bitmap.h>
++#include <linux/slab.h>
  
--extern const struct dev_pm_ops * platform_bus_get_pm_ops(void);
--extern void platform_bus_set_pm_ops(const struct dev_pm_ops *pm);
+ #ifdef CONFIG_PM_RUNTIME
+ #define BIT_ONCE 0
+@@ -29,22 +30,9 @@ struct pm_runtime_data {
+ 	struct clk *clk;
+ };
+ 
+-static void __devres_release(struct device *dev, void *res)
+-{
+-	struct pm_runtime_data *prd = res;
 -
- /* early platform driver interface */
- struct early_platform_driver {
- 	const char *class_str;
+-	dev_dbg(dev, "__devres_release()\n");
+-
+-	if (test_bit(BIT_CLK_ENABLED, &prd->flags))
+-		clk_disable(prd->clk);
+-
+-	if (test_bit(BIT_ACTIVE, &prd->flags))
+-		clk_put(prd->clk);
+-}
+-
+ static struct pm_runtime_data *__to_prd(struct device *dev)
+ {
+-	return devres_find(dev, __devres_release, NULL, NULL);
++	return dev ? dev->power.subsys_data : NULL;
+ }
+ 
+ static void platform_pm_runtime_init(struct device *dev,
+@@ -121,14 +109,26 @@ static int platform_bus_notify(struct no
+ 
+ 	dev_dbg(dev, "platform_bus_notify() %ld !\n", action);
+ 
+-	if (action == BUS_NOTIFY_BIND_DRIVER) {
+-		prd = devres_alloc(__devres_release, sizeof(*prd), GFP_KERNEL);
++	switch (action) {
++	case BUS_NOTIFY_BIND_DRIVER:
++		prd = kzalloc(sizeof(*prd), GFP_KERNEL);
+ 		if (prd) {
+-			devres_add(dev, prd);
++			dev->power.subsys_data = prd;
+ 			dev->pwr_domain = &default_power_domain;
+ 		} else {
+ 			dev_err(dev, "unable to alloc memory for runtime pm\n");
+ 		}
++		break;
++	case BUS_NOTIFY_UNBOUND_DRIVER:
++		prd = __to_prd(dev);
++		if (prd) {
++			if (test_bit(BIT_CLK_ENABLED, &prd->flags))
++				clk_disable(prd->clk);
++
++			if (test_bit(BIT_ACTIVE, &prd->flags))
++				clk_put(prd->clk);
++		}
++		break;
+ 	}
+ 
+ 	return 0;
 
