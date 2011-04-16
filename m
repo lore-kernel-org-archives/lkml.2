@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab1DPIb7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 04:31:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49523 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab1DPIb5 (ORCPT
+	id S1752296Ab1DPIfJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 04:35:09 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:44345 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751984Ab1DPIfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 04:31:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=w+jrYP+Kl5Qn3Yt8EcHRZTtmcI4TUeW46skxKgOlx/nexrLhYkT5mgivXaVfwkHwfo
-         e6WDxnEaKEvE0OoelSHd0li6VcOhu0x/eFlzAwHrEHlKbuhaVowSXRiXjvCdEbShzU3d
-         ZfBoMvjGNwwpeYtvIvxl5OGS+0u0+zkdVLCRA=
-Subject: Re: [PATCH 2/2] mtd: msm_nand: Add initial msm nand driver support.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Murali Nalajala <mnalajal@codeaurora.org>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Dima Zavin <dima@android.com>,
-        Brian Swetland <swetland@google.com>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <1302942029.2308.1.camel@koala>
-References: <1298940450-27365-1-git-send-email-mnalajal@codeaurora.org>
-	 <1298940450-27365-2-git-send-email-mnalajal@codeaurora.org>
-	 <1302861097.3220.12.camel@localhost>  <4DA85B24.50807@codeaurora.org>
-	 <1302942029.2308.1.camel@koala>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 16 Apr 2011 11:31:52 +0300
-Message-ID: <1302942712.2308.3.camel@koala>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Sat, 16 Apr 2011 04:35:07 -0400
+Date: Sat, 16 Apr 2011 09:41:34 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>
+Subject: Re: Zaurus CF tests -- ok
+Message-ID: <20110416074134.GA26440@ucw.cz>
+References: <20110415211822.GB21111@atrey.karlin.mff.cuni.cz>
+ <20110415213817.GC4420@atrey.karlin.mff.cuni.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415213817.GC4420@atrey.karlin.mff.cuni.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-16 at 11:20 +0300, Artem Bityutskiy wrote:
-> > > +#define MSM_NAND_REG(off) (msm_nand_phys + (off))
-> > > +
-> > > +#define MSM_NAND_FLASH_CMD            MSM_NAND_REG(0x0000)
-> > > +#define MSM_NAND_ADDR0                MSM_NAND_REG(0x0004)
-> > >
-> > > Could you please make the macros to take the "struct msm_nand_chip
-> > > *chip" argument instead, and store the pase address there. Do not hide
-> > > the fact that those macros are actually functions, not constant - this
-> > > is error prone.
-> > >
-> > > Besides, I'm do not know your HW, but if you have several controllers
-> > > with various base addresses - your driver won't work.
-> > 
-> > you are correct, we have multiple controllers, which breaks this logic 
-> > in future.
+Hi!
+
+> > After getting _good_ power supply, I was able to untar and rm ltp tree
+> > 100 times so far. 2.6.38, ext3. (So metan no, I do not see any weird
+> > ext3 problems).
 > 
-> So then make your macros to accept the base address as an argument
-> instead please.
+> Hmm, I'm using original adapter, but who knows if it's okay to use...
 
-Or better make macros to be constants, and always use something like
-base + MSM_NAND_FLASH_CMD - this is the standard approach.
+It probably is...
+
+> > Another strange thing is... I see lots of duplicated keystrokes --
+> > like type "pavel" but machine understands "paavel". But it only seems
+> > to happen when I'm _not_ trying to debug it?!
+> 
+> That seems to be side effect of machine under load (it has gpio keyboard).
+
+ouch. original corgi_kbd driver used timers, new one uses threads --
+more affected by scheduling. I'm not even sure if the worker thread it
+uses runs at elevated priority...
+
+> > With power from USB extension cable, it crashes in <5 minutes. It
+> > seems to toggle charger a lot, as voltage on the cable is only
+> > 4.2..4.5V. I guess it is software problem in the charging code.
+> > )
+> 
+> The zaurus actually is AFAIK unable to run from battery when connected to the
+> external power, so weak power line may explain some of the strange behaviour.
+
+?? IIRC Stanislav told me that hardware will always run off whatever
+is available...?
+							Pavel
+
 -- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
