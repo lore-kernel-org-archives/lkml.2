@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab1DPSh2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 14:37:28 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:53536 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab1DPShW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 14:37:22 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Robert Millan <rmh@gnu.org>, David Daney <ddaney@caviumnetworks.com>,
-        wu zhangjin <wuzhangjin@gmail.com>,
-        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] MIPS: Set ELF AT_PLATFORM string for BMIPS processors
-Date: Sat, 16 Apr 2011 11:29:28 -0700
-Message-Id: <7f27896d6ff6598a4b9e003454ef10e0@localhost>
-In-Reply-To: <f571cce5cf7793777f8303cea5e9628f@localhost>
-References: <f571cce5cf7793777f8303cea5e9628f@localhost>
-User-Agent: vim 7.2
+	id S1753102Ab1DPSyQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 14:54:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59891 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab1DPSyF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 14:54:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=U4j4eLVbyqkyCj9BZyiE7HX5qedhw7Jw3ZRJK5X5gvS7FxddLdezEwNkyZ0gmvOFfM
+         mu21EmGx43c+LrUioFjlIQp1cvFR9zFwVq8QVvvmd97B+c9l7BcOFuGesdkrGbuVEU3M
+         uEcoc4WdgDu5KnNKJ2Xrhnrs2KLnYtyyWFxuY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <20110416163509.GS18463@8bytes.org>
+References: <BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
+	<4DA6145D.9070703@kernel.org>
+	<BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
+	<4DA655E7.3000904@zytor.com>
+	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
+	<BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
+	<20110415131152.GJ18463@8bytes.org>
+	<20110415131650.GB18660@elte.hu>
+	<20110415154604.GN18463@8bytes.org>
+	<BANLkTim23SQiyb4R+QA7=fpPZrnQw9_PRQ@mail.gmail.com>
+	<20110416163509.GS18463@8bytes.org>
+Date: Sat, 16 Apr 2011 14:54:04 -0400
+Message-ID: <BANLkTimxG3QoLx0vqw9YgE_s4qyzcEoEaQ@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        alexandre.f.demers@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/kernel/cpu-probe.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+On Sat, Apr 16, 2011 at 12:35 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Fri, Apr 15, 2011 at 12:11:28PM -0400, Jerome Glisse wrote:
+>> Do you also got the write if you load radeon with radeon.no_wb=1 ?
+>> I think at this address it's the wb page, or maybe the cp as wb likely
+>> take only one page
+>
+> radeon.no_wb=1 makes no difference. The box still reboots.
+>
+>        Joerg
+>
+>
 
-diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
-index 5633ab1..e3cf292 100644
---- a/arch/mips/kernel/cpu-probe.c
-+++ b/arch/mips/kernel/cpu-probe.c
-@@ -911,12 +911,14 @@ static inline void cpu_probe_broadcom(struct cpuinfo_mips *c, unsigned int cpu)
- 	case PRID_IMP_BMIPS32_REV8:
- 		c->cputype = CPU_BMIPS32;
- 		__cpu_name[cpu] = "Broadcom BMIPS32";
-+		set_elf_platform(cpu, "bmips32");
- 		break;
- 	case PRID_IMP_BMIPS3300:
- 	case PRID_IMP_BMIPS3300_ALT:
- 	case PRID_IMP_BMIPS3300_BUG:
- 		c->cputype = CPU_BMIPS3300;
- 		__cpu_name[cpu] = "Broadcom BMIPS3300";
-+		set_elf_platform(cpu, "bmips3300");
- 		break;
- 	case PRID_IMP_BMIPS43XX: {
- 		int rev = c->processor_id & 0xff;
-@@ -925,15 +927,18 @@ static inline void cpu_probe_broadcom(struct cpuinfo_mips *c, unsigned int cpu)
- 				rev <= PRID_REV_BMIPS4380_HI) {
- 			c->cputype = CPU_BMIPS4380;
- 			__cpu_name[cpu] = "Broadcom BMIPS4380";
-+			set_elf_platform(cpu, "bmips4380");
- 		} else {
- 			c->cputype = CPU_BMIPS4350;
- 			__cpu_name[cpu] = "Broadcom BMIPS4350";
-+			set_elf_platform(cpu, "bmips4350");
- 		}
- 		break;
- 	}
- 	case PRID_IMP_BMIPS5000:
- 		c->cputype = CPU_BMIPS5000;
- 		__cpu_name[cpu] = "Broadcom BMIPS5000";
-+		set_elf_platform(cpu, "bmips5000");
- 		c->options |= MIPS_CPU_ULRI;
- 		break;
- 	}
--- 
-1.7.4.3
+If you want to go the printk way you can add printk before each test
+ring_test, ib_test in r600.c this 2 functions are the own that might
+trigger the first GPU gart activities.
 
+Cheers,
+Jerome
