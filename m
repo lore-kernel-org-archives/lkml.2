@@ -1,108 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1DPOI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 10:08:56 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34212 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab1DPOIs (ORCPT
+	id S1754071Ab1DPONe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 10:13:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37431 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab1DPON1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 10:08:48 -0400
+	Sat, 16 Apr 2011 10:13:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:reply-to:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=tU1iOybSHRbbH2zwQ7nFs8U49K5rqFUEvw2nAS7HbSRkk9WVciyPa9p6ZZl8QrYvhN
-         Ub52VW+R+jfS+Tpy2yJfal+qw58IrY1TkItmh82Y2AHn19KkeZTS4h/9phQ6dO8Gh9ct
-         bMG1nnGmdKFnJrNgHhU3LswmutlYc7oz6PLfE=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=LGnHMAzXmnYcTTZkuO6TPghE7IkPJkpqUnpcf1v/F5vwCFxPSEj24X+LG5dptAjv5N
+         a60K5G/1IK+q9qN9W7+7o7GYjoed29tAhjYqu4CS/DPzvel9s5XrEf+e7tD7w+Ad9Le9
+         KYwTpKa1CjnG3vL0K6gl5FbD+fE4r9lY1wnAk=
 MIME-Version: 1.0
-Reply-To: wanlong.gao@gmail.com
-In-Reply-To: <1302960373-5309-5-git-send-email-abogani@kernel.org>
-References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
-	<1302960373-5309-5-git-send-email-abogani@kernel.org>
-Date: Sat, 16 Apr 2011 22:08:48 +0800
-X-Google-Sender-Auth: yljp_3v0j494gK3NrOSnrf5DwEc
-Message-ID: <BANLkTikVMv_3vjypP=+ZCmn5BwEazRZ36w@mail.gmail.com>
-Subject: Re: [PATCH 4/4] module: Use the binary search for symbols resolution
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <BANLkTinNoX6GBG=6xVC8ZfOO4OyZ_o=sFg@mail.gmail.com>
+References: <1302781431.21145.6.camel@dev.znau.edu.ua> <BANLkTinvpt5vs+rXd3WN-a2JpGtTV+=Gyg@mail.gmail.com>
+ <4DA6E9BD.3090404@hauke-m.de> <BANLkTinu+Q367oqQPiUehPcbMs-SBxbwFg@mail.gmail.com>
+ <1302786900.21965.52.camel@dev.znau.edu.ua> <BANLkTimM8=-pX+Ea8Eyp4XyvP1APbUof9w@mail.gmail.com>
+ <1302892585.30441.12.camel@dev.znau.edu.ua> <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+ <1302896541.30441.33.camel@dev.znau.edu.ua> <BANLkTinPVaYC14Y=m5iu7GYodkRb6uTuPw@mail.gmail.com>
+ <20110415195642.22440.qmail@stuge.se> <BANLkTinNoX6GBG=6xVC8ZfOO4OyZ_o=sFg@mail.gmail.com>
+From: Jonas Gorski <jonas.gorski+openwrt@gmail.com>
+Date: Sat, 16 Apr 2011 16:13:06 +0200
+X-Google-Sender-Auth: mHvQB7oxZzehV3RjD2zfAEmOv_U
+Message-ID: <BANLkTinXUt1aNudnRqEG40vcrtMBCc3Nxg@mail.gmail.com>
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: George Kashperko <george@znau.edu.ua>, Arnd Bergmann <arnd@arndb.de>,
+        Hauke Mehrtens <hauke@hauke-m.de>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Arend van Spriel <arend@broadcom.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        linux-arm-kernel@lists.infradead.org, b43-dev@lists.infradead.org,
+        Peter Stuge <peter@stuge.se>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/16/11, Alessio Igor Bogani <abogani@kernel.org> wrote:
-> Takes advantage of the order and locates symbols using binary search.
->
-> This work was supported by a hardware donation from the CE Linux Forum.
->
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
-> ---
->  kernel/module.c |   23 ++++++++++++++++-------
->  1 files changed, 16 insertions(+), 7 deletions(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index b438b25..74a57c1 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -57,6 +57,7 @@
->  #include <linux/kmemleak.h>
->  #include <linux/jump_label.h>
->  #include <linux/pfn.h>
-> +#include <linux/bsearch.h>
->
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/module.h>
-> @@ -351,22 +352,30 @@ struct find_symbol_arg {
->  	const struct kernel_symbol *sym;
->  };
->
-> +static int cmp_name(const void *va, const void *vb)
-> +{
-> +	const char *a;
-> +	const struct kernel_symbol *b;
-> +	a = va; b = vb;
-> +	return strcmp(a, b->name);
-> +}
-> +
->  static bool find_symbol_in_symsearch(const struct symsearch *syms,
->  				     struct module *owner,
->  				     void *data)
->  {
->  	struct find_symbol_arg *fsa = data;
-> +	struct kernel_symbol *sym;
->  	unsigned int symnum;
-> -	int result;
->
-> -	for (symnum = 0; symnum < syms->stop - syms->start; symnum++) {
-> -		result = strcmp(fsa->name, syms->start[symnum].name);
-> -		if (result == 0)
-> -			break;
-> -	}
-> -	if (symnum >= syms->stop - syms->start)
-> +	sym = bsearch(fsa->name, syms->start, syms->stop - syms->start,
-> +		sizeof(struct kernel_symbol), cmp_name);
-> +
-> +	if (sym == NULL)
->  		return false;
->
-> +	symnum = sym - syms->start;
-> +
->  	if (!fsa->gplok) {
->  		if (syms->licence == GPL_ONLY)
->  			return false;
-> --
-> 1.7.4.1
->
-> --
-It seems like a great work .
-Thanks
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On 16 April 2011 16:00, Rafał Miłecki <zajec5@gmail.com> wrote:
+> Of the other point there is no sense in calling it
+> bcm_amba_axi_for_wifi as I believe we can meet other devices than just
+> wifi on this architecture.
+
+Current bcm47xx/53xx SoCs from Broadcom also use this architecture for
+the system bus (like the older ones used SSB), and they usually have
+ethernet macs, memory controllers, mips cores on it (and, as far as I
+can see, also always a 802.11 core).
+
+
+Jonas
