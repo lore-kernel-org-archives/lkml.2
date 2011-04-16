@@ -1,49 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab1DPAlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 20:41:13 -0400
-Received: from fieldses.org ([174.143.236.118]:54487 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754262Ab1DPAlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 20:41:11 -0400
-Date: Fri, 15 Apr 2011 20:41:07 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Wolfgang Walter <wolfgang.walter@stwm.de>, linux-kernel@vger.kernel.org,
-        Rick Koshi <nfs-bug-report@more-right-rudder.com>,
-        Ivo =?utf-8?Q?P=C5=99ikryl?= <prikryl@eurosat.cz>
-Subject: Re: 2.6.38.2: regression from 2.6.38: kernel BUG at
- fs/nfsd/nfs4state.c:380!
-Message-ID: <20110416004107.GC14177@fieldses.org>
-References: <201103282223.06191.wolfgang.walter@stwm.de>
- <20110328203207.GA17493@suse.de>
- <201103282300.57903.wolfgang.walter@stwm.de>
- <20110328214122.GA19854@suse.de>
- <20110329031347.GC2695@fieldses.org>
- <20110329031725.GA3665@suse.de>
- <20110411081726.GB31311@fieldses.org>
- <20110412000809.GB11110@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110412000809.GB11110@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757254Ab1DPBFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 21:05:19 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:63540 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755579Ab1DPBFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 21:05:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IUO0eSphYZtDH2YSALvbEsFTE4lvq1OZVHQX+k+GZ20q9iDHXdKes58ixFCPRAmHhe
+         o2ptHvYwyVsyxlgdnNZeWDW52AXfDBdW0m8M9h751tPdPxTxz16m6/T+Bkuq9CFxRHO0
+         gAnb+jMkwYiKt1tmFeuXsaCf4KihuJoKEi0Qg=
+From: Timothy Courrejou <timcour@gmail.com>
+To: lenb@kernel.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Timothy Courrejou <timcour@gmail.com>
+Subject: [PATCH] ACPI: ac: fixed indentation, commenting and line length coding style issues
+Date: Fri, 15 Apr 2011 18:04:47 -0700
+Message-Id: <1302915887-12693-1-git-send-email-timcour@gmail.com>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 11, 2011 at 05:08:09PM -0700, Greg KH wrote:
-> On Mon, Apr 11, 2011 at 04:17:26AM -0400, J. Bruce Fields wrote:
-> > Argh, I forgot to stick the "Cc: stable" on this one.  Anyway, should be
-> > in Linus's tree soon:
-> > 
-> > --b.
-> > 
-> > commit 23fcf2ec93fb8573a653408316af599939ff9a8e
-> 
-> Now picked up.
-> 
-> In the future, at least cc: this email to stable@kernel.org so I don't
-> loose it in the wilds that are my suse.de email account...
+Fixed coding style issues.
 
-Apologies, will do.--b.
+Signed-off-by: Timothy Courrejou <timcour@gmail.com>
+---
+ drivers/acpi/ac.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
+index 58c3f74..183a035 100644
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -85,7 +85,7 @@ static struct acpi_driver acpi_ac_driver = {
+ 
+ struct acpi_ac {
+ 	struct power_supply charger;
+-	struct acpi_device * device;
++	struct acpi_device *device;
+ 	unsigned long long state;
+ };
+ 
+@@ -101,10 +101,9 @@ static const struct file_operations acpi_ac_fops = {
+ };
+ #endif
+ 
+-/* --------------------------------------------------------------------------
+-                               AC Adapter Management
+-   -------------------------------------------------------------------------- */
+-
++/*
++ * AC Adapter Management
++ */
+ static int acpi_ac_get_state(struct acpi_ac *ac)
+ {
+ 	acpi_status status = AE_OK;
+@@ -113,9 +112,11 @@ static int acpi_ac_get_state(struct acpi_ac *ac)
+ 	if (!ac)
+ 		return -EINVAL;
+ 
+-	status = acpi_evaluate_integer(ac->device->handle, "_PSR", NULL, &ac->state);
++	status = acpi_evaluate_integer(ac->device->handle,
++				       "_PSR", NULL, &ac->state);
+ 	if (ACPI_FAILURE(status)) {
+-		ACPI_EXCEPTION((AE_INFO, status, "Error reading AC Adapter state"));
++		ACPI_EXCEPTION((AE_INFO, status,
++				"Error reading AC Adapter state"));
+ 		ac->state = ACPI_AC_STATUS_UNKNOWN;
+ 		return -ENODEV;
+ 	}
+@@ -123,9 +124,9 @@ static int acpi_ac_get_state(struct acpi_ac *ac)
+ 	return 0;
+ }
+ 
+-/* --------------------------------------------------------------------------
+-                            sysfs I/F
+-   -------------------------------------------------------------------------- */
++/*
++ * sysfs I/F
++ */
+ static int get_ac_property(struct power_supply *psy,
+ 			   enum power_supply_property psp,
+ 			   union power_supply_propval *val)
+@@ -153,10 +154,10 @@ static enum power_supply_property ac_props[] = {
+ };
+ 
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+-/* --------------------------------------------------------------------------
+-                              FS Interface (/proc)
+-   -------------------------------------------------------------------------- */
+ 
++/*
++ * FS Interface (/proc)
++ */
+ static struct proc_dir_entry *acpi_ac_dir;
+ 
+ static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
+@@ -229,10 +230,9 @@ static int acpi_ac_remove_fs(struct acpi_device *device)
+ }
+ #endif
+ 
+-/* --------------------------------------------------------------------------
+-                                   Driver Model
+-   -------------------------------------------------------------------------- */
+-
++/*
++ * Driver Model
++ */
+ static void acpi_ac_notify(struct acpi_device *device, u32 event)
+ {
+ 	struct acpi_ac *ac = acpi_driver_data(device);
+@@ -298,7 +298,7 @@ static int acpi_ac_add(struct acpi_device *device)
+ 	       acpi_device_name(device), acpi_device_bid(device),
+ 	       ac->state ? "on-line" : "off-line");
+ 
+-      end:
++end:
+ 	if (result) {
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 		acpi_ac_remove_fs(device);
+-- 
+1.7.4.2
+
