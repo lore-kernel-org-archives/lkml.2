@@ -1,195 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab1DPOX5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 10:23:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1758 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939Ab1DPOXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 10:23:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,223,1301900400"; 
-   d="scan'208";a="420425101"
-Date: Sat, 16 Apr 2011 22:21:14 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+	id S1755331Ab1DPO1w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 10:27:52 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:42530 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab1DPO1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 10:27:46 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
- time
-Message-ID: <20110416142114.GA12220@localhost>
-References: <20110413220444.GF4648@quack.suse.cz>
- <20110413233122.GA6097@localhost>
- <20110413235211.GN31057@dastard>
- <20110414002301.GA9826@localhost>
- <20110414151424.GA367@localhost>
- <20110414181609.GH5054@quack.suse.cz>
- <20110415034300.GA23430@localhost>
- <20110415143711.GA17181@localhost>
- <20110415221314.GE5432@quack.suse.cz>
- <1302942809.2388.254.camel@twins>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="mYCpIKhGyMATD0i+"
-Content-Disposition: inline
-In-Reply-To: <1302942809.2388.254.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 4/4] perf, x86: Fix event scheduler to solve complex scheduling problems
+In-Reply-To: Your message of "Sat, 16 Apr 2011 12:08:40 +0200."
+             <1302948520.32491.10.camel@twins>
+From: Valdis.Kletnieks@vt.edu
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com> <1302913676-14352-5-git-send-email-robert.richter@amd.com> <1302943877.32491.9.camel@twins> <20110416094348.GA24711@elte.hu>
+            <1302948520.32491.10.camel@twins>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1302964013_54890P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 16 Apr 2011 10:26:53 -0400
+Message-ID: <61040.1302964013@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4DA9A731.00F8,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---mYCpIKhGyMATD0i+
+--==_Exmh_1302964013_54890P
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Sat, Apr 16, 2011 at 04:33:29PM +0800, Peter Zijlstra wrote:
-> On Sat, 2011-04-16 at 00:13 +0200, Jan Kara wrote:
-> > 
-> > So what is a takeaway from this for me is that scaling the period
-> > with the dirty limit is not the right thing. If you'd have 4-times more
-> > memory, your choice of "dirty limit" as the period would be as bad as
-> > current 4*"dirty limit". What would seem like a better choice of period
-> > to me would be to have the period in an order of a few seconds worth of
-> > writeback. That would allow the bdi limit to scale up reasonably fast when
-> > new bdi starts to be used and still not make it fluctuate that much
-> > (hopefully).
-> 
-> No best would be to scale the period with the writeout bandwidth, but
-> lacking that the dirty limit had to do. Since we're counting pages, and
-> bandwidth is pages/second we'll end up with a time measure, exactly the
-> thing you wanted.
+On Sat, 16 Apr 2011 12:08:40 +0200, Peter Zijlstra said:
+> These cases only exist on AMD F15, I don't think there's many people
+> with such systems around.
 
-I owe you the patch :) Here is a tested one for doing the bandwidth
-based scaling. It's based on the attached global writeout bandwidth
-estimation.
-
-I tried updating the shift both on rosed and fallen bandwidth, however
-that leads to reset of the accumulated proportion values. So here the
-shift will only be increased and never decreased.
-
-Thanks,
-Fengguang
----
-Subject: writeback: scale dirty proportions period with writeout bandwidth
-Date: Sat Apr 16 18:38:41 CST 2011
-
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2011-04-16 21:02:24.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-04-16 21:04:08.000000000 +0800
-@@ -121,20 +121,13 @@ static struct prop_descriptor vm_complet
- static struct prop_descriptor vm_dirties;
- 
- /*
-- * couple the period to the dirty_ratio:
-+ * couple the period to global write throughput:
-  *
-- *   period/2 ~ roundup_pow_of_two(dirty limit)
-+ *   period/2 ~ roundup_pow_of_two(write IO throughput)
-  */
- static int calc_period_shift(void)
- {
--	unsigned long dirty_total;
--
--	if (vm_dirty_bytes)
--		dirty_total = vm_dirty_bytes / PAGE_SIZE;
--	else
--		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
--				100;
--	return 2 + ilog2(dirty_total - 1);
-+	return 2 + ilog2(default_backing_dev_info.avg_write_bandwidth);
- }
- 
- /*
-@@ -143,6 +136,13 @@ static int calc_period_shift(void)
- static void update_completion_period(void)
- {
- 	int shift = calc_period_shift();
-+
-+	if (shift > PROP_MAX_SHIFT)
-+		shift = PROP_MAX_SHIFT;
-+
-+	if (shift <= vm_completions.pg[0].shift)
-+		return;
-+
- 	prop_change_shift(&vm_completions, shift);
- 	prop_change_shift(&vm_dirties, shift);
- }
-@@ -180,7 +180,6 @@ int dirty_ratio_handler(struct ctl_table
- 
- 	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
- 	if (ret == 0 && write && vm_dirty_ratio != old_ratio) {
--		update_completion_period();
- 		vm_dirty_bytes = 0;
- 	}
- 	return ret;
-@@ -196,7 +195,6 @@ int dirty_bytes_handler(struct ctl_table
- 
- 	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
- 	if (ret == 0 && write && vm_dirty_bytes != old_bytes) {
--		update_completion_period();
- 		vm_dirty_ratio = 0;
- 	}
- 	return ret;
-@@ -1026,6 +1024,7 @@ void bdi_update_bandwidth(struct backing
- 						global_page_state(NR_WRITTEN));
- 		gbdi->bw_time_stamp = now;
- 		gbdi->written_stamp = global_page_state(NR_WRITTEN);
-+		update_completion_period();
- 	}
- 	if (thresh) {
- 		bdi_update_dirty_ratelimit(bdi, thresh, dirty,
-
---mYCpIKhGyMATD0i+
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="writeback-global-write-bandwidth.patch"
-
-Subject: writeback: global writeback throughput
-Date: Sat Apr 16 18:25:51 CST 2011
+Didn't they say similar things about the first Itaniums? :)
 
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+--==_Exmh_1302964013_54890P
+Content-Type: application/pgp-signature
 
---- linux-next.orig/mm/page-writeback.c	2011-04-16 18:26:54.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-04-16 20:13:21.000000000 +0800
-@@ -994,6 +994,7 @@ void bdi_update_bandwidth(struct backing
- 	unsigned long elapsed;
- 	unsigned long dirtied;
- 	unsigned long written;
-+	struct backing_dev_info *gbdi = &default_backing_dev_info;
- 
- 	if (!spin_trylock(&dirty_lock))
- 		return;
-@@ -1016,11 +1017,15 @@ void bdi_update_bandwidth(struct backing
- 	if (elapsed <= MAX_PAUSE)
- 		goto unlock;
- 
--	if (thresh &&
--	    now - default_backing_dev_info.bw_time_stamp >= MAX_PAUSE) {
-+	if (thresh && now - gbdi->bw_time_stamp >= MAX_PAUSE) {
- 		update_dirty_limit(thresh, dirty);
--		bdi_update_dirty_smooth(&default_backing_dev_info, dirty);
--		default_backing_dev_info.bw_time_stamp = now;
-+		bdi_update_dirty_smooth(gbdi, dirty);
-+		if (now - gbdi->bw_time_stamp < HZ + MAX_PAUSE)
-+			__bdi_update_write_bandwidth(gbdi,
-+						now - gbdi->bw_time_stamp,
-+						global_page_state(NR_WRITTEN));
-+		gbdi->bw_time_stamp = now;
-+		gbdi->written_stamp = global_page_state(NR_WRITTEN);
- 	}
- 	if (thresh) {
- 		bdi_update_dirty_ratelimit(bdi, thresh, dirty,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
---mYCpIKhGyMATD0i+--
+iD8DBQFNqactcC3lWbTT17ARAnl0AKCSsE5t/RHFnpkZhvq/+3uMADcmfQCeOpZ7
+T+HEef9EVo+dd8ZSxLO7QN0=
+=izQL
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1302964013_54890P--
+
