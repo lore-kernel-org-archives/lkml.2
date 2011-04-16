@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760468Ab1DPXfu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 19:35:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35332 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab1DPXfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 19:35:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=q+YwkCMBsRE1AXfGYQicAd6RoPArnCHgTHTKnfbwHMeXS3Kf+lbrbfOgIp9xoHUtqQ
-         pYN8OTSXe+Sota3/bkM07GYBblBWqqjuCEkpgcBpUTh24YnkYzhfdw89o3kpHFQjZdh1
-         Ct6zMHJTecDCLoTvcfVBsHpprGPA3X8kVIugg=
-Message-ID: <4DAA27C8.7060800@gmail.com>
-Date: Sat, 16 Apr 2011 16:35:36 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	id S1760488Ab1DPXox (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 19:44:53 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55895 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752461Ab1DPXor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 19:44:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH 0/9] PM: Rework shmobile and OMAP runtime PM using power domains
+Date: Sun, 17 Apr 2011 01:35:18 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-sh@vger.kernel.org, lethal@linux-sh.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
+References: <201104130205.26988.rjw@sisk.pl>
+In-Reply-To: <201104130205.26988.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Gottfried Haider <gottfried.haider@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [Regression] Bluetooth pairing does not work anymore in 2.6.39-rc3
- (works in 2.6.38.3)
-References: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com> <4DA9CB83.4050000@gmail.com> <BANLkTi=avo9yvpQ0VRPRv1uroF3ZnJzfAg@mail.gmail.com>
-In-Reply-To: <BANLkTi=avo9yvpQ0VRPRv1uroF3ZnJzfAg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104170135.19388.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2011 03:43 PM, Gottfried Haider wrote:
-> Hi Justin,
->
->> I'm wondering if you are hitting what I was hitting a few days ago.. the
->> commit below got things working over here:
->> (not sure if this is in the stable yet)
->> http://git.kernel.org/?p=linux/kernel/git/padovan/bluetooth-next-2.6.git;a=commitdiff;h=b99faf1b798d6d0e33526fd2cef55a405c08ff09;hp=58b6e124aac64bebb2e9e1a136cbd21a5ab0485a
->
-> I checked: I have this commit in -rc3, so it must be something else here.
->
-> greetings,
->
-> gohai
->
+Hi,
 
-hmm... seems to be working over here with the latest Mainline. one thing 
-  I have notice though is the daemon is not starting during 
-boot(systemd), manually starting bluetoothd gets me to connect.(system 
-is fedora 15).
+The following series of patches is my attempt to consolidate the shmobile and
+OMAP runtime PM code using power domains so that it is not necessary to
+replace the platform bus type's runtime PM callbacks any more.
 
-Justin P. Mattock
+Some of the patches have already been posted, some are new and some are
+from Kevin. :-)
+
+[1/9] - Make power domain callbacks take precedence over subsystem ones
+        (this one has been discussed already).
+
+[2/9] - Export the platform bus type's default PM callbacks so that they
+        can be used in power domain objects.
+
+[3/9] - Use a default power domain for runtime PM on shmobile (both ARM
+        and SH flavors) instead of replacing the platform bus type's
+        runtime PM callbacks (using __weak).
+
+[4/9] - Use generic runtime PM callbacks directly in the platform bus type.
+
+[5/9] - Move OMAP2 runtime PM implementation to using a power domain object
+        (patch from Kevin rebased on top of [1-4/9]).
+
+[6/9] - Add subsystem data field to struct dev_pm_info.
+
+[7/9] - Introduce generic clock manipulation routines for runtime PM and
+        convert ARM shmobile to using them.
+
+[8/9] - Move OMAP1 runtime PM to the new core infrastructure.
+
+[9/9] - Remove platform_bus_set_pm_ops() (patch from Kevin).
+
+Comments welcome.
+
+Thanks,
+Rafael
+
