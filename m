@@ -1,31 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab1DPKtx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 06:49:53 -0400
-Received: from hm1315-37.locaweb.com.br ([201.76.49.193]:53619 "EHLO
-	hm1315-37.locaweb.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759154Ab1DPKts (ORCPT
+	id S1759317Ab1DPLLw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 07:11:52 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:49613 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759273Ab1DPLLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 06:49:48 -0400
-X-Greylist: delayed 1058 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Apr 2011 06:49:48 EDT
-From: "=?ISO-8859-1?Q?INFORMATION?=" <rodrigo@aldeiamontessori.com.br>
-Date: Sat, 16 Apr 2011 07:31:47 -0300
-Reply-to: barrsariman1@aol.com
-Subject: URGENT
-X-LocaWeb-COR: locaweb_2009_x-mail
-References: 
-In-Reply-To: 
-X-Mailer: LocaMail
-X-Auth-User: rodrigo at aldeiamontessori.com.br
-X-IPAddress: 41.71.151.147
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Message-Id: <20110416103147.42901140066@mx01.locaweb.com.br>
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 16 Apr 2011 07:11:46 -0400
+Date: Sat, 16 Apr 2011 13:03:48 +0200
+From: =?utf-8?B?RnJhbsOnb2lz?= Romieu <romieu@fr.zoreil.com>
+To: David Miller <davem@davemloft.net>
+Cc: bp@amd64.org, linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] r8169: Be verbose when unable to load fw patch
+Message-ID: <20110416110348.GA17833@electric-eye.fr.zoreil.com>
+References: <1302615172-1646-1-git-send-email-bp@amd64.org> <20110412.162036.241924043.davem@davemloft.net> <20110413174852.GC17579@electric-eye.fr.zoreil.com> <20110413.105737.39178380.davem@davemloft.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110413.105737.39178380.davem@davemloft.net>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day,
+[...]
+> Ok.  So will you submit this yourself later or should I just
+> apply this myself directly to net-2.6?
 
- I am Mrs. Bintu Mahmud. Am presently in the hospital suffering from Cancerous disease,I need a trustworthy and God fearing fellow to help me build and manage an orphanage home in your Country,If interested kindly get back to me for more details on (BARRSARIMAN1@AOL.COM).
+Please apply it directly.
+
+Thanks.
+
+-- 
+Ueimor
