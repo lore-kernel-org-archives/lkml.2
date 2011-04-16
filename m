@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab1DPTcj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 15:32:39 -0400
-Received: from SpacedOut.fries.net ([67.64.210.234]:37751 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab1DPTcc (ORCPT
+	id S1753316Ab1DPTqS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 15:46:18 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:58367 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab1DPTqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 15:32:32 -0400
-Date: Sat, 16 Apr 2011 14:32:22 -0500
-From: David Fries <david@fries.net>
-To: linux-kernel@vger.kernel.org
-Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
-Subject: [PATCH] W1: have netlink search update kernel list
-Message-ID: <20110416193222.GZ26616@spacedout.fries.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sat, 16 Apr 2011 14:32:24 -0500 (CDT)
+	Sat, 16 Apr 2011 15:46:12 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Kbuild: how to cleanly retrieve information compilation about the last build
+In-Reply-To: Your message of "Sat, 16 Apr 2011 17:57:23 +0200."
+             <BANLkTin9ggGY9GWOf2_nYmYUsnovmgz82A@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com> <BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com> <20110416135912.GA1044@merkur.ravnborg.org> <BANLkTi=wdDsrV+ikoxLhnTpLhQTuVKW0mA@mail.gmail.com> <61322.1302964434@localhost> <BANLkTimSa7=HiSKET4FSR5zqa1mXf2xGFw@mail.gmail.com> <62853.1302966525@localhost> <BANLkTi=pZPvDbffuW1X2qVVP_xk5FzmrQQ@mail.gmail.com>
+            <BANLkTin9ggGY9GWOf2_nYmYUsnovmgz82A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1302983165_54890P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 16 Apr 2011 15:46:05 -0400
+Message-ID: <81798.1302983165@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4DA9F200.00FE,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Fries <David@Fries.net>
+--==_Exmh_1302983165_54890P
+Content-Type: text/plain; charset=us-ascii
 
-Reorganize so the netlink connector one wire search command will
-update the kernel list of detected slave devices.  Otherwise, a newly
-detected device is unusable because unless it's in the kernel list of
-known devices any commands will result in ENODEV status.
+On Sat, 16 Apr 2011 17:57:23 +0200, Francis Moreau said:
 
-Signed-off-by: David Fries <David@Fries.net>
-Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
----
- drivers/w1/w1.c         |   12 +++++++++---
- drivers/w1/w1.h         |    4 +++-
- drivers/w1/w1_netlink.c |    5 ++++-
- 3 files changed, 16 insertions(+), 5 deletions(-)
+> The user modify a file, then instead of calling 'make' (because he
+> forgets) run the script that send the kernel image through the net on
+> a test machine. Since the user had already compiled the kernel before,
+>  the kernel image exists but is outdated.
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index b7b5014..10606c8 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -827,7 +827,7 @@ void w1_reconnect_slaves(struct w1_family *f, int attach)
- 	mutex_unlock(&w1_mlock);
- }
- 
--static void w1_slave_found(struct w1_master *dev, u64 rn)
-+void w1_slave_found(struct w1_master *dev, u64 rn)
- {
- 	struct w1_slave *sl;
- 	struct w1_reg_num *tmp;
-@@ -933,14 +933,15 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
- 	}
- }
- 
--void w1_search_process(struct w1_master *dev, u8 search_type)
-+void w1_search_process_cb(struct w1_master *dev, u8 search_type,
-+	w1_slave_found_callback cb)
- {
- 	struct w1_slave *sl, *sln;
- 
- 	list_for_each_entry(sl, &dev->slist, w1_slave_entry)
- 		clear_bit(W1_SLAVE_ACTIVE, (long *)&sl->flags);
- 
--	w1_search_devices(dev, search_type, w1_slave_found);
-+	w1_search_devices(dev, search_type, cb);
- 
- 	list_for_each_entry_safe(sl, sln, &dev->slist, w1_slave_entry) {
- 		if (!test_bit(W1_SLAVE_ACTIVE, (unsigned long *)&sl->flags) && !--sl->ttl)
-@@ -953,6 +954,11 @@ void w1_search_process(struct w1_master *dev, u8 search_type)
- 		dev->search_count--;
- }
- 
-+static void w1_search_process(struct w1_master *dev, u8 search_type)
-+{
-+	w1_search_process_cb(dev, search_type, w1_slave_found);
-+}
-+
- int w1_process(void *data)
- {
- 	struct w1_master *dev = (struct w1_master *) data;
-diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
-index d8a9709..dc2f24f 100644
---- a/drivers/w1/w1.h
-+++ b/drivers/w1/w1.h
-@@ -193,7 +193,9 @@ void w1_destroy_master_attributes(struct w1_master *master);
- void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb);
- void w1_search_devices(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb);
- struct w1_slave *w1_search_slave(struct w1_reg_num *id);
--void w1_search_process(struct w1_master *dev, u8 search_type);
-+void w1_slave_found(struct w1_master *dev, u64 rn);
-+void w1_search_process_cb(struct w1_master *dev, u8 search_type,
-+	w1_slave_found_callback cb);
- struct w1_master *w1_search_master_id(u32 id);
- 
- /* Disconnect and reconnect devices in the given family.  Used for finding
-diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
-index 7e667bc..55aabd9 100644
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -55,6 +55,9 @@ static void w1_send_slave(struct w1_master *dev, u64 rn)
- 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
- 	int avail;
- 
-+	/* update kernel slave list */
-+	w1_slave_found(dev, rn);
-+
- 	avail = dev->priv_size - cmd->len;
- 
- 	if (avail > 8) {
-@@ -85,7 +88,7 @@ static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
- 	dev->priv = msg;
- 	dev->priv_size = avail;
- 
--	w1_search_devices(dev, search_type, w1_send_slave);
-+	w1_search_process_cb(dev, search_type, w1_send_slave);
- 
- 	msg->ack = 0;
- 	cn_netlink_send(msg, 0, GFP_KERNEL);
--- 
-1.7.2.3
+As I said, this is an example of a broken development environment, or
+possibly a broken developer. :)
+
+> How can a script detect this case if it doesn't call 'make' in its turn ?
+
+Why do you care about detecting it without calling make?  Just go ahead and
+*do* it, if the kernel is up to date it won't take long.  With a completely
+cold cache, it takes about 90 seconds on my laptop.  Cache-hot is closer to 45
+seconds. If that's too long, buy the developer a real machine or a compile
+farm.  If that's a problem, you'll need to put the developer inside a script
+that enforces "you *vill* do dis, then you *vill* do dat" fascism so the
+programmer never gets a chance to do something you didn't expect.
+
+
+--==_Exmh_1302983165_54890P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNqfH9cC3lWbTT17ARAux9AKDn1WrKMODq8zsQONaoJUe/XOW6agCdHuKZ
+762AWwspor/YDEY499casNU=
+=1IBr
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1302983165_54890P--
 
