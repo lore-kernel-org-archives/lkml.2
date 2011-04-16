@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab1DPOcO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 10:32:14 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41830 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab1DPOcJ (ORCPT
+	id S1755643Ab1DPOeI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 10:34:08 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35214 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab1DPOeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 10:32:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:reply-to:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=I6KRCnM//LDVrX5oM3FxMgDfAQMb4MP5QmkjUzsrq9UYW9IbIwQ7CwKxCyBAVXJSS2
-         iZmPs694JZKyIgz3E8hBpu+ady/qR7c2yQSFNpdfl/7t5PbH5Iz6IZ7gFctrj+uHqLmh
-         n2+G9S6EahUNMC8PmzTpjAgB8zkFOOUNv3hX8=
-MIME-Version: 1.0
-Reply-To: wanlong.gao@gmail.com
-In-Reply-To: <1302960373-5309-5-git-send-email-abogani@kernel.org>
-References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
-	<1302960373-5309-5-git-send-email-abogani@kernel.org>
-Date: Sat, 16 Apr 2011 22:32:08 +0800
-X-Google-Sender-Auth: wO5zXOm_QaiuBHZOOPrOvwHeewk
-Message-ID: <BANLkTik9oekjUH6YXTda1P_dM231nEHQqA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] module: Use the binary search for symbols resolution
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 16 Apr 2011 10:34:01 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Kbuild: how to cleanly retrieve information compilation about the last build
+In-Reply-To: Your message of "Sat, 16 Apr 2011 16:04:57 +0200."
+             <BANLkTi=wdDsrV+ikoxLhnTpLhQTuVKW0mA@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com> <BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com> <20110416135912.GA1044@merkur.ravnborg.org>
+            <BANLkTi=wdDsrV+ikoxLhnTpLhQTuVKW0mA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1302964434_54890P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 16 Apr 2011 10:33:54 -0400
+Message-ID: <61322.1302964434@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4DA9A8D6.0058,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/16/11, Alessio Igor Bogani <abogani@kernel.org> wrote:
-> Takes advantage of the order and locates symbols using binary search.
->
-> This work was supported by a hardware donation from the CE Linux Forum.
->
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
-> ---
->  kernel/module.c |   23 ++++++++++++++++-------
->  1 files changed, 16 insertions(+), 7 deletions(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index b438b25..74a57c1 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -57,6 +57,7 @@
->  #include <linux/kmemleak.h>
->  #include <linux/jump_label.h>
->  #include <linux/pfn.h>
-> +#include <linux/bsearch.h>
->
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/module.h>
-> @@ -351,22 +352,30 @@ struct find_symbol_arg {
->  	const struct kernel_symbol *sym;
->  };
->
-> +static int cmp_name(const void *va, const void *vb)
-> +{
-> +	const char *a;
-> +	const struct kernel_symbol *b;
-> +	a = va; b = vb;
-> +	return strcmp(a, b->name);
-> +}
-> +
->  static bool find_symbol_in_symsearch(const struct symsearch *syms,
->  				     struct module *owner,
->  				     void *data)
->  {
->  	struct find_symbol_arg *fsa = data;
-> +	struct kernel_symbol *sym;
->  	unsigned int symnum;
-> -	int result;
->
-> -	for (symnum = 0; symnum < syms->stop - syms->start; symnum++) {
-> -		result = strcmp(fsa->name, syms->start[symnum].name);
-> -		if (result == 0)
-> -			break;
-> -	}
-> -	if (symnum >= syms->stop - syms->start)
-> +	sym = bsearch(fsa->name, syms->start, syms->stop - syms->start,
-As the bsearch func, why not change the syms->stop to syms->end ?
-Hmm..Just a stupid suggestion.
-Thanks
-> +		sizeof(struct kernel_symbol), cmp_name);
-> +
-> +	if (sym == NULL)
->  		return false;
->
-> +	symnum = sym - syms->start;
-> +
->  	if (!fsa->gplok) {
->  		if (syms->licence == GPL_ONLY)
->  			return false;
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+--==_Exmh_1302964434_54890P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On Sat, 16 Apr 2011 16:04:57 +0200, Francis Moreau said:
+
+> For example a user can do:
+>=20
+>   =24 make ARCH=3Darm CROSS_COMPILE=3Darm-linux-
+>=20
+> Then call my script and expect it to pass the same flags to make.
+
+Odd, don't ARCH and CROSS_COMPILE get saved in the .config?
+
+What *are* you trying to pass to kbuild that isn't either saved in the .c=
+onfig
+or deduced at build time (the cross-compile gets saved, stuff like =22whe=
+re is
+python?=22 is deduced).  Is there a *real* problem you're hitting here, o=
+r is
+it merely theoretical?
+
+--==_Exmh_1302964434_54890P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNqajScC3lWbTT17ARAo5tAJ9SgPtQ2MzDP1TW0u0EMVmnKaLfEQCgtC+F
+wWPqPXayb/HxymZwJfVnztI=
+=yaAl
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1302964434_54890P--
+
