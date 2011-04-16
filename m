@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab1DPI0G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 04:26:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37783 "EHLO
+	id S1752227Ab1DPIb7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 04:31:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49523 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab1DPI0E convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751837Ab1DPIb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 04:26:04 -0400
+	Sat, 16 Apr 2011 04:31:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FhtE1fcN9u/WRfL826a2Y/d0ZvorfZR9CPe5zgUoy6WHUxWVuNSxpmvtsqWe/K5B6U
-         nflTNZcrB7SrNHEkFU2V7H5BhwI5p4L3J8vipCaLDMuBWNCBuKFWYBInm0WD8vxEoJci
-         NhViJYG+9A2qwTOoczb1RBZYF+74i8e+U7shc=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com>
-References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com>
-Date: Sat, 16 Apr 2011 16:26:03 +0800
-Message-ID: <BANLkTinn8xfyFArd4Q9aA5N47BoZ_rgCxw@mail.gmail.com>
-Subject: Re: Kbuild: how to cleanly retrieve information compilation about the
- last build
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=w+jrYP+Kl5Qn3Yt8EcHRZTtmcI4TUeW46skxKgOlx/nexrLhYkT5mgivXaVfwkHwfo
+         e6WDxnEaKEvE0OoelSHd0li6VcOhu0x/eFlzAwHrEHlKbuhaVowSXRiXjvCdEbShzU3d
+         ZfBoMvjGNwwpeYtvIvxl5OGS+0u0+zkdVLCRA=
+Subject: Re: [PATCH 2/2] mtd: msm_nand: Add initial msm nand driver support.
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Murali Nalajala <mnalajal@codeaurora.org>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Dima Zavin <dima@android.com>,
+        Brian Swetland <swetland@google.com>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+In-Reply-To: <1302942029.2308.1.camel@koala>
+References: <1298940450-27365-1-git-send-email-mnalajal@codeaurora.org>
+	 <1298940450-27365-2-git-send-email-mnalajal@codeaurora.org>
+	 <1302861097.3220.12.camel@localhost>  <4DA85B24.50807@codeaurora.org>
+	 <1302942029.2308.1.camel@koala>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 16 Apr 2011 11:31:52 +0300
+Message-ID: <1302942712.2308.3.camel@koala>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 3:13 PM, Francis Moreau <francis.moro@gmail.com> wrote:
-> Hello,
->
-> I'm writing a script to automatise some parts of my kernel compilation process.
->
-> From those scripts I'd like to be able to call the top makefile the
-> same way it had been called during its last invocation.
->
-> For example, if Ido:
->
->     $ make CC=my-gcc CFLAGS="-g -fwhatever"
->
-> I would like to retrieve the "CC=my-gcc CFLAGS="-g -fwhatever" part of
-> the last invocation so my script can call make with the same
-> arguments.
->
+On Sat, 2011-04-16 at 11:20 +0300, Artem Bityutskiy wrote:
+> > > +#define MSM_NAND_REG(off) (msm_nand_phys + (off))
+> > > +
+> > > +#define MSM_NAND_FLASH_CMD            MSM_NAND_REG(0x0000)
+> > > +#define MSM_NAND_ADDR0                MSM_NAND_REG(0x0004)
+> > >
+> > > Could you please make the macros to take the "struct msm_nand_chip
+> > > *chip" argument instead, and store the pase address there. Do not hide
+> > > the fact that those macros are actually functions, not constant - this
+> > > is error prone.
+> > >
+> > > Besides, I'm do not know your HW, but if you have several controllers
+> > > with various base addresses - your driver won't work.
+> > 
+> > you are correct, we have multiple controllers, which breaks this logic 
+> > in future.
+> 
+> So then make your macros to accept the base address as an argument
+> instead please.
 
-So why not just put that line into your script?
+Or better make macros to be constants, and always use something like
+base + MSM_NAND_FLASH_CMD - this is the standard approach.
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
+
