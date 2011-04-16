@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab1DPGkt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 02:40:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:54167 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751360Ab1DPGks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 02:40:48 -0400
-Date: Sat, 16 Apr 2011 16:40:22 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf annotate: Add config option for additional objdump
- arguments
-Message-ID: <20110416164022.4ee0f8aa@kryten>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S1751727Ab1DPHa2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 03:30:28 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:23307 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab1DPHa1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 03:30:27 -0400
+Date: Sat, 16 Apr 2011 09:30:15 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] gpiolib: export gpiochip_find
+Message-ID: <20110416093015.3befd780@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -23,80 +21,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Export function gpiochip_find so that modules can use it.
 
-We sometimes need to pass arguments to objdump, for example to
-specify a particular machine type. In the case below I am profiling
-on POWER7 and perf annotate is unable to decode a POWER7 specific
-instruction:
-
-c000000000008ff0:       7f 45 26 98     .long 0x7f452698
-
-With the patch below and the following in ~/.perfconfig:
-
-[objdump]
-	options = -Mpower7
-
-perf annotate successfully decodes the instruction:
-
-c000000000008ff0:       7f 45 26 98     lxvd2x  vs26,r5,r4
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
+I need this to add support for SMBus multiplexing on my Asus Z8NA-D6
+board.
 
-What do people think of objdump.options? Would annotate.objdump_options be
-better?
+ drivers/gpio/gpiolib.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Also we only look at the first occurance of the option, do we want to
-parse everything found and concatenate them together?
-
-Index: linux.trees.git/tools/perf/util/annotate.c
-===================================================================
---- linux.trees.git.orig/tools/perf/util/annotate.c	2011-04-16 16:00:31.000000000 +1000
-+++ linux.trees.git/tools/perf/util/annotate.c	2011-04-16 16:26:46.000000000 +1000
-@@ -16,10 +16,33 @@
- #include "annotate.h"
- #include <pthread.h>
+--- linux-2.6.39-rc3.orig/drivers/gpio/gpiolib.c	2011-03-30 10:57:19.000000000 +0200
++++ linux-2.6.39-rc3/drivers/gpio/gpiolib.c	2011-04-16 09:00:25.000000000 +0200
+@@ -1165,6 +1165,7 @@ struct gpio_chip *gpiochip_find(void *da
  
-+static char *objdump_options;
-+
-+static int perf_objdump_config(const char *var, const char *value, void *cb)
-+{
-+	if (objdump_options == NULL && !strcmp(var, "objdump.options")) {
-+		size_t len = strlen(value);
-+
-+		objdump_options = zalloc(len + 1);
-+		strncpy(objdump_options, value, len);
-+
-+		return 0;
-+	}
-+
-+	return perf_default_config(var, value, cb);
-+}
-+
- int symbol__annotate_init(struct map *map __used, struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	pthread_mutex_init(&notes->lock, NULL);
-+
-+	if (objdump_options == NULL) {
-+		perf_config(perf_objdump_config, NULL);
-+		if (objdump_options == NULL)
-+			objdump_options = zalloc(1);
-+	}
-+
- 	return 0;
+ 	return chip;
  }
++EXPORT_SYMBOL_GPL(gpiochip_find);
  
-@@ -324,9 +347,11 @@ fallback:
- 
- 	snprintf(command, sizeof(command),
- 		 "objdump --start-address=0x%016" PRIx64
--		 " --stop-address=0x%016" PRIx64 " -dS -C %s|grep -v %s|expand",
-+		 " --stop-address=0x%016" PRIx64 " %s -dS -C %s|"
-+		 "grep -v %s|expand",
- 		 map__rip_2objdump(map, sym->start),
- 		 map__rip_2objdump(map, sym->end),
-+		 objdump_options,
- 		 symfs_filename, filename);
- 
- 	pr_debug("Executing: %s\n", command);
+ /* These "optional" allocation calls help prevent drivers from stomping
+  * on each other, and help provide better diagnostics in debugfs.
+
+
+-- 
+Jean Delvare
