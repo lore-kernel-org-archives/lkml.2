@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab1DPOeI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 10:34:08 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:35214 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1DPOeB (ORCPT
+	id S1755569Ab1DPOpm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 10:45:42 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:43671 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab1DPOpe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 10:34:01 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Francis Moreau <francis.moro@gmail.com>
+	Sat, 16 Apr 2011 10:45:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=f605k0mcGhM6XepKyn8DWRJ+vMtgp9TIZVUej0tTNk81O3VbuB7CeeI0So8iSqnaZk
+         YaiHOfeL8Zu0tHNkAl8YhLI59tUPJFrgg+lvbjJPRK5LKUyBuYoSn+jzViEgw23H3NKw
+         H0rHVpHWfCWgxJNV95EZMuDC9h2qglxGh2wvg=
+MIME-Version: 1.0
+In-Reply-To: <61322.1302964434@localhost>
+References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com>
+	<BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com>
+	<20110416135912.GA1044@merkur.ravnborg.org>
+	<BANLkTi=wdDsrV+ikoxLhnTpLhQTuVKW0mA@mail.gmail.com>
+	<61322.1302964434@localhost>
+Date: Sat, 16 Apr 2011 16:45:33 +0200
+Message-ID: <BANLkTimSa7=HiSKET4FSR5zqa1mXf2xGFw@mail.gmail.com>
+Subject: Re: Kbuild: how to cleanly retrieve information compilation about the
+ last build
+From: Francis Moreau <francis.moro@gmail.com>
+To: Valdis.Kletnieks@vt.edu
 Cc: Sam Ravnborg <sam@ravnborg.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Kbuild: how to cleanly retrieve information compilation about the last build
-In-Reply-To: Your message of "Sat, 16 Apr 2011 16:04:57 +0200."
-             <BANLkTi=wdDsrV+ikoxLhnTpLhQTuVKW0mA@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com> <BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com> <20110416135912.GA1044@merkur.ravnborg.org>
-            <BANLkTi=wdDsrV+ikoxLhnTpLhQTuVKW0mA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1302964434_54890P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sat, 16 Apr 2011 10:33:54 -0400
-Message-ID: <61322.1302964434@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4DA9A8D6.0058,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1302964434_54890P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-On Sat, 16 Apr 2011 16:04:57 +0200, Francis Moreau said:
+On Sat, Apr 16, 2011 at 4:33 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Sat, 16 Apr 2011 16:04:57 +0200, Francis Moreau said:
+>
+>> For example a user can do:
+>>
+>>   $ make ARCH=arm CROSS_COMPILE=arm-linux-
+>>
+>> Then call my script and expect it to pass the same flags to make.
+>
+> Odd, don't ARCH and CROSS_COMPILE get saved in the .config?
+>
 
-> For example a user can do:
->=20
->   =24 make ARCH=3Darm CROSS_COMPILE=3Darm-linux-
->=20
-> Then call my script and expect it to pass the same flags to make.
+I could but not always since it can be passed to the command line.
 
-Odd, don't ARCH and CROSS_COMPILE get saved in the .config?
+> What *are* you trying to pass to kbuild that isn't either saved in the .config
+> or deduced at build time (the cross-compile gets saved, stuff like "where is
+> python?" is deduced).  Is there a *real* problem you're hitting here, or is
+> it merely theoretical?
 
-What *are* you trying to pass to kbuild that isn't either saved in the .c=
-onfig
-or deduced at build time (the cross-compile gets saved, stuff like =22whe=
-re is
-python?=22 is deduced).  Is there a *real* problem you're hitting here, o=
-r is
-it merely theoretical?
+Again, I'd like to know how the makefile has been called the last time it run.
 
---==_Exmh_1302964434_54890P
-Content-Type: application/pgp-signature
+Some flags can be passed and influence the rebuild process and I don't
+want my script to rebuild the whole kernel because my script doesn't
+invoke the makefile as the user (command line) did.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+For example, user did:
 
-iD8DBQFNqajScC3lWbTT17ARAo5tAJ9SgPtQ2MzDP1TW0u0EMVmnKaLfEQCgtC+F
-wWPqPXayb/HxymZwJfVnztI=
-=yaAl
------END PGP SIGNATURE-----
+  $ make CC=distcc
 
---==_Exmh_1302964434_54890P--
+then call my script:
 
+  $ my-script
+
+which in its turn does:
+
+  $ make
+
+then the whole kernel is rebuilt..
+
+Thanks
+-- 
+Francis
