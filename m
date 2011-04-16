@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760574Ab1DPXpu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 19:45:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55926 "EHLO ogre.sisk.pl"
+	id S1760594Ab1DPXqF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 19:46:05 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55936 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760501Ab1DPXpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 19:45:04 -0400
+	id S1760505Ab1DPXpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 19:45:05 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 6/9] PM / Runtime: Add subsystem data field to struct dev_pm_info
-Date: Sun, 17 Apr 2011 01:40:40 +0200
+Subject: [PATCH 8/9] OMAP1 / PM: Use generic clock manipulation routines for runtime PM
+Date: Sun, 17 Apr 2011 01:43:28 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
@@ -22,103 +22,119 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104170140.40557.rjw@sisk.pl>
+Message-Id: <201104170143.28980.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Some subsystems need to attach PM-related data to struct device and
-they need to use devres for this purpose.  For their convenience
-and to make code more straightforward, add a new field called
-subsys_data to struct dev_pm_info and let subsystems use it for
-attaching PM-related information to devices.
-
-Convert the ARM shmobile platform to using the new field.
+Convert OMAP1 to using the new generic clock manipulation routines
+and a device power domain for runtime PM instead of overriding the
+platform bus type's runtime PM callbacks.  This allows us to simplify
+OMAP1-specific code and to share some code with other platforms
+(shmobile in particular).
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-shmobile/pm_runtime.c |   34 +++++++++++++++++-----------------
- include/linux/pm.h                  |    1 +
- 2 files changed, 18 insertions(+), 17 deletions(-)
+ arch/arm/mach-omap1/pm_bus.c |   63 +++++++++++++------------------------------
+ 1 file changed, 20 insertions(+), 43 deletions(-)
 
-Index: linux-2.6/include/linux/pm.h
+Index: linux-2.6/arch/arm/mach-omap1/pm_bus.c
 ===================================================================
---- linux-2.6.orig/include/linux/pm.h
-+++ linux-2.6/include/linux/pm.h
-@@ -460,6 +460,7 @@ struct dev_pm_info {
- 	unsigned long		active_jiffies;
- 	unsigned long		suspended_jiffies;
- 	unsigned long		accounting_timestamp;
-+	void			*subsys_data;  /* Owned by the subsystem. */
- #endif
- };
- 
-Index: linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/pm_runtime.c
-+++ linux-2.6/arch/arm/mach-shmobile/pm_runtime.c
-@@ -18,6 +18,7 @@
- #include <linux/clk.h>
- #include <linux/sh_clk.h>
- #include <linux/bitmap.h>
-+#include <linux/slab.h>
- 
+--- linux-2.6.orig/arch/arm/mach-omap1/pm_bus.c
++++ linux-2.6/arch/arm/mach-omap1/pm_bus.c
+@@ -24,23 +24,18 @@
  #ifdef CONFIG_PM_RUNTIME
- #define BIT_ONCE 0
-@@ -29,22 +30,9 @@ struct pm_runtime_data {
- 	struct clk *clk;
- };
- 
--static void __devres_release(struct device *dev, void *res)
--{
--	struct pm_runtime_data *prd = res;
--
--	dev_dbg(dev, "__devres_release()\n");
--
--	if (test_bit(BIT_CLK_ENABLED, &prd->flags))
--		clk_disable(prd->clk);
--
--	if (test_bit(BIT_ACTIVE, &prd->flags))
--		clk_put(prd->clk);
--}
--
- static struct pm_runtime_data *__to_prd(struct device *dev)
+ static int omap1_pm_runtime_suspend(struct device *dev)
  {
--	return devres_find(dev, __devres_release, NULL, NULL);
-+	return dev ? dev->power.subsys_data : NULL;
- }
+-	struct clk *iclk, *fclk;
+-	int ret = 0;
++	int ret;
  
- static void platform_pm_runtime_init(struct device *dev,
-@@ -121,14 +109,26 @@ static int platform_bus_notify(struct no
+ 	dev_dbg(dev, "%s\n", __func__);
  
- 	dev_dbg(dev, "platform_bus_notify() %ld !\n", action);
+ 	ret = pm_generic_runtime_suspend(dev);
++	if (ret)
++		return ret;
  
--	if (action == BUS_NOTIFY_BIND_DRIVER) {
--		prd = devres_alloc(__devres_release, sizeof(*prd), GFP_KERNEL);
-+	switch (action) {
-+	case BUS_NOTIFY_BIND_DRIVER:
-+		prd = kzalloc(sizeof(*prd), GFP_KERNEL);
- 		if (prd) {
--			devres_add(dev, prd);
-+			dev->power.subsys_data = prd;
- 			dev->pwr_domain = &default_power_domain;
- 		} else {
- 			dev_err(dev, "unable to alloc memory for runtime pm\n");
- 		}
-+		break;
-+	case BUS_NOTIFY_UNBOUND_DRIVER:
-+		prd = __to_prd(dev);
-+		if (prd) {
-+			if (test_bit(BIT_CLK_ENABLED, &prd->flags))
-+				clk_disable(prd->clk);
-+
-+			if (test_bit(BIT_ACTIVE, &prd->flags))
-+				clk_put(prd->clk);
-+		}
-+		break;
+-	fclk = clk_get(dev, "fck");
+-	if (!IS_ERR(fclk)) {
+-		clk_disable(fclk);
+-		clk_put(fclk);
+-	}
+-
+-	iclk = clk_get(dev, "ick");
+-	if (!IS_ERR(iclk)) {
+-		clk_disable(iclk);
+-		clk_put(iclk);
++	ret = pm_runtime_clock_suspend(dev);
++	if (ret) {
++		pm_generic_runtime_resume(dev);
++		return ret;
  	}
  
  	return 0;
+@@ -48,23 +43,22 @@ static int omap1_pm_runtime_suspend(stru
+ 
+ static int omap1_pm_runtime_resume(struct device *dev)
+ {
+-	struct clk *iclk, *fclk;
+-
+ 	dev_dbg(dev, "%s\n", __func__);
+ 
+-	iclk = clk_get(dev, "ick");
+-	if (!IS_ERR(iclk)) {
+-		clk_enable(iclk);
+-		clk_put(iclk);
+-	}
++	pm_runtime_clock_resume(dev);
++	return pm_generic_runtime_resume(dev);
++};
+ 
+-	fclk = clk_get(dev, "fck");
+-	if (!IS_ERR(fclk)) {
+-		clk_enable(fclk);
+-		clk_put(fclk);
+-	}
++static struct dev_power_domain default_power_domain = {
++	.ops = {
++		USE_PLATFORM_PM_SLEEP_OPS,
++		.runtime_suspend = omap1_pm_runtime_suspend,
++		.runtime_resume = omap1_pm_runtime_resume,
++	},
++};
+ 
+-	return pm_generic_runtime_resume(dev);
++static struct pm_domain_notifier_block platform_bus_notifier = {
++	.pwr_domain = &default_power_domain,
+ };
+ 
+ static int __init omap1_pm_runtime_init(void)
+@@ -75,24 +69,7 @@ static int __init omap1_pm_runtime_init(
+ 	if (!cpu_class_is_omap1())
+ 		return -ENODEV;
+ 
+-	pm = platform_bus_get_pm_ops();
+-	if (!pm) {
+-		pr_err("%s: unable to get dev_pm_ops from platform_bus\n",
+-			__func__);
+-		return -ENODEV;
+-	}
+-
+-	omap_pm = kmemdup(pm, sizeof(struct dev_pm_ops), GFP_KERNEL);
+-	if (!omap_pm) {
+-		pr_err("%s: unable to alloc memory for new dev_pm_ops\n",
+-			__func__);
+-		return -ENOMEM;
+-	}
+-
+-	omap_pm->runtime_suspend = omap1_pm_runtime_suspend;
+-	omap_pm->runtime_resume = omap1_pm_runtime_resume;
+-
+-	platform_bus_set_pm_ops(omap_pm);
++	pm_runtim_clock_add_notifier(&platform_bus_type, &platform_bus_notifier);
+ 
+ 	return 0;
+ }
 
