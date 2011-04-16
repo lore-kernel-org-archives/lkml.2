@@ -1,191 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab1DPQwl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 12:52:41 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:57389 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab1DPQvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 12:51:21 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
-Date: Sat, 16 Apr 2011 09:44:29 -0700
-Message-Id: <7aa38c32b7748a95e814e5bb0583f967@localhost>
-User-Agent: vim 7.2
+	id S1752740Ab1DPRCK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 13:02:10 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42097 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab1DPRCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 13:02:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=crG1vR0rbqNm5p29+dDTJJ6qoqrlF3VZH++Nj2dYeNHo4Cj4oJZrjXlIIoHuqL6Icv
+         pbrmK7wR4ZfAw9R7x9bQbbYWBT60GYW8BgW3RFhRWRcbIDfoOOXYm3dj+5ZB2kCVmbUu
+         WlbOKV7vVFqbsr9JOfjHlNYZCWnXcjatUfI9k=
+Message-ID: <4DA9CB83.4050000@gmail.com>
+Date: Sat, 16 Apr 2011 10:01:55 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Gottfried Haider <gottfried.haider@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [Regression] Bluetooth pairing does not work anymore in 2.6.39-rc3
+ (works in 2.6.38.3)
+References: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reuse more of the same definitions for the non-RIXI and RIXI cases.  This
-avoids having special cases for kernel_uses_smartmips_rixi cluttering up
-the pgtable*.h files.
+On 04/16/2011 09:38 AM, Gottfried Haider wrote:
+> Hello,
+>
+> I am having problems pairing bluetooth devices in 2.6.39. Scanning
+> works fine (hcitool scan), but when I try to pair a device using
+> "bluez-simple-agent hci0 $MAC", I receive the following error message:
+> "Creating device failed: org.bluez.Error.Failed: Input/output error"
+>
+> The same command reliably works on a 2.6.38.3 kernel with pretty much
+> the same config.
+>
+> According to lsusb, I have a Broadcom Bluetooth Controller with ID
+> 0a5c:217f. I don't see anything related in either of the dmesgs.
+> My lspci output is here: http://sukzessiv.net/x120e/
+> Userspace is an up-to-date Ubuntu 11.04 beta (with bluez 4.91).
+>
+> If there are any debugging steps that I could do or patches to try or
+> revert, let me know. Unfortunately I can't do a proper bisect since
+> the machine is a netbook type.
+>
+> cheers,
+> gohai
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-On hardware that does not support RI/XI, EntryLo bits 31:30 / 63:62 will
-remain unset and RI/XI permissions will not be enforced.
+I'm wondering if you are hitting what I was hitting a few days ago.. the 
+commit below got things working over here:
+(not sure if this is in the stable yet)
+http://git.kernel.org/?p=linux/kernel/git/padovan/bluetooth-next-2.6.git;a=commitdiff;h=b99faf1b798d6d0e33526fd2cef55a405c08ff09;hp=58b6e124aac64bebb2e9e1a136cbd21a5ab0485a
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/include/asm/pgtable-bits.h |   23 ++++++++---------------
- arch/mips/include/asm/pgtable.h      |   21 ++++++++-------------
- arch/mips/mm/tlbex.c                 |   17 +++++------------
- 3 files changed, 21 insertions(+), 40 deletions(-)
+hope this helps,
 
-diff --git a/arch/mips/include/asm/pgtable-bits.h b/arch/mips/include/asm/pgtable-bits.h
-index e9fe7e9..7afba78 100644
---- a/arch/mips/include/asm/pgtable-bits.h
-+++ b/arch/mips/include/asm/pgtable-bits.h
-@@ -35,7 +35,7 @@
- #if defined(CONFIG_64BIT_PHYS_ADDR) && defined(CONFIG_CPU_MIPS32)
- 
- #define _PAGE_PRESENT               (1<<6)  /* implemented in software */
--#define _PAGE_READ                  (1<<7)  /* implemented in software */
-+#define _PAGE_NO_READ               (1<<7)  /* implemented in software */
- #define _PAGE_WRITE                 (1<<8)  /* implemented in software */
- #define _PAGE_ACCESSED              (1<<9)  /* implemented in software */
- #define _PAGE_MODIFIED              (1<<10) /* implemented in software */
-@@ -53,7 +53,7 @@
- #elif defined(CONFIG_CPU_R3000) || defined(CONFIG_CPU_TX39XX)
- 
- #define _PAGE_PRESENT               (1<<0)  /* implemented in software */
--#define _PAGE_READ                  (1<<1)  /* implemented in software */
-+#define _PAGE_NO_READ               (1<<1)  /* implemented in software */
- #define _PAGE_WRITE                 (1<<2)  /* implemented in software */
- #define _PAGE_ACCESSED              (1<<3)  /* implemented in software */
- #define _PAGE_MODIFIED              (1<<4)  /* implemented in software */
-@@ -79,11 +79,8 @@
- /* implemented in software */
- #define _PAGE_PRESENT_SHIFT	(0)
- #define _PAGE_PRESENT		(1 << _PAGE_PRESENT_SHIFT)
--/* implemented in software, should be unused if kernel_uses_smartmips_rixi. */
--#define _PAGE_READ_SHIFT	(kernel_uses_smartmips_rixi ? _PAGE_PRESENT_SHIFT : _PAGE_PRESENT_SHIFT + 1)
--#define _PAGE_READ ({if (kernel_uses_smartmips_rixi) BUG(); 1 << _PAGE_READ_SHIFT; })
- /* implemented in software */
--#define _PAGE_WRITE_SHIFT	(_PAGE_READ_SHIFT + 1)
-+#define _PAGE_WRITE_SHIFT	(_PAGE_PRESENT_SHIFT + 1)
- #define _PAGE_WRITE		(1 << _PAGE_WRITE_SHIFT)
- /* implemented in software */
- #define _PAGE_ACCESSED_SHIFT	(_PAGE_WRITE_SHIFT + 1)
-@@ -104,12 +101,12 @@
- #endif
- 
- /* Page cannot be executed */
--#define _PAGE_NO_EXEC_SHIFT	(kernel_uses_smartmips_rixi ? _PAGE_HUGE_SHIFT + 1 : _PAGE_HUGE_SHIFT)
--#define _PAGE_NO_EXEC		({if (!kernel_uses_smartmips_rixi) BUG(); 1 << _PAGE_NO_EXEC_SHIFT; })
-+#define _PAGE_NO_EXEC_SHIFT	(_PAGE_HUGE_SHIFT + 1)
-+#define _PAGE_NO_EXEC		(1 << _PAGE_NO_EXEC_SHIFT)
- 
- /* Page cannot be read */
--#define _PAGE_NO_READ_SHIFT	(kernel_uses_smartmips_rixi ? _PAGE_NO_EXEC_SHIFT + 1 : _PAGE_NO_EXEC_SHIFT)
--#define _PAGE_NO_READ		({if (!kernel_uses_smartmips_rixi) BUG(); 1 << _PAGE_NO_READ_SHIFT; })
-+#define _PAGE_NO_READ_SHIFT	(_PAGE_NO_EXEC_SHIFT + 1)
-+#define _PAGE_NO_READ		(1 << _PAGE_NO_READ_SHIFT)
- 
- #define _PAGE_GLOBAL_SHIFT	(_PAGE_NO_READ_SHIFT + 1)
- #define _PAGE_GLOBAL		(1 << _PAGE_GLOBAL_SHIFT)
-@@ -136,10 +133,6 @@
- #endif
- #define _PFN_MASK		(~((1 << (_PFN_SHIFT)) - 1))
- 
--#ifndef _PAGE_NO_READ
--#define _PAGE_NO_READ ({BUG(); 0; })
--#define _PAGE_NO_READ_SHIFT ({BUG(); 0; })
--#endif
- #ifndef _PAGE_NO_EXEC
- #define _PAGE_NO_EXEC ({BUG(); 0; })
- #endif
-@@ -220,7 +213,7 @@ static inline uint64_t pte_to_entrylo(unsigned long pte_val)
- 
- #endif
- 
--#define __READABLE	(_PAGE_SILENT_READ | _PAGE_ACCESSED | (kernel_uses_smartmips_rixi ? 0 : _PAGE_READ))
-+#define __READABLE	(_PAGE_SILENT_READ | _PAGE_ACCESSED)
- #define __WRITEABLE	(_PAGE_WRITE | _PAGE_SILENT_WRITE | _PAGE_MODIFIED)
- 
- #define _PAGE_CHG_MASK  (_PFN_MASK | _PAGE_ACCESSED | _PAGE_MODIFIED | _CACHE_MASK)
-diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
-index 7e40f37..0b3e7c6 100644
---- a/arch/mips/include/asm/pgtable.h
-+++ b/arch/mips/include/asm/pgtable.h
-@@ -22,15 +22,15 @@ struct mm_struct;
- struct vm_area_struct;
- 
- #define PAGE_NONE	__pgprot(_PAGE_PRESENT | _CACHE_CACHABLE_NONCOHERENT)
--#define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_WRITE | (kernel_uses_smartmips_rixi ? 0 : _PAGE_READ) | \
-+#define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_WRITE | \
- 				 _page_cachable_default)
--#define PAGE_COPY	__pgprot(_PAGE_PRESENT | (kernel_uses_smartmips_rixi ? 0 : _PAGE_READ) | \
--				 (kernel_uses_smartmips_rixi ?  _PAGE_NO_EXEC : 0) | _page_cachable_default)
--#define PAGE_READONLY	__pgprot(_PAGE_PRESENT | (kernel_uses_smartmips_rixi ? 0 : _PAGE_READ) | \
-+#define PAGE_COPY	__pgprot(_PAGE_PRESENT | _PAGE_NO_EXEC | \
-+				 _page_cachable_default)
-+#define PAGE_READONLY	__pgprot(_PAGE_PRESENT | \
- 				 _page_cachable_default)
- #define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | __READABLE | __WRITEABLE | \
- 				 _PAGE_GLOBAL | _page_cachable_default)
--#define PAGE_USERIO	__pgprot(_PAGE_PRESENT | (kernel_uses_smartmips_rixi ? 0 : _PAGE_READ) | _PAGE_WRITE | \
-+#define PAGE_USERIO	__pgprot(_PAGE_PRESENT | _PAGE_WRITE | \
- 				 _page_cachable_default)
- #define PAGE_KERNEL_UNCACHED __pgprot(_PAGE_PRESENT | __READABLE | \
- 			__WRITEABLE | _PAGE_GLOBAL | _CACHE_UNCACHED)
-@@ -250,7 +250,7 @@ static inline pte_t pte_mkdirty(pte_t pte)
- static inline pte_t pte_mkyoung(pte_t pte)
- {
- 	pte.pte_low |= _PAGE_ACCESSED;
--	if (pte.pte_low & _PAGE_READ) {
-+	if (!(pte.pte_low & _PAGE_NO_READ)) {
- 		pte.pte_low  |= _PAGE_SILENT_READ;
- 		pte.pte_high |= _PAGE_SILENT_READ;
- 	}
-@@ -299,13 +299,8 @@ static inline pte_t pte_mkdirty(pte_t pte)
- static inline pte_t pte_mkyoung(pte_t pte)
- {
- 	pte_val(pte) |= _PAGE_ACCESSED;
--	if (kernel_uses_smartmips_rixi) {
--		if (!(pte_val(pte) & _PAGE_NO_READ))
--			pte_val(pte) |= _PAGE_SILENT_READ;
--	} else {
--		if (pte_val(pte) & _PAGE_READ)
--			pte_val(pte) |= _PAGE_SILENT_READ;
--	}
-+	if (!(pte_val(pte) & _PAGE_NO_READ))
-+		pte_val(pte) |= _PAGE_SILENT_READ;
- 	return pte;
- }
- 
-diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
-index f5734c2..451735b 100644
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -1463,19 +1463,12 @@ static void __cpuinit
- build_pte_present(u32 **p, struct uasm_reloc **r,
- 		  unsigned int pte, unsigned int ptr, enum label_id lid)
- {
--	if (kernel_uses_smartmips_rixi) {
--		if (use_bbit_insns()) {
--			uasm_il_bbit0(p, r, pte, ilog2(_PAGE_PRESENT), lid);
--			uasm_i_nop(p);
--		} else {
--			uasm_i_andi(p, pte, pte, _PAGE_PRESENT);
--			uasm_il_beqz(p, r, pte, lid);
--			iPTE_LW(p, pte, ptr);
--		}
-+	if (use_bbit_insns()) {
-+		uasm_il_bbit0(p, r, pte, ilog2(_PAGE_PRESENT), lid);
-+		uasm_i_nop(p);
- 	} else {
--		uasm_i_andi(p, pte, pte, _PAGE_PRESENT | _PAGE_READ);
--		uasm_i_xori(p, pte, pte, _PAGE_PRESENT | _PAGE_READ);
--		uasm_il_bnez(p, r, pte, lid);
-+		uasm_i_andi(p, pte, pte, _PAGE_PRESENT);
-+		uasm_il_beqz(p, r, pte, lid);
- 		iPTE_LW(p, pte, ptr);
- 	}
- }
--- 
-1.7.4.3
-
+Justin P. Mattock
