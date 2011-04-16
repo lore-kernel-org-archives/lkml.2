@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab1DPSCu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 14:02:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57147 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750864Ab1DPSCn (ORCPT
+	id S1751655Ab1DPSSL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 14:18:11 -0400
+Received: from mout.perfora.net ([74.208.4.194]:64916 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002Ab1DPSSG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 14:02:43 -0400
-Date: Sat, 16 Apr 2011 19:02:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: sameo@linux.intel.com, haojian.zhuang@gmail.com,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 13/13] regulator: max8925: enable i2c sequence for control
-Message-ID: <20110416180251.GF25811@opensource.wolfsonmicro.com>
-References: <1302706264-25815-5-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-6-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-7-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-8-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-9-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-10-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-11-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-12-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-13-git-send-email-haojian.zhuang@marvell.com>
- <1302706264-25815-14-git-send-email-haojian.zhuang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302706264-25815-14-git-send-email-haojian.zhuang@marvell.com>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 16 Apr 2011 14:18:06 -0400
+From: "unliincome@yahoo.com" <unliincome@yahoo.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 16 Apr 2011 18:17:54 (GMT)
+X-MSMail-Priority: Normal
+X-mailer: AspMail 3.53 (SMTP1C5534)
+Subject: FREE MEMBERSHIP! SIGN UP NOW!
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <0LoW38-1PeYKu2yyo-00gETx@mrelay.perfora.net>
+X-Provags-ID: V02:K0:nALYS3XBcwaK+1E5cGevYaZlKepIjE1sXDWVK717NNs
+ ZKl9oPTEzpHpvsdpwfkimEhMp5svaaYQDmgfYZk38ma/ClCkmP
+ 1ggt++51yUb3cJ5O3FevuQCYn6JrWA7x6KDjhLt2aFKfQ6/R+R
+ yygo9Kdxi31B/Fm6miopnuhSqSfI4kJgPELSa72lJGtEOqS7T
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 13, 2011 at 10:51:04PM +0800, Haojian Zhuang wrote:
-> Force to enable i2c as power up/down sequence. Otherwise, SD/LDO can't
-> be enabled or disabled via accessing i2c bus.
+Greetings!!!
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Just Ask Yourself This... Who Doesn't Like FREE Stuff?
+Do you enjoy receiving FREE Things? 
+Do you enjoy telling others how they can receive FREE things?
+
+Get Paid as you share with others how to receive FREE Things
+
+Most of us, regardless of gender, famous or not, rich or poor... 
+loves to receive things for Free!
+
+A brand-new and international, multi-level-marketing company 
+had just opened doors for Unique Opportunity! 
+
+That is, Getting PAID while receiving FREE Stuffs!!
+
+Free Food... 
+Free Clothes...
+Free Phone... 
+Free Travel...
+Free Education...
+even Free Home is possible!
+And more!! Anything can be Free...
+
+Kindly click on the link below. Your Free Stuffs Are
+Waiting! 
+
+http://vurl.bz/UnliIncome/SIGN-UP
+
+SIGN UP NOW FOR FREE!
+
