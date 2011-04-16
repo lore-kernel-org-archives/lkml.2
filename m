@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab1DPCcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 22:32:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56650 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537Ab1DPCcT convert rfc822-to-8bit (ORCPT
+	id S1751400Ab1DPD2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 23:28:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4716 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab1DPD2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 22:32:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,222,1301900400"; 
-   d="scan'208";a="420259118"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        Greg KH <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Date: Sat, 16 Apr 2011 10:32:11 +0800
-Subject: RE: [0/7,v10] NUMA Hotplug Emulator (v10)
-Thread-Topic: [0/7,v10] NUMA Hotplug Emulator (v10)
-Thread-Index: Acv7rOCt7oeNppW6RkaCzfzNaPDrbwAMPKUg
-Message-ID: <749B9D3DBF0F054390025D9EAFF47F224A6052C6@shsmsx501.ccr.corp.intel.com>
-References: <749B9D3DBF0F054390025D9EAFF47F224A3D6C35@shsmsx501.ccr.corp.intel.com>
- <749B9D3DBF0F054390025D9EAFF47F224A605265@shsmsx501.ccr.corp.intel.com>
- <alpine.DEB.2.00.1104151335380.29956@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1104151335380.29956@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 15 Apr 2011 23:28:19 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: olofj@chromium.org, Sonny Rao <sonnyrao@chromium.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Jamie Iles <jamie@jamieiles.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix infinite loop in ARM user perf_event backtrace code
+Date: Fri, 15 Apr 2011 20:27:25 -0700
+Message-Id: <1302924445-18557-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, maybe I miss that mail. Also thanks for your good idea.
+The ARM user backtrace code can get into an infinite loop if it
+runs into an invalid stack frame which points back to itself.
+This situation has been observed in practice.  Fix it by capping
+the number of entries in the backtrace.  This is also what other
+architectures do in their backtrace code.
 
-best regards
-yang
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+---
+ arch/arm/kernel/perf_event.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 69cfee0..1e61d60 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -746,7 +746,8 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 
+ 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
+ 
+-	while (tail && !((unsigned long)tail & 0x3))
++	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
++	       tail && !((unsigned long)tail & 0x3))
+ 		tail = user_backtrace(tail, entry);
+ }
+ 
+-- 
+1.7.3.1
 
-> -----Original Message-----
-> From: David Rientjes [mailto:rientjes@google.com]
-> Sent: Saturday, April 16, 2011 4:37 AM
-> To: Zhang, Yang Z
-> Cc: Andrew Morton; linux-mm@kvack.org; haicheng.li@linux.intel.com;
-> lethal@linux-sh.org; Kleen, Andi; dave@linux.vnet.ibm.com; Greg KH; Ingo
-> Molnar; Len Brown; linux-kernel@vger.kernel.org; Yinghai Lu
-> Subject: RE: [0/7,v10] NUMA Hotplug Emulator (v10)
-> 
-> On Fri, 15 Apr 2011, Zhang, Yang Z wrote:
-> 
-> > Any comments for those patches?
-> >
-> 
-> I believe I commented on them in
-> http://marc.info/?l=linux-kernel&m=130272108421404 :)
