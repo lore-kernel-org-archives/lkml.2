@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab1DPIhg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 04:37:36 -0400
-Received: from wnohang.net ([178.79.154.173]:59800 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab1DPIhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 04:37:35 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 7762134870
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 88A483486D
-Date: Sat, 16 Apr 2011 14:07:30 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix for unintialized variables
-Message-ID: <20110416083730.GA5114@Xye>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-X-Operating-System: Arch linux x86_64 2.6.38.2-bldit-db-FAE
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+	id S1752481Ab1DPIjP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 04:39:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33895 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab1DPIjN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 04:39:13 -0400
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jan Kara <jack@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20110415221314.GE5432@quack.suse.cz>
+References: <20110413085937.981293444@intel.com>
+	 <20110413090415.763161169@intel.com> <20110413220444.GF4648@quack.suse.cz>
+	 <20110413233122.GA6097@localhost> <20110413235211.GN31057@dastard>
+	 <20110414002301.GA9826@localhost> <20110414151424.GA367@localhost>
+	 <20110414181609.GH5054@quack.suse.cz> <20110415034300.GA23430@localhost>
+	 <20110415143711.GA17181@localhost>  <20110415221314.GE5432@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 16 Apr 2011 10:33:29 +0200
+Message-ID: <1302942809.2388.254.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2011-04-16 at 00:13 +0200, Jan Kara wrote:
+> 
+> So what is a takeaway from this for me is that scaling the period
+> with the dirty limit is not the right thing. If you'd have 4-times more
+> memory, your choice of "dirty limit" as the period would be as bad as
+> current 4*"dirty limit". What would seem like a better choice of period
+> to me would be to have the period in an order of a few seconds worth of
+> writeback. That would allow the bdi limit to scale up reasonably fast when
+> new bdi starts to be used and still not make it fluctuate that much
+> (hopefully).
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+No best would be to scale the period with the writeout bandwidth, but
+lacking that the dirty limit had to do. Since we're counting pages, and
+bandwidth is pages/second we'll end up with a time measure, exactly the
+thing you wanted.
 
-Hi,
-I have attached (as reply) two patches to one of the drivers in led
-subsytem. The return value was not being checked before proceeding
-leading to uninitialized values being passed in few places. In the
-second patch, I am a bit unclear of the logic in the function being
-patched. So modify it if required.
---------------------------
-Raghavendra Prabhu
-GPG Id : D72BE977
-Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+> Looking at math in lib/proportions.c, nothing really fundamental requires
+> that each period has the same length. So it shouldn't be hard to actually
+> create proportions calculator that would have timer triggered periods -
+> simply whenever the timer fires, we would declare a new period. The only
+> things which would be broken by this are (t represents global counter of
+> events):
+> a) counting of periods as t/period_len - we would have to maintain global
+> period counter but that's trivial
+> b) trick that we don't do t=t/2 for each new period but rather use
+> period_len/2+(t % (period_len/2)) when calculating fractions - again we
+> would have to bite the bullet and divide the global counter when we declare
+> new period but again it's not a big deal in our case.
+> 
+> Peter what do you think about this? Do you (or anyone else) think it makes
+> sense? 
 
+But if you don't have a fixed sized period, then how do you catch up on
+fractions that haven't been updated for several periods? You cannot go
+remember all the individual period lengths.
 
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNqVVKAAoJEKYW3KHXK+l3Vv8H/3BmvDOHVXibP/6tZ7xThR5Z
-EtlJPsemO73c1yZdXWXB1A5AVP78yhkou5FTuLDojT8/FQdIzUxb6n57Z8R5l5Ay
-NefDXCWeQgJdCVYWE8RumIpN1Fe5AO6aAdBknHuUAr0eXOCbF8bzJxi3f7gQh2g4
-PfK/xkISrDoaVUMj77MJpCPi1gx47OmGNOpGvyR7Fu2OmJNJPtGTMI8eFbZWEI7O
-W8CpmlqsvZwWwLdVL/f8GwqD60W65N3k9GJQS2AZmnJHNSZ4rmtivz6WV+ynZark
-Zp7acn+yTotWnrwHWmgFqpeUysFYl8mzYX+LyjXqyGvduGYOqlCLQp1HP3tjzoo=
-=9SNM
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
+The whole trick to the proportion stuff is that its all O(1) regardless
+of the number of contestants. There isn't a single loop that iterates
+over all BDIs or tasks to update their cycle, that wouldn't have scaled.
