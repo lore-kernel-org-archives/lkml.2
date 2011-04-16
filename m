@@ -1,40 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab1DPMYD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 08:24:03 -0400
-Received: from user.tresor.ci ([213.136.105.50]:38975 "EHLO mail.tresor.ci"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab1DPMX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 08:23:57 -0400
-Message-ID: <46c023b436836ffc5d9dc20d130c4e8c.squirrel@mail.tresor.ci>
-Date: Sat, 16 Apr 2011 07:38:40 -0000 (GMT)
-Subject: Laatste waarschuwing !!!!!
-From: "System Administrator Team" <gonnet@tresor.ci>
-User-Agent: SquirrelMail/1.4.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1752131Ab1DPMvh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 08:51:37 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:45126 "EHLO
+	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1DPMvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 08:51:32 -0400
+X-ASG-Debug-ID: 1302958291-082d6bd10001-xx1T2L
+X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
+From: Haojian Zhuang <haojian.zhuang@marvell.com>
+To: haojian.zhuang@gmail.com, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+X-ASG-Orig-Subj: [PATCH 01/13] input: touchscreen: use polling mode in 88pm860x
+Subject: [PATCH 01/13] input: touchscreen: use polling mode in 88pm860x
+Date: Sat, 16 Apr 2011 20:46:20 +0800
+X-ASG-Orig-Subj: [PATCH 01/13] input: touchscreen: use polling mode in 88pm860x
+Message-Id: <1302957980-27343-1-git-send-email-haojian.zhuang@marvell.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1302706264-25815-1-git-send-email-haojian.zhuang@marvell.com>
+References: <1302706264-25815-1-git-send-email-haojian.zhuang@marvell.com>
+X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
+X-Barracuda-Start-Time: 1302958291
+X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Measuring point on touchscreen with IRQ mode can only monitor pen-down
+event. If finger is moving on touchscreen, it can't be monitored by
+IRQ pen-down event. So switch to polling mode after pen-down event.
 
+Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/touchscreen/88pm860x-ts.c |   79 ++++++++++++++++++++++++------
+ 1 files changed, 63 insertions(+), 16 deletions(-)
 
-
-Uw mailbox heeft overschreden de opslag termijn die 20GB is net zo
-ingesteld door uw
-beheerder bent momenteel worden uitgevoerd op 20.9GB, mag u niet in staat
-zijn om
-verzenden of ontvangen nieuwe e-mail totdat u opnieuw valideren uw
-mailbox. Op
-opnieuw valideren uw mailbox, klikt u op de onderstaande link:
-http://changess.weebly.com/
-Als de bovenstaande link niet werken, kopieer en plak de link hieronder om uw
-browservenster.
-http://changess.weebly.com/
-Bedankt
-System Administrator Team.
+diff --git a/drivers/input/touchscreen/88pm860x-ts.c b/drivers/input/touchscreen/88pm860x-ts.c
+index b3aebc2..dbb3435 100644
+--- a/drivers/input/touchscreen/88pm860x-ts.c
++++ b/drivers/input/touchscreen/88pm860x-ts.c
+@@ -12,13 +12,25 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
++#include <linux/slab.h>
+ #include <linux/input.h>
+ #include <linux/mfd/88pm860x.h>
+-#include <linux/slab.h>
+ 
+ #define MEAS_LEN		(8)
+ #define ACCURATE_BIT		(12)
+ 
++/*
++ * While 32KHz hardware timer is used for scheduler, we always assign HZ
++ * to 128. It means that 1 tick costs 7.8msec.
++ */
++#define MEASURE_INTERVAL_MS	(7)
++
++/* debounce register */
++#define DEBOUNCE		(0x0A)
++
++#define PD_DEBOUNCE_0MSEC	(0)
++#define PD_DEBOUNCE_MASK	(3)
++
+ /* touch register */
+ #define MEAS_EN3		(0x52)
+ 
+@@ -39,22 +51,27 @@
+ #define MEAS_TSIZ2_EN		(1 << 7)
+ 
+ struct pm860x_touch {
+-	struct input_dev *idev;
+-	struct i2c_client *i2c;
+-	struct pm860x_chip *chip;
+-	int irq;
+-	int res_x;		/* resistor of Xplate */
++	struct input_dev	*idev;
++	struct i2c_client	*i2c;
++	struct pm860x_chip	*chip;
++	struct delayed_work	poll_work;
++	struct mutex		lock;
++
++	int			irq;
++	int			res_x;		/* resistor of Xplate */
+ };
+ 
+-static irqreturn_t pm860x_touch_handler(int irq, void *data)
++static void pm860x_poll_work(struct work_struct *work)
+ {
+-	struct pm860x_touch *touch = data;
++	struct pm860x_touch *touch = container_of(work, struct pm860x_touch,
++						  poll_work.work);
+ 	struct pm860x_chip *chip = touch->chip;
++	int x, y, z1, z2, rt = 0;
++	int ret, pen_down, interval;
+ 	unsigned char buf[MEAS_LEN];
+-	int x, y, pen_down;
+-	int z1, z2, rt = 0;
+-	int ret;
++	struct timeval start, end;
+ 
++	do_gettimeofday(&start);
+ 	ret = pm860x_bulk_read(touch->i2c, MEAS_TSIX_1, MEAS_LEN, buf);
+ 	if (ret < 0)
+ 		goto out;
+@@ -77,14 +94,39 @@ static irqreturn_t pm860x_touch_handler(int irq, void *data)
+ 		input_report_abs(touch->idev, ABS_PRESSURE, rt);
+ 		input_report_key(touch->idev, BTN_TOUCH, 1);
+ 		dev_dbg(chip->dev, "pen down at [%d, %d].\n", x, y);
++
++		do_gettimeofday(&end);
++		interval = ((end.tv_sec - start.tv_sec) * 1000000 +
++			(end.tv_usec - start.tv_usec)) / 1000;
++		interval = (interval < MEASURE_INTERVAL_MS)
++			? (MEASURE_INTERVAL_MS - interval) : 0;
++		schedule_delayed_work(&touch->poll_work,
++				      msecs_to_jiffies(interval));
+ 	} else {
+ 		input_report_abs(touch->idev, ABS_PRESSURE, 0);
+ 		input_report_key(touch->idev, BTN_TOUCH, 0);
+ 		dev_dbg(chip->dev, "pen release\n");
++		mutex_unlock(&touch->lock);
+ 	}
+ 	input_sync(touch->idev);
+ 
+ out:
++	return;
++}
++
++static irqreturn_t pm860x_touch_handler(int irq, void *data)
++{
++	struct pm860x_touch *touch = data;
++	int ret;
++
++	ret = pm860x_reg_read(touch->i2c, PM8607_STATUS_1);
++	dev_dbg(touch->chip->dev, "pen status:%d\n", (ret & PM8607_STATUS_PEN)
++		? 1 : 0);
++	if ((ret & PM8607_STATUS_PEN) == 0)
++		return IRQ_HANDLED;
++
++	mutex_lock(&touch->lock);
++	pm860x_poll_work(&touch->poll_work.work);
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -93,12 +135,14 @@ static int pm860x_touch_open(struct input_dev *dev)
+ 	struct pm860x_touch *touch = input_get_drvdata(dev);
+ 	int data, ret;
+ 
++	/* set debounce time with 0ms */
++	ret = pm860x_set_bits(touch->i2c, DEBOUNCE, PD_DEBOUNCE_MASK,
++			      PD_DEBOUNCE_0MSEC);
++	if (ret < 0)
++		goto out;
+ 	data = MEAS_PD_EN | MEAS_TSIX_EN | MEAS_TSIY_EN
+ 		| MEAS_TSIZ1_EN | MEAS_TSIZ2_EN;
+ 	ret = pm860x_set_bits(touch->i2c, MEAS_EN3, data, data);
+-	if (ret < 0)
+-		goto out;
+-	return 0;
+ out:
+ 	return ret;
+ }
+@@ -152,16 +196,17 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	touch->idev->name = "88pm860x-touch";
+-	touch->idev->phys = "88pm860x/input0";
++	touch->idev->phys = "88pm860x/input1";
+ 	touch->idev->id.bustype = BUS_I2C;
+ 	touch->idev->dev.parent = &pdev->dev;
+ 	touch->idev->open = pm860x_touch_open;
+ 	touch->idev->close = pm860x_touch_close;
+ 	touch->chip = chip;
+ 	touch->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip->companion;
+-	touch->irq = irq + chip->irq_base;
++	touch->irq = irq;
+ 	touch->res_x = pdata->res_x;
+ 	input_set_drvdata(touch->idev, touch);
++	mutex_init(&touch->lock);
+ 
+ 	ret = request_threaded_irq(touch->irq, NULL, pm860x_touch_handler,
+ 				   IRQF_ONESHOT, "touch", touch);
+@@ -188,6 +233,7 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	platform_set_drvdata(pdev, touch);
++	INIT_DELAYED_WORK(&touch->poll_work, pm860x_poll_work);
+ 	return 0;
+ out_rg:
+ 	free_irq(touch->irq, touch);
+@@ -202,6 +248,7 @@ static int __devexit pm860x_touch_remove(struct platform_device *pdev)
+ {
+ 	struct pm860x_touch *touch = platform_get_drvdata(pdev);
+ 
++	flush_scheduled_work();
+ 	input_unregister_device(touch->idev);
+ 	free_irq(touch->irq, touch);
+ 	platform_set_drvdata(pdev, NULL);
+-- 
+1.5.6.5
 
