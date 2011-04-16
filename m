@@ -1,41 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab1DPGHk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 02:07:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39902 "EHLO mga01.intel.com"
+	id S1751580Ab1DPGkt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 02:40:49 -0400
+Received: from ozlabs.org ([203.10.76.45]:54167 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab1DPGHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 02:07:39 -0400
-Message-Id: <1bdc18$k8bgo3@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,223,1301900400"; 
-   d="scan'208";a="679854851"
-Date: Sat, 16 Apr 2011 07:07:35 +0100
-To: wzab@ise.pw.edu.pl, linux-kernel@vger.kernel.org
-Subject: Re: i915 drm GPU hung errors with kernel 2.6.38.2 on  82865G chipset
-References: <4DA8B3A7.3010807@ise.pw.edu.pl>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <4DA8B3A7.3010807@ise.pw.edu.pl>
+	id S1751360Ab1DPGks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 02:40:48 -0400
+Date: Sat, 16 Apr 2011 16:40:22 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf annotate: Add config option for additional objdump
+ arguments
+Message-ID: <20110416164022.4ee0f8aa@kryten>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Apr 2011 23:07:51 +0200, wzab <wzab@ise.pw.edu.pl> wrote:
-> Today I have experienced two "GPU hungs" on machine with 82865G chipset 
-> working with 2.6.38.2 kernel
-> In the /var/log/syslog I have found the following errors:
-> 
-> Apr 15 22:50:51 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
-> Hangcheck timer elapsed... GPU hung
 
-As Bruno said there is a /sys/kernel/debug/dri/0/i915_error_state file
-that contains a GPU dump at the time of the error which often contains the
-vital clue at to what went wrong. If you can also think back to what was
-happening on the machine at the time of the hang, that can also help
-identify the trigger and the suspect code.
+We sometimes need to pass arguments to objdump, for example to
+specify a particular machine type. In the case below I am profiling
+on POWER7 and perf annotate is unable to decode a POWER7 specific
+instruction:
 
-Thanks,
--Chris
+c000000000008ff0:       7f 45 26 98     .long 0x7f452698
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+With the patch below and the following in ~/.perfconfig:
+
+[objdump]
+	options = -Mpower7
+
+perf annotate successfully decodes the instruction:
+
+c000000000008ff0:       7f 45 26 98     lxvd2x  vs26,r5,r4
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+What do people think of objdump.options? Would annotate.objdump_options be
+better?
+
+Also we only look at the first occurance of the option, do we want to
+parse everything found and concatenate them together?
+
+Index: linux.trees.git/tools/perf/util/annotate.c
+===================================================================
+--- linux.trees.git.orig/tools/perf/util/annotate.c	2011-04-16 16:00:31.000000000 +1000
++++ linux.trees.git/tools/perf/util/annotate.c	2011-04-16 16:26:46.000000000 +1000
+@@ -16,10 +16,33 @@
+ #include "annotate.h"
+ #include <pthread.h>
+ 
++static char *objdump_options;
++
++static int perf_objdump_config(const char *var, const char *value, void *cb)
++{
++	if (objdump_options == NULL && !strcmp(var, "objdump.options")) {
++		size_t len = strlen(value);
++
++		objdump_options = zalloc(len + 1);
++		strncpy(objdump_options, value, len);
++
++		return 0;
++	}
++
++	return perf_default_config(var, value, cb);
++}
++
+ int symbol__annotate_init(struct map *map __used, struct symbol *sym)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+ 	pthread_mutex_init(&notes->lock, NULL);
++
++	if (objdump_options == NULL) {
++		perf_config(perf_objdump_config, NULL);
++		if (objdump_options == NULL)
++			objdump_options = zalloc(1);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -324,9 +347,11 @@ fallback:
+ 
+ 	snprintf(command, sizeof(command),
+ 		 "objdump --start-address=0x%016" PRIx64
+-		 " --stop-address=0x%016" PRIx64 " -dS -C %s|grep -v %s|expand",
++		 " --stop-address=0x%016" PRIx64 " %s -dS -C %s|"
++		 "grep -v %s|expand",
+ 		 map__rip_2objdump(map, sym->start),
+ 		 map__rip_2objdump(map, sym->end),
++		 objdump_options,
+ 		 symfs_filename, filename);
+ 
+ 	pr_debug("Executing: %s\n", command);
