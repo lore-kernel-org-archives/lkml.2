@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759272Ab1DPXHp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 19:07:45 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:53769 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008Ab1DPXHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 19:07:36 -0400
-Date: Sat, 16 Apr 2011 19:07:31 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Yang Ruirui <ruirui.r.yang@tieto.com>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: release page cache in ext4_mb_load_buddy error
- path
-Message-ID: <20110416230731.GA3806@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Yang Ruirui <ruirui.r.yang@tieto.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110414064441.GA3499@darkstar>
+	id S1760450Ab1DPXLy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 19:11:54 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55848 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751480Ab1DPXLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 19:11:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [RFC][PATCH] PM: Make power domain callbacks take precedence over subsystem ones
+Date: Sun, 17 Apr 2011 01:12:08 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-sh@vger.kernel.org, lethal@linux-sh.org
+References: <Pine.LNX.4.44L0.1104151033020.2051-100000@iolanthe.rowland.org> <201104160118.24113.rjw@sisk.pl> <1302974133.2719.31.camel@vence>
+In-Reply-To: <1302974133.2719.31.camel@vence>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414064441.GA3499@darkstar>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104170112.08292.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 02:44:41PM +0800, Yang Ruirui wrote:
-> Add missing page_cache_release in the error path of ext4_mb_load_buddy
+On Saturday, April 16, 2011, Kevin Hilman wrote:
+> On Sat, 2011-04-16 at 01:18 +0200, Rafael J. Wysocki wrote:
+> > On Friday, April 15, 2011, Alan Stern wrote:
+> > > On Fri, 15 Apr 2011, Rafael J. Wysocki wrote:
+> > > 
+> > > > On Thursday, April 14, 2011, Magnus Damm wrote:
+> > > 
+> > > > > My only thought on this is if we really want to limit ourselves to
+> > > > > only control power domains using these callbacks. I can imagine that
+> > > > > some SoCs want to do other non-power domain specific operations with
+> > > > > these callbacks, and if so, perhaps using the term power domain as
+> > > > > name of the pointer in struct device would be somewhat odd. OTOH, I
+> > > > > really dislike naming discussions in general and I can't really think
+> > > > > of any good names. So it all looks more like a set of system specific
+> > > > > PM override hooks.
+> > > > > 
+> > > > > Or is there something that is really power domain specific with these hooks?
+> > > > 
+> > > > Not in principle, but I think there is.  Namely, if there are two groups
+> > > > of devices belonging to the same bus type (e.g. platform) that each require
+> > > > different PM handling, it is legitimate to call them "power domains" (where
+> > > > "domain" means "a set of devices related to each other because of the way
+> > > > they need to be handled"), even if they don't share power resources.
+> > > > 
+> > > > Of course, if they do share power resources, the term is just right. :-)
+> > > 
+> > > They could be called "PM domains" instead of "power domains".  That's 
+> > > legitimate because they do get used by the PM core, even if they don't 
+> > > literally involve groups of devices sharing the same power supply.
+> > 
+> > Well, "power domain" can be regarded as a short form of "power management
+> > domain", which makes the point kind of moot. ;-)
 > 
-> Signed-off-by: Yang Ruirui <ruirui.r.yang@tieto.com>
+> Except that on most embedded SoCs, the term power domain has specific
+> meaning in hardware, so using something other than that is preferred
+> IMO.
+> 
+> What this really is is just per-device dev_pm_ops, which platform code
+> can use to group devices however it likes.
+> 
+> So rather than call it a power domain, or a PM domain, we could also
+> just add a struct dev_pm_ops to struct device. 
 
-Thanks, added to the ext4 tree.
+Well, right.  But in the future this thing will be necessary to provide
+additional information to _real_ power domain PM callbacks.  So it will
+be more than just struct dev_pm_ops.
 
-					- Ted
+Thanks,
+Rafael
