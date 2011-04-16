@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab1DPTyP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 15:54:15 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:61791 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab1DPTyH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 15:54:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hkz6A7bhUZEkaceeikN3fZK5GYki6HN7x7MxWHcMuljOseUkOP1VqGVjyIKy7gna9I
-         w3BIgt89PDtSr5G0baBaH+sxsxMzElDoDsIKVV9SoCIWWSdD+s1vsrrC04aRtG7GIC6u
-         pwOkZhBefATKggSGDWSoDGKJ3ZCGl96MefswA=
+	id S1759230Ab1DPWRg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 18:17:36 -0400
+Received: from pequod.mess.org ([188.220.58.213]:35768 "EHLO pequod.mess.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755909Ab1DPWRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 18:17:31 -0400
+X-Greylist: delayed 492 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Apr 2011 18:17:31 EDT
+Date: Sat, 16 Apr 2011 23:08:42 +0100
+From: Sean Young <sean@mess.org>
+To: Robin Becker <robin@reportlab.com>, Nicolas Pitre <nico@fluxnic.net>,
+        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org
+Subject: arm: mach-kirkwood: Make the red led available on the eSATA
+ SheevaPlug
+Message-ID: <20110416220842.GA1518@pequod.mess.org>
 MIME-Version: 1.0
-In-Reply-To: <81798.1302983165@localhost>
-References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com>
-	<BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com>
-	<20110416135912.GA1044@merkur.ravnborg.org>
-	<BANLkTi=wdDsrV+ikoxLhnTpLhQTuVKW0mA@mail.gmail.com>
-	<61322.1302964434@localhost>
-	<BANLkTimSa7=HiSKET4FSR5zqa1mXf2xGFw@mail.gmail.com>
-	<62853.1302966525@localhost>
-	<BANLkTi=pZPvDbffuW1X2qVVP_xk5FzmrQQ@mail.gmail.com>
-	<BANLkTin9ggGY9GWOf2_nYmYUsnovmgz82A@mail.gmail.com>
-	<81798.1302983165@localhost>
-Date: Sat, 16 Apr 2011 21:54:06 +0200
-Message-ID: <BANLkTim5wLnP6eYmKL2VaaSCZmuZ=2TQ7w@mail.gmail.com>
-Subject: Re: Kbuild: how to cleanly retrieve information compilation about the
- last build
-From: Francis Moreau <francis.moro@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Sam Ravnborg <sam@ravnborg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 16, 2011 at 9:46 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Sat, 16 Apr 2011 17:57:23 +0200, Francis Moreau said:
->
->> The user modify a file, then instead of calling 'make' (because he
->> forgets) run the script that send the kernel image through the net on
->> a test machine. Since the user had already compiled the kernel before,
->>  the kernel image exists but is outdated.
->
-> As I said, this is an example of a broken development environment, or
-> possibly a broken developer. :)
->
+After this patch:
 
-ok I think you can just ignore that thread now, this and what you said
-below is just hmm, not revelant for me and for what I asked for.
+        7780c80 arm: mach-kirkwood: add led in sheevaplug-setup.c
 
->> How can a script detect this case if it doesn't call 'make' in its turn ?
->
-> Why do you care about detecting it without calling make?  Just go ahead and
-> *do* it, if the kernel is up to date it won't take long.  With a completely
-> cold cache, it takes about 90 seconds on my laptop.
+On a eSATA SheevaPlug, neither the red nor the green led can be controlled,
+since probing fails with:
 
-Really, what kind of laptop is it ?
+[    6.188278] leds-gpio: probe of leds-gpio failed with error -22
 
-Are you compiling the kernel with just allnoconfig ?
+Signed-off-by: Sean Young <sean@mess.org>
 
-Seriously, I now think that what you say is totaly irrevelant, please
-just ignore my question.
--- 
-Francis
+diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/sheevaplug-setup.c
+index 17de0bf..92db979 100644
+--- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
++++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
+@@ -94,6 +94,7 @@ static unsigned int sheevaplug_mpp_config[] __initdata = {
+ static unsigned int sheeva_esata_mpp_config[] __initdata = {
+ 	MPP29_GPIO,	/* USB Power Enable */
+ 	MPP44_GPIO,	/* SD Write Protect */
++	MPP46_GPIO,	/* LED Red */
+ 	MPP47_GPIO,	/* SD Card Detect */
+ 	MPP49_GPIO,	/* LED Green */
+ 	0
