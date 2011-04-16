@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759281Ab1DPKQP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 06:16:15 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50653 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758554Ab1DPKQF convert rfc822-to-8bit (ORCPT
+	id S1759291Ab1DPK1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 06:27:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36967 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756692Ab1DPK1S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 06:16:05 -0400
-Subject: Re: [PATCH 4/4] perf, x86: Fix event scheduler to solve complex
- scheduling problems
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20110416101406.GA11534@elte.hu>
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
-	 <1302913676-14352-5-git-send-email-robert.richter@amd.com>
-	 <1302943877.32491.9.camel@twins> <20110416094348.GA24711@elte.hu>
-	 <1302948520.32491.10.camel@twins>  <20110416101406.GA11534@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
+	Sat, 16 Apr 2011 06:27:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,223,1301900400"; 
+   d="scan'208";a="734267319"
+From: "Shi, Alex" <alex.shi@intel.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>
+CC: Andi Kleen <ak@linux.intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Date: Sat, 16 Apr 2011 18:27:12 +0800
+Subject: RE: [PATCH] vfs: Fix RCU path walk failiures due to uninitialized
+ nameidata seq number for root directory
+Thread-Topic: [PATCH] vfs: Fix RCU path walk failiures due to uninitialized
+ nameidata seq number for root directory
+Thread-Index: Acv7nGkVpyxhr557RPS4kW2yoUe0AQAhBuQg
+Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B4E0B8CD75A@shsmsx502.ccr.corp.intel.com>
+References: <1302892769.2577.24.camel@schen9-DESK>
+In-Reply-To: <1302892769.2577.24.camel@schen9-DESK>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Date: Sat, 16 Apr 2011 12:15:40 +0200
-Message-ID: <1302948940.32491.12.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-16 at 12:14 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Sat, 2011-04-16 at 11:43 +0200, Ingo Molnar wrote:
-> > > I'd also prefer if we first had actual testcases in 'perf test' for all these 
-> > > failures - it took an *awfully* long time to find these regressions (the event 
-> > > scheduler code has been committed for months), while with proper testcases it 
-> > > would only take a second to run 'perf test'. 
-> > 
-> > These cases only exist on AMD F15, I don't think there's many people
-> > with such systems around.
-> 
-> Well, if the trend continues we'll have more twisted constraints and more bugs 
-> of this sort, so having a testsuite sure cannot hurt, right?
+This can fix dbenchthreads/aim7 regressions from 39-rc1 kernel, that caused by path_init_rcu/path_init merge. 
 
-For sure. But the problem with writing test cases at the perf userspace
-level is that they're very hardware specific. It would be much easier to
-write unit tests for the solver itself.
+
+Regards! 
+Alex  
+>-----Original Message-----
+>From: Tim Chen [mailto:tim.c.chen@linux.intel.com]
+>Sent: Saturday, April 16, 2011 2:39 AM
+>To: Alexander Viro; Nick Piggin
+>Cc: Andi Kleen; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Shaohua; Shi, Alex
+>Subject: [PATCH] vfs: Fix RCU path walk failiures due to uninitialized nameidata seq number for root directory
+>
+>During RCU walk in path_lookupat and path_openat, the rcu lookup
+>frequently failed because when root directory was looked up, seq number
+>was not properly set in nameidata.  We dropped out of RCU walk in
+>nameidata_drop_rcu due to mismatch in directory entry's seq number.  We
+>reverted to slow path walk that need to take references.
+>
+>With the following patch, I saw a 50% increase in an exim mail server
+>benchmark throughput on a 4-socket Nehalem-EX system.
+>
+>Thanks.
+>
+>Tim
+>
+>Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+>diff --git a/fs/namei.c b/fs/namei.c
+>index 3cb616d..e4b27a6 100644
+>--- a/fs/namei.c
+>+++ b/fs/namei.c
+>@@ -697,6 +697,7 @@ static __always_inline void set_root_rcu(struct nameidata *nd)
+> 		do {
+> 			seq = read_seqcount_begin(&fs->seq);
+> 			nd->root = fs->root;
+>+			nd->seq = __read_seqcount_begin(&nd->root.dentry->d_seq);
+> 		} while (read_seqcount_retry(&fs->seq, seq));
+> 	}
+> }
+>
+
