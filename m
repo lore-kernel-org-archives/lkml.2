@@ -1,56 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1DPTTR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 15:19:17 -0400
-Received: from linux-sh.org ([111.68.239.195]:53957 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752975Ab1DPTTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 15:19:07 -0400
-Date: Sun, 17 Apr 2011 04:17:57 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org,
-        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [Kgdb-bugreport] [PATCH 4/5] sh: convert to asm-generic ptrace.h
-Message-ID: <20110416191757.GA11609@linux-sh.org>
-References: <1302760895-13459-1-git-send-email-vapier@gentoo.org> <1302760895-13459-5-git-send-email-vapier@gentoo.org> <4DA70319.8000902@mvista.com>
-Mime-Version: 1.0
+	id S1752998Ab1DPTcj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 15:32:39 -0400
+Received: from SpacedOut.fries.net ([67.64.210.234]:37751 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1DPTcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 15:32:32 -0400
+Date: Sat, 16 Apr 2011 14:32:22 -0500
+From: David Fries <david@fries.net>
+To: linux-kernel@vger.kernel.org
+Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
+Subject: [PATCH] W1: have netlink search update kernel list
+Message-ID: <20110416193222.GZ26616@spacedout.fries.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DA70319.8000902@mvista.com>
-User-Agent: Mutt/1.4.1i
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sat, 16 Apr 2011 14:32:24 -0500 (CDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 06:22:17PM +0400, Sergei Shtylyov wrote:
-> Mike Frysinger wrote:
-> 
-> >Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> >---
-> > arch/sh/include/asm/ptrace.h |    6 ++++--
-> > 1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> >diff --git a/arch/sh/include/asm/ptrace.h b/arch/sh/include/asm/ptrace.h
-> >index b219a08..3f2a6e7 100644
-> >--- a/arch/sh/include/asm/ptrace.h
-> >+++ b/arch/sh/include/asm/ptrace.h
-> [...]
-> >@@ -137,6 +136,9 @@ static inline unsigned long profile_pc(struct pt_regs 
-> >*regs)
-> > 
-> > 	return pc;
-> > }
-> >+#define profile_pc profile_pc
-> 
->    Same question about preprocessor...
-> 
-Same response.
+From: David Fries <David@Fries.net>
 
-There are many places in the kernel where this convention is used, and
-for a good reason. Grep harder.
+Reorganize so the netlink connector one wire search command will
+update the kernel list of detected slave devices.  Otherwise, a newly
+detected device is unusable because unless it's in the kernel list of
+known devices any commands will result in ENODEV status.
+
+Signed-off-by: David Fries <David@Fries.net>
+Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
+---
+ drivers/w1/w1.c         |   12 +++++++++---
+ drivers/w1/w1.h         |    4 +++-
+ drivers/w1/w1_netlink.c |    5 ++++-
+ 3 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index b7b5014..10606c8 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -827,7 +827,7 @@ void w1_reconnect_slaves(struct w1_family *f, int attach)
+ 	mutex_unlock(&w1_mlock);
+ }
+ 
+-static void w1_slave_found(struct w1_master *dev, u64 rn)
++void w1_slave_found(struct w1_master *dev, u64 rn)
+ {
+ 	struct w1_slave *sl;
+ 	struct w1_reg_num *tmp;
+@@ -933,14 +933,15 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 	}
+ }
+ 
+-void w1_search_process(struct w1_master *dev, u8 search_type)
++void w1_search_process_cb(struct w1_master *dev, u8 search_type,
++	w1_slave_found_callback cb)
+ {
+ 	struct w1_slave *sl, *sln;
+ 
+ 	list_for_each_entry(sl, &dev->slist, w1_slave_entry)
+ 		clear_bit(W1_SLAVE_ACTIVE, (long *)&sl->flags);
+ 
+-	w1_search_devices(dev, search_type, w1_slave_found);
++	w1_search_devices(dev, search_type, cb);
+ 
+ 	list_for_each_entry_safe(sl, sln, &dev->slist, w1_slave_entry) {
+ 		if (!test_bit(W1_SLAVE_ACTIVE, (unsigned long *)&sl->flags) && !--sl->ttl)
+@@ -953,6 +954,11 @@ void w1_search_process(struct w1_master *dev, u8 search_type)
+ 		dev->search_count--;
+ }
+ 
++static void w1_search_process(struct w1_master *dev, u8 search_type)
++{
++	w1_search_process_cb(dev, search_type, w1_slave_found);
++}
++
+ int w1_process(void *data)
+ {
+ 	struct w1_master *dev = (struct w1_master *) data;
+diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
+index d8a9709..dc2f24f 100644
+--- a/drivers/w1/w1.h
++++ b/drivers/w1/w1.h
+@@ -193,7 +193,9 @@ void w1_destroy_master_attributes(struct w1_master *master);
+ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb);
+ void w1_search_devices(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb);
+ struct w1_slave *w1_search_slave(struct w1_reg_num *id);
+-void w1_search_process(struct w1_master *dev, u8 search_type);
++void w1_slave_found(struct w1_master *dev, u64 rn);
++void w1_search_process_cb(struct w1_master *dev, u8 search_type,
++	w1_slave_found_callback cb);
+ struct w1_master *w1_search_master_id(u32 id);
+ 
+ /* Disconnect and reconnect devices in the given family.  Used for finding
+diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
+index 7e667bc..55aabd9 100644
+--- a/drivers/w1/w1_netlink.c
++++ b/drivers/w1/w1_netlink.c
+@@ -55,6 +55,9 @@ static void w1_send_slave(struct w1_master *dev, u64 rn)
+ 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
+ 	int avail;
+ 
++	/* update kernel slave list */
++	w1_slave_found(dev, rn);
++
+ 	avail = dev->priv_size - cmd->len;
+ 
+ 	if (avail > 8) {
+@@ -85,7 +88,7 @@ static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
+ 	dev->priv = msg;
+ 	dev->priv_size = avail;
+ 
+-	w1_search_devices(dev, search_type, w1_send_slave);
++	w1_search_process_cb(dev, search_type, w1_send_slave);
+ 
+ 	msg->ack = 0;
+ 	cn_netlink_send(msg, 0, GFP_KERNEL);
+-- 
+1.7.2.3
+
