@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab1DPABT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 20:01:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51126 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab1DPABR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 20:01:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=xiePi9UQ5JRB06xLrdZ0bpnqAEBx5n0GrTZ+O0SqhjF72Kzyghyd7xFPnZKW//kkA3
-         BdPU5PCsoqoE084fwYuj0F/1snd5x9pHxTiu1P2aHUHUgvULvr8H2XV0fvmoLfC8Zot1
-         pYBRNXdOT9cczgkK1YVJYfpDJrj1v9sDLsCB4=
-Subject: Re: [PATCH] [media] lmedm04: Do not unlock mutex if
- mutex_lock_interruptible failed
-From: Malcolm Priestley <tvboxspy@gmail.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1302900017-10437-1-git-send-email-khoroshilov@ispras.ru>
-References: <1302900017-10437-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 16 Apr 2011 01:01:08 +0100
-Message-ID: <1302912068.2177.16.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755169Ab1DPAEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 20:04:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57096 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab1DPAET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 20:04:19 -0400
+Date: Sat, 16 Apr 2011 00:03:57 GMT
+From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
+Message-ID: <tip-5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        joerg.roedel@amd.com, stable@kernel.org, alexandre.f.demers@gmail.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        joerg.roedel@amd.com, stable@kernel.org, tglx@linutronix.de,
+        alexandre.f.demers@gmail.com, hpa@linux.intel.com
+In-Reply-To: <20110415131152.GJ18463@8bytes.org>
+References: <20110415131152.GJ18463@8bytes.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, amd: Disable GartTlbWlkErr when BIOS forgets it
+Git-Commit-ID: 5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 16 Apr 2011 00:03:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-16 at 00:40 +0400, Alexey Khoroshilov wrote:
-> There are a couple of places where mutex_unlock() is called even 
-> if mutex_lock_interruptible() failed. The patch fixes the issue.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/media/dvb/dvb-usb/lmedm04.c |   12 +++++++-----
->  1 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/media/dvb/dvb-usb/lmedm04.c b/drivers/media/dvb/dvb-usb/lmedm04.c
-> index f2db012..40907df 100644
-> --- a/drivers/media/dvb/dvb-usb/lmedm04.c
-> +++ b/drivers/media/dvb/dvb-usb/lmedm04.c
-> @@ -591,9 +591,10 @@ static int lme2510_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
->  	else {
->  		deb_info(1, "STM Steam Off");
->  		/* mutex is here only to avoid collision with I2C */
-> -		ret = mutex_lock_interruptible(&adap->dev->i2c_mutex);
-> +		if (mutex_lock_interruptible(&adap->dev->i2c_mutex) < 0)
-> +			return -EAGAIN;
->  
-> -		ret |= lme2510_usb_talk(adap->dev, clear_reg_3,
-> +		ret = lme2510_usb_talk(adap->dev, clear_reg_3,
->  				sizeof(clear_reg_3), rbuf, rlen);
->  		st->stream_on = 0;
->  		st->i2c_talk_onoff = 1;
+Commit-ID:  5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e
+Gitweb:     http://git.kernel.org/tip/5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e
+Author:     Joerg Roedel <joerg.roedel@amd.com>
+AuthorDate: Fri, 15 Apr 2011 14:47:40 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 15 Apr 2011 16:03:16 -0700
 
-Unfortunately dvb-usb does not provide -EAGAIN on streaming_ctrl
-stopping and returns 0 instead.
+x86, amd: Disable GartTlbWlkErr when BIOS forgets it
 
-This code is deliberate even if the i2c_mutex is unlocked, the code must
-be executed, and is protected by on going i2c_mutex by the usb_mutex.
+This patch disables GartTlbWlk errors on AMD Fam10h CPUs if
+the BIOS forgets to do is (or is just too old). Letting
+these errors enabled can cause a sync-flood on the CPU
+causing a reboot.
 
-This patch produces a intermittent stall on channel change.
+The AMD BKDG recommends disabling GART TLB Wlk Error completely.
 
-Regards
+This patch is the fix for
 
+	https://bugzilla.kernel.org/show_bug.cgi?id=33012
 
-Malcolm
+on my machine.
 
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Link: http://lkml.kernel.org/r/20110415131152.GJ18463@8bytes.org
+Tested-by: Alexandre Demers <alexandre.f.demers@gmail.com>
+Cc: <stable@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/msr-index.h |    4 ++++
+ arch/x86/kernel/cpu/amd.c        |   19 +++++++++++++++++++
+ 2 files changed, 23 insertions(+), 0 deletions(-)
 
-
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index fd5a1f3..3cce714 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -96,11 +96,15 @@
+ #define MSR_IA32_MC0_ADDR		0x00000402
+ #define MSR_IA32_MC0_MISC		0x00000403
+ 
++#define MSR_AMD64_MC0_MASK		0xc0010044
++
+ #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
+ #define MSR_IA32_MCx_STATUS(x)		(MSR_IA32_MC0_STATUS + 4*(x))
+ #define MSR_IA32_MCx_ADDR(x)		(MSR_IA32_MC0_ADDR + 4*(x))
+ #define MSR_IA32_MCx_MISC(x)		(MSR_IA32_MC0_MISC + 4*(x))
+ 
++#define MSR_AMD64_MCx_MASK(x)		(MSR_AMD64_MC0_MASK + (x))
++
+ /* These are consecutive and not in the normal 4er MCE bank block */
+ #define MSR_IA32_MC0_CTL2		0x00000280
+ #define MSR_IA32_MCx_CTL2(x)		(MSR_IA32_MC0_CTL2 + (x))
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 3ecece0..3532d3b 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -615,6 +615,25 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	/* As a rule processors have APIC timer running in deep C states */
+ 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
+ 		set_cpu_cap(c, X86_FEATURE_ARAT);
++
++	/*
++	 * Disable GART TLB Walk Errors on Fam10h. We do this here
++	 * because this is always needed when GART is enabled, even in a
++	 * kernel which has no MCE support built in.
++	 */
++	if (c->x86 == 0x10) {
++		/*
++		 * BIOS should disable GartTlbWlk Errors themself. If
++		 * it doesn't do it here as suggested by the BKDG.
++		 *
++		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
++		 */
++		u64 mask;
++
++		rdmsrl(MSR_AMD64_MCx_MASK(4), mask);
++		mask |= (1 << 10);
++		wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
++	}
+ }
+ 
+ #ifdef CONFIG_X86_32
