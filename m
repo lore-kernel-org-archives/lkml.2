@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758963Ab1DPKJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 06:09:28 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46762 "EHLO mx3.mail.elte.hu"
+	id S1758956Ab1DPKL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 06:11:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56476 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057Ab1DPKJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 06:09:22 -0400
-Date: Sat, 16 Apr 2011 12:09:10 +0200
+	id S1756688Ab1DPKLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 06:11:49 -0400
+Date: Sat, 16 Apr 2011 12:11:35 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] timer fixes
-Message-ID: <20110416100910.GA10543@elte.hu>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20110416101135.GA10889@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -30,128 +31,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest timer-fixes-for-linus git tree from:
+Please pull the latest x86-fixes-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timer-fixes-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Feng Tang (1):
-      RTC: rtc-mrst: follow on to the change of rtc_device_register()
+Jacob Pan (1):
+      x86/mrst: Fix boot crash caused by incorrect pin to irq mapping
 
-John Stultz (1):
-      RTC: Fix early irqs caused by calling rtc_set_alarm too early
+Joerg Roedel (1):
+      x86, amd: Disable GartTlbWlkErr when BIOS forgets it
 
-Mike Frysinger (1):
-      RTC: add missing "return 0" in new alarm func for rtc-bfin.c
+KOSAKI Motohiro (1):
+      x86, NUMA: Fix fakenuma boot failure
 
-Vasily Khoruzhick (1):
-      RTC: Fix s3c compile error due to missing s3c_rtc_setpie
+Sebastian Andrzej Siewior (1):
+      x86/ce4100: Add reg property to bridges
 
 
- drivers/rtc/class.c     |    2 +-
- drivers/rtc/interface.c |   26 ++++++++++++++++++++++++++
- drivers/rtc/rtc-bfin.c  |    2 ++
- drivers/rtc/rtc-s3c.c   |    2 --
- include/linux/rtc.h     |    2 ++
- 5 files changed, 31 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/msr-index.h         |    4 ++++
+ arch/x86/kernel/cpu/amd.c                |   19 +++++++++++++++++++
+ arch/x86/kernel/smpboot.c                |   23 +++++++++++++++++++++++
+ arch/x86/platform/ce4100/falconfalls.dts |    2 ++
+ arch/x86/platform/mrst/mrst.c            |   10 +++++-----
+ 5 files changed, 53 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index 09b4437..3901386 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -171,7 +171,7 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
- 	err = __rtc_read_alarm(rtc, &alrm);
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index fd5a1f3..3cce714 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -96,11 +96,15 @@
+ #define MSR_IA32_MC0_ADDR		0x00000402
+ #define MSR_IA32_MC0_MISC		0x00000403
  
- 	if (!err && !rtc_valid_tm(&alrm.time))
--		rtc_set_alarm(rtc, &alrm);
-+		rtc_initialize_alarm(rtc, &alrm);
++#define MSR_AMD64_MC0_MASK		0xc0010044
++
+ #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
+ #define MSR_IA32_MCx_STATUS(x)		(MSR_IA32_MC0_STATUS + 4*(x))
+ #define MSR_IA32_MCx_ADDR(x)		(MSR_IA32_MC0_ADDR + 4*(x))
+ #define MSR_IA32_MCx_MISC(x)		(MSR_IA32_MC0_MISC + 4*(x))
  
- 	strlcpy(rtc->name, name, RTC_DEVICE_NAME_SIZE);
- 	dev_set_name(&rtc->dev, "rtc%d", id);
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index 23719f0..ef6316a 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -375,6 +375,32 @@ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
- }
- EXPORT_SYMBOL_GPL(rtc_set_alarm);
- 
-+/* Called once per device from rtc_device_register */
-+int rtc_initialize_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
-+{
-+	int err;
++#define MSR_AMD64_MCx_MASK(x)		(MSR_AMD64_MC0_MASK + (x))
 +
-+	err = rtc_valid_tm(&alarm->time);
-+	if (err != 0)
-+		return err;
+ /* These are consecutive and not in the normal 4er MCE bank block */
+ #define MSR_IA32_MC0_CTL2		0x00000280
+ #define MSR_IA32_MCx_CTL2(x)		(MSR_IA32_MC0_CTL2 + (x))
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 3ecece0..3532d3b 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -615,6 +615,25 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	/* As a rule processors have APIC timer running in deep C states */
+ 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
+ 		set_cpu_cap(c, X86_FEATURE_ARAT);
 +
-+	err = mutex_lock_interruptible(&rtc->ops_lock);
-+	if (err)
-+		return err;
++	/*
++	 * Disable GART TLB Walk Errors on Fam10h. We do this here
++	 * because this is always needed when GART is enabled, even in a
++	 * kernel which has no MCE support built in.
++	 */
++	if (c->x86 == 0x10) {
++		/*
++		 * BIOS should disable GartTlbWlk Errors themself. If
++		 * it doesn't do it here as suggested by the BKDG.
++		 *
++		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
++		 */
++		u64 mask;
 +
-+	rtc->aie_timer.node.expires = rtc_tm_to_ktime(alarm->time);
-+	rtc->aie_timer.period = ktime_set(0, 0);
-+	if (alarm->enabled) {
-+		rtc->aie_timer.enabled = 1;
-+		timerqueue_add(&rtc->timerqueue, &rtc->aie_timer.node);
++		rdmsrl(MSR_AMD64_MCx_MASK(4), mask);
++		mask |= (1 << 10);
++		wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
 +	}
-+	mutex_unlock(&rtc->ops_lock);
-+	return err;
+ }
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c2871d3..8ed8908 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -312,6 +312,26 @@ void __cpuinit smp_store_cpu_info(int id)
+ 		identify_secondary_cpu(c);
+ }
+ 
++static void __cpuinit check_cpu_siblings_on_same_node(int cpu1, int cpu2)
++{
++	int node1 = early_cpu_to_node(cpu1);
++	int node2 = early_cpu_to_node(cpu2);
++
++	/*
++	 * Our CPU scheduler assumes all logical cpus in the same physical cpu
++	 * share the same node. But, buggy ACPI or NUMA emulation might assign
++	 * them to different node. Fix it.
++	 */
++	if (node1 != node2) {
++		pr_warning("CPU %d in node %d and CPU %d in node %d are in the same physical CPU. forcing same node %d\n",
++			   cpu1, node1, cpu2, node2, node2);
++
++		numa_remove_cpu(cpu1);
++		numa_set_node(cpu1, node2);
++		numa_add_cpu(cpu1);
++	}
 +}
-+EXPORT_SYMBOL_GPL(rtc_initialize_alarm);
 +
-+
-+
- int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
  {
- 	int err = mutex_lock_interruptible(&rtc->ops_lock);
-diff --git a/drivers/rtc/rtc-bfin.c b/drivers/rtc/rtc-bfin.c
-index a0fc4cf..90d8662 100644
---- a/drivers/rtc/rtc-bfin.c
-+++ b/drivers/rtc/rtc-bfin.c
-@@ -250,6 +250,8 @@ static int bfin_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
- 		bfin_rtc_int_set_alarm(rtc);
- 	else
- 		bfin_rtc_int_clear(~(RTC_ISTAT_ALARM | RTC_ISTAT_ALARM_DAY));
-+
-+	return 0;
+ 	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
+@@ -320,6 +340,7 @@ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
+ 	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
+ 	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
+ 	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
++	check_cpu_siblings_on_same_node(cpu1, cpu2);
  }
  
- static int bfin_rtc_read_time(struct device *dev, struct rtc_time *tm)
-diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-index 7149649..b3466c4 100644
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -336,7 +336,6 @@ static void s3c_rtc_release(struct device *dev)
  
- 	/* do not clear AIE here, it may be needed for wake */
+@@ -361,10 +382,12 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
+ 			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
++			check_cpu_siblings_on_same_node(cpu, i);
+ 		}
+ 		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
+ 			cpumask_set_cpu(i, cpu_core_mask(cpu));
+ 			cpumask_set_cpu(cpu, cpu_core_mask(i));
++			check_cpu_siblings_on_same_node(cpu, i);
+ 			/*
+ 			 *  Does this new cpu bringup a new core?
+ 			 */
+diff --git a/arch/x86/platform/ce4100/falconfalls.dts b/arch/x86/platform/ce4100/falconfalls.dts
+index dc701ea..2d6d226 100644
+--- a/arch/x86/platform/ce4100/falconfalls.dts
++++ b/arch/x86/platform/ce4100/falconfalls.dts
+@@ -74,6 +74,7 @@
+ 				compatible = "intel,ce4100-pci", "pci";
+ 				device_type = "pci";
+ 				bus-range = <1 1>;
++				reg = <0x0800 0x0 0x0 0x0 0x0>;
+ 				ranges = <0x2000000 0 0xdffe0000 0x2000000 0 0xdffe0000 0 0x1000>;
  
--	s3c_rtc_setpie(dev, 0);
- 	free_irq(s3c_rtc_alarmno, rtc_dev);
- 	free_irq(s3c_rtc_tickno, rtc_dev);
+ 				interrupt-parent = <&ioapic2>;
+@@ -412,6 +413,7 @@
+ 				#address-cells = <2>;
+ 				#size-cells = <1>;
+ 				compatible = "isa";
++				reg = <0xf800 0x0 0x0 0x0 0x0>;
+ 				ranges = <1 0 0 0 0 0x100>;
+ 
+ 				rtc@70 {
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 5c0207b..275dbc1 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -97,11 +97,11 @@ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 			pentry->freq_hz, pentry->irq);
+ 			if (!pentry->irq)
+ 				continue;
+-			mp_irq.type = MP_IOAPIC;
++			mp_irq.type = MP_INTSRC;
+ 			mp_irq.irqtype = mp_INT;
+ /* triggering mode edge bit 2-3, active high polarity bit 0-1 */
+ 			mp_irq.irqflag = 5;
+-			mp_irq.srcbus = 0;
++			mp_irq.srcbus = MP_BUS_ISA;
+ 			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 			mp_irq.dstapic = MP_APIC_ALL;
+ 			mp_irq.dstirq = pentry->irq;
+@@ -168,10 +168,10 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+ 	for (totallen = 0; totallen < sfi_mrtc_num; totallen++, pentry++) {
+ 		pr_debug("RTC[%d]: paddr = 0x%08x, irq = %d\n",
+ 			totallen, (u32)pentry->phys_addr, pentry->irq);
+-		mp_irq.type = MP_IOAPIC;
++		mp_irq.type = MP_INTSRC;
+ 		mp_irq.irqtype = mp_INT;
+ 		mp_irq.irqflag = 0xf;	/* level trigger and active low */
+-		mp_irq.srcbus = 0;
++		mp_irq.srcbus = MP_BUS_ISA;
+ 		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 		mp_irq.dstapic = MP_APIC_ALL;
+ 		mp_irq.dstirq = pentry->irq;
+@@ -282,7 +282,7 @@ void __init x86_mrst_early_setup(void)
+ 	/* Avoid searching for BIOS MP tables */
+ 	x86_init.mpparse.find_smp_config = x86_init_noop;
+ 	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+-
++	set_bit(MP_BUS_ISA, mp_bus_not_pci);
  }
-@@ -408,7 +407,6 @@ static int __devexit s3c_rtc_remove(struct platform_device *dev)
- 	platform_set_drvdata(dev, NULL);
- 	rtc_device_unregister(rtc);
  
--	s3c_rtc_setpie(&dev->dev, 0);
- 	s3c_rtc_setaie(&dev->dev, 0);
- 
- 	clk_disable(rtc_clk);
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index 2ca7e8a..877ece4 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -228,6 +228,8 @@ extern int rtc_read_alarm(struct rtc_device *rtc,
- 			struct rtc_wkalrm *alrm);
- extern int rtc_set_alarm(struct rtc_device *rtc,
- 				struct rtc_wkalrm *alrm);
-+extern int rtc_initialize_alarm(struct rtc_device *rtc,
-+				struct rtc_wkalrm *alrm);
- extern void rtc_update_irq(struct rtc_device *rtc,
- 			unsigned long num, unsigned long events);
- 
+ /*
