@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab1DRFBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 01:01:47 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57330 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab1DRFBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 01:01:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 2/2] mach-u300: rewrite gpio driver, move to drivers/gpio
-Date: Mon, 18 Apr 2011 07:01:30 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-References: <1303076969-13039-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1303076969-13039-1-git-send-email-linus.walleij@stericsson.com>
+	id S1752485Ab1DRFSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 01:18:06 -0400
+Received: from kroah.org ([198.145.64.141]:53443 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751911Ab1DRFR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 01:17:59 -0400
+Date: Fri, 15 Apr 2011 17:34:20 -0700
+From: Greg KH <greg@kroah.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Greg KH <gregkh@suse.de>, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, virtualization@lists.osdl.org
+Subject: Re: [PATCH 00/12] Staging: hv: Cleanup vmbus driver - Phase II
+Message-ID: <20110416003420.GA24814@kroah.com>
+References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
+ <20110315220454.GC30390@suse.de>
+ <30255.1300397967@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104180701.30384.arnd@arndb.de>
-X-Provags-ID: V02:K0:KJ/Moo4Du9FhXZPTFSzsOq1bwpXTjyTqxDT0H+ZrBxj
- vULCkCuCRMfD5a4Vl0iushrzFC7+2EpaylRLd1dPpS0BxdUlo7
- vM+EPPrd90buIU7wZGzmJW8pnFwOsquvwaEKVzLZIt3y73tzq+
- Y6nweLfdtGk3BBRmdMT36e4nWr0WQOpym3iMUGxUE07cKIp9C7
- p2sp6HNc7BVmaEHmMqKgA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <30255.1300397967@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 17 April 2011, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Thu, Mar 17, 2011 at 05:39:27PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 15 Mar 2011 15:04:54 PDT, Greg KH said:
 > 
-> This rewrites the U300 GPIO driver using gpiolib and the irq_chip
-> abstractions, makes it runtime-configured rather than compile-time,
-> and moves it to the drivers/gpio subsystem where it belongs,
-> depopulating the ARM tree of one more driver.
+> > Thanks for the patches, but as the .39 merge window is closed, I'll be
+> > holding on to these until after .39-rc1 is out before I can do anything
+> > with them.
 > 
-> Cc: Jonas Aaberg <jonas.aberg@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Is that Linus's merge window, or your window to freeze a for-linus tree?
 
-The new driver looks good, but it would be nice to see the actual changes you did.
-You can do that by either passing the -M flag to git-format-patch, or by splitting
-up the patch into separate move and rewrite bits, in either order.
+You are replying to a month-old email, I can't recall at the moment
+which I was referring to, sorry.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-	Arnd
+greg k-h
