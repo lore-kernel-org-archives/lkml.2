@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab1DPD2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 23:28:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4716 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab1DPD2T (ORCPT
+	id S1750854Ab1DPEEs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 00:04:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48016 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1DPEEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 23:28:19 -0400
-From: Sonny Rao <sonnyrao@chromium.org>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: olofj@chromium.org, Sonny Rao <sonnyrao@chromium.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix infinite loop in ARM user perf_event backtrace code
-Date: Fri, 15 Apr 2011 20:27:25 -0700
-Message-Id: <1302924445-18557-1-git-send-email-sonnyrao@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	Sat, 16 Apr 2011 00:04:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=CWd04YMzzV7rr+94wT4XIwITGztutTGLpIYAS9Yqvwi3ice075BqhTx+rRCVOnmQMZ
+         zA9ui475LiLeC3GsXTeF3Jr1XASgsG4D/zhNps2l0HfJXLgM+qayOd4dxiEBEOQ9v4eX
+         diUcXFQYcHjQPW6jIA6ROWATP+ToV0x+a3Tus=
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Cyril Hrubis <metan@ucw.cz>
+Subject: Re: Zaurus CF tests -- ok
+Date: Sat, 16 Apr 2011 06:04:42 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-1-amd64; KDE/4.6.1; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        thommycheck@gmail.com,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
+References: <20110415211822.GB21111@atrey.karlin.mff.cuni.cz> <20110415213817.GC4420@atrey.karlin.mff.cuni.cz>
+In-Reply-To: <20110415213817.GC4420@atrey.karlin.mff.cuni.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104160604.42482.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ARM user backtrace code can get into an infinite loop if it
-runs into an invalid stack frame which points back to itself.
-This situation has been observed in practice.  Fix it by capping
-the number of entries in the backtrace.  This is also what other
-architectures do in their backtrace code.
+On Friday, April 15, 2011 11:38:17 PM Cyril Hrubis wrote:
+> Hi!
+> 
+> > After getting _good_ power supply, I was able to untar and rm ltp tree
+> > 100 times so far. 2.6.38, ext3. (So metan no, I do not see any weird
+> > ext3 problems).
+> 
+> Hmm, I'm using original adapter, but who knows if it's okay to use...
 
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
----
- arch/arm/kernel/perf_event.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+I can lend you Eric's, but promise you won't break it or do anything weird to it 
+;-)
+> 
+> > Another strange thing is... I see lots of duplicated keystrokes --
+> > like type "pavel" but machine understands "paavel". But it only seems
+> > to happen when I'm _not_ trying to debug it?!
+> 
+> That seems to be side effect of machine under load (it has gpio keyboard).
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 69cfee0..1e61d60 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -746,7 +746,8 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 
- 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
- 
--	while (tail && !((unsigned long)tail & 0x3))
-+	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
-+	       tail && !((unsigned long)tail & 0x3))
- 		tail = user_backtrace(tail, entry);
- }
- 
--- 
-1.7.3.1
+Yea ... it's that polled para-keyboard I guess.
+> 
+> > (
+> > So... just because something needs 5V does not mean you should charge
+> > it from USB.
+> > 
+> > Yes, I'm talking about zaurus. I noticed that it crashed rather
+> > quickly when connected to USB power. (For example in tar/rm test).
+> > So I took multimeter, and there was 4.15..4.5V on USB :-(.
+> > 
+> > With power from USB extension cable, it crashes in <5 minutes. It
+> > seems to toggle charger a lot, as voltage on the cable is only
+> > 4.2..4.5V. I guess it is software problem in the charging code.
+> > )
+> 
+> The zaurus actually is AFAIK unable to run from battery when connected to
+> the external power, so weak power line may explain some of the strange
+> behaviour.
 
+As for the charging code, do we even have anything even remotely resembling that 
+?
