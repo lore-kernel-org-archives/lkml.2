@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab1DPODh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 10:03:37 -0400
+	id S1754775Ab1DPODq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 10:03:46 -0400
 Received: from mga11.intel.com ([192.55.52.93]:2530 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089Ab1DPODd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751672Ab1DPODd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 16 Apr 2011 10:03:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,223,1301900400"; 
-   d="scan'208";a="679955051"
-Message-Id: <20110416134333.566044184@intel.com>
+   d="scan'208";a="910491955"
+Message-Id: <20110416134333.693350038@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sat, 16 Apr 2011 21:25:55 +0800
+Date: Sat, 16 Apr 2011 21:25:56 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -32,75 +32,93 @@ CC: Balbir Singh <balbir@linux.vnet.ibm.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/12] writeback: show bdi write bandwidth in debugfs
+Subject: [PATCH 10/12] writeback: trace dirty_ratelimit
 References: <20110416132546.765212221@intel.com>
-Content-Disposition: inline; filename=writeback-bandwidth-show.patch
+Content-Disposition: inline; filename=writeback-trace-throttle-bandwidth.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a "BdiWriteBandwidth" entry and indent others in /debug/bdi/*/stats.
+It provides critical information to understand how various throttle
+bandwidths are updated.
 
-btw, increase digital field width to 10, for keeping the possibly
-huge BdiWritten number aligned at least for desktop systems.
-
-This could break user space tools if they are dumb enough to depend on
-the number of white spaces.
-
-CC: Theodore Ts'o <tytso@mit.edu>
-CC: Jan Kara <jack@suse.cz>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/backing-dev.c |   34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ include/trace/events/writeback.h |   51 +++++++++++++++++++++++++++--
+ mm/page-writeback.c              |    1 
+ 2 files changed, 49 insertions(+), 3 deletions(-)
 
---- linux-next.orig/mm/backing-dev.c	2011-04-13 17:18:16.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2011-04-13 17:18:17.000000000 +0800
-@@ -81,24 +81,30 @@ static int bdi_debug_stats_show(struct s
+--- linux-next.orig/mm/page-writeback.c	2011-04-16 11:28:21.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-04-16 11:28:27.000000000 +0800
+@@ -974,6 +974,7 @@ adjust:
+ 	bdi->dirty_ratelimit = bw;
+ out:
+ 	bdi_update_reference_ratelimit(bdi, ref_bw);
++	trace_dirty_ratelimit(bdi, dirty_bw, pos_bw, ref_bw);
+ }
  
- #define K(x) ((x) << (PAGE_SHIFT - 10))
- 	seq_printf(m,
--		   "BdiWriteback:     %8lu kB\n"
--		   "BdiReclaimable:   %8lu kB\n"
--		   "BdiDirtyThresh:   %8lu kB\n"
--		   "DirtyThresh:      %8lu kB\n"
--		   "BackgroundThresh: %8lu kB\n"
--		   "BdiDirtied:       %8lu kB\n"
--		   "BdiWritten:       %8lu kB\n"
--		   "b_dirty:          %8lu\n"
--		   "b_io:             %8lu\n"
--		   "b_more_io:        %8lu\n"
--		   "bdi_list:         %8u\n"
--		   "state:            %8lx\n",
-+		   "BdiWriteback:       %10lu kB\n"
-+		   "BdiReclaimable:     %10lu kB\n"
-+		   "BdiDirtyThresh:     %10lu kB\n"
-+		   "DirtyThresh:        %10lu kB\n"
-+		   "BackgroundThresh:   %10lu kB\n"
-+		   "BdiDirtied:         %10lu kB\n"
-+		   "BdiWritten:         %10lu kB\n"
-+		   "BdiWriteBandwidth:  %10lu kBps\n"
-+		   "b_dirty:            %10lu\n"
-+		   "b_io:               %10lu\n"
-+		   "b_more_io:          %10lu\n"
-+		   "bdi_list:           %10u\n"
-+		   "state:              %10lx\n",
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
--		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
-+		   K(bdi_thresh),
-+		   K(dirty_thresh),
-+		   K(background_thresh),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_DIRTIED)),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
--		   nr_dirty, nr_io, nr_more_io,
-+		   (unsigned long) K(bdi->write_bandwidth),
-+		   nr_dirty,
-+		   nr_io,
-+		   nr_more_io,
- 		   !list_empty(&bdi->bdi_list), bdi->state);
- #undef K
+ void bdi_update_bandwidth(struct backing_dev_info *bdi,
+--- linux-next.orig/include/trace/events/writeback.h	2011-04-16 11:28:17.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-04-16 11:28:27.000000000 +0800
+@@ -147,11 +147,56 @@ DEFINE_EVENT(wbc_class, name, \
+ DEFINE_WBC_EVENT(wbc_writeback_start);
+ DEFINE_WBC_EVENT(wbc_writeback_written);
+ DEFINE_WBC_EVENT(wbc_writeback_wait);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_start);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_written);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
+ DEFINE_WBC_EVENT(wbc_writepage);
  
++#define KBps(x)			((x) << (PAGE_SHIFT - 10))
++
++TRACE_EVENT(dirty_ratelimit,
++
++	TP_PROTO(struct backing_dev_info *bdi,
++		 unsigned long dirty_bw,
++		 unsigned long pos_bw,
++		 unsigned long ref_bw),
++
++	TP_ARGS(bdi, dirty_bw, pos_bw, ref_bw),
++
++	TP_STRUCT__entry(
++		__array(char,		bdi, 32)
++		__field(unsigned long,	write_bw)
++		__field(unsigned long,	avg_bw)
++		__field(unsigned long,	dirty_bw)
++		__field(unsigned long,	base_bw)
++		__field(unsigned long,	pos_bw)
++		__field(unsigned long,	ref_bw)
++		__field(unsigned long,	avg_ref_bw)
++	),
++
++	TP_fast_assign(
++		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
++		__entry->write_bw	= KBps(bdi->write_bandwidth);
++		__entry->avg_bw		= KBps(bdi->avg_write_bandwidth);
++		__entry->dirty_bw	= KBps(dirty_bw);
++		__entry->base_bw	= KBps(bdi->dirty_ratelimit);
++		__entry->pos_bw		= KBps(pos_bw);
++		__entry->ref_bw		= KBps(ref_bw);
++		__entry->avg_ref_bw	= KBps(bdi->reference_ratelimit);
++	),
++
++
++	TP_printk("bdi %s: "
++		  "write_bw=%lu awrite_bw=%lu dirty_bw=%lu "
++		  "base_bw=%lu pos_bw=%lu ref_bw=%lu aref_bw=%lu",
++		  __entry->bdi,
++		  __entry->write_bw,	/* write bandwidth */
++		  __entry->avg_bw,	/* avg write bandwidth */
++		  __entry->dirty_bw,	/* dirty bandwidth */
++		  __entry->base_bw,	/* dirty ratelimit on each task */
++		  __entry->pos_bw,	/* position control ratelimit */
++		  __entry->ref_bw,	/* the reference ratelimit */
++		  __entry->avg_ref_bw	/* smoothed reference ratelimit */
++	)
++);
++
+ DECLARE_EVENT_CLASS(writeback_congest_waited_template,
+ 
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
 
 
