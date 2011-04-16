@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab1DPIFs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 04:05:48 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:57959 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab1DPIFo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 04:05:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ov1c49noYRPCzX42k8pnMexluBd+NPnVigqyZOCOjy8pLt6dx6wRBsb32oyQyhbX9b
-         PJxOKieLam+GyTjoFkPUFRCQRlhCPi3vsqwnifKjSsLGumvCCbzDPCOBQHafIMN3FoGV
-         yRMSX+LvJJpQy5XuayRpgos1NxM3GGosPI2KM=
+	id S1751963Ab1DPIGr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 04:06:47 -0400
+Received: from smtpbg83.qq.com ([119.147.10.242]:41307 "HELO smtpbg83.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751605Ab1DPIGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 04:06:43 -0400
+X-Greylist: delayed 3403 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Apr 2011 04:06:41 EDT
+X-QQ-mid: Yesmtp9t1302937684t433t17779
+X-QQ-SSF: 0000000000000030FF6200000000000
+Message-ID: <4DA94054.3030303@skybility.com>
+Date: Sat, 16 Apr 2011 15:08:04 +0800
+From: Lyre <liyong@skybility.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; zh-CN; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com>
-References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com>
-Date: Sat, 16 Apr 2011 10:05:43 +0200
-Message-ID: <BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com>
-Subject: Re: Kbuild: how to cleanly retrieve information compilation about the
- last build
-From: Francis Moreau <francis.moro@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Subject: alloc memory for massive legacy ptys
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sam,
+Hi all:
 
-Maybe could suggest something, it would be great.
+In a rare condition, I need to alloc massive legacy ptys on SLES 9 SP4,
+kernel 2.6.5-7.308-smp.
 
-Thanks
+I noticed the limit number of legacy ptys was 10922, due to the kmalloc
+128kb limit. 10922 * 3 * sizeof (void *) was 8 bytes lesser than 128kb
+on 32bit system.
 
-On Thu, Apr 14, 2011 at 9:13 AM, Francis Moreau <francis.moro@gmail.com> wrote:
-> Hello,
->
-> I'm writing a script to automatise some parts of my kernel compilation process.
->
-> From those scripts I'd like to be able to call the top makefile the
-> same way it had been called during its last invocation.
->
-> For example, if Ido:
->
->     $ make CC=my-gcc CFLAGS="-g -fwhatever"
->
-> I would like to retrieve the "CC=my-gcc CFLAGS="-g -fwhatever" part of
-> the last invocation so my script can call make with the same
-> arguments.
->
-> Is this possible ?
->
-> Thanks for any ideas
-> --
-> Francis
->
-
-
-
--- 
-Francis
+I tried to use vmalloc instead of kmalloc in tty_register_driver(). My
+system was able to boot, but I'm not sure if it was safely to do this,
+since vmalloc don't guarant the phy memory were contiguous, and I don't
+know the pty driver memory requirements neither.
