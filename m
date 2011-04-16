@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab1DPSSL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 14:18:11 -0400
-Received: from mout.perfora.net ([74.208.4.194]:64916 "EHLO mout.perfora.net"
+	id S1752599Ab1DPSZe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 14:25:34 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:59755 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751002Ab1DPSSG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 14:18:06 -0400
-From: "unliincome@yahoo.com" <unliincome@yahoo.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 16 Apr 2011 18:17:54 (GMT)
-X-MSMail-Priority: Normal
-X-mailer: AspMail 3.53 (SMTP1C5534)
-Subject: FREE MEMBERSHIP! SIGN UP NOW!
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <0LoW38-1PeYKu2yyo-00gETx@mrelay.perfora.net>
-X-Provags-ID: V02:K0:nALYS3XBcwaK+1E5cGevYaZlKepIjE1sXDWVK717NNs
- ZKl9oPTEzpHpvsdpwfkimEhMp5svaaYQDmgfYZk38ma/ClCkmP
- 1ggt++51yUb3cJ5O3FevuQCYn6JrWA7x6KDjhLt2aFKfQ6/R+R
- yygo9Kdxi31B/Fm6miopnuhSqSfI4kJgPELSa72lJGtEOqS7T
+	id S1752116Ab1DPSZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 14:25:28 -0400
+X-ASG-Debug-ID: 1302978324-01de284cf8157490001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DA9DF15.80603@fusionio.com>
+Date: Sat, 16 Apr 2011 20:25:25 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: "maciej.rutecki@gmail.com" <maciej.rutecki@gmail.com>
+CC: Shaun Ruffell <sruffell@digium.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [2.6.39-rc2][bisected] Constant DISK_MEDIA_CHANGE_EVENTS from
+  CDROM drive.
+References: <20110408201513.GA3040@digium.com> <201104151913.38841.maciej.rutecki@gmail.com>
+X-ASG-Orig-Subj: Re: [2.6.39-rc2][bisected] Constant DISK_MEDIA_CHANGE_EVENTS from
+  CDROM drive.
+In-Reply-To: <201104151913.38841.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1302978324
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61045
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings!!!
+On 2011-04-15 19:13, Maciej Rutecki wrote:
+> I created a Bugzilla entry at 
+> https://bugzilla.kernel.org/show_bug.cgi?id=33342
+> for your bug report, please add your address to the CC list in there, thanks!
+> 
+> On piątek, 8 kwietnia 2011 o 22:15:13 Shaun Ruffell wrote:
+>> Running with 2.6.39-rc2 on a CentOS 5.5 installation with a "IDE interface:
+>> Intel Corporation 82801CA Ultra ATA Storage Controller (rev 02)"
+>> (8086:248b), I've noticed constant DISK_MEDIA_CHANGE uevents.  In my
+>> kernel log:
+>>
+>> [ 1107.530699] kobject: 'hda' (f5372610): fill_kobj_path: path =
+>> '/block/hda' [ 1109.580559] kobject: 'hda' (f5372610): kobject_uevent_env
+>> [ 1109.580594] kobject: 'hda' (f5372610): fill_kobj_path: path =
+>> '/block/hda' [ 1111.630560] kobject: 'hda' (f5372610): kobject_uevent_env
+>> [ 1111.630595] kobject: 'hda' (f5372610): fill_kobj_path: path =
+>> '/block/hda' [ 1113.680560] kobject: 'hda' (f5372610): kobject_uevent_env
+>>
+>> And from udevmonitor --env:
+>>
+>> UEVENT[1302291995.789487] change@/block/hda
+>> ACTION=change
+>> DEVPATH=/block/hda
+>> SUBSYSTEM=block
+>> DISK_MEDIA_CHANGE=1
+>> MAJOR=3
+>> MINOR=0
+>> DEVNAME=hda
+>> DEVTYPE=disk
+>> SEQNUM=1318
+>>
+>> I bisected it down to 929e27252e8ca69363f81f26af5eaba62cb4c572 'ide:
+>> ide_requeue_and_plug() reinstate "always plug" behaviour'
+>>
+>> I haven't yet looked into how that change would result in the change in
+>> behavior I'm seeing but I thought I would let you know sooner rather than
+>> leter in case this is something that is already known.
 
-Just Ask Yourself This... Who Doesn't Like FREE Stuff?
-Do you enjoy receiving FREE Things? 
-Do you enjoy telling others how they can receive FREE things?
+Tejun, why would something like that trigger and endless stream of media
+change events? I bet this is what is cauing ide-cd to hang the system as
+well now. What I know:
 
-Get Paid as you share with others how to receive FREE Things
+- It only triggers on UP
+- And then it only triggers when PREEMPT is completely turned off
 
-Most of us, regardless of gender, famous or not, rich or poor... 
-loves to receive things for Free!
-
-A brand-new and international, multi-level-marketing company 
-had just opened doors for Unique Opportunity! 
-
-That is, Getting PAID while receiving FREE Stuffs!!
-
-Free Food... 
-Free Clothes...
-Free Phone... 
-Free Travel...
-Free Education...
-even Free Home is possible!
-And more!! Anything can be Free...
-
-Kindly click on the link below. Your Free Stuffs Are
-Waiting! 
-
-http://vurl.bz/UnliIncome/SIGN-UP
-
-SIGN UP NOW FOR FREE!
+-- 
+Jens Axboe
 
