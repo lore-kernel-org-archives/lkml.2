@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1DPO1w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 10:27:52 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42530 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1DPO1q (ORCPT
+	id S1755610Ab1DPOcO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 10:32:14 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41830 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab1DPOcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 10:27:46 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 4/4] perf, x86: Fix event scheduler to solve complex scheduling problems
-In-Reply-To: Your message of "Sat, 16 Apr 2011 12:08:40 +0200."
-             <1302948520.32491.10.camel@twins>
-From: Valdis.Kletnieks@vt.edu
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com> <1302913676-14352-5-git-send-email-robert.richter@amd.com> <1302943877.32491.9.camel@twins> <20110416094348.GA24711@elte.hu>
-            <1302948520.32491.10.camel@twins>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1302964013_54890P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sat, 16 Apr 2011 10:26:53 -0400
-Message-ID: <61040.1302964013@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4DA9A731.00F8,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Sat, 16 Apr 2011 10:32:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:reply-to:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=I6KRCnM//LDVrX5oM3FxMgDfAQMb4MP5QmkjUzsrq9UYW9IbIwQ7CwKxCyBAVXJSS2
+         iZmPs694JZKyIgz3E8hBpu+ady/qR7c2yQSFNpdfl/7t5PbH5Iz6IZ7gFctrj+uHqLmh
+         n2+G9S6EahUNMC8PmzTpjAgB8zkFOOUNv3hX8=
+MIME-Version: 1.0
+Reply-To: wanlong.gao@gmail.com
+In-Reply-To: <1302960373-5309-5-git-send-email-abogani@kernel.org>
+References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
+	<1302960373-5309-5-git-send-email-abogani@kernel.org>
+Date: Sat, 16 Apr 2011 22:32:08 +0800
+X-Google-Sender-Auth: wO5zXOm_QaiuBHZOOPrOvwHeewk
+Message-ID: <BANLkTik9oekjUH6YXTda1P_dM231nEHQqA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] module: Use the binary search for symbols resolution
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1302964013_54890P
-Content-Type: text/plain; charset=us-ascii
-
-On Sat, 16 Apr 2011 12:08:40 +0200, Peter Zijlstra said:
-> These cases only exist on AMD F15, I don't think there's many people
-> with such systems around.
-
-Didn't they say similar things about the first Itaniums? :)
-
-
---==_Exmh_1302964013_54890P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNqactcC3lWbTT17ARAnl0AKCSsE5t/RHFnpkZhvq/+3uMADcmfQCeOpZ7
-T+HEef9EVo+dd8ZSxLO7QN0=
-=izQL
------END PGP SIGNATURE-----
-
---==_Exmh_1302964013_54890P--
-
+On 4/16/11, Alessio Igor Bogani <abogani@kernel.org> wrote:
+> Takes advantage of the order and locates symbols using binary search.
+>
+> This work was supported by a hardware donation from the CE Linux Forum.
+>
+> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
+> ---
+>  kernel/module.c |   23 ++++++++++++++++-------
+>  1 files changed, 16 insertions(+), 7 deletions(-)
+>
+> diff --git a/kernel/module.c b/kernel/module.c
+> index b438b25..74a57c1 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -57,6 +57,7 @@
+>  #include <linux/kmemleak.h>
+>  #include <linux/jump_label.h>
+>  #include <linux/pfn.h>
+> +#include <linux/bsearch.h>
+>
+>  #define CREATE_TRACE_POINTS
+>  #include <trace/events/module.h>
+> @@ -351,22 +352,30 @@ struct find_symbol_arg {
+>  	const struct kernel_symbol *sym;
+>  };
+>
+> +static int cmp_name(const void *va, const void *vb)
+> +{
+> +	const char *a;
+> +	const struct kernel_symbol *b;
+> +	a = va; b = vb;
+> +	return strcmp(a, b->name);
+> +}
+> +
+>  static bool find_symbol_in_symsearch(const struct symsearch *syms,
+>  				     struct module *owner,
+>  				     void *data)
+>  {
+>  	struct find_symbol_arg *fsa = data;
+> +	struct kernel_symbol *sym;
+>  	unsigned int symnum;
+> -	int result;
+>
+> -	for (symnum = 0; symnum < syms->stop - syms->start; symnum++) {
+> -		result = strcmp(fsa->name, syms->start[symnum].name);
+> -		if (result == 0)
+> -			break;
+> -	}
+> -	if (symnum >= syms->stop - syms->start)
+> +	sym = bsearch(fsa->name, syms->start, syms->stop - syms->start,
+As the bsearch func, why not change the syms->stop to syms->end ?
+Hmm..Just a stupid suggestion.
+Thanks
+> +		sizeof(struct kernel_symbol), cmp_name);
+> +
+> +	if (sym == NULL)
+>  		return false;
+>
+> +	symnum = sym - syms->start;
+> +
+>  	if (!fsa->gplok) {
+>  		if (syms->licence == GPL_ONLY)
+>  			return false;
+> --
+> 1.7.4.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
