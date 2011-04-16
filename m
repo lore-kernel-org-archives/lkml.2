@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab1DPNaV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 09:30:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36454 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab1DPNaP (ORCPT
+	id S1752453Ab1DPN7e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 09:59:34 -0400
+Received: from pqueuea.post.tele.dk ([193.162.153.9]:34723 "EHLO
+	pqueuea.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab1DPN7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 09:30:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=qJq9QVYTX4ylwyvU4NG3FaUsJQdlhoKQPM6MTqneglfe4m7OzNbiOjRxQe2SQdnxoY
-         /DTDwSr4jgM+5EdDZsykxxhc1lzJLLEl5UX3MDvZ+2B/pLPTa3FeHIOsLmxNTHnQEiNS
-         ptXADO++90xGnOpSfAUTQpVoZv/1SSLjOwwZ0=
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Tim Bird <tim.bird@am.sony.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH 4/4] module: Use the binary search for symbols resolution
-Date: Sat, 16 Apr 2011 15:26:13 +0200
-Message-Id: <1302960373-5309-5-git-send-email-abogani@kernel.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1302960373-5309-1-git-send-email-abogani@kernel.org>
-References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
+	Sat, 16 Apr 2011 09:59:31 -0400
+Date: Sat, 16 Apr 2011 15:59:12 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Kbuild: how to cleanly retrieve information compilation about
+	the last build
+Message-ID: <20110416135912.GA1044@merkur.ravnborg.org>
+References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com> <BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=2aRu6x3uZtpMvPd2BSpYpkT5yfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takes advantage of the order and locates symbols using binary search.
+On Sat, Apr 16, 2011 at 10:05:43AM +0200, Francis Moreau wrote:
+> Hello Sam,
+> 
+> Maybe could suggest something, it would be great.
+> 
+> Thanks
+> 
+> On Thu, Apr 14, 2011 at 9:13 AM, Francis Moreau <francis.moro@gmail.com> wrote:
+> > Hello,
+> >
+> > I'm writing a script to automatise some parts of my kernel compilation process.
+> >
+> > From those scripts I'd like to be able to call the top makefile the
+> > same way it had been called during its last invocation.
+> >
+> > For example, if Ido:
+> >
+> >     $ make CC=my-gcc CFLAGS="-g -fwhatever"
+> >
+> > I would like to retrieve the "CC=my-gcc CFLAGS="-g -fwhatever" part of
+> > the last invocation so my script can call make with the same
+> > arguments.
+> >
+> > Is this possible ?
 
-This work was supported by a hardware donation from the CE Linux Forum.
+There is nothing made in kbuild to preserve the value of randomly
+added variable assignments on the command-line.
 
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
----
- kernel/module.c |   23 ++++++++++++++++-------
- 1 files changed, 16 insertions(+), 7 deletions(-)
+If you specify O=... then a Makfile file is generated in the output
+directory that thus emulate the O= setting.
 
-diff --git a/kernel/module.c b/kernel/module.c
-index b438b25..74a57c1 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -57,6 +57,7 @@
- #include <linux/kmemleak.h>
- #include <linux/jump_label.h>
- #include <linux/pfn.h>
-+#include <linux/bsearch.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/module.h>
-@@ -351,22 +352,30 @@ struct find_symbol_arg {
- 	const struct kernel_symbol *sym;
- };
- 
-+static int cmp_name(const void *va, const void *vb)
-+{
-+	const char *a;
-+	const struct kernel_symbol *b;
-+	a = va; b = vb;
-+	return strcmp(a, b->name);
-+}
-+
- static bool find_symbol_in_symsearch(const struct symsearch *syms,
- 				     struct module *owner,
- 				     void *data)
- {
- 	struct find_symbol_arg *fsa = data;
-+	struct kernel_symbol *sym;
- 	unsigned int symnum;
--	int result;
- 
--	for (symnum = 0; symnum < syms->stop - syms->start; symnum++) {
--		result = strcmp(fsa->name, syms->start[symnum].name);
--		if (result == 0)
--			break;
--	}
--	if (symnum >= syms->stop - syms->start)
-+	sym = bsearch(fsa->name, syms->start, syms->stop - syms->start,
-+		sizeof(struct kernel_symbol), cmp_name);
-+
-+	if (sym == NULL)
- 		return false;
- 
-+	symnum = sym - syms->start;
-+
- 	if (!fsa->gplok) {
- 		if (syms->licence == GPL_ONLY)
- 			return false;
--- 
-1.7.4.1
+CCFLAGS has btw. no effect when you build a kernel.
 
+If you on a regular basis need to pass flags on the command-line
+then you likely are doing something odd as this is not the typical use.
+So please reconsider what you are doing.
+
+And you can as pointed out by Américo Wang always save the
+command line in your calling script.
+
+	Sam
