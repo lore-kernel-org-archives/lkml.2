@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab1DPIoX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 04:44:23 -0400
-Received: from wnohang.net ([178.79.154.173]:50300 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab1DPIoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 04:44:22 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 795C334870
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net C25E23486D
-Date: Sat, 16 Apr 2011 14:14:17 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] FIX: Check the return value before proceeding
-Message-ID: <20110416084417.GA27829@Xye>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20110416083730.GA5114@Xye>
-X-Operating-System: Arch linux x86_64 2.6.38.2-bldit-db-FAE
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+	id S1752670Ab1DPIvl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 04:51:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34391 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab1DPIvk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 04:51:40 -0400
+Subject: Re: [PATCH 4/4] perf, x86: Fix event scheduler to solve complex
+ scheduling problems
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1302913676-14352-5-git-send-email-robert.richter@amd.com>
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
+	 <1302913676-14352-5-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 16 Apr 2011 10:51:17 +0200
+Message-ID: <1302943877.32491.9.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of failure from lp5521_read, an uninitialized mode is passed to lp5521_write.
-This adds checks to prevent that.
+On Sat, 2011-04-16 at 02:27 +0200, Robert Richter wrote:
+> The current x86 event scheduler fails to resolve scheduling problems
+> of certain combinations of events and constraints. This happens esp.
+> for events with complex constraints such as those of the AMD family
+> 15h pmu. The scheduler does not find then an existing solution.
+> Examples are:
+> 
+>         event code      counter         failure         possible
+> solution
+> 
+> 1)      0x043           PMC[2:0]        0               1
+>         0x02E           PMC[3,0]        3               0
+>         0x003           PMC3            FAIL            3
+> 
+> 2)      0x02E           PMC[3,0]        0               3
+>         0x043           PMC[2:0]        1               0
+>         0x045           PMC[2:0]        2               1
+>         0x046           PMC[2:0]        FAIL            2
+> 
+> Scheduling events on counters is a Hamiltonian path problem. To find a
+> possible solution we must traverse all existing paths. This patch
+> implements this.
+> 
+> We need to save all states of already walked paths. If we fail to
+> schedule an event we now rollback the previous state and try to use
+> another free counter until we have analysed all paths.
+> 
+> We might consider to later remove the constraint weight implementation
+> completely, but I left this out as this is a much bigger and more
+> risky change than this fix. 
 
-Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
----
-  drivers/leds/leds-lp5521.c |   40 ++++++++++++++++++++++------------------
-  1 files changed, 22 insertions(+), 18 deletions(-)
+Argh, crap. That's because AMD is now the first with overlapping
+constraints. Be sure to let your hardware guys know that they went from
+top to bottom om my appreciation list. AMD used to have no constraints
+and now they have the absolute worst.
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 6c5eac0..f03a524 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -176,7 +176,7 @@ static int lp5521_set_engine_mode(struct lp5521_engine *engine, u8 mode)
-  
-  	ret = lp5521_read(client, LP5521_REG_OP_MODE, &engine_state);
-  
--	if (ret == 0){
-+	if (!ret){
-  	/* set mode only for this engine */
-  		engine_state &= ~(engine->engine_mask);
-  		mode &= engine->engine_mask;
-@@ -192,6 +192,7 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
-  	struct lp5521_chip *chip = engine_to_lp5521(eng);
-  	struct i2c_client *client = chip->client;
-  	int ret;
-+	int ret_read;
-  	int addr;
-  	u8 mode;
-  
-@@ -199,23 +200,26 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
-  	ret = lp5521_set_engine_mode(eng, LP5521_CMD_DIRECT);
-  	/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
-  	usleep_range(1000, 2000);
--	ret |= lp5521_read(client, LP5521_REG_OP_MODE, &mode);
--
--	/* For loading, all the engines to load mode */
--	lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
--	/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
--	usleep_range(1000, 2000);
--	lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_LOAD);
--	/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
--	usleep_range(1000, 2000);
--
--	addr = LP5521_PROG_MEM_BASE + eng->prog_page * LP5521_PROG_MEM_SIZE;
--	i2c_smbus_write_i2c_block_data(client,
--				addr,
--				LP5521_PROG_MEM_SIZE,
--				pattern);
--
--	ret |= lp5521_write(client, LP5521_REG_OP_MODE, mode);
-+	ret_read = lp5521_read(client, LP5521_REG_OP_MODE, &mode);
-+	ret |= ret_read;
-+
-+	if (!ret_read){
-+		/* For loading, all the engines to load mode */
-+		lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
-+		/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
-+		usleep_range(1000, 2000);
-+		lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_LOAD);
-+		/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
-+		usleep_range(1000, 2000);
-+
-+		addr = LP5521_PROG_MEM_BASE + eng->prog_page * LP5521_PROG_MEM_SIZE;
-+		i2c_smbus_write_i2c_block_data(client,
-+					addr,
-+					LP5521_PROG_MEM_SIZE,
-+					pattern);
-+
-+		ret |= lp5521_write(client, LP5521_REG_OP_MODE, mode);
-+	}
-  	return ret;
-  }
-  
--- 
-1.7.4.4
+I'd really prefer not to do this for .39, and I'll have to sit down and
+actually read this code. It looks like we went from O(n^2) to O(n!) or
+somesuch, also not much of an improvement. I'll have to analyze the
+solver to see what it does for 'simple' constraints set to see if it
+will indeed be more expensive than the O(n^2) solver we had.
 
---------------------------
-Raghavendra Prabhu
-GPG Id : D72BE977
-Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
-
+Also, I think this code could do with a tiny bit of comments ;-)
