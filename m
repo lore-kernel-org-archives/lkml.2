@@ -1,115 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab1DPAEU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Apr 2011 20:04:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57096 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab1DPAET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Apr 2011 20:04:19 -0400
-Date: Sat, 16 Apr 2011 00:03:57 GMT
-From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
-Message-ID: <tip-5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joerg.roedel@amd.com, stable@kernel.org, alexandre.f.demers@gmail.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joerg.roedel@amd.com, stable@kernel.org, tglx@linutronix.de,
-        alexandre.f.demers@gmail.com, hpa@linux.intel.com
-In-Reply-To: <20110415131152.GJ18463@8bytes.org>
-References: <20110415131152.GJ18463@8bytes.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, amd: Disable GartTlbWlkErr when BIOS forgets it
-Git-Commit-ID: 5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756019Ab1DPAfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Apr 2011 20:35:44 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:12925
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752420Ab1DPAfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Apr 2011 20:35:42 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJPYZ9-01-0J1-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 3/4] perf, x86: Use ALTERNATIVE() to check for X86_FEATURE_PERFCTR_CORE
+Date: Sat, 16 Apr 2011 02:27:55 +0200
+Message-ID: <1302913676-14352-4-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 16 Apr 2011 00:03:58 +0000 (UTC)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e
-Gitweb:     http://git.kernel.org/tip/5bbc097d890409d8eff4e3f1d26f11a9d6b7c07e
-Author:     Joerg Roedel <joerg.roedel@amd.com>
-AuthorDate: Fri, 15 Apr 2011 14:47:40 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 15 Apr 2011 16:03:16 -0700
+Using ALTERNATIVE() when checking for X86_FEATURE_PERFCTR_CORE avoids
+an extra pointer chase and data cache hit.
 
-x86, amd: Disable GartTlbWlkErr when BIOS forgets it
-
-This patch disables GartTlbWlk errors on AMD Fam10h CPUs if
-the BIOS forgets to do is (or is just too old). Letting
-these errors enabled can cause a sync-flood on the CPU
-causing a reboot.
-
-The AMD BKDG recommends disabling GART TLB Wlk Error completely.
-
-This patch is the fix for
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=33012
-
-on my machine.
-
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Link: http://lkml.kernel.org/r/20110415131152.GJ18463@8bytes.org
-Tested-by: Alexandre Demers <alexandre.f.demers@gmail.com>
-Cc: <stable@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/x86/include/asm/msr-index.h |    4 ++++
- arch/x86/kernel/cpu/amd.c        |   19 +++++++++++++++++++
- 2 files changed, 23 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index fd5a1f3..3cce714 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -96,11 +96,15 @@
- #define MSR_IA32_MC0_ADDR		0x00000402
- #define MSR_IA32_MC0_MISC		0x00000403
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index eed3673a..224a84f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -31,6 +31,7 @@
+ #include <asm/nmi.h>
+ #include <asm/compat.h>
+ #include <asm/smp.h>
++#include <asm/alternative.h>
  
-+#define MSR_AMD64_MC0_MASK		0xc0010044
-+
- #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
- #define MSR_IA32_MCx_STATUS(x)		(MSR_IA32_MC0_STATUS + 4*(x))
- #define MSR_IA32_MCx_ADDR(x)		(MSR_IA32_MC0_ADDR + 4*(x))
- #define MSR_IA32_MCx_MISC(x)		(MSR_IA32_MC0_MISC + 4*(x))
- 
-+#define MSR_AMD64_MCx_MASK(x)		(MSR_AMD64_MC0_MASK + (x))
-+
- /* These are consecutive and not in the normal 4er MCE bank block */
- #define MSR_IA32_MC0_CTL2		0x00000280
- #define MSR_IA32_MCx_CTL2(x)		(MSR_IA32_MC0_CTL2 + (x))
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 3ecece0..3532d3b 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -615,6 +615,25 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	/* As a rule processors have APIC timer running in deep C states */
- 	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
- 		set_cpu_cap(c, X86_FEATURE_ARAT);
-+
-+	/*
-+	 * Disable GART TLB Walk Errors on Fam10h. We do this here
-+	 * because this is always needed when GART is enabled, even in a
-+	 * kernel which has no MCE support built in.
-+	 */
-+	if (c->x86 == 0x10) {
-+		/*
-+		 * BIOS should disable GartTlbWlk Errors themself. If
-+		 * it doesn't do it here as suggested by the BKDG.
-+		 *
-+		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
-+		 */
-+		u64 mask;
-+
-+		rdmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+		mask |= (1 << 10);
-+		wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+	}
+ #if 0
+ #undef wrmsrl
+@@ -363,12 +364,18 @@ again:
+ 	return new_raw_count;
  }
  
- #ifdef CONFIG_X86_32
+-/* using X86_FEATURE_PERFCTR_CORE to later implement ALTERNATIVE() here */
+ static inline int x86_pmu_addr_offset(int index)
+ {
+-	if (boot_cpu_has(X86_FEATURE_PERFCTR_CORE))
+-		return index << 1;
+-	return index;
++	int offset;
++
++	/* offset = X86_FEATURE_PERFCTR_CORE ? index << 1 : index */
++	alternative_io(ASM_NOP2,
++		       "shll $1, %%eax",
++		       X86_FEATURE_PERFCTR_CORE,
++		       "=a" (offset),
++		       "a"  (index));
++
++	return offset;
+ }
+ 
+ static inline unsigned int x86_pmu_config_addr(int index)
+-- 
+1.7.3.4
+
+
