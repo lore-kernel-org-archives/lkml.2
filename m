@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760565Ab1DPXpo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 19:45:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55908 "EHLO ogre.sisk.pl"
+	id S1760462Ab1DPXp4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 19:45:56 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55920 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760484Ab1DPXox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 19:44:53 -0400
+	id S1760500Ab1DPXpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 19:45:03 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 1/9] PM: Make power domain callbacks take precedence over subsystem ones
-Date: Sun, 17 Apr 2011 01:36:29 +0200
+Subject: [PATCH 5/9] OMAP2+ / PM: Move runtime PM implementation to use power domains
+Date: Sun, 17 Apr 2011 01:39:56 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
@@ -19,275 +19,188 @@ Cc: Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
 References: <201104130205.26988.rjw@sisk.pl> <201104170135.19388.rjw@sisk.pl>
 In-Reply-To: <201104170135.19388.rjw@sisk.pl>
 MIME-Version: 1.0
-Message-Id: <201104170136.29873.rjw@sisk.pl>
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104170139.56905.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: Kevin Hilman <khilman@ti.com>
 
-Change the PM core's behavior related to power domains in such a way
-that, if a power domain is defined for a given device, its callbacks
-will be executed instead of and not in addition to the device
-subsystem's PM callbacks.
+In commit 7538e3db6e015e890825fbd9f8659952896ddd5b (PM: add support
+for device power domains) a better way for handling platform-specific
+power hooks was introduced.
 
-The idea behind the initial implementation of power domains handling
-by the PM core was that power domain callbacks would be executed in
-addition to subsystem callbacks, so that it would be possible to
-extend the subsystem callbacks by using power domains.  It turns out,
-however, that this wouldn't be really convenient in some important
-situations.
+Rather than using the platform_bus dev_pm_ops overrides
+(platform_bus_set_pm_ops()), this patch moves the OMAP runtime PM
+implementation over to using device power domains.
 
-For example, there are systems in which power can only be removed
-from entire power domains.  On those systems it is not desirable to
-execute device drivers' PM callbacks until it is known that power is
-going to be removed from the devices in question, which means that
-they should be executed by power domain callbacks rather then by
-subsystem (e.g. bus type) PM callbacks, because subsystems generally
-have no information about what devices belong to which power domain.
-Thus, for instance, if the bus type in question is the platform bus
-type, its PM callbacks generally should not be called in addition to
-power domain callbacks, because they run device drivers' callbacks
-unconditionally if defined.
+Since OMAP is the only user of platform_bus_set_pm_ops(), that
+interface can be removed (and will be in a forthcoming patch.)
 
-While in principle the default subsystem PM callbacks, or a subset of
-them, may be replaced with different functions, it doesn't seem
-correct to do so, because that would change the subsystem's behavior
-with respect to all devices in the system, regardless of whether or
-not they belong to any power domains.  Thus, the only remaining
-option is to make power domain callbacks take precedence over
-subsystem callbacks.
+[rjw: Rebased on top of a previous change modifying the handling of
+ power domains by the PM core so that power domain callbacks take
+ precendence over subsystem-level PM callbacks.]
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Kevin Hilman <khilman@ti.com>
 Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Kevin Hilman <khilman@ti.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/main.c    |   64 ++++++++++++++++++++-----------------------
- drivers/base/power/runtime.c |   29 ++++++-------------
- 2 files changed, 41 insertions(+), 52 deletions(-)
+ arch/arm/mach-omap2/Makefile     |    6 +-
+ arch/arm/mach-omap2/pm_bus.c     |   85 ---------------------------------------
+ arch/arm/plat-omap/omap_device.c |   23 ++++++++++
+ 3 files changed, 26 insertions(+), 88 deletions(-)
+ delete mode 100644 arch/arm/mach-omap2/pm_bus.c
 
-Index: linux-2.6/drivers/base/power/runtime.c
+Index: linux-2.6/arch/arm/mach-omap2/Makefile
 ===================================================================
---- linux-2.6.orig/drivers/base/power/runtime.c
-+++ linux-2.6/drivers/base/power/runtime.c
-@@ -168,7 +168,6 @@ static int rpm_check_suspend_allowed(str
- static int rpm_idle(struct device *dev, int rpmflags)
- {
- 	int (*callback)(struct device *);
--	int (*domain_callback)(struct device *);
- 	int retval;
- 
- 	retval = rpm_check_suspend_allowed(dev);
-@@ -214,7 +213,9 @@ static int rpm_idle(struct device *dev,
- 
- 	dev->power.idle_notification = true;
- 
--	if (dev->type && dev->type->pm)
-+	if (dev->pwr_domain)
-+		callback = dev->pwr_domain->ops.runtime_idle;
-+	else if (dev->type && dev->type->pm)
- 		callback = dev->type->pm->runtime_idle;
- 	else if (dev->class && dev->class->pm)
- 		callback = dev->class->pm->runtime_idle;
-@@ -223,19 +224,10 @@ static int rpm_idle(struct device *dev,
- 	else
- 		callback = NULL;
- 
--	if (dev->pwr_domain)
--		domain_callback = dev->pwr_domain->ops.runtime_idle;
--	else
--		domain_callback = NULL;
--
--	if (callback || domain_callback) {
-+	if (callback) {
- 		spin_unlock_irq(&dev->power.lock);
- 
--		if (domain_callback)
--			retval = domain_callback(dev);
--
--		if (!retval && callback)
--			callback(dev);
-+		callback(dev);
- 
- 		spin_lock_irq(&dev->power.lock);
- 	}
-@@ -382,7 +374,9 @@ static int rpm_suspend(struct device *de
- 
- 	__update_runtime_status(dev, RPM_SUSPENDING);
- 
--	if (dev->type && dev->type->pm)
-+	if (dev->pwr_domain)
-+		callback = dev->pwr_domain->ops.runtime_suspend;
-+	else if (dev->type && dev->type->pm)
- 		callback = dev->type->pm->runtime_suspend;
- 	else if (dev->class && dev->class->pm)
- 		callback = dev->class->pm->runtime_suspend;
-@@ -400,8 +394,6 @@ static int rpm_suspend(struct device *de
- 		else
- 			pm_runtime_cancel_pending(dev);
- 	} else {
--		if (dev->pwr_domain)
--			rpm_callback(dev->pwr_domain->ops.runtime_suspend, dev);
-  no_callback:
- 		__update_runtime_status(dev, RPM_SUSPENDED);
- 		pm_runtime_deactivate_timer(dev);
-@@ -582,9 +574,8 @@ static int rpm_resume(struct device *dev
- 	__update_runtime_status(dev, RPM_RESUMING);
- 
- 	if (dev->pwr_domain)
--		rpm_callback(dev->pwr_domain->ops.runtime_resume, dev);
--
--	if (dev->type && dev->type->pm)
-+		callback = dev->pwr_domain->ops.runtime_resume;
-+	else if (dev->type && dev->type->pm)
- 		callback = dev->type->pm->runtime_resume;
- 	else if (dev->class && dev->class->pm)
- 		callback = dev->class->pm->runtime_resume;
-Index: linux-2.6/drivers/base/power/main.c
+--- linux-2.6.orig/arch/arm/mach-omap2/Makefile
++++ linux-2.6/arch/arm/mach-omap2/Makefile
+@@ -59,10 +59,10 @@ endif
+ # Power Management
+ ifeq ($(CONFIG_PM),y)
+ obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
+-obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o pm_bus.o
++obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
+ obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o \
+-					   cpuidle34xx.o pm_bus.o
+-obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o pm_bus.o
++					   cpuidle34xx.o
++obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o
+ obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
+ obj-$(CONFIG_OMAP_SMARTREFLEX)          += sr_device.o smartreflex.o
+ obj-$(CONFIG_OMAP_SMARTREFLEX_CLASS3)	+= smartreflex-class3.o
+Index: linux-2.6/arch/arm/mach-omap2/pm_bus.c
 ===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -425,10 +425,8 @@ static int device_resume_noirq(struct de
- 
- 	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "EARLY power domain ");
--		pm_noirq_op(dev, &dev->pwr_domain->ops, state);
+--- linux-2.6.orig/arch/arm/mach-omap2/pm_bus.c
++++ /dev/null
+@@ -1,85 +0,0 @@
+-/*
+- * Runtime PM support code for OMAP
+- *
+- * Author: Kevin Hilman, Deep Root Systems, LLC
+- *
+- * Copyright (C) 2010 Texas Instruments, Inc.
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2. This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-#include <linux/init.h>
+-#include <linux/kernel.h>
+-#include <linux/io.h>
+-#include <linux/pm_runtime.h>
+-#include <linux/platform_device.h>
+-#include <linux/mutex.h>
+-
+-#include <plat/omap_device.h>
+-#include <plat/omap-pm.h>
+-
+-#ifdef CONFIG_PM_RUNTIME
+-static int omap_pm_runtime_suspend(struct device *dev)
+-{
+-	struct platform_device *pdev = to_platform_device(dev);
+-	int r, ret = 0;
+-
+-	dev_dbg(dev, "%s\n", __func__);
+-
+-	ret = pm_generic_runtime_suspend(dev);
+-
+-	if (!ret && dev->parent == &omap_device_parent) {
+-		r = omap_device_idle(pdev);
+-		WARN_ON(r);
 -	}
 -
--	if (dev->type && dev->type->pm) {
-+		error = pm_noirq_op(dev, &dev->pwr_domain->ops, state);
-+	} else if (dev->type && dev->type->pm) {
- 		pm_dev_dbg(dev, state, "EARLY type ");
- 		error = pm_noirq_op(dev, dev->type->pm, state);
- 	} else if (dev->class && dev->class->pm) {
-@@ -516,7 +514,8 @@ static int device_resume(struct device *
- 
- 	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
--		pm_op(dev, &dev->pwr_domain->ops, state);
-+		error = pm_op(dev, &dev->pwr_domain->ops, state);
-+		goto End;
- 	}
- 
- 	if (dev->type && dev->type->pm) {
-@@ -628,12 +627,11 @@ static void device_complete(struct devic
- {
- 	device_lock(dev);
- 
--	if (dev->pwr_domain && dev->pwr_domain->ops.complete) {
-+	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "completing power domain ");
--		dev->pwr_domain->ops.complete(dev);
+-	return ret;
+-};
+-
+-static int omap_pm_runtime_resume(struct device *dev)
+-{
+-	struct platform_device *pdev = to_platform_device(dev);
+-	int r;
+-
+-	dev_dbg(dev, "%s\n", __func__);
+-
+-	if (dev->parent == &omap_device_parent) {
+-		r = omap_device_enable(pdev);
+-		WARN_ON(r);
 -	}
 -
--	if (dev->type && dev->type->pm) {
-+		if (dev->pwr_domain->ops.complete)
-+			dev->pwr_domain->ops.complete(dev);
-+	} else if (dev->type && dev->type->pm) {
- 		pm_dev_dbg(dev, state, "completing type ");
- 		if (dev->type->pm->complete)
- 			dev->type->pm->complete(dev);
-@@ -731,7 +729,12 @@ static int device_suspend_noirq(struct d
- {
- 	int error;
- 
--	if (dev->type && dev->type->pm) {
-+	if (dev->pwr_domain) {
-+		pm_dev_dbg(dev, state, "LATE power domain ");
-+		error = pm_noirq_op(dev, &dev->pwr_domain->ops, state);
-+		if (error)
-+			return error;
-+	} else if (dev->type && dev->type->pm) {
- 		pm_dev_dbg(dev, state, "LATE type ");
- 		error = pm_noirq_op(dev, dev->type->pm, state);
- 		if (error)
-@@ -748,11 +751,6 @@ static int device_suspend_noirq(struct d
- 			return error;
- 	}
- 
--	if (dev->pwr_domain) {
--		pm_dev_dbg(dev, state, "LATE power domain ");
--		pm_noirq_op(dev, &dev->pwr_domain->ops, state);
+-	return pm_generic_runtime_resume(dev);
+-};
+-#else
+-#define omap_pm_runtime_suspend NULL
+-#define omap_pm_runtime_resume NULL
+-#endif /* CONFIG_PM_RUNTIME */
+-
+-static int __init omap_pm_runtime_init(void)
+-{
+-	const struct dev_pm_ops *pm;
+-	struct dev_pm_ops *omap_pm;
+-
+-	pm = platform_bus_get_pm_ops();
+-	if (!pm) {
+-		pr_err("%s: unable to get dev_pm_ops from platform_bus\n",
+-			__func__);
+-		return -ENODEV;
 -	}
 -
+-	omap_pm = kmemdup(pm, sizeof(struct dev_pm_ops), GFP_KERNEL);
+-	if (!omap_pm) {
+-		pr_err("%s: unable to alloc memory for new dev_pm_ops\n",
+-			__func__);
+-		return -ENOMEM;
+-	}
+-
+-	omap_pm->runtime_suspend = omap_pm_runtime_suspend;
+-	omap_pm->runtime_resume = omap_pm_runtime_resume;
+-
+-	platform_bus_set_pm_ops(omap_pm);
+-
+-	return 0;
+-}
+-core_initcall(omap_pm_runtime_init);
+Index: linux-2.6/arch/arm/plat-omap/omap_device.c
+===================================================================
+--- linux-2.6.orig/arch/arm/plat-omap/omap_device.c
++++ linux-2.6/arch/arm/plat-omap/omap_device.c
+@@ -536,6 +536,28 @@ int omap_early_device_register(struct om
  	return 0;
  }
  
-@@ -840,21 +838,27 @@ static int __device_suspend(struct devic
- 		goto End;
- 	}
- 
-+	if (dev->pwr_domain) {
-+		pm_dev_dbg(dev, state, "power domain ");
-+		error = pm_op(dev, &dev->pwr_domain->ops, state);
-+		goto End;
-+	}
++static int _od_runtime_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
 +
- 	if (dev->type && dev->type->pm) {
- 		pm_dev_dbg(dev, state, "type ");
- 		error = pm_op(dev, dev->type->pm, state);
--		goto Domain;
-+		goto End;
- 	}
++	return omap_device_idle(pdev);
++}
++
++static int _od_runtime_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++
++	return omap_device_enable(pdev);
++}
++
++static struct dev_power_domain omap_device_power_domain = {
++	.ops = {
++		USE_PLATFORM_PM_SLEEP_OPS,
++		.runtime_suspend = _od_runtime_suspend,
++		.runtime_resume = _od_runtime_resume,
++	}
++};
++
+ /**
+  * omap_device_register - register an omap_device with one omap_hwmod
+  * @od: struct omap_device * to register
+@@ -549,6 +571,7 @@ int omap_device_register(struct omap_dev
+ 	pr_debug("omap_device: %s: registering\n", od->pdev.name);
  
- 	if (dev->class) {
- 		if (dev->class->pm) {
- 			pm_dev_dbg(dev, state, "class ");
- 			error = pm_op(dev, dev->class->pm, state);
--			goto Domain;
-+			goto End;
- 		} else if (dev->class->suspend) {
- 			pm_dev_dbg(dev, state, "legacy class ");
- 			error = legacy_suspend(dev, state, dev->class->suspend);
--			goto Domain;
-+			goto End;
- 		}
- 	}
+ 	od->pdev.dev.parent = &omap_device_parent;
++	od->pdev.dev.pwr_domain = &omap_device_power_domain;
+ 	return platform_device_register(&od->pdev);
+ }
  
-@@ -868,12 +872,6 @@ static int __device_suspend(struct devic
- 		}
- 	}
- 
-- Domain:
--	if (!error && dev->pwr_domain) {
--		pm_dev_dbg(dev, state, "power domain ");
--		pm_op(dev, &dev->pwr_domain->ops, state);
--	}
--
-  End:
- 	device_unlock(dev);
- 	complete_all(&dev->power.completion);
-@@ -964,7 +962,14 @@ static int device_prepare(struct device
- 
- 	device_lock(dev);
- 
--	if (dev->type && dev->type->pm) {
-+	if (dev->pwr_domain) {
-+		pm_dev_dbg(dev, state, "preparing power domain ");
-+		if (dev->pwr_domain->ops.prepare)
-+			error = dev->pwr_domain->ops.prepare(dev);
-+		suspend_report_result(dev->pwr_domain->ops.prepare, error);
-+		if (error)
-+			goto End;
-+	} else if (dev->type && dev->type->pm) {
- 		pm_dev_dbg(dev, state, "preparing type ");
- 		if (dev->type->pm->prepare)
- 			error = dev->type->pm->prepare(dev);
-@@ -983,13 +988,6 @@ static int device_prepare(struct device
- 		if (dev->bus->pm->prepare)
- 			error = dev->bus->pm->prepare(dev);
- 		suspend_report_result(dev->bus->pm->prepare, error);
--		if (error)
--			goto End;
--	}
--
--	if (dev->pwr_domain && dev->pwr_domain->ops.prepare) {
--		pm_dev_dbg(dev, state, "preparing power domain ");
--		dev->pwr_domain->ops.prepare(dev);
- 	}
- 
-  End:
 
