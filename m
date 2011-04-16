@@ -1,193 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab1DPGFO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 02:05:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26352 "EHLO mga02.intel.com"
+	id S1751420Ab1DPGHk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 02:07:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39902 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab1DPGFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 02:05:11 -0400
+	id S1751122Ab1DPGHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 02:07:39 -0400
+Message-Id: <1bdc18$k8bgo3@fmsmga002.fm.intel.com>
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,223,1301900400"; 
-   d="scan'208";a="629620493"
-Date: Sat, 16 Apr 2011 14:05:07 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
- time
-Message-ID: <20110416060507.GB19056@localhost>
-References: <20110413090415.763161169@intel.com>
- <20110413220444.GF4648@quack.suse.cz>
- <20110413233122.GA6097@localhost>
- <20110413235211.GN31057@dastard>
- <20110414002301.GA9826@localhost>
- <20110414151424.GA367@localhost>
- <20110414181609.GH5054@quack.suse.cz>
- <20110415034300.GA23430@localhost>
- <20110415143711.GA17181@localhost>
- <20110415221314.GE5432@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110415221314.GE5432@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="679854851"
+Date: Sat, 16 Apr 2011 07:07:35 +0100
+To: wzab@ise.pw.edu.pl, linux-kernel@vger.kernel.org
+Subject: Re: i915 drm GPU hung errors with kernel 2.6.38.2 on  82865G chipset
+References: <4DA8B3A7.3010807@ise.pw.edu.pl>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <4DA8B3A7.3010807@ise.pw.edu.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 16, 2011 at 06:13:14AM +0800, Jan Kara wrote:
-> On Fri 15-04-11 22:37:11, Wu Fengguang wrote:
-> > On Fri, Apr 15, 2011 at 11:43:00AM +0800, Wu Fengguang wrote:
-> > > On Fri, Apr 15, 2011 at 02:16:09AM +0800, Jan Kara wrote:
-> > > > On Thu 14-04-11 23:14:25, Wu Fengguang wrote:
-> > > > > On Thu, Apr 14, 2011 at 08:23:02AM +0800, Wu Fengguang wrote:
-> > > > > > On Thu, Apr 14, 2011 at 07:52:11AM +0800, Dave Chinner wrote:
-> > > > > > > On Thu, Apr 14, 2011 at 07:31:22AM +0800, Wu Fengguang wrote:
-> > > > > > > > On Thu, Apr 14, 2011 at 06:04:44AM +0800, Jan Kara wrote:
-> > > > > > > > > On Wed 13-04-11 16:59:41, Wu Fengguang wrote:
-> > > > > > > > > > Reduce the dampening for the control system, yielding faster
-> > > > > > > > > > convergence. The change is a bit conservative, as smaller values may
-> > > > > > > > > > lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
-> > > > > > > > > > 
-> > > > > > > > > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > > > > > > > > CC: Richard Kennedy <richard@rsk.demon.co.uk>
-> > > > > > > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > > > > > >   Well, I have nothing against this change as such but what I don't like is
-> > > > > > > > > that it just changes magical +2 for similarly magical +0. It's clear that
-> > > > > > > > 
-> > > > > > > > The patch tends to make the rampup time a bit more reasonable for
-> > > > > > > > common desktops. From 100s to 25s (see below).
-> > > > > > > > 
-> > > > > > > > > this will lead to more rapid updates of proportions of bdi's share of
-> > > > > > > > > writeback and thread's share of dirtying but why +0? Why not +1 or -1? So
-> > > > > > > > 
-> > > > > > > > Yes, it will especially be a problem on _small memory_ JBOD setups.
-> > > > > > > > Richard actually has requested for a much radical change (decrease by
-> > > > > > > > 6) but that looks too much.
-> > > > > > > > 
-> > > > > > > > My team has a 12-disk JBOD with only 6G memory. The memory is pretty
-> > > > > > > > small as a server, but it's a real setup and serves well as the
-> > > > > > > > reference minimal setup that Linux should be able to run well on.
-> > > > > > > 
-> > > > > > > FWIW, linux runs on a lot of low power NAS boxes with jbod and/or
-> > > > > > > raid setups that have <= 1GB of RAM (many of them run XFS), so even
-> > > > > > > your setup could be considered large by a significant fraction of
-> > > > > > > the storage world. Hence you need to be careful of optimising for
-> > > > > > > what you think is a "normal" server, because there simply isn't such
-> > > > > > > a thing....
-> > > > > > 
-> > > > > > Good point! This patch is likely to hurt a loaded 1GB 4-disk NAS box...
-> > > > > > I'll test the setup.
-> > > > > 
-> > > > > Just did a comparison of the IO-less patches' performance with and
-> > > > > without this patch. I hardly notice any differences besides some more
-> > > > > bdi goal fluctuations in the attached graphs. The write throughput is
-> > > > > a bit large with this patch (80MB/s vs 76MB/s), however the delta is
-> > > > > within the even larger stddev range (20MB/s).
-> > > >   Thanks for the test but I cannot find out from the numbers you provided
-> > > > how much did the per-bdi thresholds fluctuate in this low memory NAS case?
-> > > > You can gather current bdi threshold from /sys/kernel/debug/bdi/<dev>/stats
-> > > > so it shouldn't be hard to get the numbers...
-> > > 
-> > > Hi Jan, attached are your results w/o this patch. The "bdi goal" (gray
-> > > line) is calculated as (bdi_thresh - bdi_thresh/8) and is fluctuating
-> > > all over the place.. and average wkB/s is only 49MB/s..
-> > 
-> > I got the numbers for vanilla kernel: XFS can do 57MB/s and 63MB/s in
-> > the two runs.  There are large fluctuations in the attached graphs, too.
->   Hmm, so the graphs from previous email are with longer "proportion
-> period (without patch we discuss here)" and graphs from this email are
-> with it?
-
-All graphs for vanilla and your IO-less kernels are collected without
-this patch.
-
-I only showed in previous email how my IO-less kernel works with and
-without this patch, and the conclusion is, it's not sensitive to it
-and is working fine in both cases.
-
-> > To summary it up, for a 1GB mem, 4 disks JBOD setup, running 1 dd per
-> > disk:
-> > 
-> > vanilla: 57MB/s, 63MB/s
-> > Jan:     49MB/s, 103MB/s
-> > Wu:      76MB/s, 80MB/s
-> > 
-> > The balance_dirty_pages-task-bw-jan.png and
-> > balance_dirty_pages-pages-jan.png shows very unfair allocation of
-> > dirty pages and throughput among the disks...
->   Fengguang, can we please stay on topic? It's good to know that throughput
-> fluctuates so much with my patches (although not that surprising seeing the
-> fluctuations of bdi limits) but for the sake of this patch throughput
-> numbers with different balance_dirty_pages() implementations do not seem
-> that interesting.  What is interesting (at least to me) is how this
-> particular patch changes fluctuations of bdi thresholds (fractions) in
-> vanilla kernel. In the graphs, I can see only bdi goal - that is the
-> per-bdi threshold we have in balance_dirty_pages() am I right? And it is
-> there for only a single device, right?
-
-bdi_goal = bdi_thresh * 7/8. They are close. So by looking at the bdi
-goal curve, you get the idea how bdi_thresh fluctuates over time.
-
-balance_dirty_pages-pages-jan.png looks very like the single device
-situation, because the bdi goal is so high! But that's exactly the
-problem: the first bdi is consuming most dirty pages quota and run at
-full speed, while the other bdi's run mostly idle.  You can confirm
-the imbalance in balance_dirty_pages-task-bw-jan.png and iostat.
-
-Looks similar to the problem described here:
-
-https://lkml.org/lkml/2010/12/5/6
-
-> Anyway either with or without the patch, bdi thresholds are jumping rather
-> wildly if I'm interpreting the graphs right. Hmm, which is not that surprising
-> given that in ideal case we should have about 0.5s worth of writeback for
-> each disk in the page cache. So with your patch the period for proportion
-> estimation is also just about 0.5s worth of page writeback which is
-> understandably susceptible to fluctuations. Thinking about it, the original
-> period of 4*"dirty limit" on your machine is about 2.5 GB which is about
-> 50s worth of writeback on that machine so it is in match with your
-> observation that it takes ~100s for bdi threshold to climb up.
+On Fri, 15 Apr 2011 23:07:51 +0200, wzab <wzab@ise.pw.edu.pl> wrote:
+> Today I have experienced two "GPU hungs" on machine with 82865G chipset 
+> working with 2.6.38.2 kernel
+> In the /var/log/syslog I have found the following errors:
 > 
-> So what is a takeaway from this for me is that scaling the period
-> with the dirty limit is not the right thing. If you'd have 4-times more
-> memory, your choice of "dirty limit" as the period would be as bad as
-> current 4*"dirty limit". What would seem like a better choice of period
-> to me would be to have the period in an order of a few seconds worth of
-> writeback. That would allow the bdi limit to scale up reasonably fast when
-> new bdi starts to be used and still not make it fluctuate that much
-> (hopefully).
+> Apr 15 22:50:51 wzab kernel: [drm:i915_hangcheck_elapsed] *ERROR* 
+> Hangcheck timer elapsed... GPU hung
 
-Yes it's good to make it more bandwidth and time wise.  I'll be glad
-if you can improve the algorithm :)
+As Bruno said there is a /sys/kernel/debug/dri/0/i915_error_state file
+that contains a GPU dump at the time of the error which often contains the
+vital clue at to what went wrong. If you can also think back to what was
+happening on the machine at the time of the hang, that can also help
+identify the trigger and the suspect code.
 
 Thanks,
-Fengguang
+-Chris
 
-> Looking at math in lib/proportions.c, nothing really fundamental requires
-> that each period has the same length. So it shouldn't be hard to actually
-> create proportions calculator that would have timer triggered periods -
-> simply whenever the timer fires, we would declare a new period. The only
-> things which would be broken by this are (t represents global counter of
-> events):
-> a) counting of periods as t/period_len - we would have to maintain global
-> period counter but that's trivial
-> b) trick that we don't do t=t/2 for each new period but rather use
-> period_len/2+(t % (period_len/2)) when calculating fractions - again we
-> would have to bite the bullet and divide the global counter when we declare
-> new period but again it's not a big deal in our case.
-> 
-> Peter what do you think about this? Do you (or anyone else) think it makes
-> sense?
-> 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+-- 
+Chris Wilson, Intel Open Source Technology Centre
