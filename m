@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab1DPOR1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 10:17:27 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49553 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab1DPORV (ORCPT
+	id S1754364Ab1DPOUA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 10:20:00 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55998 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab1DPOT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 10:17:21 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: haojian.zhuang@gmail.com, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 01/13] input: touchscreen: use polling mode in 88pm860x
-In-Reply-To: Your message of "Sat, 16 Apr 2011 20:46:20 +0800."
-             <1302957980-27343-1-git-send-email-haojian.zhuang@marvell.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1302706264-25815-1-git-send-email-haojian.zhuang@marvell.com>
-            <1302957980-27343-1-git-send-email-haojian.zhuang@marvell.com>
+	Sat, 16 Apr 2011 10:19:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=adubuqbMUGtbLUnhbX2yDltqZkPCAaSt3RaVLtl2G9oj6R32IpAM1qLE2wbewbSwdO
+         WlKGYJPEGkxLdHxDMRNcFhht/N8QwhC7WC0BbMADobI10UZirDgIM27bcy1FOwzvb8OD
+         QsgqNcay7hJnIzUKzt+i3beb0Q4izuGLbMKEQ=
+Subject: Re: [PATCH 2/2] mtd: msm_nand: Add initial msm nand driver support.
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Murali Nalajala <mnalajal@codeaurora.org>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Dima Zavin <dima@android.com>,
+        Brian Swetland <swetland@google.com>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+In-Reply-To: <4DA96890.2070207@codeaurora.org>
+References: <1298940450-27365-1-git-send-email-mnalajal@codeaurora.org>
+	 <1298940450-27365-2-git-send-email-mnalajal@codeaurora.org>
+	 <1302861097.3220.12.camel@localhost>  <4DA85B24.50807@codeaurora.org>
+	 <1302942029.2308.1.camel@koala>  <4DA96890.2070207@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 16 Apr 2011 17:19:50 +0300
+Message-ID: <1302963590.2308.9.camel@koala>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1302963433_54890P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sat, 16 Apr 2011 10:17:13 -0400
-Message-ID: <60599.1302963433@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4DA9A4EC.010A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1302963433_54890P
-Content-Type: text/plain; charset=us-ascii
+> Can i export this variable now?
 
-On Sat, 16 Apr 2011 20:46:20 +0800, Haojian Zhuang said:
-> Measuring point on touchscreen with IRQ mode can only monitor pen-down
-> event. If finger is moving on touchscreen, it can't be monitored by
-> IRQ pen-down event. So switch to polling mode after pen-down event.
+I do not think so, we do not export random variables.
 
->  drivers/input/touchscreen/88pm860x-ts.c |   79 ++++++++++++++++++++++++------
+> What is your suggestion?
 
-> +/*
-> + * While 32KHz hardware timer is used for scheduler, we always assign HZ
-> + * to 128. It means that 1 tick costs 7.8msec.
-> + */
-> +#define MEASURE_INTERVAL_MS	(7)
+But I already did provide you suggestions - kill this global variable
+completely. I provided the reasons:
 
-Is it guaranteed that this hardware part will only ever be used on systems
-where this is true?  How big a bug would it be if somebody tried to glue this
-touchscreen into some random embedded-ARM where HZ was something else, and
-should this be computed as a function of HZ instead of hardcoding 7?
+1. It is error prone to hide functions behind something which looks like
+a constant.
+2. Multiple controllers with different base addresses wouldn't work -
+your driver has to be able to at least theoretically handle multiple
+controllers with different bases.
 
-It *looks* like the intent of the schedule_delayed_work() call is "let's run
-this once a tick when we're awake *anyhow*" - but looking at the code, I can't
-convince myself a rounding error in computing 'interval' won't schedule 1ms
-before or after the next tick would have been.  Isn't there a better API with
-slack timers or something that would do a better "next tick" job?
-
-
-
-
---==_Exmh_1302963433_54890P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNqaTpcC3lWbTT17ARAtE0AKDQCwt8g16kcAwSD8sUToP/pr5EZQCgziyT
-27qstpI9mLYp/MzJMmb2u94=
-=p6Cs
------END PGP SIGNATURE-----
-
---==_Exmh_1302963433_54890P--
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
