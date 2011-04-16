@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab1DPJpC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 05:45:02 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60326 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758553Ab1DPJo7 (ORCPT
+	id S1758922Ab1DPJqw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 05:46:52 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:40444 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758875Ab1DPJqr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 05:44:59 -0400
-Date: Sat, 16 Apr 2011 10:44:56 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 2/3] track numbers of pagetable pages
-Message-ID: <20110416104456.3915b7de@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110415173823.EA7A7473@kernel>
-References: <20110415173821.62660715@kernel>
-	<20110415173823.EA7A7473@kernel>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Apr 2011 05:46:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=aje/Wb1UJseyg8FTyYA7ULmEc4/LWCFj5e8yi5picmcvgARqDgQU9loLqxsk2YEtS/
+         V2HTaNMiDfVc5onwP7g30/znrC7IJ5K7GSmlb+RIkAM6DLZILCqDkG2m4l9PCkvwM27r
+         2N78W3ZnY4WuCrn8HfRGKRl1HLskDpCIU9Y1o=
+MIME-Version: 1.0
+In-Reply-To: <1301726499-6010-1-git-send-email-namei.unix@gmail.com>
+References: <1301726499-6010-1-git-send-email-namei.unix@gmail.com>
+Date: Sat, 16 Apr 2011 17:46:46 +0800
+Message-ID: <BANLkTi=_vsX6Zx8b82FYWUy5WGxLdMBbMQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers, mfd: Remove unused variable 'val'
+From: Liu Yuan <namei.unix@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Apr 2011 10:38:23 -0700
-Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+Hi, Samuel, is there another similar fix already pending? I notice the
+latest[ Linus tree[0ebc115da3ed6740, Fri Apr 15 20:31:15 2011 -0700]
+still has this redundant variable.
 
-> 
-> Now that we have the mm in the constructor and destructor, it's
-> simple to to bump a counter.  Add the counter to the mm and use
-> the existing MM_* counter infrastructure.
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Thanks,
+Yuan
+
+On Sat, Apr 2, 2011 at 2:41 PM, Liu Yuan <namei.unix@gmail.com> wrote:
+> From: Liu Yuan <tailai.ly@taobao.com>
+>
+>
+> Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
 > ---
-> 
->  linux-2.6.git-dave/include/linux/mm.h       |    2 ++
->  linux-2.6.git-dave/include/linux/mm_types.h |    1 +
->  2 files changed, 3 insertions(+)
-> 
-> diff -puN include/linux/mm.h~track-pagetable-pages include/linux/mm.h
-> --- linux-2.6.git/include/linux/mm.h~track-pagetable-pages	2011-04-15 10:37:10.768832396 -0700
-> +++ linux-2.6.git-dave/include/linux/mm.h	2011-04-15 10:37:10.780832393 -0700
-> @@ -1245,12 +1245,14 @@ static inline pmd_t *pmd_alloc(struct mm
->  static inline void pgtable_page_ctor(struct mm_struct *mm, struct page *page)
->  {
->  	pte_lock_init(page);
-> +	inc_mm_counter(mm, MM_PTEPAGES);
->  	inc_zone_page_state(page, NR_PAGETABLE);
->  }
->  
->  static inline void pgtable_page_dtor(struct mm_struct *mm, struct page *page)
->  {
->  	pte_lock_deinit(page);
-> +	dec_mm_counter(mm, MM_PTEPAGES);
->  	dec_zone_page_state(page, NR_PAGETABLE);
->  }
-
-I'm probably missing something really obvious but...
-
-Is this safe in the non-USE_SPLIT_PTLOCKS case? If we're not using
-split-ptlocks then inc/dec_mm_counter() are only safe when done under
-mm->page_table_lock, right? But it looks to me like we can end up doing,
-
-  __pte_alloc()
-      pte_alloc_one()
-          pgtable_page_ctor()
-
-before acquiring mm->page_table_lock in __pte_alloc().
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+>  drivers/mfd/wl1273-core.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mfd/wl1273-core.c b/drivers/mfd/wl1273-core.c
+> index 04914f2..37af778 100644
+> --- a/drivers/mfd/wl1273-core.c
+> +++ b/drivers/mfd/wl1273-core.c
+> @@ -153,7 +153,6 @@ out:
+>  */
+>  static int wl1273_fm_set_volume(struct wl1273_core *core, unsigned int volume)
+>  {
+> -       u16 val;
+>        int r;
+>
+>        if (volume > WL1273_MAX_VOLUME)
+> --
+> 1.7.1
+>
+>
