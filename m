@@ -1,79 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab1DPNK2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 09:10:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58097 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab1DPNIU convert rfc822-to-8bit (ORCPT
+	id S1753309Ab1DPNRR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 09:17:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51427 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1DPNRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 09:08:20 -0400
+	Sat, 16 Apr 2011 09:17:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:reply-to:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=U6x/DriiLiHPQbXCLK38tbxjBlebewpaCfjorV9m2QDWDLlg3uOOEy6rdq7ZMj//6P
-         5EvDtVHvCq8ZoXvzphxMSUXZsLhgiFWKt8WDQc69Re5ZB0ZLfErJEiPr/OiZVYx4D777
-         L+mVXMWDZbClHV9+fvqhctxplw8ZJBh02xx2A=
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=tciKo3AphocOigSFKp/S5aKo5E/CokNQEbwkElFlfS0whDZsVMi8uEEoDEHbaUHqht
+         C5xEQIkIweNkjQOqB1IPi28TWoa/ibs8TMzAhns2eRYqLyymIh09wr7VJBzRtwlwQjka
+         TWy53A5K3AblwPmBot5BXspIcRH4dQRIkcJmU=
 MIME-Version: 1.0
 Reply-To: wanlong.gao@gmail.com
-In-Reply-To: <BANLkTi=_vsX6Zx8b82FYWUy5WGxLdMBbMQ@mail.gmail.com>
-References: <1301726499-6010-1-git-send-email-namei.unix@gmail.com>
-	<BANLkTi=_vsX6Zx8b82FYWUy5WGxLdMBbMQ@mail.gmail.com>
-Date: Sat, 16 Apr 2011 21:02:33 +0800
-X-Google-Sender-Auth: bclKdaKcX5ES5BaIgiJAmCw79bo
-Message-ID: <BANLkTimkSx+ECO_-Tyzgr8LVY3F52TTJXA@mail.gmail.com>
-Subject: Re: [PATCH] drivers, mfd: Remove unused variable 'val'
+In-Reply-To: <1302957980-27343-1-git-send-email-haojian.zhuang@marvell.com>
+References: <1302706264-25815-1-git-send-email-haojian.zhuang@marvell.com>
+	<1302957980-27343-1-git-send-email-haojian.zhuang@marvell.com>
+Date: Sat, 16 Apr 2011 21:17:08 +0800
+X-Google-Sender-Auth: wmhP31uYhEBq8g_JVMJxnBWNYN4
+Message-ID: <BANLkTik+f6ZKD2mWtSrFKfzD59D-b3-M3g@mail.gmail.com>
+Subject: Re: [PATCH 01/13] input: touchscreen: use polling mode in 88pm860x
 From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Liu Yuan <namei.unix@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: haojian.zhuang@gmail.com, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/16/11, Liu Yuan <namei.unix@gmail.com> wrote:
-> Hi, Samuel, is there another similar fix already pending? I notice the
-> latest[ Linus tree[0ebc115da3ed6740, Fri Apr 15 20:31:15 2011 -0700]
-> still has this redundant variable.
+On 4/16/11, Haojian Zhuang <haojian.zhuang@marvell.com> wrote:
+> Measuring point on touchscreen with IRQ mode can only monitor pen-down
+> event. If finger is moving on touchscreen, it can't be monitored by
+> IRQ pen-down event. So switch to polling mode after pen-down event.
 >
-> Thanks,
-> Yuan
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Acked-by: Wanlong Gao <wanlong.gao@gmail.com>
+> ---
+>  drivers/input/touchscreen/88pm860x-ts.c |   79
+> ++++++++++++++++++++++++------
+>  1 files changed, 63 insertions(+), 16 deletions(-)
 >
-> On Sat, Apr 2, 2011 at 2:41 PM, Liu Yuan <namei.unix@gmail.com> wrote:
->> From: Liu Yuan <tailai.ly@taobao.com>
->>
->>
->> Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
->> ---
->>  drivers/mfd/wl1273-core.c |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/mfd/wl1273-core.c b/drivers/mfd/wl1273-core.c
->> index 04914f2..37af778 100644
->> --- a/drivers/mfd/wl1273-core.c
->> +++ b/drivers/mfd/wl1273-core.c
->> @@ -153,7 +153,6 @@ out:
->>  */
->>  static int wl1273_fm_set_volume(struct wl1273_core *core, unsigned int
->> volume)
->>  {
->> -       u16 val;
->>        int r;
->>
->>        if (volume > WL1273_MAX_VOLUME)
-Hi Liu Yuan:
+> diff --git a/drivers/input/touchscreen/88pm860x-ts.c
+> b/drivers/input/touchscreen/88pm860x-ts.c
+> index b3aebc2..dbb3435 100644
+> --- a/drivers/input/touchscreen/88pm860x-ts.c
+> +++ b/drivers/input/touchscreen/88pm860x-ts.c
+> @@ -12,13 +12,25 @@
+>  #include <linux/module.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/i2c.h>
+> +#include <linux/slab.h>
+>  #include <linux/input.h>
+>  #include <linux/mfd/88pm860x.h>
+> -#include <linux/slab.h>
+>
+>  #define MEAS_LEN		(8)
+>  #define ACCURATE_BIT		(12)
+>
+> +/*
+> + * While 32KHz hardware timer is used for scheduler, we always assign HZ
+> + * to 128. It means that 1 tick costs 7.8msec.
+> + */
+> +#define MEASURE_INTERVAL_MS	(7)
+> +
+> +/* debounce register */
+> +#define DEBOUNCE		(0x0A)
+> +
+> +#define PD_DEBOUNCE_0MSEC	(0)
+> +#define PD_DEBOUNCE_MASK	(3)
+> +
+>  /* touch register */
+>  #define MEAS_EN3		(0x52)
+>
+> @@ -39,22 +51,27 @@
+>  #define MEAS_TSIZ2_EN		(1 << 7)
+>
+>  struct pm860x_touch {
+> -	struct input_dev *idev;
+> -	struct i2c_client *i2c;
+> -	struct pm860x_chip *chip;
+> -	int irq;
+> -	int res_x;		/* resistor of Xplate */
+> +	struct input_dev	*idev;
+> +	struct i2c_client	*i2c;
+> +	struct pm860x_chip	*chip;
+> +	struct delayed_work	poll_work;
+> +	struct mutex		lock;
+> +
+> +	int			irq;
+> +	int			res_x;		/* resistor of Xplate */
+>  };
+>
+> -static irqreturn_t pm860x_touch_handler(int irq, void *data)
+> +static void pm860x_poll_work(struct work_struct *work)
+>  {
+> -	struct pm860x_touch *touch = data;
+> +	struct pm860x_touch *touch = container_of(work, struct pm860x_touch,
+> +						  poll_work.work);
+>  	struct pm860x_chip *chip = touch->chip;
+> +	int x, y, z1, z2, rt = 0;
+> +	int ret, pen_down, interval;
+>  	unsigned char buf[MEAS_LEN];
+> -	int x, y, pen_down;
+> -	int z1, z2, rt = 0;
+> -	int ret;
+> +	struct timeval start, end;
+>
+> +	do_gettimeofday(&start);
+>  	ret = pm860x_bulk_read(touch->i2c, MEAS_TSIX_1, MEAS_LEN, buf);
+>  	if (ret < 0)
+>  		goto out;
+> @@ -77,14 +94,39 @@ static irqreturn_t pm860x_touch_handler(int irq, void
+> *data)
+>  		input_report_abs(touch->idev, ABS_PRESSURE, rt);
+>  		input_report_key(touch->idev, BTN_TOUCH, 1);
+>  		dev_dbg(chip->dev, "pen down at [%d, %d].\n", x, y);
+> +
+> +		do_gettimeofday(&end);
+> +		interval = ((end.tv_sec - start.tv_sec) * 1000000 +
+> +			(end.tv_usec - start.tv_usec)) / 1000;
+> +		interval = (interval < MEASURE_INTERVAL_MS)
+> +			? (MEASURE_INTERVAL_MS - interval) : 0;
+> +		schedule_delayed_work(&touch->poll_work,
+> +				      msecs_to_jiffies(interval));
+>  	} else {
+>  		input_report_abs(touch->idev, ABS_PRESSURE, 0);
+>  		input_report_key(touch->idev, BTN_TOUCH, 0);
+>  		dev_dbg(chip->dev, "pen release\n");
+> +		mutex_unlock(&touch->lock);
+>  	}
+>  	input_sync(touch->idev);
+>
+>  out:
+> +	return;
+> +}
+> +
+> +static irqreturn_t pm860x_touch_handler(int irq, void *data)
+> +{
+> +	struct pm860x_touch *touch = data;
+> +	int ret;
+> +
+> +	ret = pm860x_reg_read(touch->i2c, PM8607_STATUS_1);
+> +	dev_dbg(touch->chip->dev, "pen status:%d\n", (ret & PM8607_STATUS_PEN)
+> +		? 1 : 0);
+> +	if ((ret & PM8607_STATUS_PEN) == 0)
+> +		return IRQ_HANDLED;
+> +
+> +	mutex_lock(&touch->lock);
+> +	pm860x_poll_work(&touch->poll_work.work);
+>  	return IRQ_HANDLED;
+>  }
+>
+> @@ -93,12 +135,14 @@ static int pm860x_touch_open(struct input_dev *dev)
+>  	struct pm860x_touch *touch = input_get_drvdata(dev);
+>  	int data, ret;
+>
+> +	/* set debounce time with 0ms */
+> +	ret = pm860x_set_bits(touch->i2c, DEBOUNCE, PD_DEBOUNCE_MASK,
+> +			      PD_DEBOUNCE_0MSEC);
+> +	if (ret < 0)
+> +		goto out;
+>  	data = MEAS_PD_EN | MEAS_TSIX_EN | MEAS_TSIY_EN
+>  		| MEAS_TSIZ1_EN | MEAS_TSIZ2_EN;
+>  	ret = pm860x_set_bits(touch->i2c, MEAS_EN3, data, data);
+> -	if (ret < 0)
+> -		goto out;
+> -	return 0;
+>  out:
+>  	return ret;
+>  }
+> @@ -152,16 +196,17 @@ static int __devinit pm860x_touch_probe(struct
+> platform_device *pdev)
+>  	}
+>
+>  	touch->idev->name = "88pm860x-touch";
+> -	touch->idev->phys = "88pm860x/input0";
+> +	touch->idev->phys = "88pm860x/input1";
+>  	touch->idev->id.bustype = BUS_I2C;
+>  	touch->idev->dev.parent = &pdev->dev;
+>  	touch->idev->open = pm860x_touch_open;
+>  	touch->idev->close = pm860x_touch_close;
+>  	touch->chip = chip;
+>  	touch->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip->companion;
+> -	touch->irq = irq + chip->irq_base;
+> +	touch->irq = irq;
+>  	touch->res_x = pdata->res_x;
+>  	input_set_drvdata(touch->idev, touch);
+> +	mutex_init(&touch->lock);
+>
+>  	ret = request_threaded_irq(touch->irq, NULL, pm860x_touch_handler,
+>  				   IRQF_ONESHOT, "touch", touch);
+> @@ -188,6 +233,7 @@ static int __devinit pm860x_touch_probe(struct
+> platform_device *pdev)
+>  	}
+>
+>  	platform_set_drvdata(pdev, touch);
+> +	INIT_DELAYED_WORK(&touch->poll_work, pm860x_poll_work);
+>  	return 0;
+>  out_rg:
+>  	free_irq(touch->irq, touch);
+> @@ -202,6 +248,7 @@ static int __devexit pm860x_touch_remove(struct
+> platform_device *pdev)
+>  {
+>  	struct pm860x_touch *touch = platform_get_drvdata(pdev);
+>
+> +	flush_scheduled_work();
+>  	input_unregister_device(touch->idev);
+>  	free_irq(touch->irq, touch);
+>  	platform_set_drvdata(pdev, NULL);
+> --
+> 1.5.6.5
+>
+It looks all good to me now .
+Thanks for your great work .
 
-It has already fixed in the Samuel's for-next branch.
-Cheers .
-
-http://git.kernel.org/?p=linux/kernel/git/sameo/mfd-2.6.git;a=blobdiff;f=drivers/mfd/wl1273-core.c;h=d97a86945174519a6d333bf0527875b63537384d;hp=63d250d9a366aeac9b94ee99bba6b6040f1916f8;hb=f880ff3edc1a6f8cfa98b337dc121824c170164c;hpb=b2b1fc7407b7b989a7582b31e732f81cbc7e1d50
->> --
->> 1.7.1
->>
->>
+Best regards .
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
