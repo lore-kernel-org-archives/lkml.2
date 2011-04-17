@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1DQSMl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 14:12:41 -0400
-Received: from live.com ([74.63.213.116]:3703 "EHLO vps"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751655Ab1DQSMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 14:12:36 -0400
-X-Greylist: delayed 86537 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Apr 2011 14:12:36 EDT
-From: "jessica" <noreply@netlogmail.com>
-Subject: i wannted to send u 
-Date: Thu, 14 Apr 2011 16:54:54 +0100
+	id S1753347Ab1DQSQZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 14:16:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57297 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab1DQSQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 14:16:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Shawn Starr <shawn.starr@rogers.com>
+Subject: Re: [Bug #29672] [regression][ALSA][hda-conexant][2.6.38-rcX] external microphone sound too quiet
+Date: Sun, 17 Apr 2011 20:16:49 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <sam8u5dLkaB.A.afE.53uqNB@chimera> <IqJL5EkbqD.A.A5F.k5uqNB@chimera> <3577387.Ms3I5Hp20k@segfault.sh0n.net>
+In-Reply-To: <3577387.Ms3I5Hp20k@segfault.sh0n.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1250"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1081
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
-Message-ID: <VPSdRGy9tCx1Dy3riCT00000162@vps>
-X-OriginalArrivalTime: 14 Apr 2011 15:54:56.0545 (UTC) FILETIME=[4D27F110:01CBFABC]
-To: unlisted-recipients:; (no To-header on input)
+Message-Id: <201104172016.49571.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i wannted to send u my photo long ago, but i was afraid that u dont like to see me . check on the links u see my photo, i hope u like it
- 
-Download that and see my photo...
+On Sunday, April 17, 2011, Shawn Starr wrote:
+> On Sunday, April 17, 2011 03:52:09 PM Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.37 and 2.6.38.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.37 and 2.6.38.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> > 
+> > 
+> It is continuing, using the external microphone the audio is too quiet no 
+> matter how loud I set it with PulseAudio.
+> 
+> The audio onboard Lenovo W500 laptop is: Conexant CX20561 (Hermosa)  
+> 
+> I have not had time to do any investigations to look at the git changes made.
 
-http://www.sendspace.com/file/43dba1
-or
-http://www.2shared.com/file/cjJZaB6V/DSC0189936.html
-or
-http://www.mediafire.com/?91f2z042w3cn52k
+Thanks for the update.
+
+Rafael
