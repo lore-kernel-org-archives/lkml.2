@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab1DQUfU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 16:35:20 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:49099 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab1DQUfP (ORCPT
+	id S1752892Ab1DQUkP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 16:40:15 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65366 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab1DQUkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 16:35:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=t8KhOqrtM1/emrBm7FwOEN7D6Mwt3OKb2yJUxbzQRvNH3wWOtIEBs1GGr0WDGVIFct
-         b/Uj/ncZwR7UEDi0OfwoFrveq0eSOJ/zEg1YSYD4i9zODlu69eIBKhEjsgx5ld21MsmG
-         rx5n3xtyPTQKt5WXMWgxm49f8QTwZljANuxOU=
-Message-ID: <4DAB4EFA.40606@gmail.com>
-Date: Sun, 17 Apr 2011 13:35:06 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
+	Sun, 17 Apr 2011 16:40:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality V2
+Date: Sun, 17 Apr 2011 22:39:57 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Mathieu Poirier <mathieu.poirier@linaro.org>, ohad@wizery.com,
+        linus.walleij@stericsson.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org, lee.jones@linaro.org
+References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org> <201104121946.01618.arnd@arndb.de> <4DA4A44D.5020208@linaro.org>
+In-Reply-To: <4DA4A44D.5020208@linaro.org>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5 v2]Typo: Remove one to many ccc's in some comments.
-References: <1303063749-8282-1-git-send-email-justinmattock@gmail.com>	<1303063749-8282-3-git-send-email-justinmattock@gmail.com> <20110417120336.49f71508.rdunlap@xenotime.net>
-In-Reply-To: <20110417120336.49f71508.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104172239.57362.arnd@arndb.de>
+X-Provags-ID: V02:K0:8ndDP0/0mX81zFOTa6xpKAjJXX8LHL1OSLyRkTtaP+X
+ 54Q4RUyA0dhMpU2r30MCnBNCCP5cxBPI0mE6N24poYpav1cs6C
+ r/GW3rO5xSH3Sv5E2SUxQKKRpwhofP7NeTPUm9k5cND4Y8TLMH
+ pdNdsg7geAycBVUXK4oHZzqpQ2RSW+5OzD4px6OTXsUdITjuNK
+ RwaUBAV8SLH0sym9e5SnQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2011 12:03 PM, Randy Dunlap wrote:
-> On Sun, 17 Apr 2011 11:09:07 -0700 Justin P. Mattock wrote:
->
->> The below patch is a resend due to rebasing to the current Mainline, fixing
->> some comments due to having one to many ccc's in the definitions.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   arch/m68k/include/asm/MC68EZ328.h |    2 +-
->>   arch/m68k/include/asm/MC68VZ328.h |    2 +-
->>   2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/m68k/include/asm/MC68EZ328.h b/arch/m68k/include/asm/MC68EZ328.h
->> index 69b7f91..b2ee25d 100644
->> --- a/arch/m68k/include/asm/MC68EZ328.h
->> +++ b/arch/m68k/include/asm/MC68EZ328.h
->> @@ -1047,7 +1047,7 @@ typedef volatile struct {
->>
->>   #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
->>   #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
->> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
->> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
->
->                                                                occurred
-> (above and below)
+On Tuesday 12 April 2011, Mathieu Poirier wrote:
+> > struct u8500_hsem_state {
+> >       void __iomem *io_base;
+> >       struct u8500_hsem hsem[U8500_MAX_SEMAPHORE];
+> > }
+> I don't see the real advantage in doing a single allocation - the 
+> dynamic allocation method is also used in 'omap_hwspinlock.c'.  Is 
+> modification mandatory to get the driver accepted ?
 
-yep!! made a mistake with this one, and resent..
->
->>   #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
->>   #define WATCHDOG_CNT_SHIFT 8
->>
->> diff --git a/arch/m68k/include/asm/MC68VZ328.h b/arch/m68k/include/asm/MC68VZ328.h
->> index 2b9bf62..62cd79a 100644
->> --- a/arch/m68k/include/asm/MC68VZ328.h
->> +++ b/arch/m68k/include/asm/MC68VZ328.h
->> @@ -1143,7 +1143,7 @@ typedef struct {
->>
->>   #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
->>   #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
->> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
->> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
->>   #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
->>   #define WATCHDOG_CNT_SHIFT 8
->
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
+Not strictly required, but somewhat cleaner IMHO. If you have a good
+reason for splitting the allocations, just document that clearly.
 
+One more thing I just noticed: the hwspinlock_internal.h file defines
+the hwspinlock->id field as "a global, unique, system-wide, index of
+the lock", but the u8500 hsem just sets it to an integer starting
+at zero. If there are multiple devices providing hwspinlocks in the
+same system, that cannot work.
+
+	Arnd
