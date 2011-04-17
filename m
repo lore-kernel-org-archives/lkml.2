@@ -1,306 +1,450 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab1DQJ7O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 05:59:14 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34136 "EHLO
+	id S1753287Ab1DQJ7S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 05:59:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34137 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab1DQJ6F (ORCPT
+	with ESMTP id S1752429Ab1DQJ6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 05:58:05 -0400
-Message-Id: <20110417095507.220580277@chello.nl>
+	Sun, 17 Apr 2011 05:58:07 -0400
+Message-Id: <20110417095507.026186002@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Sun, 17 Apr 2011 11:45:10 +0200
+Date: Sun, 17 Apr 2011 11:45:08 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
 Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 5/7] lockdep: Rename lock_list::class
+Subject: [RFC][PATCH 3/7] lockdep: Annotate read/write states
 References: <20110417094505.865828233@chello.nl>
-Content-Disposition: inline; filename=gautham_r_shenoy-lockdep-rename-lock_list-class.patch
+Content-Disposition: inline; filename=gautham_r_shenoy-lockdep-annotate_read_write_states.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Gautham R Shenoy <ego@in.ibm.com>
 
-Rename a variable in locklist to reflect its usage better.
+Currently we do not save the recursive read dependencies in the dependency
+chain. As a result, a deadlock caused by the following chains are not spotted,
+since we never have the chain 1 in our dependency list:
+
+ 1: Rlock(A) --> lock(B)
+ 2: lock(B)  --> Wlock(A), where A is a recursive read lock.
+
+Before adding the Recursive Read locks to the dependency chains, we need to
+distinguish them from the normal read locks since the conflicting states for
+these two are quite different.
+
+Currently the read/write status of a lock while it's acquired is denoted by a
+monotonically increasing variable where:
+
+ 0 - WRITE
+ 1 - READ
+ 2 - RECURSIVE READ
+
+In this patch, we propose to modify this distinction from a monotonically
+increasing variable to a bit mask where:
+
+ 0x1 - WRITE
+ 0x2 - READ
+ 0x4 - RECURSIVE READ
+
+This helps us to define the conflicting states for each lock with ease:
+Thereby, the conflicting states for a given states are defined as follows:
+
+ Conflicting_states(WRITE):             RECURSIVE_READ | READ | WRITE
+ Conflicting_states(READ):                               READ | WRITE
+ Conflicting_states(RECURSIVE_READ):                            WRITE
+
+Also, we use one more bit in the bitmask to distinguish the first recursive
+read in the current chain from the others, since it is sufficient to add only
+this dependency to the dependency list.
 
 Signed-off-by: Gautham R Shenoy <ego@in.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/lockdep.h |    9 ++++++-
- kernel/lockdep.c        |   56 ++++++++++++++++++++++++------------------------
- kernel/lockdep_proc.c   |    4 +--
- 3 files changed, 38 insertions(+), 31 deletions(-)
+ include/linux/lockdep.h |  107 ++++++++++++++++++++++++++++++++++++------------
+ kernel/lockdep.c        |   46 ++++++++++----------
+ 2 files changed, 105 insertions(+), 48 deletions(-)
 
-Index: linux-2.6/include/linux/lockdep.h
+Index: tip/include/linux/lockdep.h
 ===================================================================
---- linux-2.6.orig/include/linux/lockdep.h
-+++ linux-2.6/include/linux/lockdep.h
-@@ -158,12 +158,19 @@ struct lockdep_map {
+--- tip.orig/include/linux/lockdep.h
++++ tip/include/linux/lockdep.h
+@@ -233,10 +233,11 @@ struct held_lock {
+ 	unsigned int irq_context:2; /* bit 0 - soft, bit 1 - hard */
+ 	unsigned int trylock:1;						/* 16 bits */
+ 
+-	unsigned int read:2;        /* see lock_acquire() comment */
++	unsigned int rw_state:4;        /* see lock states comment */
+ 	unsigned int check:2;       /* see lock_acquire() comment */
+ 	unsigned int hardirqs_off:1;
+-	unsigned int references:11;					/* 32 bits */
++
++	unsigned short references;
  };
  
  /*
-+ * lock_list: List of the other locks taken before or after a particular lock.
-+ *
-+ * @entry -	List head linking this particular entry to the
-+ *		lock_after/lock_before list of a particular lock.
-+ * @dep_class - lock_class of the lock which is involved in a dependency with
-+ *		 the lock to which this entry is linked to.
-+ *
-  * Every lock has a list of other locks that were taken after it.
-  * We only grow the list, never remove from it:
+@@ -286,6 +287,15 @@ extern void lockdep_init_map(struct lock
+ 
+ #define lockdep_set_novalidate_class(lock) \
+ 	lockdep_set_class(lock, &__lockdep_no_validate__)
++
++/* lock_state bits */
++#define _W_		0
++#define _R_		(_W_ + 1)
++#define _RR_		(_W_ + 2)
++#define _FIRST_RR_	(_W_ + 3)
++
++#define get_lock_state(lock_bit)	(1 << lock_bit)
++
+ /*
+  * Compare locking classes
   */
- struct lock_list {
- 	struct list_head		entry;
--	struct lock_class		*class;
-+	struct lock_class		*dep_class;
- 	struct stack_trace		trace;
- 	int				distance;
+@@ -298,13 +308,40 @@ static inline int lockdep_match_key(stru
+ }
  
-Index: linux-2.6/kernel/lockdep.c
+ /*
+- * Acquire a lock.
++ * lock states:
++ *
++ * A given lock can have one of the following states:
++ * - STATE_WRITE: Exclusive Write.
++ * - STATE_READ: Non-recursive read.
++ * - STATE_RECURSIVE_READ: Recursive Read.
+  *
+- * Values for "read":
++ * These states are represented as bitmasks
++ */
++#define STATE_WRITE		get_lock_state(_W_)
++#define STATE_READ		get_lock_state(_R_)
++#define STATE_RECURSIVE_READ	get_lock_state(_RR_)
++
++/* Helpers to check the current lock's state */
++#define is_simple_read(state)	(state & STATE_READ)
++#define is_rec_read(state)	(state & STATE_RECURSIVE_READ)
++#define is_read(state)		(is_simple_read(state) | is_rec_read(state))
++#define is_write(state)		(state & STATE_WRITE)
++
++/*
++ * When maintaining dependency chains for locks acquired with
++ * STATE_RECURSIVE_READ state, we add a particular instance of the lock to the
++ * dependency chain only if it's the first recursive read instance in the
++ * current dependency chain. We don't add recurring instances of the lock
++ * to the dependency chains.
++ */
++#define STATE_FIRST_RECURSIVE_READ	get_lock_state(_FIRST_RR_)
++#define is_first_rec_read(state)	(state & STATE_FIRST_RECURSIVE_READ)
++
++/*
++ * Acquire a lock.
+  *
+- *   0: exclusive (write) acquire
+- *   1: read-acquire (no recursion allowed)
+- *   2: read-acquire with same-instance recursion allowed
++ * Values for "rw_state":
++ *	See comment for lock states:
+  *
+  * Values for check:
+  *
+@@ -313,7 +350,7 @@ static inline int lockdep_match_key(stru
+  *   2: full validation
+  */
+ extern void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+-			 int trylock, int read, int check,
++			 int trylock, int rw_state, int check,
+ 			 struct lockdep_map *nest_lock, unsigned long ip);
+ 
+ extern void lock_release(struct lockdep_map *lock, int nested,
+@@ -457,11 +494,15 @@ static inline void print_irqtrace_events
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+-#  define spin_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
+-#  define spin_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
++#  define spin_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 2, NULL, i)
++#  define spin_acquire_nest(l, s, t, n, i)	\
++		lock_acquire(l, s, t, STATE_WRITE, 2, n, i)
+ # else
+-#  define spin_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
+-#  define spin_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, NULL, i)
++#  define spin_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 1, NULL, i)
++#  define spin_acquire_nest(l, s, t, n, i)	\
++		lock_acquire(l, s, t, STATE_WRITE, 1, NULL, i)
+ # endif
+ # define spin_release(l, n, i)			lock_release(l, n, i)
+ #else
+@@ -471,11 +512,15 @@ static inline void print_irqtrace_events
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+-#  define rwlock_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
+-#  define rwlock_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 2, 2, NULL, i)
++#  define rwlock_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 2, NULL, i)
++#  define rwlock_acquire_read(l, s, t, i)	\
++		lock_acquire(l, s, t, STATE_RECURSIVE_READ, 2, NULL, i)
+ # else
+-#  define rwlock_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
+-#  define rwlock_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 2, 1, NULL, i)
++#  define rwlock_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 1, NULL, i)
++#  define rwlock_acquire_read(l, s, t, i)	\
++		lock_acquire(l, s, t, STATE_RECURSIVE_READ, 1, NULL, i)
+ # endif
+ # define rwlock_release(l, n, i)		lock_release(l, n, i)
+ #else
+@@ -486,9 +531,11 @@ static inline void print_irqtrace_events
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+-#  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
++#  define mutex_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 2, NULL, i)
+ # else
+-#  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
++#  define mutex_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 1, NULL, i)
+ # endif
+ # define mutex_release(l, n, i)			lock_release(l, n, i)
+ #else
+@@ -498,11 +545,15 @@ static inline void print_irqtrace_events
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+-#  define rwsem_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
+-#  define rwsem_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 1, 2, NULL, i)
++#  define rwsem_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 2, NULL, i)
++#  define rwsem_acquire_read(l, s, t, i)	\
++		lock_acquire(l, s, t, STATE_READ, 2, NULL, i)
+ # else
+-#  define rwsem_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
+-#  define rwsem_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 1, 1, NULL, i)
++#  define rwsem_acquire(l, s, t, i)		\
++		lock_acquire(l, s, t, STATE_WRITE, 1, NULL, i)
++#  define rwsem_acquire_read(l, s, t, i)	\
++		lock_acquire(l, s, t, STATE_READ, 1, NULL, i)
+ # endif
+ # define rwsem_release(l, n, i)			lock_release(l, n, i)
+ #else
+@@ -513,11 +564,13 @@ static inline void print_irqtrace_events
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+-#  define lock_map_acquire(l)		lock_acquire(l, 0, 0, 0, 2, NULL, _THIS_IP_)
+ #  define lock_map_acquire_read(l)	lock_acquire(l, 0, 0, 2, 2, NULL, _THIS_IP_)
++#  define lock_map_acquire(l)		\
++		lock_acquire(l, 0, 0, STATE_WRITE, 2, NULL, _THIS_IP_)
+ # else
+-#  define lock_map_acquire(l)		lock_acquire(l, 0, 0, 0, 1, NULL, _THIS_IP_)
+ #  define lock_map_acquire_read(l)	lock_acquire(l, 0, 0, 2, 1, NULL, _THIS_IP_)
++#  define lock_map_acquire(l)		\
++		lock_acquire(l, 0, 0, STATE_WRITE, 1, NULL, _THIS_IP_)
+ # endif
+ # define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
+ #else
+@@ -530,13 +583,15 @@ static inline void print_irqtrace_events
+ # define might_lock(lock) 						\
+ do {									\
+ 	typecheck(struct lockdep_map *, &(lock)->dep_map);		\
+-	lock_acquire(&(lock)->dep_map, 0, 0, 0, 2, NULL, _THIS_IP_);	\
++	lock_acquire(&(lock)->dep_map, 0, 0, STATE_WRITE,		\
++						2, NULL, _THIS_IP_);	\
+ 	lock_release(&(lock)->dep_map, 0, _THIS_IP_);			\
+ } while (0)
+ # define might_lock_read(lock) 						\
+ do {									\
+ 	typecheck(struct lockdep_map *, &(lock)->dep_map);		\
+-	lock_acquire(&(lock)->dep_map, 0, 0, 1, 2, NULL, _THIS_IP_);	\
++	lock_acquire(&(lock)->dep_map, 0, 0, STATE_READ,		\
++						2, NULL, _THIS_IP_);	\
+ 	lock_release(&(lock)->dep_map, 0, _THIS_IP_);			\
+ } while (0)
+ #else
+Index: tip/kernel/lockdep.c
 ===================================================================
---- linux-2.6.orig/kernel/lockdep.c
-+++ linux-2.6/kernel/lockdep.c
-@@ -829,7 +829,7 @@ static int add_lock_to_list(struct lock_
- 	if (!entry)
- 		return 0;
+--- tip.orig/kernel/lockdep.c
++++ tip/kernel/lockdep.c
+@@ -256,7 +256,7 @@ static void lock_release_holdtime(struct
+ 	holdtime = lockstat_clock() - hlock->holdtime_stamp;
  
--	entry->class = this;
-+	entry->dep_class = this;
- 	entry->distance = distance;
- 	entry->trace = *trace;
- 	/*
-@@ -916,7 +916,7 @@ static inline void mark_lock_accessed(st
- 	nr = lock - list_entries;
- 	WARN_ON(nr >= nr_list_entries);
- 	lock->parent = parent;
--	lock->class->dep_gen_id = lockdep_dependency_gen_id;
-+	lock->dep_class->dep_gen_id = lockdep_dependency_gen_id;
- }
- 
- static inline unsigned long lock_accessed(struct lock_list *lock)
-@@ -925,7 +925,7 @@ static inline unsigned long lock_accesse
- 
- 	nr = lock - list_entries;
- 	WARN_ON(nr >= nr_list_entries);
--	return lock->class->dep_gen_id == lockdep_dependency_gen_id;
-+	return lock->dep_class->dep_gen_id == lockdep_dependency_gen_id;
- }
- 
- static inline struct lock_list *get_lock_parent(struct lock_list *child)
-@@ -963,9 +963,9 @@ static int __bfs(struct lock_list *sourc
- 	}
- 
- 	if (forward)
--		head = &source_entry->class->locks_after;
-+		head = &source_entry->dep_class->locks_after;
+ 	stats = get_lock_stats(hlock_class(hlock));
+-	if (hlock->read)
++	if (is_read(hlock->rw_state))
+ 		lock_time_inc(&stats->read_holdtime, holdtime);
  	else
--		head = &source_entry->class->locks_before;
-+		head = &source_entry->dep_class->locks_before;
- 
- 	if (list_empty(head))
- 		goto exit;
-@@ -978,15 +978,15 @@ static int __bfs(struct lock_list *sourc
- 
- 		__cq_dequeue(cq, (unsigned long *)&lock);
- 
--		if (!lock->class) {
-+		if (!lock->dep_class) {
- 			ret = -2;
- 			goto exit;
- 		}
- 
- 		if (forward)
--			head = &lock->class->locks_after;
-+			head = &lock->dep_class->locks_after;
- 		else
--			head = &lock->class->locks_before;
-+			head = &lock->dep_class->locks_before;
- 
- 		list_for_each_entry(entry, head, entry) {
- 			if (!lock_accessed(entry)) {
-@@ -1046,7 +1046,7 @@ print_circular_bug_entry(struct lock_lis
- 	if (debug_locks_silent)
- 		return 0;
- 	printk("\n-> #%u", depth);
--	print_lock_name(target->class);
-+	print_lock_name(target->dep_class);
- 	printk(":\n");
- 	print_stack_trace(&target->trace, 6);
- 
-@@ -1086,7 +1086,7 @@ print_circular_bug_header(struct lock_li
- 
- static inline int class_equal(struct lock_list *entry, void *data)
+ 		lock_time_inc(&stats->write_holdtime, holdtime);
+@@ -1575,7 +1575,7 @@ print_deadlock_bug(struct task_struct *c
+  */
+ static int
+ check_deadlock(struct task_struct *curr, struct held_lock *next,
+-	       struct lockdep_map *next_instance, int read)
++	       struct lockdep_map *next_instance, int rw_state)
  {
--	return entry->class == data;
-+	return entry->dep_class == data;
- }
- 
- static noinline int print_circular_bug(struct lock_list *this,
-@@ -1155,7 +1155,7 @@ unsigned long lockdep_count_forward_deps
- 	struct lock_list this;
- 
- 	this.parent = NULL;
--	this.class = class;
-+	this.dep_class = class;
- 
- 	local_irq_save(flags);
- 	arch_spin_lock(&lockdep_lock);
-@@ -1182,7 +1182,7 @@ unsigned long lockdep_count_backward_dep
- 	struct lock_list this;
- 
- 	this.parent = NULL;
--	this.class = class;
-+	this.dep_class = class;
- 
- 	local_irq_save(flags);
- 	arch_spin_lock(&lockdep_lock);
-@@ -1219,14 +1219,14 @@ check_noncircular(struct lock_list *root
- 
- static inline int usage_match(struct lock_list *entry, void *bit)
- {
--	return entry->class->usage_mask & (1 << (enum lock_usage_bit)bit);
-+	return entry->dep_class->usage_mask & (1 << (enum lock_usage_bit)bit);
- }
- 
- 
- 
- /*
-  * Find a node in the forwards-direction dependency sub-graph starting
-- * at @root->class that matches @bit.
-+ * at @root->dep_class that matches @bit.
-  *
-  * Return 0 if such a node exists in the subgraph, and put that node
-  * into *@target_entry.
-@@ -1249,7 +1249,7 @@ find_usage_forwards(struct lock_list *ro
- 
- /*
-  * Find a node in the backwards-direction dependency sub-graph starting
-- * at @root->class that matches @bit.
-+ * at @root->dep_class that matches @bit.
-  *
-  * Return 0 if such a node exists in the subgraph, and put that node
-  * into *@target_entry.
-@@ -1308,7 +1308,7 @@ print_shortest_lock_dependencies(struct
- 	depth = get_lock_depth(leaf);
- 
- 	do {
--		print_lock_class_header(entry->class, depth);
-+		print_lock_class_header(entry->dep_class, depth);
- 		printk("%*s ... acquired at:\n", depth, "");
- 		print_stack_trace(&entry->trace, 2);
- 		printk("\n");
-@@ -1363,17 +1363,17 @@ print_bad_irq_dependency(struct task_str
- 
- 	printk("\nbut this new dependency connects a %s-irq-safe lock:\n",
- 		irqclass);
--	print_lock_name(backwards_entry->class);
-+	print_lock_name(backwards_entry->dep_class);
- 	printk("\n... which became %s-irq-safe at:\n", irqclass);
- 
--	print_stack_trace(backwards_entry->class->usage_traces + bit1, 1);
-+	print_stack_trace(backwards_entry->dep_class->usage_traces + bit1, 1);
- 
- 	printk("\nto a %s-irq-unsafe lock:\n", irqclass);
--	print_lock_name(forwards_entry->class);
-+	print_lock_name(forwards_entry->dep_class);
- 	printk("\n... which became %s-irq-unsafe at:\n", irqclass);
- 	printk("...");
- 
--	print_stack_trace(forwards_entry->class->usage_traces + bit2, 1);
-+	print_stack_trace(forwards_entry->dep_class->usage_traces + bit2, 1);
- 
- 	printk("\nother info that might help us debug this:\n\n");
- 	lockdep_print_held_locks(curr);
-@@ -1408,7 +1408,7 @@ check_usage(struct task_struct *curr, st
- 
- 	this.parent = NULL;
- 
--	this.class = hlock_class(prev);
-+	this.dep_class = hlock_class(prev);
- 	ret = find_usage_backwards(&this, bit_backwards, &target_entry);
- 	if (ret < 0)
- 		return print_bfs_bug(ret);
-@@ -1416,7 +1416,7 @@ check_usage(struct task_struct *curr, st
- 		return ret;
- 
- 	that.parent = NULL;
--	that.class = hlock_class(next);
-+	that.dep_class = hlock_class(next);
- 	ret = find_usage_forwards(&that, bit_forwards, &target_entry1);
- 	if (ret < 0)
- 		return print_bfs_bug(ret);
-@@ -1657,7 +1657,7 @@ check_prev_add(struct task_struct *curr,
- 	 * We are using global variables to control the recursion, to
- 	 * keep the stackframe size of the recursive functions low:
- 	 */
--	this.class = hlock_class(next);
-+	this.dep_class = hlock_class(next);
- 	this.parent = NULL;
- 	ret = check_noncircular(&this, hlock_class(prev), &target_entry);
- 	if (unlikely(!ret))
-@@ -1687,7 +1687,7 @@ check_prev_add(struct task_struct *curr,
- 	 *  L2 added to its dependency list, due to the first chain.)
- 	 */
- 	list_for_each_entry(entry, &hlock_class(prev)->locks_after, entry) {
--		if (entry->class == hlock_class(next)) {
-+		if (entry->dep_class == hlock_class(next)) {
- 			if (distance == 1)
- 				entry->distance = 1;
+ 	struct held_lock *prev;
+ 	struct held_lock *nest = NULL;
+@@ -1594,7 +1594,7 @@ check_deadlock(struct task_struct *curr,
+ 		 * Allow read-after-read recursion of the same
+ 		 * lock class (i.e. read_lock(lock)+read_lock(lock)):
+ 		 */
+-		if ((read == 2) && prev->read)
++		if (is_rec_read(rw_state) && is_read(prev->rw_state))
  			return 2;
-@@ -2083,7 +2083,7 @@ print_irq_inversion_bug(struct task_stru
- 		printk("but this lock took another, %s-unsafe lock in the past:\n", irqclass);
- 	else
- 		printk("but this lock was taken by another, %s-safe lock in the past:\n", irqclass);
--	print_lock_name(other->class);
-+	print_lock_name(other->dep_class);
- 	printk("\n\nand interrupts could create inverse lock ordering between them.\n\n");
  
- 	printk("\nother info that might help us debug this:\n");
-@@ -2113,7 +2113,7 @@ check_usage_forwards(struct task_struct
- 	struct lock_list *uninitialized_var(target_entry);
- 
- 	root.parent = NULL;
--	root.class = hlock_class(this);
-+	root.dep_class = hlock_class(this);
- 	ret = find_usage_forwards(&root, bit, &target_entry);
- 	if (ret < 0)
- 		return print_bfs_bug(ret);
-@@ -2137,7 +2137,7 @@ check_usage_backwards(struct task_struct
- 	struct lock_list *uninitialized_var(target_entry);
- 
- 	root.parent = NULL;
--	root.class = hlock_class(this);
-+	root.dep_class = hlock_class(this);
- 	ret = find_usage_backwards(&root, bit, &target_entry);
- 	if (ret < 0)
- 		return print_bfs_bug(ret);
-@@ -3482,7 +3482,7 @@ static void zap_class(struct lock_class
- 	 * involved in:
+ 		/*
+@@ -1676,7 +1676,7 @@ check_prev_add(struct task_struct *curr,
+ 	 * write-lock never takes any other locks, then the reads are
+ 	 * equivalent to a NOP.
  	 */
- 	for (i = 0; i < nr_list_entries; i++) {
--		if (list_entries[i].class == class)
-+		if (list_entries[i].dep_class == class)
- 			list_del_rcu(&list_entries[i].entry);
- 	}
+-	if (next->read == 2)
++	if (is_rec_read(next->rw_state))
+ 		return 1;
  	/*
-Index: linux-2.6/kernel/lockdep_proc.c
-===================================================================
---- linux-2.6.orig/kernel/lockdep_proc.c
-+++ linux-2.6/kernel/lockdep_proc.c
-@@ -83,8 +83,8 @@ static int l_show(struct seq_file *m, vo
+ 	 * Is the <prev> -> <next> dependency already present?
+@@ -1765,7 +1765,7 @@ check_prevs_add(struct task_struct *curr
+ 		 * Only non-recursive-read entries get new dependencies
+ 		 * added:
+ 		 */
+-		if (hlock->read != 2) {
++		if (!is_rec_read(hlock->rw_state)) {
+ 			if (!check_prev_add(curr, hlock, next,
+ 						distance, trylock_loop))
+ 				return 0;
+@@ -1935,7 +1935,7 @@ static int validate_chain(struct task_st
+ 		 * any of these scenarios could lead to a deadlock. If
+ 		 * All validations
+ 		 */
+-		int ret = check_deadlock(curr, hlock, lock, hlock->read);
++		int ret = check_deadlock(curr, hlock, lock, hlock->rw_state);
  
- 	list_for_each_entry(entry, &class->locks_after, entry) {
- 		if (entry->distance == 1) {
--			seq_printf(m, " -> [%p] ", entry->class->key);
--			print_name(m, entry->class);
-+			seq_printf(m, " -> [%p] ", entry->dep_class->key);
-+			print_name(m, entry->dep_class);
- 			seq_puts(m, "\n");
+ 		if (!ret)
+ 			return 0;
+@@ -2273,7 +2273,7 @@ mark_held_locks(struct task_struct *curr
+ 		hlock = curr->held_locks + i;
+ 
+ 		usage_bit = 2 + (mark << 2); /* ENABLED */
+-		if (hlock->read)
++		if (hlock->rw_state)
+ 			usage_bit += 1; /* READ */
+ 
+ 		BUG_ON(usage_bit >= LOCK_USAGE_STATES);
+@@ -2486,7 +2486,7 @@ static int mark_irqflags(struct task_str
+ 	 * mark the lock as used in these contexts:
+ 	 */
+ 	if (!hlock->trylock) {
+-		if (hlock->read) {
++		if (is_read(hlock->rw_state)) {
+ 			if (curr->hardirq_context)
+ 				if (!mark_lock(curr, hlock,
+ 						LOCK_USED_IN_HARDIRQ_READ))
+@@ -2505,7 +2505,7 @@ static int mark_irqflags(struct task_str
  		}
  	}
+ 	if (!hlock->hardirqs_off) {
+-		if (hlock->read) {
++		if (is_read(hlock->rw_state)) {
+ 			if (!mark_lock(curr, hlock,
+ 					LOCK_ENABLED_HARDIRQ_READ))
+ 				return 0;
+@@ -2531,7 +2531,7 @@ static int mark_irqflags(struct task_str
+ 	 * allocation).
+ 	 */
+ 	if (!hlock->trylock && (curr->lockdep_reclaim_gfp & __GFP_FS)) {
+-		if (hlock->read) {
++		if (is_read(hlock->rw_state)) {
+ 			if (!mark_lock(curr, hlock, LOCK_USED_IN_RECLAIM_FS_READ))
+ 					return 0;
+ 		} else {
+@@ -2712,9 +2712,9 @@ struct lock_class_key __lockdep_no_valid
+  * We maintain the dependency maps and validate the locking attempt:
+  */
+ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+-			  int trylock, int read, int check, int hardirqs_off,
+-			  struct lockdep_map *nest_lock, unsigned long ip,
+-			  int references)
++			  int trylock, int rw_state, int check,
++			  int hardirqs_off, struct lockdep_map *nest_lock,
++			  unsigned long ip, int references)
+ {
+ 	struct task_struct *curr = current;
+ 	struct lock_class *class = NULL;
+@@ -2786,7 +2786,7 @@ static int __lock_acquire(struct lockdep
+ 	hlock->instance = lock;
+ 	hlock->nest_lock = nest_lock;
+ 	hlock->trylock = trylock;
+-	hlock->read = read;
++	hlock->rw_state = rw_state;
+ 	hlock->check = check;
+ 	hlock->hardirqs_off = !!hardirqs_off;
+ 	hlock->references = references;
+@@ -2963,7 +2963,7 @@ found_it:
+ 		hlock = curr->held_locks + i;
+ 		if (!__lock_acquire(hlock->instance,
+ 			hlock_class(hlock)->subclass, hlock->trylock,
+-				hlock->read, hlock->check, hlock->hardirqs_off,
++				hlock->rw_state, hlock->check, hlock->hardirqs_off,
+ 				hlock->nest_lock, hlock->acquire_ip,
+ 				hlock->references))
+ 			return 0;
+@@ -3039,7 +3039,7 @@ found_it:
+ 		hlock = curr->held_locks + i;
+ 		if (!__lock_acquire(hlock->instance,
+ 			hlock_class(hlock)->subclass, hlock->trylock,
+-				hlock->read, hlock->check, hlock->hardirqs_off,
++				hlock->rw_state, hlock->check, hlock->hardirqs_off,
+ 				hlock->nest_lock, hlock->acquire_ip,
+ 				hlock->references))
+ 			return 0;
+@@ -3192,7 +3192,7 @@ EXPORT_SYMBOL_GPL(lock_set_class);
+  * and also avoid lockdep recursion:
+  */
+ void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+-			  int trylock, int read, int check,
++			  int trylock, int rw_state, int check,
+ 			  struct lockdep_map *nest_lock, unsigned long ip)
+ {
+ 	unsigned long flags;
+@@ -3204,8 +3204,8 @@ void lock_acquire(struct lockdep_map *lo
+ 	check_flags(flags);
+ 
+ 	current->lockdep_recursion = 1;
+-	trace_lock_acquire(lock, subclass, trylock, read, check, nest_lock, ip);
+-	__lock_acquire(lock, subclass, trylock, read, check,
++	trace_lock_acquire(lock, subclass, trylock, rw_state, check, nest_lock, ip);
++	__lock_acquire(lock, subclass, trylock, rw_state, check,
+ 		       irqs_disabled_flags(flags), nest_lock, ip, 0);
+ 	current->lockdep_recursion = 0;
+ 	raw_local_irq_restore(flags);
+@@ -3332,7 +3332,8 @@ found_it:
+ 	if (contending_point < LOCKSTAT_POINTS)
+ 		stats->contending_point[contending_point]++;
+ 	if (lock->cpu != smp_processor_id())
+-		stats->bounces[bounce_contended + !!hlock->read]++;
++		stats->bounces[bounce_contended +
++				!!is_read(hlock->rw_state)]++;
+ 	put_lock_stats(stats);
+ }
+ 
+@@ -3380,13 +3381,14 @@ found_it:
+ 
+ 	stats = get_lock_stats(hlock_class(hlock));
+ 	if (waittime) {
+-		if (hlock->read)
++		if (is_read(hlock->rw_state))
+ 			lock_time_inc(&stats->read_waittime, waittime);
+ 		else
+ 			lock_time_inc(&stats->write_waittime, waittime);
+ 	}
+ 	if (lock->cpu != cpu)
+-		stats->bounces[bounce_acquired + !!hlock->read]++;
++		stats->bounces[bounce_acquired +
++				!!is_read(hlock->rw_state)]++;
+ 	put_lock_stats(stats);
+ 
+ 	lock->cpu = cpu;
 
 
