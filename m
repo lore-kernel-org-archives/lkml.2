@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1DQAyR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 20:54:17 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:65279 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab1DQAyK (ORCPT
+	id S1755476Ab1DQAyv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 20:54:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14690 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab1DQAyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 20:54:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=JZQ4K0daRuh1zJUSMQAGmDim/+3q8nqENjl0PElLR87bD6iyCL15V5XFA7lks06hRT
-         48CdQX91IIElkqUdSVqQoJLajIM7xYJn+bbJmNLeikR78EaDM/9pXoN8j8Y6AAvC3rvc
-         7AQc8TzP0i71ci5SUVujkQPTyTIqrj5dgIAs8=
-Message-ID: <4DAA3A25.30501@gmail.com>
-Date: Sun, 17 Apr 2011 08:53:57 +0800
-From: Wanlong Gao <wanlong.gao@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org, trivial@kernel.org, lrg@slimlogic.co.uk
-Subject: [PATCH] drivers:regulator:change debug statement be consistent with
- the style of the rest.
-References: <1302968543-3150-1-git-send-email-wanlong.gao@gmail.com> <20110416175440.GD25811@opensource.wolfsonmicro.com>
-In-Reply-To: <20110416175440.GD25811@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Apr 2011 20:54:44 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:organization;
+	b=RyEsoAXz/UBZTJ9r3sUyzK/3Y1Owvc7YrWptk6zQZKbllpWZL2JbTZb/S0TELrO+l
+	lwDF1u5pG1owHGNt6sbyA==
+From: David Decotigny <decot@google.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        ilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Cc: David Decotigny <decot@google.com>
+Subject: [PATCH 1/5] ethtool: cosmetics: enforce const-ness in ethtool_cmd_speed
+Date: Sat, 16 Apr 2011 17:54:07 -0700
+Message-Id: <1303001651-4074-1-git-send-email-decot@google.com>
+X-Mailer: git-send-email 1.7.3.1
+Organization: Google, Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The 'ep' argument of ethtool_cmd_speed is not altered: advertise it in
+protoype. +Indentation fix. Also add comments to advise using the
+ethtool_cmd_speed API to get/set the link speed.
 
-
-change the "mc13783_regulator_probe" string in the function 
-"mc13783_regulator_probe"
-to "__func__" for the debug statement be consistent with the style of 
-the rest of
-the file.
-
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
+Signed-off-by: David Decotigny <decot@google.com>
 ---
-  drivers/regulator/mc13783-regulator.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/ethtool.h |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/regulator/mc13783-regulator.c 
-b/drivers/regulator/mc13783-regulator.c
-index 23249cb..b8a00c7 100644
---- a/drivers/regulator/mc13783-regulator.c
-+++ b/drivers/regulator/mc13783-regulator.c
-@@ -341,7 +341,7 @@ static int __devinit mc13783_regulator_probe(struct 
-platform_device *pdev)
-         struct mc13783_regulator_init_data *init_data;
-         int i, ret;
-
--       dev_dbg(&pdev->dev, "mc13783_regulator_probe id %d\n", pdev->id);
-+       dev_dbg(&pdev->dev, "%s id %d\n", __func__, pdev->id);
-
-         priv = kzalloc(sizeof(*priv) +
-                         pdata->num_regulators * 
-sizeof(priv->regulators[0]),
+diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
+index 9de3127..170439e 100644
+--- a/include/linux/ethtool.h
++++ b/include/linux/ethtool.h
+@@ -24,7 +24,10 @@ struct ethtool_cmd {
+ 	__u32	cmd;
+ 	__u32	supported;	/* Features this interface supports */
+ 	__u32	advertising;	/* Features this interface advertises */
+-	__u16	speed;		/* The forced speed, 10Mb, 100Mb, gigabit */
++	__u16	speed;	        /* The forced speed (lower bits): see
++				 * SPEED_ macros below. Please use
++				 * ethtool_cmd_speed()/_set() to
++				 * access it */
+ 	__u8	duplex;		/* Duplex, half or full */
+ 	__u8	port;		/* Which connector port */
+ 	__u8	phy_address;
+@@ -33,7 +36,10 @@ struct ethtool_cmd {
+ 	__u8	mdio_support;
+ 	__u32	maxtxpkt;	/* Tx pkts before generating tx int */
+ 	__u32	maxrxpkt;	/* Rx pkts before generating rx int */
+-	__u16	speed_hi;
++	__u16	speed_hi;       /* The forced speed (upper
++				 * bits). Please use
++				 * ethtool_cmd_speed()/_set() to
++				 * access it */
+ 	__u8	eth_tp_mdix;
+ 	__u8	reserved2;
+ 	__u32	lp_advertising;	/* Features the link partner advertises */
+@@ -41,14 +47,14 @@ struct ethtool_cmd {
+ };
+ 
+ static inline void ethtool_cmd_speed_set(struct ethtool_cmd *ep,
+-						__u32 speed)
++					 __u32 speed)
+ {
+ 
+ 	ep->speed = (__u16)speed;
+ 	ep->speed_hi = (__u16)(speed >> 16);
+ }
+ 
+-static inline __u32 ethtool_cmd_speed(struct ethtool_cmd *ep)
++static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep)
+ {
+ 	return (ep->speed_hi << 16) | ep->speed;
+ }
 -- 
-1.7.3
+1.7.3.1
+
