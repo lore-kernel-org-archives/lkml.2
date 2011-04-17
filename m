@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab1DQCCj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 22:02:39 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:34530 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab1DQCCd (ORCPT
+	id S1755197Ab1DQCDQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 22:03:16 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57977 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab1DQCDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 22:02:33 -0400
-Subject: Re: [PATCH 4/5] ethtool: Use the full 32 bit speed range in
- ethtool's set_settings
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Decotigny <decot@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        ilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <1303001651-4074-4-git-send-email-decot@google.com>
-References: <1303001651-4074-1-git-send-email-decot@google.com>
-	 <1303001651-4074-4-git-send-email-decot@google.com>
+	Sat, 16 Apr 2011 22:03:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=pHbBI0R5/bBoJOUdnARHw8KdO7qqNGAmXuB9i7bqkPSstjOsTy7fZjZHQCjKdecSuv
+         mzn/yC1hfGb4NFz943d0u3DKq7elImscHW3wavOPjBCl2ufwVY22xD10/duEBFmWJ//7
+         mqWonn8hbFr+J7O7GfLHANjT+Dt+fI5ayRXt0=
+Subject: [PATCH] RTC: rtc-omap: fix a leak of the IRQ during init failure
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "George G. Davis" <gdavis@mvista.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, Ingo Molnar <mingo@elte.hu>,
+        rtc-linux@googlegroups.com
 Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare
-Date: Sun, 17 Apr 2011 03:02:29 +0100
-Message-ID: <1303005749.5282.909.camel@localhost>
+Date: Sun, 17 Apr 2011 10:02:58 +0800
+Message-ID: <1303005778.2889.2.camel@phoenix>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Apr 2011 02:02:33.0131 (UTC) FILETIME=[83CCFFB0:01CBFCA3]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18076.005
-X-TM-AS-Result: No--18.609500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-04-16 at 17:54 -0700, David Decotigny wrote:
-> This makes sure the ethtool's set_settings() callback of network
-> drivers don't ignore the 16 most significant bits when ethtool calls
-> their set_settings().
-> 
-> All the driver compiled with make allyesconfig on x86_64 have been
-> updated.
+In omap_rtc_probe error path, free_irq() was using NULL rather than the
+driver data as the data pointer so free_irq() wouldn't have matched.
 
-You missed one generic function, mdio45_ethtool_gset_npage() in
-drivers/net/mdio.c.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/rtc/rtc-omap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-[...]
-> diff --git a/drivers/net/dl2k.c b/drivers/net/dl2k.c
-> index c05db60..ba6c151 100644
-> --- a/drivers/net/dl2k.c
-> +++ b/drivers/net/dl2k.c
-> @@ -1219,11 +1219,11 @@ static int rio_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
->  	} else {
->  		np->an_enable = 0;
->  		if (np->speed == 1000) {
-> -			cmd->speed = SPEED_100;
-> +			ethtool_cmd_speed_set(cmd, SPEED_100);
->  			cmd->duplex = DUPLEX_FULL;
->  			printk("Warning!! Can't disable Auto negotiation in 1000Mbps, change to Manual 100Mbps, Full duplex.\n");
->  		}
-> -		switch(cmd->speed + cmd->duplex) {
-> +		switch (ethtool_cmd_speed(cmd) + cmd->duplex) {
-[...]
-
-If you're going to stop these drivers ignoring speed_hi, maybe you
-should also stop them ignoring the difference between speed and duplex!
-Currently the user can ask for 99 Mbit/s full-duplex and get 100 Mbit/s
-half-duplex.
-
-There are several others that use this trick.
-
-Ben.
-
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index de0dd7b..bcae8dd 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -394,7 +394,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ fail2:
+-	free_irq(omap_rtc_timer, NULL);
++	free_irq(omap_rtc_timer, rtc);
+ fail1:
+ 	rtc_device_unregister(rtc);
+ fail0:
 -- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.1
+
+
 
