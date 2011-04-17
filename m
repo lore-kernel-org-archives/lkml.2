@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760531Ab1DQACb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 20:02:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:1975 "EHLO
+	id S1760538Ab1DQAEE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 20:04:04 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:18212 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760486Ab1DQAC0 (ORCPT
+	with ESMTP id S1755890Ab1DQAD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 20:02:26 -0400
+	Sat, 16 Apr 2011 20:03:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=n2SuDAw73MZ4Z5lTbInd3qywql8StJkKl9hLu+kQhleIba8FH0jNJG08mIvXJAInR7
-         TQ0GKrWAFaTNgadHQUUA==
-Date: Sat, 16 Apr 2011 17:02:21 -0700 (PDT)
+        b=ht5MuFSrARPNFIbjrb6G5WldEFR54wXhknkgDI2mYxnAlvYoUOhUS10DhtEVcih/YE
+         LPvY6b0MbOtG3NhlSluw==
+Date: Sat, 16 Apr 2011 17:03:53 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
+cc: Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] break out page allocation warning code
-In-Reply-To: <20110415170437.17E1AF36@kernel>
-Message-ID: <alpine.DEB.2.00.1104161653220.14788@chino.kir.corp.google.com>
-References: <20110415170437.17E1AF36@kernel>
+Subject: Re: [PATCH 2/2] print vmalloc() state after allocation failures
+In-Reply-To: <1302889441.16562.3525.camel@nimitz>
+Message-ID: <alpine.DEB.2.00.1104161702300.14788@chino.kir.corp.google.com>
+References: <20110415170437.17E1AF36@kernel> <20110415170438.D5C317D5@kernel>  <op.vtzo4ejf3l0zgt@mnazarewicz-glaptop> <1302889441.16562.3525.camel@nimitz>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -35,137 +34,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 15 Apr 2011, Dave Hansen wrote:
 
-> 
-> This originally started as a simple patch to give vmalloc()
-> some more verbose output on failure on top of the plain
-> page allocator messages.  Johannes suggested that it might
-> be nicer to lead with the vmalloc() info _before_ the page
-> allocator messages.
-> 
-> But, I do think there's a lot of value in what
-> __alloc_pages_slowpath() does with its filtering and so
-> forth.
-> 
-> This patch creates a new function which other allocators
-> can call instead of relying on the internal page allocator
-> warnings.  It also gives this function private rate-limiting
-> which separates it from other printk_ratelimit() users.
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> ---
-> 
->  linux-2.6.git-dave/include/linux/mm.h |    2 +
->  linux-2.6.git-dave/mm/page_alloc.c    |   63 ++++++++++++++++++++++------------
->  2 files changed, 44 insertions(+), 21 deletions(-)
-> 
-> diff -puN include/linux/mm.h~break-out-alloc-failure-messages include/linux/mm.h
-> --- linux-2.6.git/include/linux/mm.h~break-out-alloc-failure-messages	2011-04-15 08:44:06.911445625 -0700
-> +++ linux-2.6.git-dave/include/linux/mm.h	2011-04-15 08:45:10.087416551 -0700
-> @@ -1365,6 +1365,8 @@ extern void si_meminfo(struct sysinfo * 
->  extern void si_meminfo_node(struct sysinfo *val, int nid);
->  extern int after_bootmem;
+> diff -puN mm/vmalloc.c~vmalloc-warn mm/vmalloc.c
+> --- linux-2.6.git/mm/vmalloc.c~vmalloc-warn	2011-04-15 10:39:05.928793559 -0700
+> +++ linux-2.6.git-dave/mm/vmalloc.c	2011-04-15 10:39:18.716789177 -0700
+> @@ -1534,6 +1534,7 @@ static void *__vmalloc_node(unsigned lon
+>  static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+>  				 pgprot_t prot, int node, void *caller)
+>  {
+> +	const int order = 0;
+>  	struct page **pages;
+>  	unsigned int nr_pages, array_size, i;
+>  	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
+> @@ -1560,11 +1561,12 @@ static void *__vmalloc_area_node(struct 
 >  
-> +extern void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
-> +
->  extern void setup_per_cpu_pageset(void);
+>  	for (i = 0; i < area->nr_pages; i++) {
+>  		struct page *page;
+> +		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
 >  
->  extern void zone_pcp_update(struct zone *zone);
-> diff -puN mm/page_alloc.c~break-out-alloc-failure-messages mm/page_alloc.c
-> --- linux-2.6.git/mm/page_alloc.c~break-out-alloc-failure-messages	2011-04-15 08:44:06.915445623 -0700
-> +++ linux-2.6.git-dave/mm/page_alloc.c	2011-04-15 08:48:34.255321834 -0700
-> @@ -54,6 +54,7 @@
->  #include <trace/events/kmem.h>
->  #include <linux/ftrace_event.h>
->  #include <linux/memcontrol.h>
-> +#include <linux/ratelimit.h>
+>  		if (node < 0)
+> -			page = alloc_page(gfp_mask);
+> +			page = alloc_page(tmp_mask);
+>  		else
+> -			page = alloc_pages_node(node, gfp_mask, 0);
+> +			page = alloc_pages_node(node, tmp_mask, order);
 >  
->  #include <asm/tlbflush.h>
->  #include <asm/div64.h>
-> @@ -1734,6 +1735,46 @@ static inline bool should_suppress_show_
->  	return ret;
+>  		if (unlikely(!page)) {
+>  			/* Successfully allocated i pages, free them in __vunmap() */
+> @@ -1579,6 +1581,9 @@ static void *__vmalloc_area_node(struct 
+>  	return area->addr;
+>  
+>  fail:
+> +	warn_alloc_failed(gfp_mask, order, "vmalloc: allocation failure, "
+> +			  "allocated %ld of %ld bytes\n",
+> +			  (area->nr_pages*PAGE_SIZE), area->size);
+>  	vfree(area->addr);
+>  	return NULL;
 >  }
->  
-> +static DEFINE_RATELIMIT_STATE(nopage_rs,
-> +		DEFAULT_RATELIMIT_INTERVAL,
-> +		DEFAULT_RATELIMIT_BURST);
-> +
-> +void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
-> +{
-> +	va_list args;
-> +	unsigned int filter = SHOW_MEM_FILTER_NODES;
-> +	const gfp_t wait = gfp_mask & __GFP_WAIT;
-> +
 
-"wait" is unnecessary.  You didn't do "const gfp_t nowarn = gfp_mask & 
-__GFP_NOWARN;" for the same reason.
-
-> +	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs))
-> +		return;
-> +
-> +	/*
-> +	 * This documents exceptions given to allocations in certain
-> +	 * contexts that are allowed to allocate outside current's set
-> +	 * of allowed nodes.
-> +	 */
-> +	if (!(gfp_mask & __GFP_NOMEMALLOC))
-> +		if (test_thread_flag(TIF_MEMDIE) ||
-> +		    (current->flags & (PF_MEMALLOC | PF_EXITING)))
-> +			filter &= ~SHOW_MEM_FILTER_NODES;
-> +	if (in_interrupt() || !wait)
-> +		filter &= ~SHOW_MEM_FILTER_NODES;
-> +
-> +	if (fmt) {
-> +		printk(KERN_WARNING);
-> +		va_start(args, fmt);
-> +		vprintk(fmt, args);
-> +		va_end(args);
-> +	}
-> +
-> +	printk(KERN_WARNING "%s: page allocation failure: order:%d, mode:0x%x\n",
-> +			current->comm, order, gfp_mask);
-
-pr_warning()?
-
-current->comm should always be printed with get_task_comm() to avoid 
-racing with /proc/pid/comm.  Since this function can be called potentially 
-deep in the stack, you may need to serialize this with a 
-statically-allocated buffer.
-
-> +
-> +	dump_stack();
-> +	if (!should_suppress_show_mem())
-> +		show_mem(filter);
-> +}
-> +
->  static inline int
->  should_alloc_retry(gfp_t gfp_mask, unsigned int order,
->  				unsigned long pages_reclaimed)
-> @@ -2176,27 +2217,7 @@ rebalance:
->  	}
->  
->  nopage:
-> -	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
-> -		unsigned int filter = SHOW_MEM_FILTER_NODES;
-> -
-> -		/*
-> -		 * This documents exceptions given to allocations in certain
-> -		 * contexts that are allowed to allocate outside current's set
-> -		 * of allowed nodes.
-> -		 */
-> -		if (!(gfp_mask & __GFP_NOMEMALLOC))
-> -			if (test_thread_flag(TIF_MEMDIE) ||
-> -			    (current->flags & (PF_MEMALLOC | PF_EXITING)))
-> -				filter &= ~SHOW_MEM_FILTER_NODES;
-> -		if (in_interrupt() || !wait)
-> -			filter &= ~SHOW_MEM_FILTER_NODES;
-> -
-> -		pr_warning("%s: page allocation failure. order:%d, mode:0x%x\n",
-> -			current->comm, order, gfp_mask);
-> -		dump_stack();
-> -		if (!should_suppress_show_mem())
-> -			show_mem(filter);
-> -	}
-> +	warn_alloc_failed(gfp_mask, order, NULL);
->  	return page;
->  got_pg:
->  	if (kmemcheck_enabled)
+Sorry, I still don't understand why this isn't just a three-liner patch to 
+call warn_alloc_failed().  I don't see the benefit of the "order" or 
+"tmp_mask" variables at all, they'll just be removed next time someone 
+goes down the mm/* directory and looks for variables that are used only 
+once or are unchanged as a cleanup.
