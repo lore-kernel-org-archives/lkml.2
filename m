@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab1DQRU5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 13:20:57 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:55172 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751526Ab1DQRUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 13:20:50 -0400
-Date: Sun, 17 Apr 2011 19:20:48 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Nigel Cunningham <lkml@nigelcunningham.com.au>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
-        airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, mjg@redhat.com, maciej.rutecki@gmail.com,
-        nouveau@lists.freedesktop.org
-Subject: Re: 2.6.39-rc1 nouveau regression (bisected)
-Message-ID: <20110417172048.GA21796@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Nigel Cunningham <lkml@nigelcunningham.com.au>,
-	Marcin Slusarz <marcin.slusarz@gmail.com>,
-	Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	mjg@redhat.com, maciej.rutecki@gmail.com,
-	nouveau@lists.freedesktop.org
-References: <20110403181206.GA19291@comet.dominikbrodowski.net> <20110407151129.GA24977@comet.dominikbrodowski.net> <20110414170559.GA10768@comet.dominikbrodowski.net> <20110414190117.GA3493@joi.lan> <20110415061136.GA21979@isilmar-3.linta.de> <4DAA1453.5000604@nigelcunningham.com.au>
+	id S1752591Ab1DQRiq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 13:38:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58959 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab1DQRii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 13:38:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
+Date: Sun, 17 Apr 2011 19:38:12 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: George Kashperko <george@znau.edu.ua>, Hauke Mehrtens <hauke@hauke-m.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arend van Spriel <arend@broadcom.com>,
+        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
+        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com> <1302892585.30441.12.camel@dev.znau.edu.ua> <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+In-Reply-To: <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAA1453.5000604@nigelcunningham.com.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201104171938.12834.arnd@arndb.de>
+X-Provags-ID: V02:K0:XV8UxJcaeJYTytl3njh+vmfPQANC+llL+W2+tBTIAmq
+ aHX4ELdFTmHvTwZMqEUyKgkk4iIzlLy0tg5+BisyCMfozjiY16
+ RPhA1aBgiMZ0LzgQhjysK48VrWFJvqy0ZWWnXftgOyW9A3Duxc
+ Sxyg4fYd2Xuf7U+amYdv/sAsYoX17sECQ6eQHKZrgpdlvMwvkv
+ 7+BSXYyHyf5D0kUAP5oxw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-
-On Sun, Apr 17, 2011 at 08:12:35AM +1000, Nigel Cunningham wrote:
-> On 15/04/11 16:11, Dominik Brodowski wrote:
-> > On Thu, Apr 14, 2011 at 09:02:01PM +0200, Marcin Slusarz wrote:
-> >> On Thu, Apr 14, 2011 at 07:05:59PM +0200, Dominik Brodowski wrote:
-> >>> Thought about CCing Linus to show him that 2.6.39-rcX isn't as "calm"
-> >>> to everyone, but then chose to CC Maciej instead: Would you be so kind and
-> >>> add this to your regression list? Thanks!
-> >>>
-> >>> Since commit 38f1cff
-> >>>
-> >>>     From: Dave Airlie <airlied@redhat.com>
-> >>>     Date: Wed, 16 Mar 2011 11:34:41 +1000
-> >>>     Subject: [PATCH] Merge commit '5359533801e3dd3abca5b7d3d985b0b33fd9fe8b' into dr
-> >>>
-> >>>     This commit changed an internal radeon structure, that meant a new driver
-> >>>     in -next had to be fixed up, merge in the commit and fix up the driver.
-> >>>
-> >>>     Also fixes a trivial nouveau merge.
-> >>>
-> >>>     Conflicts:
-> >>>         drivers/gpu/drm/nouveau/nouveau_mem.c
-> >>>
-> >>> booting my atom/NM10/ION2 system crashes hard during boot, right after
-> >>> blanking the screen, and before the initramfs gets loaded. I just
-> >>> re-checked: both parent commits ( 5359533 and 4819d2e ) do indeed work
-> >>> just fine, but the merge commit ( 38f1cff ) fails, same as tip ( 85f2e68 ).
-> >> Can you activate netconsole and check whether kernel spits anything interesting?
-> >> You might try to load nouveau module after boot - maybe something will be saved
-> >> to /var/log or you could even ssh into the box and check dmesg...
-> > Compiling it as a module seems to work fine. When I do so, no regression is
-> > obvious from what gets reported in "dmesg". However, somehow I now do get
-> > some output: The last message I see is
+On Friday 15 April 2011, Rafał Miłecki wrote:
+> W dniu 15 kwietnia 2011 20:36 użytkownik George Kashperko
+> <george@znau.edu.ua> napisał:
+> >> >> Arnd: I found you saying:
+> >> >> > I believe the one thing we really want from this driver is the bus
+> >> >> > scan code, which is not present in the amba bus implementation,
+> >> >> I explained how it works, I believe scanning (EPROM in this case) it
+> >> >> Broadcom specific, not really AMBA standard. How do you see it?
+> >>
+> >> Maybe EPROM is not Broadcom specific, but I suspect the content we
+> >> deal with in bcmai/axi is Broadcom specific. I didn't see any notes of
+> >> manuf/id/rev/class we deal with. So I guess everything we (out
+> >> driver) read from EPROM is Bcm specific.
+> >>
 > >
-> > [drm] nouveau 0000:01:00.0: allocated 1680x1050, fb 0x40.... b0 <some pointer value>
+> > Played around amba registers on bcm4716. For all amba cores present
+> > (under all I mean broadcom ip core agents, oob router core, erom core,
+> > and other I-dont-know-what-for cores present at 0x18100000). All those
+> > feature AMBA_CID (0xb105f00d) as PrimeCell ID, and slightly different
+> > PrimeCell PeripheralIDs:
+> > * vendor 0xBB, part_number 0x368 for broadcom cores' agents;
+> > * vendor 0xBB, part_number 0x367 for OOB router core (don't ask me wth
+> > is this please);
+> > * vendor 0xBB, part_number 0x366 for EROM core;
 > >
-> > Then, nothing more. However, it really is quite strange why this error only
-> > appears in the CONFIG_NOUVEAU=y case, not in the =m case...
-> Try disabling CONFIG_BOOT_LOGO. I reported on freedesktop.org that it is
-> causing me an oops at boot, but my bug has been ignored there so far -
-> perhaps I should have posted it here instead.
+> > ARM vendor id is 0x41. Might 0xBB is Broadcom vendor id but I've found
+> > no evidence for that with google.
+> 
+> Yeah, as I suspected, everything except Broadcom specific cores
+> matches AMBA standards quite nicely. Still, I don't see anything in it
+> we could use for driver.
+> 
+> Let's wait for Russell and Arnd to comment.
 
-indeed, setting CONFIG_LOGO=n makes it boot. Same as compiling nouveau as a
-module. With all the different bisect results and reverts which make it
-work, it seems to me to be a timing / interference issue...
+In general, the bus_type directly relates to how a device gets probed.
+If broadcom uses the same basic register layout as regular AMBA devices,
+it should use the amba bus type.
 
-Best,
-	Dominik
+Compare this to the PCI bus type, which essentially deals with devices
+that have a PCI configuration space that contains generic (irq, memory,
+vendor/device ID, ...) registers along with device specific registers.
+
+I think it would be fine to extend the AMBA bus slightly if there are
+just minor differences.
+
+A new bus_type really only makes sense if you expect a lot of devices
+to use this and you want to have the probing in the bus. If you only
+want to have a way to enumerate devices that get created by the
+parent driver, you can also use platform devices.
+
+	Arnd
