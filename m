@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab1DQS10 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 14:27:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40827 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab1DQS1U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 14:27:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=YIWbszhYnkAoPj5CQhkCH+qkBi6vr82XYQt8iWQ4Xd4YgJHKK6/84zGsBkf2MAlnzS
-         kKVoxsp0twWfORs68jME4JoB6Jx99Ucwolk6AlWwNzJwTOXYJ7/QDMOeQVWK3lwg+Mnl
-         oJbMiy+9XlmvcNZSLVL1RQRG70df5oTLMOXQY=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Tino Keitel <tino.keitel@tikei.de>
-Subject: Re: /proc/acpi/wakeup regression in 2.6.39-rc3
-Date: Sun, 17 Apr 2011 20:27:15 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc3; KDE/4.4.5; i686; ; )
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-References: <20110414222525.GA24365@mac.home>
-In-Reply-To: <20110414222525.GA24365@mac.home>
+	id S1753481Ab1DQSaN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 14:30:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753178Ab1DQSaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 14:30:08 -0400
+Date: Sun, 17 Apr 2011 14:29:59 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: tglx@linutronix.de
+Subject: WARN_ON report from clockevents_program_event
+Message-ID: <20110417182958.GA1821@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201104172027.16022.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=33472
-for your bug report, please add your address to the CC list in there, thanks!
+I just hit this warning on a box under heavy load.
 
-On piątek, 15 kwietnia 2011 o 00:25:25 Tino Keitel wrote:
-> Hi,
-> 
-> with 2.6.38, I enabled wakeup from suspend to RAM with the USB keyboard
-> this way:
-> 
-> echo USB2 > /proc/acpi/wakeup
-> 
-> This does not work anymore with 2.6.39-rc3. Wakeup using the keyboard
-> won't work, and the USB2 line in /proc/acpi/wakeup doesn't change to
-> "enabled" after the echo command.
-> 
-> Is this intended? If yes, what is the new way to enable keyboard
-> wakeup?
-> 
-> Regards,
-> Tino
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+WARNING: at kernel/time/clockevents.c:110 clockevents_program_event+0x37/0x90()
+Hardware name: GA-MA78GM-S2H
+Modules linked in: microcode fuse btrfs zlib_deflate tun uinput rfcomm pn_pep can_raw cmtp kernelcapi sctp libcrc32c hidp can pppoe pppox ppp_generic slhc appletalk rds rose ax25 decnet irda crc_ccitt af_key phonet bluetooth rfkill af_802154 ipx p8022 psnap llc p8023 atm nfsd lockd nfs_acl auth_rpcgss sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ppdev snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd soundcore edac_core pcspkr snd_page_alloc edac_mce_amd k10temp sp5100_tco i2c_piix4 r8169 mii parport_pc parport wmi lm63 ipv6 pata_acpi firewire_ohci ata_generic firewire_core crc_itu_t pata_atiixp floppy radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+Pid: 16066, comm: trinity Not tainted 2.6.39-rc3+ #3
+Call Trace:
+ <IRQ>  [<ffffffff810569ac>] warn_slowpath_common+0x83/0x9b
+ [<ffffffff810569de>] warn_slowpath_null+0x1a/0x1c
+ [<ffffffff81080380>] clockevents_program_event+0x37/0x90
+ [<ffffffff8108144d>] tick_dev_program_event+0x3c/0xfb
+ [<ffffffff8108152b>] tick_program_event+0x1f/0x21
+ [<ffffffff81076c41>] hrtimer_interrupt+0x127/0x1c2
+ [<ffffffff814c410e>] smp_apic_timer_interrupt+0x79/0x8c
+ [<ffffffff814c2f93>] apic_timer_interrupt+0x13/0x20
+ <EOI>  [<ffffffff814c257a>] ? sysret_check+0x2e/0x69
+---[ end trace 76ca0db688fca8df ]---
+hrtimer: interrupt took 47180328 ns
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+which is ..
+
+109         if (unlikely(expires.tv64 < 0)) {
+110                 WARN_ON_ONCE(1);
+111                 return -ETIME;
+112         }
+
+
+	Dave
