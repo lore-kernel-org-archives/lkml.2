@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab1DQTDp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 15:03:45 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:37130 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753499Ab1DQTDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 15:03:39 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=BPNMtpCoLxg2i77ecwf44grSZ3kll9OIOfdegfW9zgL2EBX+5UWw5A3IULnlpP/RojXmQtRdzEiOfvZfatXmK0Jd63IbV6WHdYxZ73WOO0CQd0ntcWyn0mjJhI1y5OKS;
-Date: Sun, 17 Apr 2011 12:03:36 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5 v2]Typo: Remove one to many ccc's in some comments.
-Message-Id: <20110417120336.49f71508.rdunlap@xenotime.net>
-In-Reply-To: <1303063749-8282-3-git-send-email-justinmattock@gmail.com>
-References: <1303063749-8282-1-git-send-email-justinmattock@gmail.com>
-	<1303063749-8282-3-git-send-email-justinmattock@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754402Ab1DQTIc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 15:08:32 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:40981 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754201Ab1DQTI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 15:08:27 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Wu Zhangjin <wuzhangjin@gmail.com>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] MIPS: Squash pci_fixup_irqs() compiler warning
+Date: Sun, 17 Apr 2011 12:01:08 -0700
+Message-Id: <cb01d61712b1374a8c62bc765094ea7e@localhost>
+User-Agent: vim 7.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Apr 2011 11:09:07 -0700 Justin P. Mattock wrote:
+MIPS Linux is unique in that it uses a "const struct pci_dev *" argument
+to discourage bad coding practices in pcibios_map_irq().  Add a cast so
+that this warning goes away:
 
-> The below patch is a resend due to rebasing to the current Mainline, fixing
-> some comments due to having one to many ccc's in the definitions.
->  
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  arch/m68k/include/asm/MC68EZ328.h |    2 +-
->  arch/m68k/include/asm/MC68VZ328.h |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/m68k/include/asm/MC68EZ328.h b/arch/m68k/include/asm/MC68EZ328.h
-> index 69b7f91..b2ee25d 100644
-> --- a/arch/m68k/include/asm/MC68EZ328.h
-> +++ b/arch/m68k/include/asm/MC68EZ328.h
-> @@ -1047,7 +1047,7 @@ typedef volatile struct {
->  
->  #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
->  #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
-> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
-> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
+arch/mips/pci/pci.c: In function 'pcibios_init':
+arch/mips/pci/pci.c:165:45: warning: passing argument 2 of 'pci_fixup_irqs' from incompatible pointer type
+include/linux/pci.h:856:6: note: expected 'int (*)(struct pci_dev *, u8,  u8)' but argument is of type 'struct pci_dev *'
 
-                                                              occurred
-(above and below)
-
->  #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
->  #define WATCHDOG_CNT_SHIFT 8
->  
-> diff --git a/arch/m68k/include/asm/MC68VZ328.h b/arch/m68k/include/asm/MC68VZ328.h
-> index 2b9bf62..62cd79a 100644
-> --- a/arch/m68k/include/asm/MC68VZ328.h
-> +++ b/arch/m68k/include/asm/MC68VZ328.h
-> @@ -1143,7 +1143,7 @@ typedef struct {
->  
->  #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
->  #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
-> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
-> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
->  #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
->  #define WATCHDOG_CNT_SHIFT 8
-
-
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+Reference:
+
+http://www.mail-archive.com/gnewsense-dev@nongnu.org/msg00706.html
+
+It's been two years since the original discussion, and the warning is
+still there.  It is now the only warning left in my kernel build.
+
+I was hoping we could get this resolved for good (one way or another).
+
+ arch/mips/pci/pci.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 33bba7b..9a35cd6 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -157,7 +157,8 @@ static int __init pcibios_init(void)
+ 	for (hose = hose_head; hose; hose = hose->next)
+ 		pcibios_scanbus(hose);
+ 
+-	pci_fixup_irqs(pci_common_swizzle, pcibios_map_irq);
++	pci_fixup_irqs(pci_common_swizzle,
++		       (int (*)(struct pci_dev *, u8, u8))pcibios_map_irq);
+ 
+ 	pci_initialized = 1;
+ 
+-- 
+1.7.4.3
+
