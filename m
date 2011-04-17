@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab1DQVRj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 17:17:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57833 "EHLO ogre.sisk.pl"
+	id S1753992Ab1DQVRz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 17:17:55 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57798 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab1DQVQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 17:16:56 -0400
+	id S1753827Ab1DQVQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 17:16:54 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/14] PM / MIPS: Use struct syscore_ops instead of sysdevs for PM
-Date: Sun, 17 Apr 2011 23:12:34 +0200
+Subject: [PATCH 14/14] PM: Remove sysdev suspend, resume and shutdown operations
+Date: Sun, 17 Apr 2011 23:15:08 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
@@ -29,470 +29,581 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104172312.35060.rjw@sisk.pl>
+Message-Id: <201104172315.08769.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Convert some MIPS architecture's code to using struct syscore_ops
-objects for power management instead of sysdev classes and sysdevs.
-
-This simplifies the code and reduces the kernel's memory footprint.
-It also is necessary for removing sysdevs from the kernel entirely in
-the future.
+Since suspend, resume and shutdown operations in struct sysdev_class
+and struct sysdev_driver are not used any more, remove them.  Also
+drop sysdev_suspend(), sysdev_resume() and sysdev_shutdown() used
+for executing those operations and modify all of their users
+accordingly.  This reduces kernel code size quite a bit and reduces
+its complexity.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/mips/alchemy/common/dbdma.c |   92 +++++++++++----------------------------
- arch/mips/alchemy/common/irq.c   |   62 +++++++++-----------------
- arch/mips/jz4740/gpio.c          |   52 +++++++++-------------
- arch/mips/kernel/i8259.c         |   26 +++--------
- 4 files changed, 80 insertions(+), 152 deletions(-)
+ arch/sh/Kconfig          |    1 
+ arch/x86/Kconfig         |    1 
+ arch/x86/kernel/apm_32.c |    4 
+ drivers/base/Kconfig     |    7 -
+ drivers/base/base.h      |    2 
+ drivers/base/sys.c       |  202 -----------------------------------------------
+ drivers/xen/manage.c     |    8 -
+ include/linux/device.h   |    7 -
+ include/linux/pm.h       |    8 -
+ include/linux/sysdev.h   |   11 --
+ kernel/kexec.c           |    9 --
+ kernel/power/hibernate.c |   18 ----
+ kernel/power/suspend.c   |    8 -
+ kernel/sys.c             |    3 
+ 14 files changed, 7 insertions(+), 282 deletions(-)
 
-Index: linux-2.6/arch/mips/alchemy/common/irq.c
+Index: linux-2.6/drivers/base/sys.c
 ===================================================================
---- linux-2.6.orig/arch/mips/alchemy/common/irq.c
-+++ linux-2.6/arch/mips/alchemy/common/irq.c
-@@ -30,7 +30,7 @@
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/slab.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- 
- #include <asm/irq_cpu.h>
- #include <asm/mipsregs.h>
-@@ -556,17 +556,15 @@ void __init arch_init_irq(void)
- 	}
+--- linux-2.6.orig/drivers/base/sys.c
++++ linux-2.6/drivers/base/sys.c
+@@ -328,203 +328,8 @@ void sysdev_unregister(struct sys_device
+ 	kobject_put(&sysdev->kobj);
  }
  
--struct alchemy_ic_sysdev {
--	struct sys_device sysdev;
-+struct alchemy_ic {
- 	void __iomem *base;
- 	unsigned long pmdata[7];
- };
- 
--static int alchemy_ic_suspend(struct sys_device *dev, pm_message_t state)
+-
+-#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+-/**
+- *	sysdev_shutdown - Shut down all system devices.
+- *
+- *	Loop over each class of system devices, and the devices in each
+- *	of those classes. For each device, we call the shutdown method for
+- *	each driver registered for the device - the auxiliaries,
+- *	and the class driver.
+- *
+- *	Note: The list is iterated in reverse order, so that we shut down
+- *	child devices before we shut down their parents. The list ordering
+- *	is guaranteed by virtue of the fact that child devices are registered
+- *	after their parents.
+- */
+-void sysdev_shutdown(void)
 -{
--	struct alchemy_ic_sysdev *icdev =
--			container_of(dev, struct alchemy_ic_sysdev, sysdev);
-+static struct alchemy_ic alchemy_ic_data[2];
- 
-+static void alchemy_suspend_one_ic(struct alchemy_ic *icdev)
-+{
- 	icdev->pmdata[0] = __raw_readl(icdev->base + IC_CFG0RD);
- 	icdev->pmdata[1] = __raw_readl(icdev->base + IC_CFG1RD);
- 	icdev->pmdata[2] = __raw_readl(icdev->base + IC_CFG2RD);
-@@ -574,15 +572,17 @@ static int alchemy_ic_suspend(struct sys
- 	icdev->pmdata[4] = __raw_readl(icdev->base + IC_ASSIGNRD);
- 	icdev->pmdata[5] = __raw_readl(icdev->base + IC_WAKERD);
- 	icdev->pmdata[6] = __raw_readl(icdev->base + IC_MASKRD);
-+}
- 
-+static int alchemy_ic_suspend(void)
-+{
-+	alchemy_suspend_one_ic(alchemy_ic_data);
-+	alchemy_suspend_one_ic(alchemy_ic_data + 1);
- 	return 0;
- }
- 
--static int alchemy_ic_resume(struct sys_device *dev)
-+static void alchemy_resume_one_ic(struct alchemy_ic *icdev)
- {
--	struct alchemy_ic_sysdev *icdev =
--			container_of(dev, struct alchemy_ic_sysdev, sysdev);
+-	struct sysdev_class *cls;
 -
- 	__raw_writel(0xffffffff, icdev->base + IC_MASKCLR);
- 	__raw_writel(0xffffffff, icdev->base + IC_CFG0CLR);
- 	__raw_writel(0xffffffff, icdev->base + IC_CFG1CLR);
-@@ -604,42 +604,26 @@ static int alchemy_ic_resume(struct sys_
- 
- 	__raw_writel(icdev->pmdata[6], icdev->base + IC_MASKSET);
- 	wmb();
-+}
- 
--	return 0;
-+static void alchemy_ic_resume(void)
-+{
-+	alchemy_resume_one_ic(alchemy_ic_data + 1);
-+	alchemy_resume_one_ic(alchemy_ic_data);
- }
- 
--static struct sysdev_class alchemy_ic_sysdev_class = {
--	.name		= "ic",
-+static struct syscore_ops alchemy_ic_syscore_ops = {
- 	.suspend	= alchemy_ic_suspend,
- 	.resume		= alchemy_ic_resume,
- };
- 
--static int __init alchemy_ic_sysdev_init(void)
-+static int __init alchemy_ic_syscore_init(void)
- {
--	struct alchemy_ic_sysdev *icdev;
--	unsigned long icbase[2] = { IC0_PHYS_ADDR, IC1_PHYS_ADDR };
--	int err, i;
+-	pr_debug("Shutting Down System Devices\n");
 -
--	err = sysdev_class_register(&alchemy_ic_sysdev_class);
--	if (err)
--		return err;
+-	mutex_lock(&sysdev_drivers_lock);
+-	list_for_each_entry_reverse(cls, &system_kset->list, kset.kobj.entry) {
+-		struct sys_device *sysdev;
 -
--	for (i = 0; i < 2; i++) {
--		icdev = kzalloc(sizeof(struct alchemy_ic_sysdev), GFP_KERNEL);
--		if (!icdev)
--			return -ENOMEM;
+-		pr_debug("Shutting down type '%s':\n",
+-			 kobject_name(&cls->kset.kobj));
 -
--		icdev->base = ioremap(icbase[i], 0x1000);
+-		list_for_each_entry(sysdev, &cls->kset.list, kobj.entry) {
+-			struct sysdev_driver *drv;
+-			pr_debug(" %s\n", kobject_name(&sysdev->kobj));
 -
--		icdev->sysdev.id = i;
--		icdev->sysdev.cls = &alchemy_ic_sysdev_class;
--		err = sysdev_register(&icdev->sysdev);
--		if (err) {
--			kfree(icdev);
--			return err;
+-			/* Call auxiliary drivers first */
+-			list_for_each_entry(drv, &cls->drivers, entry) {
+-				if (drv->shutdown)
+-					drv->shutdown(sysdev);
+-			}
+-
+-			/* Now call the generic one */
+-			if (cls->shutdown)
+-				cls->shutdown(sysdev);
 -		}
 -	}
-+	alchemy_ic_data[0].base = ioremap(icbase[IC0_PHYS_ADDR], 0x1000);
-+	alchemy_ic_data[1].base = ioremap(icbase[IC1_PHYS_ADDR], 0x1000);
-+
-+	register_syscore_ops(&alchemy_ic_syscore_ops);
- 
- 	return 0;
- }
--device_initcall(alchemy_ic_sysdev_init);
-+device_initcall(alchemy_ic_syscore_init);
-Index: linux-2.6/arch/mips/alchemy/common/dbdma.c
-===================================================================
---- linux-2.6.orig/arch/mips/alchemy/common/dbdma.c
-+++ linux-2.6/arch/mips/alchemy/common/dbdma.c
-@@ -36,7 +36,7 @@
- #include <linux/spinlock.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <asm/mach-au1x00/au1000.h>
- #include <asm/mach-au1x00/au1xxx_dbdma.h>
- 
-@@ -957,37 +957,30 @@ u32 au1xxx_dbdma_put_dscr(u32 chanid, au
- 	return nbytes;
- }
- 
-+static u32 alchemy_dbdma_pm_regs[NUM_DBDMA_CHANS + 1][6];
- 
--struct alchemy_dbdma_sysdev {
--	struct sys_device sysdev;
--	u32 pm_regs[NUM_DBDMA_CHANS + 1][6];
--};
--
--static int alchemy_dbdma_suspend(struct sys_device *dev,
--				 pm_message_t state)
-+static int alchemy_dbdma_suspend(void)
- {
--	struct alchemy_dbdma_sysdev *sdev =
--		container_of(dev, struct alchemy_dbdma_sysdev, sysdev);
- 	int i;
- 	u32 addr;
- 
- 	addr = DDMA_GLOBAL_BASE;
--	sdev->pm_regs[0][0] = au_readl(addr + 0x00);
--	sdev->pm_regs[0][1] = au_readl(addr + 0x04);
--	sdev->pm_regs[0][2] = au_readl(addr + 0x08);
--	sdev->pm_regs[0][3] = au_readl(addr + 0x0c);
-+	alchemy_dbdma_pm_regs[0][0] = au_readl(addr + 0x00);
-+	alchemy_dbdma_pm_regs[0][1] = au_readl(addr + 0x04);
-+	alchemy_dbdma_pm_regs[0][2] = au_readl(addr + 0x08);
-+	alchemy_dbdma_pm_regs[0][3] = au_readl(addr + 0x0c);
- 
- 	/* save channel configurations */
- 	for (i = 1, addr = DDMA_CHANNEL_BASE; i <= NUM_DBDMA_CHANS; i++) {
--		sdev->pm_regs[i][0] = au_readl(addr + 0x00);
--		sdev->pm_regs[i][1] = au_readl(addr + 0x04);
--		sdev->pm_regs[i][2] = au_readl(addr + 0x08);
--		sdev->pm_regs[i][3] = au_readl(addr + 0x0c);
--		sdev->pm_regs[i][4] = au_readl(addr + 0x10);
--		sdev->pm_regs[i][5] = au_readl(addr + 0x14);
-+		alchemy_dbdma_pm_regs[i][0] = au_readl(addr + 0x00);
-+		alchemy_dbdma_pm_regs[i][1] = au_readl(addr + 0x04);
-+		alchemy_dbdma_pm_regs[i][2] = au_readl(addr + 0x08);
-+		alchemy_dbdma_pm_regs[i][3] = au_readl(addr + 0x0c);
-+		alchemy_dbdma_pm_regs[i][4] = au_readl(addr + 0x10);
-+		alchemy_dbdma_pm_regs[i][5] = au_readl(addr + 0x14);
- 
- 		/* halt channel */
--		au_writel(sdev->pm_regs[i][0] & ~1, addr + 0x00);
-+		au_writel(alchemy_dbdma_pm_regs[i][0] & ~1, addr + 0x00);
- 		au_sync();
- 		while (!(au_readl(addr + 0x14) & 1))
- 			au_sync();
-@@ -1001,62 +994,35 @@ static int alchemy_dbdma_suspend(struct
- 	return 0;
- }
- 
--static int alchemy_dbdma_resume(struct sys_device *dev)
-+static void alchemy_dbdma_resume(void)
- {
--	struct alchemy_dbdma_sysdev *sdev =
--		container_of(dev, struct alchemy_dbdma_sysdev, sysdev);
- 	int i;
- 	u32 addr;
- 
- 	addr = DDMA_GLOBAL_BASE;
--	au_writel(sdev->pm_regs[0][0], addr + 0x00);
--	au_writel(sdev->pm_regs[0][1], addr + 0x04);
--	au_writel(sdev->pm_regs[0][2], addr + 0x08);
--	au_writel(sdev->pm_regs[0][3], addr + 0x0c);
-+	au_writel(alchemy_dbdma_pm_regs[0][0], addr + 0x00);
-+	au_writel(alchemy_dbdma_pm_regs[0][1], addr + 0x04);
-+	au_writel(alchemy_dbdma_pm_regs[0][2], addr + 0x08);
-+	au_writel(alchemy_dbdma_pm_regs[0][3], addr + 0x0c);
- 
- 	/* restore channel configurations */
- 	for (i = 1, addr = DDMA_CHANNEL_BASE; i <= NUM_DBDMA_CHANS; i++) {
--		au_writel(sdev->pm_regs[i][0], addr + 0x00);
--		au_writel(sdev->pm_regs[i][1], addr + 0x04);
--		au_writel(sdev->pm_regs[i][2], addr + 0x08);
--		au_writel(sdev->pm_regs[i][3], addr + 0x0c);
--		au_writel(sdev->pm_regs[i][4], addr + 0x10);
--		au_writel(sdev->pm_regs[i][5], addr + 0x14);
-+		au_writel(alchemy_dbdma_pm_regs[i][0], addr + 0x00);
-+		au_writel(alchemy_dbdma_pm_regs[i][1], addr + 0x04);
-+		au_writel(alchemy_dbdma_pm_regs[i][2], addr + 0x08);
-+		au_writel(alchemy_dbdma_pm_regs[i][3], addr + 0x0c);
-+		au_writel(alchemy_dbdma_pm_regs[i][4], addr + 0x10);
-+		au_writel(alchemy_dbdma_pm_regs[i][5], addr + 0x14);
- 		au_sync();
- 		addr += 0x100;	/* next channel base */
- 	}
--
--	return 0;
- }
- 
--static struct sysdev_class alchemy_dbdma_sysdev_class = {
--	.name		= "dbdma",
-+static struct syscore_ops alchemy_dbdma_syscore_ops = {
- 	.suspend	= alchemy_dbdma_suspend,
- 	.resume		= alchemy_dbdma_resume,
- };
- 
--static int __init alchemy_dbdma_sysdev_init(void)
--{
--	struct alchemy_dbdma_sysdev *sdev;
--	int ret;
--
--	ret = sysdev_class_register(&alchemy_dbdma_sysdev_class);
--	if (ret)
--		return ret;
--
--	sdev = kzalloc(sizeof(struct alchemy_dbdma_sysdev), GFP_KERNEL);
--	if (!sdev)
--		return -ENOMEM;
--
--	sdev->sysdev.id = -1;
--	sdev->sysdev.cls = &alchemy_dbdma_sysdev_class;
--	ret = sysdev_register(&sdev->sysdev);
--	if (ret)
--		kfree(sdev);
--
--	return ret;
+-	mutex_unlock(&sysdev_drivers_lock);
 -}
 -
- static int __init au1xxx_dbdma_init(void)
- {
- 	int irq_nr, ret;
-@@ -1084,11 +1050,7 @@ static int __init au1xxx_dbdma_init(void
- 	else {
- 		dbdma_initialized = 1;
- 		printk(KERN_INFO "Alchemy DBDMA initialized\n");
--		ret = alchemy_dbdma_sysdev_init();
--		if (ret) {
--			printk(KERN_ERR "DBDMA PM init failed\n");
--			ret = 0;
--		}
-+		register_syscore_ops(&alchemy_dbdma_syscore_ops);
- 	}
- 
- 	return ret;
-Index: linux-2.6/arch/mips/jz4740/gpio.c
-===================================================================
---- linux-2.6.orig/arch/mips/jz4740/gpio.c
-+++ linux-2.6/arch/mips/jz4740/gpio.c
-@@ -18,7 +18,7 @@
- #include <linux/init.h>
- 
- #include <linux/spinlock.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
-@@ -86,7 +86,6 @@ struct jz_gpio_chip {
- 	spinlock_t lock;
- 
- 	struct gpio_chip gpio_chip;
--	struct sys_device sysdev;
- };
- 
- static struct jz_gpio_chip jz4740_gpio_chips[];
-@@ -459,49 +458,47 @@ static struct jz_gpio_chip jz4740_gpio_c
- 	JZ4740_GPIO_CHIP(D),
- };
- 
--static inline struct jz_gpio_chip *sysdev_to_chip(struct sys_device *dev)
-+static void jz4740_gpio_suspend_chip(struct jz_gpio_chip *chip)
- {
--	return container_of(dev, struct jz_gpio_chip, sysdev);
-+	chip->suspend_mask = readl(chip->base + JZ_REG_GPIO_MASK);
-+	writel(~(chip->wakeup), chip->base + JZ_REG_GPIO_MASK_SET);
-+	writel(chip->wakeup, chip->base + JZ_REG_GPIO_MASK_CLEAR);
- }
- 
--static int jz4740_gpio_suspend(struct sys_device *dev, pm_message_t state)
-+static int jz4740_gpio_suspend(void)
- {
--	struct jz_gpio_chip *chip = sysdev_to_chip(dev);
-+	int i;
- 
--	chip->suspend_mask = readl(chip->base + JZ_REG_GPIO_MASK);
--	writel(~(chip->wakeup), chip->base + JZ_REG_GPIO_MASK_SET);
--	writel(chip->wakeup, chip->base + JZ_REG_GPIO_MASK_CLEAR);
-+	for (i = 0; i < ARRAY_SIZE(jz4740_gpio_chips); i++)
-+		jz4740_gpio_suspend_chip(&jz4740_gpio_chips[i]);
- 
- 	return 0;
- }
- 
--static int jz4740_gpio_resume(struct sys_device *dev)
-+static void jz4740_gpio_resume_chip(struct jz_gpio_chip *chip)
- {
--	struct jz_gpio_chip *chip = sysdev_to_chip(dev);
- 	uint32_t mask = chip->suspend_mask;
- 
- 	writel(~mask, chip->base + JZ_REG_GPIO_MASK_CLEAR);
- 	writel(mask, chip->base + JZ_REG_GPIO_MASK_SET);
-+}
- 
--	return 0;
-+static void jz4740_gpio_resume(void)
-+{
-+	int i;
-+
-+	for (i = ARRAY_SIZE(jz4740_gpio_chips) - 1; i >= 0 ; i--)
-+		jz4740_gpio_resume_chip(&jz4740_gpio_chips[i]);
- }
- 
--static struct sysdev_class jz4740_gpio_sysdev_class = {
--	.name = "gpio",
-+static struct syscore_ops jz4740_gpio_syscore_ops = {
- 	.suspend = jz4740_gpio_suspend,
- 	.resume = jz4740_gpio_resume,
- };
- 
--static int jz4740_gpio_chip_init(struct jz_gpio_chip *chip, unsigned int id)
-+static void jz4740_gpio_chip_init(struct jz_gpio_chip *chip, unsigned int id)
- {
--	int ret, irq;
+-static void __sysdev_resume(struct sys_device *dev)
+-{
+-	struct sysdev_class *cls = dev->cls;
+-	struct sysdev_driver *drv;
 -
--	chip->sysdev.id = id;
--	chip->sysdev.cls = &jz4740_gpio_sysdev_class;
--	ret = sysdev_register(&chip->sysdev);
+-	/* First, call the class-specific one */
+-	if (cls->resume)
+-		cls->resume(dev);
+-	WARN_ONCE(!irqs_disabled(),
+-		"Interrupts enabled after %pF\n", cls->resume);
 -
--	if (ret)
--		return ret;
-+	int irq;
- 
- 	spin_lock_init(&chip->lock);
- 
-@@ -519,22 +516,17 @@ static int jz4740_gpio_chip_init(struct
- 		irq_set_chip_and_handler(irq, &jz_gpio_irq_chip,
- 					 handle_level_irq);
- 	}
+-	/* Call auxiliary drivers next. */
+-	list_for_each_entry(drv, &cls->drivers, entry) {
+-		if (drv->resume)
+-			drv->resume(dev);
+-		WARN_ONCE(!irqs_disabled(),
+-			"Interrupts enabled after %pF\n", drv->resume);
+-	}
+-}
 -
--	return 0;
- }
- 
- static int __init jz4740_gpio_init(void)
- {
- 	unsigned int i;
+-/**
+- *	sysdev_suspend - Suspend all system devices.
+- *	@state:		Power state to enter.
+- *
+- *	We perform an almost identical operation as sysdev_shutdown()
+- *	above, though calling ->suspend() instead. Interrupts are disabled
+- *	when this called. Devices are responsible for both saving state and
+- *	quiescing or powering down the device.
+- *
+- *	This is only called by the device PM core, so we let them handle
+- *	all synchronization.
+- */
+-int sysdev_suspend(pm_message_t state)
+-{
+-	struct sysdev_class *cls;
+-	struct sys_device *sysdev, *err_dev;
+-	struct sysdev_driver *drv, *err_drv;
 -	int ret;
 -
--	ret = sysdev_class_register(&jz4740_gpio_sysdev_class);
+-	pr_debug("Checking wake-up interrupts\n");
+-
+-	/* Return error code if there are any wake-up interrupts pending */
+-	ret = check_wakeup_irqs();
 -	if (ret)
 -		return ret;
+-
+-	WARN_ONCE(!irqs_disabled(),
+-		"Interrupts enabled while suspending system devices\n");
+-
+-	pr_debug("Suspending System Devices\n");
+-
+-	list_for_each_entry_reverse(cls, &system_kset->list, kset.kobj.entry) {
+-		pr_debug("Suspending type '%s':\n",
+-			 kobject_name(&cls->kset.kobj));
+-
+-		list_for_each_entry(sysdev, &cls->kset.list, kobj.entry) {
+-			pr_debug(" %s\n", kobject_name(&sysdev->kobj));
+-
+-			/* Call auxiliary drivers first */
+-			list_for_each_entry(drv, &cls->drivers, entry) {
+-				if (drv->suspend) {
+-					ret = drv->suspend(sysdev, state);
+-					if (ret)
+-						goto aux_driver;
+-				}
+-				WARN_ONCE(!irqs_disabled(),
+-					"Interrupts enabled after %pF\n",
+-					drv->suspend);
+-			}
+-
+-			/* Now call the generic one */
+-			if (cls->suspend) {
+-				ret = cls->suspend(sysdev, state);
+-				if (ret)
+-					goto cls_driver;
+-				WARN_ONCE(!irqs_disabled(),
+-					"Interrupts enabled after %pF\n",
+-					cls->suspend);
+-			}
+-		}
+-	}
+-	return 0;
+-	/* resume current sysdev */
+-cls_driver:
+-	drv = NULL;
+-	printk(KERN_ERR "Class suspend failed for %s: %d\n",
+-		kobject_name(&sysdev->kobj), ret);
+-
+-aux_driver:
+-	if (drv)
+-		printk(KERN_ERR "Class driver suspend failed for %s: %d\n",
+-				kobject_name(&sysdev->kobj), ret);
+-	list_for_each_entry(err_drv, &cls->drivers, entry) {
+-		if (err_drv == drv)
+-			break;
+-		if (err_drv->resume)
+-			err_drv->resume(sysdev);
+-	}
+-
+-	/* resume other sysdevs in current class */
+-	list_for_each_entry(err_dev, &cls->kset.list, kobj.entry) {
+-		if (err_dev == sysdev)
+-			break;
+-		pr_debug(" %s\n", kobject_name(&err_dev->kobj));
+-		__sysdev_resume(err_dev);
+-	}
+-
+-	/* resume other classes */
+-	list_for_each_entry_continue(cls, &system_kset->list, kset.kobj.entry) {
+-		list_for_each_entry(err_dev, &cls->kset.list, kobj.entry) {
+-			pr_debug(" %s\n", kobject_name(&err_dev->kobj));
+-			__sysdev_resume(err_dev);
+-		}
+-	}
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(sysdev_suspend);
+-
+-/**
+- *	sysdev_resume - Bring system devices back to life.
+- *
+- *	Similar to sysdev_suspend(), but we iterate the list forwards
+- *	to guarantee that parent devices are resumed before their children.
+- *
+- *	Note: Interrupts are disabled when called.
+- */
+-int sysdev_resume(void)
+-{
+-	struct sysdev_class *cls;
+-
+-	WARN_ONCE(!irqs_disabled(),
+-		"Interrupts enabled while resuming system devices\n");
+-
+-	pr_debug("Resuming System Devices\n");
+-
+-	list_for_each_entry(cls, &system_kset->list, kset.kobj.entry) {
+-		struct sys_device *sysdev;
+-
+-		pr_debug("Resuming type '%s':\n",
+-			 kobject_name(&cls->kset.kobj));
+-
+-		list_for_each_entry(sysdev, &cls->kset.list, kobj.entry) {
+-			pr_debug(" %s\n", kobject_name(&sysdev->kobj));
+-
+-			__sysdev_resume(sysdev);
+-		}
+-	}
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(sysdev_resume);
+-#endif /* CONFIG_ARCH_NO_SYSDEV_OPS */
++EXPORT_SYMBOL_GPL(sysdev_register);
++EXPORT_SYMBOL_GPL(sysdev_unregister);
  
- 	for (i = 0; i < ARRAY_SIZE(jz4740_gpio_chips); ++i)
- 		jz4740_gpio_chip_init(&jz4740_gpio_chips[i], i);
+ int __init system_bus_init(void)
+ {
+@@ -534,9 +339,6 @@ int __init system_bus_init(void)
+ 	return 0;
+ }
  
-+	register_syscore_ops(&jz4740_gpio_syscore_ops);
-+
- 	printk(KERN_INFO "JZ4740 GPIO initialized\n");
+-EXPORT_SYMBOL_GPL(sysdev_register);
+-EXPORT_SYMBOL_GPL(sysdev_unregister);
+-
+ #define to_ext_attr(x) container_of(x, struct sysdev_ext_attribute, attr)
+ 
+ ssize_t sysdev_store_ulong(struct sys_device *sysdev,
+Index: linux-2.6/kernel/power/suspend.c
+===================================================================
+--- linux-2.6.orig/kernel/power/suspend.c
++++ linux-2.6/kernel/power/suspend.c
+@@ -163,19 +163,13 @@ static int suspend_enter(suspend_state_t
+ 	arch_suspend_disable_irqs();
+ 	BUG_ON(!irqs_disabled());
+ 
+-	error = sysdev_suspend(PMSG_SUSPEND);
+-	if (!error) {
+-		error = syscore_suspend();
+-		if (error)
+-			sysdev_resume();
+-	}
++	error = syscore_suspend();
+ 	if (!error) {
+ 		if (!(suspend_test(TEST_CORE) || pm_wakeup_pending())) {
+ 			error = suspend_ops->enter(state);
+ 			events_check_enabled = false;
+ 		}
+ 		syscore_resume();
+-		sysdev_resume();
+ 	}
+ 
+ 	arch_suspend_enable_irqs();
+Index: linux-2.6/kernel/power/hibernate.c
+===================================================================
+--- linux-2.6.orig/kernel/power/hibernate.c
++++ linux-2.6/kernel/power/hibernate.c
+@@ -272,12 +272,7 @@ static int create_image(int platform_mod
+ 
+ 	local_irq_disable();
+ 
+-	error = sysdev_suspend(PMSG_FREEZE);
+-	if (!error) {
+-		error = syscore_suspend();
+-		if (error)
+-			sysdev_resume();
+-	}
++	error = syscore_suspend();
+ 	if (error) {
+ 		printk(KERN_ERR "PM: Some system devices failed to power down, "
+ 			"aborting hibernation\n");
+@@ -302,7 +297,6 @@ static int create_image(int platform_mod
+ 
+  Power_up:
+ 	syscore_resume();
+-	sysdev_resume();
+ 	/* NOTE:  dpm_resume_noirq() is just a resume() for devices
+ 	 * that suspended with irqs off ... no overall powerup.
+ 	 */
+@@ -409,12 +403,7 @@ static int resume_target_kernel(bool pla
+ 
+ 	local_irq_disable();
+ 
+-	error = sysdev_suspend(PMSG_QUIESCE);
+-	if (!error) {
+-		error = syscore_suspend();
+-		if (error)
+-			sysdev_resume();
+-	}
++	error = syscore_suspend();
+ 	if (error)
+ 		goto Enable_irqs;
+ 
+@@ -442,7 +431,6 @@ static int resume_target_kernel(bool pla
+ 	touch_softlockup_watchdog();
+ 
+ 	syscore_resume();
+-	sysdev_resume();
+ 
+  Enable_irqs:
+ 	local_irq_enable();
+@@ -528,7 +516,6 @@ int hibernation_platform_enter(void)
+ 		goto Platform_finish;
+ 
+ 	local_irq_disable();
+-	sysdev_suspend(PMSG_HIBERNATE);
+ 	syscore_suspend();
+ 	if (pm_wakeup_pending()) {
+ 		error = -EAGAIN;
+@@ -541,7 +528,6 @@ int hibernation_platform_enter(void)
+ 
+  Power_up:
+ 	syscore_resume();
+-	sysdev_resume();
+ 	local_irq_enable();
+ 	enable_nonboot_cpus();
+ 
+Index: linux-2.6/kernel/kexec.c
+===================================================================
+--- linux-2.6.orig/kernel/kexec.c
++++ linux-2.6/kernel/kexec.c
+@@ -1531,13 +1531,7 @@ int kernel_kexec(void)
+ 		if (error)
+ 			goto Enable_cpus;
+ 		local_irq_disable();
+-		/* Suspend system devices */
+-		error = sysdev_suspend(PMSG_FREEZE);
+-		if (!error) {
+-			error = syscore_suspend();
+-			if (error)
+-				sysdev_resume();
+-		}
++		error = syscore_suspend();
+ 		if (error)
+ 			goto Enable_irqs;
+ 	} else
+@@ -1553,7 +1547,6 @@ int kernel_kexec(void)
+ #ifdef CONFIG_KEXEC_JUMP
+ 	if (kexec_image->preserve_context) {
+ 		syscore_resume();
+-		sysdev_resume();
+  Enable_irqs:
+ 		local_irq_enable();
+  Enable_cpus:
+Index: linux-2.6/drivers/xen/manage.c
+===================================================================
+--- linux-2.6.orig/drivers/xen/manage.c
++++ linux-2.6/drivers/xen/manage.c
+@@ -70,12 +70,7 @@ static int xen_suspend(void *data)
+ 
+ 	BUG_ON(!irqs_disabled());
+ 
+-	err = sysdev_suspend(PMSG_FREEZE);
+-	if (!err) {
+-		err = syscore_suspend();
+-		if (err)
+-			sysdev_resume();
+-	}
++	err = syscore_suspend();
+ 	if (err) {
+ 		printk(KERN_ERR "xen_suspend: system core suspend failed: %d\n",
+ 			err);
+@@ -102,7 +97,6 @@ static int xen_suspend(void *data)
+ 	}
+ 
+ 	syscore_resume();
+-	sysdev_resume();
  
  	return 0;
-Index: linux-2.6/arch/mips/kernel/i8259.c
+ }
+Index: linux-2.6/kernel/sys.c
 ===================================================================
---- linux-2.6.orig/arch/mips/kernel/i8259.c
-+++ linux-2.6/arch/mips/kernel/i8259.c
-@@ -14,7 +14,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/spinlock.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/irq.h>
- 
- #include <asm/i8259.h>
-@@ -215,14 +215,13 @@ spurious_8259A_irq:
- 	}
+--- linux-2.6.orig/kernel/sys.c
++++ linux-2.6/kernel/sys.c
+@@ -315,7 +315,6 @@ void kernel_restart_prepare(char *cmd)
+ 	blocking_notifier_call_chain(&reboot_notifier_list, SYS_RESTART, cmd);
+ 	system_state = SYSTEM_RESTART;
+ 	device_shutdown();
+-	sysdev_shutdown();
+ 	syscore_shutdown();
  }
  
--static int i8259A_resume(struct sys_device *dev)
-+static void i8259A_resume(void)
+@@ -354,7 +353,6 @@ static void kernel_shutdown_prepare(enum
+ void kernel_halt(void)
  {
- 	if (i8259A_auto_eoi >= 0)
- 		init_8259A(i8259A_auto_eoi);
--	return 0;
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+-	sysdev_shutdown();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+@@ -374,7 +372,6 @@ void kernel_power_off(void)
+ 	if (pm_power_off_prepare)
+ 		pm_power_off_prepare();
+ 	disable_nonboot_cpus();
+-	sysdev_shutdown();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "Power down.\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
+Index: linux-2.6/drivers/base/base.h
+===================================================================
+--- linux-2.6.orig/drivers/base/base.h
++++ linux-2.6/drivers/base/base.h
+@@ -111,8 +111,6 @@ static inline int driver_match_device(st
+ 	return drv->bus->match ? drv->bus->match(dev, drv) : 1;
  }
  
--static int i8259A_shutdown(struct sys_device *dev)
-+static void i8259A_shutdown(void)
- {
- 	/* Put the i8259A into a quiescent state that
- 	 * the kernel initialization code can get it
-@@ -232,29 +231,20 @@ static int i8259A_shutdown(struct sys_de
- 		outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
- 		outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-1 */
- 	}
--	return 0;
- }
+-extern void sysdev_shutdown(void);
+-
+ extern char *make_class_name(const char *name, struct kobject *kobj);
  
--static struct sysdev_class i8259_sysdev_class = {
--	.name = "i8259",
-+static struct syscore_ops i8259_syscore_ops = {
- 	.resume = i8259A_resume,
- 	.shutdown = i8259A_shutdown,
+ extern int devres_release_all(struct device *dev);
+Index: linux-2.6/include/linux/device.h
+===================================================================
+--- linux-2.6.orig/include/linux/device.h
++++ linux-2.6/include/linux/device.h
+@@ -633,13 +633,6 @@ static inline int devtmpfs_mount(const c
+ /* drivers/base/power/shutdown.c */
+ extern void device_shutdown(void);
+ 
+-#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+-/* drivers/base/sys.c */
+-extern void sysdev_shutdown(void);
+-#else
+-static inline void sysdev_shutdown(void) { }
+-#endif
+-
+ /* debugging and troubleshooting/diagnostic helpers. */
+ extern const char *dev_driver_string(const struct device *dev);
+ 
+Index: linux-2.6/include/linux/pm.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm.h
++++ linux-2.6/include/linux/pm.h
+@@ -530,14 +530,6 @@ struct dev_power_domain {
+  */
+ 
+ #ifdef CONFIG_PM_SLEEP
+-#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+-extern int sysdev_suspend(pm_message_t state);
+-extern int sysdev_resume(void);
+-#else
+-static inline int sysdev_suspend(pm_message_t state) { return 0; }
+-static inline int sysdev_resume(void) { return 0; }
+-#endif
+-
+ extern void device_pm_lock(void);
+ extern void dpm_resume_noirq(pm_message_t state);
+ extern void dpm_resume_end(pm_message_t state);
+Index: linux-2.6/arch/x86/kernel/apm_32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apm_32.c
++++ linux-2.6/arch/x86/kernel/apm_32.c
+@@ -1238,7 +1238,6 @@ static int suspend(int vetoable)
+ 	dpm_suspend_noirq(PMSG_SUSPEND);
+ 
+ 	local_irq_disable();
+-	sysdev_suspend(PMSG_SUSPEND);
+ 	syscore_suspend();
+ 
+ 	local_irq_enable();
+@@ -1258,7 +1257,6 @@ static int suspend(int vetoable)
+ 	err = (err == APM_SUCCESS) ? 0 : -EIO;
+ 
+ 	syscore_resume();
+-	sysdev_resume();
+ 	local_irq_enable();
+ 
+ 	dpm_resume_noirq(PMSG_RESUME);
+@@ -1282,7 +1280,6 @@ static void standby(void)
+ 	dpm_suspend_noirq(PMSG_SUSPEND);
+ 
+ 	local_irq_disable();
+-	sysdev_suspend(PMSG_SUSPEND);
+ 	syscore_suspend();
+ 	local_irq_enable();
+ 
+@@ -1292,7 +1289,6 @@ static void standby(void)
+ 
+ 	local_irq_disable();
+ 	syscore_resume();
+-	sysdev_resume();
+ 	local_irq_enable();
+ 
+ 	dpm_resume_noirq(PMSG_RESUME);
+Index: linux-2.6/arch/x86/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/x86/Kconfig
++++ linux-2.6/arch/x86/Kconfig
+@@ -71,7 +71,6 @@ config X86
+ 	select GENERIC_IRQ_SHOW
+ 	select IRQ_FORCED_THREADING
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+-	select ARCH_NO_SYSDEV_OPS
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+Index: linux-2.6/arch/sh/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/sh/Kconfig
++++ linux-2.6/arch/sh/Kconfig
+@@ -24,7 +24,6 @@ config SUPERH
+ 	select RTC_LIB
+ 	select GENERIC_ATOMIC64
+ 	select GENERIC_IRQ_SHOW
+-	select ARCH_NO_SYSDEV_OPS
+ 	help
+ 	  The SuperH is a RISC processor targeted for use in embedded systems
+ 	  and consumer electronics; it was also used in the Sega Dreamcast
+Index: linux-2.6/drivers/base/Kconfig
+===================================================================
+--- linux-2.6.orig/drivers/base/Kconfig
++++ linux-2.6/drivers/base/Kconfig
+@@ -168,11 +168,4 @@ config SYS_HYPERVISOR
+ 	bool
+ 	default n
+ 
+-config ARCH_NO_SYSDEV_OPS
+-	bool
+-	---help---
+-	  To be selected by architectures that don't use sysdev class or
+-	  sysdev driver power management (suspend/resume) and shutdown
+-	  operations.
+-
+ endmenu
+Index: linux-2.6/include/linux/sysdev.h
+===================================================================
+--- linux-2.6.orig/include/linux/sysdev.h
++++ linux-2.6/include/linux/sysdev.h
+@@ -34,12 +34,6 @@ struct sysdev_class {
+ 	struct list_head	drivers;
+ 	struct sysdev_class_attribute **attrs;
+ 	struct kset		kset;
+-#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+-	/* Default operations for these types of devices */
+-	int	(*shutdown)(struct sys_device *);
+-	int	(*suspend)(struct sys_device *, pm_message_t state);
+-	int	(*resume)(struct sys_device *);
+-#endif
  };
  
--static struct sys_device device_i8259A = {
--	.id	= 0,
--	.cls	= &i8259_sysdev_class,
--};
--
--static int __init i8259A_init_sysfs(void)
-+static int __init i8259A_init_syscore(void)
- {
--	int error = sysdev_class_register(&i8259_sysdev_class);
--	if (!error)
--		error = sysdev_register(&device_i8259A);
--	return error;
-+	register_syscore_ops(&i8259_syscore_ops);
-+	return 0;
- }
+ struct sysdev_class_attribute {
+@@ -77,11 +71,6 @@ struct sysdev_driver {
+ 	struct list_head	entry;
+ 	int	(*add)(struct sys_device *);
+ 	int	(*remove)(struct sys_device *);
+-#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+-	int	(*shutdown)(struct sys_device *);
+-	int	(*suspend)(struct sys_device *, pm_message_t state);
+-	int	(*resume)(struct sys_device *);
+-#endif
+ };
  
--device_initcall(i8259A_init_sysfs);
-+device_initcall(i8259A_init_syscore);
  
- static void init_8259A(int auto_eoi)
- {
 
