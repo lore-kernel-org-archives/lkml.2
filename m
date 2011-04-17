@@ -1,143 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab1DQRRZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 13:17:25 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34376 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425Ab1DQRRU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 13:17:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=Ysy58ASkBUsioboWCYc5IwwmCARM13/lu5sLQZRvNGG6JOBE1qFXaL+hqbbMgOXSIK
-         k+2+V36YDHPIiLl1In+g0KWB4jvtjVOdvAvUDMdBCfGiMFOm5ZCT8YNsIrhkdphG5VPc
-         GIXU5/0QVgMomufLLCz0G0VCTFw4O2Qa1e6UM=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Steve French <smfrench@gmail.com>
-Subject: Re: oops in radeon_ddc_get_modes on first boot of rc3
-Date: Sun, 17 Apr 2011 19:17:16 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc3; KDE/4.4.5; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <BANLkTikTVuV9eH4GiLDs0DewGJXo_3daeg@mail.gmail.com>
-In-Reply-To: <BANLkTikTVuV9eH4GiLDs0DewGJXo_3daeg@mail.gmail.com>
+	id S1752295Ab1DQRU5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 13:20:57 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:55172 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751526Ab1DQRUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 13:20:50 -0400
+Date: Sun, 17 Apr 2011 19:20:48 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Nigel Cunningham <lkml@nigelcunningham.com.au>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
+        airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, mjg@redhat.com, maciej.rutecki@gmail.com,
+        nouveau@lists.freedesktop.org
+Subject: Re: 2.6.39-rc1 nouveau regression (bisected)
+Message-ID: <20110417172048.GA21796@isilmar-3.linta.de>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Nigel Cunningham <lkml@nigelcunningham.com.au>,
+	Marcin Slusarz <marcin.slusarz@gmail.com>,
+	Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	mjg@redhat.com, maciej.rutecki@gmail.com,
+	nouveau@lists.freedesktop.org
+References: <20110403181206.GA19291@comet.dominikbrodowski.net> <20110407151129.GA24977@comet.dominikbrodowski.net> <20110414170559.GA10768@comet.dominikbrodowski.net> <20110414190117.GA3493@joi.lan> <20110415061136.GA21979@isilmar-3.linta.de> <4DAA1453.5000604@nigelcunningham.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104171917.16345.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DAA1453.5000604@nigelcunningham.com.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=33422
-for your bug report, please add your address to the CC list in there, thanks!
+Hey,
 
-On wtorek, 12 kwietnia 2011 o 19:54:06 Steve French wrote:
-> FYI - Radeon Oops occurred on my first boot of the 2.6.39-rc3 kernel
-> (the system booted fine with 2.6.38-rcs) a few minutes ago.  x also
-> would not start.  On the next reboot I did not get the oops.
-> 
-> [   23.831830] BUG: unable to handle kernel NULL pointer dereference
-> at 000000000000008e
-> [   23.831867] IP: [<ffffffffa0158ff6>]
-> drm_mode_connector_update_edid_property+0x76/0x1c0 [drm]
-> [   23.831918] PGD 156de7067 PUD 156de6067 PMD 0
-> [   23.831949] Oops: 0000 [#1] SMP
-> [   23.831972] last sysfs file:
-> /sys/devices/virtual/wmi/98479A64-33F5-4E33-A707-8E251EBBC3A1/uevent
-> [   23.832005] CPU 0
-> [   23.832016] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat
-> nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT
-> xt_tcpudp iptable_filter ip_tables x_tables bridge stp
-> snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep
-> snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss
-> snd_seq_midi snd_rawmidi arc4 snd_seq_midi_event radeon(+) fbcon
-> tileblit font bitblit snd_seq softcursor joydev snd_timer i915 iwlagn
-> ttm mac80211 snd_seq_device pcmcia drm_kms_helper snd lp drm uvcvideo
-> cfg80211 sdhci_pci soundcore psmouse serio_raw parport videodev
-> v4l2_compat_ioctl32 intel_agp snd_page_alloc yenta_socket tpm_tis tpm
-> sdhci tpm_bios intel_gtt video ahci libahci e1000e [last unloaded:
-> kvm]
-> [   23.832494]
-> [   23.832505] Pid: 473, comm: modprobe Not tainted 2.6.39-rc3-custom+
-> #122 LENOVO 4061BL2/4061BL2
-> [   23.832550] RIP: 0010:[<ffffffffa0158ff6>]  [<ffffffffa0158ff6>]
-> drm_mode_connector_update_edid_property+0x76/0x1c0 [drm]
-> [   23.832600] RSP: 0018:ffff880156a49978  EFLAGS: 00010202
-> [   23.832623] RAX: 0000000000000010 RBX: ffff880156ac2000 RCX:
-> 0000000000000000 [   23.832650] RDX: 0000000000000000 RSI:
-> 0000000000000010 RDI: ffff880156ac2000 [   23.832677] RBP:
-> ffff880156a499b8 R08: 0000000000000100 R09: 0000000000000001 [  
-> 23.832704] R10: 0000000000000632 R11: 0000000000000000 R12:
-> 0000000000000000 [   23.832730] R13: 0000000000000010 R14:
-> ffff880156a5c000 R15: ffff880156a5c000 [   23.832758] FS: 
-> 00007f223b7ec700(0000) GS:ffff88015bc00000(0000) knlGS:0000000000000000
-> [   23.832792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   23.832814] CR2: 000000000000008e CR3: 00000001577c9000 CR4:
-> 00000000000406f0 [   23.832841] DR0: 0000000000000000 DR1:
-> 0000000000000000 DR2: 0000000000000000 [   23.832867] DR3:
-> 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400 [  
-> 23.832895] Process modprobe (pid: 473, threadinfo
-> ffff880156a48000, task ffff8801574f4410)
-> [   23.832925] Stack:
-> [   23.832936]  ffff880157aa8000 0000000000000000 ffffffffa044bb00
-> ffff880156ac2000
-> [   23.832979]  ffff880157aa8000 0000000000000000 ffffffffa044bb00
-> ffff880156a5c000
-> [   23.833022]  ffff880156a499d8 ffffffffa03b47f7 ffff880156ac2000
-> ffff880156ac2000
-> [   23.833065] Call Trace:
-> [   23.833103]  [<ffffffffa03b47f7>] +0x57/0x120 [radeon]
-> [   23.833147]  [<ffffffffa03addda>] radeon_lvds_get_modes+0x2a/0x280
-> [radeon] [   23.833178]  [<ffffffffa0202bbc>]
-> drm_helper_probe_single_connector_modes+0xdc/0x380 [drm_kms_helper]
-> [   23.833215]  [<ffffffff812d34f2>] ? fb_get_options+0x22/0x110
-> [   23.833240]  [<ffffffffa020159b>]
-> drm_fb_helper_initial_config+0x2ab/0x780 [drm_kms_helper]
-> [   23.833274]  [<ffffffff81135874>] ? __kmalloc+0x134/0x1d0
-> [   23.833297]  [<ffffffffa0200639>] ? drm_fb_helper_init+0x119/0x210
-> [drm_kms_helper]
-> [   23.833327]  [<ffffffff81135654>] ? kmem_cache_alloc_trace+0xc4/0x110
-> [   23.833368]  [<ffffffffa03bb677>] radeon_fbdev_init+0xb7/0x100 [radeon]
-> [   23.833410]  [<ffffffffa03b5198>] radeon_modeset_init+0x558/0x910
-> [radeon] [   23.833456]  [<ffffffffa042125a>] ? radeon_acpi_init+0x8a/0xc0
-> [radeon] [   23.833496]  [<ffffffffa038df38>]
-> radeon_driver_load_kms+0xf8/0x170 [radeon] [   23.833532] 
-> [<ffffffffa0151610>] drm_get_pci_dev+0x190/0x2b0 [drm] [   23.833558] 
-> [<ffffffff81135654>] ? kmem_cache_alloc_trace+0xc4/0x110 [   23.833598] 
-> [<ffffffffa0421362>] radeon_pci_probe+0xb4/0x30e [radeon] [   23.833628] 
-> [<ffffffff812bad5f>] local_pci_probe+0x5f/0xd0
-> [   23.833652]  [<ffffffff812bbf08>] pci_device_probe+0x88/0xb0
-> [   23.833679]  [<ffffffff81360aca>] ? driver_sysfs_add+0x7a/0xb0
-> [   23.833705]  [<ffffffff81360c26>] driver_probe_device+0x96/0x1c0
-> [   23.833732]  [<ffffffff81360deb>] __driver_attach+0x9b/0xa0
-> [   23.833755]  [<ffffffff81360d50>] ? driver_probe_device+0x1c0/0x1c0
-> [   23.833780]  [<ffffffff81360048>] bus_for_each_dev+0x68/0x90
-> [   23.833805]  [<ffffffff81360a4e>] driver_attach+0x1e/0x20
-> [   23.833827]  [<ffffffff8136032d>] bus_add_driver+0xcd/0x270
-> [   23.833851]  [<ffffffff81361480>] driver_register+0x80/0x150
-> [   23.833878]  [<ffffffff812bc196>] __pci_register_driver+0x56/0xd0
-> [   23.833903]  [<ffffffff81569725>] ? printk+0x41/0x44
-> [   23.833932]  [<ffffffffa015184a>] drm_pci_init+0x11a/0x130 [drm]
-> [   23.833960]  [<ffffffffa01a4000>] ? 0xffffffffa01a3fff
-> [   23.833995]  [<ffffffffa01a40e7>] radeon_init+0xe7/0xe9 [radeon]
-> [   23.834024]  [<ffffffff81002043>] do_one_initcall+0x43/0x190
-> [   23.834051]  [<ffffffff81098e7b>] sys_init_module+0xbb/0x200
-> [   23.835843]  [<ffffffff81574542>] system_call_fastpath+0x16/0x1b
-> [   23.837627] Code: 89 e7 48 89 42 08 48 89 10 48 b8 00 01 10 00 00
-> 00 ad de 49 89 44 24 08 4d 89 7c 24 10 e8 13 d3 fd e0 4d 85 ed 0f 84
-> f2 00 00 00
-> [   23.837826]  0f b6 4d 7e 4c 8b 3b be d0 80 00 00 83 c1 01 c1 e1 07 48 63
-> [   23.840004] RIP  [<ffffffffa0158ff6>]
-> drm_mode_connector_update_edid_property+0x76/0x1c0 [drm]
-> [   23.840004]  RSP <ffff880156a49978>
-> [   23.840004] CR2: 000000000000008e
-> [   23.847502] ---[ end trace 34ab89fdff52c124 ]---
+On Sun, Apr 17, 2011 at 08:12:35AM +1000, Nigel Cunningham wrote:
+> On 15/04/11 16:11, Dominik Brodowski wrote:
+> > On Thu, Apr 14, 2011 at 09:02:01PM +0200, Marcin Slusarz wrote:
+> >> On Thu, Apr 14, 2011 at 07:05:59PM +0200, Dominik Brodowski wrote:
+> >>> Thought about CCing Linus to show him that 2.6.39-rcX isn't as "calm"
+> >>> to everyone, but then chose to CC Maciej instead: Would you be so kind and
+> >>> add this to your regression list? Thanks!
+> >>>
+> >>> Since commit 38f1cff
+> >>>
+> >>>     From: Dave Airlie <airlied@redhat.com>
+> >>>     Date: Wed, 16 Mar 2011 11:34:41 +1000
+> >>>     Subject: [PATCH] Merge commit '5359533801e3dd3abca5b7d3d985b0b33fd9fe8b' into dr
+> >>>
+> >>>     This commit changed an internal radeon structure, that meant a new driver
+> >>>     in -next had to be fixed up, merge in the commit and fix up the driver.
+> >>>
+> >>>     Also fixes a trivial nouveau merge.
+> >>>
+> >>>     Conflicts:
+> >>>         drivers/gpu/drm/nouveau/nouveau_mem.c
+> >>>
+> >>> booting my atom/NM10/ION2 system crashes hard during boot, right after
+> >>> blanking the screen, and before the initramfs gets loaded. I just
+> >>> re-checked: both parent commits ( 5359533 and 4819d2e ) do indeed work
+> >>> just fine, but the merge commit ( 38f1cff ) fails, same as tip ( 85f2e68 ).
+> >> Can you activate netconsole and check whether kernel spits anything interesting?
+> >> You might try to load nouveau module after boot - maybe something will be saved
+> >> to /var/log or you could even ssh into the box and check dmesg...
+> > Compiling it as a module seems to work fine. When I do so, no regression is
+> > obvious from what gets reported in "dmesg". However, somehow I now do get
+> > some output: The last message I see is
+> >
+> > [drm] nouveau 0000:01:00.0: allocated 1680x1050, fb 0x40.... b0 <some pointer value>
+> >
+> > Then, nothing more. However, it really is quite strange why this error only
+> > appears in the CONFIG_NOUVEAU=y case, not in the =m case...
+> Try disabling CONFIG_BOOT_LOGO. I reported on freedesktop.org that it is
+> causing me an oops at boot, but my bug has been ignored there so far -
+> perhaps I should have posted it here instead.
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+indeed, setting CONFIG_LOGO=n makes it boot. Same as compiling nouveau as a
+module. With all the different bisect results and reverts which make it
+work, it seems to me to be a timing / interference issue...
+
+Best,
+	Dominik
