@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab1DQURR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 16:17:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57491 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987Ab1DQURK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 16:17:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alexander Beregalov <a.beregalov@gmail.com>
-Subject: Re: [Bug #29852] 2.6.38-rc5: nfsd: page allocation failure. spinlock trylock failure on UP
-Date: Sun, 17 Apr 2011 22:17:29 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <sam8u5dLkaB.A.afE.53uqNB@chimera> <IqJL5EkbqD.A.lyF.a5uqNB@chimera> <BANLkTimGFqP7q845+zYnyjcO0PvoBGX_qg@mail.gmail.com>
-In-Reply-To: <BANLkTimGFqP7q845+zYnyjcO0PvoBGX_qg@mail.gmail.com>
+	id S1752765Ab1DQUfU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 16:35:20 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:49099 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab1DQUfP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 16:35:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=t8KhOqrtM1/emrBm7FwOEN7D6Mwt3OKb2yJUxbzQRvNH3wWOtIEBs1GGr0WDGVIFct
+         b/Uj/ncZwR7UEDi0OfwoFrveq0eSOJ/zEg1YSYD4i9zODlu69eIBKhEjsgx5ld21MsmG
+         rx5n3xtyPTQKt5WXMWgxm49f8QTwZljANuxOU=
+Message-ID: <4DAB4EFA.40606@gmail.com>
+Date: Sun, 17 Apr 2011 13:35:06 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5 v2]Typo: Remove one to many ccc's in some comments.
+References: <1303063749-8282-1-git-send-email-justinmattock@gmail.com>	<1303063749-8282-3-git-send-email-justinmattock@gmail.com> <20110417120336.49f71508.rdunlap@xenotime.net>
+In-Reply-To: <20110417120336.49f71508.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104172217.30033.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, April 17, 2011, Alexander Beregalov wrote:
-> On 17 April 2011 17:52, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.37 and 2.6.38.
-> >
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.37 and 2.6.38.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> >
-> >
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=29852
-> > Subject         : 2.6.38-rc5: nfsd: page allocation failure. spinlock trylock failure on UP
-> > Submitter       : Alexander Beregalov <a.beregalov@gmail.com>
-> > Date            : 2011-02-21 20:33 (56 days old)
-> > Message-ID      : <AANLkTi=14N_c_B7mLY0H8Dt8pte6C0mjFnVuC37e44Hs@mail.gmail.com>
-> > References      : http://marc.info/?l=linux-netdev&m=129832042402668&w=2
-> >
-> 
-> Hi, Rafael.
-> I do not see the problem since that time.
-> Is it enough reason for closing it?
+On 04/17/2011 12:03 PM, Randy Dunlap wrote:
+> On Sun, 17 Apr 2011 11:09:07 -0700 Justin P. Mattock wrote:
+>
+>> The below patch is a resend due to rebasing to the current Mainline, fixing
+>> some comments due to having one to many ccc's in the definitions.
+>>
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   arch/m68k/include/asm/MC68EZ328.h |    2 +-
+>>   arch/m68k/include/asm/MC68VZ328.h |    2 +-
+>>   2 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/m68k/include/asm/MC68EZ328.h b/arch/m68k/include/asm/MC68EZ328.h
+>> index 69b7f91..b2ee25d 100644
+>> --- a/arch/m68k/include/asm/MC68EZ328.h
+>> +++ b/arch/m68k/include/asm/MC68EZ328.h
+>> @@ -1047,7 +1047,7 @@ typedef volatile struct {
+>>
+>>   #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
+>>   #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
+>> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
+>> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
+>
+>                                                                occurred
+> (above and below)
 
-It is.  Please reopen if you see it again.
+yep!! made a mistake with this one, and resent..
+>
+>>   #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
+>>   #define WATCHDOG_CNT_SHIFT 8
+>>
+>> diff --git a/arch/m68k/include/asm/MC68VZ328.h b/arch/m68k/include/asm/MC68VZ328.h
+>> index 2b9bf62..62cd79a 100644
+>> --- a/arch/m68k/include/asm/MC68VZ328.h
+>> +++ b/arch/m68k/include/asm/MC68VZ328.h
+>> @@ -1143,7 +1143,7 @@ typedef struct {
+>>
+>>   #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
+>>   #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
+>> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
+>> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
+>>   #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
+>>   #define WATCHDOG_CNT_SHIFT 8
+>
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
 
-Thanks,
-Rafael
