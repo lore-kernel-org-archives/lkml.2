@@ -1,197 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab1DQKZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 06:25:57 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:34483 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab1DQKZt (ORCPT
+	id S1756653Ab1DQK1h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 06:27:37 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56417 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1DQK1a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 06:25:49 -0400
-Date: Sun, 17 Apr 2011 12:17:31 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ciprian Docan <docan@eden.rutgers.edu>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael, J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Suspend/resume - slow resume
-Message-ID: <20110417101731.GA17986@electric-eye.fr.zoreil.com>
-References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu> <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com> <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu> <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Sun, 17 Apr 2011 06:27:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PrAOpjvwB6oLReYh3HXaJiknTUoW7HTNMpiZTvrjWIQLrDBa3nUbeVKED2uQR7WmKH
+         ymzjU/1QRFYczqFhkIiLP255Y98hwAkxU7bp7euu5uk2LYCv6QrKsQ0NrWTqee5hlDaO
+         rtpeWF2NY3FBrYRxdFUrO+4SHqo7Am5sdKCpk=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTinAres6c8JaHA0Nuijany4XXyv67A@mail.gmail.com>
+References: <BANLkTi=GXro_xEiRyzZY86kWM9duJ3KAUQ@mail.gmail.com>
+	<BANLkTinn8xfyFArd4Q9aA5N47BoZ_rgCxw@mail.gmail.com>
+	<BANLkTinMh7bofvSNW0gEoqaKvs27-xDGpQ@mail.gmail.com>
+	<BANLkTinAres6c8JaHA0Nuijany4XXyv67A@mail.gmail.com>
+Date: Sun, 17 Apr 2011 12:27:29 +0200
+Message-ID: <BANLkTimoWT1K9QLs_-ucQNi1rt4e+4RYUw@mail.gmail.com>
+Subject: Re: Kbuild: how to cleanly retrieve information compilation about the
+ last build
+From: Francis Moreau <francis.moro@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> :
-[...]
-> So Francois, can we please not load the firmware at resume time when
-> it wasn't loaded when suspended!
+On Sun, Apr 17, 2011 at 6:57 AM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Sat, Apr 16, 2011 at 10:00 PM, Francis Moreau <francis.moro@gmail.com> wrote:
+>> On Sat, Apr 16, 2011 at 10:26 AM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+>>> So why not just put that line into your script?
+>>>
+>>
+>> Because this line was an _example_ of how the makefile could had been invoked.
+>>
+>> But the script has currently no idea how the previous invocation was
+>> made, hence my question.
+>
+> You use a bad design, why not just pass these parameters to your script?
+> Something like,
+>
+> $ ./your_script CC=my-gcc CFLAGS="-g -fwhatever"
+>
+> or whatever you want.
+>
 
-One can try the patch below. It is completely untested yet.
+Yes, I think I'll continue to do that.
 
-Subject: [PATCH] r8169: don't request firmware when there's no userspace.
-
-The firmware is cached during open() and released during close().
-The driver uses the cached firmware between open() and close().
-
-Don't bother with rtl8169_pcierr_interrupt. It is special anyway.
-
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
----
- drivers/net/r8169.c |   76 +++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 52 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 493b0de..ccc25cd 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -170,6 +170,16 @@ static const struct {
- };
- #undef _R
- 
-+static const struct rtl_firmware_info {
-+	int mac_version;
-+	const char *fw_name;
-+} rtl_firmware_infos[] = {
-+	{ .mac_version = RTL_GIGA_MAC_VER_25, .fw_name = FIRMWARE_8168D_1 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_26, .fw_name = FIRMWARE_8168D_2 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_29, .fw_name = FIRMWARE_8105E_1 },
-+	{ .mac_version = RTL_GIGA_MAC_VER_30, .fw_name = FIRMWARE_8105E_1 }
-+};
-+
- enum cfg_version {
- 	RTL_CFG_0 = 0x00,
- 	RTL_CFG_1,
-@@ -1793,21 +1803,21 @@ static void rtl_release_firmware(struct rtl8169_private *tp)
- 	tp->fw = NULL;
- }
- 
--static int rtl_apply_firmware(struct rtl8169_private *tp, const char *fw_name)
-+static void rtl_apply_firmware(struct rtl8169_private *tp)
- {
--	const struct firmware **fw = &tp->fw;
--	int rc = !*fw;
--
--	if (rc) {
--		rc = request_firmware(fw, fw_name, &tp->pci_dev->dev);
--		if (rc < 0)
--			goto out;
--	}
-+	const struct firmware *fw = tp->fw;
- 
- 	/* TODO: release firmware once rtl_phy_write_fw signals failures. */
--	rtl_phy_write_fw(tp, *fw);
--out:
--	return rc;
-+	if (fw)
-+		rtl_phy_write_fw(tp, fw);
-+}
-+
-+static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
-+{
-+	if (rtl_readphy(tp, reg) != val)
-+		netif_warn(tp, hw, tp->dev, "chipset not ready for firmware\n");
-+	else
-+		rtl_apply_firmware(tp);
- }
- 
- static void rtl8169s_hw_phy_config(struct rtl8169_private *tp)
-@@ -2246,10 +2256,8 @@ static void rtl8168d_1_hw_phy_config(struct rtl8169_private *tp)
- 
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x001b);
--	if ((rtl_readphy(tp, 0x06) != 0xbf00) ||
--	    (rtl_apply_firmware(tp, FIRMWARE_8168D_1) < 0)) {
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
--	}
-+
-+	rtl_apply_firmware_cond(tp, MII_EXPANSION, 0xbf00);
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
-@@ -2351,10 +2359,8 @@ static void rtl8168d_2_hw_phy_config(struct rtl8169_private *tp)
- 
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x001b);
--	if ((rtl_readphy(tp, 0x06) != 0xb300) ||
--	    (rtl_apply_firmware(tp, FIRMWARE_8168D_2) < 0)) {
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
--	}
-+
-+	rtl_apply_firmware_cond(tp, MII_EXPANSION, 0xb300);
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
-@@ -2474,8 +2480,7 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x18, 0x0310);
- 	msleep(100);
- 
--	if (rtl_apply_firmware(tp, FIRMWARE_8105E_1) < 0)
--		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
-+	rtl_apply_firmware(tp);
- 
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
- }
-@@ -3288,8 +3293,6 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
- 
- 	cancel_delayed_work_sync(&tp->task);
- 
--	rtl_release_firmware(tp);
--
- 	unregister_netdev(dev);
- 
- 	if (pci_dev_run_wake(pdev))
-@@ -3303,6 +3306,27 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
- 	pci_set_drvdata(pdev, NULL);
- }
- 
-+static void rtl_request_firmware(struct rtl8169_private *tp)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(rtl_firmware_infos); i++) {
-+		const struct rtl_firmware_info *info = rtl_firmware_infos + i;
-+
-+		if (info->mac_version == tp->mac_version) {
-+			const char *name = info->fw_name;
-+			int rc;
-+
-+			rc = request_firmware(&tp->fw, name, &tp->pci_dev->dev);
-+			if (rc < 0) {
-+				netif_warn(tp, ifup, tp->dev, "unable to load "
-+					"firmware patch %s (%d)\n", name, rc);
-+			}
-+			break;
-+		}
-+	}
-+}
-+
- static int rtl8169_open(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -3334,6 +3358,8 @@ static int rtl8169_open(struct net_device *dev)
- 
- 	smp_mb();
- 
-+	rtl_request_firmware(tp);
-+
- 	retval = request_irq(dev->irq, rtl8169_interrupt,
- 			     (tp->features & RTL_FEATURE_MSI) ? 0 : IRQF_SHARED,
- 			     dev->name, dev);
-@@ -4891,6 +4917,8 @@ static int rtl8169_close(struct net_device *dev)
- 
- 	free_irq(dev->irq, dev);
- 
-+	rtl_release_firmware(tp);
-+
- 	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
- 			  tp->RxPhyAddr);
- 	dma_free_coherent(&pdev->dev, R8169_TX_RING_BYTES, tp->TxDescArray,
+Thanks
 -- 
-1.7.4
-
+Francis
