@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1DQTmN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 15:42:13 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:39996 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab1DQTmG (ORCPT
+	id S1751947Ab1DQTrG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 15:47:06 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64771 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab1DQTq6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 15:42:06 -0400
-Message-ID: <4DAB4284.6060201@kernel.org>
-Date: Sun, 17 Apr 2011 12:41:56 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
+	Sun, 17 Apr 2011 15:46:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GFyvCI7aNXnsWdnhDAZaLSBjmHN7P36xRd35j9MichbHkLi802N9rBF8+7Z2203zeG
+         fHReTUwnrk/xJIaeyS+LEjxmB37T1h9LPjOzLoQsnbWJemFfmlQK8vEGpm0Ulo/+zdFN
+         RnkW6yxCyxKX02I5zkN7Xtwb5Zqm6EO+5fAN0=
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>,
-        LKML <linux-kernel@vger.kernel.org>, ftpadmin@kernel.org,
-        jk@ozlabs.org
-Subject: Re: [patchwork] TemplateSyntaxError at /project/LKML/list/
-References: <BANLkTi=5YE+j9s=tzhj6RheBdt6DPUBTkw@mail.gmail.com>
-In-Reply-To: <BANLkTi=5YE+j9s=tzhj6RheBdt6DPUBTkw@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <IqJL5EkbqD.A.lyF.a5uqNB@chimera>
+References: <sam8u5dLkaB.A.afE.53uqNB@chimera>
+	<IqJL5EkbqD.A.lyF.a5uqNB@chimera>
+Date: Sun, 17 Apr 2011 23:46:57 +0400
+Message-ID: <BANLkTimGFqP7q845+zYnyjcO0PvoBGX_qg@mail.gmail.com>
+Subject: Re: [Bug #29852] 2.6.38-rc5: nfsd: page allocation failure. spinlock
+ trylock failure on UP
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 17 Apr 2011 12:41:57 -0700 (PDT)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Databases got confused about an individual and required some munging,
-should be working now.  If you see it again give ftpadmin@kernel.org a
-shout.
+On 17 April 2011 17:52, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.37 and 2.6.38.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.37 and 2.6.38.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=29852
+> Subject         : 2.6.38-rc5: nfsd: page allocation failure. spinlock trylock failure on UP
+> Submitter       : Alexander Beregalov <a.beregalov@gmail.com>
+> Date            : 2011-02-21 20:33 (56 days old)
+> Message-ID      : <AANLkTi=14N_c_B7mLY0H8Dt8pte6C0mjFnVuC37e44Hs@mail.gmail.com>
+> References      : http://marc.info/?l=linux-netdev&m=129832042402668&w=2
+>
 
-- John 'Warthog9' Hawley
-
-On 04/17/2011 09:18 AM, Sedat Dilek wrote:
-> Hi,
-> 
-> website to look for patches sent to LKML is unreachable.
-> 
-> Regards,
-> - Sedat -
+Hi, Rafael.
+I do not see the problem since that time.
+Is it enough reason for closing it?
