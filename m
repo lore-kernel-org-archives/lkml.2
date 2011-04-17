@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab1DQVyS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 17:54:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47744 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab1DQVyO convert rfc822-to-8bit (ORCPT
+	id S1753629Ab1DQV6V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 17:58:21 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56073 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab1DQV6Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 17:54:14 -0400
+	Sun, 17 Apr 2011 17:58:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=ginkel.com; s=google;
-        h=mime-version:x-originating-ip:in-reply-to:references:from:date
-         :message-id:subject:to:cc:content-type:content-transfer-encoding;
-        b=qGGoJD9TFFjintPGL8VLmkK/SsnmeHIffCR+tm9dgWaWfFOMrIjlRIlIIPTNPTZ57e
-         DbWc/Q3tWD3DL5ThzaytwjpoF4aSefW17k5pGwIyvXBtjiyGM87B4FGOu9c9U6trel8y
-         qsOUDtfaBAw2PvVJy1ENbbSIgqO+U7NEC75z4=
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=tCTfw/UHvtFHGY0ly/AGrSS0oHuh+/gscL0T0k3KWEMqbmNItrbVOgvUEcDptNbPF8
+         LUaJPXOZgvbPdVBqADvHNdYoPi5iQ4HrHS6k9Qm0qYY7zX2L89TKsaKEmvzLauVsFTW/
+         irYBuaQJnxKR5ty//YdqT+0azgKIUStRtyBnI=
 MIME-Version: 1.0
-X-Originating-IP: [91.17.187.68]
-In-Reply-To: <201104172135.40189.arnd@arndb.de>
-References: <BANLkTi=kQgS62c7HwwFGhNCQzWr2N6kZjA@mail.gmail.com>
- <BANLkTi=aED731W4WoKK1HUU88qR7RxpW6Q@mail.gmail.com> <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
- <201104172135.40189.arnd@arndb.de>
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
-Date: Sun, 17 Apr 2011 23:53:42 +0200
-Message-ID: <BANLkTimS2DqZTjq3Kx-p8CfZ5iFra_M2DA@mail.gmail.com>
-Subject: Re: Soft lockup during suspend since ~2.6.36 [bisected]
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110417224816.38ddffee@lxorguk.ukuu.org.uk>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<20110417224816.38ddffee@lxorguk.ukuu.org.uk>
+Date: Sun, 17 Apr 2011 23:58:16 +0200
+X-Google-Sender-Auth: RewqGStcIR-hNCy8hUuyyso_YlU
+Message-ID: <BANLkTimwbsmQw0Dawz_+LpVf+wU60AbB0g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 17, 2011 at 21:35, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 14 April 2011, Thilo-Alexander Ginkel wrote:
->> All right... I verified all my bisect tests and actually found yet
->> another bug. After correcting that one (and verifying the correctness
->> of the other tests), git bisect actually came up with a commit, which
->> makes some more sense:
->>
->> | e22bee782b3b00bd4534ae9b1c5fb2e8e6573c5c is the first bad commit
->> | commit e22bee782b3b00bd4534ae9b1c5fb2e8e6573c5c
->> | Author: Tejun Heo <tj@kernel.org>
->> | Date: Â  Tue Jun 29 10:07:14 2010 +0200
->> |
->> | Â  Â  workqueue: implement concurrency managed dynamic worker pool
+2011/4/17 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+
+>> + * enum gpio_drive - drive modes for GPIOs (output)
+>> + * @GPIO_DRIVE_PUSH_PULL: the GPIO will be driven actively high and low, this
+>> + *   is the most typical case and is typically achieved with two active
+>> + *   transistors on the output
+>> + * @GPIO_DRIVE_OPEN_DRAIN: the GPIO will be driven with open drain (open
+>> + *   collector) which means it is usually wired with other output ports
+>> + *   which are then pulled up with an external resistor
+>> + * @GPIO_DRIVE_OPEN_SOURCE: the GPIO will be driven with open drain
+>> + *   (open emitter) which is the same as open drain mutatis mutandis but
+>> + *   pulled to ground
 >
-> Is it possible to make it work by reverting this patch in 2.6.38?
+> How about "off". As I've pointed out at various times some devices have
+> GPIO pins that may or may not be connected depending upon what other chip
+> logic is doing.
 
-Unfortunately, that's not that easy to test as the reverted patch does
-not apply cleanly against 2.6.38 (23 failed hunks) and I am not sure
-whether I want to revert it manually ;-).
+Sure, why not.
 
->> The good news is that I am able to reproduce the issue within a KVM
->> virtual machine, so I am able to test for the soft lockup (which
->> somewhat looks like a race condition during worker / CPU shutdown) in
->> a mostly automated fashion. Unfortunately, that also means that this
->> issue is all but hardware specific, i.e., it most probably affects all
->> SMP systems (with a varying probability depending on the number of
->> CPUs).
->>
->> Adding some further details about my configuration (which I replicated
->> in the VM):
->> - lvm running on top of
->> - dmcrypt (luks) running on top of
->> - md raid1
->>
->> If anyone is interested in getting hold of this VM for further tests,
->> let me know and I'll try to figure out how to get it (2*8 GB, barely
->> compressible due to dmcrypt) to its recipient.
->
-> Adding dm-devel to Cc, in case the problem is somewhere in there.
+> As I've also noted with various other previous suggestions for API
+> additions you also need an "unknown" state so that a device can implement
+> the methods but indicate for some pins the value is unknown due to
+> hardware or firmware limitations.
 
-In the meantime I also figured out that 2.6.39-rc3 seems to fix the
-issue (there have been some work queue changes, so this is somewhat
-sensible) and that raid1 seems to be sufficient to trigger the issue.
-Now one could try to figure out what actually fixed it, but if that
-means another bisect series I am not too keen to perform that
-exercise. ;-) If someone else feels inclined to do so, my test
-environment is available for download, though:
-  https://secure.tgbyte.de/dropbox/lockup-test.tar.bz2 (~ 700 MB)
+OK do you want an unknown biasing mode too, or is "floating" enough
+of a default to cover that?
 
-Boot using:
-  kvm -hda LockupTestRaid-1.qcow2 -hdb LockupTestRaid-2.qcow2 -smp 8
--m 1024 -curses
-
-To run the test, log in as root / test and run:
-  /root/suspend-test
-
-Regards,
-Thilo
+Yours,
+Linus Walleij
