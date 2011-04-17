@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab1DQPD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 11:03:59 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:56593 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab1DQPDx (ORCPT
+	id S1753913Ab1DQPMj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 11:12:39 -0400
+Received: from mailservices.uwaterloo.ca ([129.97.128.141]:48000 "EHLO
+	mailchk-m03.uwaterloo.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752439Ab1DQPMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 11:03:53 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@redhat.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
-Subject: Re: [105/105] nfsd4: fix oops on lock failure
-References: <20110412143559.186613198@clark.kroah.org>
-Date: Mon, 18 Apr 2011 00:03:44 +0900
-In-Reply-To: <20110412143559.186613198@clark.kroah.org> (Greg KH's message of
-	"Tue, 12 Apr 2011 07:35:34 -0700")
-Message-ID: <87pqokx6lr.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Sun, 17 Apr 2011 11:12:32 -0400
+Date: Sun, 17 Apr 2011 11:12:04 -0400
+From: Kyle Spaans <kspaans@uwaterloo.ca>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>, airlied@redhat.com,
+        dri-devel@lists.freedesktop.org, mjg@redhat.com,
+        maciej.rutecki@gmail.com, nouveau@lists.freedesktop.org,
+        Nigel Cunningham <lkml@nigelcunningham.com.au>
+Subject: Re: 2.6.39-rc1 nouveau regression (bisected)
+Message-ID: <20110417151204.GA24519@taurine.csclub.uwaterloo.ca>
+References: <20110403181206.GA19291@comet.dominikbrodowski.net>
+ <20110407151129.GA24977@comet.dominikbrodowski.net>
+ <20110414170559.GA10768@comet.dominikbrodowski.net>
+ <20110414190117.GA3493@joi.lan>
+ <20110415061136.GA21979@isilmar-3.linta.de>
+ <4DAA1453.5000604@nigelcunningham.com.au>
+ <20110416235028.GA6096@taurine.csclub.uwaterloo.ca>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110416235028.GA6096@taurine.csclub.uwaterloo.ca>
+X-PGP-Key: http://csclub.uwaterloo.ca/~kspaans/kspaans-pubkey.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-UUID: 0c1d82e5-560a-4117-b835-97377ef6cb29
+X-Miltered: at mailchk-m03 with ID 4DAB0344.003 by Joe's j-chkmail (http://j-chkmail.ensmp.fr)!
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (mailchk-m03.uwaterloo.ca [129.97.128.141]); Sun, 17 Apr 2011 11:12:09 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Apr 16, 2011 at 07:50:28PM -0400, Kyle Spaans wrote:
+> On Sun, Apr 17, 2011 at 08:12:35AM +1000, Nigel Cunningham wrote:
+> > On 15/04/11 16:11, Dominik Brodowski wrote:
+> > > On Thu, Apr 14, 2011 at 09:02:01PM +0200, Marcin Slusarz wrote:
+> > >> On Thu, Apr 14, 2011 at 07:05:59PM +0200, Dominik Brodowski wrote:
+> > >>> Thought about CCing Linus to show him that 2.6.39-rcX isn't as "calm"
+> > >>> to everyone, but then chose to CC Maciej instead: Would you be so kind and
+> > >>> add this to your regression list? Thanks!
+> > >>>
+> > >>> Since commit 38f1cff
+> > >>>
+> > >>>     From: Dave Airlie <airlied@redhat.com>
+> > >>>     Date: Wed, 16 Mar 2011 11:34:41 +1000
+> > >>>     Subject: [PATCH] Merge commit '5359533801e3dd3abca5b7d3d985b0b33fd9fe8b' into dr
+> > >>>
+> > >>>     This commit changed an internal radeon structure, that meant a new driver
+> > >>>     in -next had to be fixed up, merge in the commit and fix up the driver.
+> > >>>
+> > >>>     Also fixes a trivial nouveau merge.
+> > >>>
+> > >>>     Conflicts:
+> > >>>         drivers/gpu/drm/nouveau/nouveau_mem.c
+> > >>>
+> > >>> booting my atom/NM10/ION2 system crashes hard during boot, right after
+> > >>> blanking the screen, and before the initramfs gets loaded. I just
+> > >>> re-checked: both parent commits ( 5359533 and 4819d2e ) do indeed work
+> > >>> just fine, but the merge commit ( 38f1cff ) fails, same as tip ( 85f2e68 ).
+> > >> Can you activate netconsole and check whether kernel spits anything interesting?
+> > >> You might try to load nouveau module after boot - maybe something will be saved
+> > >> to /var/log or you could even ssh into the box and check dmesg...
+> > > Compiling it as a module seems to work fine. When I do so, no regression is
+> > > obvious from what gets reported in "dmesg". However, somehow I now do get
+> > > some output: The last message I see is
+> > >
+> > > [drm] nouveau 0000:01:00.0: allocated 1680x1050, fb 0x40.... b0 <some pointer value>
+> > >
+> > > Then, nothing more. However, it really is quite strange why this error only
+> > > appears in the CONFIG_NOUVEAU=y case, not in the =m case...
+> > Try disabling CONFIG_BOOT_LOGO. I reported on freedesktop.org that it is
+> > causing me an oops at boot, but my bug has been ignored there so far -
+> > perhaps I should have posted it here instead.
+> 
+> I'm getting the exact same symptoms on my Atom + ION hardware. Crashes before it
+> can write any logs if it's compiled in and the logo is selected, but boots fine
+> if compiled as a module or the logo is removed.
+> 
+> In my case I bisected and found 8969960 by Nick Piggin (change to mm/vmalloc.c)
+> to be the first bad one in 2.6.38+. This makes me think that it's not a bug in
+> nouveau, but maybe a bug in the order that things are initialized?
 
-> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: J. Bruce Fields <bfields@redhat.com>
->
-> commit 23fcf2ec93fb8573a653408316af599939ff9a8e upstream.
->
-> Lock stateid's can have access_bmap 0 if they were only partially
-> initialized (due to a failed lock request); handle that case in
-> free_generic_stateid.
+FWIW, reverting commit 89699605fe7cfd8611900346f61cb6cbf179b10a on 2.6.39-rc3+
+makes my system boot just fine with the nouveau drivers compiled into the
+kernel. I've seen some similar looking bugs on LKML that this regression may or
+may not be related to? It works fine on 2.6.38.
 
-I'm looking filp leak on recent kernel. Well, anyway,
-23fcf2ec93fb8573a653408316af599939ff9a8e is strange, and I think it can
-be one of causes.
+https://bugzilla.kernel.org/show_bug.cgi?id=33272
+http://lkml.org/lkml/2011/4/15/194
 
+I'm still trying to figure out exactly where the kernel is crashing after
+printing
+[drm] nouveau 0000:03:00.0: allocated 1280x1024 fb: 0x40000000, b0 f4cf7600
 
-[PATCH] nfsd4: Fix filp leak
-
-23fcf2ec93fb8573a653408316af599939ff9a8e (nfsd4: fix oops on lock failure)
-
-The above patch breaks free path for stp->st_file. If stp was inserted
-into sop->so_stateids, we have to free stp->st_file refcount. Because
-stp->st_file refcount itself is taken unrelated to stp->st_file->fi_fds[].
-
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
----
-
- fs/nfsd/nfs4state.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -puN fs/nfsd/nfs4state.c~nfsd4-filp-leak-fix fs/nfsd/nfs4state.c
---- linux-2.6/fs/nfsd/nfs4state.c~nfsd4-filp-leak-fix	2011-04-17 20:45:45.000000000 +0900
-+++ linux-2.6-hirofumi/fs/nfsd/nfs4state.c	2011-04-17 20:59:53.000000000 +0900
-@@ -402,8 +402,8 @@ static void free_generic_stateid(struct
- 	if (stp->st_access_bmap) {
- 		oflag = nfs4_access_bmap_to_omode(stp);
- 		nfs4_file_put_access(stp->st_file, oflag);
--		put_nfs4_file(stp->st_file);
- 	}
-+	put_nfs4_file(stp->st_file);
- 	kmem_cache_free(stateid_slab, stp);
- }
- 
-_
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Any thoughts on what else I should look for?
