@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1DQONz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 10:13:55 -0400
-Received: from smtp105.rog.mail.re2.yahoo.com ([206.190.36.83]:45141 "HELO
-	smtp105.rog.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751085Ab1DQONt (ORCPT
+	id S1753398Ab1DQOZc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 10:25:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46724 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab1DQOZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 10:13:49 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Apr 2011 10:13:49 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=rogers.com;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Cc:Subject:Date:Message-Id:Organization:User-Agent:In-Reply-To:References:MIME-Version:Content-Transfer-Encoding:Content-Type;
-  b=fivTz7vsS56qON6lCDlR+yywDoQLicfhndHpsCqpzjyGvh6KUlVgl6RsuNAMbqszUBOd2IlpQqiNrJLfkyw2v2bHfCV2MtCq6/U7jevxU11k0bJARtN1PgERQDIjty/NByFFE4vwLVNZtJTg7XHua2PW0dMzsbN+JnRRGK+DJ3k=  ;
-X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
-X-YMail-OSG: FpqK8sEVM1mwVj.NFZO7jzhCm40Qp3QE3Gy2tftW30YZ5iD
- owhSClVSkMsAlFEm6tJd.ZAUzfax.Rc6F_FHyXBwQj5Ex6hCmIhgPpD6WdqQ
- Ptb8y964wKn7lgGvESespOXGmS15yK3o8whb0Q00XCFb2Gvlh4H6qxDcKqSR
- 0CNd8X8NBsof1fKQFtuEOviI.MvJikr93BW2y6WdgZ34Bsi_TR.NPVLyF7Ln
- 1ZuiGG85TP8oQXA8NfaTFWQxD0Lhg4_LOC1k1k7K8rz15P94Jo9QYiFp3axM
- 3xV9O_0HZJvdtYciq7G7ld7YLxTCFcJU1u_MoTMYszO_r59Wy_lMJ3VtiA8A
- fhETctgkRqFHOTwo-
-X-Yahoo-Newman-Property: ymail-3
-From: Shawn Starr <shawn.starr@rogers.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #29672] [regression][ALSA][hda-conexant][2.6.38-rcX] external microphone sound too quiet
-Date: Sun, 17 Apr 2011 10:07:06 -0400
-Message-Id: <3577387.Ms3I5Hp20k@segfault.sh0n.net>
-Organization: sh0n.net
-User-Agent: KMail/4.6 beta5 (Linux/2.6.39-0.rc3.git2.0.fc16.x86_64; KDE/4.6.2; x86_64; ; )
-In-Reply-To: <IqJL5EkbqD.A.A5F.k5uqNB@chimera>
-References: <sam8u5dLkaB.A.afE.53uqNB@chimera> <IqJL5EkbqD.A.A5F.k5uqNB@chimera>
+	Sun, 17 Apr 2011 10:25:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=BvS64BdXIm36w/NbSxBMzveWgXin23QzZe4WNnDFlFWe9BVrfF2vp8qG95UB1OGvkJ
+         oYWA6hv7vYYR+F/e6SpmJT01nAVvDURzp+2JdYgRhyf/q3cTzNIoALlJVUr3gHBij+1+
+         KsNl4qqqmnFbsnNAeESQexN8nKgLPC5A/Fc24=
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+From: dave b <db.pub.mail@gmail.com>
+Date: Mon, 18 Apr 2011 00:25:04 +1000
+Message-ID: <BANLkTi=eYGpnMcfzEsyj+Y4meks-d6hb6g@mail.gmail.com>
+Subject: [PATCH] Remove extra output from normal iwlwifi use
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, April 17, 2011 03:52:09 PM Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.37 and 2.6.38.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.37 and 2.6.38.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-It is continuing, using the external microphone the audio is too quiet no 
-matter how loud I set it with PulseAudio.
+I personally do not think that having the IWL_ERR, which I have
+removed below, enabled during normal use (not debugging) is of any use
+to anyone.
 
-The audio onboard Lenovo W500 laptop is: Conexant CX20561 (Hermosa)  
+--- drivers/net/wireless/iwlwifi/iwl-agn-rs.c.orig	2011-04-18
+00:22:55.000000000 +1000
++++ drivers/net/wireless/iwlwifi/iwl-agn-rs.c	2011-04-16
+01:09:57.000000000 +1000
+@@ -398,10 +398,7 @@
+ 				tid);
+ 			ieee80211_stop_tx_ba_session(sta, tid);
+ 		}
+-	} else {
+-		IWL_ERR(priv, "Aggregation not enabled for tid %d "
+-			"because load = %u\n", tid, load);
+-	}
++	}
+ 	return ret;
+ }
 
-I have not had time to do any investigations to look at the git changes made.
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29672
-> Subject		: [regression][ALSA][hda-conexant][2.6.38-rcX] external 
-microphone
-> sound too quiet Submitter	: Shawn Starr <shawn.starr@rogers.com>
-> Date		: 2011-02-19 6:02 (58 days old)
-> Message-ID	: <474630.25335.qm@smtp105.rog.mail.re2.yahoo.com>
-> References	: http://marc.info/?l=linux-kernel&m=129809536502092&w=2
+--- drivers/net/wireless/iwlwifi/iwl-agn-tx.c.orig	2011-04-18
+00:21:05.000000000 +1000
++++ drivers/net/wireless/iwlwifi/iwl-agn-tx.c	2011-04-16
+01:08:29.000000000 +1000
+@@ -991,9 +991,6 @@
+ 	if (unlikely(tx_fifo < 0))
+ 		return tx_fifo;
+
+-	IWL_WARN(priv, "%s on ra = %pM tid = %d\n",
+-			__func__, sta->addr, tid);
+-
+ 	sta_id = iwl_sta_id(sta);
+ 	if (sta_id == IWL_INVALID_STATION) {
+ 		IWL_ERR(priv, "Start AGG on invalid station\n");
+
+Signed-off-by: dave bl <db.pub.mail@gmail.com>
