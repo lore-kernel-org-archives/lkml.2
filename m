@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab1DQUkP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 16:40:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65366 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab1DQUkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 16:40:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality V2
-Date: Sun, 17 Apr 2011 22:39:57 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>, ohad@wizery.com,
-        linus.walleij@stericsson.com, patches@linaro.org,
-        linux-kernel@vger.kernel.org, lee.jones@linaro.org
-References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org> <201104121946.01618.arnd@arndb.de> <4DA4A44D.5020208@linaro.org>
-In-Reply-To: <4DA4A44D.5020208@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752990Ab1DQU4e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 16:56:34 -0400
+Received: from mail.perches.com ([173.55.12.10]:4784 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838Ab1DQU42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 16:56:28 -0400
+Subject: Re: [PATCH 3/4] ata: Add and use ata_print_version_once
+From: Joe Perches <joe@perches.com>
+To: saeed bishara <saeed.bishara@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTikeV-jHXWSDyLmtTTc1d2S9L3eG0Q@mail.gmail.com>
+References: <cover.1302907496.git.joe@perches.com>
+	 <440aa7f6bb99bec705b83796894f843bfc1b7bf9.1302907497.git.joe@perches.com>
+	 <BANLkTikeV-jHXWSDyLmtTTc1d2S9L3eG0Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 17 Apr 2011 13:56:26 -0700
+Message-ID: <1303073786.31723.14.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104172239.57362.arnd@arndb.de>
-X-Provags-ID: V02:K0:8ndDP0/0mX81zFOTa6xpKAjJXX8LHL1OSLyRkTtaP+X
- 54Q4RUyA0dhMpU2r30MCnBNCCP5cxBPI0mE6N24poYpav1cs6C
- r/GW3rO5xSH3Sv5E2SUxQKKRpwhofP7NeTPUm9k5cND4Y8TLMH
- pdNdsg7geAycBVUXK4oHZzqpQ2RSW+5OzD4px6OTXsUdITjuNK
- RwaUBAV8SLH0sym9e5SnQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 April 2011, Mathieu Poirier wrote:
-> > struct u8500_hsem_state {
-> >       void __iomem *io_base;
-> >       struct u8500_hsem hsem[U8500_MAX_SEMAPHORE];
-> > }
-> I don't see the real advantage in doing a single allocation - the 
-> dynamic allocation method is also used in 'omap_hwspinlock.c'.  Is 
-> modification mandatory to get the driver accepted ?
+On Sun, 2011-04-17 at 13:45 +0300, saeed bishara wrote: 
+> On Sat, Apr 16, 2011 at 1:52 AM, Joe Perches <joe@perches.com> wrote:
+> > Use a single mechanism to show driver version.
+> > Reduces text a tiny bit too.
+> > Remove uses of static int printed_version
+> > Add and use ata_print_version(const struct device *, const char *ver)
+> > and ata_print_version_once.
+> any idea why we really need this driver version for in-kernel drivers?
+> isn't the kernel version good enough?
 
-Not strictly required, but somewhat cleaner IMHO. If you have a good
-reason for splitting the allocations, just document that clearly.
+Some think it useful to see what module
+version is linked against the kernel.
 
-One more thing I just noticed: the hwspinlock_internal.h file defines
-the hwspinlock->id field as "a global, unique, system-wide, index of
-the lock", but the u8500 hsem just sets it to an integer starting
-at zero. If there are multiple devices providing hwspinlocks in the
-same system, that cannot work.
-
-	Arnd
