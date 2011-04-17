@@ -1,75 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab1DQDQm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 23:16:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:42229 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab1DQDQh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 23:16:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZTFs7TIJgEm4gdfh3v0GDH7cS09bEcjCo+16iTl3Gk5IFlvRZGGoW21/IsZddf1Yc8
-         YJ+AP1+epYHjoP11iLCA==
+	id S1753871Ab1DQEKU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 00:10:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25129 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648Ab1DQEKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 00:10:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,225,1301900400"; 
+   d="scan'208";a="420597258"
+Date: Sun, 17 Apr 2011 12:10:03 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/12] IO-less dirty throttling v7
+Message-ID: <20110417041003.GA17032@localhost>
+References: <20110416132546.765212221@intel.com>
+ <BANLkTimY3t6Kc-+=00k3QR+AK2uqJpph4g@mail.gmail.com>
+ <20110417014430.GA9419@localhost>
+ <BANLkTik+Bcw7uz9aMi6OrAzwg1rJZmJL0Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1302818089.28876.134.camel@pasglop>
-References: <19876.35918.322649.256455@pilspetsen.it.uu.se>
-	<1302646173.28876.53.camel@pasglop>
-	<1302652502.28876.76.camel@pasglop>
-	<19877.23529.745123.819112@pilspetsen.it.uu.se>
-	<1302685102.28876.81.camel@pasglop>
-	<BANLkTimc84A8kddarnhvrcab3iKZc0HZAg@mail.gmail.com>
-	<1302736869.28876.91.camel@pasglop>
-	<BANLkTika8FY1dD_hOQ4wMhHzuQ2Qt8fg7A@mail.gmail.com>
-	<1302771756.15520.100.camel@thor.local>
-	<BANLkTimykvKp=bwsFyNE9fWqcE9Ffws6bA@mail.gmail.com>
-	<1302818089.28876.134.camel@pasglop>
-Date: Sat, 16 Apr 2011 20:16:29 -0700
-Message-ID: <BANLkTimGLmQjCNFOy5z64Zg=R2FX--LF9A@mail.gmail.com>
-Subject: Re: [regression] 2.6.39-rc[1-3] fail to boot on G5 PowerMac
-From: Hugh Dickins <hughd@google.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, Jens Axboe <jaxboe@fusionio.com>,
-        kevin diggs <diggskevin38@gmail.com>,
-        Michel Daenzer <michel@daenzer.net>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTik+Bcw7uz9aMi6OrAzwg1rJZmJL0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 2:54 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Thu, 2011-04-14 at 14:25 -0700, Hugh Dickins wrote:
->>
->> Something worth trying: turn off CONFIG_IDE.  That's what I need to
->> boot 2.6.39-rc[1-3] on PowerPC G5.
->>
->> I know Jens has been fixing problems with IDE versus his plug/unplug
->> changes, but it's still not fixed for me in rc3.
->>
->> In other mail http://lkml.org/lkml/2011/4/14/614
->> I see Linus recommending his post-rc3 commit 6631e635c65d
->> but I've not tried that myself yet.
->
-> Well, the disk is SATA so it's CONFIG_ATA/libata, which works fine here,
-> unless you somewhat replaced your CD-ROM with a legacy IDE disk :-) Or
-> maybe the problem is related to the CD-ROM drive. There's a libata
-> driver for it nowadays, so you can use PATA_MACIO instead of IDE_PMAC
+On Sun, Apr 17, 2011 at 11:18:43AM +0800, Sedat Dilek wrote:
+> On Sun, Apr 17, 2011 at 3:44 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > Hi Sedat,
+> >
+> > On Sun, Apr 17, 2011 at 12:27:58AM +0800, Sedat Dilek wrote:
+> >
+> >> I pulled your tree into linux-next (next-20110415) on an i386 Debian host.
+> >>
+> >> My build breaks here:
+> >> ...
+> >>   MODPOST vmlinux.o
+> >>   GEN     .version
+> >>   CHK     include/generated/compile.h
+> >>   UPD     include/generated/compile.h
+> >>   CC      init/version.o
+> >>   LD      init/built-in.o
+> >>   LD      .tmp_vmlinux1
+> >> mm/built-in.o: In function `bdi_position_ratio':
+> >> page-writeback.c:(.text+0x5c83): undefined reference to `__udivdi3'
+> >
+> > Yes it can be fixed by the attached patch.
+> >
+> >> mm/built-in.o: In function `calc_period_shift.part.10':
+> >> page-writeback.c:(.text+0x6446): undefined reference to `____ilog2_NaN'
+> >
+> > I cannot reproduce this error. In the git tree, calc_period_shift() is
+> > actually quite simple:
+> >
+> > static int calc_period_shift(void)
+> > {
+> >        return 2 + ilog2(default_backing_dev_info.avg_write_bandwidth);
+> > }
+> >
+> > where avg_write_bandwidth is of type "unsigned long".
+> >
+> >> make[4]: *** [.tmp_vmlinux1] Error
+> >>
+> >> BTW, which kernel-config options have to be set besides
+> >> CONFIG_BLK_DEV_THROTTLING=y?
+> >
+> > No. I used your kconfig on 2.6.39-rc3 and it compiles OK for i386.
+> >
+> > I've pushed two patches into the git tree fixing the compile errors.
+> > Thank you for trying it out and report!
+> >
+> > Thanks,
+> > Fengguang
+> >
+> 
+> Thanks for your patch.
+> 
+> The 1st part of the build-error is gone, but 2nd part still remains:
+> 
+>   LD      .tmp_vmlinux1
+> mm/built-in.o: In function `calc_period_shift.part.10':
+> page-writeback.c:(.text+0x6458): undefined reference to `____ilog2_NaN'
+> make[4]: *** [.tmp_vmlinux1] Error 1
+> 
+> I have attached some disasm-ed files.
 
-Thanks for that, Ben: I remember you were brewing up such a driver,
-but I missed when it actually went in.  I can confirm that switching
-off CONFIG_IDE and switching on CONFIG_PATA_MACIO and
-CONFIG_BLK_DEV_SR now gives me a booting system with a working CD-ROM
-(though I've not yet tried burning).
+OK. I tried next-20110415 and your kconfig and still got no error.
 
-Whereas CONFIG_IDE=y with current git still does not boot: hangs for a
-minute or three around the windfarm announcements, then an endless
-splurge of hda error messages - sorry, I'm not being helpful, other
-worries...
+Please revert the last commit. It's not necessary anyway.
 
-Hugh
+commit 84a9890ddef487d9c6d70934c0a2addc65923bcf
+Author: Wu Fengguang <fengguang.wu@intel.com>
+Date:   Sat Apr 16 18:38:41 2011 -0600
+
+    writeback: scale dirty proportions period with writeout bandwidth
+    
+    CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+
+> Unfortunately, I don't see any new commits in your GIT tree.
+
+Yeah I cannot see it in the web interface, too:
+
+http://git.kernel.org/?p=linux/kernel/git/wfg/writeback.git;a=shortlog;h=refs/heads/dirty-throttling-v7
+
+But they are in the dirty-throttling-v7 branch at kernel.org:
+
+commit d0e30163e390d87387ec13e3b1c2168238c26793
+Author: Wu Fengguang <fengguang.wu@intel.com>
+Date:   Sun Apr 17 11:59:12 2011 +0800
+
+    Revert "writeback: scale dirty proportions period with writeout bandwidth"
+    
+    This reverts commit 84a9890ddef487d9c6d70934c0a2addc65923bcf.
+    
+    sedat.dilek@gmail.com:
+    
+        LD      .tmp_vmlinux1
+      mm/built-in.o: In function `calc_period_shift.part.10':
+      page-writeback.c:(.text+0x6458): undefined reference to `____ilog2_NaN'
+      make[4]: *** [.tmp_vmlinux1] Error 1
+
+commit fc5c8b04119a5bcc46865e66eec3e6133ecb56e9
+Author: Wu Fengguang <fengguang.wu@intel.com>
+Date:   Sun Apr 17 09:22:41 2011 -0600
+
+    writeback: quick CONFIG_BLK_DEV_THROTTLING=n compile fix
+    
+    Reported-by: Sedat Dilek <sedat.dilek@googlemail.com>
+    Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+
+commit c4a7e3f48dcfae71d0e3d2c55dcc381b3def1919
+Author: Wu Fengguang <fengguang.wu@intel.com>
+Date:   Sun Apr 17 09:04:44 2011 -0600
+
+    writeback: i386 compile fix
+    
+    mm/built-in.o: In function `bdi_position_ratio':
+    page-writeback.c:(.text+0x5c83): undefined reference to `__udivdi3'
+    mm/built-in.o: In function `calc_period_shift.part.10':
+    page-writeback.c:(.text+0x6446): undefined reference to `____ilog2_NaN'
+    make[4]: *** [.tmp_vmlinux1] Error
+    
+    Reported-by: Sedat Dilek <sedat.dilek@googlemail.com>
+    Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+
+
+Thanks,
+Fengguang
