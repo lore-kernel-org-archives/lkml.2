@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1DQTgB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 15:36:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:54762 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1DQTf4 (ORCPT
+	id S1753852Ab1DQTmN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 15:42:13 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39996 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab1DQTmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 15:35:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Thilo-Alexander Ginkel" <thilo@ginkel.com>
-Subject: Re: Soft lockup during suspend since ~2.6.36 [bisected]
-Date: Sun, 17 Apr 2011 21:35:40 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-References: <BANLkTi=kQgS62c7HwwFGhNCQzWr2N6kZjA@mail.gmail.com> <BANLkTi=aED731W4WoKK1HUU88qR7RxpW6Q@mail.gmail.com> <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
-In-Reply-To: <BANLkTimDOz7M6m6Xo==DbLHP6q2pMBzd9g@mail.gmail.com>
+	Sun, 17 Apr 2011 15:42:06 -0400
+Message-ID: <4DAB4284.6060201@kernel.org>
+Date: Sun, 17 Apr 2011 12:41:56 -0700
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: sedat.dilek@gmail.com
+CC: Sedat Dilek <sedat.dilek@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>, ftpadmin@kernel.org,
+        jk@ozlabs.org
+Subject: Re: [patchwork] TemplateSyntaxError at /project/LKML/list/
+References: <BANLkTi=5YE+j9s=tzhj6RheBdt6DPUBTkw@mail.gmail.com>
+In-Reply-To: <BANLkTi=5YE+j9s=tzhj6RheBdt6DPUBTkw@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104172135.40189.arnd@arndb.de>
-X-Provags-ID: V02:K0:GwBDmdeQVda4LCb6nIg7N/ENVjEWXqyIB12r65S9yum
- R6FbvXTX2zeeYPWXknvL0Zult23NT0w9JNjzwv8MsX+rmI1xXV
- hWiadGBlWT/N8ghvtzW9S2fCHuRWDa9ybn7p1utOj8ggA6fXLW
- 8x40gvP5n1G7WeNDXonIFvLc6lJWZdJa7ktyDQ2Fqy/eMfbekc
- 7tOsnxsp9T+VO6obCj/fg==
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 17 Apr 2011 12:41:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 April 2011, Thilo-Alexander Ginkel wrote:
-> All right... I verified all my bisect tests and actually found yet
-> another bug. After correcting that one (and verifying the correctness
-> of the other tests), git bisect actually came up with a commit, which
-> makes some more sense:
+Databases got confused about an individual and required some munging,
+should be working now.  If you see it again give ftpadmin@kernel.org a
+shout.
+
+- John 'Warthog9' Hawley
+
+On 04/17/2011 09:18 AM, Sedat Dilek wrote:
+> Hi,
 > 
-> | e22bee782b3b00bd4534ae9b1c5fb2e8e6573c5c is the first bad commit
-> | commit e22bee782b3b00bd4534ae9b1c5fb2e8e6573c5c
-> | Author: Tejun Heo <tj@kernel.org>
-> | Date:   Tue Jun 29 10:07:14 2010 +0200
-> |
-> |     workqueue: implement concurrency managed dynamic worker pool
-
-Is it possible to make it work by reverting this patch in 2.6.38?
-
-> The good news is that I am able to reproduce the issue within a KVM
-> virtual machine, so I am able to test for the soft lockup (which
-> somewhat looks like a race condition during worker / CPU shutdown) in
-> a mostly automated fashion. Unfortunately, that also means that this
-> issue is all but hardware specific, i.e., it most probably affects all
-> SMP systems (with a varying probability depending on the number of
-> CPUs).
+> website to look for patches sent to LKML is unreachable.
 > 
-> Adding some further details about my configuration (which I replicated
-> in the VM):
-> - lvm running on top of
-> - dmcrypt (luks) running on top of
-> - md raid1
-> 
-> If anyone is interested in getting hold of this VM for further tests,
-> let me know and I'll try to figure out how to get it (2*8 GB, barely
-> compressible due to dmcrypt) to its recipient.
-
-Adding dm-devel to Cc, in case the problem is somewhere in there.
-
-	Arnd
+> Regards,
+> - Sedat -
