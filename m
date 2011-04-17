@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab1DQUFk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 16:05:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:40430 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab1DQUFe (ORCPT
+	id S1752829Ab1DQUFr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 16:05:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44597 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab1DQUFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 16:05:34 -0400
+	Sun, 17 Apr 2011 16:05:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=Bq0r5cR/y6ljwN9jgl++ljp6aS/hsxA3/nundo+IgnBZxnAKs6ncerNN90nxtCNJWO
-         k2uUxrQxbDpOb63+uLBiw2bWvX9I0RwPne5YjL7gssS/d/bDFqCervQDM0xUWQHWhgE4
-         jGOUwBsuBVKk6/IxFqjeWdX7/VGNjlYIBAlyM=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=jNSyntueQEp7554gYhk4n+TNdQNdHAnTeXj1Tda7ZBhSwCqKycAYa7pkIPIVO/6xhE
+         ThJLIyCTvWoAeXD0K3N8bMwdPrWNB2DO09f3NJuMQuOh2VuZDzUCnnUl0+casCr+0Pnq
+         bpEzv96CiFDKe0ypjplid8hGZKcg+XTmfZn/s=
 From: Richard Henderson <rth@twiddle.net>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, mattst88@gmail.com,
         linux-alpha@vger.kernel.org
-Subject: [PATCH 1/4] alpha: Don't force -Werror.
-Date: Sun, 17 Apr 2011 13:05:23 -0700
-Message-Id: <1303070726-32155-2-git-send-email-rth@twiddle.net>
+Subject: [PATCH 0/4][PULL] Alpha fixes
+Date: Sun, 17 Apr 2011 13:05:22 -0700
+Message-Id: <1303070726-32155-1-git-send-email-rth@twiddle.net>
 X-Mailer: git-send-email 1.7.4.2
-In-Reply-To: <1303070726-32155-1-git-send-email-rth@twiddle.net>
-References: <1303070726-32155-1-git-send-email-rth@twiddle.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are outstanding gcc 4.6 warnings that need to be cleaned up
-in the subdirectory.  No sense forcing the issue immediately.
+These patches are present in
 
-Signed-off-by: Richard Henderson <rth@twiddle.net>
----
- arch/alpha/kernel/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  git://repo.or.cz/linux-2.6/rth.git for-linus
 
-diff --git a/arch/alpha/kernel/Makefile b/arch/alpha/kernel/Makefile
-index 9bb7b85..7a6d908 100644
---- a/arch/alpha/kernel/Makefile
-+++ b/arch/alpha/kernel/Makefile
-@@ -4,7 +4,7 @@
- 
- extra-y		:= head.o vmlinux.lds
- asflags-y	:= $(KBUILD_CFLAGS)
--ccflags-y	:= -Werror -Wno-sign-compare
-+ccflags-y	:= -Wno-sign-compare
- 
- obj-y    := entry.o traps.o process.o init_task.o osf_sys.o irq.o \
- 	    irq_alpha.o signal.o setup.o ptrace.o time.o \
+They fix compilation with gcc 4.6, a crash during bootup, and a
+hang during bootup.
+
+
+r~
+
+
+Richard Henderson (4):
+  alpha: Don't force -Werror.
+  alpha: Remove set but unused variables.
+  alpha: Fix RTC interrupt setup.
+  alpha: Fix uninitialized value in read_persistent_clock.
+
+ arch/alpha/kernel/Makefile       |    2 +-
+ arch/alpha/kernel/core_mcpcia.c  |   12 +++++-------
+ arch/alpha/kernel/err_titan.c    |    4 +---
+ arch/alpha/kernel/irq_alpha.c    |    2 +-
+ arch/alpha/kernel/setup.c        |    6 +++---
+ arch/alpha/kernel/smc37c93x.c    |    3 +--
+ arch/alpha/kernel/sys_wildfire.c |    5 +++--
+ arch/alpha/kernel/time.c         |    1 +
+ 8 files changed, 16 insertions(+), 19 deletions(-)
+
 -- 
 1.7.4.2
 
