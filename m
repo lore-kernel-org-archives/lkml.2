@@ -1,45 +1,58 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab1DFC5l (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 5 Apr 2011 22:57:41 -0400
-Received: from e3.20.79ae.static.theplanet.com ([174.121.32.227]:46441 "EHLO
-	host.fountium.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623Ab1DFC5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Apr 2011 22:57:38 -0400
-X-Greylist: delayed 5703 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Apr 2011 22:57:38 EDT
-Message-ID: <20110405205954.10912xt1gnmbh2q2@webmail.konkommtelecomslimited.com>
-Date: Tue, 05 Apr 2011 20:59:54 -0400
-From: WONG HUI <wan.info@ymail.com>
-Reply-to: wonghui72@yahoo.com
-To: undisclosed-recipients:;
-Subject: hi
+	id S1751644Ab1DQMoP (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sun, 17 Apr 2011 08:44:15 -0400
+Received: from ns.dobnet.cz ([213.151.87.3]:41722 "EHLO ns.dobnet.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942Ab1DQMoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 08:44:06 -0400
+X-Greylist: delayed 2023 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Apr 2011 08:44:05 EDT
+X-Sagator-Scanner: 0.9.0-1 at posta.dobnet.cz;
+	log(status(deliver(modify_subject(clamd()))),
+	status(deliver(modify_subject(SpamAssassinD()))))
+X-Sagator-ID: 20110417-141019-0001-29565-h6Dcsc@posta.dobnet.cz
+From: "Willows Finance Company" <info@loan.com>
+Reply-To: terrygfinn213@w.cn
+Subject: Apply For Loan At 3%
+Date: Sun, 17 Apr 2011 14:10:09 +0200
+Message-Id: <20110417114343.M44557@loan.com>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 82.128.15.24 (homolova)
 MIME-Version: 1.0
 Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host.fountium.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - ymail.com
+	charset=iso-8859-2
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An iraqi oil business man made a fixed deposit of $24,500.000.00 in my  
-bank branch where I am a director and he died with his entire family  
-in the war leaving behind no next of kin.
-I Propose to present you as next of kin to claim the funds.Get back to  
-me only if interested with your full name, and telephone number to  
-reach you and most importantly, a confirmation of acceptance from you  
-after which I shall furnish you with the full details of this  
-transaction.Respond only if interested.
-Yours Truly,
-WONG HUI
+Dear Sir/Madam,
 
+Welcome to Willows Finance Company Limited. We Offer Private, Commercial and 
+Personal Loans with very Minimal annual Interest Rates as Low as 3% within a 
+1 year to 10years repayment duration period to any part of the world. We give 
+out loans within the range of $5,000 to $5,000,000.00 USD. Our loans are well 
+insured for maximum security is our priority.
 
+Interested Persons should contact us via E-mail:
 
+Lender's Name: Mr. Terry Griffen
+Lender's Email: terrygfinn213@w.cn 
+
+BORROWERS INFORMATION
+
+Names:
+Country:
+Address:
+Age:
+Fax Number:
+Personal Number:
+Occupation:
+Sex:
+Monthly Income:
+Amount Needed:
+Loan duration:
+
+Best Regards
+Mr. Terry Griffen
+CEO/Willows Finance Company.
+Tel: + 44 702 404 7963
