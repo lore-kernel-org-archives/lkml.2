@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab1DQVHb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 17:07:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50133 "EHLO mx2.suse.de"
+	id S1753439Ab1DQVQb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 17:16:31 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57595 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab1DQVH0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 17:07:26 -0400
-Date: Mon, 18 Apr 2011 07:07:11 +1000
-From: NeilBrown <neilb@suse.de>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
-Message-ID: <20110418070711.12dd5cc1@notabene.brown>
-In-Reply-To: <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com>
-References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera>
-	<_H4l51C1wXN.A.yDC.yGuqNB@chimera>
-	<BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com>
-	<BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751466Ab1DQVQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 17:16:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/14] PM: Fix error code paths executed after failing syscore_suspend()
+Date: Sun, 17 Apr 2011 23:05:57 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@ti.com>, linux-arm-kernel@lists.infradead.org,
+        Ben Dooks <ben-linux@fluff.org>, Mike Frysinger <vapier@gentoo.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, Jiri Kosina <jkosina@suse.cz>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+References: <201103280125.11750.rjw@sisk.pl> <201104172301.54115.rjw@sisk.pl>
+In-Reply-To: <201104172301.54115.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104172305.57989.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Apr 2011 20:37:39 +0200 Bart Van Assche <bvanassche@acm.org> wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> On Sun, Apr 17, 2011 at 7:03 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Sun, Apr 17, 2011 at 5:57 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > This message has been generated automatically as a part of a summary report
-> > > of recent regressions.
-> > >
-> > > The following bug entry is on the current list of known regressions
-> > > from 2.6.38.  Please verify if it still should be listed and let the tracking team
-> > > know (either way).
-> > >
-> > >
-> > > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=32982
-> > > Subject         : Kernel locks up a few minutes after boot
-> > > Submitter       : Bart Van Assche <bart.vanassche@gmail.com>
-> > > Date            : 2011-04-10 19:55 (8 days old)
-> >
-> > Is this machine running a RAID5 setup or something like that?
-> >
-> > There is a known interaction with the new block layer plugging code
-> > and MD. The "hung task" report in that bugzilla looks very much like
-> > that issue. And you do have "root=/dev/md0", so clearly there's some
-> > md thing going on.
-> >
-> > And bisecting might not work all that well for it, because I suspect
-> > it ends up being very much a matter of IO patterns how it triggers.
-> >
-> > Neil supposedly has a patch for it, but I haven't seen it yet. Neil, Jens?
-> 
-> (converted top-posting into bottom-posting)
-> 
-> Hello Linus,
-> 
-> On the system on which bug #32982 has been triggered md0, md1 and md2
-> have been configured as two-disk RAID1 (mirroring).
+If syscore_suspend() fails in suspend_enter(), create_image() or
+resume_target_kernel(), it is necessary to call sysdev_resume(),
+because sysdev_suspend() has been called already and succeeded
+and we are going to abort the transition.
 
-If any of those have write-intent bitmaps then I definitely know what the
-problem is and I'll be posting patches later today (probably not much later).
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ kernel/power/hibernate.c |   10 ++++++++--
+ kernel/power/suspend.c   |    5 ++++-
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
-If not .. then I'm less sure but it would certainly be worth testing after
-applying the promised fixes.
-
-NeilBrown
-
-
-> 
-> I've done my best to trigger enough I/O in order to obtain reliable
-> bisect results. A difficulty I encountered during bisecting though was
-> that I encountered unbootable kernels (all skipped revisions).
-> 
-> Bart.
+Index: linux-2.6/kernel/power/suspend.c
+===================================================================
+--- linux-2.6.orig/kernel/power/suspend.c
++++ linux-2.6/kernel/power/suspend.c
+@@ -164,8 +164,11 @@ static int suspend_enter(suspend_state_t
+ 	BUG_ON(!irqs_disabled());
+ 
+ 	error = sysdev_suspend(PMSG_SUSPEND);
+-	if (!error)
++	if (!error) {
+ 		error = syscore_suspend();
++		if (error)
++			sysdev_resume();
++	}
+ 	if (!error) {
+ 		if (!(suspend_test(TEST_CORE) || pm_wakeup_pending())) {
+ 			error = suspend_ops->enter(state);
+Index: linux-2.6/kernel/power/hibernate.c
+===================================================================
+--- linux-2.6.orig/kernel/power/hibernate.c
++++ linux-2.6/kernel/power/hibernate.c
+@@ -273,8 +273,11 @@ static int create_image(int platform_mod
+ 	local_irq_disable();
+ 
+ 	error = sysdev_suspend(PMSG_FREEZE);
+-	if (!error)
++	if (!error) {
+ 		error = syscore_suspend();
++		if (error)
++			sysdev_resume();
++	}
+ 	if (error) {
+ 		printk(KERN_ERR "PM: Some system devices failed to power down, "
+ 			"aborting hibernation\n");
+@@ -407,8 +410,11 @@ static int resume_target_kernel(bool pla
+ 	local_irq_disable();
+ 
+ 	error = sysdev_suspend(PMSG_QUIESCE);
+-	if (!error)
++	if (!error) {
+ 		error = syscore_suspend();
++		if (error)
++			sysdev_resume();
++	}
+ 	if (error)
+ 		goto Enable_irqs;
+ 
 
