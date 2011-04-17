@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1DQSaN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 14:30:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753178Ab1DQSaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 14:30:08 -0400
-Date: Sun, 17 Apr 2011 14:29:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: tglx@linutronix.de
-Subject: WARN_ON report from clockevents_program_event
-Message-ID: <20110417182958.GA1821@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de
+	id S1753511Ab1DQSiH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 14:38:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39524 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab1DQSiB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 14:38:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=nxWF5ow+/SF4vw5BrVaZPN2bs1CXc6DhmgXdF3zI87qmrsUvKLZrt67dRpo+5oFPJ6
+         z/uYiv24ZDvMcgcZj0m4HpcmQH58HucGA44r8inGYD1fPPqUCM1hN5SBvls1Bfjrwnpl
+         afgQPOFJtbUgv0bdFWxGIDiQvRV2SvxIvzMew=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com>
+References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera> <_H4l51C1wXN.A.yDC.yGuqNB@chimera>
+ <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Sun, 17 Apr 2011 20:37:39 +0200
+X-Google-Sender-Auth: IIzqO1ju4mtTaWyht4qpTGex1tE
+Message-ID: <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com>
+Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>,
+        Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just hit this warning on a box under heavy load.
+On Sun, Apr 17, 2011 at 7:03 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Apr 17, 2011 at 5:57 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.38.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=32982
+> > Subject         : Kernel locks up a few minutes after boot
+> > Submitter       : Bart Van Assche <bart.vanassche@gmail.com>
+> > Date            : 2011-04-10 19:55 (8 days old)
+>
+> Is this machine running a RAID5 setup or something like that?
+>
+> There is a known interaction with the new block layer plugging code
+> and MD. The "hung task" report in that bugzilla looks very much like
+> that issue. And you do have "root=/dev/md0", so clearly there's some
+> md thing going on.
+>
+> And bisecting might not work all that well for it, because I suspect
+> it ends up being very much a matter of IO patterns how it triggers.
+>
+> Neil supposedly has a patch for it, but I haven't seen it yet. Neil, Jens?
 
-WARNING: at kernel/time/clockevents.c:110 clockevents_program_event+0x37/0x90()
-Hardware name: GA-MA78GM-S2H
-Modules linked in: microcode fuse btrfs zlib_deflate tun uinput rfcomm pn_pep can_raw cmtp kernelcapi sctp libcrc32c hidp can pppoe pppox ppp_generic slhc appletalk rds rose ax25 decnet irda crc_ccitt af_key phonet bluetooth rfkill af_802154 ipx p8022 psnap llc p8023 atm nfsd lockd nfs_acl auth_rpcgss sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ppdev snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd soundcore edac_core pcspkr snd_page_alloc edac_mce_amd k10temp sp5100_tco i2c_piix4 r8169 mii parport_pc parport wmi lm63 ipv6 pata_acpi firewire_ohci ata_generic firewire_core crc_itu_t pata_atiixp floppy radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
-Pid: 16066, comm: trinity Not tainted 2.6.39-rc3+ #3
-Call Trace:
- <IRQ>  [<ffffffff810569ac>] warn_slowpath_common+0x83/0x9b
- [<ffffffff810569de>] warn_slowpath_null+0x1a/0x1c
- [<ffffffff81080380>] clockevents_program_event+0x37/0x90
- [<ffffffff8108144d>] tick_dev_program_event+0x3c/0xfb
- [<ffffffff8108152b>] tick_program_event+0x1f/0x21
- [<ffffffff81076c41>] hrtimer_interrupt+0x127/0x1c2
- [<ffffffff814c410e>] smp_apic_timer_interrupt+0x79/0x8c
- [<ffffffff814c2f93>] apic_timer_interrupt+0x13/0x20
- <EOI>  [<ffffffff814c257a>] ? sysret_check+0x2e/0x69
----[ end trace 76ca0db688fca8df ]---
-hrtimer: interrupt took 47180328 ns
+(converted top-posting into bottom-posting)
 
-which is ..
+Hello Linus,
 
-109         if (unlikely(expires.tv64 < 0)) {
-110                 WARN_ON_ONCE(1);
-111                 return -ETIME;
-112         }
+On the system on which bug #32982 has been triggered md0, md1 and md2
+have been configured as two-disk RAID1 (mirroring).
 
+I've done my best to trigger enough I/O in order to obtain reliable
+bisect results. A difficulty I encountered during bisecting though was
+that I encountered unbootable kernels (all skipped revisions).
 
-	Dave
+Bart.
