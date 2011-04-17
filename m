@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab1DQSHb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 14:07:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:49290 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab1DQSHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 14:07:24 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=wom5GMh1gUkA:10 a=n9MmX0RCC_8A:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=isJYg_9NOmvcMoE_sM8A:9 a=zRh9av5Dop7F9ceQnpEA:7 a=CjuIK1q_8ugA:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.154.172
-Date: Sun, 17 Apr 2011 13:07:22 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: crocket <crockabiscuit@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
- from root or to another non-root uid from a non-root uid.
-Message-ID: <20110417180722.GA21112@hallyn.com>
-References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
+	id S1752936Ab1DQSIQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 14:08:16 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:44091 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab1DQSIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 14:08:10 -0400
+Date: Sun, 17 Apr 2011 20:08:01 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Michal Simek <monstr@monstr.eu>,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de
+Subject: Re: [PATCH v2] uio/pdrv_genirq: Add OF support
+Message-ID: <20110417180801.GA2866@local>
+References: <1302774106-32764-1-git-send-email-monstr@monstr.eu>
+ <20110414230602.GC2780@local>
+ <201104171953.42440.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201104171953.42440.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You need
+On Sun, Apr 17, 2011 at 07:53:42PM +0200, Arnd Bergmann wrote:
+> On Friday 15 April 2011, Hans J. Koch wrote:
+> > > +#ifdef CONFIG_OF
+> > > +/*
+> > > + * Empty match table for of_platform binding
+> > > + * Select your custom compatible string in format
+> > > + * { .compatible = "<compatible string>", },
+> > > + */
+> > > +static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> > > +     { /* end of list */ },
+> > 
+> > doesn't that want a NULL termination?
+> > 
+> 
+> It is NULL terminated, that is the /* end of list */.
 
-	prctl(PR_SET_KEEPCAPS, 1);
+Right.
 
-man prctl for details.  In particular, see the following example:
-
-#include <stdio.h>
-#include <sys/prctl.h>
-#include <sys/capability.h>
-
-int main()
-{
-	cap_t c;
-	c = cap_get_proc();
-	printf("uid %d, current caps: %s\n", getuid(), cap_to_text(c, NULL));
-	cap_free(c);
-	prctl(PR_SET_KEEPCAPS, 1);
-	setuid(1001, 1001, 1001);
-	c = cap_get_proc();
-	printf("uid %d, current caps: %s\n", getuid(), cap_to_text(c, NULL));
-	cap_free(c);
-}
-
-You can either run that as root, or you can do
-
-	sudo setcap cap_setuid,cap_setgid,cap_sys_admin=eip captest
-
-and then run it as non-root.
-
-HTH,
--serge
+Thanks,
+Hans
