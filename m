@@ -1,99 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1DQCLW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 22:11:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4596 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641Ab1DQCLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 22:11:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,225,1301900400"; 
-   d="scan'208";a="629912928"
-Date: Sun, 17 Apr 2011 10:11:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
- time
-Message-ID: <20110417021111.GA11352@localhost>
-References: <20110413233122.GA6097@localhost>
- <20110413235211.GN31057@dastard>
- <20110414002301.GA9826@localhost>
- <20110414151424.GA367@localhost>
- <20110414181609.GH5054@quack.suse.cz>
- <20110415034300.GA23430@localhost>
- <20110415143711.GA17181@localhost>
- <20110415221314.GE5432@quack.suse.cz>
- <1302942809.2388.254.camel@twins>
- <20110416142114.GA12220@localhost>
+	id S1754890Ab1DQDPk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 23:15:40 -0400
+Received: from 138.160.173.62.host.static.ip.kpnqwest.it ([62.173.160.138]:3425
+	"EHLO mail2.monforte.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab1DQDPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 23:15:34 -0400
+X-Greylist: delayed 3038 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Apr 2011 23:15:33 EDT
+Date: Sun, 17 Apr 2011 04:24:53 +0200
+From: smae.inc@gncn.net
+Reply-To: smae.inc@gncn.net
+Subject: =?UTF-8?Q?O seu mau cr=C3=A9dito?=
+Message-ID: <fc1d1073b6e3329116409c5daead7e3c@darioevittoria.it>
+X-Mailer: IceWarp Web Mail 5.6.7
+X-Originating-IP: 199.255.209.74
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110416142114.GA12220@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 16, 2011 at 10:21:14PM +0800, Wu Fengguang wrote:
-> On Sat, Apr 16, 2011 at 04:33:29PM +0800, Peter Zijlstra wrote:
-> > On Sat, 2011-04-16 at 00:13 +0200, Jan Kara wrote:
-> > > 
-> > > So what is a takeaway from this for me is that scaling the period
-> > > with the dirty limit is not the right thing. If you'd have 4-times more
-> > > memory, your choice of "dirty limit" as the period would be as bad as
-> > > current 4*"dirty limit". What would seem like a better choice of period
-> > > to me would be to have the period in an order of a few seconds worth of
-> > > writeback. That would allow the bdi limit to scale up reasonably fast when
-> > > new bdi starts to be used and still not make it fluctuate that much
-> > > (hopefully).
-> > 
-> > No best would be to scale the period with the writeout bandwidth, but
-> > lacking that the dirty limit had to do. Since we're counting pages, and
-> > bandwidth is pages/second we'll end up with a time measure, exactly the
-> > thing you wanted.
-> 
-> I owe you the patch :) Here is a tested one for doing the bandwidth
-> based scaling. It's based on the attached global writeout bandwidth
-> estimation.
-> 
-> I tried updating the shift both on rosed and fallen bandwidth, however
-> that leads to reset of the accumulated proportion values. So here the
-> shift will only be increased and never decreased.
+Hello,
+  Please contact us for your secure and unsecured Loan at an interest rate of 3.75%
+..................
+Olá,
+  Você está enfrentando alguma dificuldade financeira em sua vida profissional ou social, então você precisa de ajuda financeira.
+  Meu nome é Dr. Alli Sallie Mae. O director da SALLIE MAE INTERNACIONAL. O nosso seguro de crédito irá garantir que você não está perdendo um único centavo que você receberá. Oferecemos empréstimos seguro com taxa de juros de 3.75%.
+Este é o nosso endereço de contato para os interessados em participar de uma transação com a gente:
+smae.inc@gncn.net
 
-I cannot reproduce the issue now.  It may be due to the bandwidth
-estimation went wrong and get tiny values at times in an early patch,
-thus "resetting" the proportional values.
+(n º de segurança social e sem verificação de crédito, 100% garantido!)
+Espero que possamos atendê-lo.
+Novamente, obrigado pela sua atenção.
 
-I'll carry the below version in future tests. In theory we could do
-more coarse tracking with
-
-        if (abs(shift - vm_completions.pg[0].shift) <= 1)
-                return;
-
-But let's do it more diligent now.
-
-Thanks,
-Fengguang
----
-@@ -143,6 +136,13 @@ static int calc_period_shift(void)
- static void update_completion_period(void)
- {
- 	int shift = calc_period_shift();
-+
-+	if (shift > PROP_MAX_SHIFT)
-+		shift = PROP_MAX_SHIFT;
-+
-+	if (shift == vm_completions.pg[0].shift)
-+		return;
-+
- 	prop_change_shift(&vm_completions, shift);
- 	prop_change_shift(&vm_dirties, shift);
- }
+SALLIE MAE INC
 
