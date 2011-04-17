@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab1DQN4q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 09:56:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56842 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab1DQNwM convert rfc822-to-8bit (ORCPT
+	id S1753720Ab1DQN5w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 09:57:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32941 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab1DQN5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 09:52:12 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Dmitry Nezhevenko" <dion@inhex.net>
-References: <sam8u5dLkaB.A.afE.53uqNB@chimera>
-In-Reply-To: <sam8u5dLkaB.A.afE.53uqNB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <IqJL5EkbqD.A.ifF.24uqNB@chimera>
-Subject: [Bug #30992] 2.6.38-rc7: Some strange soft-lockup
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 17 Apr 2011 15:52:10 +0200 (CEST)
+	Sun, 17 Apr 2011 09:57:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZnsTklRpR/hnkjRSWYUTIB64fxAIJUAlpsrWLcfyFgCifBzb6ffz+6PcxU9cS65htp
+         rROMZIlvTEC9ycs3GlvGm9ZCY3RaTH1jaGPVnjWG+9VgWBGu7C/2AFgEhbOBTboIGkVy
+         8rSg6kd8D+IWqZz6sXDUn3O7abVU+xZwMRx70=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Greg Ungerer <gerg@uclinux.org>
+Subject: [PATCH] m68knommu: use asm-generic/bitops/ext2-atomic.h
+Date: Sun, 17 Apr 2011 22:57:29 +0900
+Message-Id: <1303048649-28265-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.37 and 2.6.38.
+m68knommu can use generic implementation of ext2 atomic bitops.
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.37 and 2.6.38.  Please verify if it still should
-be listed and let the tracking team know (either way).
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Greg Ungerer <gerg@uclinux.org>
+---
+ arch/m68k/include/asm/bitops_no.h |   18 +-----------------
+ 1 files changed, 1 insertions(+), 17 deletions(-)
 
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=30992
-Subject		: 2.6.38-rc7: Some strange soft-lockup
-Submitter	: Dmitry Nezhevenko <dion@inhex.net>
-Date		: 2011-03-06 14:01 (43 days old)
-Message-ID	: <20110306140104.GA7700@laptop.local>
-References	: http://marc.info/?l=linux-kernel&m=129942161205739&w=2
-
+diff --git a/arch/m68k/include/asm/bitops_no.h b/arch/m68k/include/asm/bitops_no.h
+index 7d3779f..6b0e2d3 100644
+--- a/arch/m68k/include/asm/bitops_no.h
++++ b/arch/m68k/include/asm/bitops_no.h
+@@ -246,23 +246,7 @@ static inline int __test_and_clear_bit_le(int nr, volatile void *addr)
+ 	return retval;
+ }
+ 
+-#define ext2_set_bit_atomic(lock, nr, addr)		\
+-	({						\
+-		int ret;				\
+-		spin_lock(lock);			\
+-		ret = __test_and_set_bit_le((nr), (addr));	\
+-		spin_unlock(lock);			\
+-		ret;					\
+-	})
+-
+-#define ext2_clear_bit_atomic(lock, nr, addr)		\
+-	({						\
+-		int ret;				\
+-		spin_lock(lock);			\
+-		ret = __test_and_clear_bit_le((nr), (addr));	\
+-		spin_unlock(lock);			\
+-		ret;					\
+-	})
++#include <asm-generic/bitops/ext2-atomic.h>
+ 
+ static inline int test_bit_le(int nr, const volatile void *addr)
+ {
+-- 
+1.7.4.2
 
