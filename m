@@ -1,107 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab1DQPUr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 11:20:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4890 "EHLO
+	id S1754725Ab1DQPWk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 11:22:40 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5414 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1DQPUm (ORCPT
+	with ESMTP id S1752667Ab1DQPWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 11:20:42 -0400
+	Sun, 17 Apr 2011 11:22:34 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=RWDDIDCMFduABINgYn3XOkoUvPY+92eNytos4ile8iKaLnhLntNFLCSq+n8opLVgA
-	1si8UKrZfNizhMJo4Z3aw==
+	b=uvSQtT/UHYSy8r2f7cYgVYU7XxGrwkTRd0j0izjqhA+KxhaaL+LxUDe0kG9exPcay
+	Zv8V8lGrXOhQJ76rzjtVA==
 From: Greg Thelen <gthelen@google.com>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Thelen <gthelen@google.com>
-Subject: [PATCH] PCI: handle positive error codes
-Date: Sun, 17 Apr 2011 08:20:32 -0700
-Message-Id: <1303053632-32650-1-git-send-email-gthelen@google.com>
+Subject: [PATCH] PCI: check pci_vpd_pci22_wait() return
+Date: Sun, 17 Apr 2011 08:22:21 -0700
+Message-Id: <1303053741-384-1-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Callers expect pci_user_{read,write}_config_*() to indicate errors by
-returning negative values.  Prior to this change, the indicated routines
-could return positive error codes (e.g. PCIBIOS_BAD_REGISTER_NUMBER)
-which callers would mistakenly interpret as success.
+pci_vpd_pci22_write() calls pci_vpd_pci22_wait() after writing
+PCI_VPD_DATA and PCI_VPD_ADDR to wait for the VPD operation to complete.
+The result pci_vpd_pci22_wait() was not checked for error.
 
-This change converts any non-zero return from the mentioned routines
-into unambiguous negative value return codes.
+This change checks for error.
 
 Signed-off-by: Greg Thelen <gthelen@google.com>
 ---
- drivers/pci/access.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/pci/access.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 531bc69..502610b 100644
+index 502610b..fdaa42a 100644
 --- a/drivers/pci/access.c
 +++ b/drivers/pci/access.c
-@@ -143,33 +143,41 @@ static noinline void pci_wait_ucfg(struct pci_dev *dev)
- 	__remove_wait_queue(&pci_ucfg_wait, &wait);
- }
- 
-+/* Returns 0 on success, negative values indicate error. */
- #define PCI_USER_READ_CONFIG(size,type)					\
- int pci_user_read_config_##size						\
- 	(struct pci_dev *dev, int pos, type *val)			\
- {									\
- 	int ret = 0;							\
- 	u32 data = -1;							\
--	if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;	\
-+	if (PCI_##size##_BAD)						\
-+		return -EINVAL;						\
- 	raw_spin_lock_irq(&pci_lock);				\
- 	if (unlikely(dev->block_ucfg_access)) pci_wait_ucfg(dev);	\
- 	ret = dev->bus->ops->read(dev->bus, dev->devfn,			\
- 					pos, sizeof(type), &data);	\
- 	raw_spin_unlock_irq(&pci_lock);				\
- 	*val = (type)data;						\
-+	if (ret > 0)							\
-+		ret = -EINVAL;						\
- 	return ret;							\
- }
- 
-+/* Returns 0 on success, negative values indicate error. */
- #define PCI_USER_WRITE_CONFIG(size,type)				\
- int pci_user_write_config_##size					\
- 	(struct pci_dev *dev, int pos, type val)			\
- {									\
- 	int ret = -EIO;							\
--	if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;	\
-+	if (PCI_##size##_BAD)						\
-+		return -EINVAL;						\
- 	raw_spin_lock_irq(&pci_lock);				\
- 	if (unlikely(dev->block_ucfg_access)) pci_wait_ucfg(dev);	\
- 	ret = dev->bus->ops->write(dev->bus, dev->devfn,		\
- 					pos, sizeof(type), val);	\
- 	raw_spin_unlock_irq(&pci_lock);				\
-+	if (ret > 0)							\
-+		ret = -EINVAL;						\
- 	return ret;							\
- }
- 
-@@ -197,6 +205,8 @@ struct pci_vpd_pci22 {
-  * This code has to spin since there is no other notification from the PCI
-  * hardware. Since the VPD is often implemented by serial attachment to an
-  * EEPROM, it may take many milliseconds to complete.
-+ *
-+ * Returns 0 on success, negative values indicate error.
-  */
- static int pci_vpd_pci22_wait(struct pci_dev *dev)
- {
-@@ -212,7 +222,7 @@ static int pci_vpd_pci22_wait(struct pci_dev *dev)
- 	for (;;) {
- 		ret = pci_user_read_config_word(dev, vpd->cap + PCI_VPD_ADDR,
- 						&status);
--		if (ret)
+@@ -334,6 +334,8 @@ static ssize_t pci_vpd_pci22_write(struct pci_dev *dev, loff_t pos, size_t count
+ 		vpd->busy = true;
+ 		vpd->flag = 0;
+ 		ret = pci_vpd_pci22_wait(dev);
 +		if (ret < 0)
- 			return ret;
++			break;
  
- 		if ((status & PCI_VPD_ADDR_F) == vpd->flag) {
+ 		pos += sizeof(u32);
+ 	}
 -- 
 1.7.3.1
 
