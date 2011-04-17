@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab1DQSwK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 14:52:10 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54893 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab1DQSwG (ORCPT
+	id S1753750Ab1DQTDp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 15:03:45 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:37130 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753499Ab1DQTDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 14:52:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=swhAOz96MHn5SnvCcq89oiqcz/PgHvVoISry8NqbRIhbpwuHQ7Xt6+yc8HwYkzlyay
-         z01s35JjApETNWcwldWI1Vs03PAusupibr8ss1C7l/PSDpqJ05YeHwg/Ii6CeLMubYT4
-         tydXHHkNbQ0uY9KjqyeD+w4cr5e0sGKdXMD80=
-Message-ID: <4DAB36D0.8080503@gmail.com>
-Date: Sun, 17 Apr 2011 14:52:00 -0400
-From: Jay Estabrook <jay.estabrook@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20101002)
-MIME-Version: 1.0
-To: Mikael Pettersson <mikpe@it.uu.se>
-CC: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [bug] 2.6.39-rc3 fails to boot on Alpha
-References: <19883.912.266127.538215@pilspetsen.it.uu.se>
-In-Reply-To: <19883.912.266127.538215@pilspetsen.it.uu.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 17 Apr 2011 15:03:39 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=BPNMtpCoLxg2i77ecwf44grSZ3kll9OIOfdegfW9zgL2EBX+5UWw5A3IULnlpP/RojXmQtRdzEiOfvZfatXmK0Jd63IbV6WHdYxZ73WOO0CQd0ntcWyn0mjJhI1y5OKS;
+Date: Sun, 17 Apr 2011 12:03:36 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5 v2]Typo: Remove one to many ccc's in some comments.
+Message-Id: <20110417120336.49f71508.rdunlap@xenotime.net>
+In-Reply-To: <1303063749-8282-3-git-send-email-justinmattock@gmail.com>
+References: <1303063749-8282-1-git-send-email-justinmattock@gmail.com>
+	<1303063749-8282-3-git-send-email-justinmattock@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try replacing the reference to "no_irq_chip" with "dummy_irq_chip"
-in arch/alpha/irq_alpha.c: int_rtc_irq().
+On Sun, 17 Apr 2011 11:09:07 -0700 Justin P. Mattock wrote:
 
-For me, it was dying in the first RTC interrupt taken.
+> The below patch is a resend due to rebasing to the current Mainline, fixing
+> some comments due to having one to many ccc's in the definitions.
+>  
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  arch/m68k/include/asm/MC68EZ328.h |    2 +-
+>  arch/m68k/include/asm/MC68VZ328.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/m68k/include/asm/MC68EZ328.h b/arch/m68k/include/asm/MC68EZ328.h
+> index 69b7f91..b2ee25d 100644
+> --- a/arch/m68k/include/asm/MC68EZ328.h
+> +++ b/arch/m68k/include/asm/MC68EZ328.h
+> @@ -1047,7 +1047,7 @@ typedef volatile struct {
+>  
+>  #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
+>  #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
+> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
+> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
 
-Jay
+                                                              occurred
+(above and below)
 
-On 04/17/2011 11:13 AM, Mikael Pettersson wrote:
-> 2.6.39-rc3 doesn't boot on my Alpha (XP900).  As soon as aboot has loaded
-> and started the kernel I get:
-> 
-> halted CPU 0
-> 
-> halt code = 4
-> invalid PTBR
-> PC = fffffc00003130d0
-> 
-> (that PC value points to an "lda" instruction in sys_osf_proplist_syscall)
-> 
-> There's no other output except this, so I don't think the kernel got very far.
-> 
-> Haven't checked 2.6.39-rc[12] or bisected anything yet, but 2.6.38 works fine.
-> 
-> /Mikael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-alpha" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
+>  #define WATCHDOG_CNT_SHIFT 8
+>  
+> diff --git a/arch/m68k/include/asm/MC68VZ328.h b/arch/m68k/include/asm/MC68VZ328.h
+> index 2b9bf62..62cd79a 100644
+> --- a/arch/m68k/include/asm/MC68VZ328.h
+> +++ b/arch/m68k/include/asm/MC68VZ328.h
+> @@ -1143,7 +1143,7 @@ typedef struct {
+>  
+>  #define WATCHDOG_EN	0x0001	/* Watchdog Enabled */
+>  #define WATCHDOG_ISEL	0x0002	/* Select the watchdog interrupt */
+> -#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occcured */
+> +#define WATCHDOG_INTF	0x0080	/* Watchdog interrupt occured */
+>  #define WATCHDOG_CNT_MASK  0x0300	/* Watchdog Counter */
+>  #define WATCHDOG_CNT_SHIFT 8
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
