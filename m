@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab1DQVRz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 17:17:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57798 "EHLO ogre.sisk.pl"
+	id S1754055Ab1DQVSD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 17:18:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57784 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827Ab1DQVQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753824Ab1DQVQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Apr 2011 17:16:54 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 14/14] PM: Remove sysdev suspend, resume and shutdown operations
-Date: Sun, 17 Apr 2011 23:15:08 +0200
+Subject: [PATCH 13/14] PM / PowerPC: Use struct syscore_ops instead of sysdevs for PM
+Date: Sun, 17 Apr 2011 23:14:26 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
@@ -29,581 +29,366 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104172315.08769.rjw@sisk.pl>
+Message-Id: <201104172314.27023.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Since suspend, resume and shutdown operations in struct sysdev_class
-and struct sysdev_driver are not used any more, remove them.  Also
-drop sysdev_suspend(), sysdev_resume() and sysdev_shutdown() used
-for executing those operations and modify all of their users
-accordingly.  This reduces kernel code size quite a bit and reduces
-its complexity.
+Make some PowerPC architecture's code use struct syscore_ops
+objects for power management instead of sysdev classes and sysdevs.
+
+This simplifies the code and reduces the kernel's memory footprint.
+It also is necessary for removing sysdevs from the kernel entirely in
+the future.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/sh/Kconfig          |    1 
- arch/x86/Kconfig         |    1 
- arch/x86/kernel/apm_32.c |    4 
- drivers/base/Kconfig     |    7 -
- drivers/base/base.h      |    2 
- drivers/base/sys.c       |  202 -----------------------------------------------
- drivers/xen/manage.c     |    8 -
- include/linux/device.h   |    7 -
- include/linux/pm.h       |    8 -
- include/linux/sysdev.h   |   11 --
- kernel/kexec.c           |    9 --
- kernel/power/hibernate.c |   18 ----
- kernel/power/suspend.c   |    8 -
- kernel/sys.c             |    3 
- 14 files changed, 7 insertions(+), 282 deletions(-)
+ arch/powerpc/include/asm/mpic.h        |    3 --
+ arch/powerpc/platforms/cell/spu_base.c |   28 ++++++++++++-------
+ arch/powerpc/platforms/powermac/pic.c  |   42 +++++++---------------------
+ arch/powerpc/sysdev/ipic.c             |   36 ++++++------------------
+ arch/powerpc/sysdev/mpic.c             |   48 +++++++++++++++++----------------
+ 5 files changed, 64 insertions(+), 93 deletions(-)
 
-Index: linux-2.6/drivers/base/sys.c
+Index: linux-2.6/arch/powerpc/platforms/powermac/pic.c
 ===================================================================
---- linux-2.6.orig/drivers/base/sys.c
-+++ linux-2.6/drivers/base/sys.c
-@@ -328,203 +328,8 @@ void sysdev_unregister(struct sys_device
- 	kobject_put(&sysdev->kobj);
+--- linux-2.6.orig/arch/powerpc/platforms/powermac/pic.c
++++ linux-2.6/arch/powerpc/platforms/powermac/pic.c
+@@ -21,7 +21,7 @@
+ #include <linux/signal.h>
+ #include <linux/pci.h>
+ #include <linux/interrupt.h>
+-#include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/adb.h>
+ #include <linux/pmu.h>
+ #include <linux/module.h>
+@@ -677,7 +677,7 @@ not_found:
+ 	return viaint;
  }
  
--
--#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
--/**
-- *	sysdev_shutdown - Shut down all system devices.
-- *
-- *	Loop over each class of system devices, and the devices in each
-- *	of those classes. For each device, we call the shutdown method for
-- *	each driver registered for the device - the auxiliaries,
-- *	and the class driver.
-- *
-- *	Note: The list is iterated in reverse order, so that we shut down
-- *	child devices before we shut down their parents. The list ordering
-- *	is guaranteed by virtue of the fact that child devices are registered
-- *	after their parents.
-- */
--void sysdev_shutdown(void)
--{
--	struct sysdev_class *cls;
--
--	pr_debug("Shutting Down System Devices\n");
--
--	mutex_lock(&sysdev_drivers_lock);
--	list_for_each_entry_reverse(cls, &system_kset->list, kset.kobj.entry) {
--		struct sys_device *sysdev;
--
--		pr_debug("Shutting down type '%s':\n",
--			 kobject_name(&cls->kset.kobj));
--
--		list_for_each_entry(sysdev, &cls->kset.list, kobj.entry) {
--			struct sysdev_driver *drv;
--			pr_debug(" %s\n", kobject_name(&sysdev->kobj));
--
--			/* Call auxiliary drivers first */
--			list_for_each_entry(drv, &cls->drivers, entry) {
--				if (drv->shutdown)
--					drv->shutdown(sysdev);
--			}
--
--			/* Now call the generic one */
--			if (cls->shutdown)
--				cls->shutdown(sysdev);
--		}
--	}
--	mutex_unlock(&sysdev_drivers_lock);
--}
--
--static void __sysdev_resume(struct sys_device *dev)
--{
--	struct sysdev_class *cls = dev->cls;
--	struct sysdev_driver *drv;
--
--	/* First, call the class-specific one */
--	if (cls->resume)
--		cls->resume(dev);
--	WARN_ONCE(!irqs_disabled(),
--		"Interrupts enabled after %pF\n", cls->resume);
--
--	/* Call auxiliary drivers next. */
--	list_for_each_entry(drv, &cls->drivers, entry) {
--		if (drv->resume)
--			drv->resume(dev);
--		WARN_ONCE(!irqs_disabled(),
--			"Interrupts enabled after %pF\n", drv->resume);
--	}
--}
--
--/**
-- *	sysdev_suspend - Suspend all system devices.
-- *	@state:		Power state to enter.
-- *
-- *	We perform an almost identical operation as sysdev_shutdown()
-- *	above, though calling ->suspend() instead. Interrupts are disabled
-- *	when this called. Devices are responsible for both saving state and
-- *	quiescing or powering down the device.
-- *
-- *	This is only called by the device PM core, so we let them handle
-- *	all synchronization.
-- */
--int sysdev_suspend(pm_message_t state)
--{
--	struct sysdev_class *cls;
--	struct sys_device *sysdev, *err_dev;
--	struct sysdev_driver *drv, *err_drv;
--	int ret;
--
--	pr_debug("Checking wake-up interrupts\n");
--
--	/* Return error code if there are any wake-up interrupts pending */
--	ret = check_wakeup_irqs();
--	if (ret)
--		return ret;
--
--	WARN_ONCE(!irqs_disabled(),
--		"Interrupts enabled while suspending system devices\n");
--
--	pr_debug("Suspending System Devices\n");
--
--	list_for_each_entry_reverse(cls, &system_kset->list, kset.kobj.entry) {
--		pr_debug("Suspending type '%s':\n",
--			 kobject_name(&cls->kset.kobj));
--
--		list_for_each_entry(sysdev, &cls->kset.list, kobj.entry) {
--			pr_debug(" %s\n", kobject_name(&sysdev->kobj));
--
--			/* Call auxiliary drivers first */
--			list_for_each_entry(drv, &cls->drivers, entry) {
--				if (drv->suspend) {
--					ret = drv->suspend(sysdev, state);
--					if (ret)
--						goto aux_driver;
--				}
--				WARN_ONCE(!irqs_disabled(),
--					"Interrupts enabled after %pF\n",
--					drv->suspend);
--			}
--
--			/* Now call the generic one */
--			if (cls->suspend) {
--				ret = cls->suspend(sysdev, state);
--				if (ret)
--					goto cls_driver;
--				WARN_ONCE(!irqs_disabled(),
--					"Interrupts enabled after %pF\n",
--					cls->suspend);
--			}
--		}
--	}
--	return 0;
--	/* resume current sysdev */
--cls_driver:
--	drv = NULL;
--	printk(KERN_ERR "Class suspend failed for %s: %d\n",
--		kobject_name(&sysdev->kobj), ret);
--
--aux_driver:
--	if (drv)
--		printk(KERN_ERR "Class driver suspend failed for %s: %d\n",
--				kobject_name(&sysdev->kobj), ret);
--	list_for_each_entry(err_drv, &cls->drivers, entry) {
--		if (err_drv == drv)
--			break;
--		if (err_drv->resume)
--			err_drv->resume(sysdev);
--	}
--
--	/* resume other sysdevs in current class */
--	list_for_each_entry(err_dev, &cls->kset.list, kobj.entry) {
--		if (err_dev == sysdev)
--			break;
--		pr_debug(" %s\n", kobject_name(&err_dev->kobj));
--		__sysdev_resume(err_dev);
--	}
--
--	/* resume other classes */
--	list_for_each_entry_continue(cls, &system_kset->list, kset.kobj.entry) {
--		list_for_each_entry(err_dev, &cls->kset.list, kobj.entry) {
--			pr_debug(" %s\n", kobject_name(&err_dev->kobj));
--			__sysdev_resume(err_dev);
--		}
--	}
--	return ret;
--}
--EXPORT_SYMBOL_GPL(sysdev_suspend);
--
--/**
-- *	sysdev_resume - Bring system devices back to life.
-- *
-- *	Similar to sysdev_suspend(), but we iterate the list forwards
-- *	to guarantee that parent devices are resumed before their children.
-- *
-- *	Note: Interrupts are disabled when called.
-- */
--int sysdev_resume(void)
--{
--	struct sysdev_class *cls;
--
--	WARN_ONCE(!irqs_disabled(),
--		"Interrupts enabled while resuming system devices\n");
--
--	pr_debug("Resuming System Devices\n");
--
--	list_for_each_entry(cls, &system_kset->list, kset.kobj.entry) {
--		struct sys_device *sysdev;
--
--		pr_debug("Resuming type '%s':\n",
--			 kobject_name(&cls->kset.kobj));
--
--		list_for_each_entry(sysdev, &cls->kset.list, kobj.entry) {
--			pr_debug(" %s\n", kobject_name(&sysdev->kobj));
--
--			__sysdev_resume(sysdev);
--		}
--	}
--	return 0;
--}
--EXPORT_SYMBOL_GPL(sysdev_resume);
--#endif /* CONFIG_ARCH_NO_SYSDEV_OPS */
-+EXPORT_SYMBOL_GPL(sysdev_register);
-+EXPORT_SYMBOL_GPL(sysdev_unregister);
- 
- int __init system_bus_init(void)
+-static int pmacpic_suspend(struct sys_device *sysdev, pm_message_t state)
++static int pmacpic_suspend(void)
  {
-@@ -534,9 +339,6 @@ int __init system_bus_init(void)
+ 	int viaint = pmacpic_find_viaint();
+ 
+@@ -698,7 +698,7 @@ static int pmacpic_suspend(struct sys_de
+         return 0;
+ }
+ 
+-static int pmacpic_resume(struct sys_device *sysdev)
++static void pmacpic_resume(void)
+ {
+ 	int i;
+ 
+@@ -709,39 +709,19 @@ static int pmacpic_resume(struct sys_dev
+ 	for (i = 0; i < max_real_irqs; ++i)
+ 		if (test_bit(i, sleep_save_mask))
+ 			pmac_unmask_irq(irq_get_irq_data(i));
+-
+-	return 0;
+ }
+ 
+-#endif /* CONFIG_PM && CONFIG_PPC32 */
+-
+-static struct sysdev_class pmacpic_sysclass = {
+-	.name = "pmac_pic",
++static struct syscore_ops pmacpic_syscore_ops = {
++	.suspend	= pmacpic_suspend,
++	.resume		= pmacpic_resume,
+ };
+ 
+-static struct sys_device device_pmacpic = {
+-	.id		= 0,
+-	.cls		= &pmacpic_sysclass,
+-};
+-
+-static struct sysdev_driver driver_pmacpic = {
+-#if defined(CONFIG_PM) && defined(CONFIG_PPC32)
+-	.suspend	= &pmacpic_suspend,
+-	.resume		= &pmacpic_resume,
+-#endif /* CONFIG_PM && CONFIG_PPC32 */
+-};
+-
+-static int __init init_pmacpic_sysfs(void)
++static int __init init_pmacpic_syscore(void)
+ {
+-#ifdef CONFIG_PPC32
+-	if (max_irqs == 0)
+-		return -ENODEV;
+-#endif
+-	printk(KERN_DEBUG "Registering pmac pic with sysfs...\n");
+-	sysdev_class_register(&pmacpic_sysclass);
+-	sysdev_register(&device_pmacpic);
+-	sysdev_driver_register(&pmacpic_sysclass, &driver_pmacpic);
++	register_syscore_ops(&pmacpic_syscore_ops);
+ 	return 0;
+ }
+-machine_subsys_initcall(powermac, init_pmacpic_sysfs);
+ 
++machine_subsys_initcall(powermac, init_pmacpic_syscore);
++
++#endif /* CONFIG_PM && CONFIG_PPC32 */
+Index: linux-2.6/arch/powerpc/platforms/cell/spu_base.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/platforms/cell/spu_base.c
++++ linux-2.6/arch/powerpc/platforms/cell/spu_base.c
+@@ -32,6 +32,7 @@
+ #include <linux/io.h>
+ #include <linux/mutex.h>
+ #include <linux/linux_logo.h>
++#include <linux/syscore_ops.h>
+ #include <asm/spu.h>
+ #include <asm/spu_priv1.h>
+ #include <asm/spu_csa.h>
+@@ -521,18 +522,8 @@ void spu_init_channels(struct spu *spu)
+ }
+ EXPORT_SYMBOL_GPL(spu_init_channels);
+ 
+-static int spu_shutdown(struct sys_device *sysdev)
+-{
+-	struct spu *spu = container_of(sysdev, struct spu, sysdev);
+-
+-	spu_free_irqs(spu);
+-	spu_destroy_spu(spu);
+-	return 0;
+-}
+-
+ static struct sysdev_class spu_sysdev_class = {
+ 	.name = "spu",
+-	.shutdown = spu_shutdown,
+ };
+ 
+ int spu_add_sysdev_attr(struct sysdev_attribute *attr)
+@@ -797,6 +788,22 @@ static inline void crash_register_spus(s
+ }
+ #endif
+ 
++static void spu_shutdown(void)
++{
++	struct spu *spu;
++
++	mutex_lock(&spu_full_list_mutex);
++	list_for_each_entry(spu, &spu_full_list, full_list) {
++		spu_free_irqs(spu);
++		spu_destroy_spu(spu);
++	}
++	mutex_unlock(&spu_full_list_mutex);
++}
++
++static struct syscore_ops spu_syscore_ops = {
++	.shutdown = spu_shutdown,
++};
++
+ static int __init init_spu_base(void)
+ {
+ 	int i, ret = 0;
+@@ -830,6 +837,7 @@ static int __init init_spu_base(void)
+ 	crash_register_spus(&spu_full_list);
+ 	mutex_unlock(&spu_full_list_mutex);
+ 	spu_add_sysdev_attr(&attr_stat);
++	register_syscore_ops(&spu_syscore_ops);
+ 
+ 	spu_init_affinity();
+ 
+Index: linux-2.6/arch/powerpc/sysdev/ipic.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/sysdev/ipic.c
++++ linux-2.6/arch/powerpc/sysdev/ipic.c
+@@ -18,7 +18,7 @@
+ #include <linux/stddef.h>
+ #include <linux/sched.h>
+ #include <linux/signal.h>
+-#include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/device.h>
+ #include <linux/bootmem.h>
+ #include <linux/spinlock.h>
+@@ -902,7 +902,7 @@ static struct {
+ 	u32 sercr;
+ } ipic_saved_state;
+ 
+-static int ipic_suspend(struct sys_device *sdev, pm_message_t state)
++static int ipic_suspend(void)
+ {
+ 	struct ipic *ipic = primary_ipic;
+ 
+@@ -933,7 +933,7 @@ static int ipic_suspend(struct sys_devic
  	return 0;
  }
  
--EXPORT_SYMBOL_GPL(sysdev_register);
--EXPORT_SYMBOL_GPL(sysdev_unregister);
+-static int ipic_resume(struct sys_device *sdev)
++static void ipic_resume(void)
+ {
+ 	struct ipic *ipic = primary_ipic;
+ 
+@@ -949,44 +949,26 @@ static int ipic_resume(struct sys_device
+ 	ipic_write(ipic->regs, IPIC_SECNR, ipic_saved_state.secnr);
+ 	ipic_write(ipic->regs, IPIC_SERMR, ipic_saved_state.sermr);
+ 	ipic_write(ipic->regs, IPIC_SERCR, ipic_saved_state.sercr);
 -
- #define to_ext_attr(x) container_of(x, struct sysdev_ext_attribute, attr)
+-	return 0;
+ }
+ #else
+ #define ipic_suspend NULL
+ #define ipic_resume NULL
+ #endif
  
- ssize_t sysdev_store_ulong(struct sys_device *sysdev,
-Index: linux-2.6/kernel/power/suspend.c
-===================================================================
---- linux-2.6.orig/kernel/power/suspend.c
-+++ linux-2.6/kernel/power/suspend.c
-@@ -163,19 +163,13 @@ static int suspend_enter(suspend_state_t
- 	arch_suspend_disable_irqs();
- 	BUG_ON(!irqs_disabled());
+-static struct sysdev_class ipic_sysclass = {
+-	.name = "ipic",
++static struct syscore_ops ipic_syscore_ops = {
+ 	.suspend = ipic_suspend,
+ 	.resume = ipic_resume,
+ };
  
--	error = sysdev_suspend(PMSG_SUSPEND);
--	if (!error) {
--		error = syscore_suspend();
--		if (error)
--			sysdev_resume();
+-static struct sys_device device_ipic = {
+-	.id		= 0,
+-	.cls		= &ipic_sysclass,
+-};
+-
+-static int __init init_ipic_sysfs(void)
++static int __init init_ipic_syscore(void)
+ {
+-	int rc;
+-
+ 	if (!primary_ipic || !primary_ipic->regs)
+ 		return -ENODEV;
+-	printk(KERN_DEBUG "Registering ipic with sysfs...\n");
+ 
+-	rc = sysdev_class_register(&ipic_sysclass);
+-	if (rc) {
+-		printk(KERN_ERR "Failed registering ipic sys class\n");
+-		return -ENODEV;
 -	}
-+	error = syscore_suspend();
- 	if (!error) {
- 		if (!(suspend_test(TEST_CORE) || pm_wakeup_pending())) {
- 			error = suspend_ops->enter(state);
- 			events_check_enabled = false;
- 		}
- 		syscore_resume();
--		sysdev_resume();
+-	rc = sysdev_register(&device_ipic);
+-	if (rc) {
+-		printk(KERN_ERR "Failed registering ipic sys device\n");
+-		return -ENODEV;
+-	}
++	printk(KERN_DEBUG "Registering ipic system core operations\n");
++	register_syscore_ops(&ipic_syscore_ops);
++
+ 	return 0;
+ }
+ 
+-subsys_initcall(init_ipic_sysfs);
++subsys_initcall(init_ipic_syscore);
+Index: linux-2.6/arch/powerpc/sysdev/mpic.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/sysdev/mpic.c
++++ linux-2.6/arch/powerpc/sysdev/mpic.c
+@@ -27,6 +27,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/pci.h>
+ #include <linux/slab.h>
++#include <linux/syscore_ops.h>
+ 
+ #include <asm/ptrace.h>
+ #include <asm/signal.h>
+@@ -1702,9 +1703,8 @@ void mpic_reset_core(int cpu)
+ #endif /* CONFIG_SMP */
+ 
+ #ifdef CONFIG_PM
+-static int mpic_suspend(struct sys_device *dev, pm_message_t state)
++static void mpic_suspend_one(struct mpic *mpic)
+ {
+-	struct mpic *mpic = container_of(dev, struct mpic, sysdev);
+ 	int i;
+ 
+ 	for (i = 0; i < mpic->num_sources; i++) {
+@@ -1713,13 +1713,22 @@ static int mpic_suspend(struct sys_devic
+ 		mpic->save_data[i].dest =
+ 			mpic_irq_read(i, MPIC_INFO(IRQ_DESTINATION));
  	}
- 
- 	arch_suspend_enable_irqs();
-Index: linux-2.6/kernel/power/hibernate.c
-===================================================================
---- linux-2.6.orig/kernel/power/hibernate.c
-+++ linux-2.6/kernel/power/hibernate.c
-@@ -272,12 +272,7 @@ static int create_image(int platform_mod
- 
- 	local_irq_disable();
- 
--	error = sysdev_suspend(PMSG_FREEZE);
--	if (!error) {
--		error = syscore_suspend();
--		if (error)
--			sysdev_resume();
--	}
-+	error = syscore_suspend();
- 	if (error) {
- 		printk(KERN_ERR "PM: Some system devices failed to power down, "
- 			"aborting hibernation\n");
-@@ -302,7 +297,6 @@ static int create_image(int platform_mod
- 
-  Power_up:
- 	syscore_resume();
--	sysdev_resume();
- 	/* NOTE:  dpm_resume_noirq() is just a resume() for devices
- 	 * that suspended with irqs off ... no overall powerup.
- 	 */
-@@ -409,12 +403,7 @@ static int resume_target_kernel(bool pla
- 
- 	local_irq_disable();
- 
--	error = sysdev_suspend(PMSG_QUIESCE);
--	if (!error) {
--		error = syscore_suspend();
--		if (error)
--			sysdev_resume();
--	}
-+	error = syscore_suspend();
- 	if (error)
- 		goto Enable_irqs;
- 
-@@ -442,7 +431,6 @@ static int resume_target_kernel(bool pla
- 	touch_softlockup_watchdog();
- 
- 	syscore_resume();
--	sysdev_resume();
- 
-  Enable_irqs:
- 	local_irq_enable();
-@@ -528,7 +516,6 @@ int hibernation_platform_enter(void)
- 		goto Platform_finish;
- 
- 	local_irq_disable();
--	sysdev_suspend(PMSG_HIBERNATE);
- 	syscore_suspend();
- 	if (pm_wakeup_pending()) {
- 		error = -EAGAIN;
-@@ -541,7 +528,6 @@ int hibernation_platform_enter(void)
- 
-  Power_up:
- 	syscore_resume();
--	sysdev_resume();
- 	local_irq_enable();
- 	enable_nonboot_cpus();
- 
-Index: linux-2.6/kernel/kexec.c
-===================================================================
---- linux-2.6.orig/kernel/kexec.c
-+++ linux-2.6/kernel/kexec.c
-@@ -1531,13 +1531,7 @@ int kernel_kexec(void)
- 		if (error)
- 			goto Enable_cpus;
- 		local_irq_disable();
--		/* Suspend system devices */
--		error = sysdev_suspend(PMSG_FREEZE);
--		if (!error) {
--			error = syscore_suspend();
--			if (error)
--				sysdev_resume();
--		}
-+		error = syscore_suspend();
- 		if (error)
- 			goto Enable_irqs;
- 	} else
-@@ -1553,7 +1547,6 @@ int kernel_kexec(void)
- #ifdef CONFIG_KEXEC_JUMP
- 	if (kexec_image->preserve_context) {
- 		syscore_resume();
--		sysdev_resume();
-  Enable_irqs:
- 		local_irq_enable();
-  Enable_cpus:
-Index: linux-2.6/drivers/xen/manage.c
-===================================================================
---- linux-2.6.orig/drivers/xen/manage.c
-+++ linux-2.6/drivers/xen/manage.c
-@@ -70,12 +70,7 @@ static int xen_suspend(void *data)
- 
- 	BUG_ON(!irqs_disabled());
- 
--	err = sysdev_suspend(PMSG_FREEZE);
--	if (!err) {
--		err = syscore_suspend();
--		if (err)
--			sysdev_resume();
--	}
-+	err = syscore_suspend();
- 	if (err) {
- 		printk(KERN_ERR "xen_suspend: system core suspend failed: %d\n",
- 			err);
-@@ -102,7 +97,6 @@ static int xen_suspend(void *data)
- 	}
- 
- 	syscore_resume();
--	sysdev_resume();
++}
++
++static int mpic_suspend(void)
++{
++	struct mpic *mpic = mpics;
++
++	while (mpic) {
++		mpic_suspend_one(mpic);
++		mpic = mpic->next;
++	}
  
  	return 0;
  }
-Index: linux-2.6/kernel/sys.c
-===================================================================
---- linux-2.6.orig/kernel/sys.c
-+++ linux-2.6/kernel/sys.c
-@@ -315,7 +315,6 @@ void kernel_restart_prepare(char *cmd)
- 	blocking_notifier_call_chain(&reboot_notifier_list, SYS_RESTART, cmd);
- 	system_state = SYSTEM_RESTART;
- 	device_shutdown();
--	sysdev_shutdown();
- 	syscore_shutdown();
- }
  
-@@ -354,7 +353,6 @@ static void kernel_shutdown_prepare(enum
- void kernel_halt(void)
+-static int mpic_resume(struct sys_device *dev)
++static void mpic_resume_one(struct mpic *mpic)
  {
- 	kernel_shutdown_prepare(SYSTEM_HALT);
--	sysdev_shutdown();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "System halted.\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
-@@ -374,7 +372,6 @@ void kernel_power_off(void)
- 	if (pm_power_off_prepare)
- 		pm_power_off_prepare();
- 	disable_nonboot_cpus();
--	sysdev_shutdown();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "Power down.\n");
- 	kmsg_dump(KMSG_DUMP_POWEROFF);
-Index: linux-2.6/drivers/base/base.h
-===================================================================
---- linux-2.6.orig/drivers/base/base.h
-+++ linux-2.6/drivers/base/base.h
-@@ -111,8 +111,6 @@ static inline int driver_match_device(st
- 	return drv->bus->match ? drv->bus->match(dev, drv) : 1;
+-	struct mpic *mpic = container_of(dev, struct mpic, sysdev);
+ 	int i;
+ 
+ 	for (i = 0; i < mpic->num_sources; i++) {
+@@ -1746,33 +1755,28 @@ static int mpic_resume(struct sys_device
+ 	}
+ #endif
+ 	} /* end for loop */
++}
+ 
+-	return 0;
++static void mpic_resume(void)
++{
++	struct mpic *mpic = mpics;
++
++	while (mpic) {
++		mpic_resume_one(mpic);
++		mpic = mpic->next;
++	}
+ }
+-#endif
+ 
+-static struct sysdev_class mpic_sysclass = {
+-#ifdef CONFIG_PM
++static struct syscore_ops mpic_syscore_ops = {
+ 	.resume = mpic_resume,
+ 	.suspend = mpic_suspend,
+-#endif
+-	.name = "mpic",
+ };
+ 
+ static int mpic_init_sys(void)
+ {
+-	struct mpic *mpic = mpics;
+-	int error, id = 0;
+-
+-	error = sysdev_class_register(&mpic_sysclass);
+-
+-	while (mpic && !error) {
+-		mpic->sysdev.cls = &mpic_sysclass;
+-		mpic->sysdev.id = id++;
+-		error = sysdev_register(&mpic->sysdev);
+-		mpic = mpic->next;
+-	}
+-	return error;
++	register_syscore_ops(&mpic_syscore_ops);
++	return 0;
  }
  
--extern void sysdev_shutdown(void);
+ device_initcall(mpic_init_sys);
++#endif
+Index: linux-2.6/arch/powerpc/include/asm/mpic.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/mpic.h
++++ linux-2.6/arch/powerpc/include/asm/mpic.h
+@@ -3,7 +3,6 @@
+ #ifdef __KERNEL__
+ 
+ #include <linux/irq.h>
+-#include <linux/sysdev.h>
+ #include <asm/dcr.h>
+ #include <asm/msi_bitmap.h>
+ 
+@@ -320,8 +319,6 @@ struct mpic
+ 	/* link */
+ 	struct mpic		*next;
+ 
+-	struct sys_device	sysdev;
 -
- extern char *make_class_name(const char *name, struct kobject *kobj);
- 
- extern int devres_release_all(struct device *dev);
-Index: linux-2.6/include/linux/device.h
-===================================================================
---- linux-2.6.orig/include/linux/device.h
-+++ linux-2.6/include/linux/device.h
-@@ -633,13 +633,6 @@ static inline int devtmpfs_mount(const c
- /* drivers/base/power/shutdown.c */
- extern void device_shutdown(void);
- 
--#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
--/* drivers/base/sys.c */
--extern void sysdev_shutdown(void);
--#else
--static inline void sysdev_shutdown(void) { }
--#endif
--
- /* debugging and troubleshooting/diagnostic helpers. */
- extern const char *dev_driver_string(const struct device *dev);
- 
-Index: linux-2.6/include/linux/pm.h
-===================================================================
---- linux-2.6.orig/include/linux/pm.h
-+++ linux-2.6/include/linux/pm.h
-@@ -530,14 +530,6 @@ struct dev_power_domain {
-  */
- 
- #ifdef CONFIG_PM_SLEEP
--#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
--extern int sysdev_suspend(pm_message_t state);
--extern int sysdev_resume(void);
--#else
--static inline int sysdev_suspend(pm_message_t state) { return 0; }
--static inline int sysdev_resume(void) { return 0; }
--#endif
--
- extern void device_pm_lock(void);
- extern void dpm_resume_noirq(pm_message_t state);
- extern void dpm_resume_end(pm_message_t state);
-Index: linux-2.6/arch/x86/kernel/apm_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apm_32.c
-+++ linux-2.6/arch/x86/kernel/apm_32.c
-@@ -1238,7 +1238,6 @@ static int suspend(int vetoable)
- 	dpm_suspend_noirq(PMSG_SUSPEND);
- 
- 	local_irq_disable();
--	sysdev_suspend(PMSG_SUSPEND);
- 	syscore_suspend();
- 
- 	local_irq_enable();
-@@ -1258,7 +1257,6 @@ static int suspend(int vetoable)
- 	err = (err == APM_SUCCESS) ? 0 : -EIO;
- 
- 	syscore_resume();
--	sysdev_resume();
- 	local_irq_enable();
- 
- 	dpm_resume_noirq(PMSG_RESUME);
-@@ -1282,7 +1280,6 @@ static void standby(void)
- 	dpm_suspend_noirq(PMSG_SUSPEND);
- 
- 	local_irq_disable();
--	sysdev_suspend(PMSG_SUSPEND);
- 	syscore_suspend();
- 	local_irq_enable();
- 
-@@ -1292,7 +1289,6 @@ static void standby(void)
- 
- 	local_irq_disable();
- 	syscore_resume();
--	sysdev_resume();
- 	local_irq_enable();
- 
- 	dpm_resume_noirq(PMSG_RESUME);
-Index: linux-2.6/arch/x86/Kconfig
-===================================================================
---- linux-2.6.orig/arch/x86/Kconfig
-+++ linux-2.6/arch/x86/Kconfig
-@@ -71,7 +71,6 @@ config X86
- 	select GENERIC_IRQ_SHOW
- 	select IRQ_FORCED_THREADING
- 	select USE_GENERIC_SMP_HELPERS if SMP
--	select ARCH_NO_SYSDEV_OPS
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-Index: linux-2.6/arch/sh/Kconfig
-===================================================================
---- linux-2.6.orig/arch/sh/Kconfig
-+++ linux-2.6/arch/sh/Kconfig
-@@ -24,7 +24,6 @@ config SUPERH
- 	select RTC_LIB
- 	select GENERIC_ATOMIC64
- 	select GENERIC_IRQ_SHOW
--	select ARCH_NO_SYSDEV_OPS
- 	help
- 	  The SuperH is a RISC processor targeted for use in embedded systems
- 	  and consumer electronics; it was also used in the Sega Dreamcast
-Index: linux-2.6/drivers/base/Kconfig
-===================================================================
---- linux-2.6.orig/drivers/base/Kconfig
-+++ linux-2.6/drivers/base/Kconfig
-@@ -168,11 +168,4 @@ config SYS_HYPERVISOR
- 	bool
- 	default n
- 
--config ARCH_NO_SYSDEV_OPS
--	bool
--	---help---
--	  To be selected by architectures that don't use sysdev class or
--	  sysdev driver power management (suspend/resume) and shutdown
--	  operations.
--
- endmenu
-Index: linux-2.6/include/linux/sysdev.h
-===================================================================
---- linux-2.6.orig/include/linux/sysdev.h
-+++ linux-2.6/include/linux/sysdev.h
-@@ -34,12 +34,6 @@ struct sysdev_class {
- 	struct list_head	drivers;
- 	struct sysdev_class_attribute **attrs;
- 	struct kset		kset;
--#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
--	/* Default operations for these types of devices */
--	int	(*shutdown)(struct sys_device *);
--	int	(*suspend)(struct sys_device *, pm_message_t state);
--	int	(*resume)(struct sys_device *);
--#endif
- };
- 
- struct sysdev_class_attribute {
-@@ -77,11 +71,6 @@ struct sysdev_driver {
- 	struct list_head	entry;
- 	int	(*add)(struct sys_device *);
- 	int	(*remove)(struct sys_device *);
--#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
--	int	(*shutdown)(struct sys_device *);
--	int	(*suspend)(struct sys_device *, pm_message_t state);
--	int	(*resume)(struct sys_device *);
--#endif
- };
- 
- 
+ #ifdef CONFIG_PM
+ 	struct mpic_irq_save	*save_data;
+ #endif
 
