@@ -1,53 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab1DQA5Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Apr 2011 20:57:24 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15193 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab1DQA5P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Apr 2011 20:57:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:organization;
-	b=tcCDUCThIqW9Rz3toyXBM0AOvkSlIG99FzZuQk5vZZTEQYUK4lTUAzek/pZf3uFwV
-	UtZjN4gRDBM9INXfXCUCQ==
-From: David Decotigny <decot@google.com>
-To: Jes Sorensen <jes@trained-monkey.org>, linux-acenic@sunsite.dk,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Decotigny <decot@google.com>
-Subject: [PATCH] acenic: Fix using the specified speed when configuring NIC
-Date: Sat, 16 Apr 2011 17:57:07 -0700
-Message-Id: <1303001827-4283-1-git-send-email-decot@google.com>
-X-Mailer: git-send-email 1.7.3.1
-Organization: Google, Inc.
+	id S1753197Ab1DQBpD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Apr 2011 21:45:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45401 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751364Ab1DQBoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Apr 2011 21:44:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,225,1301900400"; 
+   d="scan'208";a="734472981"
+Date: Sun, 17 Apr 2011 09:44:30 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/12] IO-less dirty throttling v7
+Message-ID: <20110417014430.GA9419@localhost>
+References: <20110416132546.765212221@intel.com>
+ <BANLkTimY3t6Kc-+=00k3QR+AK2uqJpph4g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="NzB8fVQJ5HfG6fxh"
+Content-Disposition: inline
+In-Reply-To: <BANLkTimY3t6Kc-+=00k3QR+AK2uqJpph4g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch needs review, as I did not test it: I only think something
-is weird by looking at the code, but experts must confirm.
 
-This tells the NIC to take the speed specified by ethtool into account
-when configuring the NIC, instead of keeping the previous speed.
+--NzB8fVQJ5HfG6fxh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: David Decotigny <decot@google.com>
+Hi Sedat,
+
+On Sun, Apr 17, 2011 at 12:27:58AM +0800, Sedat Dilek wrote:
+
+> I pulled your tree into linux-next (next-20110415) on an i386 Debian host.
+> 
+> My build breaks here:
+> ...
+>   MODPOST vmlinux.o
+>   GEN     .version
+>   CHK     include/generated/compile.h
+>   UPD     include/generated/compile.h
+>   CC      init/version.o
+>   LD      init/built-in.o
+>   LD      .tmp_vmlinux1
+> mm/built-in.o: In function `bdi_position_ratio':
+> page-writeback.c:(.text+0x5c83): undefined reference to `__udivdi3'
+
+Yes it can be fixed by the attached patch.
+
+> mm/built-in.o: In function `calc_period_shift.part.10':
+> page-writeback.c:(.text+0x6446): undefined reference to `____ilog2_NaN'
+
+I cannot reproduce this error. In the git tree, calc_period_shift() is
+actually quite simple:
+
+static int calc_period_shift(void)                
+{                                                 
+        return 2 + ilog2(default_backing_dev_info.avg_write_bandwidth);
+}
+
+where avg_write_bandwidth is of type "unsigned long".
+
+> make[4]: *** [.tmp_vmlinux1] Error
+> 
+> BTW, which kernel-config options have to be set besides
+> CONFIG_BLK_DEV_THROTTLING=y?
+
+No. I used your kconfig on 2.6.39-rc3 and it compiles OK for i386.
+
+I've pushed two patches into the git tree fixing the compile errors.
+Thank you for trying it out and report!
+
+Thanks,
+Fengguang
+
+--NzB8fVQJ5HfG6fxh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=bdi_position_ratio-__udivdi3-fix
+
+Subject: writeback: i386 compile fix
+Date: Sun Apr 17 09:04:44 CST 2011
+
+
+mm/built-in.o: In function `bdi_position_ratio':
+page-writeback.c:(.text+0x5c83): undefined reference to `__udivdi3'
+mm/built-in.o: In function `calc_period_shift.part.10':
+page-writeback.c:(.text+0x6446): undefined reference to `____ilog2_NaN'
+make[4]: *** [.tmp_vmlinux1] Error
+
+Reported-by: Sedat Dilek <sedat.dilek@googlemail.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- drivers/net/acenic.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/page-writeback.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/acenic.c b/drivers/net/acenic.c
-index a579899..82260ca 100644
---- a/drivers/net/acenic.c
-+++ b/drivers/net/acenic.c
-@@ -2720,7 +2720,7 @@ static int ace_set_settings(struct net_device *dev, struct ethtool_cmd *ecmd)
- 		link |= LNK_NEGOTIATE;
- 	if (ethtool_cmd_speed(ecmd) != speed) {
- 		link &= ~(LNK_1000MB | LNK_100MB | LNK_10MB);
--		switch (speed) {
-+		switch (ethtool_cmd_speed(ecmd)) {
- 		case SPEED_1000:
- 			link |= LNK_1000MB;
- 			break;
--- 
-1.7.3.1
+--- linux-next.orig/mm/page-writeback.c	2011-04-17 09:02:32.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-04-17 09:03:58.000000000 +0800
+@@ -634,9 +634,10 @@ static unsigned long bdi_position_ratio(
+ 	origin = bdi->avg_write_bandwidth + 2 * MIN_WRITEBACK_PAGES;
+ 	origin = min(origin, thresh - thresh / DIRTY_FULL_SCOPE);
+ 	if (bdi_dirty < origin) {
+-		if (bdi_dirty > origin / 4)
+-			bw = bw * origin / bdi_dirty;
+-		else
++		if (bdi_dirty > origin / 4) {
++			bw *= origin;
++			do_div(bw, bdi_dirty);
++		} else
+ 			bw = bw * 4;
+ 	}
+ 
 
+--NzB8fVQJ5HfG6fxh--
