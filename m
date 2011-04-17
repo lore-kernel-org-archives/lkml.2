@@ -1,127 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab1DQQfN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 12:35:13 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:43914 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041Ab1DQQfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 12:35:09 -0400
-Date: Sun, 17 Apr 2011 18:35:30 +0200
-From: Pascal Dormeau <pdormeau@free.fr>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [Bug #31872] boot panic unless acpi=off, Thread overran stack,
- or stack corrupted - Toshiba Satellite/mobile P4
-Message-Id: <20110417183530.b36689c9.pdormeau@free.fr>
-In-Reply-To: <IqJL5EkbqD.A.z9E.W4uqNB@chimera>
-References: <sam8u5dLkaB.A.afE.53uqNB@chimera>
-	<IqJL5EkbqD.A.z9E.W4uqNB@chimera>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.3; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752849Ab1DQQn3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 12:43:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55385 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751392Ab1DQQnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 12:43:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110417101731.GA17986@electric-eye.fr.zoreil.com>
+References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu>
+ <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com> <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu>
+ <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com> <20110417101731.GA17986@electric-eye.fr.zoreil.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 17 Apr 2011 09:42:57 -0700
+Message-ID: <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com>
+Subject: Re: Suspend/resume - slow resume
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Ciprian Docan <docan@eden.rutgers.edu>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael, J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Apr 2011 15:52:13 +0200 (CEST)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Sun, Apr 17, 2011 at 3:17 AM, Francois Romieu <romieu@fr.zoreil.com> wrote:
+>
+> One can try the patch below. It is completely untested yet.
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.37 and 2.6.38.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.37 and 2.6.38.  Please verify if it still
-> should be listed and let the tracking team know (either way).
+Looks _fairly_ sane to me.  The "request firmware in open, release
+firmware in close" approach would seem to be a fairly obvious one.
 
-As I indicated in the bugzilla, the problem arose after:
-commit bf325f9538d8c89312be305b9779edbcb436af00
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Thu Nov 25 00:10:44 2010 +0100
+HOWEVER.
 
-    ACPI / PM: Register power resource devices as soon as they are
-    needed
+I think it's broken in two ways:
 
-    Depending on the organization of the ACPI namespace, power resource
-    device objects may generally be scanned after the "regular" device
-    objects that they are referred from through _PRn.  This, in turn,
-    may cause acpi_bus_get_power_flags() to attempt to access them
-    through acpi_bus_init_power() before they are registered (and
-    initialized by acpi_power_driver).  [This is not a theoretical
-    issue, it actually happens for one PnP device on my testbed HP
-     nx6325.]
+ - it causes too much re-loading for no good reason. I'm looking at
+rtl8169_reinit_task() in particular, and if I read that correctly,
+then if there are any problems, that crazy function will end up
+loading and unloading the firmware EVERY FOUR TIMER TICKS!
 
-    To fix this problem, make acpi_bus_get_power_flags() attempt to
-    register power resource devices as soon as they have been found in
-    the _PRn output for any other devices.
+   That's just totally broken.
 
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Signed-off-by: Len Brown <len.brown@intel.com>
+   But I'd also worry about some init scripts in particular, maybe
+that whole "open to test something, close immediately" is common. I
+don't know.
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 2951a27..cb7956c 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -847,6 +847,8 @@ end:
-    return 0;
- }
- 
-+static void acpi_bus_add_power_resource(acpi_handle handle);
-+
- static int acpi_bus_get_power_flags(struct acpi_device *device)
- {
-    acpi_status status = 0;
-@@ -875,8 +877,12 @@ static int acpi_bus_get_power_flags(struct
-acpi_device *device) acpi_evaluate_reference(device->handle,
-object_name, NULL, &ps->resources);
-        if (ps->resources.count) {
-+           int j;
-+
-            device->power.flags.power_resources = 1;
-            ps->flags.valid = 1;
-+           for (j = 0; j < ps->resources.count; j++)
-+               acpi_bus_add_power_resource(ps->resources.handles[j]);
-        }
- 
-        /* Evaluate "_PSx" to see if we can do explicit sets */
-@@ -1323,6 +1329,20 @@ end:
- #define ACPI_STA_DEFAULT (ACPI_STA_DEVICE_PRESENT |
-ACPI_STA_DEVICE_ENABLED | \ ACPI_STA_DEVICE_UI      |
-ACPI_STA_DEVICE_FUNCTIONING) 
-+static void acpi_bus_add_power_resource(acpi_handle handle)
-+{
-+   struct acpi_bus_ops ops = {
-+       .acpi_op_add = 1,
-+       .acpi_op_start = 1,
-+   };
-+   struct acpi_device *device = NULL;
-+
-+   acpi_bus_get_device(handle, &device);
-+   if (!device)
-+       acpi_add_single_object(&device, handle, ACPI_BUS_TYPE_POWER,
-+                   ACPI_STA_DEFAULT, &ops);
-+}
-+
- static int acpi_bus_type_and_status(acpi_handle handle, int *type,
-                    unsigned long long *sta)
- {
+ - it seems to leak the open function fails after requesting the
+firmware - nothing will ever close it, and if you unload the module
+the firmware will never be released as far as I can tell.
 
-I could build and run a 2.6.38 kernel with the above commit reverted.
-It boots with no problem (with acpi support).
+I might be missing some failure path (maybe the network device open
+will call close even if the open failed), but it looks real.
 
-Today, I tested kernel from current linux-2.6 tree and the problem is
-still there.
-I don't have a clue where to start from to help debugging this.
+So I think your patch _approaches_ being sane, but no, it's not working as-is.
 
-Regards
+I really think that this kind of "ad-hoc random firmware loading"
+stuff should go away. The device layer (or maybe the network layer)
+should have some clear and unambiguous rules. Exactly so that drivers
+don't make these kinds of mistakes.
 
-Pascal Dormeau
+My gut feel for what the rules should be is roughly (but please take
+this as a starting point for discussion rather than some final thing):
 
+ - try to load the firmware at each time the user tries to activate
+the device. IOW, not like this, where the rtl8169_open() function is
+called from many different contexts, only one of them being the
+"network layer tried to open the device".
 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=31872
-> Subject		: boot panic unless acpi=off, Thread overran
-> stack, or stack corrupted - Toshiba Satellite/mobile P4
-> Submitter	: Pascal Dormeau <pdormeau@free.fr>
-> Date		: 2011-03-25 20:17 (24 days old)
-> 
-> 
+   I do think we need to do it potentially multiple times: the main
+issue being something like this:
+
+      ifconfig eth0 up
+      ** oops, that failed because we didn't have the firmware files
+installed **
+      ... install firmware files, the 'dmesg' gave good error messages
+that the user could use to know what was going on ..
+      ifconfig eth0 up
+      ** this needs to trigger another firmware load attempt **
+
+   In other words, doing firmware load at module load time - or at
+device scan time - is fundamentally broken for a network driver.
+
+ - unload not on close, but on device unregister (iow not when you do
+"ifconfig eth0 down", but when the "eth0" device really goes away)
+
+But as mentioned, the above is (a) just my gut feel - please discuss -
+and (b) I really think that leaving this to the network driver has
+been shown to continually result in the drivers doing the firmware
+load/unload in all the wrong places.
+
+So I do wonder whether we could add a "ndo_firmware_load()" and
+"ndo_firmware_unload()" callback to the network device operations, and
+have the network layer make the above rules. A network driver
+obviously _could_ do its firmware load from other places instead, but
+such a network driver would basically be "obviously broken".
+
+Comments?
+
+(That said, I think that Francois' patch could be made acceptable
+fairly trivially:
+
+ - avoiding the load/unload from rtl8169_reinit_task() and that
+horrible "every four timer ticks" issue. That just seems crazy. Maybe
+by just having an internal open helper function that does everything
+but the firmware load)
+
+ - adding a rtl_release_firmware on open failure so that you don't leak stuff
+
+but I do think that this whole "firmware load in random places" has
+been such a common bug that I think we should have some real rules
+about it)
+
+Hmm?
+
+                                Linus
