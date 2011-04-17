@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab1DQTIc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 15:08:32 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:40981 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754201Ab1DQTI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 15:08:27 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Wu Zhangjin <wuzhangjin@gmail.com>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] MIPS: Squash pci_fixup_irqs() compiler warning
-Date: Sun, 17 Apr 2011 12:01:08 -0700
-Message-Id: <cb01d61712b1374a8c62bc765094ea7e@localhost>
-User-Agent: vim 7.2
+	id S1753149Ab1DQTUz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 15:20:55 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:57883 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838Ab1DQTUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 15:20:50 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+Message-ID: <19883.15760.364246.501142@pilspetsen.it.uu.se>
+Date: Sun, 17 Apr 2011 21:20:48 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Jay Estabrook <jay.estabrook@gmail.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-alpha@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [bug] 2.6.39-rc3 fails to boot on Alpha
+In-Reply-To: <4DAB36D0.8080503@gmail.com>
+References: <19883.912.266127.538215@pilspetsen.it.uu.se>
+	<4DAB36D0.8080503@gmail.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MIPS Linux is unique in that it uses a "const struct pci_dev *" argument
-to discourage bad coding practices in pcibios_map_irq().  Add a cast so
-that this warning goes away:
+Jay Estabrook writes:
+ > Try replacing the reference to "no_irq_chip" with "dummy_irq_chip"
+ > in arch/alpha/irq_alpha.c: int_rtc_irq().
 
-arch/mips/pci/pci.c: In function 'pcibios_init':
-arch/mips/pci/pci.c:165:45: warning: passing argument 2 of 'pci_fixup_irqs' from incompatible pointer type
-include/linux/pci.h:856:6: note: expected 'int (*)(struct pci_dev *, u8,  u8)' but argument is of type 'struct pci_dev *'
+2.6.39-rc3 booted fine with that change.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
+Thanks,
 
-Reference:
+/Mikael
 
-http://www.mail-archive.com/gnewsense-dev@nongnu.org/msg00706.html
-
-It's been two years since the original discussion, and the warning is
-still there.  It is now the only warning left in my kernel build.
-
-I was hoping we could get this resolved for good (one way or another).
-
- arch/mips/pci/pci.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
-index 33bba7b..9a35cd6 100644
---- a/arch/mips/pci/pci.c
-+++ b/arch/mips/pci/pci.c
-@@ -157,7 +157,8 @@ static int __init pcibios_init(void)
- 	for (hose = hose_head; hose; hose = hose->next)
- 		pcibios_scanbus(hose);
- 
--	pci_fixup_irqs(pci_common_swizzle, pcibios_map_irq);
-+	pci_fixup_irqs(pci_common_swizzle,
-+		       (int (*)(struct pci_dev *, u8, u8))pcibios_map_irq);
- 
- 	pci_initialized = 1;
- 
--- 
-1.7.4.3
-
+ >
+ > For me, it was dying in the first RTC interrupt taken.
+ > 
+ > Jay
+ > 
+ > On 04/17/2011 11:13 AM, Mikael Pettersson wrote:
+ > > 2.6.39-rc3 doesn't boot on my Alpha (XP900).  As soon as aboot has loaded
+ > > and started the kernel I get:
+ > > 
+ > > halted CPU 0
+ > > 
+ > > halt code = 4
+ > > invalid PTBR
+ > > PC = fffffc00003130d0
+ > > 
+ > > (that PC value points to an "lda" instruction in sys_osf_proplist_syscall)
+ > > 
+ > > There's no other output except this, so I don't think the kernel got very far.
+ > > 
+ > > Haven't checked 2.6.39-rc[12] or bisected anything yet, but 2.6.38 works fine.
+ > > 
+ > > /Mikael
