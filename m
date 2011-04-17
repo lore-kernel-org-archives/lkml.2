@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab1DQPWk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 11:22:40 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5414 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1DQPWe (ORCPT
+	id S1754928Ab1DQPmx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 11:42:53 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:2255
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752840Ab1DQPmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 11:22:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=uvSQtT/UHYSy8r2f7cYgVYU7XxGrwkTRd0j0izjqhA+KxhaaL+LxUDe0kG9exPcay
-	Zv8V8lGrXOhQJ76rzjtVA==
-From: Greg Thelen <gthelen@google.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>
-Subject: [PATCH] PCI: check pci_vpd_pci22_wait() return
-Date: Sun, 17 Apr 2011 08:22:21 -0700
-Message-Id: <1303053741-384-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Sun, 17 Apr 2011 11:42:46 -0400
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h637h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Sun, 17 Apr 2011 23:46:23 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Per Forlin <per.forlin@linaro.org>
+CC: <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-dev@lists.linaro.org>,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH v2 03/12] mmc: mmc_test: add test for none blocking
+ transfers
+Message-ID: <20110417154622.GC17935@S2100-06.ap.freescale.net>
+References: <1302116833-24540-1-git-send-email-per.forlin@linaro.org>
+ <1302116833-24540-4-git-send-email-per.forlin@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1302116833-24540-4-git-send-email-per.forlin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pci_vpd_pci22_write() calls pci_vpd_pci22_wait() after writing
-PCI_VPD_DATA and PCI_VPD_ADDR to wait for the VPD operation to complete.
-The result pci_vpd_pci22_wait() was not checked for error.
+On Wed, Apr 06, 2011 at 09:07:04PM +0200, Per Forlin wrote:
+[...]
+> +static int mmc_test_rw_multiple(struct mmc_test_card *test,
+> +				struct mmc_test_multiple_rw *tdata,
+> +				unsigned int reqsize, unsigned int size)
+> +{
+> +	unsigned int dev_addr;
+> +	struct mmc_test_area *t = &test->area;
+> +	int ret = 0;
+> +	int max_reqsize = max(t->mem->size_min_cmn *
+> +			      min(t->max_segs, t->mem->cnt), t->max_tfr);
+> +
+The 'max(..., t->max_tfr)' probably should be 'min(..., t->max_tfr)'.
+Otherwise, I see mmc_test failure on my mxs-mmc setup.
 
-This change checks for error.
+mmc0: Test case 37. Write performance with blocking req 4k to 4MB...
+mmc0: Transfer of 64 x 2048 sectors (64 x 1024 KiB) took 5.412563314 seconds (12
+398 kB/s, 12108 KiB/s, 11.82 IOPS)
+mmc0: Failed to map sg list
+[mmc_test_rw_multiple] error
+mmc0: Result: ERROR (-22)
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- drivers/pci/access.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 502610b..fdaa42a 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -334,6 +334,8 @@ static ssize_t pci_vpd_pci22_write(struct pci_dev *dev, loff_t pos, size_t count
- 		vpd->busy = true;
- 		vpd->flag = 0;
- 		ret = pci_vpd_pci22_wait(dev);
-+		if (ret < 0)
-+			break;
- 
- 		pos += sizeof(u32);
- 	}
 -- 
-1.7.3.1
+Regards,
+Shawn
 
