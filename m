@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab1DQHhs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 03:37:48 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:45825 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab1DQHhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 03:37:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=pMe77pv1xe19HX40yLULm3VbUE0dyU6BS2auFoiXoORRe1a7UtyHIje/iT7NJn2BBE
-         Hbn6RJPzwRI27YvDd3/PuI+L8np9Lbl0B1asCc1brHid2B0/nIUD3xj6XiP9I3R+btvB
-         28DYMUjkULxeLq98h3b2OrM5vlPz4gvJB1uis=
-Message-ID: <4DAA976A.3080007@gmail.com>
-Date: Sun, 17 Apr 2011 09:31:54 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+	id S1751896Ab1DQISs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 04:18:48 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38167 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab1DQISj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 04:18:39 -0400
+Date: Sun, 17 Apr 2011 10:18:27 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/12] IO-less dirty throttling v7
-References: <20110416132546.765212221@intel.com>
-In-Reply-To: <20110416132546.765212221@intel.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 4/4] perf, x86: Fix event scheduler to solve complex
+ scheduling problems
+Message-ID: <20110417081827.GC29733@elte.hu>
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
+ <1302913676-14352-5-git-send-email-robert.richter@amd.com>
+ <1302943877.32491.9.camel@twins>
+ <20110417081540.GL31407@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110417081540.GL31407@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/04/2011 15:25, Wu Fengguang ha scritto:
-> Andrew,
->
-> This revision undergoes a number of simplifications, cleanups and fixes.
-> Independent patches are separated out. The core patches (07, 08) now have
-> easier to understand changelog. Detailed rationals can be found in patch 08.
->
-> In response to the complexity complaints, an introduction document is
-> written explaining the rationals, algorithm and visual case studies:
->
-> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/slides/smooth-dirty-throttling.pdf
 
-It'd be great if you wrote a summary in the kernel documentation.
+* Robert Richter <robert.richter@amd.com> wrote:
 
-Marco
+> > I'd really prefer not to do this for .39, and I'll have to sit down and 
+> > actually read this code. It looks like we went from O(n^2) to O(n!) or 
+> > somesuch, also not much of an improvement. I'll have to analyze the solver 
+> > to see what it does for 'simple' constraints set to see if it will indeed 
+> > be more expensive than the O(n^2) solver we had.
+> 
+> It wont be more expensive, if there is a solution. But if there is no one we 
+> walk all possible ways now which is something like O(n!).
+
+So with 6 counters it would be a loop of 720, with 8 counters a loop of 40320, 
+with 10 counters a loop of 3628800 ... O(n!) is not fun.
+
+Thanks,
+
+	Ingo
