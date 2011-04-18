@@ -1,139 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab1DRH0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 03:26:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38796 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab1DRH0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 03:26:04 -0400
-Date: Mon, 18 Apr 2011 17:25:51 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110418172551.55629fc6@notabene.brown>
-In-Reply-To: <4DABDC60.2090009@fusionio.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
-	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
-	<20110303221353.GA10366@redhat.com>
-	<4D761E0D.8050200@fusionio.com>
-	<20110308202100.GA31744@redhat.com>
-	<4D76912C.9040705@fusionio.com>
-	<20110308220526.GA393@redhat.com>
-	<20110310005810.GA17911@redhat.com>
-	<20110405130541.6c2b5f86@notabene.brown>
-	<20110411145022.710c30e9@notabene.brown>
-	<4DA2C7BE.6060804@fusionio.com>
-	<20110411205928.13915719@notabene.brown>
-	<4DA2E03A.2080607@fusionio.com>
-	<20110411212635.7959de70@notabene.brown>
-	<4DA2E7F0.9010904@fusionio.com>
-	<20110411220505.1028816e@notabene.brown>
-	<4DA2F00E.6010907@fusionio.com>
-	<20110418081922.1651474a@notabene.brown>
-	<4DABDC60.2090009@fusionio.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1753118Ab1DRH1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 03:27:36 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41344 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab1DRH1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 03:27:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Hq8OCu+Cd4hexHM3Dk4wwfUfQXipZTnITF1VD7v142tAUHF5g6u4I2N66LZbniM3sh
+         AD1rvEhPvUPqa4Ci+Ca9DiIFen5+kwqECNQV5MWP33ojyjZ9U3N/suTZcETMFRhTJmY4
+         HGgfSF1eVLVxs1uUCwrYg6lFFmD+3W5kdx2Hw=
+Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
+From: raz ben yehuda <raziebe@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, stable@kernel.org, shai@scalex86.com
+In-Reply-To: <20110415150606.GP15707@random.random>
+References: <20110415101248.GB22688@suse.de>
+	 <20110415143916.GN15707@random.random>
+	 <20110415150606.GP15707@random.random>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Apr 2011 10:21:13 +0300
+Message-ID: <1303111273.3425.0.camel@raz.scalemp.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Apr 2011 08:38:24 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
+patch works great. thank you Andrea.
 
-> On 2011-04-18 00:19, NeilBrown wrote:
-> > On Mon, 11 Apr 2011 14:11:58 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
-> > 
-> >>> Yes.  But I need to know when to release the requests that I have stored.
-> >>> I need to know when ->write_pages or ->read_pages or whatever has finished
-> >>> submitting a pile of pages so that I can start processing the request that I
-> >>> have put aside.  So I need a callback from blk_finish_plug.
-> >>
-> >> OK fair enough, I'll add your callback patch.
-> >>
-> > 
-> > But you didn't did you?  You added a completely different patch which is
-> > completely pointless.
-> > If you don't like my patch I would really prefer you said so rather than
-> > silently replace it with something completely different (and broken).
+
+On Fri, 2011-04-15 at 17:06 +0200, Andrea Arcangeli wrote:
+> On Fri, Apr 15, 2011 at 04:39:16PM +0200, Andrea Arcangeli wrote:
+> > On Fri, Apr 15, 2011 at 11:12:4A.M +0100, Mel Gorman wrote:
+> > > diff --git a/mm/memory.c b/mm/memory.c
+> > > index 5823698..1659574 100644
+> > > --- a/mm/memory.c
+> > > +++ b/mm/memory.c
+> > > @@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> > >  	 * run pte_offset_map on the pmd, if an huge pmd could
+> > >  	 * materialize from under us from a different thread.
+> > >  	 */
+> > > -	if (unlikely(__pte_alloc(mm, vma, pmd, address)))
+> > > +	if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
 > 
-> First of all, you were CC'ed on all that discussion, yet didn't speak up
-> until now. This was last week. Secondly, please change your tone.
-
-Yes, I was CC'ed on a discussion.  In that discussion it was never mentioned
-that you had completely changed the patch I sent you, and it never contained
-the new patch in-line for review.   Nothing that was discussed was
-particularly relevant to md's needs so there was nothing to speak up about.
-
-Yes- there were 'git pull' requests and I could have done a pull myself to
-review the code but there seemed to be no urgency because you had already
-agreed to apply my patch.
-When I did finally pull the patches (after all the other issues had settle
-down and I had time to finish of the RAID side) I found ... what I found.
-
-I apologise for my tone, but I was very frustrated.
-
+> I started hacking on this and I noticed it'd be better to extend the
+> unlikely through the end. At first review I didn't notice the
+> parenthesis closure stops after pte_none and __pte_alloc is now
+> uncovered. I'd prefer this:
 > 
-> > I'll try to explain again.
-> > 
-> > md does not use __make_request.  At all.
-> > md does not use 'struct request'.  At all.
-> > 
-> > The 'list' in 'struct blk_plug' is a list of 'struct request'.
+>     if (unlikely(pmd_none(*pmd) && __pte_alloc(mm, vma, pmd, address)))
 > 
-> I'm well aware of how these facts, but thanks for bringing it up.
+> I mean the real unlikely thing is that we return VM_FAULT_OOM, if we
+> end up calling __pte_alloc or not, depends on the app. Generally it
+> sounds more frequent that the pte is not none, so it's not wrong, but
+> it's even less likely that __pte_alloc fails so that can be taken into
+> account too, and __pte_alloc runs still quite frequently. So either
+> above or:
 > 
-> > Therefore md cannot put anything useful on the list in 'struct blk_plug'.
-> > 
-> > So when blk_flush_plug_list calls queue_unplugged() on a queue that belonged
-> > to a request found on the blk_plug list, that queue cannot possibly ever be
-> > for an 'md' device (because no 'struct request' ever belongs to an md device,
-> > because md doesn't not use 'struct request').
-> > 
-> > So your patch (commit f75664570d8b) doesn't help MD at all.
-> > 
-> > For md, I need to attach something to blk_plug which somehow identifies an md
-> > device, so that blk_finish_plug can get to that device and let it unplug.
-> > The most sensible thing to have is a completely generic callback.  That way
-> > different block devices (which choose not to use __make_request) can attach
-> > different sorts of things to blk_plug.
-> > 
-> > So can we please have my original patch applied? (Revised version using
-> > list_splice_init included below).
-> > 
-> > Or if not, a clear explanation of why not?
+>     if (unlikely(pmd_none(*pmd)) && unlikely(__pte_alloc(mm, vma, pmd, address)))
 > 
-> So correct me if I'm wrong here, but the _only_ real difference between
-> this patch and the current code in the tree, is the checking of the
-> callback list indicating a need to flush the callbacks. And that's
-> definitely an oversight. It should be functionally equivelant if md
-> would just flag this need to get a callback, eg instead of queueing a
-> callback on the list, just set plug->need_unplug from md instead of
-> queuing a callback and have blk_needs_flush_plug() do:
+> I generally prefer unlikely only when it's 100% sure thing it's less
+> likely (like the VM_FAULT_OOM), so the first version I guess it's
+> enough (I'm afraid unlikely for pte_none too, may make gcc generate a
+> far away jump possibly going out of l1 icache for a case that is only
+> 512 times less likely at best). My point is that it's certainly hugely
+> more unlikely that __pte_alloc fails than the pte is none.
 > 
->         return plug && (!list_empty(&plug->list) || plug->need_unplug);
-> 
-> instead. Something like the below, completely untested.
-> 
-
-No, that is not the only real difference.
-
-The real difference is that in the current code, md has no way to register
-anything with a blk_plug because you can only register a 'struct request' on a
-blk_plug, and md doesn't make any use of 'struct request'.
-
-As I said in the Email you quote above:
-
-> > Therefore md cannot put anything useful on the list in 'struct blk_plug'.
-
-That is the heart of the problem.
-
-NeilBrown
+> This is a real nitpick though ;).
 
 
