@@ -1,215 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab1DRMSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 08:18:55 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51661 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab1DRMSt (ORCPT
+	id S1752995Ab1DRMTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 08:19:45 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60830 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab1DRMTj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 08:18:49 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 3/3] mm: convert mm->cpu_vm_cpumask into cpumask_var_t
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <20110418211455.9359.A69D9226@jp.fujitsu.com>
-References: <20110418211455.9359.A69D9226@jp.fujitsu.com>
-Message-Id: <20110418211950.9365.A69D9226@jp.fujitsu.com>
+	Mon, 18 Apr 2011 08:19:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dXgoIlK2B4nQ82ZpVGy38XX+MUXW/Jx+awXQXo7H7ZAlqVEeMuJdLRwndVnXzuO7bM
+         uMAr5k1nXyAE2TaqhQNnDFWYMK73xwiEInALUJne5l8EakcluzlXYPXQo6Lwa0rl6iiL
+         iJB4p9bjLP+kLf4UctaRSy5BiYGkY6RQxQRyM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 18 Apr 2011 21:18:47 +0900 (JST)
+In-Reply-To: <201104171938.12834.arnd@arndb.de>
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
+	<1302892585.30441.12.camel@dev.znau.edu.ua>
+	<BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+	<201104171938.12834.arnd@arndb.de>
+Date: Mon, 18 Apr 2011 14:19:38 +0200
+Message-ID: <BANLkTim6iCAsViJQS4XrY-XObs8pp-BiQQ@mail.gmail.com>
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: George Kashperko <george@znau.edu.ua>, Hauke Mehrtens <hauke@hauke-m.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arend van Spriel <arend@broadcom.com>,
+        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
+        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpumask_t is very big struct and cpu_vm_mask is placed wrong position.
-It might lead to reduce cache hit ratio.
+W dniu 17 kwietnia 2011 19:38 użytkownik Arnd Bergmann <arnd@arndb.de> napisał:
+> On Friday 15 April 2011, Rafał Miłecki wrote:
+>> W dniu 15 kwietnia 2011 20:36 użytkownik George Kashperko
+>> <george@znau.edu.ua> napisał:
+>> >> >> Arnd: I found you saying:
+>> >> >> > I believe the one thing we really want from this driver is the bus
+>> >> >> > scan code, which is not present in the amba bus implementation,
+>> >> >> I explained how it works, I believe scanning (EPROM in this case) it
+>> >> >> Broadcom specific, not really AMBA standard. How do you see it?
+>> >>
+>> >> Maybe EPROM is not Broadcom specific, but I suspect the content we
+>> >> deal with in bcmai/axi is Broadcom specific. I didn't see any notes of
+>> >> manuf/id/rev/class we deal with. So I guess everything we (out
+>> >> driver) read from EPROM is Bcm specific.
+>> >>
+>> >
+>> > Played around amba registers on bcm4716. For all amba cores present
+>> > (under all I mean broadcom ip core agents, oob router core, erom core,
+>> > and other I-dont-know-what-for cores present at 0x18100000). All those
+>> > feature AMBA_CID (0xb105f00d) as PrimeCell ID, and slightly different
+>> > PrimeCell PeripheralIDs:
+>> > * vendor 0xBB, part_number 0x368 for broadcom cores' agents;
+>> > * vendor 0xBB, part_number 0x367 for OOB router core (don't ask me wth
+>> > is this please);
+>> > * vendor 0xBB, part_number 0x366 for EROM core;
+>> >
+>> > ARM vendor id is 0x41. Might 0xBB is Broadcom vendor id but I've found
+>> > no evidence for that with google.
+>>
+>> Yeah, as I suspected, everything except Broadcom specific cores
+>> matches AMBA standards quite nicely. Still, I don't see anything in it
+>> we could use for driver.
+>>
+>> Let's wait for Russell and Arnd to comment.
+>
+> In general, the bus_type directly relates to how a device gets probed.
+> If broadcom uses the same basic register layout as regular AMBA devices,
+> it should use the amba bus type.
 
-This patch has two change.
-1) Move the place of cpumask into last of mm_struct. Because usually cpumask
-   is accessed only front bits when the system has cpu-hotplug capability
-2) Convert cpu_vm_mask into cpumask_var_t. It may help to reduce memory
-   footprint if cpumask_size() will use nr_cpumask_bits properly in future.
+>From Broadcom side we *could* use some registers that are AMBA
+specific, they are present... but there is totally no point in doing
+that. Everything we use is Broadcom specific.
 
-In addition, this patch change the name of cpu_vm_mask with cpu_vm_mask_var.
-It may help to detect out of tree cpu_vm_mask users.
 
-This patch has no functional change.
+> I think it would be fine to extend the AMBA bus slightly if there are
+> just minor differences.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- Documentation/cachetlb.txt |    2 +-
- include/linux/mm_types.h   |    9 ++++++---
- include/linux/sched.h      |    1 +
- init/main.c                |    2 ++
- kernel/fork.c              |   37 ++++++++++++++++++++++++++++++++++---
- mm/init-mm.c               |    1 -
- 6 files changed, 44 insertions(+), 8 deletions(-)
+As I said, Broadcom specific driver use nothing from AMBA common
+things. Plus we implement routines that are Broadcom specific and no
+other platform will use them.
 
-This patch don't touch x86/kerrnel/tboot.c. because it can't be compiled.
-
-diff --git a/Documentation/cachetlb.txt b/Documentation/cachetlb.txt
-index 9164ae3..9b728dc 100644
---- a/Documentation/cachetlb.txt
-+++ b/Documentation/cachetlb.txt
-@@ -16,7 +16,7 @@ on all processors in the system.  Don't let this scare you into
- thinking SMP cache/tlb flushing must be so inefficient, this is in
- fact an area where many optimizations are possible.  For example,
- if it can be proven that a user address space has never executed
--on a cpu (see vma->cpu_vm_mask), one need not perform a flush
-+on a cpu (see mm_cpumask()), one need not perform a flush
- for this address space on that cpu.
- 
- First, the TLB flushing interfaces, since they are the simplest.  The
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index ca01ab2..070c7f2 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -267,8 +267,6 @@ struct mm_struct {
- 
- 	struct linux_binfmt *binfmt;
- 
--	cpumask_t cpu_vm_mask;
--
- 	/* Architecture-specific MM context */
- 	mm_context_t context;
- 
-@@ -318,9 +316,14 @@ struct mm_struct {
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
- #endif
-+
-+	cpumask_var_t cpu_vm_mask_var;
- };
- 
- /* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
--#define mm_cpumask(mm) (&(mm)->cpu_vm_mask)
-+static inline cpumask_t* mm_cpumask(struct mm_struct *mm)
-+{
-+	return mm->cpu_vm_mask_var;
-+}
- 
- #endif /* _LINUX_MM_TYPES_H */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3f7d3f9..7068380 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2170,6 +2170,7 @@ static inline void mmdrop(struct mm_struct * mm)
- 	if (unlikely(atomic_dec_and_test(&mm->mm_count)))
- 		__mmdrop(mm);
- }
-+extern int mm_init_cpumask(struct mm_struct *mm, struct mm_struct *oldmm);
- 
- /* mmput gets rid of the mappings and all user-space */
- extern void mmput(struct mm_struct *);
-diff --git a/init/main.c b/init/main.c
-index 4a9479e..8451425 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -509,6 +509,8 @@ asmlinkage void __init start_kernel(void)
- 	sort_main_extable();
- 	trap_init();
- 	mm_init();
-+	BUG_ON(mm_init_cpumask(&init_mm, 0));
-+
- 	/*
- 	 * Set up the scheduler prior starting any interrupts (such as the
- 	 * timer interrupt). Full topology setup happens at smp_init()
-diff --git a/kernel/fork.c b/kernel/fork.c
-index cc04197..5d303a2 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -486,6 +486,20 @@ static void mm_init_aio(struct mm_struct *mm)
- #endif
- }
- 
-+int mm_init_cpumask(struct mm_struct *mm, struct mm_struct *oldmm)
-+{
-+#ifdef CONFIG_CPUMASK_OFFSTACK
-+	if (!alloc_cpumask_var(&mm->cpu_vm_mask_var, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	if (oldmm)
-+		cpumask_copy(mm_cpumask(mm), mm_cpumask(oldmm));
-+	else
-+		memset(mm_cpumask(mm), 0, cpumask_size());
-+#endif
-+	return 0;
-+}
-+
- static struct mm_struct * mm_init(struct mm_struct * mm, struct task_struct *p)
- {
- 	atomic_set(&mm->mm_users, 1);
-@@ -522,10 +536,20 @@ struct mm_struct * mm_alloc(void)
- 	struct mm_struct * mm;
- 
- 	mm = allocate_mm();
--	if (mm) {
--		memset(mm, 0, sizeof(*mm));
--		mm = mm_init(mm, current);
-+	if (!mm)
-+		return NULL;
-+
-+	memset(mm, 0, sizeof(*mm));
-+	mm = mm_init(mm, current);
-+	if (!mm)
-+		return NULL;
-+
-+	if (mm_init_cpumask(mm, NULL)) {
-+		mm_free_pgd(mm);
-+		free_mm(mm);
-+		return NULL;
- 	}
-+
- 	return mm;
- }
- 
-@@ -537,6 +561,7 @@ struct mm_struct * mm_alloc(void)
- void __mmdrop(struct mm_struct *mm)
- {
- 	BUG_ON(mm == &init_mm);
-+	free_cpumask_var(mm->cpu_vm_mask_var);
- 	mm_free_pgd(mm);
- 	destroy_context(mm);
- 	mmu_notifier_mm_destroy(mm);
-@@ -691,6 +716,9 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
- 	if (!mm_init(mm, tsk))
- 		goto fail_nomem;
- 
-+	if (mm_init_cpumask(mm, oldmm))
-+		goto fail_nocpumask;
-+
- 	if (init_new_context(tsk, mm))
- 		goto fail_nocontext;
- 
-@@ -717,6 +745,9 @@ fail_nomem:
- 	return NULL;
- 
- fail_nocontext:
-+	free_cpumask_var(mm->cpu_vm_mask_var);
-+
-+fail_nocpumask:
- 	/*
- 	 * If init_new_context() failed, we cannot use mmput() to free the mm
- 	 * because it calls destroy_context()
-diff --git a/mm/init-mm.c b/mm/init-mm.c
-index 1d29cdf..4019979 100644
---- a/mm/init-mm.c
-+++ b/mm/init-mm.c
-@@ -21,6 +21,5 @@ struct mm_struct init_mm = {
- 	.mmap_sem	= __RWSEM_INITIALIZER(init_mm.mmap_sem),
- 	.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
- 	.mmlist		= LIST_HEAD_INIT(init_mm.mmlist),
--	.cpu_vm_mask	= CPU_MASK_ALL,
- 	INIT_MM_CONTEXT(init_mm)
- };
 -- 
-1.7.3.1
-
-
-
+Rafał
