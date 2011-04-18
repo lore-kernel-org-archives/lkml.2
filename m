@@ -1,205 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab1DRKBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 06:01:38 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44818 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751340Ab1DRKBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 06:01:34 -0400
-Date: Mon, 18 Apr 2011 12:01:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] mm: make expand_downwards symmetrical to expand_upwards
-Message-ID: <20110418100131.GD8925@tiehlicka.suse.cz>
-References: <20110415135144.GE8828@tiehlicka.suse.cz>
- <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754071Ab1DRKPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 06:15:10 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:38275 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752324Ab1DRKPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 06:15:05 -0400
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH v4] [resend] s3fb: add DDC support
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Mon, 18 Apr 2011 12:14:57 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104181214.57501.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 17-04-11 20:00:17, Hugh Dickins wrote:
-> On Fri, 14 Apr 2011, Michal Hocko wrote:
-[...]
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > index 692dbae..765cf4e 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -1498,8 +1498,10 @@ unsigned long ra_submit(struct file_ra_state *ra,
-> >  extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
-> >  #if VM_GROWSUP
-> >  extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
-> > +  #define expand_downwards(vma, address) do { } while (0)
-> 
-> I think this is wrong: doesn't the VM_GROWSUP case actually want
-> a real expand_downwards() in addition to expand_upwards()?
+Add I2C support for the DDC bus and also default mode initialization by
+reading monitor EDID to the s3fb driver.
 
-Ahh, right you are. I haven't noticed that we have
-expand_stack_downwards as well and this one is called from get_arg_page
-if CONFIG_STACK_GROWSUP. 
+Tested on Trio64V+ (2 cards), Trio64V2/DX, Virge (3 cards),
+Virge/DX (3 cards), Virge/GX2, Trio3D/2X (4 cards), Trio3D.
 
-I am wondering why we do this just for CONFIG_STACK_GROWSUP. Do we
-expand stack for GROWSDOWN automatically?
+Will probably not work on Trio32 - my 2 cards have DDC support in BIOS that
+looks different from the other cards but the DDC pins on the VGA connector
+are not connected.
 
-> 
-> >  #else
-> >    #define expand_upwards(vma, address) do { } while (0)
-> > +extern int expand_downwards(struct vm_area_struct *vma, unsigned long address);
-> >  #endif
-> >  extern int expand_stack_downwards(struct vm_area_struct *vma,
-> >  				  unsigned long address);
-> 
-> And if you're going for symmetry, wouldn't it be nice to add fs/exec.c
-> to the patch and remove this silly expand_stack_downwards() wrapper?
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Sounds reasonable. Thanks for the review, Hugh. I am also thinking
-whether expand_stack_{downwards,upwards} is more suitable name for those
-functions as we are more explicit that this is stack related.
-
-What about the updated patch bellow?
-
-Changes since v1
- - fixed expand_downwards case for CONFIG_STACK_GROWSUP in get_arg_page.
- - rename expand_{downwards,upwards} -> expand_stack_{downwards,upwards}
----
-
->From f3adcf40518eaf7c4ee1cb10abd16b59785a66ba Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 15 Apr 2011 14:56:26 +0200
-Subject: [PATCH] mm: make expand_downwards symmetrical to expand_upwards
-
-Currently we have expand_upwards exported while expand_downwards is
-accessible only via expand_stack or expand_stack_downwards.
-
-check_stack_guard_page is a nice example of the asymmetry. It uses
-expand_stack for VM_GROWSDOWN while expand_upwards is called for
-VM_GROWSUP case.
-
-Let's clean this up by exporting both functions and make those name
-consistent. Let's use expand_stack_{upwards,downwards} so that we are
-explicit about stack manipulation in the name. expand_stack_downwards
-has to be defined for both CONFIG_STACK_GROWS{UP,DOWN} because
-get_arg_page calls the downwards version in the early process
-initialization phase for growsup configuration.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/mm.h |   13 ++++++++-----
- mm/memory.c        |    4 ++--
- mm/mmap.c          |   13 ++++---------
- 3 files changed, 14 insertions(+), 16 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 692dbae..17f9b86 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1494,15 +1494,18 @@ unsigned long ra_submit(struct file_ra_state *ra,
- 			struct address_space *mapping,
- 			struct file *filp);
+--- linux-2.6.39-rc2-/drivers/video/s3fb.c	2011-04-11 23:29:44.000000000 +0200
++++ linux-2.6.39-rc2/drivers/video/s3fb.c	2011-04-11 23:10:35.000000000 +0200
+@@ -25,6 +25,9 @@
+ #include <linux/console.h> /* Why should fb driver call console functions? because console_lock() */
+ #include <video/vga.h>
  
--/* Do stack extension */
-+/* Generic expand stack which grows the stack according to GROWS{UP,DOWN} */
- extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
++#include <linux/i2c.h>
++#include <linux/i2c-algo-bit.h>
 +
-+/* CONFIG_STACK_GROWSUP still needs to to grow downwards at some places */
-+extern int expand_stack_downwards(struct vm_area_struct *vma,
-+		unsigned long address);
- #if VM_GROWSUP
--extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
-+extern int expand_stack_upwards(struct vm_area_struct *vma,
-+		unsigned long address);
- #else
--  #define expand_upwards(vma, address) do { } while (0)
-+  #define expand_stack_upwards(vma, address) do { } while (0)
+ #ifdef CONFIG_MTRR
+ #include <asm/mtrr.h>
  #endif
--extern int expand_stack_downwards(struct vm_area_struct *vma,
--				  unsigned long address);
+@@ -36,6 +39,12 @@ struct s3fb_info {
+ 	struct mutex open_lock;
+ 	unsigned int ref_count;
+ 	u32 pseudo_palette[16];
++#ifdef CONFIG_FB_S3_DDC
++	u8 __iomem *mmio;
++	bool ddc_registered;
++	struct i2c_adapter ddc_adapter;
++	struct i2c_algo_bit_data ddc_algo;
++#endif
+ };
  
- /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
- extern struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr);
-diff --git a/mm/memory.c b/mm/memory.c
-index ce22a25..ba5b4d8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2969,7 +2969,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
- 		if (prev && prev->vm_end == address)
- 			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
  
--		expand_stack(vma, address - PAGE_SIZE);
-+		expand_stack_downwards(vma, address - PAGE_SIZE);
+@@ -105,6 +114,9 @@ static const char * const s3_names[] = {
+ #define CHIP_UNDECIDED_FLAG	0x80
+ #define CHIP_MASK		0xFF
+ 
++#define MMIO_OFFSET		0x1000000
++#define MMIO_SIZE		0x10000
++
+ /* CRT timing register sets */
+ 
+ static const struct vga_regset s3_h_total_regs[]        = {{0x00, 0, 7}, {0x5D, 0, 0}, VGA_REGSET_END};
+@@ -140,7 +152,7 @@ static const struct svga_timing_regs s3_
+ /* Module parameters */
+ 
+ 
+-static char *mode_option __devinitdata = "640x480-8@60";
++static char *mode_option __devinitdata;
+ 
+ #ifdef CONFIG_MTRR
+ static int mtrr __devinitdata = 1;
+@@ -169,6 +181,119 @@ MODULE_PARM_DESC(fasttext, "Enable S3 fa
+ 
+ /* ------------------------------------------------------------------------- */
+ 
++#ifdef CONFIG_FB_S3_DDC
++
++#define DDC_REG		0xaa		/* Trio 3D/1X/2X */
++#define DDC_MMIO_REG	0xff20		/* all other chips */
++#define DDC_SCL_OUT	(1 << 0)
++#define DDC_SDA_OUT	(1 << 1)
++#define DDC_SCL_IN	(1 << 2)
++#define DDC_SDA_IN	(1 << 3)
++#define DDC_DRIVE_EN	(1 << 4)
++
++static bool s3fb_ddc_needs_mmio(int chip)
++{
++	return !(chip == CHIP_360_TRIO3D_1X  ||
++		 chip == CHIP_362_TRIO3D_2X  ||
++		 chip == CHIP_368_TRIO3D_2X);
++}
++
++static u8 s3fb_ddc_read(struct s3fb_info *par)
++{
++	if (s3fb_ddc_needs_mmio(par->chip))
++		return readb(par->mmio + DDC_MMIO_REG);
++	else
++		return vga_rcrt(par->state.vgabase, DDC_REG);
++}
++
++static void s3fb_ddc_write(struct s3fb_info *par, u8 val)
++{
++	if (s3fb_ddc_needs_mmio(par->chip))
++		writeb(val, par->mmio + DDC_MMIO_REG);
++	else
++		vga_wcrt(par->state.vgabase, DDC_REG, val);
++}
++
++static void s3fb_ddc_setscl(void *data, int val)
++{
++	struct s3fb_info *par = data;
++	unsigned char reg;
++
++	reg = s3fb_ddc_read(par) | DDC_DRIVE_EN;
++	if (val)
++		reg |= DDC_SCL_OUT;
++	else
++		reg &= ~DDC_SCL_OUT;
++	s3fb_ddc_write(par, reg);
++}
++
++static void s3fb_ddc_setsda(void *data, int val)
++{
++	struct s3fb_info *par = data;
++	unsigned char reg;
++
++	reg = s3fb_ddc_read(par) | DDC_DRIVE_EN;
++	if (val)
++		reg |= DDC_SDA_OUT;
++	else
++		reg &= ~DDC_SDA_OUT;
++	s3fb_ddc_write(par, reg);
++}
++
++static int s3fb_ddc_getscl(void *data)
++{
++	struct s3fb_info *par = data;
++
++	return !!(s3fb_ddc_read(par) & DDC_SCL_IN);
++}
++
++static int s3fb_ddc_getsda(void *data)
++{
++	struct s3fb_info *par = data;
++
++	return !!(s3fb_ddc_read(par) & DDC_SDA_IN);
++}
++
++static int __devinit s3fb_setup_ddc_bus(struct fb_info *info)
++{
++	struct s3fb_info *par = info->par;
++
++	strlcpy(par->ddc_adapter.name, info->fix.id,
++		sizeof(par->ddc_adapter.name));
++	par->ddc_adapter.owner		= THIS_MODULE;
++	par->ddc_adapter.class		= I2C_CLASS_DDC;
++	par->ddc_adapter.algo_data	= &par->ddc_algo;
++	par->ddc_adapter.dev.parent	= info->device;
++	par->ddc_algo.setsda		= s3fb_ddc_setsda;
++	par->ddc_algo.setscl		= s3fb_ddc_setscl;
++	par->ddc_algo.getsda		= s3fb_ddc_getsda;
++	par->ddc_algo.getscl		= s3fb_ddc_getscl;
++	par->ddc_algo.udelay		= 10;
++	par->ddc_algo.timeout		= 20;
++	par->ddc_algo.data		= par;
++
++	i2c_set_adapdata(&par->ddc_adapter, par);
++
++	/*
++	 * some Virge cards have external MUX to switch chip I2C bus between
++	 * DDC and extension pins - switch it do DDC
++	 */
++/*	vga_wseq(par->state.vgabase, 0x08, 0x06); - not needed, already unlocked */
++	if (par->chip == CHIP_357_VIRGE_GX2 ||
++	    par->chip == CHIP_359_VIRGE_GX2P)
++		svga_wseq_mask(par->state.vgabase, 0x0d, 0x01, 0x03);
++	else
++		svga_wseq_mask(par->state.vgabase, 0x0d, 0x00, 0x03);
++	/* some Virge need this or the DDC is ignored */
++	svga_wcrt_mask(par->state.vgabase, 0x5c, 0x03, 0x03);
++
++	return i2c_bit_add_bus(&par->ddc_adapter);
++}
++#endif /* CONFIG_FB_S3_DDC */
++
++
++/* ------------------------------------------------------------------------- */
++
+ /* Set font in S3 fast text mode */
+ 
+ static void s3fb_settile_fast(struct fb_info *info, struct fb_tilemap *map)
+@@ -994,6 +1119,7 @@ static int __devinit s3_pci_probe(struct
+ 	struct s3fb_info *par;
+ 	int rc;
+ 	u8 regval, cr38, cr39;
++	bool found = false;
+ 
+ 	/* Ignore secondary VGA device because there is no VGA arbitration */
+ 	if (! svga_primary_device(dev)) {
+@@ -1110,12 +1236,69 @@ static int __devinit s3_pci_probe(struct
+ 	info->fix.ypanstep = 0;
+ 	info->fix.accel = FB_ACCEL_NONE;
+ 	info->pseudo_palette = (void*) (par->pseudo_palette);
++	info->var.bits_per_pixel = 8;
++
++#ifdef CONFIG_FB_S3_DDC
++	/* Enable MMIO if needed */
++	if (s3fb_ddc_needs_mmio(par->chip)) {
++		par->mmio = ioremap(info->fix.smem_start + MMIO_OFFSET, MMIO_SIZE);
++		if (par->mmio)
++			svga_wcrt_mask(par->state.vgabase, 0x53, 0x08, 0x08);	/* enable MMIO */
++		else
++			dev_err(info->device, "unable to map MMIO at 0x%lx, disabling DDC",
++				info->fix.smem_start + MMIO_OFFSET);
++	}
++	if (!s3fb_ddc_needs_mmio(par->chip) || par->mmio)
++		if (s3fb_setup_ddc_bus(info) == 0) {
++			u8 *edid = fb_ddc_read(&par->ddc_adapter);
++			par->ddc_registered = true;
++			if (edid) {
++				fb_edid_to_monspecs(edid, &info->monspecs);
++				kfree(edid);
++				if (!info->monspecs.modedb)
++					dev_err(info->device, "error getting mode database\n");
++				else {
++					const struct fb_videomode *m;
++
++					fb_videomode_to_modelist(info->monspecs.modedb,
++								 info->monspecs.modedb_len,
++								 &info->modelist);
++					m = fb_find_best_display(&info->monspecs, &info->modelist);
++					if (m) {
++						fb_videomode_to_var(&info->var, m);
++						/* fill all other info->var's fields */
++						if (s3fb_check_var(&info->var, info) == 0)
++							found = true;
++					}
++				}
++			}
++		}
++#endif
++	if (!mode_option && !found)
++		mode_option = "640x480-8@60";
+ 
+ 	/* Prepare startup mode */
+-	rc = fb_find_mode(&(info->var), info, mode_option, NULL, 0, NULL, 8);
+-	if (! ((rc == 1) || (rc == 2))) {
+-		rc = -EINVAL;
+-		dev_err(info->device, "mode %s not found\n", mode_option);
++	if (mode_option) {
++		rc = fb_find_mode(&info->var, info, mode_option,
++				   info->monspecs.modedb, info->monspecs.modedb_len,
++				   NULL, info->var.bits_per_pixel);
++		if (!rc || rc == 4) {
++			rc = -EINVAL;
++			dev_err(info->device, "mode %s not found\n", mode_option);
++			fb_destroy_modedb(info->monspecs.modedb);
++			info->monspecs.modedb = NULL;
++			goto err_find_mode;
++		}
++	}
++
++	fb_destroy_modedb(info->monspecs.modedb);
++	info->monspecs.modedb = NULL;
++
++	/* maximize virtual vertical size for fast scrolling */
++	info->var.yres_virtual = info->fix.smem_len * 8 /
++			(info->var.bits_per_pixel * info->var.xres_virtual);
++	if (info->var.yres_virtual < info->var.yres) {
++		dev_err(info->device, "virtual vertical size smaller than real\n");
+ 		goto err_find_mode;
  	}
- 	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
- 		struct vm_area_struct *next = vma->vm_next;
-@@ -2978,7 +2978,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
- 		if (next && next->vm_start == address + PAGE_SIZE)
- 			return next->vm_flags & VM_GROWSUP ? 0 : -ENOMEM;
  
--		expand_upwards(vma, address + PAGE_SIZE);
-+		expand_stack_upwards(vma, address + PAGE_SIZE);
- 	}
- 	return 0;
- }
-diff --git a/mm/mmap.c b/mm/mmap.c
-index e27e0cf..29c68b0 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1731,7 +1731,7 @@ static int acct_stack_growth(struct vm_area_struct *vma, unsigned long size, uns
-  * PA-RISC uses this for its stack; IA64 for its Register Backing Store.
-  * vma is the last one with address > vma->vm_end.  Have to extend vma.
-  */
--int expand_upwards(struct vm_area_struct *vma, unsigned long address)
-+int expand_stack_upwards(struct vm_area_struct *vma, unsigned long address)
- {
- 	int error;
+@@ -1164,6 +1347,12 @@ err_reg_fb:
+ 	fb_dealloc_cmap(&info->cmap);
+ err_alloc_cmap:
+ err_find_mode:
++#ifdef CONFIG_FB_S3_DDC
++	if (par->ddc_registered)
++		i2c_del_adapter(&par->ddc_adapter);
++	if (par->mmio)
++		iounmap(par->mmio);
++#endif
+ 	pci_iounmap(dev, info->screen_base);
+ err_iomap:
+ 	pci_release_regions(dev);
+@@ -1195,6 +1384,13 @@ static void __devexit s3_pci_remove(stru
+ 		unregister_framebuffer(info);
+ 		fb_dealloc_cmap(&info->cmap);
  
-@@ -1782,7 +1782,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- /*
-  * vma is the first one with address < vma->vm_start.  Have to extend vma.
-  */
--static int expand_downwards(struct vm_area_struct *vma,
-+int expand_stack_downwards(struct vm_area_struct *vma,
- 				   unsigned long address)
- {
- 	int error;
-@@ -1829,15 +1829,10 @@ static int expand_downwards(struct vm_area_struct *vma,
- 	return error;
- }
++#ifdef CONFIG_FB_S3_DDC
++		if (par->ddc_registered)
++			i2c_del_adapter(&par->ddc_adapter);
++		if (par->mmio)
++			iounmap(par->mmio);
++#endif
++
+ 		pci_iounmap(dev, info->screen_base);
+ 		pci_release_regions(dev);
+ /*		pci_disable_device(dev); */
+--- linux-2.6.39-rc2-orig/drivers/video/Kconfig	2011-04-06 03:30:43.000000000 +0200
++++ linux-2.6.39-rc2/drivers/video/Kconfig	2011-04-11 22:41:18.000000000 +0200
+@@ -1463,6 +1463,14 @@ config FB_S3
+ 	---help---
+ 	  Driver for graphics boards with S3 Trio / S3 Virge chip.
  
--int expand_stack_downwards(struct vm_area_struct *vma, unsigned long address)
--{
--	return expand_downwards(vma, address);
--}
--
- #ifdef CONFIG_STACK_GROWSUP
- int expand_stack(struct vm_area_struct *vma, unsigned long address)
- {
--	return expand_upwards(vma, address);
-+	return expand_stack_upwards(vma, address);
- }
- 
- struct vm_area_struct *
-@@ -1859,7 +1854,7 @@ find_extend_vma(struct mm_struct *mm, unsigned long addr)
- #else
- int expand_stack(struct vm_area_struct *vma, unsigned long address)
- {
--	return expand_downwards(vma, address);
-+	return expand_stack_downwards(vma, address);
- }
- 
- struct vm_area_struct *
--- 
-1.7.4.1
++config FB_S3_DDC
++	bool "DDC for S3 support"
++	depends on FB_S3
++	select FB_DDC
++	default y
++	help
++	  Say Y here if you want DDC support for your S3 graphics card.
++
+ config FB_SAVAGE
+ 	tristate "S3 Savage support"
+ 	depends on FB && PCI && EXPERIMENTAL
+
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Ondrej Zary
