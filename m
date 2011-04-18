@@ -1,229 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1DRMVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 08:21:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36574 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab1DRMVk convert rfc822-to-8bit (ORCPT
+	id S1753145Ab1DRM0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 08:26:08 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38444 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752903Ab1DRM0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 08:21:40 -0400
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 5/26]  5: uprobes: Adding and remove
- a uprobe in a rb tree.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110401143328.15455.19094.sendpatchset@localhost6.localdomain6>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	 <20110401143328.15455.19094.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Apr 2011 14:20:28 +0200
-Message-ID: <1303129228.32491.777.camel@twins>
+	Mon, 18 Apr 2011 08:26:00 -0400
+Date: Mon, 18 Apr 2011 13:26:29 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ben Nizette <bn@niasdigital.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+Message-ID: <20110418132629.12d9a106@lxorguk.ukuu.org.uk>
+In-Reply-To: <92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
+	<20110418091902.13345132@lxorguk.ukuu.org.uk>
+	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 20:03 +0530, Srikar Dronamraju wrote:
-> +static int match_inode(struct uprobe *uprobe, struct inode *inode,
-> +                                               struct rb_node **p)
-> +{
-> +       struct rb_node *n = *p;
-> +
-> +       if (inode < uprobe->inode)
-> +               *p = n->rb_left;
-> +       else if (inode > uprobe->inode)
-> +               *p = n->rb_right;
-> +       else
-> +               return 1;
-> +       return 0;
-> +}
-> +
-> +static int match_offset(struct uprobe *uprobe, loff_t offset,
-> +                                               struct rb_node **p)
-> +{
-> +       struct rb_node *n = *p;
-> +
-> +       if (offset < uprobe->offset)
-> +               *p = n->rb_left;
-> +       else if (offset > uprobe->offset)
-> +               *p = n->rb_right;
-> +       else
-> +               return 1;
-> +       return 0;
-> +}
->+
-> +/* Called with treelock held */
-> +static struct uprobe *__find_uprobe(struct inode * inode,
-> +                        loff_t offset, struct rb_node **near_match)
-> +{
-> +       struct rb_node *n = uprobes_tree.rb_node;
-> +       struct uprobe *uprobe, *u = NULL;
-> +
-> +       while (n) {
-> +               uprobe = rb_entry(n, struct uprobe, rb_node);
-> +               if (match_inode(uprobe, inode, &n)) {
-> +                       if (near_match)
-> +                               *near_match = n;
-> +                       if (match_offset(uprobe, offset, &n)) {
-> +                               /* get access ref */
-> +                               atomic_inc(&uprobe->ref);
-> +                               u = uprobe;
-> +                               break;
-> +                       }
-> +               }
-> +       }
-> +       return u;
-> +}
+> Fair call, but bringing this back to the particular case in hand what in that enum is worth 'hinting' in a might-have-an-effect manner rather than just letting the board take care of it?
+> 
+> Still my question stands, where is the driver ever better placed to make these calls than the board code?
 
-Here you break out the match functions for some reason.
+The logical extension to that is to delete the gpio layer because the
+board code can do it ?
 
-> +/*
-> + * Find a uprobe corresponding to a given inode:offset
-> + * Acquires treelock
-> + */
-> +static struct uprobe *find_uprobe(struct inode * inode, loff_t offset)
-> +{
-> +       struct uprobe *uprobe;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&treelock, flags);
-> +       uprobe = __find_uprobe(inode, offset, NULL);
-> +       spin_unlock_irqrestore(&treelock, flags);
-> +       return uprobe;
-> +}
-> +
-> +/*
-> + * Acquires treelock.
-> + * Matching uprobe already exists in rbtree;
-> + *     increment (access refcount) and return the matching uprobe.
-> + *
-> + * No matching uprobe; insert the uprobe in rb_tree;
-> + *     get a double refcount (access + creation) and return NULL.
-> + */
-> +static struct uprobe *insert_uprobe(struct uprobe *uprobe)
-> +{
-> +       struct rb_node **p = &uprobes_tree.rb_node;
-> +       struct rb_node *parent = NULL;
-> +       struct uprobe *u;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&treelock, flags);
-> +       while (*p) {
-> +               parent = *p;
-> +               u = rb_entry(parent, struct uprobe, rb_node);
-> +               if (u->inode > uprobe->inode)
-> +                       p = &(*p)->rb_left;
-> +               else if (u->inode < uprobe->inode)
-> +                       p = &(*p)->rb_right;
-> +               else {
-> +                       if (u->offset > uprobe->offset)
-> +                               p = &(*p)->rb_left;
-> +                       else if (u->offset < uprobe->offset)
-> +                               p = &(*p)->rb_right;
-> +                       else {
-> +                               /* get access ref */
-> +                               atomic_inc(&u->ref);
-> +                               goto unlock_return;
-> +                       }
-> +               }
-> +       }
-> +       u = NULL;
-> +       rb_link_node(&uprobe->rb_node, parent, p);
-> +       rb_insert_color(&uprobe->rb_node, &uprobes_tree);
-> +       /* get access + drop ref */
-> +       atomic_set(&uprobe->ref, 2);
-> +
-> +unlock_return:
-> +       spin_unlock_irqrestore(&treelock, flags);
-> +       return u;
-> +} 
+> > Also your comment re simply in or out on or off is incorrect. Pins may
+> > also be in use by firmware and the like and in a 'neither' state.
+> > Something certain gpio people seem to be in denial over.
+> 
+> Quite right, but should a pin ever be in a neither state and simultaneously controlled by a gpiolib driver?  If so, how should it behave and if not, is it anything that stricter enforcement of gpio_request() semantics can't get around?
 
-And here you open-code the match functions..
+That won't fix sysfs.
 
-Why not have something like:
+It also doesn't solve the real problem which is that you've got to
+implement platform specific parallel gpio extensions all over the place
+when you really want it all using the same 'handle' and request logic.
 
-static int match_probe(struct uprobe *l, struct uprobe *r)
-{
-	if (l->inode < r->inode)
-		return -1;
-	else if (l->inode > r->inode)
-		return 1;
-	else {
-		if (l->offset < r->offset)
-			return -1;
-		else if (l->offset > r->offset)
-			return 1;
-	}
+The gpio layer doesn't seem to know what it is doing. It's a fine resource
+allocator and call distributor but it can't make up its mind whether it
+wants to just do that job, or to be a proper extensible gpio layer.
+Instead it sits there being almost useful but incomplete and unwilling to
+either do the job needed or get out of the way.
 
-	return 0;
-}
+One possible way to tackle a lot of it would be to actually let the
+drivers make the choices instead of imposing arbitarily wrong sematics
+in the upper layers.
 
-And use that as:
+And for a lot of this stuff that the gpio layer really doesn't want
+internal knowledge of other chunks of the kernel have used models like
+'get_property/set_property' (eg battery, video4linux etc) so that the mid
+layer can plumb in a conversation between the handle owner and the driver
+without getting involved in the conversation.
 
-static struct uprobe *
-__find_uprobe(struct inode *inode, loff_t offset)
-{
-	struct uprobe r = { .inode = inode, .offset = offset };
-	struct rb_node *n = uprobes_tree.rb_node;
-	struct uprobe *uprobe;
-	int match;
-
-	while (n) {
-		uprobe = rb_node(n, struct uprobe, rb_node);
-		match = match_probe(uprobe, &r);
-		if (!match) {
-			atomic_inc(&uprobe->ref);
-			return uprobe;
-		}
-		if (match < 0)
-			n = n->rb_left;
-		else
-			n = n->rb_right;
-	}
-
-	return NULL;
-}
-
-static struct uprobe *__insert_uprobe(struct uprobe *uprobe)
-{
-	struct rb_node **p = &uprobes_tree.rb_node;
-	struct rn_node *parent = NULL;
-	struct uprobe *u;
-	int match;
-
-	while (*p) {
-		parent = *p;
-		u = rb_entry(parent, struct uprobe, rb_node);
-		match = match_uprobe(u, uprobe);
-		if (!match) {
-			atomic_inc(&u->ref);
-			return u;
-		}
-		if (match < 0)
-			p = &parent->rb_left;
-		else
-			p = &parent->rb_right;
-	}
-
-	atomic_set(&uprobe->ref, 2);
-	rb_link_node(&uprobe->rb_node, parent, p);
-	rb_insert_color(&uprobe->rb_node, &uprobes_tree);
-	return uprobe;
-}
-
-Isn't that much nicer?
+Alan
