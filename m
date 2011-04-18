@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab1DRLnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 07:43:31 -0400
-Received: from pequod.mess.org ([188.220.58.213]:37775 "EHLO pequod.mess.org"
+	id S1752575Ab1DRLov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 07:44:51 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:37775 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab1DRLn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 07:43:26 -0400
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Apr 2011 07:43:26 EDT
-Date: Mon, 18 Apr 2011 12:36:40 +0100
-From: Sean Young <sean@mess.org>
-To: Robin Becker <robin@reportlab.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Peter Korsgaard <jacmet@sunsite.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: arm: mach-kirkwood: Make the red led available on the eSATA
- SheevaPlug
-Message-ID: <20110418113640.GA11559@pequod.mess.org>
-References: <20110416220842.GA1518@pequod.mess.org>
- <4DAC0390.9050205@chamonix.reportlab.co.uk>
+	id S1752033Ab1DRLop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 07:44:45 -0400
+X-ASG-Debug-ID: 1303127081-01de284cf815c730001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DAC2429.5000105@fusionio.com>
+Date: Mon, 18 Apr 2011 13:44:41 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAC0390.9050205@chamonix.reportlab.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>
+Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
+References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera> <_H4l51C1wXN.A.yDC.yGuqNB@chimera> <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com> <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [Bug #32982] Kernel locks up a few minutes after boot
+In-Reply-To: <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1303127081
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61209
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:25:36AM +0100, Robin Becker wrote:
-> On 16/04/2011 23:08, Sean Young wrote:
-> >After this patch:
-> >
-> >         7780c80 arm: mach-kirkwood: add led in sheevaplug-setup.c
-> >
-> >On a eSATA SheevaPlug, neither the red nor the green led can be controlled,
-> >since probing fails with:
-> >
-> >[    6.188278] leds-gpio: probe of leds-gpio failed with error -22
-> >
-> >Signed-off-by: Sean Young<sean@mess.org>
-> >
-> >diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-> >index 17de0bf..92db979 100644
-> >--- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
-> >+++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-> >@@ -94,6 +94,7 @@ static unsigned int sheevaplug_mpp_config[] __initdata = {
-> >  static unsigned int sheeva_esata_mpp_config[] __initdata = {
-> >  	MPP29_GPIO,	/* USB Power Enable */
-> >  	MPP44_GPIO,	/* SD Write Protect */
-> >+	MPP46_GPIO,	/* LED Red */
-> >  	MPP47_GPIO,	/* SD Card Detect */
-> >  	MPP49_GPIO,	/* LED Green */
-> >  	0
-> >
+On 2011-04-17 20:37, Bart Van Assche wrote:
+> On Sun, Apr 17, 2011 at 7:03 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Sun, Apr 17, 2011 at 5:57 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> This message has been generated automatically as a part of a summary report
+>>> of recent regressions.
+>>>
+>>> The following bug entry is on the current list of known regressions
+>>> from 2.6.38.  Please verify if it still should be listed and let the tracking team
+>>> know (either way).
+>>>
+>>>
+>>> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=32982
+>>> Subject         : Kernel locks up a few minutes after boot
+>>> Submitter       : Bart Van Assche <bart.vanassche@gmail.com>
+>>> Date            : 2011-04-10 19:55 (8 days old)
+>>
+>> Is this machine running a RAID5 setup or something like that?
+>>
+>> There is a known interaction with the new block layer plugging code
+>> and MD. The "hung task" report in that bugzilla looks very much like
+>> that issue. And you do have "root=/dev/md0", so clearly there's some
+>> md thing going on.
+>>
+>> And bisecting might not work all that well for it, because I suspect
+>> it ends up being very much a matter of IO patterns how it triggers.
+>>
+>> Neil supposedly has a patch for it, but I haven't seen it yet. Neil, Jens?
 > 
-> I think my original patch had some changes to gpio_led
-> sheevaplug_led_pins as well. 
-
-Yes, which causes breakage on my eSATA SheevaPlug without my patch above,
-since the corresponding GPIO pins aren't enabled.
-
-> It definitely works on my standard
-> sheeva plug. In fact I have three controllable leds at 46, 48 & 49.
-> GPIO 45 is also an led, but is also grounded so is permanently on.
-> This is something like the patch I am using with plugbox
+> (converted top-posting into bottom-posting)
 > 
-> diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/
-> index d2eec35..e14893b 100644
-> --- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
-> +++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-> @@ -58,7 +58,19 @@
+> Hello Linus,
 > 
->  static struct gpio_led sheevaplug_led_pins[] = {
->     {
-> -       .name           = "plug:green:health",
-> +       .name           = "status:red:misc",
-> +       .default_trigger    = "none",
-> +       .gpio           = 46,
-> +       .active_low     = 1,
-> +   },
-> +   {
-> +       .name           = "status:green:health",
-> +       .default_trigger    = "none",
-> +       .gpio           = 48,
-> +       .active_low     = 1,
-> +   },
-> +   {
-> +       .name           = "status:blue:health",
->         .default_trigger    = "default-on",
->         .gpio           = 49,
->         .active_low     = 1,
-> @@ -80,7 +92,9 @@
+> On the system on which bug #32982 has been triggered md0, md1 and md2
+> have been configured as two-disk RAID1 (mirroring).
 > 
->  static unsigned int sheevaplug_mpp_config[] __initdata = {
->     MPP29_GPIO, /* USB Power Enable */
-> -   MPP49_GPIO, /* LED */
-> +   MPP46_GPIO, /* LED Red Misc */
-> +   MPP48_GPIO, /* LED Green Health */
-> +   MPP49_GPIO, /* LED Blue Health */
->     0
->  };
-> 
+> I've done my best to trigger enough I/O in order to obtain reliable
+> bisect results. A difficulty I encountered during bisecting though was
+> that I encountered unbootable kernels (all skipped revisions).
 
-First of all, your mail client has replaced tabs with spaces, causing 
-the patch to be garbage.
+Bart, can you try and pull:
 
-Again you're not enabling the GPIO pins on the eSATA SheevaPlug for the 
-leds you're adding. For the eSATA SheevaPlug sheeva_esata_mpp_config[] 
-is used, not sheevaplug_mpp_config[], causing this patch and 
-2.6.39-rc? to break on the eSATA SheevaPlug.
+git://git.kernel.dk/linux-2.6-block.git for-linus
 
+into Linus' tree and see if that works? This has, among other things,
+Neils fixes for MD.
 
-Sean
+-- 
+Jens Axboe
+
