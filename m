@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab1DRR2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:28:05 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52341 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab1DRR15 (ORCPT
+	id S1756117Ab1DRRbC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:31:02 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:3021 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755925Ab1DRRa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:27:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Ai93AOg86KTdRC+MQKHQ3jGKbG8/56l6D7NYI+GZSKoux6PKl2Ujq3fajuaFQP/YCZ
-         ru3XAk2OnSYHopaAJkNYCMY0b9dAAlJSwn1BmqVN0LEjNlJgTpAnknciRKFZ/AZR9jbs
-         nLFIiUDVXMNNx0HVcDYgoHdsW5kePXnsvB820=
-Message-ID: <4DAC7499.5000602@gmail.com>
-Date: Mon, 18 Apr 2011 10:27:53 -0700
-From: David Daney <ddaney.cavm@gmail.com>
+	Mon, 18 Apr 2011 13:30:56 -0400
+Message-ID: <4DAC754A.3080207@caviumnetworks.com>
+Date: Mon, 18 Apr 2011 10:30:50 -0700
+From: David Daney <ddaney@caviumnetworks.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
 To: Kevin Cernekee <cernekee@gmail.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, Wu Zhangjin <wuzhangjin@gmail.com>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: Squash pci_fixup_irqs() compiler warning
-References: <cb01d61712b1374a8c62bc765094ea7e@localhost>
-In-Reply-To: <cb01d61712b1374a8c62bc765094ea7e@localhost>
+CC: Ralf Baechle <ralf@linux-mips.org>, Robert Millan <rmh@gnu.org>,
+        wu zhangjin <wuzhangjin@gmail.com>,
+        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] MIPS: Introduce set_elf_platform() helper function
+References: <f571cce5cf7793777f8303cea5e9628f@localhost>
+In-Reply-To: <f571cce5cf7793777f8303cea5e9628f@localhost>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Apr 2011 17:30:55.0619 (UTC) FILETIME=[5F7BE530:01CBFDEE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2011 12:01 PM, Kevin Cernekee wrote:
-> MIPS Linux is unique in that it uses a "const struct pci_dev *" argument
-> to discourage bad coding practices in pcibios_map_irq().  Add a cast so
-> that this warning goes away:
+On 04/16/2011 11:29 AM, Kevin Cernekee wrote:
+> From: Robert Millan<rmh@gnu.org>
 >
-> arch/mips/pci/pci.c: In function 'pcibios_init':
-> arch/mips/pci/pci.c:165:45: warning: passing argument 2 of 'pci_fixup_irqs' from incompatible pointer type
-> include/linux/pci.h:856:6: note: expected 'int (*)(struct pci_dev *, u8,  u8)' but argument is of type 'struct pci_dev *'
+> Replace these sequences:
 >
+> if (cpu == 0)
+> 	__elf_platform = "foo";
+>
+> with a trivial inline function.
+>
+> Signed-off-by: Robert Millan<rmh@gnu.org>
+> Acked-by: David Daney<ddaney@caviumnetworks.com>
 > Signed-off-by: Kevin Cernekee<cernekee@gmail.com>
 > ---
+>   arch/mips/include/asm/elf.h  |    6 ++++++
+>   arch/mips/kernel/cpu-probe.c |    6 ++----
+>   2 files changed, 8 insertions(+), 4 deletions(-)
 >
-> Reference:
+> diff --git a/arch/mips/include/asm/elf.h b/arch/mips/include/asm/elf.h
+> index 455c0ac..455da05 100644
+> --- a/arch/mips/include/asm/elf.h
+> +++ b/arch/mips/include/asm/elf.h
+> @@ -348,6 +348,12 @@ extern int dump_task_fpu(struct task_struct *, elf_fpregset_t *);
+>   #define ELF_PLATFORM  __elf_platform
+>   extern const char *__elf_platform;
 >
-> http://www.mail-archive.com/gnewsense-dev@nongnu.org/msg00706.html
->
-> It's been two years since the original discussion, and the warning is
-> still there.  It is now the only warning left in my kernel build.
->
-> I was hoping we could get this resolved for good (one way or another).
->
->   arch/mips/pci/pci.c |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
-> index 33bba7b..9a35cd6 100644
-> --- a/arch/mips/pci/pci.c
-> +++ b/arch/mips/pci/pci.c
-> @@ -157,7 +157,8 @@ static int __init pcibios_init(void)
->   	for (hose = hose_head; hose; hose = hose->next)
->   		pcibios_scanbus(hose);
->
-> -	pci_fixup_irqs(pci_common_swizzle, pcibios_map_irq);
-> +	pci_fixup_irqs(pci_common_swizzle,
-> +		       (int (*)(struct pci_dev *, u8, u8))pcibios_map_irq);
->
+> +static inline void set_elf_platform(int cpu, const char *plat)
+> +{
+> +	if (cpu == 0)
+> +		__elf_platform = plat;
+> +}
+> +
 
-NAK.
+Now I want to NAK it.
 
-I think Ralf's idea in the e-mail you referenced is the proper approach.
-
-Change pci_fixup_irqs(...) to take a 'const struct pci_dev *' instead. 
-There is a lot of work going on in the kernel to constify things.  This 
-should be fairly easy to get accepted.
-
-The alternative is to change all the pcibios_map_irq to match what is 
-expected by pci_fixup_irqs().
+This function is only ever used in cpu-probe.c, can't we just put it in 
+there (and then make it non-inline)?  The less stuff in elf.h the better.
 
 David Daney
 
 
->   	pci_initialized = 1;
->
+>   /*
+>    * See comments in asm-alpha/elf.h, this is the same thing
+>    * on the MIPS.
+> diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
+> index f65d4c8..5633ab1 100644
+> --- a/arch/mips/kernel/cpu-probe.c
+> +++ b/arch/mips/kernel/cpu-probe.c
+> @@ -956,14 +956,12 @@ static inline void cpu_probe_cavium(struct cpuinfo_mips *c, unsigned int cpu)
+>   		c->cputype = CPU_CAVIUM_OCTEON_PLUS;
+>   		__cpu_name[cpu] = "Cavium Octeon+";
+>   platform:
+> -		if (cpu == 0)
+> -			__elf_platform = "octeon";
+> +		set_elf_platform(cpu, "octeon");
+>   		break;
+>   	case PRID_IMP_CAVIUM_CN63XX:
+>   		c->cputype = CPU_CAVIUM_OCTEON2;
+>   		__cpu_name[cpu] = "Cavium Octeon II";
+> -		if (cpu == 0)
+> -			__elf_platform = "octeon2";
+> +		set_elf_platform(cpu, "octeon2");
+>   		break;
+>   	default:
+>   		printk(KERN_INFO "Unknown Octeon chip!\n");
 
