@@ -1,44 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab1DRCmc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 22:42:32 -0400
-Received: from nm3.bullet.mail.ukl.yahoo.com ([217.146.182.224]:31431 "HELO
-	nm3.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751097Ab1DRCm1 (ORCPT
+	id S1751987Ab1DRDAY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 23:00:24 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8732 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab1DRDAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 22:42:27 -0400
-X-Yahoo-Newman-Id: 598569.63602.bm@smtp145.mail.ukl.yahoo.com
-X-Yahoo-SMTP: B8iIt66swBAJLovdjSeKT6T1Kqn55Hfzkc20
-X-YMail-OSG: tjfRUeEVM1lC0cWXs.ebzhnh8p7eafWIPFRMpSryu7.cbGe
- 2KCZeRvQ5DeeAKAy4059QcX6vJrVWwt5eDCuFqoZxPFtQ3jqGdrsEgUkBZ4S
- uHNvJJiMLYbTagRBxjt7asTFG1WBXjlY0TZPC0hfzJDr5DCUoWEC8c00hzeD
- z4_6TDHaHGVmIZWJwZupkgj8siGcMnMKcqnE5rYy6WNmBWJUn9CAOGyYxZJu
- O06c8Enypo79tclSaP5J_otHLgTkOXk9GT1Q7UkbtmqNuep73S2_ubAmhVXI
- 3JhSlFIHzcSXxM1tzUc1.ajw1EPRmujlWjG_EmGvtuqV8ZdTnEuv_aYI-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 18 Apr 2011 10:42:08 +0800
-From: "Rool" <angelalorubbio@yahoo.it>
-To: "linuxjiang" <linuxjiang@163.com>
-Subject: auum1
-Message-ID: <201104181042086652705@yahoo.it>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Sun, 17 Apr 2011 23:00:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=eUkFv4ixJIUsNVVvif8jf2CueOGFvAlr1G0zNB/WxaNP82Mw6/KWthrTTr3yWahTqm
+         heIIVQZlQuXSQUwiX/2Q==
+Date: Sun, 17 Apr 2011 20:00:17 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: make expand_downwards symmetrical to
+ expand_upwards
+In-Reply-To: <20110415135144.GE8828@tiehlicka.suse.cz>
+Message-ID: <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
+References: <20110415135144.GE8828@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3I2gq0T004976
 
-21cn.com7572227217639173
-¿Í»§£ºÄúºÃ£ºr
-±¾¹«Ë¾ÓëºÏ×÷¹«Ë¾Òò½øÏî½Ï¶àµÈÔ­Òò£¬³¤ÆÚÎªÄúÌá¹©£º
-   ´ú-¿ª-Õæ-·¢-Æ± £¨ÒµÎñ£©D
-  °üÀ¨£ºÔöÖµË°¡¢¹úË°¡¢µØË°·¢\Æ±¡¢¹ã¸æ¡¢×ÉÑ¯¡¢»áÒé¡¢½¨Öþ¹¤³Ì¡¢ÉÌÆ·
-ÏúÊÛ¡¢×¡ËÞ¡¢¹úÄÚÔËÊä£¬¹ú¼Ê»õÔË¡¢×âÁÞ¡¢º£¹Ø½É¿îÊéµÈ·¢\Æ±¡£
-    ÒÔÉÏ·¢\Æ±¾ù¿ÉÉÏÍø²éÑ¯»òµ½µ±µØË°¾ÖÑéÖ¤£¬Ë°µã´ÓÓÅ£¬s
-»¶Ó­À´µç×ÉÑ¯¡£´òÈÅÇëÁÂ½â£¡ÐèÒªÇëÁôÓÃ!
-    ÁªÏµÈË£º139-1863-1325 ³ÂÏÈÉú ¿Í·þQQ£º126-4017-554  
+On Fri, 14 Apr 2011, Michal Hocko wrote:
 
-//21cn.com7572227217639173ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Hi,
+> the following patch is just a cleanup for better readability without any
+> functional changes. What do you think about it?
+> ---
+> From 71de71aaa725ee87459b3a256e8bb0af7de4abeb Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Fri, 15 Apr 2011 14:56:26 +0200
+> Subject: [PATCH] mm: make expand_downwards symmetrical to expand_upwards
+> 
+> Currently we have expand_upwards exported while expand_downwards is
+> accessible only via expand_stack.
+> 
+> check_stack_guard_page is a nice example of the asymmetry. It uses
+> expand_stack for VM_GROWSDOWN while expand_upwards is called for
+> VM_GROWSUP case. Let's make this consistent and export expand_downwards
+> same way we do with expand_upwards.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
+Yes, I've just been looking around here, and I like your symmetry.
+But two points:
+
+> ---
+>  include/linux/mm.h |    2 ++
+>  mm/memory.c        |    2 +-
+>  mm/mmap.c          |    2 +-
+>  3 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 692dbae..765cf4e 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1498,8 +1498,10 @@ unsigned long ra_submit(struct file_ra_state *ra,
+>  extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
+>  #if VM_GROWSUP
+>  extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
+> +  #define expand_downwards(vma, address) do { } while (0)
+
+I think this is wrong: doesn't the VM_GROWSUP case actually want
+a real expand_downwards() in addition to expand_upwards()?
+
+>  #else
+>    #define expand_upwards(vma, address) do { } while (0)
+> +extern int expand_downwards(struct vm_area_struct *vma, unsigned long address);
+>  #endif
+>  extern int expand_stack_downwards(struct vm_area_struct *vma,
+>  				  unsigned long address);
+
+And if you're going for symmetry, wouldn't it be nice to add fs/exec.c
+to the patch and remove this silly expand_stack_downwards() wrapper?
+
+Hugh
+
+
+> diff --git a/mm/memory.c b/mm/memory.c
+> index ce22a25..f404fb6 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2969,7 +2969,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
+>  		if (prev && prev->vm_end == address)
+>  			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
+>  
+> -		expand_stack(vma, address - PAGE_SIZE);
+> +		expand_downwards(vma, address - PAGE_SIZE);
+>  	}
+>  	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
+>  		struct vm_area_struct *next = vma->vm_next;
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index e27e0cf..6b2a817 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1782,7 +1782,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  /*
+>   * vma is the first one with address < vma->vm_start.  Have to extend vma.
+>   */
+> -static int expand_downwards(struct vm_area_struct *vma,
+> +int expand_downwards(struct vm_area_struct *vma,
+>  				   unsigned long address)
+>  {
+>  	int error;
+> -- 
+> 1.7.4.1
