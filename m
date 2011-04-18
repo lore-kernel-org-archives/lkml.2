@@ -1,33 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab1DRRA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:00:27 -0400
-Received: from ulysses.noc.ntua.gr ([147.102.222.230]:50026 "EHLO
-	ulysses.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab1DRRAW (ORCPT
+	id S1756040Ab1DRRAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:00:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37775 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755977Ab1DRRAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:00:22 -0400
-Message-ID: <4DAC6E20.4050709@ece.ntua.gr>
-Date: Mon, 18 Apr 2011 20:00:16 +0300
-From: Stratos Psomadakis <psomas@ece.ntua.gr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
+	Mon, 18 Apr 2011 13:00:24 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 1/1] ppc64: fix build error when compiling with gcc-4.6.0
-References: <1303144739-4407-1-git-send-email-psomas@cslab.ece.ntua.gr> <1303144739-4407-2-git-send-email-psomas@cslab.ece.ntua.gr>
-In-Reply-To: <1303144739-4407-2-git-send-email-psomas@cslab.ece.ntua.gr>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (ulysses.noc.ntua.gr [147.102.222.230]); Mon, 18 Apr 2011 20:00:17 +0300 (EEST)
+In-Reply-To: <87zknnv7id.fsf@devron.myhome.or.jp>
+References: <20110412143559.186613198@clark.kroah.org> <87pqokx6lr.fsf@devron.myhome.or.jp>
+ <BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com> <20110418153236.GC20935@pad.home.fieldses.org>
+ <87ipubwnj3.fsf@devron.myhome.or.jp> <8762qbwnf1.fsf@devron.myhome.or.jp> <87zknnv7id.fsf@devron.myhome.or.jp>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 18 Apr 2011 09:59:26 -0700
+Message-ID: <BANLkTi=HGzJ4LaZpWsWXrUQVWheS=x7CoQ@mail.gmail.com>
+Subject: Re: [105/105] nfsd4: fix oops on lock failure
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "J. Bruce Fields" <bfields@redhat.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+On Mon, Apr 18, 2011 at 9:39 AM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+>
+> For now, I feel this explain filp leak on my system. the leak is
+> increased slowly (filp, cred_jar, and no nfs* slabs), and leak is on
+> nfs server side.
+>
+> I'll start test of this patch, and see what happens.
 
--- 
-Stratos Psomadakis
-<psomas@ece.ntua.gr>
+Can somebody ping/remind me when that is verified - preferably about
+_both_ patches, even if it turns out that the first one by Ogawa
+wasn't the one that caused the problem?
 
+Or can I just assume that the fix will be in Bruce's pull requests some day?
+
+                         Linus
