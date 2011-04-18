@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab1DRSkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 14:40:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36226 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752650Ab1DRSkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 14:40:04 -0400
-Date: Mon, 18 Apr 2011 18:39:53 GMT
-From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
-Message-ID: <tip-c387aa3a1a910ce00b86f3a85082d24f144db256@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, joerg.roedel@amd.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, joerg.roedel@amd.com, tglx@linutronix.de
-In-Reply-To: <1303134346-5805-2-git-send-email-joerg.roedel@amd.com>
-References: <1303134346-5805-2-git-send-email-joerg.roedel@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/gart] x86, gart: Don't enforce GART aperture lower-bound by alignment
-Git-Commit-ID: c387aa3a1a910ce00b86f3a85082d24f144db256
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756357Ab1DRSoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 14:44:08 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:40379 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755954Ab1DRSoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 14:44:05 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Robert Millan <rmh@gnu.org>, David Daney <ddaney@caviumnetworks.com>,
+        wu zhangjin <wuzhangjin@gmail.com>,
+        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] MIPS: Introduce set_elf_platform() helper function
+Date: Mon, 18 Apr 2011 11:37:55 -0700
+Message-Id: <12309140238d597edc0b48cbc07df218@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Apr 2011 18:39:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c387aa3a1a910ce00b86f3a85082d24f144db256
-Gitweb:     http://git.kernel.org/tip/c387aa3a1a910ce00b86f3a85082d24f144db256
-Author:     Joerg Roedel <joerg.roedel@amd.com>
-AuthorDate: Mon, 18 Apr 2011 15:45:43 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 18 Apr 2011 10:31:38 -0700
+From: Robert Millan <rmh@gnu.org>
 
-x86, gart: Don't enforce GART aperture lower-bound by alignment
+Replace these sequences:
 
-This patch changes the allocation of the GART aperture to
-enforce only natural alignment instead of aligning it on
-512MB. This big alignment was used to force the GART
-aperture to be over 512MB. This is enforced by using 512MB
-as the lower-bound address in the allocation range.
+if (cpu == 0)
+	__elf_platform = "foo";
 
-[ hpa: The actual number 512 MiB needs to be revisited, too. ]
+with a trivial inline function.
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Link: http://lkml.kernel.org/r/1303134346-5805-2-git-send-email-joerg.roedel@amd.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Robert Millan <rmh@gnu.org>
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/x86/kernel/aperture_64.c |   34 +++++++++++++++++++---------------
- 1 files changed, 19 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 73fb469..3d2661c 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -30,6 +30,22 @@
- #include <asm/amd_nb.h>
- #include <asm/x86_init.h>
+v2: Move the new function into cpu-probe.c .  Retained the "inline"
+qualifier because all but one of the other helper functions in
+cpu-probe.c use it.
+
+ arch/mips/kernel/cpu-probe.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
+index f65d4c8..4e4a0fd 100644
+--- a/arch/mips/kernel/cpu-probe.c
++++ b/arch/mips/kernel/cpu-probe.c
+@@ -771,6 +771,12 @@ static void __cpuinit decode_configs(struct cpuinfo_mips *c)
+ 		c->core = read_c0_ebase() & 0x3ff;
+ }
  
-+/*
-+ * Using 512M as goal, in case kexec will load kernel_big
-+ * that will do the on-position decompress, and could overlap with
-+ * with the gart aperture that is used.
-+ * Sequence:
-+ * kernel_small
-+ * ==> kexec (with kdump trigger path or gart still enabled)
-+ * ==> kernel_small (gart area become e820_reserved)
-+ * ==> kexec (with kdump trigger path or gart still enabled)
-+ * ==> kerne_big (uncompressed size will be big than 64M or 128M)
-+ * So don't use 512M below as gart iommu, leave the space for kernel
-+ * code for safe.
-+ */
-+#define GART_MIN_ADDR	(512ULL << 20)
-+#define GART_MAX_ADDR	(1ULL   << 32)
++static inline void set_elf_platform(int cpu, const char *plat)
++{
++	if (cpu == 0)
++		__elf_platform = plat;
++}
 +
- int gart_iommu_aperture;
- int gart_iommu_aperture_disabled __initdata;
- int gart_iommu_aperture_allowed __initdata;
-@@ -70,21 +86,9 @@ static u32 __init allocate_aperture(void)
- 	 * memory. Unfortunately we cannot move it up because that would
- 	 * make the IOMMU useless.
- 	 */
--	/*
--	 * using 512M as goal, in case kexec will load kernel_big
--	 * that will do the on position decompress, and  could overlap with
--	 * that position with gart that is used.
--	 * sequende:
--	 * kernel_small
--	 * ==> kexec (with kdump trigger path or previous doesn't shutdown gart)
--	 * ==> kernel_small(gart area become e820_reserved)
--	 * ==> kexec (with kdump trigger path or previous doesn't shutdown gart)
--	 * ==> kerne_big (uncompressed size will be big than 64M or 128M)
--	 * so don't use 512M below as gart iommu, leave the space for kernel
--	 * code for safe
--	 */
--	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
--	if (addr == MEMBLOCK_ERROR || addr + aper_size > 0xffffffff) {
-+	addr = memblock_find_in_range(GART_MIN_ADDR, GART_MAX_ADDR,
-+				      aper_size, aper_size);
-+	if (addr == MEMBLOCK_ERROR || addr + aper_size > GART_MAX_ADDR) {
- 		printk(KERN_ERR
- 			"Cannot allocate aperture memory hole (%lx,%uK)\n",
- 				addr, aper_size>>10);
+ static inline void cpu_probe_mips(struct cpuinfo_mips *c, unsigned int cpu)
+ {
+ 	decode_configs(c);
+@@ -956,14 +962,12 @@ static inline void cpu_probe_cavium(struct cpuinfo_mips *c, unsigned int cpu)
+ 		c->cputype = CPU_CAVIUM_OCTEON_PLUS;
+ 		__cpu_name[cpu] = "Cavium Octeon+";
+ platform:
+-		if (cpu == 0)
+-			__elf_platform = "octeon";
++		set_elf_platform(cpu, "octeon");
+ 		break;
+ 	case PRID_IMP_CAVIUM_CN63XX:
+ 		c->cputype = CPU_CAVIUM_OCTEON2;
+ 		__cpu_name[cpu] = "Cavium Octeon II";
+-		if (cpu == 0)
+-			__elf_platform = "octeon2";
++		set_elf_platform(cpu, "octeon2");
+ 		break;
+ 	default:
+ 		printk(KERN_INFO "Unknown Octeon chip!\n");
+-- 
+1.7.4.3
+
