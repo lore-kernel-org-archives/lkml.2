@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab1DRQaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 12:30:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52064 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab1DRQad convert rfc822-to-8bit (ORCPT
+	id S1755710Ab1DRQbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 12:31:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38504 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab1DRQbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 12:30:33 -0400
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 9/26]  9: uprobes: mmap and fork
- hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110401143413.15455.75831.sendpatchset@localhost6.localdomain6>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	 <20110401143413.15455.75831.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Apr 2011 18:29:23 +0200
-Message-ID: <1303144163.32491.875.camel@twins>
+	Mon, 18 Apr 2011 12:31:08 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=JTjb3um6TXYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tRtyh2qvoiNuSwtzAtEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 3/7] lockdep: Annotate read/write states
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110417095507.026186002@chello.nl>
+References: <20110417094505.865828233@chello.nl>
+	 <20110417095507.026186002@chello.nl>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 18 Apr 2011 12:31:06 -0400
+Message-ID: <1303144266.7181.41.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 20:04 +0530, Srikar Dronamraju wrote:
-> +               if (vaddr > ULONG_MAX)
-> +                       /*
-> +                        * We cannot have a virtual address that is
-> +                        * greater than ULONG_MAX
-> +                        */
-> +                       continue; 
+On Sun, 2011-04-17 at 11:45 +0200, Peter Zijlstra wrote:
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  # ifdef CONFIG_PROVE_LOCKING
+> -#  define rwlock_acquire(l, s, t, i)           lock_acquire(l, s, t, 0, 2, NULL, i)
+> -#  define rwlock_acquire_read(l, s, t, i)      lock_acquire(l, s, t, 2, 2, NULL, i)
+> +#  define rwlock_acquire(l, s, t, i)           \
+> +               lock_acquire(l, s, t, STATE_WRITE, 2, NULL, i)
+> +#  define rwlock_acquire_read(l, s, t, i)      \
+> +               lock_acquire(l, s, t, STATE_RECURSIVE_READ, 2, NULL, i)
+>  # else
+> -#  define rwlock_acquire(l, s, t, i)           lock_acquire(l, s, t, 0, 1, NULL, i)
+> -#  define rwlock_acquire_read(l, s, t, i)      lock_acquire(l, s, t, 2, 1, NULL, i)
+> +#  define rwlock_acquire(l, s, t, i)           \
+> +               lock_acquire(l, s, t, STATE_WRITE, 1, NULL, i)
+> +#  define rwlock_acquire_read(l, s, t, i)      \
+> +               lock_acquire(l, s, t, STATE_RECURSIVE_READ, 1, NULL, i)
+>  # endif
+>  # define rwlock_release(l, n, i)               lock_release(l, n, i)
+>  #else 
 
-I'm having trouble with those checks.. while they're not wrong they're
-not correct either. Mostly the top address space is where the kernel
-lives and on 32-on-64 compat the boundary is much lower still. Ideally
-it'd be TASK_SIZE, but that doesn't work since it assumes you're testing
-for the current task.
+OT, I like this, we need to get rid of that other 2 and 1 too, as it is
+very confusing to what they mean. But that can be done in a later clean
+up.
+
+-- Steve
 
 
