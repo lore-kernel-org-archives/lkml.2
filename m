@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab1DRPwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:52:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60331 "EHLO hera.kernel.org"
+	id S1755361Ab1DRPwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:52:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43712 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754442Ab1DRPwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:52:01 -0400
-Date: Mon, 18 Apr 2011 15:51:51 GMT
-From: tip-bot for Lin Ming <ming.m.lin@intel.com>
-Message-ID: <tip-db9a9cbc8142eed008e242e389938689c6feb1ba@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, ming.m.lin@intel.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, ming.m.lin@intel.com, tglx@linutronix.de
-In-Reply-To: <1302244286.4106.36.camel@minggr.sh.intel.com>
-References: <1302244286.4106.36.camel@minggr.sh.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf hists browser: Fix seg fault when annotate null symbol
-Git-Commit-ID: db9a9cbc8142eed008e242e389938689c6feb1ba
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754442Ab1DRPw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 11:52:29 -0400
+Message-ID: <4DAC5E16.1020408@zytor.com>
+Date: Mon, 18 Apr 2011 08:51:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 1/4] x86, gart: Don't enforce GART aperture lower-bound
+ by alignment
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-2-git-send-email-joerg.roedel@amd.com> <4DAC4E7F.1010502@zytor.com> <20110418145653.GI2192@amd.com>
+In-Reply-To: <20110418145653.GI2192@amd.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Apr 2011 15:51:52 +0000 (UTC)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db9a9cbc8142eed008e242e389938689c6feb1ba
-Gitweb:     http://git.kernel.org/tip/db9a9cbc8142eed008e242e389938689c6feb1ba
-Author:     Lin Ming <ming.m.lin@intel.com>
-AuthorDate: Fri, 8 Apr 2011 14:31:26 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Apr 2011 12:51:49 -0300
+On 04/18/2011 07:56 AM, Roedel, Joerg wrote:
+> On Mon, Apr 18, 2011 at 10:45:19AM -0400, H. Peter Anvin wrote:
+>> On 04/18/2011 06:45 AM, Joerg Roedel wrote:
+>>> This patch changes the allocation of the GART aperture to
+>>> enforce only natural alignment instead of aligning it on
+>>> 512MB. This big alignment was used to force the GART
+>>> aperture to be over 512MB. This is enforced by using 512MB
+>>> as the lower-bound address in the allocation range.
+>>>
+>>> Cc: Yinghai Lu <yinghai@kernel.org>
+>>> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+>>
+>> Better implementation of the existing bounds, yes, but I think the
+>> algorithm is still wrong.  Specifically, 512 MiB seems to have been the
+>> maximum address of the kernel at some point, but that is historic at
+>> this point, at least on 64 bits.
+> 
+> I am fine with a smaller lower-bound, but I am not sure what a better
+> choice is. The comment about kexec seems to be valid. It shouldn't matter
+> for kdump because in this case the memory is allocated independently and
+> the kdump kernel will only use this part, but for other kexec uses it is
+> a bit harder. Probably any number we choose as a lower bound is an
+> arbitrary choice at some point. But I am open for
+> suggestions/corrections to this.
+> 
 
-perf hists browser: Fix seg fault when annotate null symbol
+The right thing to do for in-place kexec it to turn it off, not rely on
+any specific magic addresses.  We have had this problem with a number of
+drivers in the context of kexec.
 
-In hists browser, press hotkey 'a' to annotate current symbol.
+	-hpa
 
-Now it causes segment fault if 'a' is pressed on a null symbol.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Here are 2 small bugs:
-- In perf_evsel__hists_browse, the condition check after 'a' is pressed
-  is not correct, we should check ->sym instead of ->map.
-- In symbol__tui_annotate we must check whether sym is NULL or not
-  before getting annotation structure.
-
-This patch fixes above 2 small bugs.
-
-Link: http://lkml.kernel.org/r/1302244286.4106.36.camel@minggr.sh.intel.com
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browsers/annotate.c |    6 ++++--
- tools/perf/util/ui/browsers/hists.c    |    2 +-
- 2 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index 8c17a87..15633d6 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -256,10 +256,9 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			 int refresh)
- {
- 	struct objdump_line *pos, *n;
--	struct annotation *notes = symbol__annotation(sym);
-+	struct annotation *notes;
- 	struct annotate_browser browser = {
- 		.b = {
--			.entries = &notes->src->source,
- 			.refresh = ui_browser__list_head_refresh,
- 			.seek	 = ui_browser__list_head_seek,
- 			.write	 = annotate_browser__write,
-@@ -281,6 +280,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 
- 	ui_helpline__push("Press <- or ESC to exit");
- 
-+	notes = symbol__annotation(sym);
-+
- 	list_for_each_entry(pos, &notes->src->source, node) {
- 		struct objdump_line_rb_node *rbpos;
- 		size_t line_len = strlen(pos->line);
-@@ -291,6 +292,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 		rbpos->idx = browser.b.nr_entries++;
- 	}
- 
-+	browser.b.entries = &notes->src->source,
- 	browser.b.width += 18; /* Percentage */
- 	ret = annotate_browser__run(&browser, evidx, refresh);
- 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 798efdc..5d767c6 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -851,7 +851,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel,
- 			goto out_free_stack;
- 		case 'a':
- 			if (browser->selection == NULL ||
--			    browser->selection->map == NULL ||
-+			    browser->selection->sym == NULL ||
- 			    browser->selection->map->dso->annotate_warned)
- 				continue;
- 			goto do_annotate;
