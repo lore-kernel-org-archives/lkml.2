@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab1DRL7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 07:59:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60302 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab1DRL7K (ORCPT
+	id S1752938Ab1DRL7i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 07:59:38 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51370 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab1DRL7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 07:59:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2 cache
-Date: Mon, 18 Apr 2011 13:58:53 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Ramesh Gupta <grgupta@ti.com>,
-        Hari Kanigeri <h-kanigeri2@ti.com>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com> <201104180929.33569.arnd@arndb.de> <20110418110502.GI12272@atomide.com>
-In-Reply-To: <20110418110502.GI12272@atomide.com>
+	Mon, 18 Apr 2011 07:59:16 -0400
+Date: Mon, 18 Apr 2011 12:59:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ben Nizette <bn@niasdigital.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+Message-ID: <20110418115903.GB9462@sirena.org.uk>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com> <3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com> <20110418091902.13345132@lxorguk.ukuu.org.uk> <92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104181358.53521.arnd@arndb.de>
-X-Provags-ID: V02:K0:ydZlPdNnapHz6OpOzgQkt5wGYovK3KdeU778PYdpGow
- hF5Ba3KN+/3Zz6pPj82OXMLj5M2qOlp2OSrJTekCd6C+4raBY0
- n6OOhxfcW1wymOeAPXNACyXP88Jo8fP2mpnVjjHkk4+/+W6W8A
- 4J564KwvMgK1SsszmMhaRw1jNFUkJlM1V4PErt/R731bTz4lag
- 0EUawOvrdzndNjd83piOQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+X-Cookie: APL hackers do it in the quad.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 April 2011, Tony Lindgren wrote:
-> * Arnd Bergmann <arnd@arndb.de> [110418 10:26]:
-> > On Friday 15 April 2011, Russell King - ARM Linux wrote:
-> > > On Thu, Apr 14, 2011 at 04:52:48PM -0500, Fernando Guzman Lugo wrote:
-> > > > From: Ramesh Gupta <grgupta@ti.com>
-> > > > 
-> > > > This patch is to flush the iommu page table entries from L1 and L2
-> > > > caches using dma_map_single. This also simplifies the implementation
-> > > > by removing the functions  flush_iopgd_range/flush_iopte_range.
-> > > 
-> > > No.  This usage is just wrong.  If you're going to use the DMA API then
-> > > unmap it, otherwise the DMA API debugging will go awol.
-> > 
-> > 
-> > It's also completely upside-down: The iommu support should provide interfaces
-> > using the dma-mapping API, not use that API to provide a machine specific
-> > version of the generic interface.
-> > 
-> > As far as I can tell, nothing actually uses these drivers, maybe we should just
-> > remove them before we get any code in the mainline kernel that depends on it.
-> 
-> There is drivers/media/video/omap3isp/isp.c.
+On Mon, Apr 18, 2011 at 06:50:12PM +1000, Ben Nizette wrote:
 
-Ah, I didn't see that, was looking at an older version.
+Please fix your MUA to word wrap within paragraphs; I've reflowed your
+text for legibility.
 
-> But if we now have a generic replacement for this code we should start
-> using it.
+> Still my question stands, where is the driver ever better placed to
+> make these calls than the board code?
 
-To give some background:
-
-Historically, the dma-mapping API has been used for all IOMMUs on
-architectures that need it. This interface is rather flexible,
-but ARM currently only uses it for managing static mappings.
-One thing that it cannot do is mapping memory to an arbitrary
-(driver-chosen) bus address. The generic iommu API was added in order
-to do that, and is mostly used for virtual machines with KVM.
-
-The MSM platform in ARM also added support for the generic iommu
-API, and now the exynos4 is gaining support for it as well.
-
-One missing piece is still a way for a platform to provide both
-the iommu and the dma-mapping API in a unified driver. Right now,
-you have to export both interface for a generic solution.
-
-On ARM, we don't yet use include/asm-generic/dma-mapping-common.h,
-which allows overriding the dma-mapping API per device. This would
-have to change if you want to export the IOMMU functionality using
-the dma-mapping API, but that would also allow abstracting the
-various ways we currently have (dmabounce, swiotlb, linear map,
-custom __arch_page_to_dma, iommu, coherent or noncoherent DMA)
-in a nicer way per device.
-
-	Arnd
+Even if it ends up being the board code using these APIs it seems
+sensible to have a standard API that GPIO drivers can use to expose the
+functionality.  This will help with getting control into code Linux owns
+(since people don't have to implement custom APIs) and will mean we can
+do things like add control of this for device tree based boards.
