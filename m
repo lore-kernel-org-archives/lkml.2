@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab1DRUBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 16:01:35 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:33374 "EHLO mx1.fusionio.com"
+	id S1752915Ab1DRUBr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 16:01:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47907 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751793Ab1DRUBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 16:01:32 -0400
-X-ASG-Debug-ID: 1303156891-03d6a55d38d1560001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DAC9897.2040606@fusionio.com>
-Date: Mon, 18 Apr 2011 22:01:27 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752313Ab1DRUBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 16:01:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,234,1301900400"; 
+   d="scan'208";a="421437703"
+From: Andi Kleen <andi@firstfloor.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] perf, x86: Use ALTERNATIVE() to check for X86_FEATURE_PERFCTR_CORE
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
+	<1302913676-14352-4-git-send-email-robert.richter@amd.com>
+Date: Mon, 18 Apr 2011 13:00:57 -0700
+In-Reply-To: <1302913676-14352-4-git-send-email-robert.richter@amd.com>
+	(Robert Richter's message of "Sat, 16 Apr 2011 02:27:55 +0200")
+Message-ID: <m27har9vnq.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Mike Snitzer <snitzer@redhat.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: add blk_run_queue_async
-References: <20110418092647.GB3837@infradead.org> <BANLkTikOKji3_p+bqMO4zoSnXFunEdue0g@mail.gmail.com> <20110418195929.GA9650@infradead.org>
-X-ASG-Orig-Subj: Re: [PATCH] block: add blk_run_queue_async
-In-Reply-To: <20110418195929.GA9650@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303156891
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61244
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-18 21:59, Christoph Hellwig wrote:
-> On Mon, Apr 18, 2011 at 03:55:04PM -0400, Mike Snitzer wrote:
->>> +{
->>> + ? ? ? if (likely(!blk_queue_stopped(q)))
->>> + ? ? ? ? ? ? ? queue_delayed_work(kblockd_workqueue, &q->delay_work, 0);
->>
->> I know Jens already queued this up 'for-linus' but why not use
->> kblockd_schedule_work(q, &q->delay_work)?
-> 
-> I don't see what that would buy us.  If we'd absolutely want a wrapper
-> a blk_delay_queue(q, 0) in Jens' current tree would do it now that is
-> has been fixed up to use the kblockd workqueue.
+Robert Richter <robert.richter@amd.com> writes:
 
-I thought about changing it to use that, but I don't think there's any
-point in doing that to be honest.
+> Using ALTERNATIVE() when checking for X86_FEATURE_PERFCTR_CORE avoids
+> an extra pointer chase and data cache hit.
+
+Is that really a performance critical path?
+
+Seems more like unnecessary obfuscation to me.
+
+-Andi
+
 
 -- 
-Jens Axboe
-
+ak@linux.intel.com -- Speaking for myself only
