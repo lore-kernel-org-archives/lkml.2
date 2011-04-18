@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1DRLLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 07:11:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63793 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1DRLK4 (ORCPT
+	id S1751937Ab1DRLVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 07:21:39 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:48792 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751420Ab1DRLVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 07:10:56 -0400
-Message-ID: <4DAC1C3B.6020205@monstr.eu>
-Date: Mon, 18 Apr 2011 13:10:51 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Mon, 18 Apr 2011 07:21:33 -0400
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX18YkR4YYXkY+XgBgrtiH5Oim+IkpBULgVaGv3stlw
+	AmdfVOLN4u569u
+Date: Mon, 18 Apr 2011 13:21:25 +0200
+From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: Raghavendra D Prabhu <rprabhu@wnohang.net>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] FIX: engine_state is uninitialized
+Message-ID: <20110418112124.GB1100@debian.debian>
+References: <20110416083730.GA5114@Xye>
+ <20110416084313.GA27564@Xye>
 MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
-        hjk@hansjkoch.de, w.sang@pengutronix.de, arnd@arndb.de
-Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
-References: <1303116654-5042-1-git-send-email-monstr@monstr.eu> <20110418103513.GA27864@linux-sh.org>
-In-Reply-To: <20110418103513.GA27864@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110416084313.GA27564@Xye>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Mundt wrote:
-> On Mon, Apr 18, 2011 at 10:50:54AM +0200, Michal Simek wrote:
->> Adding OF binding to genirq.
->> Version string is setup to the "devicetree".
->>
->> Compatible string is not setup for now but you can add your
->> custom compatible string to uio_of_genirq_match structure.
->>
->> For example with "uio" compatible string:
->> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
->> 	{ .compatible = "uio", },
->> 	{ /* empty for now */ },
->> };
->>
->> Signed-off-by: Michal Simek <monstr@monstr.eu>
->>
-> Perhaps a silly question, but how are you planning on differentiating
-> between uio_pdrv and uio_pdrv_genirq binding if someone has both enabled?
+On Sat, Apr 16, 2011 at 02:13:13PM +0530, Raghavendra D Prabhu wrote:
+> In case lp5521_read() returns EIO, engine_state is in an uninitialized state. This
+> adds checks to fix that.
+>
+> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
+> ---
+>  drivers/leds/leds-lp5521.c |   10 ++++++----
+>  1 files changed, 6 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+> index c0cff64..6c5eac0 100644
+> --- a/drivers/leds/leds-lp5521.c
+> +++ b/drivers/leds/leds-lp5521.c
+> @@ -176,11 +176,13 @@ static int lp5521_set_engine_mode(struct lp5521_engine *engine, u8 mode)
+>  	ret = lp5521_read(client, LP5521_REG_OP_MODE, &engine_state);
+> +	if (ret == 0){
+>  	/* set mode only for this engine */
+> -	engine_state &= ~(engine->engine_mask);
+> -	mode &= engine->engine_mask;
+> -	engine_state |= mode;
+> -	ret |= lp5521_write(client, LP5521_REG_OP_MODE, engine_state);
+> +		engine_state &= ~(engine->engine_mask);
+> +		mode &= engine->engine_mask;
+> +		engine_state |= mode;
+> +		ret |= lp5521_write(client, LP5521_REG_OP_MODE, engine_state);
+> +	}
+>  	return ret;
+>  }
+> --
+> 1.7.4.4
 
-It is not a silly question. OF support in uio_pdrv_genirq can handle both cases 
-with/without IRQ (I tested it) and I don't want to add OF support to uio_pdrv.
-Not sure if uio_pdrv_genirq without OF can handle UIO without IRQ.
+Usually something like
 
-> uio_pdrv obviously doesn't have OF bindings at the moment, but it seems
-> like you could easily parse the memory ranges in addition to the IRQ and
-> come up with a generic binding that would work for both.
+	if (ret < 0)
+		goto out;
 
-I think the question is if uio_pdrv_genirq can handle both cases, if yes, we can 
-completely remove uio_pdrv. But it is up to UIO maintainers.
+	/* some code here */
 
-> 
-> We also have a shiny new Documentation/devicetree these days, so it would
-> be nice to see the binding documented at the same time.
+out:
+	return ret;
 
-Sure - make sense.
+is preferred to avoid unnecessary nesting/indentation. Anyway, thanks for the
+patch (although I'm not the maintainer, but just commenting).
 
-Michal
-
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Thanks,
+	Jonathan Neuschäfer
