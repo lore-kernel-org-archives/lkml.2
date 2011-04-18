@@ -1,38 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab1DRRlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:41:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45589 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754726Ab1DRRlb (ORCPT
+	id S1756177Ab1DRRnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:43:18 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:61260 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab1DRRnK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:41:31 -0400
+	Mon, 18 Apr 2011 13:43:10 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-127.messagelabs.com!1303148589!17293328!1
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.32]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Date: Mon, 18 Apr 2011 12:43:08 -0500
+Subject: RE: [patch 21/23] arm: Cleanup the irq namespace
+Thread-Topic: [patch 21/23] arm: Cleanup the irq namespace
+Thread-Index: Acv8fEb+1oyemEq2QLuuSggOvV2OfgBc4Q2A
+Message-ID: <0D753D10438DA54287A00B027084269764D221CD07@AUSP01VMBX24.collaborationhost.net>
+References: <20110325131617.258789658@linutronix.de>
+ <20110325132049.382413026@linutronix.de>
+In-Reply-To: <20110325132049.382413026@linutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20110418173224.GA27918@redhat.com>
-References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
- <20110418173224.GA27918@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 18 Apr 2011 10:40:40 -0700
-Message-ID: <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 0/7] signal: sigprocmask fixes
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> These patches should not change the current behaviour in this case.
-> We never try to re-target the thread-specific signals. Note that
-> retarget_shared_pending() checks ->signal->shared_pending only.
+On Friday, March 25, 2011 6:22 AM, Thomas Gleixner wrote:
+> 
+> Convert to the new function names. Automated with coccinelle.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+ arch/arm/mach-ep93xx/gpio.c                    |   31 +++++++++++------
 
-Ok, I clearly didn't follow the details closely enough.
+> Index: linux-2.6-tip/arch/arm/mach-ep93xx/gpio.c
+> ===================================================================
+> --- linux-2.6-tip.orig/arch/arm/mach-ep93xx/gpio.c
+> +++ linux-2.6-tip/arch/arm/mach-ep93xx/gpio.c
+> @@ -231,20 +231,29 @@ void __init ep93xx_gpio_init_irq(void)
+>  
+>  	for (gpio_irq = gpio_to_irq(0);
+>  	     gpio_irq <= gpio_to_irq(EP93XX_GPIO_LINE_MAX_IRQ); ++gpio_irq) {
+> -		set_irq_chip(gpio_irq, &ep93xx_gpio_irq_chip);
+> -		set_irq_handler(gpio_irq, handle_level_irq);
+> +		irq_set_chip(gpio_irq, &ep93xx_gpio_irq_chip);
+> +		irq_set_handler(gpio_irq, handle_level_irq);
+>  		set_irq_flags(gpio_irq, IRQF_VALID);
+>  	}
+>  
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO_AB, ep93xx_gpio_ab_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO0MUX, ep93xx_gpio_f_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO1MUX, ep93xx_gpio_f_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO2MUX, ep93xx_gpio_f_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO3MUX, ep93xx_gpio_f_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO4MUX, ep93xx_gpio_f_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO5MUX, ep93xx_gpio_f_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO6MUX, ep93xx_gpio_f_irq_handler);
+> -	set_irq_chained_handler(IRQ_EP93XX_GPIO7MUX, ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO_AB,
+> +				ep93xx_gpio_ab_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO0MUX,
+> +				ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO1MUX,
+> +				ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO2MUX,
+> +				ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO3MUX,
+> +				ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO4MUX,
+> +				ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO5MUX,
+> +				ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO6MUX,
+> +				ep93xx_gpio_f_irq_handler);
+> +	irq_set_chained_handler(IRQ_EP93XX_GPIO7MUX,
+> +				ep93xx_gpio_f_irq_handler);
+>  }
 
-In that case, this series looks fairly ok to me. I'm still unsure
-whether it's _required_, but it looks sane and reasonable.
+This appears to be the same patch as [27/29] arm: Cleanup the irq namespace
 
-                   Linus
+Regards,
+Hartley
