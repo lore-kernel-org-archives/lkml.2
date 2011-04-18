@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab1DRTYm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:24:42 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:48113 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab1DRTYI (ORCPT
+	id S1756653Ab1DRTZl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 15:25:41 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:9321 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756591Ab1DRTZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 15:24:08 -0400
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        arnaud.patard@rtp-net.org
-Subject: [PATCH 10/12] staging: xgifb: main: delete redudant extern declarations
-Date: Mon, 18 Apr 2011 22:14:06 +0300
-Message-Id: <1303154048-21989-11-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1303154048-21989-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1303154048-21989-1-git-send-email-aaro.koskinen@iki.fi>
+	Mon, 18 Apr 2011 15:25:40 -0400
+Subject: Re: Suspend/resume - slow resume
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Francois Romieu <romieu@fr.zoreil.com>,
+        Ciprian Docan <docan@eden.rutgers.edu>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael, J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@suse.de>
+In-Reply-To: <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com>
+References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu>
+	 <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com>
+	 <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu>
+	 <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com>
+	 <20110417101731.GA17986@electric-eye.fr.zoreil.com>
+	 <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com>
+	 <20110418180813.GA18469@electric-eye.fr.zoreil.com>
+	 <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 18 Apr 2011 20:25:36 +0100
+Message-ID: <1303154736.2857.46.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Apr 2011 19:25:40.0015 (UTC) FILETIME=[66E75BF0:01CBFDFE]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18080.005
+X-TM-AS-Result: No--24.502300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete redudant declarations and include proper .h files.
+On Mon, 2011-04-18 at 11:49 -0700, Linus Torvalds wrote:
+> On Mon, Apr 18, 2011 at 11:08 AM, Francois Romieu <romieu@fr.zoreil.com> wrote:
+> > [...]
+> >>  - unload not on close, but on device unregister (iow not when you do
+> >> "ifconfig eth0 down", but when the "eth0" device really goes away)
+> >
+> > Without further action, the firmware(s) will thus be locked in until the
+> > driver is removed.
+> 
+> I do agree. It's a downside. Maybe doing it in "close()" is the right
+> thing, as long as we don't have that crazy "every four timer ticks"
+> situation with rtl8169_reinit_task.
+> 
+> As mentioned, the only real reason for me to be worried about the
+> close thing is that I don't have a good feel for what happens at boot
+> time. Are the setup scripts going to look at the interface lots of
+> times? On my desktop, I couldn't care less, but I try to keep boot
+> time in mind.
+>
+> Maybe in practice there's just a single open at boot-time (for dhcp or
+> whatever), and I'm just worried for no good reason.
+[...]
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/staging/xgifb/XGI_main.h    |   55 -----------------------------------
- drivers/staging/xgifb/XGI_main_26.c |    2 +
- 2 files changed, 2 insertions(+), 55 deletions(-)
+Well, net devices are weird - they don't have file descriptors, they
+just have names and indices which you can specify in an ioctl on any
+socket (or netlink message on an appropriate netlink socket).  Opening
+means starting the device, and I can't think of a configuration tool
+that implicitly opens a net device.  Normally they get opened by ifup or
+network-manager or the local equivalent, and then they stay open until
+an explicit action by the administrator.
 
-diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
-index 1b20e55..4c480bc 100644
---- a/drivers/staging/xgifb/XGI_main.h
-+++ b/drivers/staging/xgifb/XGI_main.h
-@@ -648,59 +648,4 @@ static const struct _XGI_TV_filter {
- static int           filter = -1;
- static unsigned char filter_tb;
- 
--
--/* ---------------------- Routine prototypes ------------------------- */
--
--/*
--extern int	XGIfb_mode_rate_to_dclock(VB_DEVICE_INFO *XGI_Pr,
--			      struct xgi_hw_device_info *HwDeviceExtension,
--			      unsigned char modeno, unsigned char rateindex);
--extern int      XGIfb_mode_rate_to_ddata(VB_DEVICE_INFO *XGI_Pr, struct xgi_hw_device_info *HwDeviceExtension,
--			 unsigned char modeno, unsigned char rateindex,
--			 unsigned int *left_margin, unsigned int *right_margin,
--			 unsigned int *upper_margin, unsigned int *lower_margin,
--			 unsigned int *hsync_len, unsigned int *vsync_len,
--			 unsigned int *sync, unsigned int *vmode);
--*/
--extern unsigned char XGI_SearchModeID(unsigned short ModeNo,
--				unsigned short *ModeIdIndex,
--				struct vb_device_info *);
--
--/* Internal routines to access PCI configuration space */
--unsigned char XGIfb_query_VGA_config_space(struct xgi_hw_device_info *pXGIhw_ext,
--					   unsigned long offset,
--					   unsigned long set,
--					   unsigned long *value);
--//BOOLEAN         XGIfb_query_north_bridge_space(PXGI_HW_DEVICE_INFO pXGIhw_ext,
--//	         	unsigned long offset, unsigned long set, unsigned long *value);
--
--
--/* Routines from init.c/init301.c */
--extern void     InitTo330Pointer(unsigned char, struct vb_device_info *pVBInfo);
--extern unsigned char  XGIInitNew(struct xgi_hw_device_info *HwDeviceExtension);
--extern unsigned char XGISetModeNew(struct xgi_hw_device_info *HwDeviceExtension,
--				   unsigned short ModeNo);
--//extern void     XGI_SetEnableDstn(VB_DEVICE_INFO *XGI_Pr);
--extern void     XGI_LongWait(struct vb_device_info *XGI_Pr);
--extern unsigned short XGI_GetRatePtrCRT2(struct xgi_hw_device_info *pXGIHWDE,
--					 unsigned short ModeNo,
--					 unsigned short ModeIdIndex,
--					 struct vb_device_info *pVBInfo);
--/* TW: Chrontel TV functions */
--extern unsigned short XGI_GetCH700x(struct vb_device_info *XGI_Pr,
--				    unsigned short tempbx);
--extern void XGI_SetCH700x(struct vb_device_info *XGI_Pr, unsigned short tempbx);
--extern unsigned short XGI_GetCH701x(struct vb_device_info *XGI_Pr,
--				    unsigned short tempbx);
--extern void XGI_SetCH701x(struct vb_device_info *XGI_Pr, unsigned short tempbx);
--extern void XGI_SetCH70xxANDOR(struct vb_device_info *XGI_Pr,
--			       unsigned short tempax,
--			       unsigned short tempbh);
--extern void XGI_DDC2Delay(struct vb_device_info *XGI_Pr, unsigned short delaytime);
--
--/* TW: Sensing routines */
--void            XGI_Sense30x(void);
--int             XGIDoSense(int tempbl, int tempbh, int tempcl, int tempch);
--
--extern struct XGI21_LVDSCapStruct XGI21_LCDCapList[13];
- #endif
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 1350681..a6e9c60 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -41,7 +41,9 @@
- #include "XGIfb.h"
- #include "vgatypes.h"
- #include "XGI_main.h"
-+#include "vb_init.h"
- #include "vb_util.h"
-+#include "vb_setmode.h"
- 
- #define Index_CR_GPIO_Reg1 0x48
- #define Index_CR_GPIO_Reg2 0x49
+Ben.
+
 -- 
-1.5.6.5
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
