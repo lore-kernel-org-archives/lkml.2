@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab1DRQlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 12:41:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39602 "EHLO hera.kernel.org"
+	id S1755887Ab1DRQqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 12:46:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28419 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab1DRQlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 12:41:00 -0400
-Date: Mon, 18 Apr 2011 16:40:51 GMT
-From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
-Message-ID: <tip-665d3e2af83c8fbd149534db8f57d82fa6fa6753@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joerg.roedel@amd.com, stable@kernel.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joerg.roedel@amd.com, stable@kernel.org, tglx@linutronix.de
-In-Reply-To: <1303134346-5805-5-git-send-email-joerg.roedel@amd.com>
-References: <1303134346-5805-5-git-send-email-joerg.roedel@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, gart: Make sure GART does not map physmem above 1TB
-Git-Commit-ID: 665d3e2af83c8fbd149534db8f57d82fa6fa6753
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754057Ab1DRQqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 12:46:10 -0400
+Date: Mon, 18 Apr 2011 18:45:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFC][PATCH 2/5] signals: Introduce per-thread siglock and
+	action rwlock
+Message-ID: <20110418164513.GA25930@redhat.com>
+References: <1302031310-1765-1-git-send-email-matt@console-pimps.org> <1302031310-1765-3-git-send-email-matt@console-pimps.org> <20110413194231.GA15330@redhat.com> <20110414113456.5182a582@mfleming-mobl1.ger.corp.intel.com> <20110414190012.GA23517@redhat.com> <20110416140813.5c90b1fc@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Apr 2011 16:40:51 +0000 (UTC)
+In-Reply-To: <20110416140813.5c90b1fc@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  665d3e2af83c8fbd149534db8f57d82fa6fa6753
-Gitweb:     http://git.kernel.org/tip/665d3e2af83c8fbd149534db8f57d82fa6fa6753
-Author:     Joerg Roedel <joerg.roedel@amd.com>
-AuthorDate: Mon, 18 Apr 2011 15:45:46 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 18 Apr 2011 09:26:49 -0700
+On 04/16, Matt Fleming wrote:
+>
+> On Thu, 14 Apr 2011 21:00:12 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > > Is there a reason that a short-term reference counter isn't used to
+> > > prevent this, instead of taking the siglock?
+> >
+> > Well, sighand->count is the reference counter. The problem is, ->sighand
+> > is not per-process, we can share it with abother CLONE_SIGHAND process
+> > and de_thread() can change ->sighand during exec.
+>
+> What I meant was, a reference to say "You can't change/free ->sighand
+> because I'm reading/modifying it". So you'd have two new functions,
+> get_sighand() and put_sighand(), which would protect the sighand from
+> changing while you were looking at it. Obviously, you'd still need to
+> see if sighand = NULL, but you wouldn't need to grab the shared
+> siglock.
+>
+> Note how this is different from sighand->count. sighand->count is a
+> much longer term reference which stops it being freed while a task is
+> using it, kinda like a "Don't free _MY_ sighand" reference, whereas
+> what I'm talking about is a "I'm touching YOUR sighand, so don't
+> change/free it" reference, e.g. a short term ref for when we're
+> operating on a target task. It could be that the two references can
+> really be just one atomic_t, I would have to write the code to figure
+> that out.
 
-x86, gart: Make sure GART does not map physmem above 1TB
+Can't understand...
 
-The GART can only map physical memory below 1TB. Make sure
-the gart driver in the kernel does not try to map memory
-above 1TB.
+OK, someone does get_sighand(). Now, what de_thread() should do if it
+wants to change ->sighand?
 
-Cc: <stable@kernel.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Link: http://lkml.kernel.org/r/1303134346-5805-5-git-send-email-joerg.roedel@amd.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/pci-gart_64.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+And I don't really understand the point. You can read *sighand lockless.
+But you need some per-CLONE_SIGHAND lock if you want to modify it anyway.
 
-diff --git a/arch/x86/kernel/pci-gart_64.c b/arch/x86/kernel/pci-gart_64.c
-index 82ada01..b117efd 100644
---- a/arch/x86/kernel/pci-gart_64.c
-+++ b/arch/x86/kernel/pci-gart_64.c
-@@ -81,6 +81,9 @@ static u32 gart_unmapped_entry;
- #define AGPEXTERN
- #endif
- 
-+/* GART can only remap to physical addresses < 1TB */
-+#define GART_MAX_PHYS_ADDR	(1ULL << 40)
-+
- /* backdoor interface to AGP driver */
- AGPEXTERN int agp_memory_reserved;
- AGPEXTERN __u32 *agp_gatt_table;
-@@ -212,9 +215,13 @@ static dma_addr_t dma_map_area(struct device *dev, dma_addr_t phys_mem,
- 				size_t size, int dir, unsigned long align_mask)
- {
- 	unsigned long npages = iommu_num_pages(phys_mem, size, PAGE_SIZE);
--	unsigned long iommu_page = alloc_iommu(dev, npages, align_mask);
-+	unsigned long iommu_page;
- 	int i;
- 
-+	if (unlikely(phys_mem + size > GART_MAX_PHYS_ADDR))
-+		return bad_dma_addr;
-+
-+	iommu_page = alloc_iommu(dev, npages, align_mask);
- 	if (iommu_page == -1) {
- 		if (!nonforced_iommu(dev, phys_mem, size))
- 			return phys_mem;
+> Now, at the moment that suggestion just seems like needless overhead
+> because siglock already provides the features we want. But, my problem
+> with siglock is,
+>
+> 	1. It needs to be acquired to stop a task passing through
+> 	__exit_signal().
+>
+> 	2. It protects bits of signal_struct and that struct is getting
+> 	pretty bloated and siglock is being used to protect lots of
+> 	different things.
+
+Yes, this is the main problem: it is overused.
+
+We need the better locking. Honestly, _personally_ I do not really care
+about scalability (but perhaps I should) when it comes to signals, but
+there are other problems. And, apart from the already mentioned problems
+with signals-from-irq, I think the main problem is tasklist_lock in
+do_wait/exit/etc pathes.
+
+And we still have the problems with signals which should be fixed.
+de_thread() can miss a signal, vfork() should be interruptible,
+do_coredump() should be interruptible. But first of all we need to
+define better the behaviour of explicit SIGKILL and what it means
+after exit_signals(). This should be fixed first, I think.
+
+> 	3. I suspect most people find the rules of ->sighand pretty
+> 	confusing. Just look at
+>
+> 		arch/tile/kernel/hardwall.c:do_hardwall_trap()
+>
+> 	the use of siglock there looks buggy to me.
+
+Indeed, I agree. It shouldn't use __group_send_sig_info() at all.
+I'll send the patch. Nobody outside of signal code should play with
+->sighand, this is almost always wrong.
+
+There is another problem, historically we have a lot, a lot of send-signal
+helpers, but you can never find the right one. And the naming sucks.
+
+> Do you have any recollection of the cleanups? signal_struct needs to be
+> put on a diet for sure.
+
+I was going to remove ->sighand from fs/proc first, probably I should
+try to resend these patches... Then we should remove the "sighand != NULL"
+checks, we need the new helper, and btw it should be used instead of
+pid_alive(). Then something else... boring ;)
+
+Oleg.
+
