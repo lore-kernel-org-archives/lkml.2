@@ -1,64 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab1DRANN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 20:13:13 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:49319 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246Ab1DRANF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 20:13:05 -0400
-Date: Sun, 17 Apr 2011 20:12:55 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: shaohua.li@intel.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, cl@linux.com,
-        tj@kernel.org, eric.dumazet@gmail.com, linux-ext4@vger.kernel.org
-Subject: Re: [patch v2 2/4] percpu_counter: delete dead code
-Message-ID: <20110418001255.GA19243@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, shaohua.li@intel.com,
-	linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-	cl@linux.com, tj@kernel.org, eric.dumazet@gmail.com,
-	linux-ext4@vger.kernel.org
-References: <20110413075715.090406229@sli10-conroe.sh.intel.com>
- <20110413080517.566936500@sli10-conroe.sh.intel.com>
+	id S1753435Ab1DRANp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 20:13:45 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17660 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751582Ab1DRANj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 20:13:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,229,1301900400"; 
+   d="scan'208";a="420895894"
+Date: Mon, 18 Apr 2011 08:13:33 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/12] IO-less dirty throttling v7
+Message-ID: <20110418001333.GA8890@localhost>
+References: <20110416132546.765212221@intel.com>
+ <BANLkTimY3t6Kc-+=00k3QR+AK2uqJpph4g@mail.gmail.com>
+ <20110417014430.GA9419@localhost>
+ <BANLkTik+Bcw7uz9aMi6OrAzwg1rJZmJL0Q@mail.gmail.com>
+ <20110417041003.GA17032@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110413080517.566936500@sli10-conroe.sh.intel.com>
+In-Reply-To: <20110417041003.GA17032@localhost>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll take care of merging this patch via the ext4 tree.
+Hi Sedat,
 
-     	       	  	       	     - Ted
+> Please revert the last commit. It's not necessary anyway.
+> 
+> commit 84a9890ddef487d9c6d70934c0a2addc65923bcf
+> Author: Wu Fengguang <fengguang.wu@intel.com>
+> Date:   Sat Apr 16 18:38:41 2011 -0600
+> 
+>     writeback: scale dirty proportions period with writeout bandwidth
+>     
+>     CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>     Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 
-On Wed, Apr 13, 2011 at 03:57:17PM +0800, shaohua.li@intel.com wrote:
-> percpu_counter_sum_positive never returns negative.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> 
-> ---
->  fs/ext4/balloc.c |    5 -----
->  1 file changed, 5 deletions(-)
-> 
-> Index: linux/fs/ext4/balloc.c
-> ===================================================================
-> --- linux.orig/fs/ext4/balloc.c	2011-04-12 16:22:59.000000000 +0800
-> +++ linux/fs/ext4/balloc.c	2011-04-13 13:23:01.000000000 +0800
-> @@ -507,11 +507,6 @@ static int ext4_has_free_blocks(struct e
->  						EXT4_FREEBLOCKS_WATERMARK) {
->  		free_blocks  = percpu_counter_sum_positive(fbc);
->  		dirty_blocks = percpu_counter_sum_positive(dbc);
-> -		if (dirty_blocks < 0) {
-> -			printk(KERN_CRIT "Dirty block accounting "
-> -					"went wrong %lld\n",
-> -					(long long)dirty_blocks);
-> -		}
->  	}
->  	/* Check whether we have space after
->  	 * accounting for current dirty blocks & root reserved blocks.
-> 
-> 
+Please do revert that commit, because I found a sleep-inside-spinlock
+bug with it. Here is the fixed one (but you don't have to track this
+optional patch).
+
+Thanks,
+Fengguang
+---
+Subject: writeback: scale dirty proportions period with writeout bandwidth
+Date: Sat Apr 16 18:38:41 CST 2011
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2011-04-17 20:52:13.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-04-18 07:57:01.000000000 +0800
+@@ -121,20 +121,13 @@ static struct prop_descriptor vm_complet
+ static struct prop_descriptor vm_dirties;
+ 
+ /*
+- * couple the period to the dirty_ratio:
++ * couple the period to global write throughput:
+  *
+- *   period/2 ~ roundup_pow_of_two(dirty limit)
++ *   period/2 ~ roundup_pow_of_two(write IO throughput)
+  */
+ static int calc_period_shift(void)
+ {
+-	unsigned long dirty_total;
+-
+-	if (vm_dirty_bytes)
+-		dirty_total = vm_dirty_bytes / PAGE_SIZE;
+-	else
+-		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+-				100;
+-	return 2 + ilog2(dirty_total - 1);
++	return 2 + ilog2(default_backing_dev_info.avg_write_bandwidth);
+ }
+ 
+ /*
+@@ -143,6 +136,13 @@ static int calc_period_shift(void)
+ static void update_completion_period(void)
+ {
+ 	int shift = calc_period_shift();
++
++	if (shift > PROP_MAX_SHIFT)
++		shift = PROP_MAX_SHIFT;
++
++	if (abs(shift - vm_completions.pg[0].shift) <= 1)
++		return;
++
+ 	prop_change_shift(&vm_completions, shift);
+ 	prop_change_shift(&vm_dirties, shift);
+ }
+@@ -180,7 +180,6 @@ int dirty_ratio_handler(struct ctl_table
+ 
+ 	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+ 	if (ret == 0 && write && vm_dirty_ratio != old_ratio) {
+-		update_completion_period();
+ 		vm_dirty_bytes = 0;
+ 	}
+ 	return ret;
+@@ -196,7 +195,6 @@ int dirty_bytes_handler(struct ctl_table
+ 
+ 	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
+ 	if (ret == 0 && write && vm_dirty_bytes != old_bytes) {
+-		update_completion_period();
+ 		vm_dirty_ratio = 0;
+ 	}
+ 	return ret;
+@@ -1044,6 +1042,8 @@ snapshot:
+ 	bdi->bw_time_stamp = now;
+ unlock:
+ 	spin_unlock(&dirty_lock);
++	if (gbdi->bw_time_stamp == now)
++		update_completion_period();
+ }
+ 
+ static unsigned long max_pause(struct backing_dev_info *bdi,
