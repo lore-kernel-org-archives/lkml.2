@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab1DRWHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 18:07:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34376 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab1DRWHi convert rfc822-to-8bit (ORCPT
+	id S1752906Ab1DRWK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 18:10:57 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35734 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab1DRWKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 18:07:38 -0400
-Subject: Re: [RFC][PATCH 4/7] lockdep: Seperate lock ids for read/write
- acquires
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gautham R Shenoy <gautshen@cmi.ac.in>
-In-Reply-To: <20110417095507.123045423@chello.nl>
-References: <20110417094505.865828233@chello.nl>
-	 <20110417095507.123045423@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 19 Apr 2011 00:07:00 +0200
-Message-ID: <1303164420.32491.908.camel@twins>
+	Mon, 18 Apr 2011 18:10:54 -0400
+Date: Tue, 19 Apr 2011 00:10:51 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, x86 <x86@kernel.org>
+Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
+Message-ID: <20110418221051.GR16484@one.firstfloor.org>
+References: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-04-17 at 11:45 +0200, Peter Zijlstra wrote:
-> In order to support recursive read locks we need to support the
-> previously mentioned lock state conflict matrix:
-> 
->  Conflicting_states(WRITE):             RECURSIVE_READ | READ | WRITE
->  Conflicting_states(READ):                               READ | WRITE
->  Conflicting_states(RECURSIVE_READ):                            WRITE
-> 
-> Since this introduces asymmetry between recursive read and write, we
-> need to split the lock dependency chains such that we can traverse
-> WRITE chains without observing RECURSIVE_READ|READ chains. 
+I tested it on a dual Westmere-EP and a Quad Westmere-EX.
+Seems to pass everywhere.
 
-So while we split off the WRITE chain from the RECURSIVE_READ|READ
-chains, shouldn't we split it in three, because the READ conflict state
-only has READ|WRITE, not RECURSIVE_READ.
+However I kept the default MAX_THREADS 4. Shouldn't that be 
+increased for the large systems?
 
-Therefore a RECURSIVE_READ dependency in the READ chain could throw the
-regular READ cycle detector, no?
+I suspect the tests as written didn't really use the large 
+systems.
+
+Dual:
+
+CPU vendor   : GenuineIntel
+CPU model    : Intel(R) Xeon(R) CPU           E5640  ...
+CPU stepping : ..
+TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
+Using lfence_rdtsc because you have an Intel CPU
+Will test the "lfence;rdtsc" clock.
+Now test failed  : worst error 48 with 48647928 samples
+Load3 test passed: margin 368 with 1013805 samples
+Load test passed : margin 368 with 4142659 samples
+Store test failed as expected: worst error 2940 with 4298473 samples
+
+Quad:
+
+CPU vendor   : GenuineIntel
+CPU model    : Intel(R) Xeon(R) CPU E7 ...
+CPU stepping : ..
+TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
+Using lfence_rdtsc because you have an Intel CPU
+Will test the "lfence;rdtsc" clock.
+Now test passed  : margin 208 with 11997136 samples
+Load3 test passed: margin 812 with 98710 samples
+Load test passed : margin 208 with 1259451 samples
+Store test failed as expected: worst error 9284 with 1086616 samples
 
 
- A(r) -> B(r) -> C(rr)
-
- C(w) -> B(r)
-
-would close the cycle and report a problem, but doesn't match the
-conflict states.
+-Andi
