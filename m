@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab1DROLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:11:42 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:58303 "EHLO
+	id S1754904Ab1DROLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:11:19 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:58391 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab1DROJs (ORCPT
+	with ESMTP id S1754647Ab1DROJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:09:48 -0400
-X-ASG-Debug-ID: 1303135787-082c703d0001-xx1T2L
+	Mon, 18 Apr 2011 10:09:52 -0400
+X-ASG-Debug-ID: 1303135791-082d70310001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
@@ -16,16 +16,16 @@ To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
         dwmw2@infradead.org, lrg@slimlogic.co.uk,
         broonie@opensource.wolfsonmicro.com
 Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH 07/14] mfd: fix build warning on 88pm860x
-Subject: [PATCH 07/14] mfd: fix build warning on 88pm860x
-Date: Mon, 18 Apr 2011 22:04:04 +0800
-X-ASG-Orig-Subj: [PATCH 07/14] mfd: fix build warning on 88pm860x
-Message-Id: <1303135451-26362-8-git-send-email-haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH 10/14] rtc: avoid to use hardcoding irq number in max8925
+Subject: [PATCH 10/14] rtc: avoid to use hardcoding irq number in max8925
+Date: Mon, 18 Apr 2011 22:04:07 +0800
+X-ASG-Orig-Subj: [PATCH 10/14] rtc: avoid to use hardcoding irq number in max8925
+Message-Id: <1303135451-26362-11-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <2011041801>
 References: <2011041801>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1303135787
+X-Barracuda-Start-Time: 1303135791
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -33,129 +33,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: vmlinux.o(.devinit.text+0x6c4): Section mismatch in reference
-from the function device_onkey_init() to the (unknown reference)
-.init.data:(unknown)
-The function __devinit device_onkey_init() references a (unknown reference)
- __initdata (unknown).
-If (unknown) is only used by device_onkey_init then annotate (unknown)
-with a matching annotation.
-
-It's caused by using __initdata on mfd cell resources. Replace __initdata
-with __devinitdata.
+Avoid to use hardcoding irq number in max8925 rtc driver. Use irq number
+from resources instead.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 ---
- drivers/mfd/88pm860x-core.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/rtc/rtc-max8925.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index f114ec7..4fbc69b 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -21,13 +21,13 @@
- 
- #define INT_STATUS_NUM			3
- 
--static struct resource bk_resources[] __initdata = {
-+static struct resource bk_resources[] __devinitdata = {
- 	{PM8606_BACKLIGHT1, PM8606_BACKLIGHT1, "backlight-0", IORESOURCE_IO,},
- 	{PM8606_BACKLIGHT2, PM8606_BACKLIGHT2, "backlight-1", IORESOURCE_IO,},
- 	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,},
+diff --git a/drivers/rtc/rtc-max8925.c b/drivers/rtc/rtc-max8925.c
+index 174036d..c460152 100644
+--- a/drivers/rtc/rtc-max8925.c
++++ b/drivers/rtc/rtc-max8925.c
+@@ -69,6 +69,7 @@ struct max8925_rtc_info {
+ 	struct max8925_chip	*chip;
+ 	struct i2c_client	*rtc;
+ 	struct device		*dev;
++	int			irq;
  };
  
--static struct resource led_resources[] __initdata = {
-+static struct resource led_resources[] __devinitdata = {
- 	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,},
- 	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,},
- 	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,},
-@@ -36,7 +36,7 @@ static struct resource led_resources[] __initdata = {
- 	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
- };
+ static irqreturn_t rtc_update_handler(int irq, void *data)
+@@ -239,7 +240,7 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+ 	struct max8925_rtc_info *info;
+-	int irq, ret;
++	int ret = -EINVAL;
  
--static struct resource regulator_resources[] __initdata = {
-+static struct resource regulator_resources[] __devinitdata = {
- 	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,},
- 	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,},
- 	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,},
-@@ -61,15 +61,15 @@ static struct resource rtc_resources[] __devinitdata = {
- 	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ,},
- };
+ 	info = kzalloc(sizeof(struct max8925_rtc_info), GFP_KERNEL);
+ 	if (!info)
+@@ -247,16 +248,22 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
+ 	info->chip = chip;
+ 	info->rtc = chip->rtc;
+ 	info->dev = &pdev->dev;
+-	irq = chip->irq_base + MAX8925_IRQ_RTC_ALARM0;
++	info->irq = platform_get_irq(pdev, 0);
++	if (info->irq < 0) {
++		dev_err(chip->dev, "Failed to get IRQ resource\n");
++		goto out_irq;
++	}
  
--static struct resource touch_resources[] __initdata = {
-+static struct resource touch_resources[] __devinitdata = {
- 	{PM8607_IRQ_PEN, PM8607_IRQ_PEN, "touch", IORESOURCE_IRQ,},
- };
+-	ret = request_threaded_irq(irq, NULL, rtc_update_handler,
++	ret = request_threaded_irq(info->irq, NULL, rtc_update_handler,
+ 				   IRQF_ONESHOT, "rtc-alarm0", info);
+ 	if (ret < 0) {
+ 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
+-			irq, ret);
++			info->irq, ret);
+ 		goto out_irq;
+ 	}
  
--static struct resource onkey_resources[] __initdata = {
-+static struct resource onkey_resources[] __devinitdata = {
- 	{PM8607_IRQ_ONKEY, PM8607_IRQ_ONKEY, "onkey", IORESOURCE_IRQ,},
- };
++	dev_set_drvdata(&pdev->dev, info);
++	platform_set_drvdata(pdev, info);
+ 	info->rtc_dev = rtc_device_register("max8925-rtc", &pdev->dev,
+ 					&max8925_rtc_ops, THIS_MODULE);
+ 	ret = PTR_ERR(info->rtc_dev);
+@@ -265,12 +272,9 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
+ 		goto out_rtc;
+ 	}
  
--static struct resource codec_resources[] __initdata = {
-+static struct resource codec_resources[] __devinitdata = {
- 	/* Headset microphone insertion or removal */
- 	{PM8607_IRQ_MICIN,   PM8607_IRQ_MICIN,   "micin",   IORESOURCE_IRQ,},
- 	/* Hook-switch press or release */
-@@ -80,12 +80,12 @@ static struct resource codec_resources[] __initdata = {
- 	{PM8607_IRQ_AUDIO_SHORT, PM8607_IRQ_AUDIO_SHORT, "audio-short", IORESOURCE_IRQ,},
- };
+-	dev_set_drvdata(&pdev->dev, info);
+-	platform_set_drvdata(pdev, info);
+-
+ 	return 0;
+ out_rtc:
+-	free_irq(chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
++	free_irq(info->irq, info);
+ out_irq:
+ 	kfree(info);
+ 	return ret;
+@@ -281,7 +285,7 @@ static int __devexit max8925_rtc_remove(struct platform_device *pdev)
+ 	struct max8925_rtc_info *info = platform_get_drvdata(pdev);
  
--static struct resource battery_resources[] __initdata = {
-+static struct resource battery_resources[] __devinitdata = {
- 	{PM8607_IRQ_CC,  PM8607_IRQ_CC,  "columb counter", IORESOURCE_IRQ,},
- 	{PM8607_IRQ_BAT, PM8607_IRQ_BAT, "battery",        IORESOURCE_IRQ,},
- };
- 
--static struct resource charger_resources[] __initdata = {
-+static struct resource charger_resources[] __devinitdata = {
- 	{PM8607_IRQ_CHG,  PM8607_IRQ_CHG,  "charger detect",  IORESOURCE_IRQ,},
- 	{PM8607_IRQ_CHG_DONE,  PM8607_IRQ_CHG_DONE,  "charging done",       IORESOURCE_IRQ,},
- 	{PM8607_IRQ_CHG_FAULT, PM8607_IRQ_CHG_FAULT, "charging timeout",    IORESOURCE_IRQ,},
-@@ -94,13 +94,13 @@ static struct resource charger_resources[] __initdata = {
- 	{PM8607_IRQ_VCHG, PM8607_IRQ_VCHG, "vchg voltage",    IORESOURCE_IRQ,},
- };
- 
--static struct mfd_cell bk_devs[] __initdata = {
-+static struct mfd_cell bk_devs[] = {
- 	{"88pm860x-backlight", 0,},
- 	{"88pm860x-backlight", 1,},
- 	{"88pm860x-backlight", 2,},
- };
- 
--static struct mfd_cell led_devs[] __initdata = {
-+static struct mfd_cell led_devs[] = {
- 	{"88pm860x-led", 0,},
- 	{"88pm860x-led", 1,},
- 	{"88pm860x-led", 2,},
-@@ -109,7 +109,7 @@ static struct mfd_cell led_devs[] __initdata = {
- 	{"88pm860x-led", 5,},
- };
- 
--static struct mfd_cell regulator_devs[] __initdata = {
-+static struct mfd_cell regulator_devs[] = {
- 	{"88pm860x-regulator", 0,},
- 	{"88pm860x-regulator", 1,},
- 	{"88pm860x-regulator", 2,},
-@@ -134,15 +134,15 @@ static struct mfd_cell rtc_devs[] = {
- 	{"88pm860x-rtc", -1,},
- };
- 
--static struct mfd_cell touch_devs[] __initdata = {
-+static struct mfd_cell touch_devs[] = {
- 	{"88pm860x-touch", -1,},
- };
- 
--static struct mfd_cell onkey_devs[] __initdata = {
-+static struct mfd_cell onkey_devs[] = {
- 	{"88pm860x-onkey", -1,},
- };
- 
--static struct mfd_cell codec_devs[] __initdata = {
-+static struct mfd_cell codec_devs[] = {
- 	{"88pm860x-codec", -1,},
- };
- 
+ 	if (info) {
+-		free_irq(info->chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
++		free_irq(info->irq, info);
+ 		rtc_device_unregister(info->rtc_dev);
+ 		kfree(info);
+ 	}
 -- 
 1.5.6.5
 
