@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab1DRNq5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:46:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31308 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754390Ab1DRNqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 09:46:22 -0400
-Date: Mon, 18 Apr 2011 15:45:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/7] signal: sigprocmask: narrow the scope of ->siglock
-Message-ID: <20110418134538.GE15951@redhat.com>
-References: <20110418134421.GA15951@redhat.com>
+	id S1754586Ab1DRNrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 09:47:11 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:42979
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754439Ab1DRNq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 09:46:29 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bh8275dhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJUOWF-01-FT7-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, <stable@kernel.org>
+Subject: [PATCH 4/4] x86, gart: Make sure GART does not map physmem above 1TB
+Date: Mon, 18 Apr 2011 15:45:46 +0200
+Message-ID: <1303134346-5805-5-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110418134421.GA15951@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, preparation to simplify the review of the next change.
+The GART can only map physical memory below 1TB. Make sure
+the gart driver in the kernel does not try to map memory
+above 1TB.
 
-1. We can read current->block lockless, nobody else can ever change this mask.
-
-2. Calculate the resulting sigset_t outside of ->siglock into the temporary
-   variable, then take ->siglock and change ->blocked.
-
-Also, kill the stale comment about BKL.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
+ arch/x86/kernel/pci-gart_64.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
- kernel/signal.c |   29 +++++++++++++----------------
- 1 file changed, 13 insertions(+), 16 deletions(-)
-
---- sigprocmask/kernel/signal.c~4_cleanup_sigprocmask	2011-04-17 21:28:21.000000000 +0200
-+++ sigprocmask/kernel/signal.c	2011-04-17 22:16:44.000000000 +0200
-@@ -2116,12 +2116,6 @@ long do_no_restart_syscall(struct restar
- }
+diff --git a/arch/x86/kernel/pci-gart_64.c b/arch/x86/kernel/pci-gart_64.c
+index 82ada01..b117efd 100644
+--- a/arch/x86/kernel/pci-gart_64.c
++++ b/arch/x86/kernel/pci-gart_64.c
+@@ -81,6 +81,9 @@ static u32 gart_unmapped_entry;
+ #define AGPEXTERN
+ #endif
  
- /*
-- * We don't need to get the kernel lock - this is all local to this
-- * particular thread.. (and that's good, because this is _heavily_
-- * used by various programs)
-- */
--
--/*
-  * This is also useful for kernel threads that want to temporarily
-  * (or permanently) block certain signals.
-  *
-@@ -2131,30 +2125,33 @@ long do_no_restart_syscall(struct restar
-  */
- int sigprocmask(int how, sigset_t *set, sigset_t *oldset)
- {
--	int error;
-+	struct task_struct *tsk = current;
-+	sigset_t newset;
- 
--	spin_lock_irq(&current->sighand->siglock);
-+	/* Lockless, only current can change ->blocked, never from irq */
- 	if (oldset)
--		*oldset = current->blocked;
-+		*oldset = tsk->blocked;
- 
--	error = 0;
- 	switch (how) {
- 	case SIG_BLOCK:
--		sigorsets(&current->blocked, &current->blocked, set);
-+		sigorsets(&newset, &tsk->blocked, set);
- 		break;
- 	case SIG_UNBLOCK:
--		signandsets(&current->blocked, &current->blocked, set);
-+		signandsets(&newset, &tsk->blocked, set);
- 		break;
- 	case SIG_SETMASK:
--		current->blocked = *set;
-+		newset = *set;
- 		break;
- 	default:
--		error = -EINVAL;
-+		return -EINVAL;
- 	}
++/* GART can only remap to physical addresses < 1TB */
++#define GART_MAX_PHYS_ADDR	(1ULL << 40)
 +
-+	spin_lock_irq(&tsk->sighand->siglock);
-+	tsk->blocked = newset;
- 	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	spin_unlock_irq(&tsk->sighand->siglock);
+ /* backdoor interface to AGP driver */
+ AGPEXTERN int agp_memory_reserved;
+ AGPEXTERN __u32 *agp_gatt_table;
+@@ -212,9 +215,13 @@ static dma_addr_t dma_map_area(struct device *dev, dma_addr_t phys_mem,
+ 				size_t size, int dir, unsigned long align_mask)
+ {
+ 	unsigned long npages = iommu_num_pages(phys_mem, size, PAGE_SIZE);
+-	unsigned long iommu_page = alloc_iommu(dev, npages, align_mask);
++	unsigned long iommu_page;
+ 	int i;
  
--	return error;
-+	return 0;
- }
- 
- /**
++	if (unlikely(phys_mem + size > GART_MAX_PHYS_ADDR))
++		return bad_dma_addr;
++
++	iommu_page = alloc_iommu(dev, npages, align_mask);
+ 	if (iommu_page == -1) {
+ 		if (!nonforced_iommu(dev, phys_mem, size))
+ 			return phys_mem;
+-- 
+1.7.1
+
 
