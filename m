@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab1DRPCY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:02:24 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46053 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1DRPCS (ORCPT
+	id S1753526Ab1DRPCc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:02:32 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57552 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab1DRPCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:02:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QrrhaEOcOzjdOu4naC6O+Qa+tuouXIt/eoRIFolzwllLXa459Z14CsKXZWG4Ey34Ea
-         UV/oatKwR1ClA/CZ+uGMmFjOPtY1JiO7FYKhAMJhccQi4jx02abmRBnwt2+l7hjLmM79
-         cJds9IZ1eS21M4xvYPHkFgTFhrsTODJmeqh0k=
-MIME-Version: 1.0
-In-Reply-To: <20110418082838.GA30088@hallyn.com>
-References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
-	<20110417180722.GA21112@hallyn.com>
-	<BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
-	<20110418082838.GA30088@hallyn.com>
-Date: Tue, 19 Apr 2011 00:02:17 +0900
-Message-ID: <BANLkTi=kxpFkQ86ZGd2_q+XFRm-nVWzw4g@mail.gmail.com>
-Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
- from root or to another non-root uid from a non-root uid.
-From: crocket <crockabiscuit@gmail.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 18 Apr 2011 11:02:24 -0400
+Subject: Re: [RFC][PATCH 2/3] track numbers of pagetable pages
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20110416104456.3915b7de@mfleming-mobl1.ger.corp.intel.com>
+References: <20110415173821.62660715@kernel>
+	 <20110415173823.EA7A7473@kernel>
+	 <20110416104456.3915b7de@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 18 Apr 2011 08:02:04 -0700
+Message-ID: <1303138924.9615.2487.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have several questions.
+On Sat, 2011-04-16 at 10:44 +0100, Matt Fleming wrote:
+> >  static inline void pgtable_page_dtor(struct mm_struct *mm, struct page *page)
+> >  {
+> >  	pte_lock_deinit(page);
+> > +	dec_mm_counter(mm, MM_PTEPAGES);
+> >  	dec_zone_page_state(page, NR_PAGETABLE);
+> >  }
+> 
+> I'm probably missing something really obvious but...
+> 
+> Is this safe in the non-USE_SPLIT_PTLOCKS case? If we're not using
+> split-ptlocks then inc/dec_mm_counter() are only safe when done under
+> mm->page_table_lock, right? But it looks to me like we can end up doing,
+> 
+>   __pte_alloc()
+>       pte_alloc_one()
+>           pgtable_page_ctor()
+> 
+> before acquiring mm->page_table_lock in __pte_alloc().
 
-1) How do I set SECBIT_NO_SETUID_FIXUP?
+No, it's probably not safe.  We'll have to come up with something a bit
+different in that case.  Either that, or just kill the non-atomic case.
+Surely there's some percpu magic counter somewhere in the kernel that is
+optimized for fast (unlocked?) updates and rare, slow reads.
 
-2) Is there any reason to unset SECBIT_NO_SETUID_FIXUP by default?
+-- Dave
 
-On Mon, Apr 18, 2011 at 5:28 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting crocket (crockabiscuit@gmail.com):
->> I don't like the fact that an application should be linux-specific to
->> keep capabilities after setuid.
->> If users added capabilities to a file, they would know what they were
->> doing, and they would want applications to keep capabilities even
->> after setuid.
->
-> Alternatively, you could call the program using a wrapper which first
-> sets the SECBIT_NO_SETUID_FIXUP securebit, after which setuid would
-> not trigger any capability changes.
->
-> -serge
->
