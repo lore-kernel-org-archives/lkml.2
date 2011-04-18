@@ -1,173 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab1DRGih (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 02:38:37 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:36852 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752288Ab1DRGia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 02:38:30 -0400
-X-ASG-Debug-ID: 1303108705-01de284cf815ba40001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DABDC60.2090009@fusionio.com>
-Date: Mon, 18 Apr 2011 08:38:24 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753110Ab1DRGx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 02:53:59 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:59070 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab1DRGxz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 02:53:55 -0400
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>	<20110303221353.GA10366@redhat.com>	<4D761E0D.8050200@fusionio.com>	<20110308202100.GA31744@redhat.com>	<4D76912C.9040705@fusionio.com>	<20110308220526.GA393@redhat.com>	<20110310005810.GA17911@redhat.com>	<20110405130541.6c2b5f86@notabene.brown>	<20110411145022.710c30e9@notabene.brown>	<4DA2C7BE.6060804@fusionio.com>	<20110411205928.13915719@notabene.brown>	<4DA2E03A.2080607@fusionio.com>	<20110411212635.7959de70@notabene.brown>	<4DA2E7F0.9010904@fusionio.com>	<20110411220505.1028816e@notabene.brown>	<4DA2F00E.6010907@fusionio.com> <20110418081922.1651474a@notabene.brown>
-X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <20110418081922.1651474a@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303108705
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.50
-X-Barracuda-Spam-Status: No, SCORE=0.50 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61191
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.50 BSF_RULE7568M          Custom Rule 7568M
+In-Reply-To: <BANLkTik8nOXJb3J9=m4-2Ugw4P7AFzCQoA@mail.gmail.com>
+References: <BANLkTik8nOXJb3J9=m4-2Ugw4P7AFzCQoA@mail.gmail.com>
+Date: Mon, 18 Apr 2011 08:53:54 +0200
+Message-ID: <BANLkTim8=Tf62gfTePczL11K_tYm71NXwg@mail.gmail.com>
+Subject: Re: Kernel panic (NULL ptr deref?) in find_ge_pid()/next_pidmap()
+ (via sys_getdents or sys_readdir)
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-18 00:19, NeilBrown wrote:
-> On Mon, 11 Apr 2011 14:11:58 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
-> 
->>> Yes.  But I need to know when to release the requests that I have stored.
->>> I need to know when ->write_pages or ->read_pages or whatever has finished
->>> submitting a pile of pages so that I can start processing the request that I
->>> have put aside.  So I need a callback from blk_finish_plug.
->>
->> OK fair enough, I'll add your callback patch.
->>
-> 
-> But you didn't did you?  You added a completely different patch which is
-> completely pointless.
-> If you don't like my patch I would really prefer you said so rather than
-> silently replace it with something completely different (and broken).
+On Wed, Apr 13, 2011 at 11:12 PM, Robert Święcki <robert@swiecki.net> wrote:
+> Oops: (kdb's dumpall attached)
+>
+> [18608.476700] general protection fault: 0000 [#1] PREEMPT SMP
+> [18608.476704] last sysfs file:
+> /sys/devices/platform/microcode/power/runtime_status
+> [18608.477002] CPU 0
+> [18608.477002] Pid: 31157, comm: iknowthis Not tainted 2.6.39-rc3 #4
+> Dell Inc.                 Precision WorkStation 390    /0GH911
+> [18608.477002] RIP: 0010:[<ffffffff810ac3cc>]  [<ffffffff810ac3cc>]
+> next_pidmap+0x38/0x7f
+> [18608.477002] RSP: 0000:ffff88007b40fd48  EFLAGS: 00010203
+> [18608.477002] RAX: 0000000000000000 RBX: 001fffff82753988 RCX: 0000000000000034
+> [18608.477002] RDX: 0000000000003b6e RSI: 001ffffffff2c980 RDI: ffffffff82827000
+> [18608.477002] RBP: ffff88007b40fd68 R08: a000000000000000 R09: 5b68000000000000
+> [18608.477002] R10: ffff88007b40e000 R11: ffff88007b40fdb8 R12: ffffffff82827000
+> [18608.477002] R13: ffffffff82827808 R14: ffffffff81199146 R15: ffffffff81199146
+> [18608.477002] FS:  0000000000000000(0000) GS:ffff88012bc00000(0063)
+> knlGS:00000000f75406c0
+> [18608.477002] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> [18608.477002] CR2: 000000000809601c CR3: 0000000118457000 CR4: 00000000000006f0
+> [18608.477002] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [18608.477002] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [18608.477002] Process iknowthis (pid: 31157, threadinfo
+> ffff88007b40e000, task ffff880124f6c560)
+> [18608.477002] Stack:
+> [18608.477002]  ffff88011e2e5c80 00000000964c3b6d 0000000000000000
+> ffffffff82827000
+> [18608.477002]  ffff88007b40fd98 ffffffff810ac446 ffff88011e2e5c80
+> ffffffff82827000
+> [18608.477002]  00000000964c3b6d ffff880124f68000 ffff88007b40fdf8
+> ffffffff811aedbb
+> [18608.477002] Call Trace:
+> [18608.477002]  [<ffffffff810ac446>] find_ge_pid+0x33/0x45
+> [18608.477002]  [<ffffffff811aedbb>] next_tgid+0x3c/0x93
+> [18608.477002]  [<ffffffff81199146>] ? compat_sys_io_getevents+0xae/0xae
+> [18608.477002]  [<ffffffff810abf69>] ? get_pid_task+0x49/0x51
+> [18608.477002]  [<ffffffff811aef6f>] proc_pid_readdir+0x15d/0x1b0
+> [18608.477002]  [<ffffffff81199146>] ? compat_sys_io_getevents+0xae/0xae
+> [18608.477002]  [<ffffffff81199146>] ? compat_sys_io_getevents+0xae/0xae
+> [18608.477002]  [<ffffffff81199146>] ? compat_sys_io_getevents+0xae/0xae
+> [18608.477002]  [<ffffffff811ab262>] proc_root_readdir+0x43/0x4b
+> [18608.477002]  [<ffffffff8116bd57>] vfs_readdir+0x71/0xae
+> [18608.477002]  [<ffffffff81197d18>] compat_sys_getdents+0x81/0xcc
+> [18608.477002]  [<ffffffff81f26703>] ia32_do_call+0x13/0x13
+> [18608.477002] Code: 0f 1f 44 00 00 ff c6 49 89 fc 89 f2 4c 8d af 08
+> 08 00 00 48 63 f6 81 e2 ff 7f 00 00 48 c1 ee 0f 48 c1 e6 04 48 8d 5c
+> 37 08 eb 36
+> [18608.477002]  8b 7b 08 48 85 ff 74 27 48 63 d2 be 00 80 00 00 e8 66 ab 3e
+> [18608.477002] RIP  [<ffffffff810ac3cc>] next_pidmap+0x38/0x7f
+> [18608.477002]  RSP <ffff88007b40fd48>
+> [18626.313012] ---[ end trace 947a53151707da51 ]---
 
-First of all, you were CC'ed on all that discussion, yet didn't speak up
-until now. This was last week. Secondly, please change your tone.
+And a quick kgdb session:
 
-> I'll try to explain again.
-> 
-> md does not use __make_request.  At all.
-> md does not use 'struct request'.  At all.
-> 
-> The 'list' in 'struct blk_plug' is a list of 'struct request'.
+(gdb) target remote /dev/ttyS0
+Remote debugging using /dev/ttyS0
+next_pidmap (pid_ns=0xffffffff82827000, last=<value optimized out>) at
+kernel/pid.c:229
+229                     if (unlikely(!map->page))
 
-I'm well aware of how these facts, but thanks for bringing it up.
+(gdb) p map
+$1 = (struct pidmap *) 0x1fffff82745c68
+(gdb) p map->page
+Cannot access memory at address 0x1fffff82745c70
 
-> Therefore md cannot put anything useful on the list in 'struct blk_plug'.
-> 
-> So when blk_flush_plug_list calls queue_unplugged() on a queue that belonged
-> to a request found on the blk_plug list, that queue cannot possibly ever be
-> for an 'md' device (because no 'struct request' ever belongs to an md device,
-> because md doesn't not use 'struct request').
-> 
-> So your patch (commit f75664570d8b) doesn't help MD at all.
-> 
-> For md, I need to attach something to blk_plug which somehow identifies an md
-> device, so that blk_finish_plug can get to that device and let it unplug.
-> The most sensible thing to have is a completely generic callback.  That way
-> different block devices (which choose not to use __make_request) can attach
-> different sorts of things to blk_plug.
-> 
-> So can we please have my original patch applied? (Revised version using
-> list_splice_init included below).
-> 
-> Or if not, a clear explanation of why not?
+(gdb) bt
+#0  next_pidmap (pid_ns=0xffffffff82827000, last=<value optimized
+out>) at kernel/pid.c:229
+#1  0xffffffff810ac446 in find_ge_pid (nr=-1889315394,
+ns=0xffffffff82827000) at kernel/pid.c:527
+#2  0xffffffff811aedbb in next_tgid (ns=0xffffffff82827000, iter=...)
+at fs/proc/base.c:3087
+#3  0xffffffff811aef6f in proc_pid_readdir (filp=0xffff880020155840,
+dirent=<value optimized out>, filldir=0xffffffff811992c0
+<compat_fillonedir>) at fs/proc/base.c:3146
+#4  0xffffffff811ab262 in proc_root_readdir (filp=0xffff880020155840,
+dirent=0xffff8800c82d1f48, filldir=0xffffffff811992c0
+<compat_fillonedir>) at fs/proc/root.c:159
+#5  0xffffffff8116bd57 in vfs_readdir (file=0xffff880020155840,
+filler=0xffffffff811992c0 <compat_fillonedir>, buf=0xffff8800c82d1f48)
+at fs/readdir.c:40
+#6  0xffffffff81197da9 in compat_sys_old_readdir (fd=<value optimized
+out>, dirent=0xf777a000, count=<value optimized out>) at
+fs/compat.c:901
+#7  <signal handler called>
+#8  0x00000000080658d2 in ?? ()
+Cannot access memory at address 0x29d58137
 
-So correct me if I'm wrong here, but the _only_ real difference between
-this patch and the current code in the tree, is the checking of the
-callback list indicating a need to flush the callbacks. And that's
-definitely an oversight. It should be functionally equivelant if md
-would just flag this need to get a callback, eg instead of queueing a
-callback on the list, just set plug->need_unplug from md instead of
-queuing a callback and have blk_needs_flush_plug() do:
+(gdb) up
+#1  0xffffffff810ac446 in find_ge_pid (nr=-1889315394,
+ns=0xffffffff82827000) at kernel/pid.c:527
+527                     nr = next_pidmap(ns, nr);
 
-        return plug && (!list_empty(&plug->list) || plug->need_unplug);
+(gdb) p nr
+$5 = -1889315394
 
-instead. Something like the below, completely untested.
+(gdb) up
+#2  0xffffffff811aedbb in next_tgid (ns=0xffffffff82827000, iter=...)
+at fs/proc/base.c:3087
+3087            pid = find_ge_pid(iter.tgid, ns);
+
+(gdb) p iter
+$8 = {tgid = 2405651902, task = 0x0}
+
+Might it be unsigned (2405651902) vs signed (-1889315394) problem? The
+map is counted as
+
+map = &pid_ns->pidmap[(last + 1)/BITS_PER_PAGE];
+
+so
 
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 78b7b0c..e1f5635 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1305,12 +1305,12 @@ get_rq:
- 		 */
- 		if (list_empty(&plug->list))
- 			trace_block_plug(q);
--		else if (!plug->should_sort) {
-+		else if (!(plug->flags & BLK_PLUG_F_SORT)) {
- 			struct request *__rq;
- 
- 			__rq = list_entry_rq(plug->list.prev);
- 			if (__rq->q != q)
--				plug->should_sort = 1;
-+				plug->flags |= BLK_PLUG_F_SORT;
- 		}
- 		/*
- 		 * Debug flag, kill later
-@@ -2638,7 +2638,7 @@ void blk_start_plug(struct blk_plug *plug)
- 
- 	plug->magic = PLUG_MAGIC;
- 	INIT_LIST_HEAD(&plug->list);
--	plug->should_sort = 0;
-+	plug->flags = 0;
- 
- 	/*
- 	 * If this is a nested plug, don't actually assign it. It will be
-@@ -2693,9 +2693,9 @@ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
- 
- 	list_splice_init(&plug->list, &list);
- 
--	if (plug->should_sort) {
-+	if (plug->flags & BLK_PLUG_F_SORT) {
- 		list_sort(NULL, &list, plug_rq_cmp);
--		plug->should_sort = 0;
-+		plug->flags &= ~BLK_PLUG_F_SORT;
- 	}
- 
- 	q = NULL;
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index ec0357d..1a0b76b 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -860,7 +860,12 @@ extern void blk_put_queue(struct request_queue *);
- struct blk_plug {
- 	unsigned long magic;
- 	struct list_head list;
--	unsigned int should_sort;
-+	unsigned int flags;
-+};
-+
-+enum {
-+	BLK_PLUG_F_SORT		= 1,
-+	BLK_PLUG_F_NEED_UNPLUG	= 2,
- };
- 
- extern void blk_start_plug(struct blk_plug *);
-@@ -887,7 +892,8 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
- {
- 	struct blk_plug *plug = tsk->plug;
- 
--	return plug && !list_empty(&plug->list);
-+	return plug && (!list_empty(&plug->list) ||
-+			(plug->flags & BLK_PLUG_F_NEED_UNPLUG));
- }
- 
- /*
+
 
 -- 
-Jens Axboe
-
+Robert Święcki
