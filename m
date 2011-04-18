@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab1DRT7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:59:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54039 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab1DRT7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 15:59:34 -0400
-Date: Mon, 18 Apr 2011 15:59:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, jaxboe@fusionio.com,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: add blk_run_queue_async
-Message-ID: <20110418195929.GA9650@infradead.org>
-References: <20110418092647.GB3837@infradead.org>
- <BANLkTikOKji3_p+bqMO4zoSnXFunEdue0g@mail.gmail.com>
+	id S1752659Ab1DRT76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 15:59:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26316 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751753Ab1DRT75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 15:59:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,234,1301900400"; 
+   d="scan'208";a="911262103"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: ming.m.lin@intel.com, peterz@infradead.org, mingo@elte.hu,
+        eranian@gmail.com, akpm@linux-foundation.org, fweisbec@gmail.com
+Subject: PING Re: [PATCH] perf: Add missing user space support for config1/config2
+References: <1302652370-3479-1-git-send-email-andi@firstfloor.org>
+Date: Mon, 18 Apr 2011 12:59:22 -0700
+In-Reply-To: <1302652370-3479-1-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Tue, 12 Apr 2011 16:52:50 -0700")
+Message-ID: <m2bp039vqd.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikOKji3_p+bqMO4zoSnXFunEdue0g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 03:55:04PM -0400, Mike Snitzer wrote:
-> > +{
-> > + ? ? ? if (likely(!blk_queue_stopped(q)))
-> > + ? ? ? ? ? ? ? queue_delayed_work(kblockd_workqueue, &q->delay_work, 0);
-> 
-> I know Jens already queued this up 'for-linus' but why not use
-> kblockd_schedule_work(q, &q->delay_work)?
+Andi Kleen <andi@firstfloor.org> writes:
 
-I don't see what that would buy us.  If we'd absolutely want a wrapper
-a blk_delay_queue(q, 0) in Jens' current tree would do it now that is
-has been fixed up to use the kblockd workqueue.
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> The offcore_msr perf kernel code was merged into 2.6.39-rc*,
+> but the user space bits were not. This made it impossible
+> to set the extra mask and actually do the OFFCORE profiling
+
+PING. Can someone review/merge this patch please?
+Without it the offcore profiling support in .39 is unusable.
+
+Thanks,
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
