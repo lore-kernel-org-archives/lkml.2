@@ -1,357 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab1DRPw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:52:57 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60368 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754442Ab1DRPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:52:50 -0400
-Date: Mon, 18 Apr 2011 15:52:16 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-5d2cd90922c778908bd0cd669e572a5b5eafd737@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, peterz@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, efault@gmx.de,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110414170121.GC3229@ghostprotocols.net>
-References: <20110414170121.GC3229@ghostprotocols.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evsel: Fix use of inherit
-Git-Commit-ID: 5d2cd90922c778908bd0cd669e572a5b5eafd737
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755423Ab1DRPxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:53:07 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:35265 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249Ab1DRPxB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 11:53:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=x1AlUE+Wo/bBmE2jUWk6kBo019Ym1DYrFgL7UfokSL6Al1UIJwe16DgudNqw8J+rrj
+         j28HUJTHK7BuzLJ9aPg6UvEnw8wtn+SV8Is0JMnhnF4WHVKagZ25sy931GEV3BMSR0xd
+         cVBwtCoP1ngMOfVxfTOIYPRYObmjwVt5/Vrtg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Apr 2011 15:52:18 +0000 (UTC)
+In-Reply-To: <1303140940.31595.45.camel@dev.znau.edu.ua>
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
+	<201104171938.12834.arnd@arndb.de>
+	<BANLkTim6iCAsViJQS4XrY-XObs8pp-BiQQ@mail.gmail.com>
+	<201104181619.35115.arnd@arndb.de>
+	<BANLkTinB-9h=bZg9zg219i2wi3zUCA6mcw@mail.gmail.com>
+	<1303140940.31595.45.camel@dev.znau.edu.ua>
+Date: Mon, 18 Apr 2011 17:53:00 +0200
+Message-ID: <BANLkTikBau8GYiO=Ez=m2t-72QJq3=vUrg@mail.gmail.com>
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: George Kashperko <george@znau.edu.ua>
+Cc: Arnd Bergmann <arnd@arndb.de>, Hauke Mehrtens <hauke@hauke-m.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arend van Spriel <arend@broadcom.com>,
+        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
+        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: multipart/mixed; boundary=001485ea8b80ddc2b504a1336287
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5d2cd90922c778908bd0cd669e572a5b5eafd737
-Gitweb:     http://git.kernel.org/tip/5d2cd90922c778908bd0cd669e572a5b5eafd737
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 14 Apr 2011 11:20:14 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Apr 2011 12:52:28 -0300
+--001485ea8b80ddc2b504a1336287
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-perf evsel: Fix use of inherit
+W dniu 18 kwietnia 2011 17:35 u=C5=BCytkownik George Kashperko
+<george@znau.edu.ua> napisa=C5=82:
+> Unfortunately still have just one axi-based box to play with. Will be
+> much appreciated if you could share EROM dumps from your boards to get
+> better understanding of agents/wrappers coupling and relations.
 
-perf stat doesn't mmap and its perfectly fine for it to use task-bound
-counters with inheritance.
+You're welcome.
 
-So set the attr.inherit on the caller and leave the syscall itself to
-validate it.
+It's just my standard card, not SoC.
 
-When the mmap fails perf_evlist__mmap will just emit a warning if this
-is the failure reason.
+--=20
+Rafa=C5=82
 
-Reported-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Link: http://lkml.kernel.org/r/20110414170121.GC3229@ghostprotocols.net
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c |    7 +++++--
- tools/perf/builtin-stat.c   |    7 ++++---
- tools/perf/builtin-test.c   |   10 +++++-----
- tools/perf/builtin-top.c    |    3 ++-
- tools/perf/util/evlist.c    |   14 ++++++++++----
- tools/perf/util/evsel.c     |   27 +++++++--------------------
- tools/perf/util/evsel.h     |    6 +++---
- tools/perf/util/python.c    |    9 +++++----
- 8 files changed, 41 insertions(+), 42 deletions(-)
+--001485ea8b80ddc2b504a1336287
+Content-Type: text/plain; charset=UTF-8; name="eprom.txt"
+Content-Disposition: attachment; filename="eprom.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gmnl1zcy0
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 17d1dcb..4165382 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -163,6 +163,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
- 
-+	attr->inherit		= !no_inherit;
- 	attr->read_format	= PERF_FORMAT_TOTAL_TIME_ENABLED |
- 				  PERF_FORMAT_TOTAL_TIME_RUNNING |
- 				  PERF_FORMAT_ID;
-@@ -251,6 +252,9 @@ static void open_counters(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *pos;
- 
-+	if (evlist->cpus->map[0] < 0)
-+		no_inherit = true;
-+
- 	list_for_each_entry(pos, &evlist->entries, node) {
- 		struct perf_event_attr *attr = &pos->attr;
- 		/*
-@@ -271,8 +275,7 @@ static void open_counters(struct perf_evlist *evlist)
- retry_sample_id:
- 		attr->sample_id_all = sample_id_all_avail ? 1 : 0;
- try_again:
--		if (perf_evsel__open(pos, evlist->cpus, evlist->threads, group,
--				     !no_inherit) < 0) {
-+		if (perf_evsel__open(pos, evlist->cpus, evlist->threads, group) < 0) {
- 			int err = errno;
- 
- 			if (err == EPERM || err == EACCES) {
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index e2109f9..03f0e45 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -167,16 +167,17 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 		attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
- 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
- 
-+	attr->inherit = !no_inherit;
-+
- 	if (system_wide)
--		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus, false, false);
-+		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus, false);
- 
--	attr->inherit = !no_inherit;
- 	if (target_pid == -1 && target_tid == -1) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
- 
--	return perf_evsel__open_per_thread(evsel, evsel_list->threads, false, false);
-+	return perf_evsel__open_per_thread(evsel, evsel_list->threads, false);
- }
- 
- /*
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 1b2106c..11e3c84 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -290,7 +290,7 @@ static int test__open_syscall_event(void)
- 		goto out_thread_map_delete;
- 	}
- 
--	if (perf_evsel__open_per_thread(evsel, threads, false, false) < 0) {
-+	if (perf_evsel__open_per_thread(evsel, threads, false) < 0) {
- 		pr_debug("failed to open counter: %s, "
- 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
- 			 strerror(errno));
-@@ -303,7 +303,7 @@ static int test__open_syscall_event(void)
- 	}
- 
- 	if (perf_evsel__read_on_cpu(evsel, 0, 0) < 0) {
--		pr_debug("perf_evsel__open_read_on_cpu\n");
-+		pr_debug("perf_evsel__read_on_cpu\n");
- 		goto out_close_fd;
- 	}
- 
-@@ -365,7 +365,7 @@ static int test__open_syscall_event_on_all_cpus(void)
- 		goto out_thread_map_delete;
- 	}
- 
--	if (perf_evsel__open(evsel, cpus, threads, false, false) < 0) {
-+	if (perf_evsel__open(evsel, cpus, threads, false) < 0) {
- 		pr_debug("failed to open counter: %s, "
- 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
- 			 strerror(errno));
-@@ -418,7 +418,7 @@ static int test__open_syscall_event_on_all_cpus(void)
- 			continue;
- 
- 		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
--			pr_debug("perf_evsel__open_read_on_cpu\n");
-+			pr_debug("perf_evsel__read_on_cpu\n");
- 			err = -1;
- 			break;
- 		}
-@@ -529,7 +529,7 @@ static int test__basic_mmap(void)
- 
- 		perf_evlist__add(evlist, evsels[i]);
- 
--		if (perf_evsel__open(evsels[i], cpus, threads, false, false) < 0) {
-+		if (perf_evsel__open(evsels[i], cpus, threads, false) < 0) {
- 			pr_debug("failed to open counter: %s, "
- 				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
- 				 strerror(errno));
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index fc1273e..7e3d6e3 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -845,9 +845,10 @@ static void start_counters(struct perf_evlist *evlist)
- 		}
- 
- 		attr->mmap = 1;
-+		attr->inherit = inherit;
- try_again:
- 		if (perf_evsel__open(counter, top.evlist->cpus,
--				     top.evlist->threads, group, inherit) < 0) {
-+				     top.evlist->threads, group) < 0) {
- 			int err = errno;
- 
- 			if (err == EPERM || err == EACCES) {
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index d852cef..45da8d1 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -12,6 +12,7 @@
- #include "evlist.h"
- #include "evsel.h"
- #include "util.h"
-+#include "debug.h"
- 
- #include <sys/mman.h>
- 
-@@ -250,15 +251,19 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- 	return evlist->mmap != NULL ? 0 : -ENOMEM;
- }
- 
--static int __perf_evlist__mmap(struct perf_evlist *evlist, int cpu, int prot,
--			       int mask, int fd)
-+static int __perf_evlist__mmap(struct perf_evlist *evlist, struct perf_evsel *evsel,
-+			       int cpu, int prot, int mask, int fd)
- {
- 	evlist->mmap[cpu].prev = 0;
- 	evlist->mmap[cpu].mask = mask;
- 	evlist->mmap[cpu].base = mmap(NULL, evlist->mmap_len, prot,
- 				      MAP_SHARED, fd, 0);
--	if (evlist->mmap[cpu].base == MAP_FAILED)
-+	if (evlist->mmap[cpu].base == MAP_FAILED) {
-+		if (evlist->cpus->map[cpu] == -1 && evsel->attr.inherit)
-+			ui__warning("Inherit is not allowed on per-task "
-+				    "events using mmap.\n");
- 		return -1;
-+	}
- 
- 	perf_evlist__add_pollfd(evlist, fd);
- 	return 0;
-@@ -312,7 +317,8 @@ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite)
- 					if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT,
- 						  FD(first_evsel, cpu, 0)) != 0)
- 						goto out_unmap;
--				} else if (__perf_evlist__mmap(evlist, cpu, prot, mask, fd) < 0)
-+				} else if (__perf_evlist__mmap(evlist, evsel, cpu,
-+							       prot, mask, fd) < 0)
- 					goto out_unmap;
- 
- 				if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 662596a..d6fd59b 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -175,7 +175,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- }
- 
- static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
--			      struct thread_map *threads, bool group, bool inherit)
-+			      struct thread_map *threads, bool group)
- {
- 	int cpu, thread;
- 	unsigned long flags = 0;
-@@ -192,19 +192,6 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 
- 	for (cpu = 0; cpu < cpus->nr; cpu++) {
- 		int group_fd = -1;
--		/*
--		 * Don't allow mmap() of inherited per-task counters. This
--		 * would create a performance issue due to all children writing
--		 * to the same buffer.
--		 *
--		 * FIXME:
--		 * Proper fix is not to pass 'inherit' to perf_evsel__open*,
--		 * but a 'flags' parameter, with 'group' folded there as well,
--		 * then introduce a PERF_O_{MMAP,GROUP,INHERIT} enum, and if
--		 * O_MMAP is set, emit a warning if cpu < 0 and O_INHERIT is
--		 * set. Lets go for the minimal fix first tho.
--		 */
--		evsel->attr.inherit = (cpus->map[cpu] >= 0) && inherit;
- 
- 		for (thread = 0; thread < threads->nr; thread++) {
- 
-@@ -253,7 +240,7 @@ static struct {
- };
- 
- int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
--		     struct thread_map *threads, bool group, bool inherit)
-+		     struct thread_map *threads, bool group)
- {
- 	if (cpus == NULL) {
- 		/* Work around old compiler warnings about strict aliasing */
-@@ -263,19 +250,19 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	if (threads == NULL)
- 		threads = &empty_thread_map.map;
- 
--	return __perf_evsel__open(evsel, cpus, threads, group, inherit);
-+	return __perf_evsel__open(evsel, cpus, threads, group);
- }
- 
- int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
--			     struct cpu_map *cpus, bool group, bool inherit)
-+			     struct cpu_map *cpus, bool group)
- {
--	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group, inherit);
-+	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group);
- }
- 
- int perf_evsel__open_per_thread(struct perf_evsel *evsel,
--				struct thread_map *threads, bool group, bool inherit)
-+				struct thread_map *threads, bool group)
- {
--	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group, inherit);
-+	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group);
- }
- 
- static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 6710ab5..f79bb2c 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -81,11 +81,11 @@ void perf_evsel__free_id(struct perf_evsel *evsel);
- void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- 
- int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
--			     struct cpu_map *cpus, bool group, bool inherit);
-+			     struct cpu_map *cpus, bool group);
- int perf_evsel__open_per_thread(struct perf_evsel *evsel,
--				struct thread_map *threads, bool group, bool inherit);
-+				struct thread_map *threads, bool group);
- int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
--		     struct thread_map *threads, bool group, bool inherit);
-+		     struct thread_map *threads, bool group);
- 
- #define perf_evsel__match(evsel, t, c)		\
- 	(evsel->attr.type == PERF_TYPE_##t &&	\
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index a9f2d7e..f5e3845 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -498,11 +498,11 @@ static PyObject *pyrf_evsel__open(struct pyrf_evsel *pevsel,
- 	struct cpu_map *cpus = NULL;
- 	struct thread_map *threads = NULL;
- 	PyObject *pcpus = NULL, *pthreads = NULL;
--	int group = 0, overwrite = 0;
--	static char *kwlist[] = {"cpus", "threads", "group", "overwrite", NULL, NULL};
-+	int group = 0, inherit = 0;
-+	static char *kwlist[] = {"cpus", "threads", "group", "inherit", NULL, NULL};
- 
- 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOii", kwlist,
--					 &pcpus, &pthreads, &group, &overwrite))
-+					 &pcpus, &pthreads, &group, &inherit))
- 		return NULL;
- 
- 	if (pthreads != NULL)
-@@ -511,7 +511,8 @@ static PyObject *pyrf_evsel__open(struct pyrf_evsel *pevsel,
- 	if (pcpus != NULL)
- 		cpus = ((struct pyrf_cpu_map *)pcpus)->cpus;
- 
--	if (perf_evsel__open(evsel, cpus, threads, group, overwrite) < 0) {
-+	evsel->attr.inherit = inherit;
-+	if (perf_evsel__open(evsel, cpus, threads, group) < 0) {
- 		PyErr_SetFromErrno(PyExc_OSError);
- 		return NULL;
- 	}
+MHg0QkY4MDAwMQlUQUc9PUNJCQlDSUQ9PTB4ODAwCjB4MjIwMDQyMTEJVEFHPT1DSQkJUE9SVFM9
+PTErMQlXUkFQUEVSUz09MSswCjB4MDAwMDAwMDMJVEFHPT1NU1RfUE9SVAoweDE4MDAwMDA1CVRB
+Rz09QUREUglTVD09U0xWX1BPUlQJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1Na
+X01BU0s9PTAKMHgxODEwMDBDNQlUQUc9PUFERFIJU1Q9PU1TVF9XUkFQCUFERFJMPT0uLi4JUE9S
+VD09MAkJQURfQUczMj09MAlBRF9TWl9NQVNLPT0wCgoweDRCRjgxMjAxCVRBRz09Q0kJCUNJRD09
+MHg4MTIKMHgxNzAwNDIxMQlUQUc9PUNJCQlQT1JUUz09MSsxCVdSQVBQRVJTPT0xKzAKMHgwMDAw
+MDEwMwlUQUc9PU1TVF9QT1JUCjB4MTgwMDEwMDUJVEFHPT1BRERSCVNUPT1TTFZfUE9SVAlBRERS
+TD09Li4uCVBPUlQ9PTAJCUFEX0FHMzI9PTAJQURfU1pfTUFTSz09MAoweDE4MTAxMEM1CVRBRz09
+QUREUglTVD09TVNUX1dSQVAJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1NaX01B
+U0s9PTAKCjB4NEJGODIwMDEJVEFHPT1DSQkJQ0lEPT0weDgyMAoweDBGMDg0NDExCVRBRz09Q0kJ
+CVBPUlRTPT0xKzIJV1JBUFBFUlM9PTErMQoweDAwMDAwMjAzCVRBRz09TVNUX1BPUlQKMHgxODAw
+MjAwNQlUQUc9PUFERFIJU1Q9PVNMVl9QT1JUCUFERFJMPT0uLi4JUE9SVD09MAkJQURfQUczMj09
+MAlBRF9TWl9NQVNLPT0wCjB4MDgwMDAxMzUJVEFHPT1BRERSCVNUPT1TTFZfUE9SVAlBRERSTD09
+Li4uCVBPUlQ9PTEJCUFEX0FHMzI9PTAJQURfU1pfTUFTSz09MHgzMD09U1pECjB4MDgwMDAwMDAJ
+CQkJCVNJWkVMPT0uLi4JCQlTRF9TRzMyPT0wCjB4MDAwMDAxM0QJVEFHPT1BRERSCVNUPT1TTFZf
+UE9SVAlBRERSTD09Li4uCVBPUlQ9PTEJCUFEX0FHMzI9PTgJQURfU1pfTUFTSz09MHgzMD09U1pE
+CjB4ODAwMDAwMDAJCQkJCUFERFJIPT0uLi4KMHgwMDAwMDAwOAkJCQkJU0laRUw9PS4uLgkJCVNE
+X1NHMzI9PTgKMHg4MDAwMDAwMAkJCQkJU0laRUg9PS4uLgoweDE4MTAyMEM1CVRBRz09QUREUglT
+VD09TVNUX1dSQVAJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1NaX01BU0s9PTAK
+MHgxODEwMzE4NQlUQUc9PUFERFIJU1Q9PVNMVl9XUkFQCUFERFJMPT0uLi4JUE9SVD09MQkJQURf
+QUczMj09MAlBRF9TWl9NQVNLPT0wCgoweDQzQjEzNTAxCVRBRz09Q0kJCUNJRD09MHgxMzUKMHgw
+MDA4MDIwMQlUQUc9PUNJCQlQT1JUUz09MCsxCVdSQVBQRVJTPT0wKzEKMHgxODAwMDA2NQlUQUc9
+PUFERFIJU1Q9PUJSSURHRQlBRERSTD09Li4uCVBPUlQ9PTAJCUFEX0FHMzI9PTAJQURfU1pfTUFT
+Sz09MHg2MAoweDE4MTA0MDg1CVRBRz09QUREUglTVD09U0xWX1dSQVAJQUREUkw9PS4uLglQT1JU
+PT0wCQlBRF9BRzMyPT0wCUFEX1NaX01BU0s9PTAKCjB4NDNCMTM1MDEJVEFHPT1DSQkJQ0lEPT0w
+eDEzNQoweDAwMDgwMjAxCVRBRz09Q0kJCVBPUlRTPT0wKzEJV1JBUFBFUlM9PTArMQoweDE4MTAw
+MDc1CVRBRz09QUREUglTVD09QlJJREdFCUFERFJMPT0uLi4JUE9SVD09MAkJQURfQUczMj09MAlB
+RF9TWl9NQVNLPT0weDMwPT1TWkQKMHgwMDAwOTAwMAkJCQkJU0laRUw9Li4uCjB4MTgxMDUwODUJ
+VEFHPT1BRERSCVNUPT1TTFZfV1JBUAlBRERSTD09Li4uCVBPUlQ9PTAJCUFEX0FHMzI9PTAJQURf
+U1pfTUFTSz09MAoKMHg0M0IzNjcwMQlUQUc9PUNJCQlDSUQ9PTB4MzY3IChub3RlOiBPT0JfUk9V
+VEVSLCB3ZSBkbyBub3QgY2FyZSBhYm91dCBsYWNrIG9mIHdyYXBwZXJzKQoweDAwMDAwMjAxCVRB
+Rz09Q0kJCVBPUlRTPT0wKzEJV1JBUFBFUlM9PTArMAoweDE4MTA2MDA1CVRBRz09QUREUglTVD09
+U0xWX1BPUlQJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1NaX01BU0s9PTAKCjB4
+NDNCMzY2MDEJVEFHPT1DSQkJQ0lEPT0weDM2NgoweDAwMDAwMjAxCVRBRz09Q0kJCVBPUlRTPT0w
+KzEJV1JBUFBFUlM9PTArMAoweDE4MTA3MDA1CSguLi4pIOKUgCBOTyBXUkFQUEVSUwoKMHg0M0Iz
+MDEwMQlUQUc9PUNJCQlDSUQ9PTB4MzAxCjB4MDAwMDAyMDEJVEFHPT1DSQkJUE9SVFM9PTArMQlX
+UkFQUEVSUz09MCswCjB4MTgwMDMwMDUJKC4uLikg4pSAIE5PIFdSQVBQRVJTCgoweDQzQkZGRjAx
+CVRBRz09Q0kJCUNJRD09MHhGRkYKMHgwMDA4MDIwMQlUQUc9PUNJCQlQT1JUUz09MCsxCVdSQVBQ
+RVJTPT0wKzEKMHgwMDAwMDAzNQkoLi4uKSDilIAgTUFOVUZfQVJNICYmIERFRl9BSV9DT01QCjB4
+MDgwMDAwMDAJKC4uLikg4pSAIE1BTlVGX0FSTSAmJiBERUZfQUlfQ09NUAoweDEwMDAwMDM1CSgu
+Li4pIOKUgCBNQU5VRl9BUk0gJiYgREVGX0FJX0NPTVAKMHgwODAwMDAwMAkoLi4uKSDilIAgTUFO
+VUZfQVJNICYmIERFRl9BSV9DT01QCjB4MTgwMDQwMzUJKC4uLikg4pSAIE1BTlVGX0FSTSAmJiBE
+RUZfQUlfQ09NUAoweDAwMEZDMDAwCSguLi4pIOKUgCBNQU5VRl9BUk0gJiYgREVGX0FJX0NPTVAK
+MHgxODEwOTAzNQkoLi4uKSDilIAgTUFOVUZfQVJNICYmIERFRl9BSV9DT01QCjB4RTdFRjcwMDgJ
+KC4uLikg4pSAIE1BTlVGX0FSTSAmJiBERUZfQUlfQ09NUAoweDdGRkZGRkZGCSguLi4pIOKUgCBN
+QU5VRl9BUk0gJiYgREVGX0FJX0NPTVAKMHgxODEwODA4NQkoLi4uKSDilIAgTUFOVUZfQVJNICYm
+IERFRl9BSV9DT01QCgoweDAwMDAwMDBGCVRBRz09RU5ECg==
+--001485ea8b80ddc2b504a1336287--
