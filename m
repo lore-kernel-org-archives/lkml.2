@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab1DROIK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:08:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55438 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab1DROII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:08:08 -0400
-Date: Mon, 18 Apr 2011 15:08:04 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 12/12] mm: Throttle direct reclaimers if PF_MEMALLOC
- reserves are low and swap is backed by network storage
-Message-ID: <20110418140804.GC16908@suse.de>
-References: <1302777698-28237-1-git-send-email-mgorman@suse.de>
- <1302777698-28237-13-git-send-email-mgorman@suse.de>
- <20110418223251.7ab148bb@notabene.brown>
+	id S1754489Ab1DROJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:09:06 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:9910 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab1DROI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 10:08:57 -0400
+X-IronPort-AV: E=Sophos;i="4.64,232,1301875200"; 
+   d="scan'208";a="5355988"
+Date: Mon, 18 Apr 2011 15:09:21 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [PATCH 2/4] x86,xen: introduce
+ x86_init.mapping.pagetable_reserve
+In-Reply-To: <alpine.DEB.2.00.1104141746430.10886@kaball-desktop>
+Message-ID: <alpine.DEB.2.00.1104181507180.10886@kaball-desktop>
+References: <alpine.DEB.2.00.1104121149280.22672@kaball-desktop> <1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com> <4DA5EAE4.2060406@linux.intel.com> <alpine.DEB.2.00.1104141218110.22672@kaball-desktop> <4DA70A4A.4030805@zytor.com>
+ <alpine.DEB.2.00.1104141746430.10886@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110418223251.7ab148bb@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:32:51PM +1000, NeilBrown wrote:
-> On Thu, 14 Apr 2011 11:41:38 +0100 Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > If swap is backed by network storage such as NBD, there is a risk that a
-> > large number of reclaimers can hang the system by consuming all
-> > PF_MEMALLOC reserves. To avoid these hangs, the administrator must tune
-> > min_free_kbytes in advance. This patch will throttle direct reclaimers
-> > if half the PF_MEMALLOC reserves are in use as the system is at risk of
-> > hanging. A message will be displayed so the administrator knows that
-> > min_free_kbytes should be tuned to a higher value to avoid the
-> > throttling in the future.
+On Thu, 14 Apr 2011, Stefano Stabellini wrote:
+> On Thu, 14 Apr 2011, H. Peter Anvin wrote:
+> > On 04/14/2011 04:30 AM, Stefano Stabellini wrote:
+> > > 
+> > > I hope that the other email I have just sent clarifies the purpose of
+> > > the hook.
+> > > 		
 > > 
+> > You're commingling rationale and (proposed) semantics.  BOTH need to be
+> > stated clearly.
 > 
-> (I knew there was something else).
+> Sorry I didn't answer the right question straight away.
+> The semantics follow:
 > 
-> I understand that there are suggestions that direct reclaim should always be
-> serialised as this reduces lock contention and improve data patterns (or
-> something like that).
+> 
+> 
+> It is as if there is an implicit pvop after find_early_table_space
+> that exports the range pgt_buf_start - pgt_buf_top.
+> The range indicated is used, and it is the only range used, for the initial
+> kernel pagetable pages.
+> The range indicated is an overestimate.
+> It is implicit because we use the pgt_buf_* variables directly but
+> nonetheless it was in the first version of the patch.
+> 
+> After the pagetable setup done by kernel_physical_mapping_init, we know
+> exactly how many pages we actually used for the initial kernel
+> pagetables and how many are left unused.
+> 
+> The purpose of the second pvop (x86_init.mapping.pagetable_reserve) is
+> to notify sub-architectures of the actual range used for initial kernel
+> pagetable pages and partially revoke the previous indication.
+> 
+> 
+> 
+> If you agree with the proposed semantics above, I'll add the description
+> to the commit message as well as the code. I could also modify the
+> syntax of the new pvop call to better suit the semantics and/or restore
+> the first pvop call.
 > 
 
-AFAIK, this suggestion never got much beyond the "hand-waving" stage
-of development. It tended to trip up on the fact that such a feature
-could also throttle processes on machines with plenty of free clean
-unmapped pagecache which would be undesirable.
+ping?
 
-> Would that make this patch redundant? 
 
-Depends on how it was being serialised but ....
-
-> Or does this provide some extra
-> guarantee that the other proposal would not?
-> 
-
-This patch could be extended to serialise direct reclaims in situations
-other than PFMEMALLOC is low if someone demonstrated the benefit.
-
--- 
-Mel Gorman
-SUSE Labs
+Sorry, I don't mean to be pushy, it is just that I'll be AFK for 12 days
+starting from next Friday and I think that this issue should really be
+fixed in time for the 2.6.39 release, otherwise no 2.6.39 kernels will
+be able to boot on any xen system.
