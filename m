@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab1DRRRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:17:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60120 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754667Ab1DRRRd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:17:33 -0400
+	id S1756073Ab1DRRRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:17:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62697 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756056Ab1DRRRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 13:17:41 -0400
+Date: Mon, 18 Apr 2011 13:16:43 -0400
+From: "J. Bruce Fields" <bfields@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: Re: [105/105] nfsd4: fix oops on lock failure
+Message-ID: <20110418171640.GJ20935@pad.home.fieldses.org>
+References: <20110412143559.186613198@clark.kroah.org>
+ <87pqokx6lr.fsf@devron.myhome.or.jp>
+ <BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
+ <20110418153236.GC20935@pad.home.fieldses.org>
+ <87ipubwnj3.fsf@devron.myhome.or.jp>
+ <8762qbwnf1.fsf@devron.myhome.or.jp>
+ <87zknnv7id.fsf@devron.myhome.or.jp>
+ <BANLkTi=HGzJ4LaZpWsWXrUQVWheS=x7CoQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110418134421.GA15951@redhat.com>
-References: <20110418134421.GA15951@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 18 Apr 2011 10:16:43 -0700
-Message-ID: <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 0/7] signal: sigprocmask fixes
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=HGzJ4LaZpWsWXrUQVWheS=x7CoQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 6:44 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Once again: if we need this, then we need a lot more (trivial) changes
-> like 6/7 and 7/7. Basically every change of ->blocked should be converted
-> to use set_current_blocked(). OTOH, perhaps this makes sense by itself.
+On Mon, Apr 18, 2011 at 09:59:26AM -0700, Linus Torvalds wrote:
+> On Mon, Apr 18, 2011 at 9:39 AM, OGAWA Hirofumi
+> <hirofumi@mail.parknet.co.jp> wrote:
+> >
+> > For now, I feel this explain filp leak on my system. the leak is
+> > increased slowly (filp, cred_jar, and no nfs* slabs), and leak is on
+> > nfs server side.
+> >
+> > I'll start test of this patch, and see what happens.
+> 
+> Can somebody ping/remind me when that is verified - preferably about
+> _both_ patches, even if it turns out that the first one by Ogawa
+> wasn't the one that caused the problem?
+> 
+> Or can I just assume that the fix will be in Bruce's pull requests some day?
 
-Hmm. The more I think about this, the less I like it.
+I'll send a pull request when it's sorted out, thanks.
 
-What if the pending thread signal was thread-specific to begin with?
-
-For example, if we have a SIGFPE and a SIGKILL that happen at the same
-time, a dying task may have a SIGFPE pending when it dies, and that
-SIGFPE should _not_ be just distributed out to the other threads in
-the thread group.
-
-Am I missing something that protects against this?
-
-                  Linus
+--b.
