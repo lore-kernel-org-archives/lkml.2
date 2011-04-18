@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab1DRTGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:06:24 -0400
-Received: from 8bytes.org ([88.198.83.132]:50004 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756455Ab1DRTGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 15:06:21 -0400
-Date: Mon, 18 Apr 2011 21:06:20 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 1/4] x86, gart: Don't enforce GART aperture lower-bound
-	by alignment
-Message-ID: <20110418190620.GD8155@8bytes.org>
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-2-git-send-email-joerg.roedel@amd.com> <4DAC4E7F.1010502@zytor.com> <20110418145653.GI2192@amd.com> <4DAC5E16.1020408@zytor.com> <20110418173655.GA8155@8bytes.org> <4DAC7739.2060100@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAC7739.2060100@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756588Ab1DRTOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 15:14:12 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:59166 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab1DRTOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 15:14:08 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        arnaud.patard@rtp-net.org
+Subject: [PATCH 06/12] staging: xgifb: replace setXGIIDXREG() with xgifb_reg_and_or()
+Date: Mon, 18 Apr 2011 22:14:02 +0300
+Message-Id: <1303154048-21989-7-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1303154048-21989-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1303154048-21989-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:39:05AM -0700, H. Peter Anvin wrote:
-> I'm going to apply your patch as-is, based on the notion that this is a
-> change of mechanism, and a change of policy is a separate thing.
-> However, we should address the shutdown of the GART first, and then we
-> can move the start address to zero (again, two separate patches.)
+Replace setXGIIDXREG() with xgifb_reg_and_or().
 
-Hmm, thinking again about this, setting the lower-bound to 0 may break
-kdump setups. The kdump kernel is then able to allocate an aperture too
-and that may use half of the memory from the kdump-system so that the
-dump-process triggers OOM.
-As it is now, the GART is automatically disabled when the BIOS doesn't
-setup it correctly and the machine has not more than 512MB of memory.
-Either we keep it as is or, with the changes suggested above, we handle
-it like soft-iotlb and don't use gart for dma-api at all when
-max_pfn is smaller than 4G.
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ drivers/staging/xgifb/XGI_main_26.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-	Joerg
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 1dacd52..3112a25 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -1185,14 +1185,14 @@ static int XGIfb_pan_var(struct fb_var_screeninfo *var)
+ 	xgifb_reg_set(XGICR, 0x0C, (base >> 8) & 0xFF);
+ 	xgifb_reg_set(XGISR, 0x0D, (base >> 16) & 0xFF);
+ 	xgifb_reg_set(XGISR, 0x37, (base >> 24) & 0x03);
+-	setXGIIDXREG(XGISR, 0x37, 0xDF, (base >> 21) & 0x04);
++	xgifb_reg_and_or(XGISR, 0x37, 0xDF, (base >> 21) & 0x04);
+ 
+ 	if (xgi_video_info.disp_state & DISPTYPE_DISP2) {
+ 		xgifb_reg_or(XGIPART1, XGIfb_CRT2_write_enable, 0x01);
+ 		xgifb_reg_set(XGIPART1, 0x06, (base & 0xFF));
+ 		xgifb_reg_set(XGIPART1, 0x05, ((base >> 8) & 0xFF));
+ 		xgifb_reg_set(XGIPART1, 0x04, ((base >> 16) & 0xFF));
+-		setXGIIDXREG(XGIPART1, 0x02, 0x7F, ((base >> 24) & 0x01) << 7);
++		xgifb_reg_and_or(XGIPART1, 0x02, 0x7F, ((base >> 24) & 0x01) << 7);
+ 	}
+ 	/* printk("End of pan_var"); */
+ 	return 0;
+@@ -1736,7 +1736,7 @@ int XGIDoSense(int tempbl, int tempbh, int tempcl, int tempch)
+ 
+ 	xgifb_reg_set(XGIPART4, 0x11, tempbl);
+ 	temp = tempbh | tempcl;
+-	setXGIIDXREG(XGIPART4, 0x10, 0xe0, temp);
++	xgifb_reg_and_or(XGIPART4, 0x10, 0xe0, temp);
+ 	for (i = 0; i < 10; i++)
+ 		XGI_LongWait(&XGI_Pr);
+ 	tempch &= 0x7f;
+@@ -1904,7 +1904,7 @@ static void XGIfb_post_setmode(void)
+ 	/*
+ 	xgifb_reg_set(XGISR,IND_XGI_PASSWORD,XGI_PASSWORD);
+ 	xgifb_reg_set(XGICR, 0x13, 0x00);
+-	setXGIIDXREG(XGISR,0x0E, 0xF0, 0x01);
++	xgifb_reg_and_or(XGISR,0x0E, 0xF0, 0x01);
+ 	*test*
+ 	*/
+ 	if (xgi_video_info.video_bpp == 8) {
+-- 
+1.5.6.5
 
