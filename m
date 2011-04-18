@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1DRNZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:25:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65430 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab1DRNZu (ORCPT
+	id S1753638Ab1DRNby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 09:31:54 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:32796 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab1DRNbr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 09:25:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2 cache
-Date: Mon, 18 Apr 2011 15:25:41 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: tony@atomide.com, linux@arm.linux.org.uk, fernando.lugo@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, grgupta@ti.com, h-kanigeri2@ti.com
-References: <20110414223036.GA7335@n2100.arm.linux.org.uk> <20110418110502.GI12272@atomide.com> <20110418.144246.77604458849535045.Hiroshi.DOYU@nokia.com>
-In-Reply-To: <20110418.144246.77604458849535045.Hiroshi.DOYU@nokia.com>
+	Mon, 18 Apr 2011 09:31:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=bXQ8930XQ0eIkwsYi6ba7gV3U2wXWB+Wrql3e5WmErcAdL4fHFv5sd9s4p/MJlTGPq
+         JgYGyXgD429xcgWR+zQEXOkets638zA2Nr3MDwXeaWiaMV+41L8GcPwlMfZCP0DR5nJS
+         XeC9UJWp//bJdvEvm1NOlhNV/hgE/ydWXBccc=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104181525.43481.arnd@arndb.de>
-X-Provags-ID: V02:K0:KnynaJq9SxCayKB28dfiQxc1RyKG9F0rt2NJEJK2TmU
- SCiudX/wHYpVE4peqmtkszZ6+5vH6/igP8qPg+gMpndXhrAbH1
- C7In4ZIof8Q3xljzjCiZNhL2uZBNvBh3j0h3RGkHE83TqXL2Py
- EW2GNv8UJLNyI6EMbDyiqyX1xJse1byiwcOTrjtkXOZWQQ3u6r
- cYmifRU9GztQii2MAF0Aw==
+In-Reply-To: <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+ <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
+ <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
+ <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com> <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Mon, 18 Apr 2011 15:31:14 +0200
+X-Google-Sender-Auth: OIBbcHktmzith19_G1_v7k6gzcE
+Message-ID: <BANLkTinMNL8Q+_MCHDqAGSdYNAvHB2GdLw@mail.gmail.com>
+Subject: Re: Unionmount status?
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Jiri Kosina <jkosina@suse.cz>,
+        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 April 2011, Hiroshi DOYU wrote:
-> From: ext Tony Lindgren <tony@atomide.com>
+On 16 April 2011 00:18, Andreas Dilger <adilger@dilger.ca> wrote:
+> On 2011-04-15, at 6:29 AM, Miklos Szeredi wrote:
+>> Apparently tmpfs does not support generic xattr.  I understand why
+>> tmpfs is an attractive choice for an upper filesystem, so this should
+>> be addressed.
+>>
+>> I see two options here:
+>>
+>> 1) implement generic xattr in tmpfs
+>
+> There was a patch posted recently to add xattr support to tmpfs, so that it can use security labels:
+>
+> From: Eric Paris <eparis@redhat.com>
+> Subject: [PATCH] tmpfs: implement xattr support for the entire security namespace
+> Date: March 29, 2011 12:56:49 PM MDT
+>
+> Cheers, Andreas
 
-> > have a generic replacement for this code we should start using it.
-> 
-> I'm afraid that there's no general IOMMU APIs yet, or already? If
-> there is, migrating to those general IOMMU API is the way, but still
-> SoC dependent parts remain, anyway. I guess that more or less general
-> IOMMU API is composed of common set of client APIs(like IOVMM) and the
-> registration of H/W dependent functions(like omap iommu), I guess.
+Applying this patch is not sufficient. Apparently more xattrs are
+needed but adding them on top of this patch should be easy.
 
-As I explained, we have a surplus of generic iommu APIs
-already, see include/linux/dma-mapping.h and include/linux/iommu.h
- 
-The dma-mapping interface handles IOMMUs on all other architectures
-that have them.
+The ones mentioned in the overlayfs doc are
 
-	Arnd
+trusted.overlay.whiteout
+trusted.overlay.opaque
+
+The patch implements security.*
+
+Thanks
+
+Michal
