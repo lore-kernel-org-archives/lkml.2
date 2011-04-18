@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab1DRMdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 08:33:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51107 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753062Ab1DRMdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 08:33:02 -0400
-Date: Mon, 18 Apr 2011 22:32:51 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 12/12] mm: Throttle direct reclaimers if PF_MEMALLOC
- reserves are low and swap is backed by network storage
-Message-ID: <20110418223251.7ab148bb@notabene.brown>
-In-Reply-To: <1302777698-28237-13-git-send-email-mgorman@suse.de>
-References: <1302777698-28237-1-git-send-email-mgorman@suse.de>
-	<1302777698-28237-13-git-send-email-mgorman@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753197Ab1DRMkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 08:40:47 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:59150 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab1DRMkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 08:40:43 -0400
+Date: Mon, 18 Apr 2011 14:40:37 +0200
+From: Jan Glauber <jang@linux.vnet.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, castet.matthieu@free.fr,
+        sliakh.lkml@gmail.com, jiang@cs.ncsu.edu, rusty@rustcorp.com.au,
+        mingo@elte.hu
+Subject: Re: Undoing module RONX protection
+Message-ID: <20110418124037.GC7786@hal>
+References: <20110418092348.GB7786@hal>
+ <20110418092801.GC3837@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110418092801.GC3837@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Apr 2011 11:41:38 +0100 Mel Gorman <mgorman@suse.de> wrote:
-
-> If swap is backed by network storage such as NBD, there is a risk that a
-> large number of reclaimers can hang the system by consuming all
-> PF_MEMALLOC reserves. To avoid these hangs, the administrator must tune
-> min_free_kbytes in advance. This patch will throttle direct reclaimers
-> if half the PF_MEMALLOC reserves are in use as the system is at risk of
-> hanging. A message will be displayed so the administrator knows that
-> min_free_kbytes should be tuned to a higher value to avoid the
-> throttling in the future.
+On Mon, Apr 18, 2011 at 05:28:01AM -0400, Christoph Hellwig wrote:
+> > +int set_memory_x(unsigned long addr, int numpages)
+> > +{
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL_GPL(set_memory_x);
 > 
+> No need to export this one.
 
-(I knew there was something else).
+True. Also for the other exports in that file. Will remove them.
 
-I understand that there are suggestions that direct reclaim should always be
-serialised as this reduces lock contention and improve data patterns (or
-something like that).
+--Jan
 
-Would that make this patch redundant?  Or does this provide some extra
-guarantee that the other proposal would not?
-
-Thanks again,
-
-NeilBrown
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
