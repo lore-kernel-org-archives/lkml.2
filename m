@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab1DRQWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 12:22:51 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37278 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755341Ab1DRQWq convert rfc822-to-8bit (ORCPT
+	id S1755689Ab1DRQ0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 12:26:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55316 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755475Ab1DRQ0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 12:22:46 -0400
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 9/26]  9: uprobes: mmap and fork
- hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110401143413.15455.75831.sendpatchset@localhost6.localdomain6>
-References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	 <20110401143413.15455.75831.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Apr 2011 18:21:57 +0200
-Message-ID: <1303143717.32491.872.camel@twins>
+	Mon, 18 Apr 2011 12:26:33 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=JTjb3um6TXYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=iu0ztstRCHuiI7ohK2cA:9 a=DXEUTjIy7eY9GSspxkQA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 3/7] lockdep: Annotate read/write states
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110417095507.026186002@chello.nl>
+References: <20110417094505.865828233@chello.nl>
+	 <20110417095507.026186002@chello.nl>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 18 Apr 2011 12:26:31 -0400
+Message-ID: <1303143991.7181.38.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-01 at 20:04 +0530, Srikar Dronamraju wrote:
-> +       if (vma) {
-> +               /*
-> +                * We get here from uprobe_mmap() -- the case where we
-> +                * are trying to copy an instruction from a page that's
-> +                * not yet in page cache.
-> +                *
-> +                * Read page in before copy.
-> +                */
-> +               struct file *filp = vma->vm_file;
-> +
-> +               if (!filp)
-> +                       return -EINVAL;
-> +               page_cache_sync_readahead(mapping, &filp->f_ra, filp, idx, 1);
-> +       }
-> +       page = grab_cache_page(mapping, idx); 
+On Sun, 2011-04-17 at 11:45 +0200, Peter Zijlstra wrote:
 
-So I don't see why that isn't so for the normal install_uprobe() <-
-register_uprobe() path.
+> Currently the read/write status of a lock while it's acquired is denoted by a
+> monotonically increasing variable where:
+> 
+>  0 - WRITE
+>  1 - READ
+>  2 - RECURSIVE READ
+> 
+> In this patch, we propose to modify this distinction from a monotonically
+> increasing variable to a bit mask where:
+> 
+>  0x1 - WRITE
+>  0x2 - READ
+>  0x4 - RECURSIVE READ
+> 
+
+
+>  /*
+> @@ -286,6 +287,15 @@ extern void lockdep_init_map(struct lock
+>  
+>  #define lockdep_set_novalidate_class(lock) \
+>  	lockdep_set_class(lock, &__lockdep_no_validate__)
+> +
+> +/* lock_state bits */
+> +#define _W_		0
+> +#define _R_		(_W_ + 1)
+> +#define _RR_		(_W_ + 2)
+> +#define _FIRST_RR_	(_W_ + 3)
+
+Eek!!! Please comment these. I hate trying to figure out what RR means.
+If I did not read the change log, my first thought was "Round Robin".
+
+Adding something like:
+
+/*
+ * lock_state bits:
+ *   WRITE
+ *   READ
+ *   RECURSIVE_READ
+ *   FIRST RECURSIVE_READ
+ */
+
+Above that would help tremendously. This code is obfuscated enough, we
+need many more comments. (I plan on sending out patches to do this too).
+
+
+
