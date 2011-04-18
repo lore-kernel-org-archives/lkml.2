@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab1DRCes (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 22:34:48 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:56011 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab1DRCen convert rfc822-to-8bit (ORCPT
+	id S1751877Ab1DRCmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 22:42:32 -0400
+Received: from nm3.bullet.mail.ukl.yahoo.com ([217.146.182.224]:31431 "HELO
+	nm3.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751097Ab1DRCm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 22:34:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=oJiPzYNIgqX5B9Vz64J/ENvlMfgXD5XNh9nJSr9dehHQ4V0uBcFaZVKH7UkdlLt9ck
-         vJUhGd2386rMzj0REQPZhsEOc0z2plKnj8mdAaucz7Vkm7l1SufMuscFus8MNgrLThnP
-         PtQe2uGtM6L9dVu2dpqtXlGWOtiCqTv7g8NC0=
+	Sun, 17 Apr 2011 22:42:27 -0400
+X-Yahoo-Newman-Id: 598569.63602.bm@smtp145.mail.ukl.yahoo.com
+X-Yahoo-SMTP: B8iIt66swBAJLovdjSeKT6T1Kqn55Hfzkc20
+X-YMail-OSG: tjfRUeEVM1lC0cWXs.ebzhnh8p7eafWIPFRMpSryu7.cbGe
+ 2KCZeRvQ5DeeAKAy4059QcX6vJrVWwt5eDCuFqoZxPFtQ3jqGdrsEgUkBZ4S
+ uHNvJJiMLYbTagRBxjt7asTFG1WBXjlY0TZPC0hfzJDr5DCUoWEC8c00hzeD
+ z4_6TDHaHGVmIZWJwZupkgj8siGcMnMKcqnE5rYy6WNmBWJUn9CAOGyYxZJu
+ O06c8Enypo79tclSaP5J_otHLgTkOXk9GT1Q7UkbtmqNuep73S2_ubAmhVXI
+ 3JhSlFIHzcSXxM1tzUc1.ajw1EPRmujlWjG_EmGvtuqV8ZdTnEuv_aYI-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 18 Apr 2011 10:42:08 +0800
+From: "Rool" <angelalorubbio@yahoo.it>
+To: "linuxjiang" <linuxjiang@163.com>
+Subject: auum1
+Message-ID: <201104181042086652705@yahoo.it>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-In-Reply-To: <201104172311.59289.rjw@sisk.pl>
-References: <201103280125.11750.rjw@sisk.pl> <201104172301.54115.rjw@sisk.pl> <201104172311.59289.rjw@sisk.pl>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Sun, 17 Apr 2011 22:34:22 -0400
-X-Google-Sender-Auth: _AzKcBj4vVVO0xSeUKYJZUtBD8w
-Message-ID: <BANLkTi=BRXtsG0wK6SbK-6L-xzwMccR3eQ@mail.gmail.com>
-Subject: Re: [PATCH 9/14] PM / Blackfin: Use struct syscore_ops instead of
- sysdevs for PM
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@suse.de>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, linux-arm-kernel@lists.infradead.org,
-        Ben Dooks <ben-linux@fluff.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, Jiri Kosina <jkosina@suse.cz>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3I2gq0T004976
 
-On Sun, Apr 17, 2011 at 17:11, Rafael J. Wysocki wrote:
-> Convert some Blackfin architecture's code to using struct syscore_ops
-> objects for power management instead of sysdev classes and sysdevs.
->
-> This simplifies the code and reduces the kernel's memory footprint.
-> It also is necessary for removing sysdevs from the kernel entirely in
-> the future.
+21cn.com7572227217639173
+¿Í»§£ºÄúºÃ£ºr
+±¾¹«Ë¾ÓëºÏ×÷¹«Ë¾Òò½øÏî½Ï¶àµÈÔ­Òò£¬³¤ÆÚÎªÄúÌá¹©£º
+   ´ú-¿ª-Õæ-·¢-Æ± £¨ÒµÎñ£©D
+  °üÀ¨£ºÔöÖµË°¡¢¹úË°¡¢µØË°·¢\Æ±¡¢¹ã¸æ¡¢×ÉÑ¯¡¢»áÒé¡¢½¨Öş¹¤³Ì¡¢ÉÌÆ·
+ÏúÊÛ¡¢×¡ËŞ¡¢¹úÄÚÔËÊä£¬¹ú¼Ê»õÔË¡¢×âÁŞ¡¢º£¹Ø½É¿îÊéµÈ·¢\Æ±¡£
+    ÒÔÉÏ·¢\Æ±¾ù¿ÉÉÏÍø²éÑ¯»òµ½µ±µØË°¾ÖÑéÖ¤£¬Ë°µã´ÓÓÅ£¬s
+»¶Ó­À´µç×ÉÑ¯¡£´òÈÅÇëÁÂ½â£¡ĞèÒªÇëÁôÓÃ!
+    ÁªÏµÈË£º139-1863-1325 ³ÂÏÈÉú ¿Í·şQQ£º126-4017-554  
 
-looks straight forward enough ...
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-
-> +static struct syscore_ops nmi_syscore_ops = {
-> Â  Â  Â  Â .resume Â  Â  Â  Â  = nmi_wdt_resume,
-> Â  Â  Â  Â .suspend Â  Â  Â  Â = nmi_wdt_suspend,
-> Â };
-
-a bit sad this couldnt be made const
--mike
+//21cn.com7572227217639173ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
