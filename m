@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1DRMOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 08:14:17 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42426 "EHLO
+	id S1752566Ab1DRMPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 08:15:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42443 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab1DRMOK (ORCPT
+	with ESMTP id S1751869Ab1DRMP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 08:14:10 -0400
+	Mon, 18 Apr 2011 08:15:27 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 1/3] mn10300: replace mm->cpu_vm_mask with mm_cpumask
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH 0/3] convert mm->cpu_vm_mask into cpumask_var_t
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20110418211455.9359.A69D9226@jp.fujitsu.com>
+        Hugh Dickins <hughd@google.com>, David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+In-Reply-To: <20110418211455.9359.A69D9226@jp.fujitsu.com>
+References: <20110418211455.9359.A69D9226@jp.fujitsu.com>
+Message-Id: <20110418211626.935D.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon, 18 Apr 2011 21:14:04 +0900 (JST)
+Date: Mon, 18 Apr 2011 21:15:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, I and Hugh discussed about size of mm_struct. And then, I decided
-to spend some time to diet it.
+We plant to change mm->cpu_vm_mask definition later. Thus this
+patch convert it into mm_cpumask().
 
-Unfortunately, We don't finished to convert cpumask_size() into full
-nr_cpu_ids-ism. then, We can't get full benefit of cpumask_var_t yet.
-However I expect it will be solved in this or next year.
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+---
+ arch/mn10300/kernel/smp.c |    2 +-
+ arch/mn10300/mm/tlb-smp.c |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
+mn10300 is one of last two cpu_vm_mask direct access users.
 
-KOSAKI Motohiro (3):
-  mn10300: replace mm->cpu_vm_mask with mm_cpumask
-  tile: replace mm->cpu_vm_mask with mm_cpumask()
-  mm: convert mm->cpu_vm_cpumask into cpumask_var_t
-
- Documentation/cachetlb.txt          |    2 +-
- arch/mn10300/kernel/smp.c           |    2 +-
- arch/mn10300/mm/tlb-smp.c           |    6 ++--
- arch/tile/include/asm/mmu_context.h |    4 +-
- arch/tile/kernel/tlb.c              |   12 +++++-----
- include/linux/mm_types.h            |    9 +++++--
- include/linux/sched.h               |    1 +
- init/main.c                         |    2 +
- kernel/fork.c                       |   37 ++++++++++++++++++++++++++++++++--
- mm/init-mm.c                        |    1 -
- 10 files changed, 56 insertions(+), 20 deletions(-)
-
+diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
+index 83fb279..6d59726 100644
+--- a/arch/mn10300/kernel/smp.c
++++ b/arch/mn10300/kernel/smp.c
+@@ -986,7 +986,7 @@ int __cpu_disable(void)
+ 		return -EBUSY;
+ 
+ 	migrate_irqs();
+-	cpu_clear(cpu, current->active_mm->cpu_vm_mask);
++	cpu_clear(cpu, mm_cpumask(current->active_mm));
+ 	return 0;
+ }
+ 
+diff --git a/arch/mn10300/mm/tlb-smp.c b/arch/mn10300/mm/tlb-smp.c
+index 0b6a5ad..9d357b4 100644
+--- a/arch/mn10300/mm/tlb-smp.c
++++ b/arch/mn10300/mm/tlb-smp.c
+@@ -146,7 +146,7 @@ void flush_tlb_mm(struct mm_struct *mm)
+ 	cpumask_t cpu_mask;
+ 
+ 	preempt_disable();
+-	cpu_mask = mm->cpu_vm_mask;
++	cpu_mask = mm_cpumask(mm);
+ 	cpu_clear(smp_processor_id(), cpu_mask);
+ 
+ 	local_flush_tlb();
+@@ -165,7 +165,7 @@ void flush_tlb_current_task(void)
+ 	cpumask_t cpu_mask;
+ 
+ 	preempt_disable();
+-	cpu_mask = mm->cpu_vm_mask;
++	cpu_mask = mm_cpumask(mm);
+ 	cpu_clear(smp_processor_id(), cpu_mask);
+ 
+ 	local_flush_tlb();
+@@ -186,7 +186,7 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+ 	cpumask_t cpu_mask;
+ 
+ 	preempt_disable();
+-	cpu_mask = mm->cpu_vm_mask;
++	cpu_mask = mm_cpumask(mm);
+ 	cpu_clear(smp_processor_id(), cpu_mask);
+ 
+ 	local_flush_tlb_page(mm, va);
 -- 
 1.7.3.1
 
