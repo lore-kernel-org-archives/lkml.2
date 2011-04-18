@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab1DRNPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:15:55 -0400
-Received: from ozlabs.org ([203.10.76.45]:41969 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab1DRNPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 09:15:48 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Christoph Hellwig <hch@infradead.org>,
-        Jan Glauber <jang@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, castet.matthieu@free.fr,
-        sliakh.lkml@gmail.com, jiang@cs.ncsu.edu, mingo@elte.hu
-Subject: Re: Undoing module RONX protection
-In-Reply-To: <20110418092801.GC3837@infradead.org>
-References: <20110418092348.GB7786@hal> <20110418092801.GC3837@infradead.org>
-User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Mon, 18 Apr 2011 20:13:36 +0930
-Message-ID: <874o5v6drb.fsf@rustcorp.com.au>
+	id S1753300Ab1DRNWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 09:22:47 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:55639 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751703Ab1DRNWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 09:22:44 -0400
+Date: Mon, 18 Apr 2011 15:21:40 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Gottfried Haider <gottfried.haider@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [Regression] Bluetooth pairing does not work anymore in
+ 2.6.39-rc3 (works in 2.6.38.3)
+Message-ID: <20110418132140.GA1479@ucw.cz>
+References: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Apr 2011 11:23:48 +0200, Jan Glauber <jang@linux.vnet.ibm.com> wrote:
-> While debugging I stumbled over two problems in the code that protects module
-> pages.
-> 
-> First issue is that disabling the protection before freeing init or unload of
-> a module is not symmetric with the enablement. For instance, if pages are set
-> to RO the page range from module_core to module_core + core_ro_size is
-> protected. If a module is unloaded the page range from module_core to
-> module_core + core_size is set back to RW.
-> So pages that were not set to RO are also changed to RW.
-> This is not critical but IMHO it should be symmetric.
-> 
-> Second issue is that while set_memory_rw & set_memory_ro are used for
-> RO/RW changes only set_memory_nx is involved for NX/X. One would await that
-> the inverse function is called when the NX protection should be removed,
-> which is not the case here, unless I'm missing something.
-> 
-> The following patch addresses both issues. Works on s390. Boot tested on x86.
-> 
-> Please comment,
+Hi!
 
-Applied, minus the S/390 EXPORT_SYMBOL which Christoph pointed out.  I
-turned your mail into the commit message, since it was clearer and more
-verbose.  I don't see why they would be different.
+> I am having problems pairing bluetooth devices in 2.6.39. Scanning
+> works fine (hcitool scan), but when I try to pair a device using
+> "bluez-simple-agent hci0 $MAC", I receive the following error message:
+> "Creating device failed: org.bluez.Error.Failed: Input/output error"
+> 
+> The same command reliably works on a 2.6.38.3 kernel with pretty much
+> the same config.
+> 
+> According to lsusb, I have a Broadcom Bluetooth Controller with ID
+> 0a5c:217f. I don't see anything related in either of the dmesgs.
+> My lspci output is here: http://sukzessiv.net/x120e/
+> Userspace is an up-to-date Ubuntu 11.04 beta (with bluez 4.91).
+> 
+> If there are any debugging steps that I could do or patches to try or
+> revert, let me know. Unfortunately I can't do a proper bisect since
+> the machine is a netbook type.
 
-Might have been nicer as three separate patches, in future.
+I guess strace of the pairing attempt would be helpful.
 
-Thanks!
-Rusty.
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
