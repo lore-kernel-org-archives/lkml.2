@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab1DRMRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 08:17:08 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55033 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab1DRMRC (ORCPT
+	id S1752744Ab1DRMSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 08:18:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51651 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab1DRMSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 08:17:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=gQkaUaP9zODnhwpWnjJ/4234chdYDGR6fdmhuEpY1BSPOMTzFVetVZuZsBQfP4u6rv
-         jopVxDi1CF2ToUwrElpDZn504pSpLZH/6ZCZ9JOMPhX6P5nQgGli6YwBdTjyK1H7t/Yu
-         DXE0ZZe5H1nDLirWHtlfYRdfwlhQnTsBNBWB8=
-Subject: [PATCH] RTC: Add MODULE_DEVICE_TABLE to
- rtc-ds1672/rtc-max6900/rtc-max8998
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Dale Farnsworth <dale@farnsworth.org>,
-        Minkyu Kang <mk7.kang@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Apr 2011 20:16:57 +0800
-Message-ID: <1303129017.8158.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 18 Apr 2011 08:18:13 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 2/3] tile: replace mm->cpu_vm_mask with mm_cpumask()
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Chris Metcalf <cmetcalf@tilera.com>
+In-Reply-To: <20110418211455.9359.A69D9226@jp.fujitsu.com>
+References: <20110418211455.9359.A69D9226@jp.fujitsu.com>
+Message-Id: <20110418211914.9361.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon, 18 Apr 2011 21:18:11 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device table is required to load modules based on modaliases.
-After adding MODULE_DEVICE_TABLE, below entries will be added to modules.alias:
+We plan to change mm->cpu_vm_mask definition later. Thus, this patch convert
+it into proper macro.
 
-alias i2c:ds1672 rtc_ds1672
-alias i2c:max6900 rtc_max6900
-alias platform:lp3974-rtc rtc_max8998
-alias platform:max8998-rtc rtc_max8998
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Dale Farnsworth <dale@farnsworth.org>
-Cc: Minkyu Kang <mk7.kang@samsung.com>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/rtc/rtc-ds1672.c  |    1 +
- drivers/rtc/rtc-max6900.c |    1 +
- drivers/rtc/rtc-max8998.c |    1 +
- 3 files changed, 3 insertions(+), 0 deletions(-)
+ arch/tile/include/asm/mmu_context.h |    4 ++--
+ arch/tile/kernel/tlb.c              |   12 ++++++------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds1672.c b/drivers/rtc/rtc-ds1672.c
-index 06dfb54..fa301d4 100644
---- a/drivers/rtc/rtc-ds1672.c
-+++ b/drivers/rtc/rtc-ds1672.c
-@@ -191,6 +191,7 @@ static struct i2c_device_id ds1672_id[] = {
- 	{ "ds1672", 0 },
- 	{ }
- };
-+MODULE_DEVICE_TABLE(i2c, ds1672_id);
+tile is one of last two cpu_vm_mask direct access users. I hope convert it
+even if anyone refuse [path 3/3].
+
+Chris, I couldn't get cross compiler for tile. thus I hope you check it carefully.
+Thanks.
+
+diff --git a/arch/tile/include/asm/mmu_context.h b/arch/tile/include/asm/mmu_context.h
+index 9bc0d07..15fb246 100644
+--- a/arch/tile/include/asm/mmu_context.h
++++ b/arch/tile/include/asm/mmu_context.h
+@@ -100,8 +100,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 		__get_cpu_var(current_asid) = asid;
  
- static struct i2c_driver ds1672_driver = {
- 	.driver = {
-diff --git a/drivers/rtc/rtc-max6900.c b/drivers/rtc/rtc-max6900.c
-index 486142c..ef834c1 100644
---- a/drivers/rtc/rtc-max6900.c
-+++ b/drivers/rtc/rtc-max6900.c
-@@ -251,6 +251,7 @@ static struct i2c_device_id max6900_id[] = {
- 	{ "max6900", 0 },
- 	{ }
- };
-+MODULE_DEVICE_TABLE(i2c, max6900_id);
+ 		/* Clear cpu from the old mm, and set it in the new one. */
+-		cpumask_clear_cpu(cpu, &prev->cpu_vm_mask);
+-		cpumask_set_cpu(cpu, &next->cpu_vm_mask);
++		cpumask_clear_cpu(cpu, mm_cpumask(prev));
++		cpumask_set_cpu(cpu, mm_cpumask(next));
  
- static struct i2c_driver max6900_driver = {
- 	.driver = {
-diff --git a/drivers/rtc/rtc-max8998.c b/drivers/rtc/rtc-max8998.c
-index 3f7bc6b..dade62e 100644
---- a/drivers/rtc/rtc-max8998.c
-+++ b/drivers/rtc/rtc-max8998.c
-@@ -315,6 +315,7 @@ static const struct platform_device_id max8998_rtc_id[] = {
- 	{ "lp3974-rtc", TYPE_LP3974 },
- 	{ }
- };
-+MODULE_DEVICE_TABLE(platform, max8998_rtc_id);
+ 		/* Re-load page tables */
+ 		install_page_table(next->pgd, asid);
+diff --git a/arch/tile/kernel/tlb.c b/arch/tile/kernel/tlb.c
+index 2dffc10..a5f241c 100644
+--- a/arch/tile/kernel/tlb.c
++++ b/arch/tile/kernel/tlb.c
+@@ -34,13 +34,13 @@ void flush_tlb_mm(struct mm_struct *mm)
+ {
+ 	HV_Remote_ASID asids[NR_CPUS];
+ 	int i = 0, cpu;
+-	for_each_cpu(cpu, &mm->cpu_vm_mask) {
++	for_each_cpu(cpu, mm_cpumask(mm)) {
+ 		HV_Remote_ASID *asid = &asids[i++];
+ 		asid->y = cpu / smp_topology.width;
+ 		asid->x = cpu % smp_topology.width;
+ 		asid->asid = per_cpu(current_asid, cpu);
+ 	}
+-	flush_remote(0, HV_FLUSH_EVICT_L1I, &mm->cpu_vm_mask,
++	flush_remote(0, HV_FLUSH_EVICT_L1I, mm_cpumask(mm),
+ 		     0, 0, 0, NULL, asids, i);
+ }
  
- static struct platform_driver max8998_rtc_driver = {
- 	.driver		= {
+@@ -54,8 +54,8 @@ void flush_tlb_page_mm(const struct vm_area_struct *vma, struct mm_struct *mm,
+ {
+ 	unsigned long size = hv_page_size(vma);
+ 	int cache = (vma->vm_flags & VM_EXEC) ? HV_FLUSH_EVICT_L1I : 0;
+-	flush_remote(0, cache, &mm->cpu_vm_mask,
+-		     va, size, size, &mm->cpu_vm_mask, NULL, 0);
++	flush_remote(0, cache, mm_cpumask(mm),
++		     va, size, size, mm_cpumask(mm), NULL, 0);
+ }
+ 
+ void flush_tlb_page(const struct vm_area_struct *vma, unsigned long va)
+@@ -70,8 +70,8 @@ void flush_tlb_range(const struct vm_area_struct *vma,
+ 	unsigned long size = hv_page_size(vma);
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	int cache = (vma->vm_flags & VM_EXEC) ? HV_FLUSH_EVICT_L1I : 0;
+-	flush_remote(0, cache, &mm->cpu_vm_mask, start, end - start, size,
+-		     &mm->cpu_vm_mask, NULL, 0);
++	flush_remote(0, cache, mm_cpumask(mm), start, end - start, size,
++		     mm_cpumask(mm), NULL, 0);
+ }
+ 
+ void flush_tlb_all(void)
 -- 
-1.7.1
+1.7.3.1
 
 
 
