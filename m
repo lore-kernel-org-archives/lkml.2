@@ -1,1524 +1,621 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab1DRUFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 16:05:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47490 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab1DRUFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 16:05:35 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        Matthew Garrett <mjg@redhat.com>, Matt Turner <mattst88@gmail.com>
-Subject: [PATCH] drm: Add a driver for kvm emulated Cirrus
-Date: Mon, 18 Apr 2011 16:04:54 -0400
-Message-Id: <1303157094-11425-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1751675Ab1DRUPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 16:15:00 -0400
+Received: from eden-out.rutgers.edu ([128.6.68.11]:61576 "EHLO
+	goshen10.rutgers.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751395Ab1DRUO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 16:14:56 -0400
+X-Greylist: delayed 2391 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Apr 2011 16:14:56 EDT
+Date: Mon, 18 Apr 2011 15:27:55 -0400 (EDT)
+From: Ciprian Docan <docan@eden.rutgers.edu>
+X-X-Sender: docan@er3.rutgers.edu
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Francois Romieu <romieu@fr.zoreil.com>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael, J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@suse.de>
+Subject: Re: Suspend/resume - slow resume
+In-Reply-To: <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com>
+Message-ID: <Pine.SOC.4.64.1104181519490.1320@er3.rutgers.edu>
+References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu>
+ <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com>
+ <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu>
+ <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com>
+ <20110417101731.GA17986@electric-eye.fr.zoreil.com>
+ <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com>
+ <20110418180813.GA18469@electric-eye.fr.zoreil.com>
+ <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-559023410-838832689-1303154875=:1320"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-qemu-kvm emulates a Cirrus GPU, including its acceleration engine. We
-typically then run a Cirrus-specific X driver on top of this, which
-turns requests into commands and sends them to the emulated accelerator.
-This all seems to be unnecessary overhead given that we're just going
-to end up writing to memory from the host instead, and performance is
-almost certainly going to be better using an unaccelerated framebuffer
-and a guest-side shadow.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-This patch provides a simple modesetting-only KMS driver for the hardware
-emulated in qemu-kvm. It's stripped down to the point where it's able to
-program the emulation, but would almost certainly fail miserably if asked
-to run on real hardware. It's intended to reduce virt overhead slightly,
-but also to serve as a template to writing a basic KMS driver.
+---559023410-838832689-1303154875=:1320
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 
-The code and structure are heavily derived from Matt Turner's glint
-driver, with the modesetting code cribbed from cirrusfb (hence the
-license).
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Matt Turner <mattst88@gmail.com>
----
- drivers/gpu/drm/Kconfig                     |    8 +
- drivers/gpu/drm/Makefile                    |    1 +
- drivers/gpu/drm/cirrus/Makefile             |    6 +
- drivers/gpu/drm/cirrus/cirrus.h             |   40 ++++
- drivers/gpu/drm/cirrus/cirrus_crtc.c        |  277 +++++++++++++++++++++++++++
- drivers/gpu/drm/cirrus/cirrus_device.c      |  111 +++++++++++
- drivers/gpu/drm/cirrus/cirrus_display.c     |   70 +++++++
- drivers/gpu/drm/cirrus/cirrus_drv.c         |   91 +++++++++
- drivers/gpu/drm/cirrus/cirrus_drv.h         |  127 ++++++++++++
- drivers/gpu/drm/cirrus/cirrus_encoder.c     |  139 ++++++++++++++
- drivers/gpu/drm/cirrus/cirrus_fbdev.c       |  214 +++++++++++++++++++++
- drivers/gpu/drm/cirrus/cirrus_framebuffer.c |   48 +++++
- drivers/gpu/drm/cirrus/cirrus_kms.c         |   59 ++++++
- drivers/gpu/drm/cirrus/cirrus_mode.h        |   54 +++++
- drivers/gpu/drm/cirrus/cirrus_vga.c         |  102 ++++++++++
- 15 files changed, 1347 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpu/drm/cirrus/Makefile
- create mode 100644 drivers/gpu/drm/cirrus/cirrus.h
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_crtc.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_device.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_display.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_drv.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_drv.h
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_encoder.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_fbdev.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_framebuffer.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_kms.c
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_mode.h
- create mode 100644 drivers/gpu/drm/cirrus/cirrus_vga.c
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index c58f691..2f54d2f 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -126,6 +126,14 @@ config DRM_I915_KMS
- 	  the driver to bind to PCI devices, which precludes loading things
- 	  like intelfb.
- 
-+config DRM_KVM_CIRRUS
-+	tristate "Kernel modesetting driver for qemu-kvm Cirrus emulation"
-+	depends on DRM && PCI
-+	select FB_CFB_FILLRECT
-+	select FB_CFB_COPYAREA
-+	select FB_CFB_IMAGEBLIT
-+	select DRM_KMS_HELPER
-+
- config DRM_MGA
- 	tristate "Matrox g200/g400"
- 	depends on DRM && PCI
-diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
-index 89cf05a..11e486f 100644
---- a/drivers/gpu/drm/Makefile
-+++ b/drivers/gpu/drm/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_DRM_RADEON)+= radeon/
- obj-$(CONFIG_DRM_MGA)	+= mga/
- obj-$(CONFIG_DRM_I810)	+= i810/
- obj-$(CONFIG_DRM_I915)  += i915/
-+obj-$(CONFIG_DRM_KVM_CIRRUS) += cirrus/
- obj-$(CONFIG_DRM_SIS)   += sis/
- obj-$(CONFIG_DRM_SAVAGE)+= savage/
- obj-$(CONFIG_DRM_VMWGFX)+= vmwgfx/
-diff --git a/drivers/gpu/drm/cirrus/Makefile b/drivers/gpu/drm/cirrus/Makefile
-new file mode 100644
-index 0000000..126dd50
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/Makefile
-@@ -0,0 +1,6 @@
-+ccflags-y := -Iinclude/drm
-+cirrus-y   := cirrus_crtc.o cirrus_encoder.o cirrus_device.o cirrus_display.o \
-+	cirrus_drv.o cirrus_fbdev.o cirrus_framebuffer.o \
-+	cirrus_kms.o cirrus_vga.o
-+
-+obj-$(CONFIG_DRM_KVM_CIRRUS) += cirrus.o
-diff --git a/drivers/gpu/drm/cirrus/cirrus.h b/drivers/gpu/drm/cirrus/cirrus.h
-new file mode 100644
-index 0000000..44ad60a
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus.h
-@@ -0,0 +1,40 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#ifndef __CIRRUS_H__
-+#define __CIRRUS_H__
-+
-+#include "cirrus_mode.h"
-+
-+struct cirrus_mc {
-+	resource_size_t			vram_size;
-+	resource_size_t			vram_base;
-+};
-+
-+struct cirrus_device {
-+	struct device			*dev;
-+	struct drm_device		*ddev;
-+	struct pci_dev			*pdev;
-+	unsigned long			flags;
-+
-+	resource_size_t			rmmio_base;
-+	resource_size_t			rmmio_size;
-+	void __iomem			*rmmio;
-+
-+	drm_local_map_t			*framebuffer;
-+
-+	struct cirrus_mc			mc;
-+	struct cirrus_mode_info		mode_info;
-+
-+	int				num_crtc;
-+};
-+
-+#endif				/* __CIRRUS_H__ */
-diff --git a/drivers/gpu/drm/cirrus/cirrus_crtc.c b/drivers/gpu/drm/cirrus/cirrus_crtc.c
-new file mode 100644
-index 0000000..afce8f2
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_crtc.c
-@@ -0,0 +1,277 @@
-+/*
-+ * Copyright 2000,2001 Sven Luther.
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ *			Sven Luther
-+ *			Thomas Witzel
-+ *			Alan Hourihane
-+ *
-+ * Portions of this code derived from cirrusfb.c:
-+ * drivers/video/cirrusfb.c - driver for Cirrus Logic chipsets
-+ *
-+ * Copyright 1999-2001 Jeff Garzik <jgarzik@pobox.com>
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+#include "drm_crtc_helper.h"
-+
-+#include <video/cirrus.h>
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+#include "cirrus_mode.h"
-+
-+#define CIRRUS_LUT_SIZE 256
-+
-+#define PALETTE_INDEX 0x8
-+#define PALETTE_DATA 0x9
-+
-+/*
-+ * This file contains setup code for the CRTC.
-+ */
-+
-+static void cirrus_crtc_load_lut(struct drm_crtc *crtc)
-+{
-+	struct cirrus_crtc *cirrus_crtc = to_cirrus_crtc(crtc);
-+	struct drm_device *dev = crtc->dev;
-+	struct cirrus_device *cdev = dev->dev_private;
-+	int i;
-+
-+	if (!crtc->enabled)
-+		return;
-+
-+	for (i = 0; i < CIRRUS_LUT_SIZE; i++) {
-+		/* VGA registers */
-+		WREG8(PALETTE_INDEX, i);
-+		WREG8(PALETTE_DATA, cirrus_crtc->lut_r[i]);
-+		WREG8(PALETTE_DATA, cirrus_crtc->lut_g[i]);
-+		WREG8(PALETTE_DATA, cirrus_crtc->lut_b[i]);
-+	}
-+}
-+
-+/*
-+ * The DRM core requires DPMS functions, but they make little sense in our
-+ * case and so are just stubs
-+ */
-+
-+static void cirrus_crtc_dpms(struct drm_crtc *crtc, int mode)
-+{
-+}
-+
-+/*
-+ * The core passes the desired mode to the CRTC code to see whether any
-+ * CRTC-specific modifications need to be made to it. We're in a position
-+ * to just pass that straight through, so this does nothing
-+ */
-+static bool cirrus_crtc_mode_fixup(struct drm_crtc *crtc,
-+				   struct drm_display_mode *mode,
-+				   struct drm_display_mode *adjusted_mode)
-+{
-+	return true;
-+}
-+
-+/*
-+ * The meat of this driver. The core passes us a mode and we have to program
-+ * it. The modesetting here is the bare minimum required to satisfy the qemu
-+ * emulation of this hardware, and running this against a real device is
-+ * likely to result in an inadequately programmed mode. We've already had
-+ * the opportunity to modify the mode, so whatever we receive here should
-+ * be something that can be correctly programmed and displayed
-+ */
-+static int cirrus_crtc_mode_set(struct drm_crtc *crtc,
-+				struct drm_display_mode *mode,
-+				struct drm_display_mode *adjusted_mode,
-+				int x, int y, struct drm_framebuffer *old_fb)
-+{
-+	struct drm_device *dev = crtc->dev;
-+	struct cirrus_device *cdev = dev->dev_private;
-+	int hsyncstart, hsyncend, htotal, hdispend;
-+	int vtotal, vdispend;
-+	int tmp;
-+
-+	htotal = mode->htotal / 8;
-+	hsyncend = mode->hsync_end / 8;
-+	hsyncstart = mode->hsync_start / 8;
-+	hdispend = mode->hdisplay / 8;
-+
-+	vtotal = mode->vtotal;
-+	vdispend = mode->vdisplay;
-+
-+	vdispend -= 1;
-+	vtotal -= 2;
-+
-+	htotal -= 5;
-+	hdispend -= 1;
-+	hsyncstart += 1;
-+	hsyncend += 1;
-+
-+	WREG_CRT(VGA_CRTC_V_SYNC_END, 0x20);
-+	WREG_CRT(VGA_CRTC_H_TOTAL, htotal);
-+	WREG_CRT(VGA_CRTC_H_DISP, hdispend);
-+	WREG_CRT(VGA_CRTC_H_SYNC_START, hsyncstart);
-+	WREG_CRT(VGA_CRTC_H_SYNC_END, hsyncend);
-+	WREG_CRT(VGA_CRTC_V_TOTAL, vtotal & 0xff);
-+	WREG_CRT(VGA_CRTC_V_DISP_END, vdispend & 0xff);
-+
-+	tmp = 0x40;
-+	if ((vdispend + 1) & 512)
-+		tmp |= 0x20;
-+	WREG_CRT(VGA_CRTC_MAX_SCAN, tmp);
-+
-+	/*
-+	 * Overflow bits for values that don't fit in the standard registers
-+	 */
-+	tmp = 16;
-+	if (vtotal & 256)
-+		tmp |= 1;
-+	if (vdispend & 256)
-+		tmp |= 2;
-+	if ((vdispend + 1) & 256)
-+		tmp |= 8;
-+	if (vtotal & 512)
-+		tmp |= 32;
-+	if (vdispend & 512)
-+		tmp |= 64;
-+	WREG_CRT(VGA_CRTC_OVERFLOW, tmp);
-+
-+	tmp = 0;
-+
-+	/* More overflow bits */
-+
-+	if ((htotal + 5) & 64)
-+		tmp |= 16;
-+	if ((htotal + 5) & 128)
-+		tmp |= 32;
-+	if (vtotal & 256)
-+		tmp |= 64;
-+	if (vtotal & 512)
-+		tmp |= 128;
-+
-+	WREG_CRT(CL_CRT1A, tmp);
-+
-+	/* Disable Hercules/CGA compatibility */
-+	WREG_CRT(VGA_CRTC_MODE, 0x03);
-+
-+	return 0;
-+}
-+
-+/*
-+ * This is called before a mode is programmed. A typical use might be to
-+ * enable DPMS during the programming to avoid seeing intermediate stages,
-+ * but that's not relevant to us
-+ */
-+static void cirrus_crtc_prepare(struct drm_crtc *crtc)
-+{
-+}
-+
-+/*
-+ * This is called after a mode is programmed. It should reverse anything done
-+ * by the prepare function
-+ */
-+static void cirrus_crtc_commit(struct drm_crtc *crtc)
-+{
-+}
-+
-+/*
-+ * The core can pass us a set of gamma values to program. We actually only
-+ * use this for 8-bit mode so can't perform smooth fades on deeper modes,
-+ * but it's a requirement that we provide the function
-+ */
-+static void cirrus_crtc_gamma_set(struct drm_crtc *crtc, u16 *red, u16 *green,
-+				  u16 *blue, uint32_t start, uint32_t size)
-+{
-+	struct cirrus_crtc *cirrus_crtc = to_cirrus_crtc(crtc);
-+	int i;
-+
-+	if (size != CIRRUS_LUT_SIZE)
-+		return;
-+
-+	for (i = 0; i < CIRRUS_LUT_SIZE; i++) {
-+		cirrus_crtc->lut_r[i] = red[i];
-+		cirrus_crtc->lut_g[i] = green[i];
-+		cirrus_crtc->lut_b[i] = blue[i];
-+	}
-+	cirrus_crtc_load_lut(crtc);
-+}
-+
-+/* Simple cleanup function */
-+static void cirrus_crtc_destroy(struct drm_crtc *crtc)
-+{
-+	struct cirrus_crtc *cirrus_crtc = to_cirrus_crtc(crtc);
-+
-+	drm_crtc_cleanup(crtc);
-+	kfree(cirrus_crtc);
-+}
-+
-+/* These provide the minimum set of functions required to handle a CRTC */
-+static const struct drm_crtc_funcs cirrus_crtc_funcs = {
-+	.gamma_set = cirrus_crtc_gamma_set,
-+	.set_config = drm_crtc_helper_set_config,
-+	.destroy = cirrus_crtc_destroy,
-+};
-+
-+static const struct drm_crtc_helper_funcs cirrus_helper_funcs = {
-+	.dpms = cirrus_crtc_dpms,
-+	.mode_fixup = cirrus_crtc_mode_fixup,
-+	.mode_set = cirrus_crtc_mode_set,
-+	.prepare = cirrus_crtc_prepare,
-+	.commit = cirrus_crtc_commit,
-+	.load_lut = cirrus_crtc_load_lut,
-+};
-+
-+/* CRTC setup */
-+void cirrus_crtc_init(struct drm_device *dev)
-+{
-+	struct cirrus_device *cdev = dev->dev_private;
-+	struct cirrus_crtc *cirrus_crtc;
-+	int i;
-+
-+	cirrus_crtc = kzalloc(sizeof(struct cirrus_crtc) +
-+			      (CIRRUSFB_CONN_LIMIT * sizeof(struct drm_connector *)),
-+			      GFP_KERNEL);
-+
-+	if (cirrus_crtc == NULL)
-+		return;
-+
-+	drm_crtc_init(dev, &cirrus_crtc->base, &cirrus_crtc_funcs);
-+
-+	drm_mode_crtc_set_gamma_size(&cirrus_crtc->base, CIRRUS_LUT_SIZE);
-+	cdev->mode_info.crtc = cirrus_crtc;
-+
-+	for (i = 0; i < CIRRUS_LUT_SIZE; i++) {
-+		cirrus_crtc->lut_r[i] = i;
-+		cirrus_crtc->lut_g[i] = i;
-+		cirrus_crtc->lut_b[i] = i;
-+	}
-+
-+	drm_crtc_helper_add(&cirrus_crtc->base, &cirrus_helper_funcs);
-+}
-+
-+/** Sets the color ramps on behalf of fbcon */
-+void cirrus_crtc_fb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
-+			      u16 blue, int regno)
-+{
-+	struct cirrus_crtc *cirrus_crtc = to_cirrus_crtc(crtc);
-+
-+	cirrus_crtc->lut_r[regno] = red;
-+	cirrus_crtc->lut_g[regno] = green;
-+	cirrus_crtc->lut_b[regno] = blue;
-+}
-+
-+/** Gets the color ramps on behalf of fbcon */
-+void cirrus_crtc_fb_gamma_get(struct drm_crtc *crtc, u16 *red, u16 *green,
-+			      u16 *blue, int regno)
-+{
-+	struct cirrus_crtc *cirrus_crtc = to_cirrus_crtc(crtc);
-+
-+	*red = cirrus_crtc->lut_r[regno];
-+	*green = cirrus_crtc->lut_g[regno];
-+	*blue = cirrus_crtc->lut_b[regno];
-+}
-diff --git a/drivers/gpu/drm/cirrus/cirrus_device.c b/drivers/gpu/drm/cirrus/cirrus_device.c
-new file mode 100644
-index 0000000..685c53b
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_device.c
-@@ -0,0 +1,111 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+
-+/* Unmap the framebuffer from the core and release the memory */
-+static void cirrus_vram_fini(struct cirrus_device *cdev)
-+{
-+	iounmap(cdev->rmmio);
-+	cdev->rmmio = NULL;
-+	if (cdev->framebuffer)
-+		drm_rmmap(cdev->ddev, cdev->framebuffer);
-+	if (cdev->mc.vram_base)
-+		release_mem_region(cdev->mc.vram_base, cdev->mc.vram_size);
-+}
-+
-+/* Map the framebuffer from the card and configure the core */
-+static int cirrus_vram_init(struct cirrus_device *cdev)
-+{
-+	int ret;
-+
-+	/* BAR 0 is VRAM */
-+	cdev->mc.vram_base = pci_resource_start(cdev->ddev->pdev, 0);
-+	/* We have 4MB of VRAM */
-+	cdev->mc.vram_size = 4 * 1024 * 1024;
-+
-+	if (!request_mem_region(cdev->mc.vram_base, cdev->mc.vram_size,
-+				"cirrusdrmfb_vram")) {
-+		CIRRUS_ERROR("can't reserve VRAM\n");
-+		return -ENXIO;
-+	}
-+
-+	/*
-+	 * Tell the kernel that vram is available to userspace. This driver
-+	 * provides no acceleration and doesn't support any off-screen buffers
-+	 * so we can just map the entirity of vram as a framebuffer.
-+	 */
-+	ret = drm_addmap(cdev->ddev, cdev->mc.vram_base, cdev->mc.vram_size,
-+			 _DRM_FRAME_BUFFER, _DRM_WRITE_COMBINING,
-+			 &cdev->framebuffer);
-+
-+	if (ret) {
-+		cirrus_vram_fini(cdev);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Our emulated hardware has two sets of memory. One is video RAM and can
-+ * simply be used as a linear framebuffer - the other provides mmio access
-+ * to the display registers. The latter can also be accessed via IO port
-+ * access, but we map the range and use mmio to program them instead
-+ */
-+
-+int cirrus_device_init(struct cirrus_device *cdev,
-+		       struct drm_device *ddev,
-+		       struct pci_dev *pdev, uint32_t flags)
-+{
-+	int ret;
-+
-+	cdev->dev = &pdev->dev;
-+	cdev->ddev = ddev;
-+	cdev->pdev = pdev;
-+	cdev->flags = flags;
-+
-+	/* Hardcode the number of CRTCs to 1 */
-+	cdev->num_crtc = 1;
-+
-+	/* BAR 0 is the framebuffer, BAR 1 contains registers */
-+	cdev->rmmio_base = pci_resource_start(cdev->ddev->pdev, 1);
-+	cdev->rmmio_size = pci_resource_len(cdev->ddev->pdev, 1);
-+
-+	if (!request_mem_region(cdev->rmmio_base, cdev->rmmio_size,
-+				"cirrusdrmfb_mmio")) {
-+		CIRRUS_ERROR("can't reserve mmio registers\n");
-+		return -ENOMEM;
-+	}
-+
-+	cdev->rmmio = ioremap(cdev->rmmio_base, cdev->rmmio_size);
-+
-+	if (cdev->rmmio == NULL)
-+		return -ENOMEM;
-+
-+	ret = cirrus_vram_init(cdev);
-+	if (ret) {
-+		release_mem_region(cdev->rmmio_base, cdev->rmmio_size);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+void cirrus_device_fini(struct cirrus_device *cdev)
-+{
-+	release_mem_region(cdev->rmmio_base, cdev->rmmio_size);
-+	cirrus_vram_fini(cdev);
-+}
-diff --git a/drivers/gpu/drm/cirrus/cirrus_display.c b/drivers/gpu/drm/cirrus/cirrus_display.c
-new file mode 100644
-index 0000000..77f4dcf
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_display.c
-@@ -0,0 +1,70 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+#include "drm_crtc_helper.h"
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+
-+/*
-+ * This file contains simple functions for initialising the driver
-+ */
-+
-+int cirrus_modeset_init(struct cirrus_device *cdev)
-+{
-+	struct drm_encoder *encoder;
-+	struct drm_connector *connector;
-+	int ret;
-+
-+	drm_mode_config_init(cdev->ddev);
-+	cdev->mode_info.mode_config_initialized = true;
-+
-+	cdev->ddev->mode_config.max_width = CIRRUS_MAX_FB_WIDTH;
-+	cdev->ddev->mode_config.max_height = CIRRUS_MAX_FB_HEIGHT;
-+
-+	cdev->ddev->mode_config.fb_base = cdev->mc.vram_base;
-+
-+	cirrus_crtc_init(cdev->ddev);
-+
-+	encoder = cirrus_encoder_init(cdev->ddev);
-+	if (!encoder) {
-+		CIRRUS_ERROR("cirrus_encoder_init failed\n");
-+		return -1;
-+	}
-+
-+	connector = cirrus_vga_init(cdev->ddev);
-+	if (!connector) {
-+		CIRRUS_ERROR("cirrus_vga_init failed\n");
-+		return -1;
-+	}
-+
-+	drm_mode_connector_attach_encoder(connector, encoder);
-+
-+	ret = cirrus_fbdev_init(cdev);
-+	if (ret) {
-+		CIRRUS_ERROR("cirrus_fbdev_init failed\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+void cirrus_modeset_fini(struct cirrus_device *cdev)
-+{
-+	cirrus_fbdev_fini(cdev);
-+
-+	if (cdev->mode_info.mode_config_initialized) {
-+		drm_mode_config_cleanup(cdev->ddev);
-+		cdev->mode_info.mode_config_initialized = false;
-+	}
-+}
-diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
-new file mode 100644
-index 0000000..ecc8e8d
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
-@@ -0,0 +1,91 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+
-+#include "cirrus_drv.h"
-+
-+#include "drm_pciids.h"
-+
-+/*
-+ * This is the generic driver code. This binds the driver to the drm core,
-+ * which then performs further device association and calls our graphics init
-+ * functions
-+ */
-+
-+static struct drm_driver driver;
-+
-+static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
-+	{ PCI_VENDOR_ID_CIRRUS, PCI_DEVICE_ID_CIRRUS_5446, 0x1af4, 0x1100, 0,
-+	  0, 0 },
-+	{0,}
-+};
-+
-+static int __devinit
-+cirrus_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
-+{
-+	return drm_get_pci_dev(pdev, ent, &driver);
-+}
-+
-+static void cirrus_pci_remove(struct pci_dev *pdev)
-+{
-+	struct drm_device *dev = pci_get_drvdata(pdev);
-+
-+	drm_put_dev(dev);
-+}
-+
-+static struct drm_driver driver = {
-+	.driver_features = DRIVER_MODESET,
-+	.load = cirrus_driver_load,
-+	.unload = cirrus_driver_unload,
-+	.reclaim_buffers = drm_core_reclaim_buffers,
-+	.fops = {
-+		 .owner = THIS_MODULE,
-+		 .open = drm_open,
-+		 .release = drm_release,
-+		 .unlocked_ioctl = drm_ioctl,
-+		 .mmap = drm_mmap,
-+		 .poll = drm_poll,
-+		 .fasync = drm_fasync,
-+		 },
-+	.name = DRIVER_NAME,
-+	.desc = DRIVER_DESC,
-+	.date = DRIVER_DATE,
-+	.major = DRIVER_MAJOR,
-+	.minor = DRIVER_MINOR,
-+	.patchlevel = DRIVER_PATCHLEVEL,
-+};
-+
-+static struct pci_driver cirrus_pci_driver = {
-+	.name = DRIVER_NAME,
-+	.id_table = pciidlist,
-+	.probe = cirrus_pci_probe,
-+	.remove = cirrus_pci_remove,
-+};
-+
-+static int __init cirrus_init(void)
-+{
-+	return drm_pci_init(&driver, &cirrus_pci_driver);
-+}
-+
-+static void __exit cirrus_exit(void)
-+{
-+	drm_pci_exit(&driver, &cirrus_pci_driver);
-+}
-+
-+module_init(cirrus_init);
-+module_exit(cirrus_exit);
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.h b/drivers/gpu/drm/cirrus/cirrus_drv.h
-new file mode 100644
-index 0000000..7a93f3e
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.h
-@@ -0,0 +1,127 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#ifndef __CIRRUS_DRV_H__
-+#define __CIRRUS_DRV_H__
-+
-+#include <video/vga.h>
-+
-+#define DRIVER_AUTHOR		"Matthew Garrett"
-+
-+#define DRIVER_NAME		"cirrus"
-+#define DRIVER_DESC		"qemu Cirrus emulation"
-+#define DRIVER_DATE		"20110418"
-+
-+#define DRIVER_MAJOR		1
-+#define DRIVER_MINOR		0
-+#define DRIVER_PATCHLEVEL	0
-+
-+#define CIRRUS_INFO(fmt, arg...) DRM_INFO(DRIVER_NAME ": " fmt, ##arg)
-+#define CIRRUS_ERROR(fmt, arg...) DRM_ERROR(DRIVER_NAME ": " fmt, ##arg)
-+
-+#define CIRRUSFB_CONN_LIMIT 4
-+
-+#define RREG8(reg) ioread8(((void __iomem *)cdev->rmmio) + (reg))
-+#define WREG8(reg, v) iowrite8(v, ((void __iomem *)cdev->rmmio) + (reg))
-+#define RREG32(reg) ioread32(((void __iomem *)cdev->rmmio) + (reg))
-+#define WREG32(reg, v) iowrite32(v, ((void __iomem *)cdev->rmmio) + (reg))
-+
-+#define SEQ_INDEX 4
-+#define SEQ_DATA 5
-+
-+#define WREG_SEQ(reg, v)					\
-+	do {							\
-+		WREG8(SEQ_INDEX, reg);				\
-+		WREG8(SEQ_DATA, v);				\
-+	} while (0)						\
-+
-+#define CRT_INDEX 0x14
-+#define CRT_DATA 0x15
-+
-+#define WREG_CRT(reg, v)					\
-+	do {							\
-+		WREG8(CRT_INDEX, reg);				\
-+		WREG8(CRT_DATA, v);				\
-+	} while (0)						\
-+
-+#define GFX_INDEX 0xe
-+#define GFX_DATA 0xf
-+
-+#define WREG_GFX(reg, v)					\
-+	do {							\
-+		WREG8(GFX_INDEX, reg);				\
-+		WREG8(GFX_DATA, v);				\
-+	} while (0)						\
-+
-+/*
-+ * Cirrus has a "hidden" DAC register that can be accessed by writing to
-+ * the pixel mask register to reset the state, then reading from the register
-+ * four times. The next write will then pass to the DAC
-+ */
-+#define WREG_HDR(v)						\
-+	do {							\
-+		WREG8(0x6, 0xff);				\
-+		RREG8(0x6);					\
-+		RREG8(0x6);					\
-+		RREG8(0x6);					\
-+		RREG8(0x6);					\
-+		WREG8(0x6, v);					\
-+	} while (0)						\
-+
-+
-+#include "cirrus.h"
-+
-+				/* cirrus_crtc.c */
-+void cirrus_crtc_fb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
-+			     u16 blue, int regno);
-+void cirrus_crtc_fb_gamma_get(struct drm_crtc *crtc, u16 *red, u16 *green,
-+			     u16 *blue, int regno);
-+void cirrus_crtc_init(struct drm_device *dev);
-+
-+				/* cirrus_encoder.c */
-+struct drm_encoder *cirrus_encoder_init(struct drm_device *dev);
-+
-+				/* cirrus_device.c */
-+int cirrus_device_init(struct cirrus_device *cdev,
-+		      struct drm_device *ddev,
-+		      struct pci_dev *pdev,
-+		      uint32_t flags);
-+void cirrus_device_fini(struct cirrus_device *cdev);
-+
-+				/* cirrus_display.c */
-+int cirrus_modeset_init(struct cirrus_device *cdev);
-+void cirrus_modeset_fini(struct cirrus_device *cdev);
-+
-+				/* cirrus_fbdev.c */
-+int cirrus_fbdev_init(struct cirrus_device *cdev);
-+void cirrus_fbdev_fini(struct cirrus_device *cdev);
-+
-+				/* cirrus_framebuffer.c */
-+int cirrus_framebuffer_init(struct drm_device *dev,
-+			   struct cirrus_framebuffer *gfb,
-+			   struct drm_mode_fb_cmd *mode_cmd);
-+
-+				/* cirrus_irq.c */
-+void cirrus_driver_irq_preinstall(struct drm_device *dev);
-+int cirrus_driver_irq_postinstall(struct drm_device *dev);
-+void cirrus_driver_irq_uninstall(struct drm_device *dev);
-+irqreturn_t cirrus_driver_irq_handler(DRM_IRQ_ARGS);
-+
-+				/* cirrus_kms.c */
-+int cirrus_driver_load(struct drm_device *dev, unsigned long flags);
-+int cirrus_driver_unload(struct drm_device *dev);
-+extern struct drm_ioctl_desc cirrus_ioctls[];
-+extern int cirrus_max_ioctl;
-+
-+				/* cirrus_vga.c */
-+struct drm_connector *cirrus_vga_init(struct drm_device *dev);
-+
-+#endif				/* __CIRRUS_DRV_H__ */
-diff --git a/drivers/gpu/drm/cirrus/cirrus_encoder.c b/drivers/gpu/drm/cirrus/cirrus_encoder.c
-new file mode 100644
-index 0000000..3556ead
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_encoder.c
-@@ -0,0 +1,139 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+#include "drm_crtc_helper.h"
-+
-+#include <video/cirrus.h>
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+#include "cirrus_mode.h"
-+
-+/*
-+ * The encoder comes after the CRTC in the output pipeline, but before
-+ * the connector. It's responsible for ensuring that the digital
-+ * stream is appropriately converted into the output format. Setup is
-+ * very simple in this case - all we have to do is inform qemu of the
-+ * colour depth in order to ensure that it displays appropriately
-+ */
-+
-+/*
-+ * These functions are analagous to those in the CRTC code, but are intended
-+ * to handle any encoder-specific limitations
-+ */
-+static bool cirrus_encoder_mode_fixup(struct drm_encoder *encoder,
-+				  struct drm_display_mode *mode,
-+				  struct drm_display_mode *adjusted_mode)
-+{
-+	return true;
-+}
-+
-+static void cirrus_encoder_mode_set(struct drm_encoder *encoder,
-+				struct drm_display_mode *mode,
-+				struct drm_display_mode *adjusted_mode)
-+{
-+	struct drm_device *dev = encoder->dev;
-+	struct cirrus_device *cdev = dev->dev_private;
-+
-+	unsigned char tmp;
-+
-+	switch (encoder->crtc->fb->bits_per_pixel) {
-+	case 8:
-+		tmp = 0x0;
-+		break;
-+	case 16:
-+		/* Enable 16 bit mode */
-+		WREG_HDR(0x01);
-+		tmp = 0x6;
-+		break;
-+	case 24:
-+		tmp = 0x4;
-+		break;
-+	case 32:
-+		tmp = 0x8;
-+		break;
-+	default:
-+		return;
-+	}
-+
-+	/* Enable packed pixel graphics modes */
-+	tmp |= 0x1;
-+	WREG_SEQ(0x7, tmp);
-+
-+	/* Program the pitch */
-+	tmp = encoder->crtc->fb->pitch / 8;
-+	WREG_CRT(VGA_CRTC_OFFSET, tmp);
-+
-+	/* Enable extended blanking and pitch bits, and enable full memory */
-+	tmp = 0x22;
-+	if (encoder->crtc->fb->pitch >= 2048)
-+		tmp |= 0x10;
-+	WREG_CRT(0x1b, tmp);
-+
-+	/* Enable high-colour modes */
-+	WREG_GFX(VGA_GFX_MODE, 0x40);
-+
-+	/* And set graphics mode */
-+	WREG_GFX(VGA_GFX_MISC, 0x01);
-+}
-+
-+static void cirrus_encoder_dpms(struct drm_encoder *encoder, int state)
-+{
-+	return;
-+}
-+
-+static void cirrus_encoder_prepare(struct drm_encoder *encoder)
-+{
-+}
-+
-+static void cirrus_encoder_commit(struct drm_encoder *encoder)
-+{
-+}
-+
-+void cirrus_encoder_destroy(struct drm_encoder *encoder)
-+{
-+	struct cirrus_encoder *cirrus_encoder = to_cirrus_encoder(encoder);
-+	drm_encoder_cleanup(encoder);
-+	kfree(cirrus_encoder);
-+}
-+
-+static const struct drm_encoder_helper_funcs cirrus_encoder_helper_funcs = {
-+	.dpms = cirrus_encoder_dpms,
-+	.mode_fixup = cirrus_encoder_mode_fixup,
-+	.mode_set = cirrus_encoder_mode_set,
-+	.prepare = cirrus_encoder_prepare,
-+	.commit = cirrus_encoder_commit,
-+};
-+
-+static const struct drm_encoder_funcs cirrus_encoder_encoder_funcs = {
-+	.destroy = cirrus_encoder_destroy,
-+};
-+
-+struct drm_encoder *cirrus_encoder_init(struct drm_device *dev)
-+{
-+	struct drm_encoder *encoder;
-+	struct cirrus_encoder *cirrus_encoder;
-+
-+	cirrus_encoder = kzalloc(sizeof(struct cirrus_encoder), GFP_KERNEL);
-+	if (!cirrus_encoder)
-+		return NULL;
-+
-+	encoder = &cirrus_encoder->base;
-+	encoder->possible_crtcs = 0x1;
-+
-+	drm_encoder_init(dev, encoder, &cirrus_encoder_encoder_funcs,
-+			 DRM_MODE_ENCODER_DAC);
-+	drm_encoder_helper_add(encoder, &cirrus_encoder_helper_funcs);
-+
-+	return encoder;
-+}
-diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-new file mode 100644
-index 0000000..086e647
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-@@ -0,0 +1,214 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+#include "drm_fb_helper.h"
-+
-+#include <linux/fb.h>
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+
-+struct cirrus_fbdev {
-+	struct drm_fb_helper helper;
-+	struct cirrus_framebuffer gfb;
-+	struct list_head fbdev_list;
-+	struct cirrus_device *cdev;
-+};
-+
-+static struct fb_ops cirrusfb_ops = {
-+	.owner = THIS_MODULE,
-+	.fb_check_var = drm_fb_helper_check_var,
-+	.fb_set_par = drm_fb_helper_set_par,
-+	.fb_fillrect = cfb_fillrect,
-+	.fb_copyarea = cfb_copyarea,
-+	.fb_imageblit = cfb_imageblit,
-+	.fb_pan_display = drm_fb_helper_pan_display,
-+	.fb_blank = drm_fb_helper_blank,
-+	.fb_setcmap = drm_fb_helper_setcmap,
-+};
-+
-+static int cirrusfb_create(struct cirrus_fbdev *gfbdev,
-+			   struct drm_fb_helper_surface_size *sizes)
-+{
-+	struct cirrus_device *cdev = gfbdev->cdev;
-+	struct fb_info *info;
-+	struct drm_framebuffer *fb;
-+	struct drm_map_list *r_list, *list_t;
-+	struct drm_local_map *map = NULL;
-+	struct drm_mode_fb_cmd mode_cmd;
-+	struct device *device = &cdev->pdev->dev;
-+	int ret;
-+
-+	mode_cmd.width = sizes->surface_width;
-+	mode_cmd.height = sizes->surface_height;
-+	mode_cmd.bpp = sizes->surface_bpp;
-+	mode_cmd.depth = sizes->surface_depth;
-+	mode_cmd.pitch = mode_cmd.width * ((mode_cmd.bpp + 7) / 8);
-+
-+	info = framebuffer_alloc(0, device);
-+	if (info == NULL)
-+		return -ENOMEM;
-+
-+	info->par = gfbdev;
-+
-+	ret = cirrus_framebuffer_init(cdev->ddev, &gfbdev->gfb, &mode_cmd);
-+	if (ret)
-+		return ret;
-+
-+	fb = &gfbdev->gfb.base;
-+	if (!fb) {
-+		CIRRUS_INFO("fb is NULL\n");
-+		return -EINVAL;
-+	}
-+
-+	/* setup helper */
-+	gfbdev->helper.fb = fb;
-+	gfbdev->helper.fbdev = info;
-+
-+	strcpy(info->fix.id, "cirrusdrmfb");
-+
-+	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
-+
-+	info->flags = FBINFO_DEFAULT;
-+	info->fbops = &cirrusfb_ops;
-+
-+	drm_fb_helper_fill_var(info, &gfbdev->helper, sizes->fb_width,
-+			       sizes->fb_height);
-+
-+	/* setup aperture base/size for vesafb takeover */
-+	info->apertures = alloc_apertures(1);
-+	if (!info->apertures) {
-+		ret = -ENOMEM;
-+		goto out_iounmap;
-+	}
-+	info->apertures->ranges[0].base = cdev->ddev->mode_config.fb_base;
-+	info->apertures->ranges[0].size = cdev->mc.vram_size;
-+
-+	list_for_each_entry_safe(r_list, list_t, &cdev->ddev->maplist, head) {
-+		map = r_list->map;
-+		if (map->type == _DRM_FRAME_BUFFER) {
-+			map->handle = ioremap_nocache(map->offset, map->size);
-+			if (!map->handle) {
-+				CIRRUS_ERROR("fb: can't remap framebuffer\n");
-+				return -1;
-+			}
-+			break;
-+		}
-+	}
-+
-+	info->fix.smem_start = map->offset;
-+	info->fix.smem_len = map->size;
-+	if (!info->fix.smem_len) {
-+		CIRRUS_ERROR("%s: can't count memory\n", info->fix.id);
-+		goto out_iounmap;
-+	}
-+	info->screen_base = map->handle;
-+	if (!info->screen_base) {
-+		CIRRUS_ERROR("%s: can't remap framebuffer\n", info->fix.id);
-+		goto out_iounmap;
-+	}
-+
-+	info->fix.mmio_start = 0;
-+	info->fix.mmio_len = 0;
-+
-+	ret = fb_alloc_cmap(&info->cmap, 256, 0);
-+	if (ret) {
-+		CIRRUS_ERROR("%s: can't allocate color map\n", info->fix.id);
-+		ret = -ENOMEM;
-+		goto out_iounmap;
-+	}
-+
-+	return 0;
-+out_iounmap:
-+	iounmap(map->handle);
-+	return ret;
-+}
-+
-+static int cirrus_fb_find_or_create_single(struct drm_fb_helper *helper,
-+					   struct drm_fb_helper_surface_size
-+					   *sizes)
-+{
-+	struct cirrus_fbdev *gfbdev = (struct cirrus_fbdev *)helper;
-+	int new_fb = 0;
-+	int ret;
-+
-+	if (!helper->fb) {
-+		ret = cirrusfb_create(gfbdev, sizes);
-+		if (ret)
-+			return ret;
-+		new_fb = 1;
-+	}
-+	return new_fb;
-+}
-+
-+static int cirrus_fbdev_destroy(struct drm_device *dev,
-+				struct cirrus_fbdev *gfbdev)
-+{
-+	struct fb_info *info;
-+	struct cirrus_framebuffer *gfb = &gfbdev->gfb;
-+
-+	if (gfbdev->helper.fbdev) {
-+		info = gfbdev->helper.fbdev;
-+
-+		unregister_framebuffer(info);
-+		if (info->cmap.len)
-+			fb_dealloc_cmap(&info->cmap);
-+		framebuffer_release(info);
-+	}
-+
-+	drm_fb_helper_fini(&gfbdev->helper);
-+	drm_framebuffer_cleanup(&gfb->base);
-+
-+	return 0;
-+}
-+
-+static struct drm_fb_helper_funcs cirrus_fb_helper_funcs = {
-+	.gamma_set = cirrus_crtc_fb_gamma_set,
-+	.gamma_get = cirrus_crtc_fb_gamma_get,
-+	.fb_probe = cirrus_fb_find_or_create_single,
-+};
-+
-+int cirrus_fbdev_init(struct cirrus_device *cdev)
-+{
-+	struct cirrus_fbdev *gfbdev;
-+	int ret;
-+
-+	gfbdev = kzalloc(sizeof(struct cirrus_fbdev), GFP_KERNEL);
-+	if (!gfbdev)
-+		return -ENOMEM;
-+
-+	gfbdev->cdev = cdev;
-+	cdev->mode_info.gfbdev = gfbdev;
-+	gfbdev->helper.funcs = &cirrus_fb_helper_funcs;
-+
-+	ret = drm_fb_helper_init(cdev->ddev, &gfbdev->helper,
-+				 cdev->num_crtc, CIRRUSFB_CONN_LIMIT);
-+	if (ret) {
-+		kfree(gfbdev);
-+		return ret;
-+	}
-+	drm_fb_helper_single_add_all_connectors(&gfbdev->helper);
-+	drm_fb_helper_initial_config(&gfbdev->helper, 24);
-+
-+	return 0;
-+}
-+
-+void cirrus_fbdev_fini(struct cirrus_device *cdev)
-+{
-+	if (!cdev->mode_info.gfbdev)
-+		return;
-+
-+	cirrus_fbdev_destroy(cdev->ddev, cdev->mode_info.gfbdev);
-+	kfree(cdev->mode_info.gfbdev);
-+	cdev->mode_info.gfbdev = NULL;
-+}
-diff --git a/drivers/gpu/drm/cirrus/cirrus_framebuffer.c b/drivers/gpu/drm/cirrus/cirrus_framebuffer.c
-new file mode 100644
-index 0000000..6cc49f2
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_framebuffer.c
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+#include "drm_crtc_helper.h"
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+
-+static void cirrus_user_framebuffer_destroy(struct drm_framebuffer *fb)
-+{
-+	drm_framebuffer_cleanup(fb);
-+}
-+
-+static int cirrus_user_framebuffer_create_handle(struct drm_framebuffer *fb,
-+						 struct drm_file *file_priv,
-+						 unsigned int *handle)
-+{
-+	return 0;
-+}
-+
-+static const struct drm_framebuffer_funcs cirrus_fb_funcs = {
-+	.destroy = cirrus_user_framebuffer_destroy,
-+	.create_handle = cirrus_user_framebuffer_create_handle,
-+};
-+
-+int cirrus_framebuffer_init(struct drm_device *dev,
-+			    struct cirrus_framebuffer *gfb,
-+			    struct drm_mode_fb_cmd *mode_cmd)
-+{
-+	int ret = drm_framebuffer_init(dev, &gfb->base, &cirrus_fb_funcs);
-+	if (ret) {
-+		CIRRUS_ERROR("drm_framebuffer_init failed: %d\n", ret);
-+		return ret;
-+	}
-+	drm_helper_mode_fill_fb_struct(&gfb->base, mode_cmd);
-+
-+	return 0;
-+}
-diff --git a/drivers/gpu/drm/cirrus/cirrus_kms.c b/drivers/gpu/drm/cirrus/cirrus_kms.c
-new file mode 100644
-index 0000000..967033a
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_kms.c
-@@ -0,0 +1,59 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+
-+/*
-+ * Functions here will be called by the core once it's bound the driver to
-+ * a PCI device
-+ */
-+
-+int cirrus_driver_load(struct drm_device *dev, unsigned long flags)
-+{
-+	struct cirrus_device *cdev;
-+	int r;
-+
-+	cdev = kzalloc(sizeof(struct cirrus_device), GFP_KERNEL);
-+	if (cdev == NULL)
-+		return -ENOMEM;
-+	dev->dev_private = (void *)cdev;
-+
-+	r = cirrus_device_init(cdev, dev, dev->pdev, flags);
-+	if (r) {
-+		dev_err(&dev->pdev->dev, "Fatal error during GPU init: %d\n", r);
-+		goto out;
-+	}
-+
-+	r = cirrus_modeset_init(cdev);
-+	if (r)
-+		dev_err(&dev->pdev->dev, "Fatal error during modeset init: %d\n", r);
-+out:
-+	if (r)
-+		cirrus_driver_unload(dev);
-+	return r;
-+}
-+
-+int cirrus_driver_unload(struct drm_device *dev)
-+{
-+	struct cirrus_device *cdev = dev->dev_private;
-+
-+	if (cdev == NULL)
-+		return 0;
-+	cirrus_modeset_fini(cdev);
-+	cirrus_device_fini(cdev);
-+	kfree(cdev);
-+	dev->dev_private = NULL;
-+	return 0;
-+}
-diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.h b/drivers/gpu/drm/cirrus/cirrus_mode.h
-new file mode 100644
-index 0000000..fec62ea
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_mode.h
-@@ -0,0 +1,54 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#ifndef __CIRRUS_MODE_H__
-+#define __CIRRUS_MODE_H__
-+
-+#include "drmP.h"
-+#include "drm.h"
-+
-+#define CIRRUS_MAX_FB_HEIGHT 4096
-+#define CIRRUS_MAX_FB_WIDTH 4096
-+
-+#define CIRRUS_DPMS_CLEARED (-1)
-+
-+#define to_cirrus_crtc(x) container_of(x, struct cirrus_crtc, base)
-+#define to_cirrus_encoder(x) container_of(x, struct cirrus_encoder, base)
-+#define to_cirrus_framebuffer(x) container_of(x, struct cirrus_framebuffer, base)
-+
-+struct cirrus_crtc {
-+	struct drm_crtc			base;
-+	u8				lut_r[256], lut_g[256], lut_b[256];
-+	int				last_dpms;
-+	bool				enabled;
-+};
-+
-+struct cirrus_mode_info {
-+	bool				mode_config_initialized;
-+	struct cirrus_crtc		*crtc;
-+	/* pointer to fbdev info structure */
-+	struct cirrus_fbdev		*gfbdev;
-+};
-+
-+struct cirrus_encoder {
-+	struct drm_encoder		base;
-+	int				last_dpms;
-+};
-+
-+struct cirrus_connector {
-+	struct drm_connector		base;
-+};
-+
-+struct cirrus_framebuffer {
-+	struct drm_framebuffer		base;
-+};
-+
-+#endif				/* __CIRRUS_MODE_H__ */
-diff --git a/drivers/gpu/drm/cirrus/cirrus_vga.c b/drivers/gpu/drm/cirrus/cirrus_vga.c
-new file mode 100644
-index 0000000..b07e086
---- /dev/null
-+++ b/drivers/gpu/drm/cirrus/cirrus_vga.c
-@@ -0,0 +1,102 @@
-+/*
-+ * Copyright 2010 Matt Turner.
-+ * Copyright 2011 Red Hat <mjg@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License version 2. See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * Authors: Matthew Garrett
-+ *			Matt Turner
-+ */
-+#include "drmP.h"
-+#include "drm.h"
-+#include "drm_crtc_helper.h"
-+
-+#include <video/cirrus.h>
-+
-+#include "cirrus.h"
-+#include "cirrus_drv.h"
-+#include "cirrus_mode.h"
-+
-+static int cirrus_vga_get_modes(struct drm_connector *connector)
-+{
-+	/* Just add a static list of modes */
-+	drm_add_modes_noedid(connector, 640, 480);
-+	drm_add_modes_noedid(connector, 800, 600);
-+	drm_add_modes_noedid(connector, 1024, 768);
-+	drm_add_modes_noedid(connector, 1280, 1024);
-+
-+	return 4;
-+}
-+
-+static int cirrus_vga_mode_valid(struct drm_connector *connector,
-+				 struct drm_display_mode *mode)
-+{
-+	/* Any mode we've added is valid */
-+	return MODE_OK;
-+}
-+
-+struct drm_encoder *cirrus_connector_best_encoder(struct drm_connector
-+						  *connector)
-+{
-+	int enc_id = connector->encoder_ids[0];
-+	struct drm_mode_object *obj;
-+	struct drm_encoder *encoder;
-+
-+	/* pick the encoder ids */
-+	if (enc_id) {
-+		obj =
-+		    drm_mode_object_find(connector->dev, enc_id,
-+					 DRM_MODE_OBJECT_ENCODER);
-+		if (!obj)
-+			return NULL;
-+		encoder = obj_to_encoder(obj);
-+		return encoder;
-+	}
-+	return NULL;
-+}
-+
-+static enum drm_connector_status cirrus_vga_detect(struct drm_connector
-+						   *connector, bool force)
-+{
-+	return connector_status_connected;
-+}
-+
-+static void cirrus_connector_destroy(struct drm_connector *connector)
-+{
-+	drm_connector_cleanup(connector);
-+	kfree(connector);
-+}
-+
-+struct drm_connector_helper_funcs cirrus_vga_connector_helper_funcs = {
-+	.get_modes = cirrus_vga_get_modes,
-+	.mode_valid = cirrus_vga_mode_valid,
-+	.best_encoder = cirrus_connector_best_encoder,
-+};
-+
-+struct drm_connector_funcs cirrus_vga_connector_funcs = {
-+	.dpms = drm_helper_connector_dpms,
-+	.detect = cirrus_vga_detect,
-+	.fill_modes = drm_helper_probe_single_connector_modes,
-+	.destroy = cirrus_connector_destroy,
-+};
-+
-+struct drm_connector *cirrus_vga_init(struct drm_device *dev)
-+{
-+	struct drm_connector *connector;
-+	struct cirrus_connector *cirrus_connector;
-+
-+	cirrus_connector = kzalloc(sizeof(struct cirrus_connector), GFP_KERNEL);
-+	if (!cirrus_connector)
-+		return NULL;
-+
-+	connector = &cirrus_connector->base;
-+
-+	drm_connector_init(dev, connector,
-+			   &cirrus_vga_connector_funcs, DRM_MODE_CONNECTOR_VGA);
-+
-+	drm_connector_helper_add(connector, &cirrus_vga_connector_helper_funcs);
-+
-+	return connector;
-+}
--- 
-1.7.4.4
+> TOTALLY UNTESTED PATCH ATTACHED!
+>
+> Ciprian - does this get rid of the 60-second wait? Do you get a nice
+> kernel traceback in your dmesg instead?
 
+Linus - I applied your patch and attached the diff between output of dmesg 
+before and after the patch as resume_timing.diff. This patch alone does 
+not seem to fix the issue; however, applying Francois's patch in addition 
+to yours make the resume smooth. I have also attached the diff output of 
+dmesg before and after, with both patched applied as resume2_timing.diff. 
+Both cases were tested after a fresh reboot. Please let me know if you 
+need any other information.
+
+Thank you,
+--
+ 	Ciprian
+---559023410-838832689-1303154875=:1320
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=resume2_timing.diff
+Content-Transfer-Encoding: BASE64
+Content-ID: <Pine.SOC.4.64.1104181527550.1320@er3.rutgers.edu>
+Content-Description: 
+Content-Disposition: attachment; filename=resume2_timing.diff
+
+MTAwM2ExMDA0LDExNjcNCj4gWyAgIDY1LjYxODg2Nl0gd2xfb3BzX2Jzc19p
+bmZvX2NoYW5nZWQ6IHFvcyBlbmFibGVkOiBmYWxzZSAoaW1wbGVtZW50KQ0K
+PiBbICAgNjUuNjE4ODgzXSBicmNtc21hYzogd2xfb3BzX2Jzc19pbmZvX2No
+YW5nZWQ6IGRpc2Fzc29jaWF0ZWQNCj4gWyAgIDY1LjYxODg4OF0gd2xfb3Bz
+X2Jzc19pbmZvX2NoYW5nZWQ6IHVzZV9jdHNfcHJvdDogZmFsc2UgKGltcGxl
+bWVudCkNCj4gWyAgIDY1LjYxODg5Ml0gd2xfb3BzX2Jzc19pbmZvX2NoYW5n
+ZWQ6IHNob3J0IHByZWFtYmxlOiBmYWxzZSAoaW1wbGVtZW50KQ0KPiBbICAg
+NjUuNjE4OTAzXSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogYXJwIGZpbHRl
+cmluZzogZW5hYmxlZCBmYWxzZSwgY291bnQgMSAoaW1wbGVtZW50KQ0KPiBb
+ICAgNjUuNjE4OTExXSB3bGFuMDogZGVhdXRoZW50aWNhdGluZyBmcm9tIDAw
+OjFjOjEwOjljOjNjOjk4IGJ5IGxvY2FsIGNob2ljZSAocmVhc29uPTMpDQo+
+IFsgICA2NS42NDIyOTVdIHdsX29wc19ic3NfaW5mb19jaGFuZ2VkOiBCU1Mg
+aWRsZTogdHJ1ZSAoaW1wbGVtZW50KQ0KPiBbICAgNjUuNjQyMzM4XSBjZmc4
+MDIxMTogQWxsIGRldmljZXMgYXJlIGRpc2Nvbm5lY3RlZCwgZ29pbmcgdG8g
+cmVzdG9yZSByZWd1bGF0b3J5IHNldHRpbmdzDQo+IFsgICA2NS42NDIzNDZd
+IGNmZzgwMjExOiBSZXN0b3JpbmcgcmVndWxhdG9yeSBzZXR0aW5ncw0KPiBb
+ICAgNjUuNjQyMzU2XSBjZmc4MDIxMTogQ2FsbGluZyBDUkRBIHRvIHVwZGF0
+ZSB3b3JsZCByZWd1bGF0b3J5IGRvbWFpbg0KPiBbICAgNjUuNjQyNDE5XSB3
+bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogQlNTIGlkbGU6IGZhbHNlIChpbXBs
+ZW1lbnQpDQo+IFsgICA2NS42NDcwMjVdIGNmZzgwMjExOiBVcGRhdGluZyBp
+bmZvcm1hdGlvbiBvbiBmcmVxdWVuY3kgMjQxMiBNSHogZm9yIGEgMjAgTUh6
+IHdpZHRoIGNoYW5uZWwgd2l0aCByZWd1bGF0b3J5IHJ1bGU6DQo+IFsgICA2
+NS42NDcwMzNdIGNmZzgwMjExOiAyNDAyMDAwIEtIeiAtIDI0NzIwMDAgS0h6
+IEAgIEtIeiksICgzMDAgbUJpLCAyNzAwIG1CbSkNCj4gWyAgIDY1LjY0NzAz
+OF0gY2ZnODAyMTE6IFVwZGF0aW5nIGluZm9ybWF0aW9uIG9uIGZyZXF1ZW5j
+eSAyNDE3IE1IeiBmb3IgYSAyMCBNSHogd2lkdGggY2hhbm5lbCB3aXRoIHJl
+Z3VsYXRvcnkgcnVsZToNCj4gWyAgIDY1LjY0NzA0M10gY2ZnODAyMTE6IDI0
+MDIwMDAgS0h6IC0gMjQ3MjAwMCBLSHogQCAgS0h6KSwgKDMwMCBtQmksIDI3
+MDAgbUJtKQ0KPiBbICAgNjUuNjQ3MDQ3XSBjZmc4MDIxMTogVXBkYXRpbmcg
+aW5mb3JtYXRpb24gb24gZnJlcXVlbmN5IDI0MjIgTUh6IGZvciBhIDIwIE1I
+eiB3aWR0aCBjaGFubmVsIHdpdGggcmVndWxhdG9yeSBydWxlOg0KPiBbICAg
+NjUuNjQ3MDUyXSBjZmc4MDIxMTogMjQwMjAwMCBLSHogLSAyNDcyMDAwIEtI
+eiBAICBLSHopLCAoMzAwIG1CaSwgMjcwMCBtQm0pDQo+IFsgICA2NS42NDcw
+NTZdIGNmZzgwMjExOiBVcGRhdGluZyBpbmZvcm1hdGlvbiBvbiBmcmVxdWVu
+Y3kgMjQyNyBNSHogZm9yIGEgMjAgTUh6IHdpZHRoIGNoYW5uZWwgd2l0aCBy
+ZWd1bGF0b3J5IHJ1bGU6DQo+IFsgICA2NS42NDcwNjFdIGNmZzgwMjExOiAy
+NDAyMDAwIEtIeiAtIDI0NzIwMDAgS0h6IEAgIEtIeiksICgzMDAgbUJpLCAy
+NzAwIG1CbSkNCj4gWyAgIDY1LjY0NzA2NV0gY2ZnODAyMTE6IFVwZGF0aW5n
+IGluZm9ybWF0aW9uIG9uIGZyZXF1ZW5jeSAyNDMyIE1IeiBmb3IgYSAyMCBN
+SHogd2lkdGggY2hhbm5lbCB3aXRoIHJlZ3VsYXRvcnkgcnVsZToNCj4gWyAg
+IDY1LjY0NzA3MF0gY2ZnODAyMTE6IDI0MDIwMDAgS0h6IC0gMjQ3MjAwMCBL
+SHogQCAgS0h6KSwgKDMwMCBtQmksIDI3MDAgbUJtKQ0KPiBbICAgNjUuNjQ3
+MDc1XSBjZmc4MDIxMTogVXBkYXRpbmcgaW5mb3JtYXRpb24gb24gZnJlcXVl
+bmN5IDI0MzcgTUh6IGZvciBhIDIwIE1IeiB3aWR0aCBjaGFubmVsIHdpdGgg
+cmVndWxhdG9yeSBydWxlOg0KPiBbICAgNjUuNjQ3MDc5XSBjZmc4MDIxMTog
+MjQwMjAwMCBLSHogLSAyNDcyMDAwIEtIeiBAICBLSHopLCAoMzAwIG1CaSwg
+MjcwMCBtQm0pDQo+IFsgICA2NS42NDcwODRdIGNmZzgwMjExOiBVcGRhdGlu
+ZyBpbmZvcm1hdGlvbiBvbiBmcmVxdWVuY3kgMjQ0MiBNSHogZm9yIGEgMjAg
+TUh6IHdpZHRoIGNoYW5uZWwgd2l0aCByZWd1bGF0b3J5IHJ1bGU6DQo+IFsg
+ICA2NS42NDcwODldIGNmZzgwMjExOiAyNDAyMDAwIEtIeiAtIDI0NzIwMDAg
+S0h6IEAgIEtIeiksICgzMDAgbUJpLCAyNzAwIG1CbSkNCj4gWyAgIDY1LjY0
+NzA5M10gY2ZnODAyMTE6IFVwZGF0aW5nIGluZm9ybWF0aW9uIG9uIGZyZXF1
+ZW5jeSAyNDQ3IE1IeiBmb3IgYSAyMCBNSHogd2lkdGggY2hhbm5lbCB3aXRo
+IHJlZ3VsYXRvcnkgcnVsZToNCj4gWyAgIDY1LjY0NzA5OF0gY2ZnODAyMTE6
+IDI0MDIwMDAgS0h6IC0gMjQ3MjAwMCBLSHogQCAgS0h6KSwgKDMwMCBtQmks
+IDI3MDAgbUJtKQ0KPiBbICAgNjUuNjQ3MTAyXSBjZmc4MDIxMTogVXBkYXRp
+bmcgaW5mb3JtYXRpb24gb24gZnJlcXVlbmN5IDI0NTIgTUh6IGZvciBhIDIw
+IE1IeiB3aWR0aCBjaGFubmVsIHdpdGggcmVndWxhdG9yeSBydWxlOg0KPiBb
+ICAgNjUuNjQ3MTA3XSBjZmc4MDIxMTogMjQwMjAwMCBLSHogLSAyNDcyMDAw
+IEtIeiBAICBLSHopLCAoMzAwIG1CaSwgMjcwMCBtQm0pDQo+IFsgICA2NS42
+NDcxMTFdIGNmZzgwMjExOiBVcGRhdGluZyBpbmZvcm1hdGlvbiBvbiBmcmVx
+dWVuY3kgMjQ1NyBNSHogZm9yIGEgMjAgTUh6IHdpZHRoIGNoYW5uZWwgd2l0
+aCByZWd1bGF0b3J5IHJ1bGU6DQo+IFsgICA2NS42NDcxMTZdIGNmZzgwMjEx
+OiAyNDAyMDAwIEtIeiAtIDI0NzIwMDAgS0h6IEAgIEtIeiksICgzMDAgbUJp
+LCAyNzAwIG1CbSkNCj4gWyAgIDY1LjY0NzEyMF0gY2ZnODAyMTE6IFVwZGF0
+aW5nIGluZm9ybWF0aW9uIG9uIGZyZXF1ZW5jeSAyNDYyIE1IeiBmb3IgYSAy
+MCBNSHogd2lkdGggY2hhbm5lbCB3aXRoIHJlZ3VsYXRvcnkgcnVsZToNCj4g
+WyAgIDY1LjY0NzEyNV0gY2ZnODAyMTE6IDI0MDIwMDAgS0h6IC0gMjQ3MjAw
+MCBLSHogQCAgS0h6KSwgKDMwMCBtQmksIDI3MDAgbUJtKQ0KPiBbICAgNjUu
+NjQ3MTI5XSBjZmc4MDIxMTogRGlzYWJsaW5nIGZyZXEgMjQ2NyBNSHoNCj4g
+WyAgIDY1LjY0NzEzMl0gY2ZnODAyMTE6IERpc2FibGluZyBmcmVxIDI0NzIg
+TUh6DQo+IFsgICA2NS42NDcxMzVdIGNmZzgwMjExOiBEaXNhYmxpbmcgZnJl
+cSAyNDg0IE1Ieg0KPiBbICAgNjUuNjQ3MTM5XSBjZmc4MDIxMTogV29ybGQg
+cmVndWxhdG9yeSBkb21haW4gdXBkYXRlZDoNCj4gWyAgIDY1LjY0NzE0MV0g
+Y2ZnODAyMTE6ICAgICAoc3RhcnRfZnJlcSAtIGVuZF9mcmVxIEAgYmFuZHdp
+ZHRoKSwgKG1heF9hbnRlbm5hX2dhaW4sIG1heF9laXJwKQ0KPiBbICAgNjUu
+NjQ3MTQ2XSBjZmc4MDIxMTogICAgICgyNDAyMDAwIEtIeiAtIDI0NzIwMDAg
+S0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQ0KPiBbICAg
+NjUuNjQ3MTUxXSBjZmc4MDIxMTogICAgICgyNDU3MDAwIEtIeiAtIDI0ODIw
+MDAgS0h6IEAgMjAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQ0KPiBb
+ICAgNjUuNjQ3MTU2XSBjZmc4MDIxMTogICAgICgyNDc0MDAwIEtIeiAtIDI0
+OTQwMDAgS0h6IEAgMjAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQ0K
+PiBbICAgNjUuNjQ3MTYwXSBjZmc4MDIxMTogICAgICg1MTcwMDAwIEtIeiAt
+IDUyNTAwMDAgS0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJt
+KQ0KPiBbICAgNjUuNjQ3MTgyXSBjZmc4MDIxMTogICAgICg1NzM1MDAwIEtI
+eiAtIDU4MzUwMDAgS0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAg
+bUJtKQ0KPiBbICAgNjUuNjYxMjA1XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdl
+ZDogQlNTIGlkbGU6IHRydWUgKGltcGxlbWVudCkNCj4gWyAgIDY3LjE0OTQw
+OV0gUE06IFN5bmNpbmcgZmlsZXN5c3RlbXMgLi4uIGRvbmUuDQo+IFsgICA2
+Ny4xNTA2MTJdIFBNOiBQcmVwYXJpbmcgc3lzdGVtIGZvciBtZW0gc2xlZXAN
+Cj4gWyAgIDY3LjI5NDEwMl0gRnJlZXppbmcgdXNlciBzcGFjZSBwcm9jZXNz
+ZXMgLi4uIChlbGFwc2VkIDAuMDEgc2Vjb25kcykgZG9uZS4NCj4gWyAgIDY3
+LjMwNDc2NV0gRnJlZXppbmcgcmVtYWluaW5nIGZyZWV6YWJsZSB0YXNrcyAu
+Li4gKGVsYXBzZWQgMC4wMSBzZWNvbmRzKSBkb25lLg0KPiBbICAgNjcuMzE1
+NzE2XSBQTTogRW50ZXJpbmcgbWVtIHNsZWVwDQo+IFsgICA2Ny4zMTU4NzJd
+IFN1c3BlbmRpbmcgY29uc29sZShzKSAodXNlIG5vX2NvbnNvbGVfc3VzcGVu
+ZCB0byBkZWJ1ZykNCj4gWyAgIDY3LjMxNjUwNV0gc2QgMDowOjA6MDogW3Nk
+YV0gU3luY2hyb25pemluZyBTQ1NJIGNhY2hlDQo+IFsgICA2Ny4zMTkxMDVd
+IHNkIDA6MDowOjA6IFtzZGFdIFN0b3BwaW5nIGRpc2sNCj4gWyAgIDY3LjM1
+NTU2OF0gYnJjbXNtYWMgMDAwMDowMzowMC4wOiBQQ0kgSU5UIEEgZGlzYWJs
+ZWQNCj4gWyAgIDY3LjM2NjYzOF0gZWhjaV9oY2QgMDAwMDowMDoxZC4wOiBQ
+Q0kgSU5UIEEgZGlzYWJsZWQNCj4gWyAgIDY3LjM2NjY1MF0gZWhjaV9oY2Qg
+MDAwMDowMDoxYS4wOiBQQ0kgSU5UIEEgZGlzYWJsZWQNCj4gWyAgIDY3LjQ1
+NTQ1NF0gSERBIEludGVsIDAwMDA6MDE6MDAuMTogUENJIElOVCBCIGRpc2Fi
+bGVkDQo+IFsgICA2Ny40NTU0ODhdIEFDUEkgaGFuZGxlIGhhcyBubyBjb250
+ZXh0IQ0KPiBbICAgNjcuNDU3ODcyXSBIREEgSW50ZWwgMDAwMDowMDoxYi4w
+OiBQQ0kgSU5UIEEgZGlzYWJsZWQNCj4gWyAgIDY5LjgyNDAzN10gUE06IHN1
+c3BlbmQgb2YgZGV2aWNlcyBjb21wbGV0ZSBhZnRlciAyNTE0LjYwMSBtc2Vj
+cw0KPiBbICAgNjkuODI0MjQ3XSByODE2OSAwMDAwOjAyOjAwLjA6IFBNRSMg
+ZW5hYmxlZA0KPiBbICAgNjkuODMyOTQ1XSByODE2OSAwMDAwOjAyOjAwLjA6
+IHdha2UtdXAgY2FwYWJpbGl0eSBlbmFibGVkIGJ5IEFDUEkNCj4gWyAgIDY5
+Ljg2NTkyNF0gUE06IGxhdGUgc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBsZXRl
+IGFmdGVyIDQyLjAwMCBtc2Vjcw0KPiBbICAgNjkuODY2MDc5XSBBQ1BJOiBQ
+cmVwYXJpbmcgdG8gZW50ZXIgc3lzdGVtIHNsZWVwIHN0YXRlIFMzDQo+IFsg
+ICA2OS45MTE4ODldIFBNOiBTYXZpbmcgcGxhdGZvcm0gTlZTIG1lbW9yeQ0K
+PiBbICAgNjkuOTE1NTYwXSBEaXNhYmxpbmcgbm9uLWJvb3QgQ1BVcyAuLi4N
+Cj4gWyAgIDY5LjkxNzM1OF0gQ1BVIDEgaXMgbm93IG9mZmxpbmUNCj4gWyAg
+IDY5LjkyOTk3OF0gQ1BVIDIgaXMgbm93IG9mZmxpbmUNCj4gWyAgIDY5Ljkz
+MTgxOV0gQnJva2UgYWZmaW5pdHkgZm9yIGlycSA5DQo+IFsgICA2OS45MzI4
+NTddIENQVSAzIGlzIG5vdyBvZmZsaW5lDQo+IFsgICA2OS45MzMxODJdIEV4
+dGVuZGVkIENNT1MgeWVhcjogMjAwMA0KPiBbICAgNjkuOTMzMzc3XSBBQ1BJ
+OiBMb3ctbGV2ZWwgcmVzdW1lIGNvbXBsZXRlDQo+IFsgICA2OS45MzM0MzJd
+IFBNOiBSZXN0b3JpbmcgcGxhdGZvcm0gTlZTIG1lbW9yeQ0KPiBbICAgNjku
+OTMzOTc5XSBFeHRlbmRlZCBDTU9TIHllYXI6IDIwMDANCj4gWyAgIDY5Ljkz
+NDAwMF0gRW5hYmxpbmcgbm9uLWJvb3QgQ1BVcyAuLi4NCj4gWyAgIDY5Ljkz
+NDEyMF0gQm9vdGluZyBOb2RlIDAgUHJvY2Vzc29yIDEgQVBJQyAweDENCj4g
+WyAgIDY5LjkzNDEyMV0gc21wYm9vdCBjcHUgMTogc3RhcnRfaXAgPSA5ODAw
+MA0KPiBbICAgNzAuMDI1MTM1XSBTd2l0Y2hlZCB0byBOT0h6IG1vZGUgb24g
+Q1BVICMxDQo+IFsgICA3MC4wMjY2NzBdIENQVTEgaXMgdXANCj4gWyAgIDcw
+LjAyNjgzMV0gQm9vdGluZyBOb2RlIDAgUHJvY2Vzc29yIDIgQVBJQyAweDQN
+Cj4gWyAgIDcwLjAyNjgzNF0gc21wYm9vdCBjcHUgMjogc3RhcnRfaXAgPSA5
+ODAwMA0KPiBbICAgNzAuMTE3NTY1XSBDUFUyIGlzIHVwDQo+IFsgICA3MC4x
+MTc2NDZdIEJvb3RpbmcgTm9kZSAwIFByb2Nlc3NvciAzIEFQSUMgMHg1DQo+
+IFsgICA3MC4xMTc2NDhdIHNtcGJvb3QgY3B1IDM6IHN0YXJ0X2lwID0gOTgw
+MDANCj4gWyAgIDcwLjExNzg0NV0gU3dpdGNoZWQgdG8gTk9IeiBtb2RlIG9u
+IENQVSAjMg0KPiBbICAgNzAuMjA4MTU3XSBDUFUzIGlzIHVwDQo+IFsgICA3
+MC4yMDkzNTNdIFN3aXRjaGVkIHRvIE5PSHogbW9kZSBvbiBDUFUgIzMNCj4g
+WyAgIDcwLjIwOTcxMF0gQUNQSTogV2FraW5nIHVwIGZyb20gc3lzdGVtIHNs
+ZWVwIHN0YXRlIFMzDQo+IFsgICA3MC4yNzcxMzddIHBjaWVwb3J0IDAwMDA6
+MDA6MDEuMDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHg3
+ICh3YXMgMHgyMDAwMzAzMCwgd3JpdGluZyAweDMwMzApDQo+IFsgICA3MC4y
+NzcxNDJdIHBjaWVwb3J0IDAwMDA6MDA6MDEuMDogcmVzdG9yaW5nIGNvbmZp
+ZyBzcGFjZSBhdCBvZmZzZXQgMHgxICh3YXMgMHgxMDAwMDcsIHdyaXRpbmcg
+MHgxMDA0MDcpDQo+IFsgICA3MC4yNzcxNjJdIGk5MTUgMDAwMDowMDowMi4w
+OiByZXN0b3JpbmcgY29uZmlnIHNwYWNlIGF0IG9mZnNldCAweDEgKHdhcyAw
+eDkwMDAwNywgd3JpdGluZyAweDkwMDQwNykNCj4gWyAgIDcwLjI3NzE5MF0g
+cGNpIDAwMDA6MDA6MTYuMDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBv
+ZmZzZXQgMHgxICh3YXMgMHgxODAwMDYsIHdyaXRpbmcgMHgxMDAwMDYpDQo+
+IFsgICA3MC4yNzcyMjJdIGVoY2lfaGNkIDAwMDA6MDA6MWEuMDogcmVzdG9y
+aW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHgxICh3YXMgMHgyOTAwMDA2
+LCB3cml0aW5nIDB4MjkwMDAwMikNCj4gWyAgIDcwLjI3NzI1N10gSERBIElu
+dGVsIDAwMDA6MDA6MWIuMDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBv
+ZmZzZXQgMHgxICh3YXMgMHgxMDAwMDYsIHdyaXRpbmcgMHgxMDAwMDIpDQo+
+IFsgICA3MC4yNzcyODZdIHBjaWVwb3J0IDAwMDA6MDA6MWMuMDogcmVzdG9y
+aW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHg3ICh3YXMgMHgyMDAwMjAy
+MCwgd3JpdGluZyAweDIwMjApDQo+IFsgICA3MC4yNzczNjJdIGVoY2lfaGNk
+IDAwMDA6MDA6MWQuMDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZz
+ZXQgMHgxICh3YXMgMHgyOTAwMDA2LCB3cml0aW5nIDB4MjkwMDAwMikNCj4g
+WyAgIDcwLjI3NzM4NF0gcGNpIDAwMDA6MDA6MWUuMDogcmVzdG9yaW5nIGNv
+bmZpZyBzcGFjZSBhdCBvZmZzZXQgMHhhICh3YXMgMHhmZmZmZmZmZiwgd3Jp
+dGluZyAweDApDQo+IFsgICA3MC4yNzc0NjVdIGFoY2kgMDAwMDowMDoxZi4y
+OiByZXN0b3JpbmcgY29uZmlnIHNwYWNlIGF0IG9mZnNldCAweDEgKHdhcyAw
+eDJiMDAwMDcsIHdyaXRpbmcgMHgyYjAwNDA3KQ0KPiBbICAgNzAuMjc3NTg4
+XSBIREEgSW50ZWwgMDAwMDowMTowMC4xOiByZXN0b3JpbmcgY29uZmlnIHNw
+YWNlIGF0IG9mZnNldCAweDEgKHdhcyAweDEwMDAwNywgd3JpdGluZyAweDEw
+MDAwMykNCj4gWyAgIDcwLjI3NzY0Ml0gcjgxNjkgMDAwMDowMjowMC4wOiBy
+ZXN0b3JpbmcgY29uZmlnIHNwYWNlIGF0IG9mZnNldCAweDEgKHdhcyAweDEw
+MDAwNywgd3JpdGluZyAweDEwMDQwNykNCj4gWyAgIDcwLjI3NzcyOF0gYnJj
+bXNtYWMgMDAwMDowMzowMC4wOiByZXN0b3JpbmcgY29uZmlnIHNwYWNlIGF0
+IG9mZnNldCAweGYgKHdhcyAweDEwMCwgd3JpdGluZyAweDEwYSkNCj4gWyAg
+IDcwLjI3Nzc0OF0gYnJjbXNtYWMgMDAwMDowMzowMC4wOiByZXN0b3Jpbmcg
+Y29uZmlnIHNwYWNlIGF0IG9mZnNldCAweDQgKHdhcyAweDQsIHdyaXRpbmcg
+MHhjMjQwMDAwNCkNCj4gWyAgIDcwLjI3Nzc1M10gYnJjbXNtYWMgMDAwMDow
+MzowMC4wOiByZXN0b3JpbmcgY29uZmlnIHNwYWNlIGF0IG9mZnNldCAweDMg
+KHdhcyAweDAsIHdyaXRpbmcgMHgxMCkNCj4gWyAgIDcwLjI3Nzc1OV0gYnJj
+bXNtYWMgMDAwMDowMzowMC4wOiByZXN0b3JpbmcgY29uZmlnIHNwYWNlIGF0
+IG9mZnNldCAweDEgKHdhcyAweDEwMDAwMCwgd3JpdGluZyAweDEwMDAwNikN
+Cj4gWyAgIDcwLjI3NzkwN10gUE06IGVhcmx5IHJlc3VtZSBvZiBkZXZpY2Vz
+IGNvbXBsZXRlIGFmdGVyIDAuODMyIG1zZWNzDQo+IFsgICA3MC4yNzgwNThd
+IGk5MTUgMDAwMDowMDowMi4wOiBzZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8g
+NjQNCj4gWyAgIDcwLjI3ODA2M10gZWhjaV9oY2QgMDAwMDowMDoxYS4wOiBQ
+Q0kgSU5UIEEgLT4gR1NJIDE2IChsZXZlbCwgbG93KSAtPiBJUlEgMTYNCj4g
+WyAgIDcwLjI3ODA2OV0gZWhjaV9oY2QgMDAwMDowMDoxYS4wOiBzZXR0aW5n
+IGxhdGVuY3kgdGltZXIgdG8gNjQNCj4gWyAgIDcwLjI3ODA4NF0gSERBIElu
+dGVsIDAwMDA6MDA6MWIuMDogUENJIElOVCBBIC0+IEdTSSAyMiAobGV2ZWws
+IGxvdykgLT4gSVJRIDIyDQo+IFsgICA3MC4yNzgwOTFdIGVoY2lfaGNkIDAw
+MDA6MDA6MWQuMDogUENJIElOVCBBIC0+IEdTSSAyMCAobGV2ZWwsIGxvdykg
+LT4gSVJRIDIwDQo+IFsgICA3MC4yNzgwOTNdIEhEQSBJbnRlbCAwMDAwOjAw
+OjFiLjA6IHNldHRpbmcgbGF0ZW5jeSB0aW1lciB0byA2NA0KPiBbICAgNzAu
+Mjc4MTAwXSBlaGNpX2hjZCAwMDAwOjAwOjFkLjA6IHNldHRpbmcgbGF0ZW5j
+eSB0aW1lciB0byA2NA0KPiBbICAgNzAuMjc4MTEwXSBwY2kgMDAwMDowMDox
+ZS4wOiBzZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8gNjQNCj4gWyAgIDcwLjI3
+ODEzMl0gYWhjaSAwMDAwOjAwOjFmLjI6IHNldHRpbmcgbGF0ZW5jeSB0aW1l
+ciB0byA2NA0KPiBbICAgNzAuMjc4MTQwXSBIREEgSW50ZWwgMDAwMDowMTow
+MC4xOiBQQ0kgSU5UIEIgLT4gR1NJIDE3IChsZXZlbCwgbG93KSAtPiBJUlEg
+MTcNCj4gWyAgIDcwLjI3ODE0NV0gSERBIEludGVsIDAwMDA6MDE6MDAuMTog
+c2V0dGluZyBsYXRlbmN5IHRpbWVyIHRvIDY0DQo+IFsgICA3MC4yNzgxNjBd
+IEhEQSBJbnRlbCAwMDAwOjAwOjFiLjA6IGlycSA0NiBmb3IgTVNJL01TSS1Y
+DQo+IFsgICA3MC4yNzgxOTRdIEhEQSBJbnRlbCAwMDAwOjAxOjAwLjE6IGly
+cSA0NyBmb3IgTVNJL01TSS1YDQo+IFsgICA3MC4yNzgzMzhdIHNkIDA6MDow
+OjA6IFtzZGFdIFN0YXJ0aW5nIGRpc2sNCj4gWyAgIDcwLjI3ODQ2MV0gYnJj
+bXNtYWMgMDAwMDowMzowMC4wOiBQQ0kgSU5UIEEgLT4gR1NJIDE3IChsZXZl
+bCwgbG93KSAtPiBJUlEgMTcNCj4gWyAgIDcwLjI3ODQ2N10gYnJjbXNtYWMg
+MDAwMDowMzowMC4wOiBzZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8gNjQNCj4g
+WyAgIDcwLjI4NjQzOV0gcjgxNjkgMDAwMDowMjowMC4wOiB3YWtlLXVwIGNh
+cGFiaWxpdHkgZGlzYWJsZWQgYnkgQUNQSQ0KPiBbICAgNzAuMjg2NDQ1XSBy
+ODE2OSAwMDAwOjAyOjAwLjA6IFBNRSMgZGlzYWJsZWQNCj4gWyAgIDcwLjUw
+ODk4NV0gdXNiIDEtMS40OiByZXNldCBmdWxsIHNwZWVkIFVTQiBkZXZpY2Ug
+bnVtYmVyIDMgdXNpbmcgZWhjaV9oY2QNCj4gWyAgIDcwLjU4MzYzOF0gYXRh
+MjogU0FUQSBsaW5rIHVwIDEuNSBHYnBzIChTU3RhdHVzIDExMyBTQ29udHJv
+bCAzMDApDQo+IFsgICA3MC41ODU2NDRdIGF0YTU6IFNBVEEgbGluayBkb3du
+IChTU3RhdHVzIDAgU0NvbnRyb2wgMzAwKQ0KPiBbICAgNzAuNjE3NTE4XSBh
+dGEyLjAwOiBjb25maWd1cmVkIGZvciBVRE1BLzEwMA0KPiBbICAgNzAuNjY2
+NTk4XSB1c2IgMi0xLjM6IHJlc2V0IGZ1bGwgc3BlZWQgVVNCIGRldmljZSBu
+dW1iZXIgMyB1c2luZyBlaGNpX2hjZA0KPiBbICAgNzAuNzUzMzY2XSBidHVz
+YiAyLTEuMzoxLjA6IG5vIHJlc2V0X3Jlc3VtZSBmb3IgZHJpdmVyIGJ0dXNi
+Pw0KPiBbICAgNzAuNzUzMzcyXSBidHVzYiAyLTEuMzoxLjE6IG5vIHJlc2V0
+X3Jlc3VtZSBmb3IgZHJpdmVyIGJ0dXNiPw0KPiBbICAgNzAuODI0MTgzXSB1
+c2IgMi0xLjY6IHJlc2V0IGhpZ2ggc3BlZWQgVVNCIGRldmljZSBudW1iZXIg
+NSB1c2luZyBlaGNpX2hjZA0KPiBbICAgNzEuNzUzNTEyXSBoY2lfY21kX3Rp
+bWVyOiBoY2kwIGNvbW1hbmQgdHggdGltZW91dA0KPiBbICAgNzMuMDIzMDgz
+XSBhdGExOiBTQVRBIGxpbmsgdXAgMy4wIEdicHMgKFNTdGF0dXMgMTIzIFND
+b250cm9sIDMwMCkNCj4gWyAgIDczLjAzNTEzM10gYXRhMS4wMDogY29uZmln
+dXJlZCBmb3IgVURNQS8xMzMNCj4gWyAgIDczLjY0MjA2OV0gUE06IHJlc3Vt
+ZSBvZiBkZXZpY2VzIGNvbXBsZXRlIGFmdGVyIDMzNzMuMjIwIG1zZWNzDQo+
+IFsgICA3My42NDI0MThdIFBNOiBGaW5pc2hpbmcgd2FrZXVwLg0KPiBbICAg
+NzMuNjQyNDIwXSBSZXN0YXJ0aW5nIHRhc2tzIC4uLiBkb25lLg0KPiBbICAg
+NzMuNjQ4NTY0XSB2aWRlbyBMTlhWSURFTzowMDogUmVzdG9yaW5nIGJhY2ts
+aWdodCBzdGF0ZQ0KPiBbICAgNzMuNjQ4NzEyXSB2aWRlbyBMTlhWSURFTzow
+MTogUmVzdG9yaW5nIGJhY2tsaWdodCBzdGF0ZQ0KPiBbICAgNzQuMDgyNzM3
+XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogdXNlX2N0c19wcm90OiBmYWxz
+ZSAoaW1wbGVtZW50KQ0KPiBbICAgNzQuMDgyNzQyXSB3bF9vcHNfYnNzX2lu
+Zm9fY2hhbmdlZDogc2hvcnQgcHJlYW1ibGU6IGZhbHNlIChpbXBsZW1lbnQp
+DQo+IFsgICA3NC4wODI3NjBdIHdsX29wc19jb25maWc6IGNoYW5nZSBtb25p
+dG9yIG1vZGU6IGZhbHNlIChpbXBsZW1lbnQpDQo+IFsgICA3NC4wODI3NjNd
+IHdsX29wc19jb25maWc6IGNoYW5nZSBwb3dlci1zYXZlIG1vZGU6IGZhbHNl
+IChpbXBsZW1lbnQpDQo+IFsgICA3NC4wODQ5ODZdIHdsX29wc19ic3NfaW5m
+b19jaGFuZ2VkOiBxb3MgZW5hYmxlZDogZmFsc2UgKGltcGxlbWVudCkNCj4g
+WyAgIDc0LjA4NTY4Ml0gd2xfb3BzX2Jzc19pbmZvX2NoYW5nZWQ6IEJTUyBp
+ZGxlOiBmYWxzZSAoaW1wbGVtZW50KQ0KPiBbICAgNzQuMDg1NzAyXSBBRERS
+Q09ORihORVRERVZfVVApOiB3bGFuMDogbGluayBpcyBub3QgcmVhZHkNCj4g
+WyAgIDc0LjE3NDk0MF0gd2xfb3BzX2Jzc19pbmZvX2NoYW5nZWQ6IEJTUyBp
+ZGxlOiB0cnVlIChpbXBsZW1lbnQpDQo+IFsgICA3NC4xNzQ5NzddIHdsX29w
+c19ic3NfaW5mb19jaGFuZ2VkOiBCU1MgaWRsZTogZmFsc2UgKGltcGxlbWVu
+dCkNCj4gWyAgIDc0LjI2NDY1Nl0gd2xfb3BzX2Jzc19pbmZvX2NoYW5nZWQ6
+IEJTUyBpZGxlOiB0cnVlIChpbXBsZW1lbnQpDQo+IFsgICA3NC4yOTM3NTJd
+IHdsX29wc19ic3NfaW5mb19jaGFuZ2VkOiBCU1MgaWRsZTogZmFsc2UgKGlt
+cGxlbWVudCkNCj4gWyAgIDc0LjI5MzgxMl0gd2xhbjA6IGRlYXV0aGVudGlj
+YXRpbmcgZnJvbSAwMDoxYzoxMDo5YzozYzo5OCBieSBsb2NhbCBjaG9pY2Ug
+KHJlYXNvbj0zKQ0KPiBbICAgNzQuMzgzMzUwXSB3bGFuMDogYXV0aGVudGlj
+YXRlIHdpdGggMDA6MWM6MTA6OWM6M2M6OTggKHRyeSAxKQ0KPiBbICAgNzQu
+Mzk4MzMxXSB3bGFuMDogYXV0aGVudGljYXRlZA0KPiBbICAgNzQuMzk4MzQ3
+XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogQlNTIGlkbGU6IHRydWUgKGlt
+cGxlbWVudCkNCj4gWyAgIDc0LjM5ODM3NF0gd2xfb3BzX2Jzc19pbmZvX2No
+YW5nZWQ6IEJTUyBpZGxlOiBmYWxzZSAoaW1wbGVtZW50KQ0KPiBbICAgNzQu
+Mzk4MzgxXSB3bGFuMDogYXNzb2NpYXRlIHdpdGggMDA6MWM6MTA6OWM6M2M6
+OTggKHRyeSAxKQ0KPiBbICAgNzQuNDAyODQyXSB3bGFuMDogUlggQXNzb2NS
+ZXNwIGZyb20gMDA6MWM6MTA6OWM6M2M6OTggKGNhcGFiPTB4NDExIHN0YXR1
+cz0wIGFpZD0xMSkNCj4gWyAgIDc0LjQwMjg0Nl0gd2xhbjA6IGFzc29jaWF0
+ZWQNCj4gWyAgIDc0LjQwMzg4Nl0gd2xfb3BzX2Jzc19pbmZvX2NoYW5nZWQ6
+IHFvcyBlbmFibGVkOiBmYWxzZSAoaW1wbGVtZW50KQ0KPiBbICAgNzQuNDAz
+ODkxXSBicmNtc21hYzogd2xfb3BzX2Jzc19pbmZvX2NoYW5nZWQ6IGFzc29j
+aWF0ZWQNCj4gWyAgIDc0LjQwMzg5OF0gd2xfb3BzX2Jzc19pbmZvX2NoYW5n
+ZWQ6IE5lZWQgdG8gY2hhbmdlIEJhc2ljIFJhdGVzOiAweGYgKGltcGxlbWVu
+dCkNCj4gWyAgIDc0LjQwMzkwNF0gd2xfb3BzX2Jzc19pbmZvX2NoYW5nZWQ6
+IGFycCBmaWx0ZXJpbmc6IGVuYWJsZWQgdHJ1ZSwgY291bnQgMCAoaW1wbGVt
+ZW50KQ0KPiBbICAgNzQuNDA1MDIxXSBBRERSQ09ORihORVRERVZfQ0hBTkdF
+KTogd2xhbjA6IGxpbmsgYmVjb21lcyByZWFkeQ0KPiBbICAgNzQuNjQ3NTgz
+XSBoY2lfY21kX3RpbWVyOiBoY2kwIGNvbW1hbmQgdHggdGltZW91dA0KPiBb
+ICAgNzQuNzc2NTIyXSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogYXJwIGZp
+bHRlcmluZzogZW5hYmxlZCB0cnVlLCBjb3VudCAxIChpbXBsZW1lbnQpDQo=
+
+---559023410-838832689-1303154875=:1320
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=resume_timing.diff
+Content-Transfer-Encoding: BASE64
+Content-ID: <Pine.SOC.4.64.1104181527551.1320@er3.rutgers.edu>
+Content-Description: 
+Content-Disposition: attachment; filename=resume_timing.diff
+
+MTAzMWExMDMyLDExOTcNCj4gWyAgIDc1LjkyMzg2NF0gd2xfb3BzX2Jzc19p
+bmZvX2NoYW5nZWQ6IHFvcyBlbmFibGVkOiBmYWxzZSAoaW1wbGVtZW50KQ0K
+PiBbICAgNzUuOTIzODc0XSBicmNtc21hYzogd2xfb3BzX2Jzc19pbmZvX2No
+YW5nZWQ6IGRpc2Fzc29jaWF0ZWQNCj4gWyAgIDc1LjkyMzg3N10gd2xfb3Bz
+X2Jzc19pbmZvX2NoYW5nZWQ6IHVzZV9jdHNfcHJvdDogZmFsc2UgKGltcGxl
+bWVudCkNCj4gWyAgIDc1LjkyMzg4MF0gd2xfb3BzX2Jzc19pbmZvX2NoYW5n
+ZWQ6IHNob3J0IHByZWFtYmxlOiBmYWxzZSAoaW1wbGVtZW50KQ0KPiBbICAg
+NzUuOTIzODg5XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogYXJwIGZpbHRl
+cmluZzogZW5hYmxlZCBmYWxzZSwgY291bnQgMSAoaW1wbGVtZW50KQ0KPiBb
+ICAgNzUuOTIzODk1XSB3bGFuMDogZGVhdXRoZW50aWNhdGluZyBmcm9tIDAw
+OjFjOjEwOjljOjNjOjk4IGJ5IGxvY2FsIGNob2ljZSAocmVhc29uPTMpDQo+
+IFsgICA3NS45NDMzMjJdIHdsX29wc19ic3NfaW5mb19jaGFuZ2VkOiBCU1Mg
+aWRsZTogdHJ1ZSAoaW1wbGVtZW50KQ0KPiBbICAgNzUuOTQzMzM5XSBjZmc4
+MDIxMTogQWxsIGRldmljZXMgYXJlIGRpc2Nvbm5lY3RlZCwgZ29pbmcgdG8g
+cmVzdG9yZSByZWd1bGF0b3J5IHNldHRpbmdzDQo+IFsgICA3NS45NDMzNDhd
+IGNmZzgwMjExOiBSZXN0b3JpbmcgcmVndWxhdG9yeSBzZXR0aW5ncw0KPiBb
+ICAgNzUuOTQzMzU3XSBjZmc4MDIxMTogQ2FsbGluZyBDUkRBIHRvIHVwZGF0
+ZSB3b3JsZCByZWd1bGF0b3J5IGRvbWFpbg0KPiBbICAgNzUuOTQzMzYyXSB3
+bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogQlNTIGlkbGU6IGZhbHNlIChpbXBs
+ZW1lbnQpDQo+IFsgICA3NS45NDgwMzNdIGNmZzgwMjExOiBVcGRhdGluZyBp
+bmZvcm1hdGlvbiBvbiBmcmVxdWVuY3kgMjQxMiBNSHogZm9yIGEgMjAgTUh6
+IHdpZHRoIGNoYW5uZWwgd2l0aCByZWd1bGF0b3J5IHJ1bGU6DQo+IFsgICA3
+NS45NDgwNDFdIGNmZzgwMjExOiAyNDAyMDAwIEtIeiAtIDI0NzIwMDAgS0h6
+IEAgIEtIeiksICgzMDAgbUJpLCAyNzAwIG1CbSkNCj4gWyAgIDc1Ljk0ODA0
+Nl0gY2ZnODAyMTE6IFVwZGF0aW5nIGluZm9ybWF0aW9uIG9uIGZyZXF1ZW5j
+eSAyNDE3IE1IeiBmb3IgYSAyMCBNSHogd2lkdGggY2hhbm5lbCB3aXRoIHJl
+Z3VsYXRvcnkgcnVsZToNCj4gWyAgIDc1Ljk0ODA1MV0gY2ZnODAyMTE6IDI0
+MDIwMDAgS0h6IC0gMjQ3MjAwMCBLSHogQCAgS0h6KSwgKDMwMCBtQmksIDI3
+MDAgbUJtKQ0KPiBbICAgNzUuOTQ4MDU1XSBjZmc4MDIxMTogVXBkYXRpbmcg
+aW5mb3JtYXRpb24gb24gZnJlcXVlbmN5IDI0MjIgTUh6IGZvciBhIDIwIE1I
+eiB3aWR0aCBjaGFubmVsIHdpdGggcmVndWxhdG9yeSBydWxlOg0KPiBbICAg
+NzUuOTQ4MDYwXSBjZmc4MDIxMTogMjQwMjAwMCBLSHogLSAyNDcyMDAwIEtI
+eiBAICBLSHopLCAoMzAwIG1CaSwgMjcwMCBtQm0pDQo+IFsgICA3NS45NDgw
+NjVdIGNmZzgwMjExOiBVcGRhdGluZyBpbmZvcm1hdGlvbiBvbiBmcmVxdWVu
+Y3kgMjQyNyBNSHogZm9yIGEgMjAgTUh6IHdpZHRoIGNoYW5uZWwgd2l0aCBy
+ZWd1bGF0b3J5IHJ1bGU6DQo+IFsgICA3NS45NDgwNjldIGNmZzgwMjExOiAy
+NDAyMDAwIEtIeiAtIDI0NzIwMDAgS0h6IEAgIEtIeiksICgzMDAgbUJpLCAy
+NzAwIG1CbSkNCj4gWyAgIDc1Ljk0ODA3NF0gY2ZnODAyMTE6IFVwZGF0aW5n
+IGluZm9ybWF0aW9uIG9uIGZyZXF1ZW5jeSAyNDMyIE1IeiBmb3IgYSAyMCBN
+SHogd2lkdGggY2hhbm5lbCB3aXRoIHJlZ3VsYXRvcnkgcnVsZToNCj4gWyAg
+IDc1Ljk0ODA3OV0gY2ZnODAyMTE6IDI0MDIwMDAgS0h6IC0gMjQ3MjAwMCBL
+SHogQCAgS0h6KSwgKDMwMCBtQmksIDI3MDAgbUJtKQ0KPiBbICAgNzUuOTQ4
+MDgzXSBjZmc4MDIxMTogVXBkYXRpbmcgaW5mb3JtYXRpb24gb24gZnJlcXVl
+bmN5IDI0MzcgTUh6IGZvciBhIDIwIE1IeiB3aWR0aCBjaGFubmVsIHdpdGgg
+cmVndWxhdG9yeSBydWxlOg0KPiBbICAgNzUuOTQ4MDg4XSBjZmc4MDIxMTog
+MjQwMjAwMCBLSHogLSAyNDcyMDAwIEtIeiBAICBLSHopLCAoMzAwIG1CaSwg
+MjcwMCBtQm0pDQo+IFsgICA3NS45NDgwOTJdIGNmZzgwMjExOiBVcGRhdGlu
+ZyBpbmZvcm1hdGlvbiBvbiBmcmVxdWVuY3kgMjQ0MiBNSHogZm9yIGEgMjAg
+TUh6IHdpZHRoIGNoYW5uZWwgd2l0aCByZWd1bGF0b3J5IHJ1bGU6DQo+IFsg
+ICA3NS45NDgwOTddIGNmZzgwMjExOiAyNDAyMDAwIEtIeiAtIDI0NzIwMDAg
+S0h6IEAgIEtIeiksICgzMDAgbUJpLCAyNzAwIG1CbSkNCj4gWyAgIDc1Ljk0
+ODEwMV0gY2ZnODAyMTE6IFVwZGF0aW5nIGluZm9ybWF0aW9uIG9uIGZyZXF1
+ZW5jeSAyNDQ3IE1IeiBmb3IgYSAyMCBNSHogd2lkdGggY2hhbm5lbCB3aXRo
+IHJlZ3VsYXRvcnkgcnVsZToNCj4gWyAgIDc1Ljk0ODEwNl0gY2ZnODAyMTE6
+IDI0MDIwMDAgS0h6IC0gMjQ3MjAwMCBLSHogQCAgS0h6KSwgKDMwMCBtQmks
+IDI3MDAgbUJtKQ0KPiBbICAgNzUuOTQ4MTEwXSBjZmc4MDIxMTogVXBkYXRp
+bmcgaW5mb3JtYXRpb24gb24gZnJlcXVlbmN5IDI0NTIgTUh6IGZvciBhIDIw
+IE1IeiB3aWR0aCBjaGFubmVsIHdpdGggcmVndWxhdG9yeSBydWxlOg0KPiBb
+ICAgNzUuOTQ4MTE1XSBjZmc4MDIxMTogMjQwMjAwMCBLSHogLSAyNDcyMDAw
+IEtIeiBAICBLSHopLCAoMzAwIG1CaSwgMjcwMCBtQm0pDQo+IFsgICA3NS45
+NDgxMTldIGNmZzgwMjExOiBVcGRhdGluZyBpbmZvcm1hdGlvbiBvbiBmcmVx
+dWVuY3kgMjQ1NyBNSHogZm9yIGEgMjAgTUh6IHdpZHRoIGNoYW5uZWwgd2l0
+aCByZWd1bGF0b3J5IHJ1bGU6DQo+IFsgICA3NS45NDgxMjRdIGNmZzgwMjEx
+OiAyNDAyMDAwIEtIeiAtIDI0NzIwMDAgS0h6IEAgIEtIeiksICgzMDAgbUJp
+LCAyNzAwIG1CbSkNCj4gWyAgIDc1Ljk0ODE0OV0gY2ZnODAyMTE6IFVwZGF0
+aW5nIGluZm9ybWF0aW9uIG9uIGZyZXF1ZW5jeSAyNDYyIE1IeiBmb3IgYSAy
+MCBNSHogd2lkdGggY2hhbm5lbCB3aXRoIHJlZ3VsYXRvcnkgcnVsZToNCj4g
+WyAgIDc1Ljk0ODE1NF0gY2ZnODAyMTE6IDI0MDIwMDAgS0h6IC0gMjQ3MjAw
+MCBLSHogQCAgS0h6KSwgKDMwMCBtQmksIDI3MDAgbUJtKQ0KPiBbICAgNzUu
+OTQ4MTU3XSBjZmc4MDIxMTogRGlzYWJsaW5nIGZyZXEgMjQ2NyBNSHoNCj4g
+WyAgIDc1Ljk0ODE2MF0gY2ZnODAyMTE6IERpc2FibGluZyBmcmVxIDI0NzIg
+TUh6DQo+IFsgICA3NS45NDgxNjNdIGNmZzgwMjExOiBEaXNhYmxpbmcgZnJl
+cSAyNDg0IE1Ieg0KPiBbICAgNzUuOTQ4MTY3XSBjZmc4MDIxMTogV29ybGQg
+cmVndWxhdG9yeSBkb21haW4gdXBkYXRlZDoNCj4gWyAgIDc1Ljk0ODE3MF0g
+Y2ZnODAyMTE6ICAgICAoc3RhcnRfZnJlcSAtIGVuZF9mcmVxIEAgYmFuZHdp
+ZHRoKSwgKG1heF9hbnRlbm5hX2dhaW4sIG1heF9laXJwKQ0KPiBbICAgNzUu
+OTQ4MTc1XSBjZmc4MDIxMTogICAgICgyNDAyMDAwIEtIeiAtIDI0NzIwMDAg
+S0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQ0KPiBbICAg
+NzUuOTQ4MTgwXSBjZmc4MDIxMTogICAgICgyNDU3MDAwIEtIeiAtIDI0ODIw
+MDAgS0h6IEAgMjAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQ0KPiBb
+ICAgNzUuOTQ4MTg1XSBjZmc4MDIxMTogICAgICgyNDc0MDAwIEtIeiAtIDI0
+OTQwMDAgS0h6IEAgMjAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQ0K
+PiBbICAgNzUuOTQ4MTg5XSBjZmc4MDIxMTogICAgICg1MTcwMDAwIEtIeiAt
+IDUyNTAwMDAgS0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJt
+KQ0KPiBbICAgNzUuOTQ4MTk0XSBjZmc4MDIxMTogICAgICg1NzM1MDAwIEtI
+eiAtIDU4MzUwMDAgS0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAg
+bUJtKQ0KPiBbICAgNzUuOTU3MjA2XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdl
+ZDogQlNTIGlkbGU6IHRydWUgKGltcGxlbWVudCkNCj4gWyAgIDc3LjcwNTU1
+Nl0gUE06IFN5bmNpbmcgZmlsZXN5c3RlbXMgLi4uIGRvbmUuDQo+IFsgICA3
+Ny43MDY3MjJdIFBNOiBQcmVwYXJpbmcgc3lzdGVtIGZvciBtZW0gc2xlZXAN
+Cj4gWyAgIDc3Ljg1MDE4OV0gRnJlZXppbmcgdXNlciBzcGFjZSBwcm9jZXNz
+ZXMgLi4uIChlbGFwc2VkIDAuMDEgc2Vjb25kcykgZG9uZS4NCj4gWyAgIDc3
+Ljg2MTA1Ml0gRnJlZXppbmcgcmVtYWluaW5nIGZyZWV6YWJsZSB0YXNrcyAu
+Li4gKGVsYXBzZWQgMC4wMSBzZWNvbmRzKSBkb25lLg0KPiBbICAgNzcuODcy
+MDM5XSBQTTogRW50ZXJpbmcgbWVtIHNsZWVwDQo+IFsgICA3Ny44NzIxOTFd
+IFN1c3BlbmRpbmcgY29uc29sZShzKSAodXNlIG5vX2NvbnNvbGVfc3VzcGVu
+ZCB0byBkZWJ1ZykNCj4gWyAgIDc3Ljg3MjgzN10gc2QgMDowOjA6MDogW3Nk
+YV0gU3luY2hyb25pemluZyBTQ1NJIGNhY2hlDQo+IFsgICA3Ny44ODg2MjBd
+IHNkIDA6MDowOjA6IFtzZGFdIFN0b3BwaW5nIGRpc2sNCj4gWyAgIDc3Ljkx
+MjA2MF0gYnJjbXNtYWMgMDAwMDowMzowMC4wOiBQQ0kgSU5UIEEgZGlzYWJs
+ZWQNCj4gWyAgIDc3LjkyMzA2NF0gZWhjaV9oY2QgMDAwMDowMDoxZC4wOiBQ
+Q0kgSU5UIEEgZGlzYWJsZWQNCj4gWyAgIDc3LjkyMzA3Nl0gZWhjaV9oY2Qg
+MDAwMDowMDoxYS4wOiBQQ0kgSU5UIEEgZGlzYWJsZWQNCj4gWyAgIDc4LjAx
+MzA5Ml0gSERBIEludGVsIDAwMDA6MDE6MDAuMTogUENJIElOVCBCIGRpc2Fi
+bGVkDQo+IFsgICA3OC4wMTMxMjZdIEFDUEkgaGFuZGxlIGhhcyBubyBjb250
+ZXh0IQ0KPiBbICAgNzguMDE0MzY5XSBIREEgSW50ZWwgMDAwMDowMDoxYi4w
+OiBQQ0kgSU5UIEEgZGlzYWJsZWQNCj4gWyAgIDgwLjM5OTc0OV0gUE06IHN1
+c3BlbmQgb2YgZGV2aWNlcyBjb21wbGV0ZSBhZnRlciAyNTI3LjQ1OSBtc2Vj
+cw0KPiBbICAgODAuMzk5OTI0XSByODE2OSAwMDAwOjAyOjAwLjA6IFBNRSMg
+ZW5hYmxlZA0KPiBbICAgODAuNDA4Njk3XSByODE2OSAwMDAwOjAyOjAwLjA6
+IHdha2UtdXAgY2FwYWJpbGl0eSBlbmFibGVkIGJ5IEFDUEkNCj4gWyAgIDgw
+LjQ0MTc0MF0gUE06IGxhdGUgc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBsZXRl
+IGFmdGVyIDQxLjk5NyBtc2Vjcw0KPiBbICAgODAuNDQxODg0XSBBQ1BJOiBQ
+cmVwYXJpbmcgdG8gZW50ZXIgc3lzdGVtIHNsZWVwIHN0YXRlIFMzDQo+IFsg
+ICA4MC40ODc4MzRdIFBNOiBTYXZpbmcgcGxhdGZvcm0gTlZTIG1lbW9yeQ0K
+PiBbICAgODAuNDkzMTc3XSBEaXNhYmxpbmcgbm9uLWJvb3QgQ1BVcyAuLi4N
+Cj4gWyAgIDgwLjQ5NDgwNl0gQ1BVIDEgaXMgbm93IG9mZmxpbmUNCj4gWyAg
+IDgwLjQ5NjUyOV0gQ1BVIDIgaXMgbm93IG9mZmxpbmUNCj4gWyAgIDgwLjUw
+NDgyOV0gQnJva2UgYWZmaW5pdHkgZm9yIGlycSAyMA0KPiBbICAgODAuNTA1
+ODc2XSBDUFUgMyBpcyBub3cgb2ZmbGluZQ0KPiBbICAgODAuNTA2MjIwXSBF
+eHRlbmRlZCBDTU9TIHllYXI6IDIwMDANCj4gWyAgIDgwLjUwNjQxNl0gQUNQ
+STogTG93LWxldmVsIHJlc3VtZSBjb21wbGV0ZQ0KPiBbICAgODAuNTA2NDcx
+XSBQTTogUmVzdG9yaW5nIHBsYXRmb3JtIE5WUyBtZW1vcnkNCj4gWyAgIDgw
+LjUwNzA0MF0gRXh0ZW5kZWQgQ01PUyB5ZWFyOiAyMDAwDQo+IFsgICA4MC41
+MDcwNzldIEVuYWJsaW5nIG5vbi1ib290IENQVXMgLi4uDQo+IFsgICA4MC41
+MDcxODJdIEJvb3RpbmcgTm9kZSAwIFByb2Nlc3NvciAxIEFQSUMgMHgxDQo+
+IFsgICA4MC41MDcxODNdIHNtcGJvb3QgY3B1IDE6IHN0YXJ0X2lwID0gOTgw
+MDANCj4gWyAgIDgwLjU5ODUwN10gU3dpdGNoZWQgdG8gTk9IeiBtb2RlIG9u
+IENQVSAjMQ0KPiBbICAgODAuNTk5OTYwXSBDUFUxIGlzIHVwDQo+IFsgICA4
+MC42MDAwNTJdIEJvb3RpbmcgTm9kZSAwIFByb2Nlc3NvciAyIEFQSUMgMHg0
+DQo+IFsgICA4MC42MDAwNTNdIHNtcGJvb3QgY3B1IDI6IHN0YXJ0X2lwID0g
+OTgwMDANCj4gWyAgIDgwLjY5MTA3OF0gQ1BVMiBpcyB1cA0KPiBbICAgODAu
+NjkxMTc4XSBCb290aW5nIE5vZGUgMCBQcm9jZXNzb3IgMyBBUElDIDB4NQ0K
+PiBbICAgODAuNjkxMTgwXSBzbXBib290IGNwdSAzOiBzdGFydF9pcCA9IDk4
+MDAwDQo+IFsgICA4MC42OTE0NzFdIFN3aXRjaGVkIHRvIE5PSHogbW9kZSBv
+biBDUFUgIzINCj4gWyAgIDgwLjc4MjE1N10gQ1BVMyBpcyB1cA0KPiBbICAg
+ODAuNzgzMzU3XSBTd2l0Y2hlZCB0byBOT0h6IG1vZGUgb24gQ1BVICMzDQo+
+IFsgICA4MC43ODM2ODFdIEFDUEk6IFdha2luZyB1cCBmcm9tIHN5c3RlbSBz
+bGVlcCBzdGF0ZSBTMw0KPiBbICAgODAuODUxMTc3XSBwY2llcG9ydCAwMDAw
+OjAwOjAxLjA6IHJlc3RvcmluZyBjb25maWcgc3BhY2UgYXQgb2Zmc2V0IDB4
+NyAod2FzIDB4MjAwMDMwMzAsIHdyaXRpbmcgMHgzMDMwKQ0KPiBbICAgODAu
+ODUxMTgxXSBwY2llcG9ydCAwMDAwOjAwOjAxLjA6IHJlc3RvcmluZyBjb25m
+aWcgc3BhY2UgYXQgb2Zmc2V0IDB4MSAod2FzIDB4MTAwMDA3LCB3cml0aW5n
+IDB4MTAwNDA3KQ0KPiBbICAgODAuODUxMjAxXSBpOTE1IDAwMDA6MDA6MDIu
+MDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHgxICh3YXMg
+MHg5MDAwMDcsIHdyaXRpbmcgMHg5MDA0MDcpDQo+IFsgICA4MC44NTEyMjld
+IHBjaSAwMDAwOjAwOjE2LjA6IHJlc3RvcmluZyBjb25maWcgc3BhY2UgYXQg
+b2Zmc2V0IDB4MSAod2FzIDB4MTgwMDA2LCB3cml0aW5nIDB4MTAwMDA2KQ0K
+PiBbICAgODAuODUxMjYyXSBlaGNpX2hjZCAwMDAwOjAwOjFhLjA6IHJlc3Rv
+cmluZyBjb25maWcgc3BhY2UgYXQgb2Zmc2V0IDB4MSAod2FzIDB4MjkwMDAw
+Niwgd3JpdGluZyAweDI5MDAwMDIpDQo+IFsgICA4MC44NTEyOTddIEhEQSBJ
+bnRlbCAwMDAwOjAwOjFiLjA6IHJlc3RvcmluZyBjb25maWcgc3BhY2UgYXQg
+b2Zmc2V0IDB4MSAod2FzIDB4MTAwMDA2LCB3cml0aW5nIDB4MTAwMDAyKQ0K
+PiBbICAgODAuODUxMzI3XSBwY2llcG9ydCAwMDAwOjAwOjFjLjA6IHJlc3Rv
+cmluZyBjb25maWcgc3BhY2UgYXQgb2Zmc2V0IDB4NyAod2FzIDB4MjAwMDIw
+MjAsIHdyaXRpbmcgMHgyMDIwKQ0KPiBbICAgODAuODUxNDAyXSBlaGNpX2hj
+ZCAwMDAwOjAwOjFkLjA6IHJlc3RvcmluZyBjb25maWcgc3BhY2UgYXQgb2Zm
+c2V0IDB4MSAod2FzIDB4MjkwMDAwNiwgd3JpdGluZyAweDI5MDAwMDIpDQo+
+IFsgICA4MC44NTE0MjRdIHBjaSAwMDAwOjAwOjFlLjA6IHJlc3RvcmluZyBj
+b25maWcgc3BhY2UgYXQgb2Zmc2V0IDB4YSAod2FzIDB4ZmZmZmZmZmYsIHdy
+aXRpbmcgMHgwKQ0KPiBbICAgODAuODUxNTA0XSBhaGNpIDAwMDA6MDA6MWYu
+MjogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHgxICh3YXMg
+MHgyYjAwMDA3LCB3cml0aW5nIDB4MmIwMDQwNykNCj4gWyAgIDgwLjg1MTYy
+N10gSERBIEludGVsIDAwMDA6MDE6MDAuMTogcmVzdG9yaW5nIGNvbmZpZyBz
+cGFjZSBhdCBvZmZzZXQgMHgxICh3YXMgMHgxMDAwMDcsIHdyaXRpbmcgMHgx
+MDAwMDMpDQo+IFsgICA4MC44NTE2ODBdIHI4MTY5IDAwMDA6MDI6MDAuMDog
+cmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHgxICh3YXMgMHgx
+MDAwMDcsIHdyaXRpbmcgMHgxMDA0MDcpDQo+IFsgICA4MC44NTE3NjhdIGJy
+Y21zbWFjIDAwMDA6MDM6MDAuMDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBh
+dCBvZmZzZXQgMHhmICh3YXMgMHgxMDAsIHdyaXRpbmcgMHgxMGEpDQo+IFsg
+ICA4MC44NTE3ODddIGJyY21zbWFjIDAwMDA6MDM6MDAuMDogcmVzdG9yaW5n
+IGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHg0ICh3YXMgMHg0LCB3cml0aW5n
+IDB4YzI0MDAwMDQpDQo+IFsgICA4MC44NTE3OTJdIGJyY21zbWFjIDAwMDA6
+MDM6MDAuMDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBhdCBvZmZzZXQgMHgz
+ICh3YXMgMHgwLCB3cml0aW5nIDB4MTApDQo+IFsgICA4MC44NTE3OThdIGJy
+Y21zbWFjIDAwMDA6MDM6MDAuMDogcmVzdG9yaW5nIGNvbmZpZyBzcGFjZSBh
+dCBvZmZzZXQgMHgxICh3YXMgMHgxMDAwMDAsIHdyaXRpbmcgMHgxMDAwMDYp
+DQo+IFsgICA4MC44NTE5NDldIFBNOiBlYXJseSByZXN1bWUgb2YgZGV2aWNl
+cyBjb21wbGV0ZSBhZnRlciAwLjgzMyBtc2Vjcw0KPiBbICAgODAuODUyMTAw
+XSBpOTE1IDAwMDA6MDA6MDIuMDogc2V0dGluZyBsYXRlbmN5IHRpbWVyIHRv
+IDY0DQo+IFsgICA4MC44NTIxMDddIGVoY2lfaGNkIDAwMDA6MDA6MWEuMDog
+UENJIElOVCBBIC0+IEdTSSAxNiAobGV2ZWwsIGxvdykgLT4gSVJRIDE2DQo+
+IFsgICA4MC44NTIxMTNdIGVoY2lfaGNkIDAwMDA6MDA6MWEuMDogc2V0dGlu
+ZyBsYXRlbmN5IHRpbWVyIHRvIDY0DQo+IFsgICA4MC44NTIxNDhdIEhEQSBJ
+bnRlbCAwMDAwOjAwOjFiLjA6IFBDSSBJTlQgQSAtPiBHU0kgMjIgKGxldmVs
+LCBsb3cpIC0+IElSUSAyMg0KPiBbICAgODAuODUyMTUyXSBIREEgSW50ZWwg
+MDAwMDowMDoxYi4wOiBzZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8gNjQNCj4g
+WyAgIDgwLjg1MjE5MV0gSERBIEludGVsIDAwMDA6MDA6MWIuMDogaXJxIDQ2
+IGZvciBNU0kvTVNJLVgNCj4gWyAgIDgwLjg1MjIzMV0gZWhjaV9oY2QgMDAw
+MDowMDoxZC4wOiBQQ0kgSU5UIEEgLT4gR1NJIDIwIChsZXZlbCwgbG93KSAt
+PiBJUlEgMjANCj4gWyAgIDgwLjg1MjIzNl0gZWhjaV9oY2QgMDAwMDowMDox
+ZC4wOiBzZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8gNjQNCj4gWyAgIDgwLjg1
+MjI2NV0gcGNpIDAwMDA6MDA6MWUuMDogc2V0dGluZyBsYXRlbmN5IHRpbWVy
+IHRvIDY0DQo+IFsgICA4MC44NTIyNzddIGFoY2kgMDAwMDowMDoxZi4yOiBz
+ZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8gNjQNCj4gWyAgIDgwLjg1MjMyNl0g
+SERBIEludGVsIDAwMDA6MDE6MDAuMTogUENJIElOVCBCIC0+IEdTSSAxNyAo
+bGV2ZWwsIGxvdykgLT4gSVJRIDE3DQo+IFsgICA4MC44NTIzMzBdIEhEQSBJ
+bnRlbCAwMDAwOjAxOjAwLjE6IHNldHRpbmcgbGF0ZW5jeSB0aW1lciB0byA2
+NA0KPiBbICAgODAuODUyMzYzXSBIREEgSW50ZWwgMDAwMDowMTowMC4xOiBp
+cnEgNDcgZm9yIE1TSS9NU0ktWA0KPiBbICAgODAuODUyNDgwXSBicmNtc21h
+YyAwMDAwOjAzOjAwLjA6IFBDSSBJTlQgQSAtPiBHU0kgMTcgKGxldmVsLCBs
+b3cpIC0+IElSUSAxNw0KPiBbICAgODAuODUyNDg1XSBicmNtc21hYyAwMDAw
+OjAzOjAwLjA6IHNldHRpbmcgbGF0ZW5jeSB0aW1lciB0byA2NA0KPiBbICAg
+ODAuODUyNTk4XSBzZCAwOjA6MDowOiBbc2RhXSBTdGFydGluZyBkaXNrDQo+
+IFsgICA4MC44NjU0NzNdIHI4MTY5IDAwMDA6MDI6MDAuMDogd2FrZS11cCBj
+YXBhYmlsaXR5IGRpc2FibGVkIGJ5IEFDUEkNCj4gWyAgIDgwLjg2NTQ3OV0g
+cjgxNjkgMDAwMDowMjowMC4wOiBQTUUjIGRpc2FibGVkDQo+IFsgICA4MS4w
+ODM2MDddIHVzYiAxLTEuNDogcmVzZXQgZnVsbCBzcGVlZCBVU0IgZGV2aWNl
+IG51bWJlciAzIHVzaW5nIGVoY2lfaGNkDQo+IFsgICA4MS4xNTg0NzldIGF0
+YTI6IFNBVEEgbGluayB1cCAxLjUgR2JwcyAoU1N0YXR1cyAxMTMgU0NvbnRy
+b2wgMzAwKQ0KPiBbICAgODEuMTYwNDc5XSBhdGE1OiBTQVRBIGxpbmsgZG93
+biAoU1N0YXR1cyAwIFNDb250cm9sIDMwMCkNCj4gWyAgIDgxLjE5MjQ0Nl0g
+YXRhMi4wMDogY29uZmlndXJlZCBmb3IgVURNQS8xMDANCj4gWyAgIDgxLjI0
+MTYxN10gdXNiIDItMS4zOiByZXNldCBmdWxsIHNwZWVkIFVTQiBkZXZpY2Ug
+bnVtYmVyIDMgdXNpbmcgZWhjaV9oY2QNCj4gWyAgIDgxLjMyODcxNF0gYnR1
+c2IgMi0xLjM6MS4wOiBubyByZXNldF9yZXN1bWUgZm9yIGRyaXZlciBidHVz
+Yj8NCj4gWyAgIDgxLjMyODcxOV0gYnR1c2IgMi0xLjM6MS4xOiBubyByZXNl
+dF9yZXN1bWUgZm9yIGRyaXZlciBidHVzYj8NCj4gWyAgIDgxLjM5OTc1Ml0g
+dXNiIDItMS42OiByZXNldCBoaWdoIHNwZWVkIFVTQiBkZXZpY2UgbnVtYmVy
+IDUgdXNpbmcgZWhjaV9oY2QNCj4gWyAgIDgyLjMyOTQwNV0gaGNpX2NtZF90
+aW1lcjogaGNpMCBjb21tYW5kIHR4IHRpbWVvdXQNCj4gWyAgIDgzLjYwNDI5
+OV0gYXRhMTogU0FUQSBsaW5rIHVwIDMuMCBHYnBzIChTU3RhdHVzIDEyMyBT
+Q29udHJvbCAzMDApDQo+IFsgICA4My42MTYxOTJdIGF0YTEuMDA6IGNvbmZp
+Z3VyZWQgZm9yIFVETUEvMTMzDQo+IFsgIDE0MS45NTU1NTZdIHI4MTY5IDAw
+MDA6MDI6MDAuMDogZXRoMDogdW5hYmxlIHRvIGFwcGx5IGZpcm13YXJlIHBh
+dGNoDQo+IFsgIDE0Mi41NTc5NjldIFBNOiByZXN1bWUgb2YgZGV2aWNlcyBj
+b21wbGV0ZSBhZnRlciA2MTcxMi4yNDYgbXNlY3MNCj4gWyAgMTQyLjU1ODQ3
+NF0gUE06IEZpbmlzaGluZyB3YWtldXAuDQo+IFsgIDE0Mi41NTg0NzVdIFJl
+c3RhcnRpbmcgdGFza3MgLi4uIGRvbmUuDQo+IFsgIDE0Mi41NjM3NDJdIHZp
+ZGVvIExOWFZJREVPOjAwOiBSZXN0b3JpbmcgYmFja2xpZ2h0IHN0YXRlDQo+
+IFsgIDE0Mi41NjM5MjNdIHZpZGVvIExOWFZJREVPOjAxOiBSZXN0b3Jpbmcg
+YmFja2xpZ2h0IHN0YXRlDQo+IFsgIDE0My41NjUwNTVdIGhjaV9jbWRfdGlt
+ZXI6IGhjaTAgY29tbWFuZCB0eCB0aW1lb3V0DQo+IFsgIDE0My41OTExNzdd
+IHdsX29wc19ic3NfaW5mb19jaGFuZ2VkOiB1c2VfY3RzX3Byb3Q6IGZhbHNl
+IChpbXBsZW1lbnQpDQo+IFsgIDE0My41OTExODNdIHdsX29wc19ic3NfaW5m
+b19jaGFuZ2VkOiBzaG9ydCBwcmVhbWJsZTogZmFsc2UgKGltcGxlbWVudCkN
+Cj4gWyAgMTQzLjU5MTIwMl0gd2xfb3BzX2NvbmZpZzogY2hhbmdlIG1vbml0
+b3IgbW9kZTogZmFsc2UgKGltcGxlbWVudCkNCj4gWyAgMTQzLjU5MTIwNV0g
+d2xfb3BzX2NvbmZpZzogY2hhbmdlIHBvd2VyLXNhdmUgbW9kZTogZmFsc2Ug
+KGltcGxlbWVudCkNCj4gWyAgMTQzLjU5MzQ0OF0gd2xfb3BzX2Jzc19pbmZv
+X2NoYW5nZWQ6IHFvcyBlbmFibGVkOiBmYWxzZSAoaW1wbGVtZW50KQ0KPiBb
+ICAxNDMuNTk0MDMxXSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogQlNTIGlk
+bGU6IGZhbHNlIChpbXBsZW1lbnQpDQo+IFsgIDE0My41OTQwNjFdIEFERFJD
+T05GKE5FVERFVl9VUCk6IHdsYW4wOiBsaW5rIGlzIG5vdCByZWFkeQ0KPiBb
+ICAxNDMuNjg0MDk3XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogQlNTIGlk
+bGU6IHRydWUgKGltcGxlbWVudCkNCj4gWyAgMTQzLjY4NDE1N10gd2xfb3Bz
+X2Jzc19pbmZvX2NoYW5nZWQ6IEJTUyBpZGxlOiBmYWxzZSAoaW1wbGVtZW50
+KQ0KPiBbICAxNDMuNzc0MTE4XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDog
+QlNTIGlkbGU6IHRydWUgKGltcGxlbWVudCkNCj4gWyAgMTQzLjc5ODE3NF0g
+d2xfb3BzX2Jzc19pbmZvX2NoYW5nZWQ6IEJTUyBpZGxlOiBmYWxzZSAoaW1w
+bGVtZW50KQ0KPiBbICAxNDMuNzk4MjIyXSB3bGFuMDogZGVhdXRoZW50aWNh
+dGluZyBmcm9tIDAwOjFjOjEwOjljOjNjOjk4IGJ5IGxvY2FsIGNob2ljZSAo
+cmVhc29uPTMpDQo+IFsgIDE0My44ODgxMDldIHdsYW4wOiBhdXRoZW50aWNh
+dGUgd2l0aCAwMDoxYzoxMDo5YzozYzo5OCAodHJ5IDEpDQo+IFsgIDE0My45
+MTE3NThdIHdsYW4wOiBhdXRoZW50aWNhdGVkDQo+IFsgIDE0My45MTE3ODFd
+IHdsX29wc19ic3NfaW5mb19jaGFuZ2VkOiBCU1MgaWRsZTogdHJ1ZSAoaW1w
+bGVtZW50KQ0KPiBbICAxNDMuOTExODE1XSB3bF9vcHNfYnNzX2luZm9fY2hh
+bmdlZDogQlNTIGlkbGU6IGZhbHNlIChpbXBsZW1lbnQpDQo+IFsgIDE0My45
+MTE4MjFdIHdsYW4wOiBhc3NvY2lhdGUgd2l0aCAwMDoxYzoxMDo5YzozYzo5
+OCAodHJ5IDEpDQo+IFsgIDE0My45MTQzNzJdIHdsYW4wOiBSWCBBc3NvY1Jl
+c3AgZnJvbSAwMDoxYzoxMDo5YzozYzo5OCAoY2FwYWI9MHg0MTEgc3RhdHVz
+PTAgYWlkPTExKQ0KPiBbICAxNDMuOTE0Mzc3XSB3bGFuMDogYXNzb2NpYXRl
+ZA0KPiBbICAxNDMuOTE1MTM3XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDog
+cW9zIGVuYWJsZWQ6IGZhbHNlIChpbXBsZW1lbnQpDQo+IFsgIDE0My45MTUx
+NDFdIGJyY21zbWFjOiB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDogYXNzb2Np
+YXRlZA0KPiBbICAxNDMuOTE1MTQ3XSB3bF9vcHNfYnNzX2luZm9fY2hhbmdl
+ZDogTmVlZCB0byBjaGFuZ2UgQmFzaWMgUmF0ZXM6IDB4ZiAoaW1wbGVtZW50
+KQ0KPiBbICAxNDMuOTE1MTUzXSB3bF9vcHNfYnNzX2luZm9fY2hhbmdlZDog
+YXJwIGZpbHRlcmluZzogZW5hYmxlZCB0cnVlLCBjb3VudCAwIChpbXBsZW1l
+bnQpDQo+IFsgIDE0My45MTU5ODddIEFERFJDT05GKE5FVERFVl9DSEFOR0Up
+OiB3bGFuMDogbGluayBiZWNvbWVzIHJlYWR5DQo+IFsgIDE0My45NzQ0MDVd
+IHdsX29wc19ic3NfaW5mb19jaGFuZ2VkOiBhcnAgZmlsdGVyaW5nOiBlbmFi
+bGVkIHRydWUsIGNvdW50IDEgKGltcGxlbWVudCkNCj4gWyAgMTU0LjAwNDA1
+Nl0gd2xhbjA6IG5vIElQdjYgcm91dGVycyBwcmVzZW50DQo=
+
+---559023410-838832689-1303154875=:1320--
