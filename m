@@ -1,113 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab1DRO7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:59:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51422 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755014Ab1DRO7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:59:33 -0400
-Date: Mon, 18 Apr 2011 16:59:29 +0200
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
- time
-Message-ID: <20110418145929.GH5557@quack.suse.cz>
-References: <20110413220444.GF4648@quack.suse.cz>
- <20110413233122.GA6097@localhost>
- <20110413235211.GN31057@dastard>
- <20110414002301.GA9826@localhost>
- <20110414151424.GA367@localhost>
- <20110414181609.GH5054@quack.suse.cz>
- <20110415034300.GA23430@localhost>
- <20110415143711.GA17181@localhost>
- <20110415221314.GE5432@quack.suse.cz>
- <1302942809.2388.254.camel@twins>
+	id S1755126Ab1DRPBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:01:16 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:49429
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752575Ab1DRPBM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 11:01:12 -0400
+X-SpamScore: -28
+X-BigFish: VPS-28(zzbb2dK9371O1432N98dKzz1202hzz15d4Rz32i637h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJUSBI-01-4WK-02
+X-M-MSG: 
+Date: Mon, 18 Apr 2011 16:59:41 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: "H. Peter Anvin" <hpa@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH 4/4] x86, gart: Make sure GART does not map physmem
+ above 1TB
+Message-ID: <20110418145941.GJ2192@amd.com>
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
+ <1303134346-5805-5-git-send-email-joerg.roedel@amd.com>
+ <4DAC4EC0.80008@zytor.com>
+ <4DAC5099.4010403@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1302942809.2388.254.camel@twins>
+In-Reply-To: <4DAC5099.4010403@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 16-04-11 10:33:29, Peter Zijlstra wrote:
-> On Sat, 2011-04-16 at 00:13 +0200, Jan Kara wrote:
+On Mon, Apr 18, 2011 at 10:54:17AM -0400, H. Peter Anvin wrote:
+> On 04/18/2011 07:46 AM, H. Peter Anvin wrote:
+> > On 04/18/2011 06:45 AM, Joerg Roedel wrote:
+> >> The GART can only map physical memory below 1TB. Make sure
+> >> the gart driver in the kernel does not try to map memory
+> >> above 1TB.
 > > 
-> > So what is a takeaway from this for me is that scaling the period
-> > with the dirty limit is not the right thing. If you'd have 4-times more
-> > memory, your choice of "dirty limit" as the period would be as bad as
-> > current 4*"dirty limit". What would seem like a better choice of period
-> > to me would be to have the period in an order of a few seconds worth of
-> > writeback. That would allow the bdi limit to scale up reasonably fast when
-> > new bdi starts to be used and still not make it fluctuate that much
-> > (hopefully).
+> > Where does this limit come from?
 > 
-> No best would be to scale the period with the writeout bandwidth, but
-> lacking that the dirty limit had to do. Since we're counting pages, and
-> bandwidth is pages/second we'll end up with a time measure, exactly the
-> thing you wanted.
-  Yes, I was thinking about this as well. We could measure the throughput
-but essentially it's a changing entity (dependent on the type of load and
-possibly other things like network load for NFS, or other machines
-accessing your NAS). So I'm not sure one constant value will work (esp.
-because you have to measure it and you never know at which state you did
-the measurement). And when you have changing values, you have to solve the
-same problem as with time based periods - that's how I came to them.
+> Nevermind... despite the generic name of the file it looks to be
+> specific to the K8 GART.
 
-> > Looking at math in lib/proportions.c, nothing really fundamental requires
-> > that each period has the same length. So it shouldn't be hard to actually
-> > create proportions calculator that would have timer triggered periods -
-> > simply whenever the timer fires, we would declare a new period. The only
-> > things which would be broken by this are (t represents global counter of
-> > events):
-> > a) counting of periods as t/period_len - we would have to maintain global
-> > period counter but that's trivial
-> > b) trick that we don't do t=t/2 for each new period but rather use
-> > period_len/2+(t % (period_len/2)) when calculating fractions - again we
-> > would have to bite the bullet and divide the global counter when we declare
-> > new period but again it's not a big deal in our case.
-> > 
-> > Peter what do you think about this? Do you (or anyone else) think it makes
-> > sense? 
-> 
-> But if you don't have a fixed sized period, then how do you catch up on
-> fractions that haven't been updated for several periods? You cannot go
-> remember all the individual period lengths.
-  OK, I wrote the expressions down and the way I want to do it would get
-different fractions than your original formula:
+Yes, this file mostly contains the dma-ops implementation that uses the
+K8 gart plus some k8-gart specific initialization functions.
 
-  Your formula is:
-p(j)=\sum_i x_i(j)/(t_i*2^{i+1})
-  where $i$ sums from 0 to \infty, x_i(j) is the number of events of type
-$j$ in period $i$, $t_i$ is the total number of events in period $i$.
+	Joerg
 
-  I want to compute
-l(j)=\sum_i x_i(j)/2^{i+1}
-g=\sum_i t_i/2^{i+1}
-  and
-p(j)=l(j)/g
-
-  Clearly, all these values can be computed in O(1). Now for t_i = t for every
-i, the results of both formulas are the same (which is what made me make my
-mistake). But when t_i differ, the results are different. I'd say that the
-new formula also provides a meaningful notion of writeback share although
-it's hard to quantify how far the computations will be in practice...
-  
-> The whole trick to the proportion stuff is that its all O(1) regardless
-> of the number of contestants. There isn't a single loop that iterates
-> over all BDIs or tasks to update their cycle, that wouldn't have scaled.
-  Sure, I understand.
-
-								Honza
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
