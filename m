@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab1DRKzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 06:55:38 -0400
-Received: from linux-sh.org ([111.68.239.195]:41017 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753700Ab1DRKzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 06:55:31 -0400
-Date: Mon, 18 Apr 2011 19:54:42 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
-Message-ID: <20110418105442.GB27864@linux-sh.org>
-References: <1299134429.100626.661279191478.0.gpush@pororo> <1302754859.2767.30.camel@pororo> <20110414100048.GB1611@n2100.arm.linux.org.uk> <1302776705.28876.113.camel@pasglop> <20110414103200.GF1611@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104140751220.24613@xanadu.home> <20110414120904.GH1611@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104140920110.24613@xanadu.home> <20110414153813.GC6259@n2100.arm.linux.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110414153813.GC6259@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.4.1i
+	id S1753776Ab1DRLAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 07:00:46 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59990 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1DRLAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 07:00:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=OdwwGkLL9A90RP7rZbJylgXwfRekUkq+Saze+UE+IQTQNm6RfkpNRHioqPuX+LHtqo
+         ul5xtMFRmZLvfPmUvORi0vpcTPyvBAQFxoDbrj4C+tpKBpWuGJJSHfaRNiDQxVHs/G5p
+         CrqWzLVeAgRxgIdlSY69XcYKYsKEibgH/5H40=
+From: Liu Yuan <namei.unix@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org (open list)
+Subject: [RESEND PATCH] drivers, regulator: Remove unused variable 'wm831x'
+Date: Mon, 18 Apr 2011 19:00:29 +0800
+Message-Id: <1303124430-9703-1-git-send-email-namei.unix@gmail.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 04:38:14PM +0100, Russell King - ARM Linux wrote:
-> On Thu, Apr 14, 2011 at 09:39:58AM -0400, Nicolas Pitre wrote:
-> > However we can and must do better in consolidation work in order to make 
-> > the tree more maintainable of course.  _That_ is the real issue and 
-> > _that_ is what the ARM tree sucks at.  The fact that this consolidation 
-> > work might reduce the size of the ARM code is only a side effect, not 
-> > the primary goal.  So let's not get too hung up about LOC but focus on 
-> > improving the infrastructure instead.
-> 
-> Look, this is what is in amongst the 6K lines of new code - these are
-> the top two in the diffstat with the highest number of additional lines:
-> 
->  arch/arm/mach-ux500/clock-db8500.c                 | 1291 +++++++++++++
->  arch/arm/mach-ux500/prcmu-db8500.c                 | 2018 ++++++++++++++++++++
-> 
-> These comprise 50% of the 6K of new code.  clock-db8500.c is a mixture
-> of code and data declarations for individual clocks - which is essentially
-> what Linus picked up with his complaint on under OMAP.  That in itself
-> makes me worried.
-> 
-A common struct clk implementation will at least allow you to whittle
-this number down a bit, but it's obviously not possible to attempt to
-work with the generic infrastructure prior to it being merged. Given that
-there is nothing ARM-specific about the patch series it doesn't much
-matter which tree it ultimately gets merged through, so long as it's in
-place for people to build on top of for the next merge window.
+From: Liu Yuan <tailai.ly@taobao.com>
 
-> Now, the next thing is that Linus hasn't been too happy about driver stuff
-> coming via my tree either - it's something which has been the subject of
-> concern in private email.  I've _already_ said something about that prior
-> to the recent merge window.  So should I take the clk API stuff which
-> touches the drivers subtree?  If yes, it needs to be kept entirely separate
-> from the rest of the ARM stuff so we don't end up mixing drivers stuff with
-> ARM stuff.
+Variable ‘wm831x’ is not used in the function of
+wm831x_buckv_remove() and wm831x_buckp_remove().This
+patch removes 'em.
 
-ARM has been the defacto owner for the clock bits to date, but between
-clkdev and a common struct clk it's certainly possible to move to a clock
-tree and treat it the same as any other subsystem. Moving things out of
-arch/arm and in to more generic maintenance paths certainly reduces the
-chance for abuse -- and also provides a path for driver stuff.
+Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/wm831x-dcdc.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-SH and ARM-based SH/R-Mobile CPUs already share a clock framework, which
-I've slowly been refactoring in preparation for Jeremy's common struct
-clk. With that merged I'll be able to kill off a couple hundred lines
-from the existing implementation at least.
+diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
+index e93453b..a0982e8 100644
+--- a/drivers/regulator/wm831x-dcdc.c
++++ b/drivers/regulator/wm831x-dcdc.c
+@@ -600,7 +600,6 @@ err:
+ static __devexit int wm831x_buckv_remove(struct platform_device *pdev)
+ {
+ 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
+-	struct wm831x *wm831x = dcdc->wm831x;
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 
+@@ -776,7 +775,6 @@ err:
+ static __devexit int wm831x_buckp_remove(struct platform_device *pdev)
+ {
+ 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
+-	struct wm831x *wm831x = dcdc->wm831x;
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 
+-- 
+1.7.1
 
-If you'd prefer not to be the guinea pig for the clock bits going in to
-.40 I'm certainly happy to take them in a topic branch, convert my
-platforms on top of that and send the bits off to Linus early in the
-merge window.
