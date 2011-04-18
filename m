@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab1DRRda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:33:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48952 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756123Ab1DRRdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:33:25 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=eB1xKnnnCBQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=HiHOTtR78ZVs8Wu2-TQA:9 a=leDIBe4hL-LKxSe1mm0A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 4/7] lockdep: Seperate lock ids for read/write
- acquires
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1303145378.32491.889.camel@twins>
-References: <20110417094505.865828233@chello.nl>
-	 <20110417095507.123045423@chello.nl>
-	 <1303145177.7181.46.camel@gandalf.stny.rr.com>
-	 <1303145378.32491.889.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 18 Apr 2011 13:33:22 -0400
-Message-ID: <1303148002.7181.47.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756147Ab1DRRhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:37:03 -0400
+Received: from 8bytes.org ([88.198.83.132]:51607 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754726Ab1DRRg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 13:36:57 -0400
+Date: Mon, 18 Apr 2011 19:36:55 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 1/4] x86, gart: Don't enforce GART aperture lower-bound
+	by alignment
+Message-ID: <20110418173655.GA8155@8bytes.org>
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-2-git-send-email-joerg.roedel@amd.com> <4DAC4E7F.1010502@zytor.com> <20110418145653.GI2192@amd.com> <4DAC5E16.1020408@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DAC5E16.1020408@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-18 at 18:49 +0200, Peter Zijlstra wrote:
-> On Mon, 2011-04-18 at 12:46 -0400, Steven Rostedt wrote:
->  
-> > >  void lockdep_off(void)
-> > > @@ -1988,6 +1988,9 @@ static void check_chain_key(struct task_
-> > >               if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
-> > >                       return;
-> > >  
-> > > +             if (is_read(hlock->rw_state))
-> > > +                     id += MAX_LOCKDEP_KEYS;
+On Mon, Apr 18, 2011 at 08:51:50AM -0700, H. Peter Anvin wrote:
+> On 04/18/2011 07:56 AM, Roedel, Joerg wrote:
+> > On Mon, Apr 18, 2011 at 10:45:19AM -0400, H. Peter Anvin wrote:
+> >> On 04/18/2011 06:45 AM, Joerg Roedel wrote:
+> >>> This patch changes the allocation of the GART aperture to
+> >>> enforce only natural alignment instead of aligning it on
+> >>> 512MB. This big alignment was used to force the GART
+> >>> aperture to be over 512MB. This is enforced by using 512MB
+> >>> as the lower-bound address in the allocation range.
+> >>>
+> >>> Cc: Yinghai Lu <yinghai@kernel.org>
+> >>> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> >>
+> >> Better implementation of the existing bounds, yes, but I think the
+> >> algorithm is still wrong.  Specifically, 512 MiB seems to have been the
+> >> maximum address of the kernel at some point, but that is historic at
+> >> this point, at least on 64 bits.
 > > 
-> > Again, isn't this about recursive reads? Or am I just confused ;) 
+> > I am fine with a smaller lower-bound, but I am not sure what a better
+> > choice is. The comment about kexec seems to be valid. It shouldn't matter
+> > for kdump because in this case the memory is allocated independently and
+> > the kdump kernel will only use this part, but for other kexec uses it is
+> > a bit harder. Probably any number we choose as a lower bound is an
+> > arbitrary choice at some point. But I am open for
+> > suggestions/corrections to this.
+> > 
 > 
-> So what we do here is split off the write chain, the above could have
-> been writeen if (!is_write()) to clarify that.
+> The right thing to do for in-place kexec it to turn it off, not rely on
+> any specific magic addresses.  We have had this problem with a number of
+> drivers in the context of kexec.
 
-Or just add a comment ;)
+Ok, so changing the start-address to zero seems the best thing to do.
+This way the GART will working again on machines with less than 512MB of
+RAM (and a BIOS that does not initialize the GART as we want it).
 
--- Steve
+Regards,
 
-> 
-> Everything except recursive read validation will traverse both chains,
-> the recursive read validation will only traverse the write chains and
-> ignore the combined read/recursive-read chain.
-
+	Joerg
 
