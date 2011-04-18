@@ -1,112 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab1DRPxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:53:07 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:35265 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249Ab1DRPxB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:53:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=x1AlUE+Wo/bBmE2jUWk6kBo019Ym1DYrFgL7UfokSL6Al1UIJwe16DgudNqw8J+rrj
-         j28HUJTHK7BuzLJ9aPg6UvEnw8wtn+SV8Is0JMnhnF4WHVKagZ25sy931GEV3BMSR0xd
-         cVBwtCoP1ngMOfVxfTOIYPRYObmjwVt5/Vrtg=
+	id S1755427Ab1DRPxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:53:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43735 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754029Ab1DRPxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 11:53:37 -0400
+Message-ID: <4DAC5E70.6040204@zytor.com>
+Date: Mon, 18 Apr 2011 08:53:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1303140940.31595.45.camel@dev.znau.edu.ua>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
-	<201104171938.12834.arnd@arndb.de>
-	<BANLkTim6iCAsViJQS4XrY-XObs8pp-BiQQ@mail.gmail.com>
-	<201104181619.35115.arnd@arndb.de>
-	<BANLkTinB-9h=bZg9zg219i2wi3zUCA6mcw@mail.gmail.com>
-	<1303140940.31595.45.camel@dev.znau.edu.ua>
-Date: Mon, 18 Apr 2011 17:53:00 +0200
-Message-ID: <BANLkTikBau8GYiO=Ez=m2t-72QJq3=vUrg@mail.gmail.com>
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: George Kashperko <george@znau.edu.ua>
-Cc: Arnd Bergmann <arnd@arndb.de>, Hauke Mehrtens <hauke@hauke-m.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arend van Spriel <arend@broadcom.com>,
-        Jonas Gorski <jonas.gorski@gmail.com>, b43-dev@lists.infradead.org,
-        Greg KH <greg@kroah.com>, Andy Botting <andy@andybotting.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: multipart/mixed; boundary=001485ea8b80ddc2b504a1336287
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH 4/4] x86, gart: Make sure GART does not map physmem above
+ 1TB
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-5-git-send-email-joerg.roedel@amd.com> <4DAC4EC0.80008@zytor.com> <20110418145230.GH2192@amd.com>
+In-Reply-To: <20110418145230.GH2192@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001485ea8b80ddc2b504a1336287
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 04/18/2011 07:52 AM, Roedel, Joerg wrote:
+>>
+>> Where does this limit come from?
+> 
+> From the hardware. A GART PTE is only 32 bits in size so that it cannot
+> be expanded. The physical address bits 32-39 are mapped 11:4 in the PTE.
+> This can not be architecturally expanded to more than 40 physical bits.
+> 
 
-W dniu 18 kwietnia 2011 17:35 u=C5=BCytkownik George Kashperko
-<george@znau.edu.ua> napisa=C5=82:
-> Unfortunately still have just one axi-based box to play with. Will be
-> much appreciated if you could share EROM dumps from your boards to get
-> better understanding of agents/wrappers coupling and relations.
+AFAIK the GART format is implementation-specific (unless some standard
+crept up when I wasn't looking -- this happens from time to time); this
+file seems, despite its generic name, to be AMD K8 specific.
 
-You're welcome.
+	-hpa
 
-It's just my standard card, not SoC.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
---=20
-Rafa=C5=82
-
---001485ea8b80ddc2b504a1336287
-Content-Type: text/plain; charset=UTF-8; name="eprom.txt"
-Content-Disposition: attachment; filename="eprom.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gmnl1zcy0
-
-MHg0QkY4MDAwMQlUQUc9PUNJCQlDSUQ9PTB4ODAwCjB4MjIwMDQyMTEJVEFHPT1DSQkJUE9SVFM9
-PTErMQlXUkFQUEVSUz09MSswCjB4MDAwMDAwMDMJVEFHPT1NU1RfUE9SVAoweDE4MDAwMDA1CVRB
-Rz09QUREUglTVD09U0xWX1BPUlQJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1Na
-X01BU0s9PTAKMHgxODEwMDBDNQlUQUc9PUFERFIJU1Q9PU1TVF9XUkFQCUFERFJMPT0uLi4JUE9S
-VD09MAkJQURfQUczMj09MAlBRF9TWl9NQVNLPT0wCgoweDRCRjgxMjAxCVRBRz09Q0kJCUNJRD09
-MHg4MTIKMHgxNzAwNDIxMQlUQUc9PUNJCQlQT1JUUz09MSsxCVdSQVBQRVJTPT0xKzAKMHgwMDAw
-MDEwMwlUQUc9PU1TVF9QT1JUCjB4MTgwMDEwMDUJVEFHPT1BRERSCVNUPT1TTFZfUE9SVAlBRERS
-TD09Li4uCVBPUlQ9PTAJCUFEX0FHMzI9PTAJQURfU1pfTUFTSz09MAoweDE4MTAxMEM1CVRBRz09
-QUREUglTVD09TVNUX1dSQVAJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1NaX01B
-U0s9PTAKCjB4NEJGODIwMDEJVEFHPT1DSQkJQ0lEPT0weDgyMAoweDBGMDg0NDExCVRBRz09Q0kJ
-CVBPUlRTPT0xKzIJV1JBUFBFUlM9PTErMQoweDAwMDAwMjAzCVRBRz09TVNUX1BPUlQKMHgxODAw
-MjAwNQlUQUc9PUFERFIJU1Q9PVNMVl9QT1JUCUFERFJMPT0uLi4JUE9SVD09MAkJQURfQUczMj09
-MAlBRF9TWl9NQVNLPT0wCjB4MDgwMDAxMzUJVEFHPT1BRERSCVNUPT1TTFZfUE9SVAlBRERSTD09
-Li4uCVBPUlQ9PTEJCUFEX0FHMzI9PTAJQURfU1pfTUFTSz09MHgzMD09U1pECjB4MDgwMDAwMDAJ
-CQkJCVNJWkVMPT0uLi4JCQlTRF9TRzMyPT0wCjB4MDAwMDAxM0QJVEFHPT1BRERSCVNUPT1TTFZf
-UE9SVAlBRERSTD09Li4uCVBPUlQ9PTEJCUFEX0FHMzI9PTgJQURfU1pfTUFTSz09MHgzMD09U1pE
-CjB4ODAwMDAwMDAJCQkJCUFERFJIPT0uLi4KMHgwMDAwMDAwOAkJCQkJU0laRUw9PS4uLgkJCVNE
-X1NHMzI9PTgKMHg4MDAwMDAwMAkJCQkJU0laRUg9PS4uLgoweDE4MTAyMEM1CVRBRz09QUREUglT
-VD09TVNUX1dSQVAJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1NaX01BU0s9PTAK
-MHgxODEwMzE4NQlUQUc9PUFERFIJU1Q9PVNMVl9XUkFQCUFERFJMPT0uLi4JUE9SVD09MQkJQURf
-QUczMj09MAlBRF9TWl9NQVNLPT0wCgoweDQzQjEzNTAxCVRBRz09Q0kJCUNJRD09MHgxMzUKMHgw
-MDA4MDIwMQlUQUc9PUNJCQlQT1JUUz09MCsxCVdSQVBQRVJTPT0wKzEKMHgxODAwMDA2NQlUQUc9
-PUFERFIJU1Q9PUJSSURHRQlBRERSTD09Li4uCVBPUlQ9PTAJCUFEX0FHMzI9PTAJQURfU1pfTUFT
-Sz09MHg2MAoweDE4MTA0MDg1CVRBRz09QUREUglTVD09U0xWX1dSQVAJQUREUkw9PS4uLglQT1JU
-PT0wCQlBRF9BRzMyPT0wCUFEX1NaX01BU0s9PTAKCjB4NDNCMTM1MDEJVEFHPT1DSQkJQ0lEPT0w
-eDEzNQoweDAwMDgwMjAxCVRBRz09Q0kJCVBPUlRTPT0wKzEJV1JBUFBFUlM9PTArMQoweDE4MTAw
-MDc1CVRBRz09QUREUglTVD09QlJJREdFCUFERFJMPT0uLi4JUE9SVD09MAkJQURfQUczMj09MAlB
-RF9TWl9NQVNLPT0weDMwPT1TWkQKMHgwMDAwOTAwMAkJCQkJU0laRUw9Li4uCjB4MTgxMDUwODUJ
-VEFHPT1BRERSCVNUPT1TTFZfV1JBUAlBRERSTD09Li4uCVBPUlQ9PTAJCUFEX0FHMzI9PTAJQURf
-U1pfTUFTSz09MAoKMHg0M0IzNjcwMQlUQUc9PUNJCQlDSUQ9PTB4MzY3IChub3RlOiBPT0JfUk9V
-VEVSLCB3ZSBkbyBub3QgY2FyZSBhYm91dCBsYWNrIG9mIHdyYXBwZXJzKQoweDAwMDAwMjAxCVRB
-Rz09Q0kJCVBPUlRTPT0wKzEJV1JBUFBFUlM9PTArMAoweDE4MTA2MDA1CVRBRz09QUREUglTVD09
-U0xWX1BPUlQJQUREUkw9PS4uLglQT1JUPT0wCQlBRF9BRzMyPT0wCUFEX1NaX01BU0s9PTAKCjB4
-NDNCMzY2MDEJVEFHPT1DSQkJQ0lEPT0weDM2NgoweDAwMDAwMjAxCVRBRz09Q0kJCVBPUlRTPT0w
-KzEJV1JBUFBFUlM9PTArMAoweDE4MTA3MDA1CSguLi4pIOKUgCBOTyBXUkFQUEVSUwoKMHg0M0Iz
-MDEwMQlUQUc9PUNJCQlDSUQ9PTB4MzAxCjB4MDAwMDAyMDEJVEFHPT1DSQkJUE9SVFM9PTArMQlX
-UkFQUEVSUz09MCswCjB4MTgwMDMwMDUJKC4uLikg4pSAIE5PIFdSQVBQRVJTCgoweDQzQkZGRjAx
-CVRBRz09Q0kJCUNJRD09MHhGRkYKMHgwMDA4MDIwMQlUQUc9PUNJCQlQT1JUUz09MCsxCVdSQVBQ
-RVJTPT0wKzEKMHgwMDAwMDAzNQkoLi4uKSDilIAgTUFOVUZfQVJNICYmIERFRl9BSV9DT01QCjB4
-MDgwMDAwMDAJKC4uLikg4pSAIE1BTlVGX0FSTSAmJiBERUZfQUlfQ09NUAoweDEwMDAwMDM1CSgu
-Li4pIOKUgCBNQU5VRl9BUk0gJiYgREVGX0FJX0NPTVAKMHgwODAwMDAwMAkoLi4uKSDilIAgTUFO
-VUZfQVJNICYmIERFRl9BSV9DT01QCjB4MTgwMDQwMzUJKC4uLikg4pSAIE1BTlVGX0FSTSAmJiBE
-RUZfQUlfQ09NUAoweDAwMEZDMDAwCSguLi4pIOKUgCBNQU5VRl9BUk0gJiYgREVGX0FJX0NPTVAK
-MHgxODEwOTAzNQkoLi4uKSDilIAgTUFOVUZfQVJNICYmIERFRl9BSV9DT01QCjB4RTdFRjcwMDgJ
-KC4uLikg4pSAIE1BTlVGX0FSTSAmJiBERUZfQUlfQ09NUAoweDdGRkZGRkZGCSguLi4pIOKUgCBN
-QU5VRl9BUk0gJiYgREVGX0FJX0NPTVAKMHgxODEwODA4NQkoLi4uKSDilIAgTUFOVUZfQVJNICYm
-IERFRl9BSV9DT01QCgoweDAwMDAwMDBGCVRBRz09RU5ECg==
---001485ea8b80ddc2b504a1336287--
