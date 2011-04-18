@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab1DRSad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 14:30:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49159 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab1DRSab (ORCPT
+	id S1755895Ab1DRSbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 14:31:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55082 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab1DRSbO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 14:30:31 -0400
-Message-ID: <4DAC8303.2010604@kernel.org>
-Date: Mon, 18 Apr 2011 11:29:23 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Mon, 18 Apr 2011 14:31:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NFBT5bhFjHnqw4a6Q3J6/r6UXHFjvy8X7kcyI3csLhL87HGJ4z2s9/zkR7zRBV+ON4
+         UDxTd3K8d03kv0x1l0tg==
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86, gart: Don't enforce GART aperture lower-bound
- by alignment
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-2-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1303134346-5805-2-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1302924445-18557-1-git-send-email-sonnyrao@chromium.org>
+References: <1302924445-18557-1-git-send-email-sonnyrao@chromium.org>
+Date: Mon, 18 Apr 2011 11:31:09 -0700
+X-Google-Sender-Auth: 91Yra2_ntMkS4zlXBRX8zqUcUUM
+Message-ID: <BANLkTikwJzOXJGM4pcKmxVdP_2yb9uyeag@mail.gmail.com>
+Subject: Re: [PATCH] Fix infinite loop in ARM user perf_event backtrace code
+From: Olof Johansson <olofj@chromium.org>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: Jamie Iles <jamie@jamieiles.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DAC830B.00CB,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2011 06:45 AM, Joerg Roedel wrote:
-> This patch changes the allocation of the GART aperture to
-> enforce only natural alignment instead of aligning it on
-> 512MB. This big alignment was used to force the GART
-> aperture to be over 512MB.
+On Fri, Apr 15, 2011 at 8:27 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
+>
+> The ARM user backtrace code can get into an infinite loop if it
+> runs into an invalid stack frame which points back to itself.
+> This situation has been observed in practice.  Fix it by capping
+> the number of entries in the backtrace.  This is also what other
+> architectures do in their backtrace code.
+>
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
 
-Now, memblock is used instead of bootmem, so we don't need big alignment anymore.
+Acked-by: Olof Johansson <olof@lixom.net>
 
-> This is enforced by using 512MB
-> as the lower-bound address in the allocation range.
-> 
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-
-Thanks
-
-Yinghai
+-Olof
