@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab1DRQ2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 12:28:08 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:21669 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab1DRQ2A (ORCPT
+	id S1755721Ab1DRQaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 12:30:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52064 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab1DRQad convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 12:28:00 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 18 Apr 2011 12:27:59 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Sean Young <sean@mess.org>
-Cc: Robin Becker <robin@reportlab.com>, Peter Korsgaard <jacmet@sunsite.dk>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: arm: mach-kirkwood: Make the red led available on the eSATA
- SheevaPlug
-In-reply-to: <20110418113640.GA11559@pequod.mess.org>
-Message-id: <alpine.LFD.2.00.1104181218270.24613@xanadu.home>
-References: <20110416220842.GA1518@pequod.mess.org>
- <4DAC0390.9050205@chamonix.reportlab.co.uk>
- <20110418113640.GA11559@pequod.mess.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 18 Apr 2011 12:30:33 -0400
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 9/26]  9: uprobes: mmap and fork
+ hooks.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110401143413.15455.75831.sendpatchset@localhost6.localdomain6>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+	 <20110401143413.15455.75831.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Apr 2011 18:29:23 +0200
+Message-ID: <1303144163.32491.875.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Apr 2011, Sean Young wrote:
+On Fri, 2011-04-01 at 20:04 +0530, Srikar Dronamraju wrote:
+> +               if (vaddr > ULONG_MAX)
+> +                       /*
+> +                        * We cannot have a virtual address that is
+> +                        * greater than ULONG_MAX
+> +                        */
+> +                       continue; 
 
-> On Mon, Apr 18, 2011 at 10:25:36AM +0100, Robin Becker wrote:
-> > On 16/04/2011 23:08, Sean Young wrote:
-> > >After this patch:
-> > >
-> > >         7780c80 arm: mach-kirkwood: add led in sheevaplug-setup.c
-> > >
-> > >On a eSATA SheevaPlug, neither the red nor the green led can be controlled,
-> > >since probing fails with:
-> > >
-> > >[    6.188278] leds-gpio: probe of leds-gpio failed with error -22
-> > >
-> > >Signed-off-by: Sean Young<sean@mess.org>
-[...]
-> > I think my original patch had some changes to gpio_led
-> > sheevaplug_led_pins as well. 
-> 
-> Yes, which causes breakage on my eSATA SheevaPlug without my patch above,
-> since the corresponding GPIO pins aren't enabled.
-
-I didn't closely follow the matter, so could both of you resolve 
-possible issues and resent me the appropriate patch with Acked-by tags 
-please?
+I'm having trouble with those checks.. while they're not wrong they're
+not correct either. Mostly the top address space is where the kernel
+lives and on 32-on-64 compat the boundary is much lower still. Ideally
+it'd be TASK_SIZE, but that doesn't work since it assumes you're testing
+for the current task.
 
 
-Nicolas
