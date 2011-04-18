@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab1DRSy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 14:54:29 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:44275 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756354Ab1DRSy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 14:54:27 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Eric Moore <eric.moore@lsi.com>, Kashyap Desai <kashyap.desai@lsi.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>
-Subject: [PATCH] [SCSI] mpt2sas: fix double mutex lock in NON_BLOCKING state
-Date: Mon, 18 Apr 2011 22:53:38 +0400
-Message-Id: <1303152818-9856-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.1
+	id S1756472Ab1DRS7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 14:59:47 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49781 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992Ab1DRS7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 14:59:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=GWwgPcwqVc1QdcQ3/Ac0pDxI3v2WMBmoZARj3lhInQ7wNz9hM42/y6ozdNqs6LGwe
+	pLjVfxLu6i8dNa1h2LXtQ==
+From: Nat Gurumoorthy <natg@google.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Cc: Mike Waychison <mikew@google.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Nat Gurumoorthy <natg@google.com>
+Subject: [PATCH v7 0/2] Make all it87 drivers SMP safe
+Date: Mon, 18 Apr 2011 11:58:47 -0700
+Message-Id: <1303153127-11717-1-git-send-email-natg@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If mutex_trylock succeed, the control flow goes to mutex_lock_interruptible()
-that is not a good thing.
+There are 3 different drivers that touch the it87 hardware registers.
+The 3 drivers have been written independently and access the it87 hardware
+registers assuming they are the only driver accessing it. This change
+attempts to serialize access to the hardware by using
+"request_muxed_region" macro defined by Alan Cox. Call to this macro
+will hold off the requestor if the resource is currently busy.
+The use of the above macro makes it possible to get rid of
+spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
+This also greatly simplifies the implementation of it87_wdt.c driver.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+01 - Changes to it87 watchdog driver to use "request_muxed_region"
+ drivers/watchdog/it8712f_wdt.c
+ drivers/watchdog/it87_wdt.c
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/scsi/mpt2sas/mpt2sas_ctl.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
+02 - Chages to hwmon it87 driver to use "request_muxed_region"
+ drivers/hwmon/it87.c
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-index 1c6d2b4..9bd7ffc 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -648,8 +648,10 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPTER *ioc,
- 
- 	issue_reset = 0;
- 
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 
-@@ -1587,8 +1589,10 @@ _ctl_diag_register(void __user *arg, enum block_state state)
- 	if (_ctl_verify_adapter(karg.hdr.ioc_number, &ioc) == -1 || !ioc)
- 		return -ENODEV;
- 
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 	rc = _ctl_diag_register_2(ioc, &karg);
-@@ -1932,8 +1936,10 @@ _ctl_diag_release(void __user *arg, enum block_state state)
- 		return 0;
- 	}
- 
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 
-@@ -2033,8 +2039,10 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
- 	}
- 	/* Get a free request frame and save the message context.
- 	*/
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 
--- 
-1.7.1
+ drivers/hwmon/it87.c           |   14 ++++-
+ drivers/watchdog/it8712f_wdt.c |   53 ++++++++++++------
+ drivers/watchdog/it87_wdt.c    |  119 ++++++++++++++++++++++------------------
+ 3 files changed, 113 insertions(+), 73 deletions(-)
+
+Signed-off-by: Nat Gurumoorthy <natg@google.com>
+
+Patch History:
+v7:
+- superio_enter return error if call to "request_muxed_region" fails. Rest
+  of the changes deal with error returns from superio_enter. Changes to
+  it87_wdt.c are untested.
+
+v6:
+- Pay attention to value returned by request_muxed_region. The first call to
+  request_muxed_region will attempt 10 times to reserve the region before it
+  gives up. This will typically get called from the driver init routines. If this
+  succeeds then subsequent calls wait forever for the resource to be available.
+
+v5:
+- Remove unnecessary while from superio_enter.
+
+v4:
+- Remove extra braces in superio_enter routines.
+
+v3:
+- Totally abandon the spinlock based approach and use "request_muxed_region" to
+  hold off requestors if the resource is busy.
+
+v2:
+- More verbose patch headers. Add In-Reply-To: field.
 
