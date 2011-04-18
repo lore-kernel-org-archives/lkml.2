@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab1DROGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:06:05 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49196 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab1DROGB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:06:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=YRPFckA/LB9ngDlO21jJwsZEwKt2/jxlgme1Er48xQwvOQ5Ob74tqPqiXfR3eKIewT
-         eyABmkmUrR8BTU1H3T7/eCNHfhvq3tfC4iDRkecS9NDwHTtMKW/5kJuLO5PoNmp4kE5O
-         SYqbVYQ5QOoAexwhI/1GZ21pqjuFU4zx6kjeQ=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Sage Weil <sage@newdream.net>
-Subject: Re: [Regression,bisected] 2.6.39-rc3 ceph client write hangs
-Date: Mon, 18 Apr 2011 16:05:54 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc3; KDE/4.4.5; i686; ; )
-Cc: Jim Schutt <jaschut@sandia.gov>, dchinner@redhat.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
-References: <4DA879CA.8060305@sandia.gov> <201104172017.15090.maciej.rutecki@gmail.com> <Pine.LNX.4.64.1104172249540.18433@cobra.newdream.net>
-In-Reply-To: <Pine.LNX.4.64.1104172249540.18433@cobra.newdream.net>
+	id S1754380Ab1DROIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:08:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55438 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753177Ab1DROII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 10:08:08 -0400
+Date: Mon, 18 Apr 2011 15:08:04 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 12/12] mm: Throttle direct reclaimers if PF_MEMALLOC
+ reserves are low and swap is backed by network storage
+Message-ID: <20110418140804.GC16908@suse.de>
+References: <1302777698-28237-1-git-send-email-mgorman@suse.de>
+ <1302777698-28237-13-git-send-email-mgorman@suse.de>
+ <20110418223251.7ab148bb@notabene.brown>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201104181605.54981.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110418223251.7ab148bb@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 18 kwietnia 2011 o 07:52:40 Sage Weil wrote:
-> This was a simple s/igrab/ihold/ fix.  See
+On Mon, Apr 18, 2011 at 10:32:51PM +1000, NeilBrown wrote:
+> On Thu, 14 Apr 2011 11:41:38 +0100 Mel Gorman <mgorman@suse.de> wrote:
 > 
-> 283a85dc6e670083adb1e5437bd93d163f4f801a
+> > If swap is backed by network storage such as NBD, there is a risk that a
+> > large number of reclaimers can hang the system by consuming all
+> > PF_MEMALLOC reserves. To avoid these hangs, the administrator must tune
+> > min_free_kbytes in advance. This patch will throttle direct reclaimers
+> > if half the PF_MEMALLOC reserves are in use as the system is at risk of
+> > hanging. A message will be displayed so the administrator knows that
+> > min_free_kbytes should be tuned to a higher value to avoid the
+> > throttling in the future.
+> > 
 > 
-> in the for-linus branch of ceph-client.git.  I'll push to Linus in the
-> next few days.
+> (I knew there was something else).
+> 
+> I understand that there are suggestions that direct reclaim should always be
+> serialised as this reduces lock contention and improve data patterns (or
+> something like that).
 > 
 
-Thanks, closing.
+AFAIK, this suggestion never got much beyond the "hand-waving" stage
+of development. It tended to trip up on the fact that such a feature
+could also throttle processes on machines with plenty of free clean
+unmapped pagecache which would be undesirable.
+
+> Would that make this patch redundant? 
+
+Depends on how it was being serialised but ....
+
+> Or does this provide some extra
+> guarantee that the other proposal would not?
+> 
+
+This patch could be extended to serialise direct reclaims in situations
+other than PFMEMALLOC is low if someone demonstrated the benefit.
 
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Mel Gorman
+SUSE Labs
