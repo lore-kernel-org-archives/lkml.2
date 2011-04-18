@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab1DRHnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 03:43:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29987 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246Ab1DRHns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 03:43:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,231,1301900400"; 
-   d="scan'208";a="734920275"
-Subject: Re: [patch v3 3/3] percpu_counter: use atomic64 for counter in SMP
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-In-Reply-To: <20110415041506.GC29512@mtj.dyndns.org>
-References: <20110414020447.979946152@sli10-conroe.sh.intel.com>
-	 <20110414020747.411215973@sli10-conroe.sh.intel.com>
-	 <20110415041506.GC29512@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Apr 2011 15:43:45 +0800
-Message-ID: <1303112625.3981.191.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753440Ab1DRIB5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 04:01:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34866 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab1DRIBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 04:01:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ECo4JOAyBvxWByswRWJ+0EiCKk0/ZraF12Lo/Dtjd0pqIciduZEC2fdoQb17ySjzaZ
+         Qb4LWsltoiQHKB+xPKx+2n5VB5p2vlYz6AHmGZ+lrQKGw1l3m6xU0RthOn66RMmjg19i
+         LZ550inkdiPVqRmLl61xqWX5Mgq1yEDss1GGM=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTinHk7fVi62_Xftwn_0WLOzkS4jggw@mail.gmail.com>
+References: <201011181650.00152.roucaries.bastien@gmail.com>
+	<AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
+	<AANLkTimYiRYZVXtxLBNeGcG=KVJTTiaGn+XGYP2Y=XMo@mail.gmail.com>
+	<201103311704.40372.roucaries.bastien@gmail.com>
+	<BANLkTikmtyyMes84rED5wpMxuN8kL91jEw@mail.gmail.com>
+	<4D9B3C10.9060704@suse.com>
+	<BANLkTi=XDzOcZsP+aKS_WQSRxT+N8XHBRQ@mail.gmail.com>
+	<BANLkTi=yTfMiLvVtZTqQvxVhy7aFPdwSXQ@mail.gmail.com>
+	<BANLkTi=KUMNWJZZBQSHK+WViy6BYv8+4dQ@mail.gmail.com>
+	<BANLkTi=LHx-cwQ8dAY7ogLN0B5xtJApVWg@mail.gmail.com>
+	<20110411231843.GB2061@nowhere>
+	<BANLkTinHk7fVi62_Xftwn_0WLOzkS4jggw@mail.gmail.com>
+Date: Mon, 18 Apr 2011 10:01:48 +0200
+Message-ID: <BANLkTikjD9hRPagnvjYO7A3ESGrwd1Qe-Q@mail.gmail.com>
+Subject: Re: Reiserfs deadlock in 2.6.36
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jeff Mahoney <jeffm@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-04-15 at 12:15 +0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Apr 14, 2011 at 10:04:50AM +0800, shaohua.li@intel.com wrote:
-> > Index: linux/lib/percpu_counter.c
-> > ===================================================================
-> > --- linux.orig/lib/percpu_counter.c	2011-04-14 09:53:04.000000000 +0800
-> > +++ linux/lib/percpu_counter.c	2011-04-14 10:01:29.000000000 +0800
-> > @@ -59,13 +59,17 @@ void percpu_counter_set(struct percpu_co
-> >  {
-> >  	int cpu;
-> >  
-> > -	spin_lock(&fbc->lock);
-> > +	/*
-> > +	 * Don't really need to disable preempt here, just make sure there is
-> > +	 * no big latency because of preemption
-> > +	 */
-> > +	preempt_disable();
-> >  	for_each_possible_cpu(cpu) {
-> >  		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
-> >  		*pcount = 0;
-> >  	}
-> > -	fbc->count = amount;
-> > -	spin_unlock(&fbc->lock);
-> > +	atomic64_set(&fbc->count, amount);
-> > +	preempt_enable();
-> 
-> Disabling preemption here doesn't make any sense.
-> percpu_counter_set() inherently requires its users to guarantee that
-> no other user is modifying the percpu counter.
-ha, ok.
-should I still rebase the patch against Christoph's patch? Looks that
-one is still not settled down.
+On Tue, Apr 12, 2011 at 2:01 PM, Bastien ROUCARIES
+<roucaries.bastien@gmail.com> wrote:
+> On Tue, Apr 12, 2011 at 1:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> On Mon, Apr 11, 2011 at 10:40:18AM +0200, Bastien ROUCARIES wrote:
+>>> Any news ? Can I test some patch ?
+Do you achieve to reproduce it ?
 
+Do you want I test something ?
 
+bastien
