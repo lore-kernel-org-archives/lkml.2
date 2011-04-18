@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab1DRNqO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:46:14 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:42331
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753745Ab1DRNqC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754278Ab1DRNqC (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Apr 2011 09:46:02 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bh8275dhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:52500
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754195Ab1DRNp4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 09:45:56 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJUOWF-01-FT9-02
+X-WSS-ID: 0LJUOWE-01-FT5-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>
-CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, <stable@kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/4] x86, gart: Set DISTLBWALKPRB bit always
-Date: Mon, 18 Apr 2011 15:45:45 +0200
-Message-ID: <1303134346-5805-4-git-send-email-joerg.roedel@amd.com>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] gart cleanups and fixes
+Date: Mon, 18 Apr 2011 15:45:42 +0200
+Message-ID: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -32,56 +28,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DISTLBWALKPRB bit must be set for the GART because the
-gatt table is mapped UC. But the current code does not set
-the bit at boot when the BIOS setup the aperture correctly.
-Fix that by setting this bit when enabling the GART instead
-of the other places.
+Hi,
 
-Cc: stable@kernel.org
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/gart.h   |    4 ++--
- arch/x86/kernel/aperture_64.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+here is a patch-set to clean things up and fix certain issues with the
+GART driver in x86-linux. The first patch changes the alignment
+requirements for the aperture to be aper_size instead of hard-coded
+512MB as discussed in another thread.
+Patch two is preperation for patch three which makes sure that the bit
+to disable cache probes on gart table walks is always set, even when the
+BIOS sets up the aperture correctly and Linux does not remap then.
+The last patch adds a check for a GART hardware constraint. The GART can
+only map addresses in the first 1TB of physical memory. This is now
+checked with the last patch.
 
-diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
-index 88c1ebe..156cd5d 100644
---- a/arch/x86/include/asm/gart.h
-+++ b/arch/x86/include/asm/gart.h
-@@ -66,7 +66,7 @@ static inline void gart_set_size_and_enable(struct pci_dev *dev, u32 order)
- 	 * Don't enable translation but enable GART IO and CPU accesses.
- 	 * Also, set DISTLBWALKPRB since GART tables memory is UC.
- 	 */
--	ctl = DISTLBWALKPRB | order << 1;
-+	ctl = order << 1;
- 
- 	pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
- }
-@@ -83,7 +83,7 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
- 
- 	/* Enable GART translation for this hammer. */
- 	pci_read_config_dword(dev, AMD64_GARTAPERTURECTL, &ctl);
--	ctl |= GARTEN;
-+	ctl |= GARTEN | DISTLBWALKPRB;
- 	ctl &= ~(DISGARTCPU | DISGARTIO);
- 	pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
- }
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 5c66a2f..3d2661c 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -503,7 +503,7 @@ out:
- 		 * Don't enable translation yet but enable GART IO and CPU
- 		 * accesses and set DISTLBWALKPRB since GART table memory is UC.
- 		 */
--		u32 ctl = DISTLBWALKPRB | aper_order << 1;
-+		u32 ctl = aper_order << 1;
- 
- 		bus = amd_nb_bus_dev_ranges[i].bus;
- 		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
--- 
-1.7.1
+Regards,
+
+	Joerg
+
+Diffstat:
+
+ arch/x86/include/asm/gart.h   |   24 ++++++++++++------------
+ arch/x86/kernel/aperture_64.c |   36 ++++++++++++++++++++----------------
+ arch/x86/kernel/pci-gart_64.c |    9 ++++++++-
+ 3 files changed, 40 insertions(+), 29 deletions(-)
+
+Shortlog:
+
+Joerg Roedel (4):
+      x86, gart: Don't enforce GART aperture lower-bound by alignment
+      x86, gart: Convert spaces to tabs in enable_gart_translation
+      x86, gart: Set DISTLBWALKPRB bit always
+      x86, gart: Make sure GART does not map physmem above 1TB
+
 
 
