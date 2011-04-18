@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab1DRN6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:58:17 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:36591 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab1DRN6M (ORCPT
+	id S1754159Ab1DROBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:01:20 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43873 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab1DROBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 09:58:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=wrtwcMFzq3MgnLzpGqfPJLl51Z7y6H2mf0RxjfD8oMhRb/Xxi8J5h0QLKYgX5V3qLl
-         1j/MKhsy1kga12SXIAgMCpbmYd/liApLsW8dtgM9XR8tm6mxF1iBweWGEXdKQOMlMtFI
-         oMFAZmpLYHi6bx7JjkEV5B5wD9ScQLXD43IBA=
+	Mon, 18 Apr 2011 10:01:14 -0400
+Date: Mon, 18 Apr 2011 15:01:10 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Tony Ibbs <tibs@tonyibbs.co.uk>, Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux-embedded <linux-embedded@vger.kernel.org>,
+        Tibs at Kynesim <tibs@kynesim.co.uk>,
+        Richard Watts <rrw@kynesim.co.uk>
+Subject: Re: [PATCH] extra/1 Allow setting the maximum KBUS message size
+Message-ID: <20110418140110.GD9462@sirena.org.uk>
+References: <cover.1300450604.git.tibs@tonyibbs.co.uk> <20110322133640.5d5c88e4@bike.lwn.net> <DBA665CD-BE12-4DC8-9B3F-4170BED789BD@tonyibbs.co.uk> <32934D05-E7A7-4A2C-92EF-96A0580F2234@tonyibbs.co.uk> <20110415164608.489d82bf@bike.lwn.net>
 MIME-Version: 1.0
-In-Reply-To: <1303126676-3456-1-git-send-email-holler@ahsoftware.de>
-References: <1303126676-3456-1-git-send-email-holler@ahsoftware.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 18 Apr 2011 09:57:52 -0400
-Message-ID: <BANLkTi=yaXOWnUi2s1A-BtoAFgjExX8q4w@mail.gmail.com>
-Subject: Re: [PATCH 0/1] Implement /dev/byte (a generic byte source similiar
- to /dev/zero)
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415164608.489d82bf@bike.lwn.net>
+X-Cookie: APL hackers do it in the quad.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 07:37, Alexander Holler wrote:
-> I don't know if this patch qualifies for inclusion into the mainline kernel, but
-> maybe someone else would be interested in such, so I'm posting it here.
->
-> The main idea for that device was to have a source for 0xff to clear FLASH based
-> devices. And to make it more generic, I've added the possibility to change the
-> default value on a per file descriptor basis.
->
-> I don't want to discuss if such a device makes sense or if such should be done
-> in userspace only. I like it as a device, otherwise I wouldn't have written it.
-> So besides this message, I will not take part in such a discussion.
+On Fri, Apr 15, 2011 at 04:46:08PM -0600, Jonathan Corbet wrote:
 
-cant you do this with cuse ?  that would satisfy the "has to be a
-device" requirement while keeping it in userspace.
+> That means getting more people to look at the patch, which could be hard.
+> The problem is that, if you wait, they'll only squeal when the code is
+> close to going in, and you could find yourself set back a long way.  A
+> good first step might be to CC Andrew Morton on your next posting.
 
-although, i have a hard time seeing there be a realistic perf diff with:
-tr '\000' '\377' < /dev/zero | dd ......
--mike
+One other thing that it'd be good to see is a contrast and compare with
+other similar things like the Android binder that are floating around.
