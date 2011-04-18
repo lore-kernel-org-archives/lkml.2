@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1DRLAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 07:00:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59990 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1DRLAm (ORCPT
+	id S1752989Ab1DRLFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 07:05:18 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:14292 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab1DRLFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 07:00:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=OdwwGkLL9A90RP7rZbJylgXwfRekUkq+Saze+UE+IQTQNm6RfkpNRHioqPuX+LHtqo
-         ul5xtMFRmZLvfPmUvORi0vpcTPyvBAQFxoDbrj4C+tpKBpWuGJJSHfaRNiDQxVHs/G5p
-         CrqWzLVeAgRxgIdlSY69XcYKYsKEibgH/5H40=
-From: Liu Yuan <namei.unix@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org (open list)
-Subject: [RESEND PATCH] drivers, regulator: Remove unused variable 'wm831x'
-Date: Mon, 18 Apr 2011 19:00:29 +0800
-Message-Id: <1303124430-9703-1-git-send-email-namei.unix@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 18 Apr 2011 07:05:14 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/2fi+F6m3KuVXGm0EAZeTo
+Date: Mon, 18 Apr 2011 14:05:08 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Ramesh Gupta <grgupta@ti.com>,
+        Hari Kanigeri <h-kanigeri2@ti.com>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2
+ cache
+Message-ID: <20110418110502.GI12272@atomide.com>
+References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com>
+ <20110414223036.GA7335@n2100.arm.linux.org.uk>
+ <201104180929.33569.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201104180929.33569.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Yuan <tailai.ly@taobao.com>
+* Arnd Bergmann <arnd@arndb.de> [110418 10:26]:
+> On Friday 15 April 2011, Russell King - ARM Linux wrote:
+> > On Thu, Apr 14, 2011 at 04:52:48PM -0500, Fernando Guzman Lugo wrote:
+> > > From: Ramesh Gupta <grgupta@ti.com>
+> > > 
+> > > This patch is to flush the iommu page table entries from L1 and L2
+> > > caches using dma_map_single. This also simplifies the implementation
+> > > by removing the functions  flush_iopgd_range/flush_iopte_range.
+> > 
+> > No.  This usage is just wrong.  If you're going to use the DMA API then
+> > unmap it, otherwise the DMA API debugging will go awol.
+> 
+> 
+> It's also completely upside-down: The iommu support should provide interfaces
+> using the dma-mapping API, not use that API to provide a machine specific
+> version of the generic interface.
+> 
+> As far as I can tell, nothing actually uses these drivers, maybe we should just
+> remove them before we get any code in the mainline kernel that depends on it.
 
-Variable ‘wm831x’ is not used in the function of
-wm831x_buckv_remove() and wm831x_buckp_remove().This
-patch removes 'em.
+There is drivers/media/video/omap3isp/isp.c. But if we now
+have a generic replacement for this code we should start using it.
 
-Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/wm831x-dcdc.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Hiroshi, any comments on that?
 
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index e93453b..a0982e8 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -600,7 +600,6 @@ err:
- static __devexit int wm831x_buckv_remove(struct platform_device *pdev)
- {
- 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
--	struct wm831x *wm831x = dcdc->wm831x;
- 
- 	platform_set_drvdata(pdev, NULL);
- 
-@@ -776,7 +775,6 @@ err:
- static __devexit int wm831x_buckp_remove(struct platform_device *pdev)
- {
- 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
--	struct wm831x *wm831x = dcdc->wm831x;
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--- 
-1.7.1
+Regards,
 
+Tony
