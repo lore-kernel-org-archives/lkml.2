@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab1DREXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 00:23:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55772 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab1DREXB (ORCPT
+	id S1752167Ab1DRE2v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 00:28:51 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:63797 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab1DRE2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 00:23:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
+	Mon, 18 Apr 2011 00:28:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=E1oGEdbnmJLLyUrNd+gaSynhjNGOWLSV/oCS5uvAR7ZyUzRylXaaGDrvDE8Kt1bZJj
+         bogY0ek7DaiMJGoBe5p6HgEwgigdxpC9JVCiC3janQBFudY3SOrAnR9MCDI9qeyTGR71
+         6wtyWgVNkFpw4seBlU5VJyqfsEnivi7NndN6w=
+Date: Mon, 18 Apr 2011 12:28:30 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
 To: Thiago Farina <tfransosi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, wanlong.gao@gmail.com
 Subject: Re: [PATCH 1/1] drivers/usb/image/mdc800.c: Remove "typdef enum".
-Date: Mon, 18 Apr 2011 06:22:52 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: wanlong.gao@gmail.com, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org
-References: <014287655bd0c4327bbd946b9c823a0e4ec35f8e.1303079016.git.tfransosi@gmail.com> <BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com> <BANLkTinFYjtOQbcdrDBNODrzjtU-VDuNxQ@mail.gmail.com>
-In-Reply-To: <BANLkTinFYjtOQbcdrDBNODrzjtU-VDuNxQ@mail.gmail.com>
+Message-ID: <20110418042828.GA1904@gmail.com>
+Mail-Followup-To: Thiago Farina <tfransosi@gmail.com>,
+	linux-kernel@vger.kernel.org, wanlong.gao@gmail.com
+References: <014287655bd0c4327bbd946b9c823a0e4ec35f8e.1303079016.git.tfransosi@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104180622.53412.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZaQaB4CRGEKTiWMk1NbQw0mhI3yyf2HqYES7uHawZI6
- BjGF6uxZXWGx/zHXBPPAi1Vp8HhbPl3BcOxMQLh1vh12IbKMIi
- 0iREU4zXTYpE0lekwoY+Ild28hz8KJYGBOWCAz6HMDAuI5GkfH
- vZzcfdbFFragzW3AMJHGEZCKtiQe1113jUJk0FKSBIm76oW8uH
- sZcIEVTmj1VVdj2fw4Rmg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <014287655bd0c4327bbd946b9c823a0e4ec35f8e.1303079016.git.tfransosi@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 April 2011, Thiago Farina wrote:
-
-> > and why change so many lines ?
+On Sun, Apr 17, 2011 at 07:34:14PM -0300, Thiago Farina wrote:
+> Instead use the keyword "enum" where we use it.
 > 
-> Removed whitespaces, and converted // to /* */
-
-You forgot to list these in the changelog.
-
-	Arnd
+> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+> ---
+>  drivers/usb/image/mdc800.c |  111 +++++++++++++++++++++----------------------
+This is well for me.
+>  	NOT_CONNECTED, READY, WORKING, DOWNLOAD
+> -} mdc800_state;
+> +};
+>  
+>  
+> -/* Data for the driver */
+> +/* Data for the driver. */
+>  struct mdc800_data
+>  {
+> -	struct usb_device *	dev;			// Device Data
+> -	mdc800_state 		state;
+> +	struct usb_device*      dev;                  /* Device Data. */
+This should be 'struct usb_device	*dev'. The same as
+following. See Documentation/CodingStyle for details.
+> +	enum mdc800_state	state;
+>  
+> -	unsigned int		endpoint [4];
+> +	unsigned int		endpoint[4];
+>  
+> -	struct urb *		irq_urb;
+> +	struct urb*             irq_urb;
+>  	wait_queue_head_t	irq_wait;
