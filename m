@@ -1,230 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749Ab1DREJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 00:09:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55678 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab1DREJD (ORCPT
+	id S1751908Ab1DRETV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 00:19:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35114 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105Ab1DRETO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 00:09:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kgOt2EV1rEEPOLc/l3kq/mCnfj7J1rZrInKvJC3Ke9j7aJRLQjcEdlWM5Pe3HC6nuT
-         WUa2pBaW+aHAaYXkCaErN8x9VpVCA/X1Qk5NV7rxkVPkGBZNyKt2rIQBeGhTG9GpB9MJ
-         6JSk8D1FMNlO2KUQgRrChWWU/3O4FTcrK0lFg=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com>
-References: <014287655bd0c4327bbd946b9c823a0e4ec35f8e.1303079016.git.tfransosi@gmail.com>
-	<BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com>
-Date: Mon, 18 Apr 2011 01:09:02 -0300
-Message-ID: <BANLkTinFYjtOQbcdrDBNODrzjtU-VDuNxQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drivers/usb/image/mdc800.c: Remove "typdef enum".
-From: Thiago Farina <tfransosi@gmail.com>
-To: wanlong.gao@gmail.com
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Apr 2011 00:19:14 -0400
+Date: Mon, 18 Apr 2011 14:19:01 +1000
+From: NeilBrown <neilb@suse.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110418141901.14e89cee@notabene.brown>
+In-Reply-To: <20110418081922.1651474a@notabene.brown>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
+	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
+	<20110303221353.GA10366@redhat.com>
+	<4D761E0D.8050200@fusionio.com>
+	<20110308202100.GA31744@redhat.com>
+	<4D76912C.9040705@fusionio.com>
+	<20110308220526.GA393@redhat.com>
+	<20110310005810.GA17911@redhat.com>
+	<20110405130541.6c2b5f86@notabene.brown>
+	<20110411145022.710c30e9@notabene.brown>
+	<4DA2C7BE.6060804@fusionio.com>
+	<20110411205928.13915719@notabene.brown>
+	<4DA2E03A.2080607@fusionio.com>
+	<20110411212635.7959de70@notabene.brown>
+	<4DA2E7F0.9010904@fusionio.com>
+	<20110411220505.1028816e@notabene.brown>
+	<4DA2F00E.6010907@fusionio.com>
+	<20110418081922.1651474a@notabene.brown>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3I49FKK005253
 
-On Sun, Apr 17, 2011 at 9:54 PM, Wanlong Gao <wanlong.gao@gmail.com> wrote:
-> On 4/18/11, Thiago Farina <tfransosi@gmail.com> wrote:
->> Instead use the keyword "enum" where we use it.
->>
->> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
->> ---
->>  drivers/usb/image/mdc800.c |  111
->> +++++++++++++++++++++----------------------
->>  1 files changed, 54 insertions(+), 57 deletions(-)
->>
->> diff --git a/drivers/usb/image/mdc800.c b/drivers/usb/image/mdc800.c
->> index 575b56c..4b0a032 100644
->> --- a/drivers/usb/image/mdc800.c
->> +++ b/drivers/usb/image/mdc800.c
->> @@ -122,59 +122,57 @@
->>  /* Minor Number of the device (create with mknod /dev/mustek c 180 32) */
->>  #define MDC800_DEVICE_MINOR_BASE 32
->>
->> +/*
->> + * Data and structs.
->> + */
->>
->> -/**************************************************************************
->> -     Data and structs
->> -***************************************************************************/
->> -
->> -
->> -typedef enum {
->> +enum mdc800_state {
->>       NOT_CONNECTED, READY, WORKING, DOWNLOAD
->> -} mdc800_state;
->> +};
->>
->>
->> -/* Data for the driver */
->> +/* Data for the driver. */
->>  struct mdc800_data
->>  {
->> -     struct usb_device *     dev;                    // Device Data
->> -     mdc800_state            state;
->> +     struct usb_device*      dev;                  /* Device Data. */
->> +     enum mdc800_state       state;
->>
->> -     unsigned int            endpoint [4];
->> +     unsigned int            endpoint[4];
->>
->> -     struct urb *            irq_urb;
->> +     struct urb*             irq_urb;
->>       wait_queue_head_t       irq_wait;
->>       int                     irq_woken;
->>       char*                   irq_urb_buffer;
->>
->> -     int                     camera_busy;          // is camera busy ?
->> -     int                     camera_request_ready; // Status to synchronize with irq
->> -     char                    camera_response [8];  // last Bytes send after busy
->> +     int                     camera_busy;          /* Is camera busy? */
->> +     int                     camera_request_ready; /* Status to synchronize with irq. */
->> +     char                    camera_response[8];   /* last Bytes send after busy. */
->>
->> -     struct urb *            write_urb;
->> +     struct urb*             write_urb;
->>       char*                   write_urb_buffer;
->>       wait_queue_head_t       write_wait;
->>       int                     written;
->>
->>
->> -     struct urb *            download_urb;
->> +     struct urb*             download_urb;
->>       char*                   download_urb_buffer;
->>       wait_queue_head_t       download_wait;
->>       int                     downloaded;
->> -     int                     download_left;          // Bytes left to download ?
->> +     int                     download_left;       /* Bytes left to download? */
->>
->>
->>       /* Device Data */
->> -     char                    out [64];       // Answer Buffer
->> -     int                     out_ptr;        // Index to the first not readen byte
->> -     int                     out_count;      // Bytes in the buffer
->> +     char                    out[64];        /* Answer buffer. */
->> +     int                     out_ptr;        /* Index to the first not readen byte. */
->> +     int                     out_count;      /* Bytes in the buffer. */
->>
->> -     int                     open;           // Camera device open ?
->> -     struct mutex            io_lock;        // IO -lock
->> +     int                     open;           /* Camera device open. */
->> +     struct mutex            io_lock;        /* IO -lock. */
->>
->> -     char                    in [8];         // Command Input Buffer
->> -     int                     in_count;
->> +     char                    in [8];         /* Command Input Buffer. */
->> +     int                     in_count;
->>
->> -     int                     pic_index;      // Cache for the Imagesize (-1 for nothing cached )
->> +     int                     pic_index;      /* Cache for the Imagesize (-1 for nothing cached) */
->>       int                     pic_len;
->>       int                     minor;
->>  };
->> @@ -183,52 +181,51 @@ struct mdc800_data
->>  /* Specification of the Endpoints */
->>  static struct usb_endpoint_descriptor mdc800_ed [4] =
->>  {
->> -     {
->> -             .bLength =              0,
->> +     {
->> +             .bLength =              0,
->>               .bDescriptorType =      0,
->>               .bEndpointAddress =     0x01,
->> -             .bmAttributes =         0x02,
->> +             .bmAttributes =         0x02,
->>               .wMaxPacketSize =       cpu_to_le16(8),
->> -             .bInterval =            0,
->> -             .bRefresh =             0,
->> -             .bSynchAddress =        0,
->> +             .bInterval =            0,
->> +             .bRefresh =             0,
->> +             .bSynchAddress =        0,
->>       },
->>       {
->> -             .bLength =              0,
->> -             .bDescriptorType =      0,
->> -             .bEndpointAddress =     0x82,
->> -             .bmAttributes =         0x03,
->> -             .wMaxPacketSize =       cpu_to_le16(8),
->> -             .bInterval =            0,
->> -             .bRefresh =             0,
->> -             .bSynchAddress =        0,
->> +             .bLength =              0,
->> +             .bDescriptorType =      0,
->> +             .bEndpointAddress =     0x82,
->> +             .bmAttributes =         0x03,
->> +             .wMaxPacketSize =       cpu_to_le16(8),
->> +             .bInterval =            0,
->> +             .bRefresh =             0,
->> +             .bSynchAddress =        0,
->>       },
->>       {
->> -             .bLength =              0,
->> -             .bDescriptorType =      0,
->> -             .bEndpointAddress =     0x03,
->> -             .bmAttributes =         0x02,
->> -             .wMaxPacketSize =       cpu_to_le16(64),
->> -             .bInterval =            0,
->> -             .bRefresh =             0,
->> -             .bSynchAddress =        0,
->> +             .bLength =              0,
->> +             .bDescriptorType =      0,
->> +             .bEndpointAddress =     0x03,
->> +             .bmAttributes =         0x02,
->> +             .wMaxPacketSize =       cpu_to_le16(64),
->> +             .bInterval =            0,
->> +             .bRefresh =             0,
->> +             .bSynchAddress =        0,
->>       },
->>       {
->> -             .bLength =              0,
->> -             .bDescriptorType =      0,
->> -             .bEndpointAddress =     0x84,
->> -             .bmAttributes =         0x02,
->> -             .wMaxPacketSize =       cpu_to_le16(64),
->> -             .bInterval =            0,
->> -             .bRefresh =             0,
->> -             .bSynchAddress =        0,
->> +             .bLength =              0,
->> +             .bDescriptorType =      0,
->> +             .bEndpointAddress =     0x84,
->> +             .bmAttributes =         0x02,
->> +             .wMaxPacketSize =       cpu_to_le16(64),
->> +             .bInterval =            0,
->> +             .bRefresh =             0,
->> +             .bSynchAddress =        0,
->>       },
->>  };
->>
->>  /* The Variable used by the driver */
->>  static struct mdc800_data* mdc800;
->>
->> -
->> /***************************************************************************
->>       The USB Part of the driver
->> ****************************************************************************/
->> --
->> 1.7.3.2.343.g7d43d
->>
-> Why did you change it ?
+On Mon, 18 Apr 2011 08:19:22 +1000 NeilBrown <neilb@suse.de> wrote:
 
-To get rid of the typedef?
+> So can we please have my original patch applied? (Revised version using
+> list_splice_init included below).
 
-> and why change so many lines ?
+I hadn't adjusted that one properly for the recent code shuffling.
+This one is actually tested...
 
-Removed whitespaces, and converted // to /* */
+Thanks,
+NeilBrown
 
-> It had some thing wrong ?
+>From 325b1c12b6165002022bd7b599f95c0331491cb3 Mon Sep 17 00:00:00 2001
+From: NeilBrown <neilb@suse.de>
+Date: Mon, 18 Apr 2011 14:06:05 +1000
+Subject: [PATCH] Enhance new plugging support to support general callbacks.
 
-Hum?
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+md/raid requires an unplug callback, but as it does not uses
+requests the current code cannot provide one.
+
+So allow arbitrary callbacks to be attached to the blk_plug.
+
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+---
+ block/blk-core.c       |   20 ++++++++++++++++++++
+ include/linux/blkdev.h |    7 ++++++-
+ 2 files changed, 26 insertions(+), 1 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 78b7b0c..77edf05 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2638,6 +2638,7 @@ void blk_start_plug(struct blk_plug *plug)
+ 
+ 	plug->magic = PLUG_MAGIC;
+ 	INIT_LIST_HEAD(&plug->list);
++	INIT_LIST_HEAD(&plug->cb_list);
+ 	plug->should_sort = 0;
+ 
+ 	/*
+@@ -2678,6 +2679,24 @@ static void queue_unplugged(struct request_queue *q, unsigned int depth,
+ 		q->unplugged_fn(q);
+ }
+ 
++static void flush_plug_callbacks(struct blk_plug *plug)
++{
++	LIST_HEAD(callbacks);
++
++	if (list_empty(&plug->cb_list))
++		return;
++
++	list_splice_init(&plug->cb_list, &callbacks);
++
++	while (!list_empty(&callbacks)) {
++		struct blk_plug_cb *cb = list_first_entry(&callbacks,
++							  struct blk_plug_cb,
++							  list);
++		list_del(&cb->list);
++		cb->callback(cb);
++	}
++}
++
+ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
+ {
+ 	struct request_queue *q;
+@@ -2688,6 +2707,7 @@ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
+ 
+ 	BUG_ON(plug->magic != PLUG_MAGIC);
+ 
++	flush_plug_callbacks(plug);
+ 	if (list_empty(&plug->list))
+ 		return;
+ 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index ec0357d..f3f7879 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -860,8 +860,13 @@ extern void blk_put_queue(struct request_queue *);
+ struct blk_plug {
+ 	unsigned long magic;
+ 	struct list_head list;
++	struct list_head cb_list;
+ 	unsigned int should_sort;
+ };
++struct blk_plug_cb {
++	struct list_head list;
++	void (*callback)(struct blk_plug_cb *);
++};
+ 
+ extern void blk_start_plug(struct blk_plug *);
+ extern void blk_finish_plug(struct blk_plug *);
+@@ -887,7 +892,7 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
+ {
+ 	struct blk_plug *plug = tsk->plug;
+ 
+-	return plug && !list_empty(&plug->list);
++	return plug && (!list_empty(&plug->list) || !list_empty(&plug->cb_list));
+ }
+ 
+ /*
+-- 
+1.7.3.4
+
