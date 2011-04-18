@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab1DROK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:10:59 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:58478 "EHLO
+	id S1754830Ab1DROLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:11:05 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:58449 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab1DROJz (ORCPT
+	with ESMTP id S1754324Ab1DROJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:09:55 -0400
-X-ASG-Debug-ID: 1303135795-082e703e0001-xx1T2L
+	Mon, 18 Apr 2011 10:09:54 -0400
+X-ASG-Debug-ID: 1303135793-082b704f0001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
@@ -16,16 +16,16 @@ To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
         dwmw2@infradead.org, lrg@slimlogic.co.uk,
         broonie@opensource.wolfsonmicro.com
 Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH 13/14] regulator: check name in initialization of max8925
-Subject: [PATCH 13/14] regulator: check name in initialization of max8925
-Date: Mon, 18 Apr 2011 22:04:10 +0800
-X-ASG-Orig-Subj: [PATCH 13/14] regulator: check name in initialization of max8925
-Message-Id: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH 12/14] regulator: max8925: enable i2c sequence for control
+Subject: [PATCH 12/14] regulator: max8925: enable i2c sequence for control
+Date: Mon, 18 Apr 2011 22:04:09 +0800
+X-ASG-Orig-Subj: [PATCH 12/14] regulator: max8925: enable i2c sequence for control
+Message-Id: <1303135451-26362-13-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <2011041801>
 References: <2011041801>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1303135795
+X-Barracuda-Start-Time: 1303135793
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -33,86 +33,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check name in initialization of max8925 regulator driver.
+Force to enable i2c as power up/down sequence. Otherwise, SD/LDO can't
+be enabled or disabled via accessing i2c bus.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/max8925-regulator.c |   39 ++++++++++++++++-----------------
- 1 files changed, 19 insertions(+), 20 deletions(-)
+ drivers/regulator/max8925-regulator.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
-index e4dbd66..7ce8147 100644
+index 8ae1475..e4dbd66 100644
 --- a/drivers/regulator/max8925-regulator.c
 +++ b/drivers/regulator/max8925-regulator.c
-@@ -174,7 +174,7 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
- #define MAX8925_SDV(_id, min, max, step)			\
- {								\
- 	.desc	= {						\
--		.name	= "SDV" #_id,				\
-+		.name	= "SD" #_id,				\
- 		.ops	= &max8925_regulator_sdv_ops,		\
- 		.type	= REGULATOR_VOLTAGE,			\
- 		.id	= MAX8925_ID_SD##_id,			\
-@@ -236,39 +236,38 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
- 	MAX8925_LDO(20, 750, 3900, 50),
- };
+@@ -23,6 +23,10 @@
+ #define SD1_DVM_SHIFT		5		/* SDCTL1 bit5 */
+ #define SD1_DVM_EN		6		/* SDV1 bit 6 */
  
--static struct max8925_regulator_info * __devinit find_regulator_info(int id)
-+static int __devinit max8925_regulator_probe(struct platform_device *pdev)
- {
--	struct max8925_regulator_info *ri;
-+	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
-+	struct max8925_regulator_info *ri = NULL;
-+	struct regulator_init_data *pdata;
-+	struct regulator_dev *rdev;
- 	int i;
- 
-+	pdata = pdev->dev.platform_data;
-+	if ((pdata == NULL) || (pdata->driver_data == NULL))
-+		return -EINVAL;
++/* bit definitions in SD & LDO control registers */
++#define OUT_ENABLE   		0x1f		/* Power U/D sequence as I2C */
++#define OUT_DISABLE		0x1e		/* Power U/D sequence as I2C */
 +
- 	for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
- 		ri = &max8925_regulator_info[i];
--		if (ri->desc.id == id)
--			return ri;
-+		/* pdata->driver_data stores the name of regulator */
-+		if (!strcmp(ri->desc.name, pdata->driver_data))
-+			break;
- 	}
--	return NULL;
--}
--
--static int __devinit max8925_regulator_probe(struct platform_device *pdev)
--{
--	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
--	struct max8925_platform_data *pdata = chip->dev->platform_data;
--	struct max8925_regulator_info *ri;
--	struct regulator_dev *rdev;
--
--	ri = find_regulator_info(pdev->id);
--	if (ri == NULL) {
--		dev_err(&pdev->dev, "invalid regulator ID specified\n");
-+	if (i > ARRAY_SIZE(max8925_regulator_info)) {
-+		dev_err(&pdev->dev, "Failed to find regulator %s\n",
-+			pdata->constraints.name);
- 		return -EINVAL;
- 	}
- 	ri->i2c = chip->i2c;
- 	ri->chip = chip;
+ struct max8925_regulator_info {
+ 	struct regulator_desc	desc;
+ 	struct regulator_dev	*regulator;
+@@ -93,8 +97,8 @@ static int max8925_enable(struct regulator_dev *rdev)
+ 	struct max8925_regulator_info *info = rdev_get_drvdata(rdev);
  
-+	/* replace driver_data with ri */
- 	rdev = regulator_register(&ri->desc, &pdev->dev,
--				  pdata->regulator[pdev->id], ri);
-+				  pdata, ri);
- 	if (IS_ERR(rdev)) {
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
--				ri->desc.name);
-+			ri->desc.name);
- 		return PTR_ERR(rdev);
- 	}
+ 	return max8925_set_bits(info->i2c, info->enable_reg,
+-				1 << info->enable_bit,
+-				1 << info->enable_bit);
++				OUT_ENABLE << info->enable_bit,
++				OUT_ENABLE << info->enable_bit);
+ }
  
+ static int max8925_disable(struct regulator_dev *rdev)
+@@ -102,7 +106,8 @@ static int max8925_disable(struct regulator_dev *rdev)
+ 	struct max8925_regulator_info *info = rdev_get_drvdata(rdev);
+ 
+ 	return max8925_set_bits(info->i2c, info->enable_reg,
+-				1 << info->enable_bit, 0);
++				OUT_ENABLE << info->enable_bit,
++				OUT_DISABLE << info->enable_bit);
+ }
+ 
+ static int max8925_is_enabled(struct regulator_dev *rdev)
 -- 
 1.5.6.5
 
