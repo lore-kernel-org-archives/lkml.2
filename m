@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab1DRUXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 16:23:48 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:59872 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab1DRUXq convert rfc822-to-8bit (ORCPT
+	id S1751937Ab1DRUZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 16:25:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19916 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab1DRUZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 16:23:46 -0400
+	Mon, 18 Apr 2011 16:25:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=m9xeAVFH0bZfph8PYOGFGizVooc/+wgatBIqjUUMyCflw5GQr3qnILr5Kllx56v22I
-         ZyGzjA0gxSY79PoWvEPnfmlyj129dqG0ZlK1/DKNKRv2H+r+VGqL2HPZTln3/WBDeG4J
-         lW02t9xakn1tPZPQHZ4GPF2EfxWF66Vo73CEY=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=o+NwF8uQ5heMdZLUG3yPOIdJ2VEaWqneRIUIOZJfJT4YoDjZQ0A5u3KLUaV1y5mTIN
+         L9TAbpWcOXFkEELuyxWw==
+Date: Mon, 18 Apr 2011 13:25:24 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] break out page allocation warning code
+In-Reply-To: <1303139455.9615.2533.camel@nimitz>
+Message-ID: <alpine.DEB.2.00.1104181321480.31186@chino.kir.corp.google.com>
+References: <20110415170437.17E1AF36@kernel> <alpine.DEB.2.00.1104161653220.14788@chino.kir.corp.google.com> <1303139455.9615.2533.camel@nimitz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
-References: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
-Date: Mon, 18 Apr 2011 16:23:45 -0400
-X-Google-Sender-Auth: otjJl2FnejxNprLp0cAeYIps_0g
-Message-ID: <BANLkTi=UjQ5tenjbHpkNWGmFSd2JzOvOOw@mail.gmail.com>
-Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
-From: Colin Walters <walters@verbum.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, x86 <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 3:32 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> Hi all-
->
-> I'd appreciate some help testing rdtsc's ordering wrt memory on
-> various hardware.  You can download evil-clock-test code at:
->
-> https://gitorious.org/linux-test-utils/linux-clock-tests/blobs/raw/master/evil-clock-test.cc
+On Mon, 18 Apr 2011, Dave Hansen wrote:
 
-Hmm...the first time I ran it, it started OK, then printed over and over:
+> > > +void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
+> > > +{
+> > > +	va_list args;
+> > > +	unsigned int filter = SHOW_MEM_FILTER_NODES;
+> > > +	const gfp_t wait = gfp_mask & __GFP_WAIT;
+> > > +
+> > 
+> > "wait" is unnecessary.  You didn't do "const gfp_t nowarn = gfp_mask & 
+> > __GFP_NOWARN;" for the same reason.
+> 
+> This line is just a copy from the __alloc_pages_slowpath() one.  I guess
+> we only use it once, so I've got no problem killing it.
+> 
+> > > +	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs))
+> > > +		return;
+> > > +
+> > > +	/*
+> > > +	 * This documents exceptions given to allocations in certain
+> > > +	 * contexts that are allowed to allocate outside current's set
+> > > +	 * of allowed nodes.
+> > > +	 */
+> > > +	if (!(gfp_mask & __GFP_NOMEMALLOC))
+> > > +		if (test_thread_flag(TIF_MEMDIE) ||
+> > > +		    (current->flags & (PF_MEMALLOC | PF_EXITING)))
+> > > +			filter &= ~SHOW_MEM_FILTER_NODES;
+> > > +	if (in_interrupt() || !wait)
+> > > +		filter &= ~SHOW_MEM_FILTER_NODES;
+> > > +
+> > > +	if (fmt) {
+> > > +		printk(KERN_WARNING);
+> > > +		va_start(args, fmt);
+> > > +		vprintk(fmt, args);
+> > > +		va_end(args);
+> > > +	}
+> > > +
+> > > +	printk(KERN_WARNING "%s: page allocation failure: order:%d, mode:0x%x\n",
+> > > +			current->comm, order, gfp_mask);
+> > 
+> > pr_warning()?
+> 
+> OK, I'll change it back.
+> 
+> > current->comm should always be printed with get_task_comm() to avoid 
+> > racing with /proc/pid/comm.  Since this function can be called potentially 
+> > deep in the stack, you may need to serialize this with a 
+> > statically-allocated buffer.
+> 
+> This code was already in page_alloc.c.  I'm simply breaking it out here
+> trying to keep the changes down to what is needed minimally to move the
+> code.  Correcting this preexisting problem sounds like a great follow-on
+> patch.
+> 
 
-  ERROR!  Time1 went back by 2380216472
-  ERROR!  Time1 went back by 2380216080
-  ERROR!  Time1 went back by 2380215704
-  ERROR!  Time1 went back by 2380215320
+It shouldn't be a follow-on patch since you're introducing a new feature 
+here (vmalloc allocation failure warnings) and what I'm identifying is a 
+race in the access to current->comm.  A bug fix for a race should always 
+preceed a feature that touches the same code.
 
-and the original output was lost in the terminal emulator history.
-After piping it to tee a second time, of course it worked and didn't
-print any errors =)
+There's two options to fixing the race:
 
-CPU vendor   : GenuineIntel
-CPU model    : Intel(R) Core(TM)2 Quad CPU    Q9400  @ 2.66GHz
-CPU stepping : 10
-TSC flags    : tsc constant_tsc
-Using lfence_rdtsc because you have an Intel CPU
-Will test the "lfence;rdtsc" clock.
-Now test passed  : margin 160 with 28911200 samples
-Load3 test passed: margin 144 with 2493322 samples
-Load test passed : margin 120 with 4929138 samples
-Store test failed as expected: worst error 2184 with 4409828 samples
+ - provide a statically-allocated buffer to use for get_task_comm() and 
+   copy current->comm over before printing it, or
 
-What's interesting is it seems unpredictable when running it whether
-it will error out =/ Here's the start of a failing trace:
+ - take task_lock(current) to protect against /proc/pid/comm.
 
-CPU vendor   : GenuineIntel
-CPU model    : Intel(R) Core(TM)2 Quad CPU    Q9400  @ 2.66GHz
-CPU stepping : 10
-TSC flags    : tsc constant_tsc
-Using lfence_rdtsc because you have an Intel CPU
-Will test the "lfence;rdtsc" clock.
-Now test failed  : worst error 2399269920 with 28704328 samples
-  ERROR!  Time1 went back by 2399197568
-  ERROR!  Time1 went back by 2399196984
+The latter probably isn't safe because we could potentially already be 
+holding task_lock(current) during a GFP_ATOMIC page allocation.
