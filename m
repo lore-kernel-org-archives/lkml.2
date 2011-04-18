@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab1DRKXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 06:23:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45636 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab1DRKXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 06:23:05 -0400
-Date: Mon, 18 Apr 2011 11:23:00 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: akpm@linux-foundation.org, raz ben yehuda <raziebe@gmail.com>,
-        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        stable@kernel.org
-Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
-Message-ID: <20110418102300.GA16908@suse.de>
-References: <20110415101248.GB22688@suse.de>
- <20110415143916.GN15707@random.random>
- <20110415150606.GP15707@random.random>
+	id S1754192Ab1DRKam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 06:30:42 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:46181 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab1DRKae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 06:30:34 -0400
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Mark Lord <kernel@teksavvy.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Justin Maggard <jmaggard10@gmail.com>, Tejun Heo <htejun@gmail.com>
+Date: Mon, 18 Apr 2011 11:30:28 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: Acv7gur0RT9uqwC6Qx+WMGhG/eIw0gCLmWFQ
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C772DA764@gretna.indigovision.com>
+References: <C1438B59050E1B4C9482FF3266AD6BA32C7493557A@gretna.indigovision.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C7493559F@gretna.indigovision.com>
+ <4D9CD275.9000002@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C749358D0@gretna.indigovision.com>
+ <4D9FACC9.7020200@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C772D9EB1@gretna.indigovision.com>
+ <4DA5BCF3.5080205@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C772DA491@gretna.indigovision.com>
+ <4DA79134.1010508@teksavvy.com>
+ <C1438B59050E1B4C9482FF3266AD6BA32C772DA5DD@gretna.indigovision.com>
+ <4DA86606.308@teksavvy.com>
+In-Reply-To: <4DA86606.308@teksavvy.com>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110415150606.GP15707@random.random>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3IAV78w006556
 
-On Fri, Apr 15, 2011 at 05:06:06PM +0200, Andrea Arcangeli wrote:
-> On Fri, Apr 15, 2011 at 04:39:16PM +0200, Andrea Arcangeli wrote:
-> > On Fri, Apr 15, 2011 at 11:12:48AM +0100, Mel Gorman wrote:
-> > > diff --git a/mm/memory.c b/mm/memory.c
-> > > index 5823698..1659574 100644
-> > > --- a/mm/memory.c
-> > > +++ b/mm/memory.c
-> > > @@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
-> > >  	 * run pte_offset_map on the pmd, if an huge pmd could
-> > >  	 * materialize from under us from a different thread.
-> > >  	 */
-> > > -	if (unlikely(__pte_alloc(mm, vma, pmd, address)))
-> > > +	if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
-> 
-> I started hacking on this and I noticed it'd be better to extend the
-> unlikely through the end. At first review I didn't notice the
-> parenthesis closure stops after pte_none and __pte_alloc is now
-> uncovered. I'd prefer this:
-> 
->     if (unlikely(pmd_none(*pmd) && __pte_alloc(mm, vma, pmd, address)))
-> 
+> > libata.force=1.5g
+>
+> Mmm... I suppose it could be getting stuck at 1.5g,
+> and not transitioning back to "auto detect" or something.
+>
+> That part of sata_mv involves a bit of voo-doo,
+> because I was reluctant to cut/paste the 200 lines or so
+> of generic code just for the sake of changing five lines.
+>
+> Perhaps the generic code has changed since this was originally working,
+> and now no longer always works for sata_mv..
+>
+> I suppose you have a good reason for using "libata.force=1.5g" there?
 
-I had this at one point and then decided to match what we do for
-pte_alloc_map(). My reasoning was that the most important part of this
-check is pmd_none(). It's relatively unlikely we even call __pte_alloc
-which is why I didn't think it belonged in the unlikely block. I also
-preferred being consistent with pte_alloc_map.
+Hi Mark,
 
-> I mean the real unlikely thing is that we return VM_FAULT_OOM, if we
-> end up calling __pte_alloc or not, depends on the app. Generally it
-> sounds more frequent that the pte is not none, so it's not wrong, but
-> it's even less likely that __pte_alloc fails so that can be taken into
-> account too, and __pte_alloc runs still quite frequently. So either
-> above or:
-> 
->     if (unlikely(pmd_none(*pmd)) && unlikely(__pte_alloc(mm, vma, pmd, address)))
-> 
+I hope you had a good weekend.
 
-I'd prefer this than putting everything inside the same unlikely block.
-But if this makes a noticeable, why do we not do it for pte_alloc_map,
-pmd_alloc and other similar functions?
+The SATA speed was limited because there were concerns over signal integrity at
+3Gbps early on in our product development, and even at 1.5Gbps the SATA links
+are not a bottleneck in our platform.  The signal integrity issues have been
+addressed, and we would like to remove the limit, but this obviously has an
+additional test overhead and it is low down on our priorities.
 
-> I generally prefer unlikely only when it's 100% sure thing it's less
-> likely (like the VM_FAULT_OOM), so the first version I guess it's
-> enough (I'm afraid unlikely for pte_none too, may make gcc generate a
-> far away jump possibly going out of l1 icache for a case that is only
-> 512 times less likely at best). My point is that it's certainly hugely
-> more unlikely that __pte_alloc fails than the pte is none.
-> 
+Out of interest I examined the behaviour of the hotplug with the 1.5Gbps limit
+removed, but I saw no change in the port lockup behaviour.
 
-For the bug fix, it's best to match what pte_alloc_map, pmd_alloc,
-pud_alloc and others do in terms of how it uses unlikely. If what we are
-currently doing is sub-optimal, a single patch should change all the
-helpers.
 
--- 
-Mel Gorman
-SUSE Labs
+Cheers,
+
+Bruce.
+
+
+Latest News at: http://www.indigovision.com/index.php/en/news.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
