@@ -1,79 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab1DROBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:01:41 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42280 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab1DROBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:01:15 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>, EDAC devel <linux-edac@vger.kernel.org>,
+	id S1754250Ab1DROE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:04:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55275 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753092Ab1DROEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 10:04:49 -0400
+Date: Mon, 18 Apr 2011 15:04:45 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        Prarit Bhargava <prarit@redhat.com>, Russ Anderson <rja@sgi.com>
-Subject: [PATCH -v2 1/2] x86, MCE: Do not taint when handling correctable errors
-Date: Mon, 18 Apr 2011 16:00:21 +0200
-Message-Id: <1303135222-17118-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 12/12] mm: Throttle direct reclaimers if PF_MEMALLOC
+ reserves are low and swap is backed by network storage
+Message-ID: <20110418140445.GB16908@suse.de>
+References: <1302777698-28237-1-git-send-email-mgorman@suse.de>
+ <1302777698-28237-13-git-send-email-mgorman@suse.de>
+ <20110418223014.22a6e490@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110418223014.22a6e490@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Mon, Apr 18, 2011 at 10:30:14PM +1000, NeilBrown wrote:
+> On Thu, 14 Apr 2011 11:41:38 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > If swap is backed by network storage such as NBD, there is a risk that a
+> > large number of reclaimers can hang the system by consuming all
+> > PF_MEMALLOC reserves. To avoid these hangs, the administrator must tune
+> > min_free_kbytes in advance. This patch will throttle direct reclaimers
+> > if half the PF_MEMALLOC reserves are in use as the system is at risk of
+> > hanging. A message will be displayed so the administrator knows that
+> > min_free_kbytes should be tuned to a higher value to avoid the
+> > throttling in the future.
+> 
+> This sounds like a much simpler approach than all the pre-allocation.
+> Is it certain to work? 
 
-Correctable errors are considered something rather normal on modern
-hardware these days. Even more importantly, correctable errors mean
-exactly that - they've been corrected by the hardware - and there's no
-need to taint the kernel since execution hasn't been compromised so far.
+It should - at least I haven't conceived of a situation where it would
+fail yet nor have I triggered the throttling logic during tests. The
+logic was tested with a debugging patch that set the throttling
+level higher.
 
-Also, drop tainting in the thermal throttling code for a similar reason:
-crossing a thermal threshold does not mean corruption.
+> Are PF_MEMALLOC reserved only used from direct
+> reclaim?
+> 
 
-Cc: Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Acked-by: Tony Luck <tony.luck@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c         |    1 -
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ---
- 2 files changed, 0 insertions(+), 4 deletions(-)
+No. They are also used by kswapd and by a task that is being OOM killed.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 3385ea2..68e2303 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -590,7 +590,6 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
- 			mce_log(&m);
- 			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
--			add_taint(TAINT_MACHINE_CHECK);
- 		}
- 
- 		/*
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 6f8c5e9..5846a79 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -187,8 +187,6 @@ static int therm_throt_process(bool new_event, int event, int level)
- 				this_cpu,
- 				level == CORE_LEVEL ? "Core" : "Package",
- 				state->count);
--
--		add_taint(TAINT_MACHINE_CHECK);
- 		return 1;
- 	}
- 	if (old_event) {
-@@ -393,7 +391,6 @@ static void unexpected_thermal_interrupt(void)
- {
- 	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
- 			smp_processor_id());
--	add_taint(TAINT_MACHINE_CHECK);
- }
- 
- static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
+> Is printing a message for the admin really a good idea? 
+
+Ordinarily no but initially I wanted to make it brutually obvious
+when throttling is hit and what got hit. Ultimately it's more likely
+to be a tracepoint.
+
+> Auto-tuning is much
+> better than requiring the sysadmin to tune.
+
+That requires the memory reservation and pre-allocation patches. To
+keep complexity down, I wanted to treat that as a separate series.
+
+> Is throttling when we are low on memory really a problem that needs to be
+> tuned away? Presumably we would get over the memory shortage fairly soon and
+> the throttling would stop (??).
+> 
+
+It depends on what the administrator wants really. If they don't care
+about the stall, they can simply ignore the problem because as you say,
+it should get resolved quickly and the throttled processes continue.
+
+> > +	if (printk_ratelimit())
+> > +		printk(KERN_INFO "Throttling %s due to reclaim pressure on "
+> > +				 "network storage\n",
+> > +			current->comm);
+> > +	do {
+> > +		prepare_to_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait,
+> > +							TASK_INTERRUPTIBLE);
+> > +		schedule();
+> > +		finish_wait(&zone->zone_pgdat->pfmemalloc_wait, &wait);
+> > +	} while (!pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx) &&
+> > +			!fatal_signal_pending(current));
+> > +}
+> > +
+> 
+> This looks racing.  It is my understanding that you should always perform the
+> test between the 'prepare_to_wait' and the 'schedule'. Otherwise the wakeup
+> could happen just before the prepare_to_wait and you never wake from the
+> schedule.
+> If that doesn't apply in this case I would appreciate a comment explaining
+> why.
+> 
+
+You're right, it's racy. Well spotted.
+
+> 
+> 
+> >  unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> >  				gfp_t gfp_mask, nodemask_t *nodemask)
+> >  {
+> > @@ -2131,6 +2188,8 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> >  		.nodemask = nodemask,
+> >  	};
+> >  
+> > +	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
+> > +
+> >  	trace_mm_vmscan_direct_reclaim_begin(order,
+> >  				sc.may_writepage,
+> >  				gfp_mask);
+> > @@ -2482,6 +2541,13 @@ loop_again:
+> >  			}
+> >  
+> >  		}
+> > +
+> > +		/* Wake throttled direct reclaimers if low watermark is met */
+> > +		if (sk_memalloc_socks() &&
+> > +				waitqueue_active(&pgdat->pfmemalloc_wait) &&
+> > +				pfmemalloc_watermark_ok(pgdat, MAX_NR_ZONES - 1))
+> > +			wake_up_interruptible(&pgdat->pfmemalloc_wait);
+> > +
+> 
+> This test on sk_memalloc_socks looks ugly to me.
+> The VM shouldn't be checking on some networking state.
+> Do we really need the test?  It is not reasonable to always throttle direct
+> reclaim when mem gets really low?
+
+It's a micro-optimisation. Throttling is not currently necessary
+as backing storage such as local block devices have mempools in
+place that avoid dipping into the PF_MEMALLOC reserves. On a normal
+configuration, that waitqueue will simply never be active so I can
+remove the sk_memalloc_socks() test.
+
+What about in slab though? A function call in the fast path is avoided
+by using the sk_memalloc_socks tests which is nice.
+
+> If we do need the test - could networking set some global flag in the VM
+> which the VM can then test.
+
+I'd like to keep the test in slab at least but adding a new global flag
+feels like a waste. I could add a VM wrapper around sk_memalloc_socks()
+that would effectively be a rename but that doesn't seem much better.
+
+> Maybe one day we will have something other than network which needs special
+> care with the last dregs of memory - then it could set the global flag too
+> (in which case it should probably be a global counter).
+> 
+
+When/if that happens, the naming would become more obvious. Right now,
+it's network-related so doesn't seem unreasonable to have a
+network-related check.
+
 -- 
-1.7.4.rc2
-
+Mel Gorman
+SUSE Labs
