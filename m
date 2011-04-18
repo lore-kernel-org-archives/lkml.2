@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab1DRRXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:23:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39380 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab1DRRXL (ORCPT
+	id S1756108Ab1DRR1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:27:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33291 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726Ab1DRR1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:23:11 -0400
+	Mon, 18 Apr 2011 13:27:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=vFS+gfbJP3LKOzxQzqmHhFAcFtv53pWhhMnE47apJrYqXiYnmAbPSzpBMo/gOQsa+m
-         NcuPL4RwwaNOt10ieXtqwv+Wb53b51kkq9HcXS/cGx8v4SfcqcQMKV+IeSP+hbdKOjLF
-         KBy7BzIq6cToNDHZLpdDELcs9qCr8D9y3En/Q=
-Date: Mon, 18 Apr 2011 10:23:01 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.39-rc3
-Message-ID: <20110418172301.GA14259@core.coreip.homeip.net>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ED9IzM2Vusaq53M/0bBBrgkWWpMJOh1zp1tlK4pcnq2iEOhq4NVNijvGQRHbOBVMuf
+         3QpyNyx73AQdutLnqo0MG7CHhs1eZim4+NojKPX0g1HIMRJXEz3y82MoaV9MbnYC0C8I
+         bj+pGi4LWstjTEhRQhQHmslRFxCX5S1NAxBCY=
+Message-ID: <4DAC7487.6050204@gmail.com>
+Date: Tue, 19 Apr 2011 01:27:35 +0800
+From: Wanlong Gao <wanlong.gao@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oliver Neukum <oneukum@suse.de>
+CC: Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/1] drivers/usb/image/mdc800.c: Remove "typdef enum".
+References: <014287655bd0c4327bbd946b9c823a0e4ec35f8e.1303079016.git.tfransosi@gmail.com> <BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com> <201104180926.17457.oneukum@suse.de>
+In-Reply-To: <201104180926.17457.oneukum@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+2011-4-18 15:26, Oliver Neukum wroted:
+> Am Montag, 18. April 2011, 02:54:16 schrieb Wanlong Gao:
+>>> -
+>>> /***************************************************************************
+>>>        The USB Part of the driver
+>>> ****************************************************************************/
+>>> --
+>>> 1.7.3.2.343.g7d43d
+>>>
+>> Why did you change it ? and why change so many lines ?
+>> It had some thing wrong ?
+>
+> Exactly. This is a driver for legacy hardware. Could you leave it alone
+> unless you fix a real, as in makes a difference to code generation, bug?
+>
+> 	Regards
+> 		Oliver
+Hmm..Maybe he just want to make to code nice . and didn't think as more 
+about this as you .
 
-Please pull from:
+Thanks
+Regards
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive updates for the input subsystem. Couple of driver fixes plus
-changes to evdev to signal buffer overruns to userspace and also change
-to input core to estimate number of events in a packet (mostly useful
-for multitouch devices).
-
-Changelog:
----------
-
-Axel Lin (1):
-      Input: twl4030_keypad - fix potential NULL dereference in twl4030_kp_probe()
-
-Chase Douglas (1):
-      Input: document event types and codes and their intended use
-
-Christoph Fritz (1):
-      Input: h3600_ts - fix error handling at connect
-
-Igor Mammedov (1):
-      Input: xen-kbdfront - fix mouse getting stuck after save/restore
-
-Jarod Wilson (1):
-      Input: add KEY_IMAGES specifically for AL Image Browser
-
-Jeff Brown (2):
-      Input: evdev - indicate buffer overrun with SYN_DROPPED
-      Input: estimate number of events per packet
-
-Shubhrajyoti D (1):
-      Input: twl4030_keypad - avoid potential NULL-pointer dereference
-
-
-Diffstat:
---------
-
- Documentation/input/event-codes.txt        |  262 ++++++++++++++++++++++++++++
- drivers/input/evdev.c                      |   33 +++--
- drivers/input/input.c                      |   40 +++++
- drivers/input/keyboard/twl4030_keypad.c    |    6 +-
- drivers/input/misc/xen-kbdfront.c          |   13 ++-
- drivers/input/touchscreen/h3600_ts_input.c |   17 +-
- include/linux/input.h                      |   10 +-
- include/linux/input/mt.h                   |    6 +
- 8 files changed, 361 insertions(+), 26 deletions(-)
- create mode 100644 Documentation/input/event-codes.txt
-
--- 
-Dmitry
-
+	Wanlong Gao
