@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab1DRTOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:14:12 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:59166 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab1DRTOI (ORCPT
+	id S1756566Ab1DRTOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 15:14:11 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:48305 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324Ab1DRTOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Apr 2011 15:14:08 -0400
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         arnaud.patard@rtp-net.org
-Subject: [PATCH 06/12] staging: xgifb: replace setXGIIDXREG() with xgifb_reg_and_or()
-Date: Mon, 18 Apr 2011 22:14:02 +0300
-Message-Id: <1303154048-21989-7-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 05/12] staging: xgifb: replace andXGIIDXREG() with xgifb_reg_and()
+Date: Mon, 18 Apr 2011 22:14:01 +0300
+Message-Id: <1303154048-21989-6-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1303154048-21989-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1303154048-21989-1-git-send-email-aaro.koskinen@iki.fi>
@@ -20,52 +20,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace setXGIIDXREG() with xgifb_reg_and_or().
+Replace andXGIIDXREG() with xgifb_reg_and().
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/XGI_main_26.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 1dacd52..3112a25 100644
+index 2f2c275..1dacd52 100644
 --- a/drivers/staging/xgifb/XGI_main_26.c
 +++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -1185,14 +1185,14 @@ static int XGIfb_pan_var(struct fb_var_screeninfo *var)
- 	xgifb_reg_set(XGICR, 0x0C, (base >> 8) & 0xFF);
- 	xgifb_reg_set(XGISR, 0x0D, (base >> 16) & 0xFF);
- 	xgifb_reg_set(XGISR, 0x37, (base >> 24) & 0x03);
--	setXGIIDXREG(XGISR, 0x37, 0xDF, (base >> 21) & 0x04);
-+	xgifb_reg_and_or(XGISR, 0x37, 0xDF, (base >> 21) & 0x04);
+@@ -1936,7 +1936,7 @@ static void XGIfb_post_setmode(void)
+ 		reg |= 0x80;
+ 	xgifb_reg_set(XGICR, 0x17, reg);
  
- 	if (xgi_video_info.disp_state & DISPTYPE_DISP2) {
- 		xgifb_reg_or(XGIPART1, XGIfb_CRT2_write_enable, 0x01);
- 		xgifb_reg_set(XGIPART1, 0x06, (base & 0xFF));
- 		xgifb_reg_set(XGIPART1, 0x05, ((base >> 8) & 0xFF));
- 		xgifb_reg_set(XGIPART1, 0x04, ((base >> 16) & 0xFF));
--		setXGIIDXREG(XGIPART1, 0x02, 0x7F, ((base >> 24) & 0x01) << 7);
-+		xgifb_reg_and_or(XGIPART1, 0x02, 0x7F, ((base >> 24) & 0x01) << 7);
- 	}
- 	/* printk("End of pan_var"); */
- 	return 0;
-@@ -1736,7 +1736,7 @@ int XGIDoSense(int tempbl, int tempbh, int tempcl, int tempch)
+-	andXGIIDXREG(XGISR, IND_XGI_RAMDAC_CONTROL, ~0x04);
++	xgifb_reg_and(XGISR, IND_XGI_RAMDAC_CONTROL, ~0x04);
  
- 	xgifb_reg_set(XGIPART4, 0x11, tempbl);
- 	temp = tempbh | tempcl;
--	setXGIIDXREG(XGIPART4, 0x10, 0xe0, temp);
-+	xgifb_reg_and_or(XGIPART4, 0x10, 0xe0, temp);
- 	for (i = 0; i < 10; i++)
- 		XGI_LongWait(&XGI_Pr);
- 	tempch &= 0x7f;
-@@ -1904,7 +1904,7 @@ static void XGIfb_post_setmode(void)
- 	/*
- 	xgifb_reg_set(XGISR,IND_XGI_PASSWORD,XGI_PASSWORD);
- 	xgifb_reg_set(XGICR, 0x13, 0x00);
--	setXGIIDXREG(XGISR,0x0E, 0xF0, 0x01);
-+	xgifb_reg_and_or(XGISR,0x0E, 0xF0, 0x01);
- 	*test*
- 	*/
- 	if (xgi_video_info.video_bpp == 8) {
+ 	if ((xgi_video_info.disp_state & DISPTYPE_TV) && (xgi_video_info.hasVB
+ 			== HASVB_301)) {
+@@ -1967,11 +1967,11 @@ static void XGIfb_post_setmode(void)
+ 
+ 			if (xgi_video_info.TV_type == TVMODE_NTSC) {
+ 
+-				andXGIIDXREG(XGIPART2, 0x3a, 0x1f);
++				xgifb_reg_and(XGIPART2, 0x3a, 0x1f);
+ 
+ 				if (xgi_video_info.TV_plug == TVPLUG_SVIDEO) {
+ 
+-					andXGIIDXREG(XGIPART2, 0x30, 0xdf);
++					xgifb_reg_and(XGIPART2, 0x30, 0xdf);
+ 
+ 				} else if (xgi_video_info.TV_plug
+ 						== TVPLUG_COMPOSITE) {
+@@ -2002,11 +2002,11 @@ static void XGIfb_post_setmode(void)
+ 
+ 			} else if (xgi_video_info.TV_type == TVMODE_PAL) {
+ 
+-				andXGIIDXREG(XGIPART2, 0x3A, 0x1F);
++				xgifb_reg_and(XGIPART2, 0x3A, 0x1F);
+ 
+ 				if (xgi_video_info.TV_plug == TVPLUG_SVIDEO) {
+ 
+-					andXGIIDXREG(XGIPART2, 0x30, 0xDF);
++					xgifb_reg_and(XGIPART2, 0x30, 0xDF);
+ 
+ 				} else if (xgi_video_info.TV_plug
+ 						== TVPLUG_COMPOSITE) {
 -- 
 1.5.6.5
 
