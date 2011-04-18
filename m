@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab1DRQfT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 12:35:19 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45227 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab1DRQfQ convert rfc822-to-8bit (ORCPT
+	id S1755793Ab1DRQh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 12:37:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39533 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab1DRQhW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 12:35:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lRBtaKZnw48PMNBzRondrLPbUxosXGelr02gcJ9+MXFyneCqrIx+0om6GiItr1oAHf
-         H4z8WuByQKXUmfIpBMHmlPwQ0KSKdAL/TubjTirEByLzZxIAd09MdB0v7DXodvsc4sAP
-         sV2IVS3CrCltjOFnfJdDdc/98oOgtj0yg9w+I=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimW2WpbxRGDwJ9AFQf9FnYSCXs9Ow@mail.gmail.com>
-References: <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
-	<4DA655E7.3000904@zytor.com>
-	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
-	<BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
-	<20110415131152.GJ18463@8bytes.org>
-	<20110415131650.GB18660@elte.hu>
-	<20110415154604.GN18463@8bytes.org>
-	<BANLkTim23SQiyb4R+QA7=fpPZrnQw9_PRQ@mail.gmail.com>
-	<20110416163509.GS18463@8bytes.org>
-	<BANLkTimxG3QoLx0vqw9YgE_s4qyzcEoEaQ@mail.gmail.com>
-	<20110417140924.GU18463@8bytes.org>
-	<BANLkTikEsZHjqzT6Ur+XgJhkzJDpSy-FDA@mail.gmail.com>
-	<BANLkTin3XeXBEvWZcKVdPvif=Ndr0h3UVA@mail.gmail.com>
-	<BANLkTintukwS-FibGRdP0R52nSjcGywV=g@mail.gmail.com>
-	<BANLkTimW2WpbxRGDwJ9AFQf9FnYSCXs9Ow@mail.gmail.com>
-Date: Mon, 18 Apr 2011 12:35:15 -0400
-Message-ID: <BANLkTim5htGJfiZPqYmpRu5YwFhUp5CRrg@mail.gmail.com>
-Subject: Re: Linux 2.6.39-rc3
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, alexandre.f.demers@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 18 Apr 2011 12:37:22 -0400
+Subject: Re: [RFC][PATCH 3/7] lockdep: Annotate read/write states
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1303144459.7181.42.camel@gandalf.stny.rr.com>
+References: <20110417094505.865828233@chello.nl>
+	 <20110417095507.026186002@chello.nl>  <20110418133405.GA2080@zhy>
+	 <1303144459.7181.42.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Apr 2011 18:36:51 +0200
+Message-ID: <1303144611.32491.878.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 11:59 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
-> On Mon, Apr 18, 2011 at 11:33 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->> On Mon, Apr 18, 2011 at 11:29 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
->>> On Mon, Apr 18, 2011 at 11:23 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>> On Sun, Apr 17, 2011 at 10:09 AM, Joerg Roedel <joro@8bytes.org> wrote:
->>>>> On Sat, Apr 16, 2011 at 02:54:04PM -0400, Jerome Glisse wrote:
->>>>>
->>>>>> If you want to go the printk way you can add printk before each test
->>>>>> ring_test, ib_test in r600.c this 2 functions are the own that might
->>>>>> trigger the first GPU gart activities.
->>>>>
->>>>> Okay, I found the place in source that triggers this. It happens in the
->>>>> function r600_ib_test. The interesting thing is that not the ib-command
->>>>> itself is responsible but the fence that is emitted afterwards (proved
->>>>> by removing the fence command, where the problem went away).
->>>>> I don't know enough about the command semantics to make a guess what
->>>>> goes wrong there. But maybe you GPU folks have an idea?
->>>>>
->>>>
->>>> I can't think of anything off hand.  It might be worth disabling the
->>>> call to r600_ib_test() in r600_init() and then seeing if you get any
->>>> errors when the fences are used later on when X starts or just at that
->>>> point in the module load sequence.  What's odd is that when you tested
->>>> radeon.no_wb=1 you got the same behavior as that disables shadowing of
->>>> fence writes to gpu gart mem, so it wouldn't be writing to memory in
->>>> that case.
->>>>
->>>> Alex
->>>>
->>>
->>> It might be the irq ring write that is faulty.
->>
->> That's disabled with no_wb=1 as well.
->>
->> Alex
->>
->
-> I mean the irq interrupt ring, i don't see this being disabled when no_wb=1
+On Mon, 2011-04-18 at 12:34 -0400, Steven Rostedt wrote:
+> On Mon, 2011-04-18 at 21:34 +0800, Yong Zhang wrote:
+> 
+> > > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > ---
+> > >  include/linux/lockdep.h |  107 ++++++++++++++++++++++++++++++++++++------------
+> > >  kernel/lockdep.c        |   46 ++++++++++----------
+> > >  2 files changed, 105 insertions(+), 48 deletions(-)
+> > > 
+> > > @@ -2273,7 +2273,7 @@ mark_held_locks(struct task_struct *curr
+> > >  		hlock = curr->held_locks + i;
+> > >  
+> > >  		usage_bit = 2 + (mark << 2); /* ENABLED */
+> > > -		if (hlock->read)
+> > > +		if (hlock->rw_state)
+> > 
+> > 		is_read(hlock->rw_state) ?
+> 
+> Yeah, I think this should be a is_read() or add a comment explaining why
+> not.
 
-I meant the IH ring pointer writeback.  The ih ring itself is still in
-gart memory.
-
-Alex
-
->
-> Cheers,
-> Jerome
->
+Yeah it should be is_read().
