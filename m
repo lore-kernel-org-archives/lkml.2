@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab1DRMVY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 08:21:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59650 "EHLO
+	id S1753153Ab1DRMVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 08:21:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59735 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab1DRMVT convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752833Ab1DRMVh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 08:21:19 -0400
-Subject: Re: [PATCH v3 2.6.39-rc1-tip 4/26]  4: uprobes: Breakground page
- replacement.
+	Mon, 18 Apr 2011 08:21:37 -0400
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 6/26]  6: Uprobes:
+ register/unregister probes.
 From: Peter Zijlstra <peterz@infradead.org>
 To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
         Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
+        Jonathan Corbet <corbet@lwn.net>,
         Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         SystemTap <systemtap@sources.redhat.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110401143318.15455.64841.sendpatchset@localhost6.localdomain6>
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110401143338.15455.98645.sendpatchset@localhost6.localdomain6>
 References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
-	 <20110401143318.15455.64841.sendpatchset@localhost6.localdomain6>
+	 <20110401143338.15455.98645.sendpatchset@localhost6.localdomain6>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Apr 2011 14:20:25 +0200
-Message-ID: <1303129225.32491.776.camel@twins>
+Date: Mon, 18 Apr 2011 14:20:36 +0200
+Message-ID: <1303129236.32491.778.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,144 +40,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 2011-04-01 at 20:03 +0530, Srikar Dronamraju wrote:
-
-> +static int write_opcode(struct task_struct *tsk, struct uprobe * uprobe,
-> +			unsigned long vaddr, uprobe_opcode_t opcode)
+> +static int remove_uprobe(struct mm_struct *mm, struct uprobe *uprobe)
 > +{
-> +	struct page *old_page, *new_page;
-> +	void *vaddr_old, *vaddr_new;
-> +	struct vm_area_struct *vma;
-> +	spinlock_t *ptl;
-> +	pte_t *orig_pte;
-> +	unsigned long addr;
-> +	int ret;
+> +       int ret = 0;
 > +
-> +	/* Read the page with vaddr into memory */
-> +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
-> +	if (ret <= 0)
-> +		return -EINVAL;
-
-Why not return the actual gup() error?
-
-> +	ret = -EINVAL;
+> +       /*TODO: remove breakpoint */
+> +       if (!ret)
+> +               atomic_dec(&mm->uprobes_count);
 > +
-> +	/*
-> +	 * We are interested in text pages only. Our pages of interest
-> +	 * should be mapped for read and execute only. We desist from
-> +	 * adding probes in write mapped pages since the breakpoints
-> +	 * might end up in the file copy.
-> +	 */
-> +	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) !=
-> +						(VM_READ|VM_EXEC))
-> +		goto put_out;
-
-Note how you return -EINVAL here when we're attempting to poke at the
-wrong kind of mapping.
-
-> +	/* Allocate a page */
-> +	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
-> +	if (!new_page) {
-> +		ret = -ENOMEM;
-> +		goto put_out;
-> +	}
-> +
-> +	/*
-> +	 * lock page will serialize against do_wp_page()'s
-> +	 * PageAnon() handling
-> +	 */
-> +	lock_page(old_page);
-> +	/* copy the page now that we've got it stable */
-> +	vaddr_old = kmap_atomic(old_page, KM_USER0);
-> +	vaddr_new = kmap_atomic(new_page, KM_USER1);
-> +
-> +	memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
-> +	/* poke the new insn in, ASSUMES we don't cross page boundary */
-
-Why not test this assertion with a VM_BUG_ON() or something.
-
-> +	addr = vaddr;
-> +	vaddr &= ~PAGE_MASK;
-> +	memcpy(vaddr_new + vaddr, &opcode, uprobe_opcode_sz);
-> +
-> +	kunmap_atomic(vaddr_new, KM_USER1);
-> +	kunmap_atomic(vaddr_old, KM_USER0);
-
-The use of KM_foo is obsolete and un-needed.
-
-> +	orig_pte = page_check_address(old_page, tsk->mm, addr, &ptl, 0);
-> +	if (!orig_pte)
-> +		goto unlock_out;
-> +	pte_unmap_unlock(orig_pte, ptl);
-> +
-> +	lock_page(new_page);
-> +	ret = anon_vma_prepare(vma);
-> +	if (!ret)
-> +		ret = replace_page(vma, old_page, new_page, *orig_pte);
-> +
-> +	unlock_page(new_page);
-> +	if (ret != 0)
-> +		page_cache_release(new_page);
-> +unlock_out:
-> +	unlock_page(old_page);
-> +
-> +put_out:
-> +	put_page(old_page); /* we did a get_page in the beginning */
-> +	return ret;
+> +       return ret;
 > +}
-> +
-> +/**
-> + * read_opcode - read the opcode at a given virtual address.
-> + * @tsk: the probed task.
-> + * @vaddr: the virtual address to read the opcode.
-> + * @opcode: location to store the read opcode.
-> + *
-> + * Called with tsk->mm->mmap_sem held (for read and with a reference to
-> + * tsk->mm.
-> + *
-> + * For task @tsk, read the opcode at @vaddr and store it in @opcode.
-> + * Return 0 (success) or a negative errno.
-> + */
-> +int __weak read_opcode(struct task_struct *tsk, unsigned long vaddr,
-> +						uprobe_opcode_t *opcode)
+
+> +static void delete_uprobe(struct mm_struct *mm, struct uprobe *uprobe)
 > +{
-> +	struct vm_area_struct *vma;
-> +	struct page *page;
-> +	void *vaddr_new;
-> +	int ret;
-> +
-> +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 0, 0, &page, &vma);
-> +	if (ret <= 0)
-> +		return -EFAULT;
-
-Again, why not return the gup() error proper?
-
-> +	ret = -EFAULT;
-> +
-> +	/*
-> +	 * We are interested in text pages only. Our pages of interest
-> +	 * should be mapped for read and execute only. We desist from
-> +	 * adding probes in write mapped pages since the breakpoints
-> +	 * might end up in the file copy.
-> +	 */
-> +	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) !=
-> +						(VM_READ|VM_EXEC))
-> +		goto put_out;
-
-But now you return -EFAULT if we peek at the wrong kind of mapping,
-which is inconsistent with the -EINVAL of write_opcode().
-
-> +	lock_page(page);
-> +	vaddr_new = kmap_atomic(page, KM_USER0);
-> +	vaddr &= ~PAGE_MASK;
-> +	memcpy(opcode, vaddr_new + vaddr, uprobe_opcode_sz);
-> +	kunmap_atomic(vaddr_new, KM_USER0);
-
-Again, loose the KM_foo.
-
-> +	unlock_page(page);
-> +	ret =  0;
-> +
-> +put_out:
-> +	put_page(page); /* we did a get_page in the beginning */
-> +	return ret;
+> +       down_read(&mm->mmap_sem);
+> +       remove_uprobe(mm, uprobe);
+> +       list_del(&mm->uprobes_list);
+> +       up_read(&mm->mmap_sem);
+> +       mmput(mm);
 > +}
+
+> +static void erase_uprobe(struct uprobe *uprobe)
+> +{
+> +       unsigned long flags;
+> +
+> +       synchronize_sched();
+> +       spin_lock_irqsave(&treelock, flags);
+> +       rb_erase(&uprobe->rb_node, &uprobes_tree);
+> +       spin_unlock_irqrestore(&treelock, flags);
+> +       iput(uprobe->inode);
+> +} 
+
+remove,delete,erase.. head spins.. ;-)
+
+
