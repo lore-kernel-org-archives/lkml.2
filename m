@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab1DRSw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 14:52:28 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:4505 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756380Ab1DRSwZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 14:52:25 -0400
-Message-ID: <4DAC8868.4090003@caviumnetworks.com>
-Date: Mon, 18 Apr 2011 11:52:24 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Kevin Cernekee <cernekee@gmail.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
-References: <7aa38c32b7748a95e814e5bb0583f967@localhost>	<4DAC75C6.2060504@caviumnetworks.com> <BANLkTinbFNvez+G4LpmF7uwwJrH_J1NK8w@mail.gmail.com>
-In-Reply-To: <BANLkTinbFNvez+G4LpmF7uwwJrH_J1NK8w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Apr 2011 18:52:24.0662 (UTC) FILETIME=[C194A760:01CBFDF9]
+	id S1756434Ab1DRSy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 14:54:29 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:44275 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756354Ab1DRSy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 14:54:27 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Eric Moore <eric.moore@lsi.com>, Kashyap Desai <kashyap.desai@lsi.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>
+Subject: [PATCH] [SCSI] mpt2sas: fix double mutex lock in NON_BLOCKING state
+Date: Mon, 18 Apr 2011 22:53:38 +0400
+Message-Id: <1303152818-9856-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2011 11:24 AM, Kevin Cernekee wrote:
-> On Mon, Apr 18, 2011 at 10:32 AM, David Daney<ddaney@caviumnetworks.com>  wrote:
->> How much testing have you done on non-RI/XI CPUs?
->
-> On a non-RIXI CPU I was able to boot the system, run a basic GUI
-> application, create R/W shared mappings to /dev/mem, insert/remove
-> kernel modules, run a broken program that dumps core, etc.
->
-> I guess it would be a good idea to make sure swap still works.  Didn't
-> try that yet.
->
-> Can you think of anything else that might exercise the bits that were
-> touched by the patch?  Were there any tests you ran during the
-> development of RIXI support which uncovered subtle issues?
->
+If mutex_trylock succeed, the control flow goes to mutex_lock_interruptible()
+that is not a good thing.
 
-We run the LTP, I think it tests these things.  We also have a small 
-test case that tests for both the no-read and no-execute parts, but that 
-would be expected to fail on platforms that don't have RI/XI bits.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-David Daney
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+index 1c6d2b4..9bd7ffc 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+@@ -648,8 +648,10 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPTER *ioc,
+ 
+ 	issue_reset = 0;
+ 
+-	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
+-		return -EAGAIN;
++	if (state == NON_BLOCKING) {
++		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
++			return -EAGAIN;
++	}
+ 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
+ 		return -ERESTARTSYS;
+ 
+@@ -1587,8 +1589,10 @@ _ctl_diag_register(void __user *arg, enum block_state state)
+ 	if (_ctl_verify_adapter(karg.hdr.ioc_number, &ioc) == -1 || !ioc)
+ 		return -ENODEV;
+ 
+-	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
+-		return -EAGAIN;
++	if (state == NON_BLOCKING) {
++		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
++			return -EAGAIN;
++	}
+ 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
+ 		return -ERESTARTSYS;
+ 	rc = _ctl_diag_register_2(ioc, &karg);
+@@ -1932,8 +1936,10 @@ _ctl_diag_release(void __user *arg, enum block_state state)
+ 		return 0;
+ 	}
+ 
+-	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
+-		return -EAGAIN;
++	if (state == NON_BLOCKING) {
++		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
++			return -EAGAIN;
++	}
+ 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
+ 		return -ERESTARTSYS;
+ 
+@@ -2033,8 +2039,10 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
+ 	}
+ 	/* Get a free request frame and save the message context.
+ 	*/
+-	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
+-		return -EAGAIN;
++	if (state == NON_BLOCKING) {
++		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
++			return -EAGAIN;
++	}
+ 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
+ 		return -ERESTARTSYS;
+ 
+-- 
+1.7.1
+
