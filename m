@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab1DRRBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:01:18 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:51384 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754434Ab1DRRBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:01:13 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: A word of warning
-Date: Mon, 18 Apr 2011 13:01:09 -0400
-User-Agent: KMail/1.13.6 (Linux/2.6.38.2-pclos1.pae.bfs; KDE/4.6.2; i686; ; )
+	id S1756028Ab1DRRRi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:17:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60120 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754667Ab1DRRRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 13:17:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104181301.09175.gene.heskett@gmail.com>
+In-Reply-To: <20110418134421.GA15951@redhat.com>
+References: <20110418134421.GA15951@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 18 Apr 2011 10:16:43 -0700
+Message-ID: <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 0/7] signal: sigprocmask fixes
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings all;
+On Mon, Apr 18, 2011 at 6:44 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Once again: if we need this, then we need a lot more (trivial) changes
+> like 6/7 and 7/7. Basically every change of ->blocked should be converted
+> to use set_current_blocked(). OTOH, perhaps this makes sense by itself.
 
-I have just now managed to recover a working system caused by updating the 
-firmware on 2 of those 1 terrabyte seagate drives.  One of them was the 
-system drive, and the update scrambled the labels and blkid's, but not the 
-partitions, so my data remained available but it had to be searched for.
+Hmm. The more I think about this, the less I like it.
 
-The drive remained usable and I have recovered all my data to the other of 
-these twin drives, but its write speeds run in the 350k/sec range, so I 
-just now have it all moved back to the good drive.
+What if the pending thread signal was thread-specific to begin with?
 
-This past week is one I wouldn't wish on my worst enemy.
+For example, if we have a SIGFPE and a SIGKILL that happen at the same
+time, a dying task may have a SIGFPE pending when it dies, and that
+SIGFPE should _not_ be just distributed out to the other threads in
+the thread group.
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-<http://tinyurl.com/ddg5bz>
-<http://www.cantrip.org/gatto.html>
-How much for your women?  I want to buy your daughter... how much for
-the little girl?
-		-- Jake Blues, "The Blues Brothers"
+Am I missing something that protects against this?
+
+                  Linus
