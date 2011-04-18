@@ -1,138 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1DRANp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 20:13:45 -0400
-Received: from mga03.intel.com ([143.182.124.21]:17660 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab1DRANj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 20:13:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,229,1301900400"; 
-   d="scan'208";a="420895894"
-Date: Mon, 18 Apr 2011 08:13:33 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/12] IO-less dirty throttling v7
-Message-ID: <20110418001333.GA8890@localhost>
-References: <20110416132546.765212221@intel.com>
- <BANLkTimY3t6Kc-+=00k3QR+AK2uqJpph4g@mail.gmail.com>
- <20110417014430.GA9419@localhost>
- <BANLkTik+Bcw7uz9aMi6OrAzwg1rJZmJL0Q@mail.gmail.com>
- <20110417041003.GA17032@localhost>
+	id S1753054Ab1DRA02 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 20:26:28 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32496 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1DRA0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 20:26:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=YXoipWVlV1KnPgYBdiDW8k9RRIBZ3YdkL7+f6cth6rvIjhO04Kc58pT3VnG/k6zUDG
+         97xDHL/OK6bP9kCaRGxA==
+Date: Sun, 17 Apr 2011 17:26:19 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: mm: convert vma->vm_flags to 64bit
+In-Reply-To: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.LSU.2.00.1104171649350.21405@sister.anvils>
+References: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110417041003.GA17032@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sedat,
-
-> Please revert the last commit. It's not necessary anyway.
+On Tue, 12 Apr 2011, KOSAKI Motohiro wrote:
 > 
-> commit 84a9890ddef487d9c6d70934c0a2addc65923bcf
-> Author: Wu Fengguang <fengguang.wu@intel.com>
-> Date:   Sat Apr 16 18:38:41 2011 -0600
-> 
->     writeback: scale dirty proportions period with writeout bandwidth
->     
->     CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
->     Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> Benjamin, Hugh, I hope to add your S-O-B to this one because you are original author. 
+> Can I do?
 
-Please do revert that commit, because I found a sleep-inside-spinlock
-bug with it. Here is the fixed one (but you don't have to track this
-optional patch).
+Well, now you've fixed the mm/fremap.c omission, you're welcome to my
+Acked-by: Hugh Dickins <hughd@google.com>
 
-Thanks,
-Fengguang
----
-Subject: writeback: scale dirty proportions period with writeout bandwidth
-Date: Sat Apr 16 18:38:41 CST 2011
+I happen not to shared Ben's aversion to unsigned long long, I just
+don't really care one way or another on that; but I do get irritated by
+obfuscatory types which we then have to cast or unfold all over the place,
+I don't know if vm_flags_t would have been in that category or not.
 
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+You've made a few different choices than I did, okay: the only place
+where it might be worth disagreeing with you, is on mm->def_flags:
+I would rather make that an unsigned int than an unsigned long long,
+to save 4 bytes on 64-bit (if it were moved) rather than waste 4 bytes
+on 32-bit - in the unlikely event that someone adds a high VM_flag to
+def_flags, I'd rather hope they would test its effect.  However,
+it's every mm not every vma, so maybe not worth worrying about.
 
---- linux-next.orig/mm/page-writeback.c	2011-04-17 20:52:13.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-04-18 07:57:01.000000000 +0800
-@@ -121,20 +121,13 @@ static struct prop_descriptor vm_complet
- static struct prop_descriptor vm_dirties;
- 
- /*
-- * couple the period to the dirty_ratio:
-+ * couple the period to global write throughput:
-  *
-- *   period/2 ~ roundup_pow_of_two(dirty limit)
-+ *   period/2 ~ roundup_pow_of_two(write IO throughput)
-  */
- static int calc_period_shift(void)
- {
--	unsigned long dirty_total;
--
--	if (vm_dirty_bytes)
--		dirty_total = vm_dirty_bytes / PAGE_SIZE;
--	else
--		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
--				100;
--	return 2 + ilog2(dirty_total - 1);
-+	return 2 + ilog2(default_backing_dev_info.avg_write_bandwidth);
- }
- 
- /*
-@@ -143,6 +136,13 @@ static int calc_period_shift(void)
- static void update_completion_period(void)
- {
- 	int shift = calc_period_shift();
-+
-+	if (shift > PROP_MAX_SHIFT)
-+		shift = PROP_MAX_SHIFT;
-+
-+	if (abs(shift - vm_completions.pg[0].shift) <= 1)
-+		return;
-+
- 	prop_change_shift(&vm_completions, shift);
- 	prop_change_shift(&vm_dirties, shift);
- }
-@@ -180,7 +180,6 @@ int dirty_ratio_handler(struct ctl_table
- 
- 	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
- 	if (ret == 0 && write && vm_dirty_ratio != old_ratio) {
--		update_completion_period();
- 		vm_dirty_bytes = 0;
- 	}
- 	return ret;
-@@ -196,7 +195,6 @@ int dirty_bytes_handler(struct ctl_table
- 
- 	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
- 	if (ret == 0 && write && vm_dirty_bytes != old_bytes) {
--		update_completion_period();
- 		vm_dirty_ratio = 0;
- 	}
- 	return ret;
-@@ -1044,6 +1042,8 @@ snapshot:
- 	bdi->bw_time_stamp = now;
- unlock:
- 	spin_unlock(&dirty_lock);
-+	if (gbdi->bw_time_stamp == now)
-+		update_completion_period();
- }
- 
- static unsigned long max_pause(struct backing_dev_info *bdi,
+I am surprised that
+#define VM_EXEC		0x00000004ULL
+does not cause trouble for arch/arm/kernel/asm-offsets.c,
+but you tried cross-building it which I never did.
+
+Does your later addition of __nocast on vm_flags not make trouble
+for the unsigned long casts in arch/arm/include/asm/cacheflush.h?
+(And if it does not, then just what does __nocast do?)
+
+Thanks for seeing this through,
+Hugh
