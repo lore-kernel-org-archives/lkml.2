@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab1DRF6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 01:58:33 -0400
-Received: from muni-edif.netvision.com.py ([200.1.200.230]:47171 "EHLO
-	webserver.mca.gov.py" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab1DRF6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 01:58:30 -0400
-Message-ID: <20110418015621.20132feolbn27nvo@webmail.netvision.com.py>
-Date: Mon, 18 Apr 2011 01:56:21 -0400
-From: System Administrator <helpdeskzi@uni-mannheim.de>
-Reply-to: techndeskz@aim.com
-To: undisclosed-recipients:;
-Subject: Webmail Quote The Set-Limit =?iso-8859-1?b?/GJlcnNjaHJpdHRlbg==?=
+	id S1752787Ab1DRGCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 02:02:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36533 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751693Ab1DRGCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 02:02:11 -0400
+Date: Sun, 17 Apr 2011 23:02:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Arjan Mels <arjan.mels@gmx.net>,
+        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>,
+        Max Vozeler <max@vozeler.com>
+Subject: Re: [12/74] staging: usbip: bugfixes related to kthread conversion
+Message-ID: <20110418060255.GC22168@suse.de>
+References: <20110413155144.231263288@clark.kroah.org>
+ <201104172215.01736.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
-X-Anti-Virus: Kaspersky Anti-Virus for Sendmail with Milter API 5.6.20,
-	 bases: 20100805 #4144846, check: 20110418 clean
+In-Reply-To: <201104172215.01736.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 17, 2011 at 10:15:01PM +0200, Arnd Bergmann wrote:
+> On Wednesday 13 April 2011, Greg KH wrote:
+> > From: Arjan Mels <arjan.mels@gmx.net>
+> > 
+> > commit d2dd0b07c3e725d386d20294ec906f7ddef207fa upstream.
+> > 
+> > When doing a usb port reset do a queued reset instead to prevent a
+> > deadlock: the reset will cause the driver to unbind, causing the
+> > usb_driver_lock_for_reset to stall.
+> > 
+> > Signed-off-by: Arjan Mels <arjan.mels@gmx.net>
+> > Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+> > Cc: Max Vozeler <max@vozeler.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > 
+> 
+> I think either the subject line is misleading or the patch is not
+> needed in -stable. The kthread conversion was done in 2.6.38, so
+> any bug introduced by it would not need to be fixed in an earlier
+> version, afaict.
 
+Yes, the Subject: was incorrect, and I only realized it after it was
+committed to the tree, sorry.
 
-Ihr Postfach hat die Lagerung Grenze, die 20GB ist wie vom  
-Administrator festgelegt, Sie sind derzeit auf 20.9GB, können Sie  
-nicht in der Lage zu senden oder zu empfangen, bis Sie neue E-Mail  
-erneut validieren Ihr Postfach überschritten. Zur erneuten Überprüfung  
-Ihrer Mailbox bitte hier klicken:
+The bug fixes were still real.
 
-http://95.211.18.144/~testuser/acc3/account.html
+thanks,
 
-Dank
-System-Administrator
-
+greg k-h
