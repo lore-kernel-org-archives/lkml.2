@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab1DRH1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 03:27:36 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41344 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab1DRH1b (ORCPT
+	id S1752853Ab1DRH3y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 03:29:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60266 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab1DRH3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 03:27:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Hq8OCu+Cd4hexHM3Dk4wwfUfQXipZTnITF1VD7v142tAUHF5g6u4I2N66LZbniM3sh
-         AD1rvEhPvUPqa4Ci+Ca9DiIFen5+kwqECNQV5MWP33ojyjZ9U3N/suTZcETMFRhTJmY4
-         HGgfSF1eVLVxs1uUCwrYg6lFFmD+3W5kdx2Hw=
-Subject: Re: [PATCH] mm: Check if PTE is already allocated during page fault
-From: raz ben yehuda <raziebe@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org, riel@redhat.com,
-        kosaki.motohiro@jp.fujitsu.com, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, stable@kernel.org, shai@scalex86.com
-In-Reply-To: <20110415150606.GP15707@random.random>
-References: <20110415101248.GB22688@suse.de>
-	 <20110415143916.GN15707@random.random>
-	 <20110415150606.GP15707@random.random>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Apr 2011 10:21:13 +0300
-Message-ID: <1303111273.3425.0.camel@raz.scalemp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+	Mon, 18 Apr 2011 03:29:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2 cache
+Date: Mon, 18 Apr 2011 09:29:33 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, Ramesh Gupta <grgupta@ti.com>,
+        Hari Kanigeri <h-kanigeri2@ti.com>
+References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com> <20110414223036.GA7335@n2100.arm.linux.org.uk>
+In-Reply-To: <20110414223036.GA7335@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201104180929.33569.arnd@arndb.de>
+X-Provags-ID: V02:K0:AYEf+koebSFW0cF6H4y/ojmCa197WaS1xCDFaKecj5T
+ 9TZ/u5q7U56jYf0IsKg3Q5/AU26s5QsA/ZyFVkoAdX0zkwjau7
+ 02BkTIWb5ZZdOtxgWiCzrw2dlwpwc2+IEf9FFwJHsNlojDVzoa
+ eQW5jF0q2Zi2Eti6vunTx3ABwPCGQTxtJhrb4NDdU+wir/6RCN
+ MFOIzI3GGBLkeEk1Ivsdg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-patch works great. thank you Andrea.
+On Friday 15 April 2011, Russell King - ARM Linux wrote:
+> On Thu, Apr 14, 2011 at 04:52:48PM -0500, Fernando Guzman Lugo wrote:
+> > From: Ramesh Gupta <grgupta@ti.com>
+> > 
+> > This patch is to flush the iommu page table entries from L1 and L2
+> > caches using dma_map_single. This also simplifies the implementation
+> > by removing the functions  flush_iopgd_range/flush_iopte_range.
+> 
+> No.  This usage is just wrong.  If you're going to use the DMA API then
+> unmap it, otherwise the DMA API debugging will go awol.
 
 
-On Fri, 2011-04-15 at 17:06 +0200, Andrea Arcangeli wrote:
-> On Fri, Apr 15, 2011 at 04:39:16PM +0200, Andrea Arcangeli wrote:
-> > On Fri, Apr 15, 2011 at 11:12:4A.M +0100, Mel Gorman wrote:
-> > > diff --git a/mm/memory.c b/mm/memory.c
-> > > index 5823698..1659574 100644
-> > > --- a/mm/memory.c
-> > > +++ b/mm/memory.c
-> > > @@ -3322,7 +3322,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
-> > >  	 * run pte_offset_map on the pmd, if an huge pmd could
-> > >  	 * materialize from under us from a different thread.
-> > >  	 */
-> > > -	if (unlikely(__pte_alloc(mm, vma, pmd, address)))
-> > > +	if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
-> 
-> I started hacking on this and I noticed it'd be better to extend the
-> unlikely through the end. At first review I didn't notice the
-> parenthesis closure stops after pte_none and __pte_alloc is now
-> uncovered. I'd prefer this:
-> 
->     if (unlikely(pmd_none(*pmd) && __pte_alloc(mm, vma, pmd, address)))
-> 
-> I mean the real unlikely thing is that we return VM_FAULT_OOM, if we
-> end up calling __pte_alloc or not, depends on the app. Generally it
-> sounds more frequent that the pte is not none, so it's not wrong, but
-> it's even less likely that __pte_alloc fails so that can be taken into
-> account too, and __pte_alloc runs still quite frequently. So either
-> above or:
-> 
->     if (unlikely(pmd_none(*pmd)) && unlikely(__pte_alloc(mm, vma, pmd, address)))
-> 
-> I generally prefer unlikely only when it's 100% sure thing it's less
-> likely (like the VM_FAULT_OOM), so the first version I guess it's
-> enough (I'm afraid unlikely for pte_none too, may make gcc generate a
-> far away jump possibly going out of l1 icache for a case that is only
-> 512 times less likely at best). My point is that it's certainly hugely
-> more unlikely that __pte_alloc fails than the pte is none.
-> 
-> This is a real nitpick though ;).
+It's also completely upside-down: The iommu support should provide interfaces
+using the dma-mapping API, not use that API to provide a machine specific
+version of the generic interface.
 
+As far as I can tell, nothing actually uses these drivers, maybe we should just
+remove them before we get any code in the mainline kernel that depends on it.
 
+	Arnd
