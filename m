@@ -1,44 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab1DRT76 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:59:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26316 "EHLO mga01.intel.com"
+	id S1752112Ab1DRUBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 16:01:31 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:41526 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753Ab1DRT75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 15:59:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,234,1301900400"; 
-   d="scan'208";a="911262103"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: ming.m.lin@intel.com, peterz@infradead.org, mingo@elte.hu,
-        eranian@gmail.com, akpm@linux-foundation.org, fweisbec@gmail.com
-Subject: PING Re: [PATCH] perf: Add missing user space support for config1/config2
-References: <1302652370-3479-1-git-send-email-andi@firstfloor.org>
-Date: Mon, 18 Apr 2011 12:59:22 -0700
-In-Reply-To: <1302652370-3479-1-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Tue, 12 Apr 2011 16:52:50 -0700")
-Message-ID: <m2bp039vqd.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751793Ab1DRUB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 16:01:28 -0400
+X-ASG-Debug-ID: 1303156858-01de284cf8160f10001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DAC9876.6020004@fusionio.com>
+Date: Mon, 18 Apr 2011 22:00:54 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block fixes for 2.6.39-rc3
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] block fixes for 2.6.39-rc3
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1303156858
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61245
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+Hi Linus,
 
-> From: Andi Kleen <ak@linux.intel.com>
->
-> The offcore_msr perf kernel code was merged into 2.6.39-rc*,
-> but the user space bits were not. This made it impossible
-> to set the extra mask and actually do the OFFCORE profiling
+With this in, I believe the only regression there's left is the one in
+IDE which seems to be due to endless media events being generated. In
+this round:
 
-PING. Can someone review/merge this patch please?
-Without it the offcore profiling support in .39 is unusable.
+- Removal of the ->unplugged_fn(), as MD could not really use it. This
+  adds a callback list instead, which MD can use to get notification on
+  the level it requires.
 
-Thanks,
--Andi
+- Neils MD fixes to fix with write intent bitmap hanging.
+
+- Small fixup to use kblockd workqueue for the delay work, that was an
+  oversight (it used the system workqueue instead).
+
+- Small improvement to drop the queue lock before doing the async
+  kblockd wakeup.
+
+Please pull.
+
+  git://git.kernel.dk/linux-2.6-block.git for-linus
+
+Christoph Hellwig (1):
+      block: add blk_run_queue_async
+
+Jens Axboe (3):
+      Revert "block: add callback function for unplug notification"
+      block: drop queue lock before calling __blk_run_queue() for kblockd punt
+      block: blk_delay_queue() should use kblockd workqueue
+
+NeilBrown (7):
+      block: Enhance new plugging support to support general callbacks
+      md: use new plugging interface for RAID IO.
+      md/dm - remove remains of plug_fn callback.
+      md - remove old plugging code.
+      md: provide generic support for handling unplug callbacks.
+      md: incorporate new plugging into raid5.
+      md: fix up raid1/raid10 unplugging.
+
+ block/blk-core.c                 |   83 ++++++++++++++++++++++++++++--------
+ block/blk-exec.c                 |    2 +-
+ block/blk-flush.c                |    4 +-
+ block/blk-settings.c             |   16 -------
+ block/blk.h                      |    1 +
+ block/cfq-iosched.c              |    6 +-
+ block/elevator.c                 |    4 +-
+ drivers/md/dm-raid.c             |    8 ----
+ drivers/md/md.c                  |   87 ++++++++++++++++++++------------------
+ drivers/md/md.h                  |   26 ++----------
+ drivers/md/raid1.c               |   29 ++++++-------
+ drivers/md/raid10.c              |   27 ++++++------
+ drivers/md/raid5.c               |   61 +++++++++++---------------
+ drivers/md/raid5.h               |    2 -
+ drivers/scsi/scsi_lib.c          |    2 +-
+ drivers/scsi/scsi_transport_fc.c |    2 +-
+ include/linux/blkdev.h           |   12 +++--
+ include/linux/device-mapper.h    |    1 -
+ 18 files changed, 186 insertions(+), 187 deletions(-)
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Jens Axboe
+
