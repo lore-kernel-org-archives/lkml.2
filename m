@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab1DRPdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:33:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37586 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157Ab1DRPdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:33:04 -0400
-Date: Mon, 18 Apr 2011 11:32:38 -0400
-From: "J. Bruce Fields" <bfields@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
-Subject: Re: [105/105] nfsd4: fix oops on lock failure
-Message-ID: <20110418153236.GC20935@pad.home.fieldses.org>
-References: <20110412143559.186613198@clark.kroah.org>
- <87pqokx6lr.fsf@devron.myhome.or.jp>
- <BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
+	id S1755210Ab1DRPdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:33:20 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64248 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab1DRPdP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 11:33:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=txuaKthU7M2tHraoe5JUtI5VbGAOwtpou86W5l5ErwVsWuBVyr/uvxUAn2njApBokA
+         GwE5Q/FEmpIFcqhPQHLDH4YJfrKSUmewEA1KU9jTfa7HmvYRLRqczS9MD0FLjbXYFMeC
+         ZHziq+b5v1Ber3PbafkY0ud0XmU0JfCeTGPBo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTin3XeXBEvWZcKVdPvif=Ndr0h3UVA@mail.gmail.com>
+References: <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
+	<4DA655E7.3000904@zytor.com>
+	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
+	<BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
+	<20110415131152.GJ18463@8bytes.org>
+	<20110415131650.GB18660@elte.hu>
+	<20110415154604.GN18463@8bytes.org>
+	<BANLkTim23SQiyb4R+QA7=fpPZrnQw9_PRQ@mail.gmail.com>
+	<20110416163509.GS18463@8bytes.org>
+	<BANLkTimxG3QoLx0vqw9YgE_s4qyzcEoEaQ@mail.gmail.com>
+	<20110417140924.GU18463@8bytes.org>
+	<BANLkTikEsZHjqzT6Ur+XgJhkzJDpSy-FDA@mail.gmail.com>
+	<BANLkTin3XeXBEvWZcKVdPvif=Ndr0h3UVA@mail.gmail.com>
+Date: Mon, 18 Apr 2011 11:33:14 -0400
+Message-ID: <BANLkTintukwS-FibGRdP0R52nSjcGywV=g@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, alexandre.f.demers@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 17, 2011 at 09:10:12AM -0700, Linus Torvalds wrote:
-> On Sun, Apr 17, 2011 at 8:03 AM, OGAWA Hirofumi
-> <hirofumi@mail.parknet.co.jp> wrote:
-> >
-> > I'm looking filp leak on recent kernel. Well, anyway,
+On Mon, Apr 18, 2011 at 11:29 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Mon, Apr 18, 2011 at 11:23 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>> On Sun, Apr 17, 2011 at 10:09 AM, Joerg Roedel <joro@8bytes.org> wrote:
+>>> On Sat, Apr 16, 2011 at 02:54:04PM -0400, Jerome Glisse wrote:
+>>>
+>>>> If you want to go the printk way you can add printk before each test
+>>>> ring_test, ib_test in r600.c this 2 functions are the own that might
+>>>> trigger the first GPU gart activities.
+>>>
+>>> Okay, I found the place in source that triggers this. It happens in the
+>>> function r600_ib_test. The interesting thing is that not the ib-command
+>>> itself is responsible but the fence that is emitted afterwards (proved
+>>> by removing the fence command, where the problem went away).
+>>> I don't know enough about the command semantics to make a guess what
+>>> goes wrong there. But maybe you GPU folks have an idea?
+>>>
+>>
+>> I can't think of anything off hand.  It might be worth disabling the
+>> call to r600_ib_test() in r600_init() and then seeing if you get any
+>> errors when the fences are used later on when X starts or just at that
+>> point in the module load sequence.  What's odd is that when you tested
+>> radeon.no_wb=1 you got the same behavior as that disables shadowing of
+>> fence writes to gpu gart mem, so it wouldn't be writing to memory in
+>> that case.
+>>
+>> Alex
+>>
+>
+> It might be the irq ring write that is faulty.
 
-Does this fix it?
+That's disabled with no_wb=1 as well.
 
---b.
+Alex
 
-commit 5152c8a947359758862d4631863e68e83ec01048
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Fri Apr 15 18:08:26 2011 -0400
-
-    nfsd4: fix struct file leak on delegation
-    
-    Introduced by acfdf5c383b38f7f4dddae41b97c97f1ae058f49.
-    
-    Cc: stable@kernel.org
-    Reported-by: Gerhard Heift <ml-nfs-linux-20110412-ef47@gheift.de>
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index aa309aa..c79a983 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -258,6 +258,7 @@ static void nfs4_put_deleg_lease(struct nfs4_file *fp)
- 	if (atomic_dec_and_test(&fp->fi_delegees)) {
- 		vfs_setlease(fp->fi_deleg_file, F_UNLCK, &fp->fi_lease);
- 		fp->fi_lease = NULL;
-+		fput(fp->fi_deleg_file);
- 		fp->fi_deleg_file = NULL;
- 	}
- }
+>
+> Cheers,
+> Jerome
+>
