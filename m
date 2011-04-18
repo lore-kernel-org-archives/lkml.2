@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab1DROLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:11:19 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:58391 "EHLO
+	id S1754941Ab1DROMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:12:22 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:58275 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab1DROJw (ORCPT
+	with ESMTP id S1754601Ab1DROJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:09:52 -0400
-X-ASG-Debug-ID: 1303135791-082d70310001-xx1T2L
+	Mon, 18 Apr 2011 10:09:46 -0400
+X-ASG-Debug-ID: 1303135785-082d702f0001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
@@ -16,16 +16,16 @@ To: sameo@linux.intel.com, haojian.zhuang@gmail.com,
         dwmw2@infradead.org, lrg@slimlogic.co.uk,
         broonie@opensource.wolfsonmicro.com
 Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH 10/14] rtc: avoid to use hardcoding irq number in max8925
-Subject: [PATCH 10/14] rtc: avoid to use hardcoding irq number in max8925
-Date: Mon, 18 Apr 2011 22:04:07 +0800
-X-ASG-Orig-Subj: [PATCH 10/14] rtc: avoid to use hardcoding irq number in max8925
-Message-Id: <1303135451-26362-11-git-send-email-haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH 06/14] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
+Subject: [PATCH 06/14] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
+Date: Mon, 18 Apr 2011 22:04:03 +0800
+X-ASG-Orig-Subj: [PATCH 06/14] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
+Message-Id: <1303135451-26362-7-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <2011041801>
 References: <2011041801>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1303135791
+X-Barracuda-Start-Time: 1303135785
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -33,85 +33,203 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid to use hardcoding irq number in max8925 rtc driver. Use irq number
-from resources instead.
+This driver provides registers and IRQ of PXA3xx chips to the ds1wm driver.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
 ---
- drivers/rtc/rtc-max8925.c |   22 +++++++++++++---------
- 1 files changed, 13 insertions(+), 9 deletions(-)
+ drivers/mfd/Kconfig  |    7 ++
+ drivers/mfd/Makefile |    1 +
+ drivers/mfd/pxa-w1.c |  150 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 158 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/pxa-w1.c
 
-diff --git a/drivers/rtc/rtc-max8925.c b/drivers/rtc/rtc-max8925.c
-index 174036d..c460152 100644
---- a/drivers/rtc/rtc-max8925.c
-+++ b/drivers/rtc/rtc-max8925.c
-@@ -69,6 +69,7 @@ struct max8925_rtc_info {
- 	struct max8925_chip	*chip;
- 	struct i2c_client	*rtc;
- 	struct device		*dev;
-+	int			irq;
- };
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index e2fea58..b6ecf90 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -34,6 +34,13 @@ config MFD_88PM860X
+ 	  select individual components like voltage regulators, RTC and
+ 	  battery-charger under the corresponding menus.
  
- static irqreturn_t rtc_update_handler(int irq, void *data)
-@@ -239,7 +240,7 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
- {
- 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
- 	struct max8925_rtc_info *info;
--	int irq, ret;
-+	int ret = -EINVAL;
++config MFD_PXA_DS1WM
++	tristate "Support DS1WM chip on Marvell silicons"
++	select MFD_CORE
++	help
++	  This core driver provides register access for PXA_DS1WM.
++	  Actual functionality is handled by the ds1wm drivers.
++
+ config MFD_SM501
+ 	tristate "Support for Silicon Motion SM501"
+ 	 ---help---
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 419caa9..4f8d1d2 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -4,6 +4,7 @@
  
- 	info = kzalloc(sizeof(struct max8925_rtc_info), GFP_KERNEL);
- 	if (!info)
-@@ -247,16 +248,22 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
- 	info->chip = chip;
- 	info->rtc = chip->rtc;
- 	info->dev = &pdev->dev;
--	irq = chip->irq_base + MAX8925_IRQ_RTC_ALARM0;
-+	info->irq = platform_get_irq(pdev, 0);
-+	if (info->irq < 0) {
-+		dev_err(chip->dev, "Failed to get IRQ resource\n");
-+		goto out_irq;
+ 88pm860x-objs			:= 88pm860x-core.o 88pm860x-i2c.o
+ obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
++obj-$(CONFIG_MFD_PXA_DS1WM)	+= pxa-w1.o
+ obj-$(CONFIG_MFD_SM501)		+= sm501.o
+ obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+ 
+diff --git a/drivers/mfd/pxa-w1.c b/drivers/mfd/pxa-w1.c
+new file mode 100644
+index 0000000..98074ff
+--- /dev/null
++++ b/drivers/mfd/pxa-w1.c
+@@ -0,0 +1,150 @@
++/*
++ * Core driver for PXA DS1WM chip.
++ *
++ * Copyright (C) 2010 Marvell  <jtzhou@marvell.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/ds1wm.h>
++
++struct pxa_w1_info {
++	struct clk *clk;
++};
++
++static int ds1wm_enable(struct platform_device *pdev)
++{
++	struct device *dev = pdev->dev.parent;
++	struct pxa_w1_info *info = dev_get_drvdata(dev);
++
++	clk_enable(info->clk);
++	dev_dbg(dev, "pxa DS1WM clk (active)\n");
++	return 0;
++}
++
++static int ds1wm_disable(struct platform_device *pdev)
++{
++	struct device *dev = pdev->dev.parent;
++	struct pxa_w1_info *info = dev_get_drvdata(dev);
++
++	clk_disable(info->clk);
++	dev_dbg(dev, "pxa DS1WM clk (in-active)\n");
++	return 0;
++}
++
++static struct resource ds1wm_resources[] __devinitdata = {
++	{0, 0, "ds1wm-mem", IORESOURCE_MEM,},
++	{0, 0, "ds1wm-irq", IORESOURCE_IRQ,},
++};
++
++static struct ds1wm_driver_data ds1wm_pdata;
++
++static struct mfd_cell ds1wm_cell __devinitdata = {
++	.name		= "ds1wm",
++	.enable		= ds1wm_enable,
++	.disable	= ds1wm_disable,
++	.platform_data	= &ds1wm_pdata,
++	.pdata_size	= sizeof(ds1wm_pdata),
++	.num_resources	= ARRAY_SIZE(ds1wm_resources),
++	.resources	= ds1wm_resources,
++};
++
++static int __devinit pxa_w1_probe(struct platform_device *pdev)
++{
++	struct ds1wm_driver_data *pdata = pdev->dev.platform_data;
++	struct pxa_w1_info *info;
++	struct resource *r;
++	int ret, irq;
++
++	info = kzalloc(sizeof(struct pxa_w1_info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (r == NULL) {
++		ret = -ENXIO;
++		goto out;
 +	}
- 
--	ret = request_threaded_irq(irq, NULL, rtc_update_handler,
-+	ret = request_threaded_irq(info->irq, NULL, rtc_update_handler,
- 				   IRQF_ONESHOT, "rtc-alarm0", info);
- 	if (ret < 0) {
- 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
--			irq, ret);
-+			info->irq, ret);
- 		goto out_irq;
- 	}
- 
-+	dev_set_drvdata(&pdev->dev, info);
++	irq = r->start;
++	if (pdata)
++		ds1wm_pdata.active_high = pdata->active_high;
++	if (ds1wm_pdata.active_high)
++		ds1wm_resources[1].flags |= IORESOURCE_IRQ_HIGHEDGE;
++	else
++		ds1wm_resources[1].flags |= IORESOURCE_IRQ_LOWEDGE;
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		ret = -ENXIO;
++		goto out;
++	}
++	ds1wm_resources[0].end = resource_size(r) - 1;
++
++	info->clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(info->clk)) {
++		ret = PTR_ERR(info->clk);
++		goto out;
++	}
 +	platform_set_drvdata(pdev, info);
- 	info->rtc_dev = rtc_device_register("max8925-rtc", &pdev->dev,
- 					&max8925_rtc_ops, THIS_MODULE);
- 	ret = PTR_ERR(info->rtc_dev);
-@@ -265,12 +272,9 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
- 		goto out_rtc;
- 	}
- 
--	dev_set_drvdata(&pdev->dev, info);
--	platform_set_drvdata(pdev, info);
--
- 	return 0;
- out_rtc:
--	free_irq(chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
-+	free_irq(info->irq, info);
- out_irq:
- 	kfree(info);
- 	return ret;
-@@ -281,7 +285,7 @@ static int __devexit max8925_rtc_remove(struct platform_device *pdev)
- 	struct max8925_rtc_info *info = platform_get_drvdata(pdev);
- 
- 	if (info) {
--		free_irq(info->chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
-+		free_irq(info->irq, info);
- 		rtc_device_unregister(info->rtc_dev);
- 		kfree(info);
- 	}
++
++	ds1wm_pdata.clock_rate = clk_get_rate(info->clk);
++	ret = mfd_add_devices(&pdev->dev, pdev->id, &ds1wm_cell, 1, r, irq);
++	if (ret < 0)
++		dev_err(&pdev->dev, "failed to register pxa DS1WM\n");
++
++	return 0;
++out:
++	kfree(info);
++	return ret;
++}
++
++static int __devexit pxa_w1_remove(struct platform_device *pdev)
++{
++	struct pxa_w1_info *info = platform_get_drvdata(pdev);
++
++	mfd_remove_devices(&pdev->dev);
++	clk_put(info->clk);
++	kfree(info);
++	platform_set_drvdata(pdev, NULL);
++	return 0;
++}
++
++static struct platform_driver pxa_w1_driver = {
++	.driver = {
++		   .name	= "pxa3xx-w1",
++		   .owner	= THIS_MODULE,
++	},
++	.probe		= pxa_w1_probe,
++	.remove		= __devexit_p(pxa_w1_remove),
++};
++
++static int __init pxa_w1_base_init(void)
++{
++	return platform_driver_register(&pxa_w1_driver);
++}
++
++static void __exit pxa_w1_base_exit(void)
++{
++	platform_driver_unregister(&pxa_w1_driver);
++}
++
++module_init(pxa_w1_base_init);
++module_exit(pxa_w1_base_exit);
++
++MODULE_AUTHOR("Jett Zhou <jtzhou@marvell.com>");
++MODULE_DESCRIPTION("one wire driver for PXA");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:pxa-w1");
 -- 
 1.5.6.5
 
