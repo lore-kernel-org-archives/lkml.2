@@ -1,53 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab1DRVXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 17:23:12 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54166 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1DRVXJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 17:23:09 -0400
-Date: Mon, 18 Apr 2011 17:23:06 -0400
-From: "hch@infradead.org" <hch@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-Message-ID: <20110418212306.GA21154@infradead.org>
-References: <4DA2E03A.2080607@fusionio.com>
- <20110411212635.7959de70@notabene.brown>
- <4DA2E7F0.9010904@fusionio.com>
- <20110411220505.1028816e@notabene.brown>
- <4DA2F00E.6010907@fusionio.com>
- <20110418081922.1651474a@notabene.brown>
- <4DABDC60.2090009@fusionio.com>
- <20110418172551.55629fc6@notabene.brown>
- <4DABF1EA.3070301@fusionio.com>
- <20110418183343.036f412e@notabene.brown>
+	id S1752495Ab1DRV3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 17:29:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36472 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751675Ab1DRV3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 17:29:18 -0400
+Date: Mon, 18 Apr 2011 23:29:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Paul Menage <menage@google.com>,
+        Robin Holt <holt@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH incremental] cpusets: initialize spread rotor lazily
+Message-ID: <20110418212915.GA17376@tiehlicka.suse.cz>
+References: <20110414065146.GA19685@tiehlicka.suse.cz>
+ <20110414160145.0830.A69D9226@jp.fujitsu.com>
+ <20110415161831.12F8.A69D9226@jp.fujitsu.com>
+ <20110415082051.GB8828@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1104151639080.3967@chino.kir.corp.google.com>
+ <20110418084248.GB8925@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1104181316110.31186@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110418183343.036f412e@notabene.brown>
+In-Reply-To: <alpine.DEB.2.00.1104181316110.31186@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> NeilBrown (6):
->       md: use new plugging interface for RAID IO.
->       md/dm - remove remains of plug_fn callback.
->       md - remove old plugging code.
->       md: provide generic support for handling unplug callbacks.
->       md: incorporate new plugging into raid5.
->       md: fix up raid1/raid10 unplugging.
+On Mon 18-04-11 13:19:09, David Rientjes wrote:
+> On Mon, 18 Apr 2011, Michal Hocko wrote:
+[...]
+> > > Andrew could easily drop the earlier version and merge this v2, but I'm 
+> > > asking for selfish reasons:
+> > 
+> > Just out of curiosity. What is the reason? Don't want to wait for new mmotm?
+> > 
+> 
+> Because lazy initialization is another feature on top of the existing 
+> patch so it should be done incrementally instead of proposing an entirely 
+> new patch which is already mostly in -mm.
 
-Looking over more of the unplugging left over, is there a reason to
-keep the unplug_work bits in CFQ?  They seem to rather counter the
-current scheme (and it is the last user of kblockd outside of
-blk-core.c)
+ok, makes sense
 
+> > 
+> > [Here is the follow-up patch based on top of
+> > http://userweb.kernel.org/~akpm/mmotm/broken-out/cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node.patch]
+> > ---
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Subject: cpusets: initialize spread mem/slab rotor lazily
+> > 
+[...]
+> > Also do not use -1 for unitialized nodes and rather use NUMA_NO_NODE
+> > instead.
+> > 
+> 
+> Don't need to refer to a previous version that used -1 since it will never 
+> be committed and nobody will know what you're talking about in the git 
+> log.
+
+removed
+
+[...]
+> >  int cpuset_mem_spread_node(void)
+> >  {
+> > +	if (current->cpuset_mem_spread_rotor == NUMA_NO_NODE)
+> > +		current->cpuset_mem_spread_rotor =
+> > +			node_random(&current->mems_allowed);
+> > +
+> >  	return cpuset_spread_node(&current->cpuset_mem_spread_rotor);
+> >  }
+> >  
+> >  int cpuset_slab_spread_node(void)
+> >  {
+> > +	if (current->cpuset_slab_spread_rotor == NUMA_NO_NODE)
+> > +		current->cpuset_slab_spread_rotor
+> > +			= node_random(&current->mems_allowed);
+> > +
+> 
+> So one function has the `=' on the line with the assignment (preferred) 
+> and the other has it on the new value?
+
+fixed
+
+Thanks! Updated patch bellow.
+
+Changes from v3:
+ - code style fix
+Changes from v2:
+ - use NUMA_NO_NODE rather than hardcoded -1
+ - make the patch incremental to the original one because that one is in
+   -mm tree already.
+Changes from v1:
+ - initialize cpuset_{mem,slab}_spread_rotor lazily}
+---
+From: Michal Hocko <mhocko@suse.cz>
+Subject: cpusets: initialize spread mem/slab rotor lazily
+
+Kosaki Motohiro raised a concern that copy_process is hot path and we do
+not want to initialize cpuset_{mem,slab}_spread_rotor if they are not
+used most of the time.
+
+I think that we should rather initialize it lazily when rotors are used
+for the first time.
+This will also catch the case when we set up spread mem/slab later.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Index: linus_tree/kernel/cpuset.c
+===================================================================
+--- linus_tree.orig/kernel/cpuset.c	2011-04-18 10:33:15.000000000 +0200
++++ linus_tree/kernel/cpuset.c	2011-04-18 23:24:02.000000000 +0200
+@@ -2460,11 +2460,19 @@ static int cpuset_spread_node(int *rotor
+ 
+ int cpuset_mem_spread_node(void)
+ {
++	if (current->cpuset_mem_spread_rotor == NUMA_NO_NODE)
++		current->cpuset_mem_spread_rotor =
++			node_random(&current->mems_allowed);
++
+ 	return cpuset_spread_node(&current->cpuset_mem_spread_rotor);
+ }
+ 
+ int cpuset_slab_spread_node(void)
+ {
++	if (current->cpuset_slab_spread_rotor == NUMA_NO_NODE)
++		current->cpuset_slab_spread_rotor =
++			node_random(&current->mems_allowed);
++
+ 	return cpuset_spread_node(&current->cpuset_slab_spread_rotor);
+ }
+ 
+Index: linus_tree/kernel/fork.c
+===================================================================
+--- linus_tree.orig/kernel/fork.c	2011-04-18 10:33:15.000000000 +0200
++++ linus_tree/kernel/fork.c	2011-04-18 10:33:56.000000000 +0200
+@@ -1126,8 +1126,8 @@ static struct task_struct *copy_process(
+ 	mpol_fix_fork_child_flag(p);
+ #endif
+ #ifdef CONFIG_CPUSETS
+-	p->cpuset_mem_spread_rotor = node_random(&p->mems_allowed);
+-	p->cpuset_slab_spread_rotor = node_random(&p->mems_allowed);
++	p->cpuset_mem_spread_rotor = NUMA_NO_NODE;
++	p->cpuset_slab_spread_rotor = NUMA_NO_NODE;
+ #endif
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	p->irq_events = 0;
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
