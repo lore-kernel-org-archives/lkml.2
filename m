@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab1DRTdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:33:16 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:59116 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1DRTdO (ORCPT
+	id S1752853Ab1DRTfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 15:35:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39424 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751472Ab1DRTfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 15:33:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=TrhlYxj9thndn0GtnRfyupfeaZmSuUs7tkcaS3SbIBFLntJKjPGkvtPoVxETtYMmv7
-         VYLLJ34oSERQdejcHt5ziK3sdLGgpn2nCqRu2ZH2vwnw985zS+GFo4aWsVCqExk1AZ3n
-         1dAk+9J2Vet4XcEB5OR5PmOdtHC02+675LG4o=
-MIME-Version: 1.0
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 18 Apr 2011 15:32:52 -0400
-X-Google-Sender-Auth: b8PuGwPeS6Y1kSBl8bNKKSKpbVU
-Message-ID: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
-Subject: [RFT] Please test rdtsc on various x86-64 hardware (app included)
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, x86 <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 18 Apr 2011 15:35:06 -0400
+Date: Mon, 18 Apr 2011 12:34:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH v2] mempolicy: reduce references to the current
+Message-Id: <20110418123433.7b72b103.akpm@linux-foundation.org>
+In-Reply-To: <1302847688-8076-1-git-send-email-namhyung@gmail.com>
+References: <BANLkTinDFrbUNPnUmed2aBTu1_QHFQie-w@mail.gmail.com>
+	<1302847688-8076-1-git-send-email-namhyung@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all-
+On Fri, 15 Apr 2011 15:08:08 +0900
+Namhyung Kim <namhyung@gmail.com> wrote:
 
-I'd appreciate some help testing rdtsc's ordering wrt memory on
-various hardware.  You can download evil-clock-test code at:
+> Remove duplicated reference to the 'current' task using a local
+> variable. Since refering the current can be a burden, it'd better
+> cache the reference, IMHO. At least this saves some bytes on x86_64.
+> 
+>   $ size mempolicy-{old,new}.o
+>      text    data    bss     dec     hex filename
+>     25203    2448   9176   36827    8fdb mempolicy-old.o
+>     25136    2448   9184   36768    8fa0 mempolicy-new.o
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  mm/mempolicy.c |   58 +++++++++++++++++++++++++++++--------------------------
+>  1 files changed, 31 insertions(+), 27 deletions(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 959a8b8c7350..5a30065590aa 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -304,6 +304,7 @@ static void mpol_rebind_nodemask(struct mempolicy *pol, const nodemask_t *nodes,
+>  				 enum mpol_rebind_step step)
+>  {
+>  	nodemask_t tmp;
+> +	struct task_struct *tsk = current;
+>  
+>  	if (pol->flags & MPOL_F_STATIC_NODES)
+>  		nodes_and(tmp, pol->w.user_nodemask, *nodes);
+> @@ -335,12 +336,12 @@ static void mpol_rebind_nodemask(struct mempolicy *pol, const nodemask_t *nodes,
+>  	else
+>  		BUG();
+>  
+> -	if (!node_isset(current->il_next, tmp)) {
+> -		current->il_next = next_node(current->il_next, tmp);
+> -		if (current->il_next >= MAX_NUMNODES)
+> -			current->il_next = first_node(tmp);
+> -		if (current->il_next >= MAX_NUMNODES)
+> -			current->il_next = numa_node_id();
+> +	if (!node_isset(tsk->il_next, tmp)) {
+> +		tsk->il_next = next_node(tsk->il_next, tmp);
+> +		if (tsk->il_next >= MAX_NUMNODES)
+> +			tsk->il_next = first_node(tmp);
+> +		if (tsk->il_next >= MAX_NUMNODES)
+> +			tsk->il_next = numa_node_id();
+>  	}
+>  }
 
-https://gitorious.org/linux-test-utils/linux-clock-tests/blobs/raw/master/evil-clock-test.cc
+Odd.  The new(ish) percpu_read_stable() stuff produces very efficient
+code for `current' and usually means that caching `current' in a local
+is unneeded, often an overall loss.
 
-or pull from:
-
-git://gitorious.org/linux-test-utils/linux-clock-tests.git
-
-or see it online at:
-
-https://gitorious.org/linux-test-utils/linux-clock-tests
-
-No kernel patches required.  If you have an old glibc then timing_test
-will fail to build.  You can ignore that problem, because I'm only
-really interested in what evil-clock-test says.
-
-On Sandy Bridge, you'll see something like:
-
-$ ./evil-clock-test
-CPU vendor   : GenuineIntel
-CPU model    : Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz
-CPU stepping : 7
-TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
-Using lfence_rdtsc because you have an Intel CPU
-Will test the "lfence;rdtsc" clock.
-Now test passed  : margin 68 with 78370992 samples
-Load3 test passed: margin 71 with 12740250 samples
-Load test passed : margin 60 with 17743461 samples
-Store test failed as expected: worst error 3316 with 14666029 samples
-
-I've tested on Sandy Bridge, Allendale (i.e. Pentium Dual-Core),
-Bloomfield. and C2D.  I don't have any AMD machines with usable tscs,
-and I haven't tested on systems with multiple packages.  (If you're
-feeling adventurous, you can play with the -p option.  If you give it
-two cpu numbers, comma-separated, which live on different packages,
-maybe you'll learn something interesting.  It might also be
-interesting to try evil-clock-test -3 -p a,b,c where c is on a
-different package from a and b.
-
-(Oddly enough, the test *passes* on my C2D box, even though the kernel
-thinks that my TSC halts in idle.  This is with a fair amount of time
-spent in C6 and even after a suspend/resume cycle.  I'm not sure
-what's going on there.)
-
-For those of you who really care about this stuff, the 'store test'
-will *fail* on most Intel systems.  IMO that's OK, since fixing it
-would slow everything down and since I don't think it deserves to
-pass, even though it looks like the tsc is warping.
-
---Andy
+So... what is going wrong in mempolicy.c?
