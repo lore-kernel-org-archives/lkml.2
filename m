@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab1DRJrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 05:47:47 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:59885 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab1DRJrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 05:47:40 -0400
-X-ASG-Debug-ID: 1303120059-03d6a569fbc8d00001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DAC08BB.6060202@fusionio.com>
-Date: Mon, 18 Apr 2011 11:47:39 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753898Ab1DRJ5g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 05:57:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2386 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab1DRJ53 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 05:57:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 18 Apr 2011 02:57:28 -0700
+From: Wei Ni <wni@nvidia.com>
+To: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "ccross@android.com" <ccross@android.com>,
+        Varun Wadekar <vwadekar@nvidia.com>, Emily Jiang <ejiang@nvidia.com>
+Date: Mon, 18 Apr 2011 17:57:00 +0800
+Subject: RE: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+Thread-Topic: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+Thread-Index: Acvt2Otvgx632cJjTHeElwCvRXpn6wAyVQ/gA8MmeHA=
+Message-ID: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4C0@HKMAIL01.nvidia.com>
+References: <1301379390-28063-1-git-send-email-wni@nvidia.com>
+ <6B4D417B830BC44B8026029FD256F7F1C2CB3DD499@HKMAIL01.nvidia.com>
+In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD499@HKMAIL01.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: device-mapper development <dm-devel@redhat.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [dm-devel] [PATCH 05/10] block: remove per-queue plugging
-References: <20110411205928.13915719@notabene.brown>	<4DA2E03A.2080607@fusionio.com>	<20110411212635.7959de70@notabene.brown>	<4DA2E7F0.9010904@fusionio.com>	<20110411220505.1028816e@notabene.brown>	<4DA2F00E.6010907@fusionio.com>	<20110418081922.1651474a@notabene.brown>	<4DABDC60.2090009@fusionio.com>	<20110418172551.55629fc6@notabene.brown>	<4DABF1EA.3070301@fusionio.com> <20110418091959.GA32013@infradead.org> <4DAC070C.6010403@suse.de>
-X-ASG-Orig-Subj: Re: [dm-devel] [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <4DAC070C.6010403@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303120059
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61202
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-18 11:40, Hannes Reinecke wrote:
-> On 04/18/2011 11:19 AM, hch@infradead.org wrote:
->> Btw, I really start to wonder if the request level is the right place
->> to do this on-stack plugging.  Wouldn't it be better to just plug
->> bios in the on-stack queue?  That way we could also stop doing the
->> special case merging when adding to the plug list, and leave all the
->> merging / I/O schedule logic in the __make_request path.  Probably
->> not .39 material, but worth a prototype?
->>
->> Also what this dicussion brought up is that the block layer data
->> structures are highly confusing.  Using a small subset of the
->> request_queue also for make_request based driver just doesn't make
->> sense.  It seems like we should try to migrate the required state
->> to struct gendisk, and submit I/O through a block_device_ops.submit
->> method, leaving the request_queue as an internal abstraction for
->> the request based drivers.
->>
-> Good point.
-> It would also help us we the device-mapper redesign agk and myself 
-> discussed at LSF. Having a block_device_ops.submit function would
-> allow us remap the actual request queue generically; and we would 
-> even be able to address more than one request queue, which sounds 
-> awfully similar to what Jens is trying to do ...
+Hi, all
+Does there have any updates for this patch?
 
-The multiqueue bits would still have one request_queue, but multiple
-queueing structures (I called those blk_queue_ctx, iirc).
+Thanks
+Wei.
 
+-----Original Message-----
+From: Wei Ni 
+Sent: Wednesday, March 30, 2011 2:20 PM
+To: sameo@linux.intel.com; linux-kernel@vger.kernel.org
+Cc: ccross@android.com; Varun Wadekar; Wei Ni; Emily Jiang
+Subject: RE: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+
+Hi, all
+Could anyone review this patch?
+
+Thanks
+Wei.
+
+-----Original Message-----
+From: Wei Ni 
+Sent: Tuesday, March 29, 2011 2:17 PM
+To: sameo@linux.intel.com; linux-kernel@vger.kernel.org
+Cc: ccross@android.com; Varun Wadekar; Wei Ni
+Subject: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+
+From: Wei Ni <wni@nvidia.com>
+
+When use rtc tps6586x wakealarm to suspend/resume system,
+it will show a lot error messages:
+"tps6586x 4-0034: failed to read interrupt status
+tps6586x 4-0034: failed reading from 0xb5"
+After resume, the system will call the mfd tps6586x driver's interrupt handle
+tps6586x_irq(). This handle will read tps6586x interrupt status (0xb5), but at
+that time the i2c driver didn't resume yet, so the reading will be failed.
+I call the disble_irq in the suspend, and enable_irq in the resume, which will
+delay the delivery of the irq until the i2c driver has been resumed.
+
+Signed-off-by: Wei Ni <wni@nvidia.com>
+---
+ drivers/mfd/tps6586x.c |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index b600808..c7bd96b 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -569,6 +569,22 @@ static const struct i2c_device_id tps6586x_id_table[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, tps6586x_id_table);
+ 
++#ifdef CONFIG_PM
++static int tps6586x_suspend(struct i2c_client *client, pm_message_t mesg)
++{
++	if (client->irq)
++		disable_irq(client->irq);
++	return 0;
++}
++
++static int tps6586x_resume(struct i2c_client *client)
++{
++	if (client->irq)
++		enable_irq(client->irq);
++	return 0;
++}
++#endif
++
+ static struct i2c_driver tps6586x_driver = {
+ 	.driver	= {
+ 		.name	= "tps6586x",
+@@ -577,6 +593,10 @@ static struct i2c_driver tps6586x_driver = {
+ 	.probe		= tps6586x_i2c_probe,
+ 	.remove		= __devexit_p(tps6586x_i2c_remove),
+ 	.id_table	= tps6586x_id_table,
++#ifdef CONFIG_PM
++	.suspend	= tps6586x_suspend,
++	.resume		= tps6586x_resume,
++#endif
+ };
+ 
+ static int __init tps6586x_init(void)
 -- 
-Jens Axboe
+1.7.0
 
