@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab1DRPdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:33:41 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33500 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1DRPde convert rfc822-to-8bit (ORCPT
+	id S1755268Ab1DRPeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:34:00 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:57795 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755145Ab1DRPdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:33:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=q/oxTXxeKaX1RZ/SSHFfvzsqsO0puNyYeXtyVyX+0fWh4HbTgwJw9suvhe+ny7q0Sv
-         823PJZjKKiCFH0nriLsUcgVDSIOfh+3KM2eOKS2FiOvKo2f4we/G+c9VNIjShlC82bOU
-         +3/wFMARf41F33PsIpfIE+HDV5jD/dYp0KVQo=
+	Mon, 18 Apr 2011 11:33:54 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Lf0MEHLgaiMgiYZY5OoZhHkAXVLuLC8WedXcHc5WAk7YnJRhjNa91zFFT+gQhsubfZlmE0FFKIijesyd3FAyynlXI9r4esXQ/sIEiW5HdYxnFuLZ6gdU1GJDN456c/9M;
+Message-ID: <4DAC59C7.1060807@tao.ma>
+Date: Mon, 18 Apr 2011 23:33:27 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110418142855.GE2466@opensource.wolfsonmicro.com>
-References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com>
-	<20110418142855.GE2466@opensource.wolfsonmicro.com>
-Date: Mon, 18 Apr 2011 23:33:34 +0800
-Message-ID: <BANLkTim1QHe-hpyt0yQxKt2SBwtOAPQ3Bg@mail.gmail.com>
-Subject: Re: [PATCH 13/14] regulator: check name in initialization of max8925
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
-        a.zummo@towertech.it, johnpol@2ka.mipt.ru, cbou@mail.ru,
-        dwmw2@infradead.org, lrg@slimlogic.co.uk
+To: Christoph Hellwig <hch@infradead.org>
+CC: jaxboe@fusionio.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: add blk_run_queue_async
+References: <20110418092647.GB3837@infradead.org>
+In-Reply-To: <20110418092647.GB3837@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.48.16 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:28 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Apr 18, 2011 at 10:04:10PM +0800, Haojian Zhuang wrote:
->> Check name in initialization of max8925 regulator driver.
->
-> What name are we checking and why do we need to check it?  I've no idea
-> what the patch is supposed to do which makes it hard to review.
->
-Actually, I didn't submit any platform driver before. So I can't
-attach the related patch on
-platform driver. After 2.6.39, I'll upload patches on platform driver.
+Hi Christoph,
+On 04/18/2011 05:26 PM, Christoph Hellwig wrote:
+> Instead of overloading __blk_run_queue to force an offload to kblockd
+> add a new blk_run_queue_async helper to do it explicitly.  I've kept
+> the blk_queue_stopped check for now, but I suspect it's not needed
+> as the check we do when the workqueue items runs should be enough.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> 
 
-In this original design, regulator data is assigned in platform driver
-separately with index.
-If I missed to define regulator[0] in platform data, the regulator
-driver will meet failure
-because of checking in max8925-core.c. The regulator[0] always means Buck0.
-
-So I want to avoid to use the index and check regulator[] one by one.
-I use a pointer to link
-all regulator data together. I just need to check whether the
-regulator pointer is valid or not.
-
->> +++ b/drivers/regulator/max8925-regulator.c
->> @@ -174,7 +174,7 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
->>  #define MAX8925_SDV(_id, min, max, step)                     \
->>  {                                                            \
->>       .desc   = {                                             \
->> -             .name   = "SDV" #_id,                           \
->> +             .name   = "SD" #_id,                            \
->
-> The above isn't obviously correct - it changes the name that's assigned
-> from matching the macro used to something different.
->
-
-The name isn't used by others. So I change it to SDx in order to
-compare regulator name.
+> Index: linux-2.6/block/blk.h
+> ===================================================================
+> --- linux-2.6.orig/block/blk.h	2011-04-18 10:53:39.001656864 +0200
+> +++ linux-2.6/block/blk.h	2011-04-18 11:00:28.066107438 +0200
+> @@ -22,6 +22,7 @@ void blk_rq_timed_out_timer(unsigned lon
+>  void blk_delete_timer(struct request *);
+>  void blk_add_timer(struct request *);
+>  void __generic_unplug_device(struct request_queue *);
+> +void blk_run_queue_async(struct request_queue *q);
+any reason why this function isn't put together with the __blk_run_queue
+below?
+>  
+>  /*
+>   * Internal atomic flags for request handling
+> Index: linux-2.6/include/linux/blkdev.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/blkdev.h	2011-04-18 10:48:11.170099546 +0200
+> +++ linux-2.6/include/linux/blkdev.h	2011-04-18 10:58:41.003354113 +0200
+> @@ -697,7 +697,7 @@ extern void blk_start_queue(struct reque
+>  extern void blk_stop_queue(struct request_queue *q);
+>  extern void blk_sync_queue(struct request_queue *q);
+>  extern void __blk_stop_queue(struct request_queue *q);
+> -extern void __blk_run_queue(struct request_queue *q, bool force_kblockd);
+> +extern void __blk_run_queue(struct request_queue *q);
+>  extern void blk_run_queue(struct request_queue *);
+>  extern int blk_rq_map_user(struct request_queue *, struct request *,
+>  			   struct rq_map_data *, void __user *, unsigned long,
+Regards,
+Tao
