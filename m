@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab1DRBMx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 21:12:53 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41456 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab1DRBMr convert rfc822-to-8bit (ORCPT
+	id S1753688Ab1DRBUw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 21:20:52 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64868 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab1DRBUp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 21:12:47 -0400
+	Sun, 17 Apr 2011 21:20:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YDQ5TGHWPMbGBoHbLeghkKfQ/YxsVk7P9cw8J1Fyr3SXuy5YgwgQH9E/1CyF1onp/o
-         zBeLqKcqVSX8FILmImbFWBRfH6k60I3UWsPx4nRDI3tqPuYiVexfLRY6oc1goDNWnmvA
-         zYHhpPjHG3WdaE8Kc0ihiTHXNUGJEXKwQYxxY=
+         :content-type:content-transfer-encoding;
+        b=EV/lojIxRRjmK4TiD7COm4XB/Klj/c76sv6s9ar2/LtVm8d28IUJTzdRzeVFNzFOGp
+         W/6L/HECJB4qYCXy1m8kMQdVM4aJ3IrI0zuIM7GqnuvrKcuoAE0seDlepPXFXt9ewmn3
+         bJT65dN1YvPjMbL24Whb2PuoHqk/J4e7erUD0=
 MIME-Version: 1.0
-In-Reply-To: <20110417140924.GU18463@8bytes.org>
-References: <BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
-	<4DA655E7.3000904@zytor.com>
-	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
-	<BANLkTincU4rM+SqhzGOK_Rgxgg8fqJOOdQ@mail.gmail.com>
-	<20110415131152.GJ18463@8bytes.org>
-	<20110415131650.GB18660@elte.hu>
-	<20110415154604.GN18463@8bytes.org>
-	<BANLkTim23SQiyb4R+QA7=fpPZrnQw9_PRQ@mail.gmail.com>
-	<20110416163509.GS18463@8bytes.org>
-	<BANLkTimxG3QoLx0vqw9YgE_s4qyzcEoEaQ@mail.gmail.com>
-	<20110417140924.GU18463@8bytes.org>
-Date: Sun, 17 Apr 2011 21:12:47 -0400
-Message-ID: <BANLkTi=csRDS6DM+8dkG3_DmdU4VxX8sgg@mail.gmail.com>
-Subject: Re: Linux 2.6.39-rc3
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        alexandre.f.demers@gmail.com
+In-Reply-To: <20110417180722.GA21112@hallyn.com>
+References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
+	<20110417180722.GA21112@hallyn.com>
+Date: Mon, 18 Apr 2011 10:20:43 +0900
+Message-ID: <BANLkTike0=ivQux4-m_5V2GheOkmRE-0ow@mail.gmail.com>
+Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
+ from root or to another non-root uid from a non-root uid.
+From: crocket <crockabiscuit@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 17, 2011 at 10:09 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Sat, Apr 16, 2011 at 02:54:04PM -0400, Jerome Glisse wrote:
->
->> If you want to go the printk way you can add printk before each test
->> ring_test, ib_test in r600.c this 2 functions are the own that might
->> trigger the first GPU gart activities.
->
-> Okay, I found the place in source that triggers this. It happens in the
-> function r600_ib_test. The interesting thing is that not the ib-command
-> itself is responsible but the fence that is emitted afterwards (proved
-> by removing the fence command, where the problem went away).
-> I don't know enough about the command semantics to make a guess what
-> goes wrong there. But maybe you GPU folks have an idea?
->
->        Joerg
->
->
+prctl(PR_SET_KEEPCAPS, 1) didn't work since, during setuid to
+non-root, effective bit was lost.
 
-I can't think of any theory, at that point the wb, irq ring, cp buffer
-& ib pool are all allocated and pinned into gtt so they all have valid
-entry backed by a real page. Maybe the GART flush & update is
-seriously buggy but i expect we would have been hurt sooner by such
-things. Maybe there is a bug in the hw... wouldn't be surprised. Will
-try to think to crazy theory.
+Please refer to "man prctl".
 
-Cheers,
-Jerome
+I don't know what would happen when I run OpenVPN as non-root with
+cap_setuid, cap_setgid, cap_sys_admin.
+I guess OpenVPN woull fail to generate tun0 interface if it's run as root.
+However, I need to test it to be sure.
+
+On Mon, Apr 18, 2011 at 3:07 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> You need
+>
+>        prctl(PR_SET_KEEPCAPS, 1);
+>
+> man prctl for details.  In particular, see the following example:
+>
+> #include <stdio.h>
+> #include <sys/prctl.h>
+> #include <sys/capability.h>
+>
+> int main()
+> {
+>        cap_t c;
+>        c = cap_get_proc();
+>        printf("uid %d, current caps: %s\n", getuid(), cap_to_text(c, NULL));
+>        cap_free(c);
+>        prctl(PR_SET_KEEPCAPS, 1);
+>        setuid(1001, 1001, 1001);
+>        c = cap_get_proc();
+>        printf("uid %d, current caps: %s\n", getuid(), cap_to_text(c, NULL));
+>        cap_free(c);
+> }
+>
+> You can either run that as root, or you can do
+>
+>        sudo setcap cap_setuid,cap_setgid,cap_sys_admin=eip captest
+>
+> and then run it as non-root.
+>
+> HTH,
+> -serge
+>
