@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab1DRPBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:01:16 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:49429
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752575Ab1DRPBM (ORCPT
+	id S1752566Ab1DRPCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:02:24 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46053 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1DRPCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:01:12 -0400
-X-SpamScore: -28
-X-BigFish: VPS-28(zzbb2dK9371O1432N98dKzz1202hzz15d4Rz32i637h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJUSBI-01-4WK-02
-X-M-MSG: 
-Date: Mon, 18 Apr 2011 16:59:41 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: "H. Peter Anvin" <hpa@kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH 4/4] x86, gart: Make sure GART does not map physmem
- above 1TB
-Message-ID: <20110418145941.GJ2192@amd.com>
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
- <1303134346-5805-5-git-send-email-joerg.roedel@amd.com>
- <4DAC4EC0.80008@zytor.com>
- <4DAC5099.4010403@kernel.org>
+	Mon, 18 Apr 2011 11:02:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QrrhaEOcOzjdOu4naC6O+Qa+tuouXIt/eoRIFolzwllLXa459Z14CsKXZWG4Ey34Ea
+         UV/oatKwR1ClA/CZ+uGMmFjOPtY1JiO7FYKhAMJhccQi4jx02abmRBnwt2+l7hjLmM79
+         cJds9IZ1eS21M4xvYPHkFgTFhrsTODJmeqh0k=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4DAC5099.4010403@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110418082838.GA30088@hallyn.com>
+References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
+	<20110417180722.GA21112@hallyn.com>
+	<BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
+	<20110418082838.GA30088@hallyn.com>
+Date: Tue, 19 Apr 2011 00:02:17 +0900
+Message-ID: <BANLkTi=kxpFkQ86ZGd2_q+XFRm-nVWzw4g@mail.gmail.com>
+Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
+ from root or to another non-root uid from a non-root uid.
+From: crocket <crockabiscuit@gmail.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:54:17AM -0400, H. Peter Anvin wrote:
-> On 04/18/2011 07:46 AM, H. Peter Anvin wrote:
-> > On 04/18/2011 06:45 AM, Joerg Roedel wrote:
-> >> The GART can only map physical memory below 1TB. Make sure
-> >> the gart driver in the kernel does not try to map memory
-> >> above 1TB.
-> > 
-> > Where does this limit come from?
-> 
-> Nevermind... despite the generic name of the file it looks to be
-> specific to the K8 GART.
+I have several questions.
 
-Yes, this file mostly contains the dma-ops implementation that uses the
-K8 gart plus some k8-gart specific initialization functions.
+1) How do I set SECBIT_NO_SETUID_FIXUP?
 
-	Joerg
+2) Is there any reason to unset SECBIT_NO_SETUID_FIXUP by default?
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+On Mon, Apr 18, 2011 at 5:28 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting crocket (crockabiscuit@gmail.com):
+>> I don't like the fact that an application should be linux-specific to
+>> keep capabilities after setuid.
+>> If users added capabilities to a file, they would know what they were
+>> doing, and they would want applications to keep capabilities even
+>> after setuid.
+>
+> Alternatively, you could call the program using a wrapper which first
+> sets the SECBIT_NO_SETUID_FIXUP securebit, after which setuid would
+> not trigger any capability changes.
+>
+> -serge
+>
