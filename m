@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab1DRU5T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 16:57:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45664 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751949Ab1DRU5M (ORCPT
+	id S1752740Ab1DRU5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 16:57:33 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:19857 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab1DRU5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 16:57:12 -0400
-Date: Mon, 18 Apr 2011 13:56:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] mm: make expand_downwards symmetrical to
- expand_upwards
-Message-Id: <20110418135637.5baac204.akpm@linux-foundation.org>
-In-Reply-To: <20110418100131.GD8925@tiehlicka.suse.cz>
-References: <20110415135144.GE8828@tiehlicka.suse.cz>
-	<alpine.LSU.2.00.1104171952040.22679@sister.anvils>
-	<20110418100131.GD8925@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 18 Apr 2011 16:57:31 -0400
+Subject: Re: [PATCH V14 4/4] ptp: Added a clock driver for the National
+ Semiconductor PHYTER.
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <1728ffb5735c2a04876a69ad55427c4e7b5a1bd7.1303107532.git.richard.cochran@omicron.at>
+References: <cover.1303107532.git.richard.cochran@omicron.at>
+	 <1728ffb5735c2a04876a69ad55427c4e7b5a1bd7.1303107532.git.richard.cochran@omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 18 Apr 2011 21:57:25 +0100
+Message-ID: <1303160245.2857.60.camel@bwh-desktop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Apr 2011 20:57:30.0800 (UTC) FILETIME=[3B966B00:01CBFE0B]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18080.005
+X-TM-AS-Result: No--11.839700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Apr 2011 12:01:31 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+On Mon, 2011-04-18 at 08:30 +0200, Richard Cochran wrote:
+> This patch adds support for the PTP clock found on the DP83640.
+> The basic clock operations and one external time stamp have
+> been implemented.
+[...]
+> --- /dev/null
+> +++ b/drivers/net/phy/dp83640.c
+[...]
+> +static int match(struct sk_buff *skb, unsigned int type, struct rxts *rxts)
+> +{
+> +	u16 *seqid;
 
-> Currently we have expand_upwards exported while expand_downwards is
-> accessible only via expand_stack or expand_stack_downwards.
-> 
-> check_stack_guard_page is a nice example of the asymmetry. It uses
-> expand_stack for VM_GROWSDOWN while expand_upwards is called for
-> VM_GROWSUP case.
-> 
-> Let's clean this up by exporting both functions and make those name
-> consistent. Let's use expand_stack_{upwards,downwards} so that we are
-> explicit about stack manipulation in the name. expand_stack_downwards
-> has to be defined for both CONFIG_STACK_GROWS{UP,DOWN} because
-> get_arg_page calls the downwards version in the early process
-> initialization phase for growsup configuration.
+Should be __be16 *, and similarly for the casts.
 
-Has this patch been tested on any stack-grows-upwards architecture?
+> +	u8 *msgtype, *data = skb_mac_header(skb);
+> +
+> +	/* check sequenceID, messageType, 12 bit hash of offset 20-29 */
+> +	/* We assume that the IPv4 header has no options. */
+
+Does the hardware definitely not timestamp received packets with IP
+options?
+
+> +	switch (type) {
+> +	case PTP_CLASS_V1_IPV4:
+> +		msgtype = data + 42 + 32;
+> +		seqid = (u16 *)(data + 42 + 30);
+> +		break;
+> +	case PTP_CLASS_V1_IPV6:
+> +		msgtype = data + 62 + 32;
+> +		seqid = (u16 *)(data + 62 + 30);
+> +		break;
+> +	case PTP_CLASS_V2_IPV4:
+> +		msgtype = data + 42 + 0;
+> +		seqid = (u16 *)(data + 42 + 30);
+> +		break;
+> +	case PTP_CLASS_V2_IPV6:
+> +		msgtype = data + 62 + 0;
+> +		seqid = (u16 *)(data + 62 + 30);
+> +		break;
+> +	case PTP_CLASS_V2_L2:
+> +		msgtype = data + 14 + 0;
+> +		seqid = (u16 *)(data + 14 + 30);
+> +		break;
+> +	case PTP_CLASS_V2_VLAN:
+> +		msgtype = data + 18 + 0;
+> +		seqid = (u16 *)(data + 18 + 30);
+> +		break;
+[...]
+
+Would be better without the magic numbers.
+
+Ben.
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
