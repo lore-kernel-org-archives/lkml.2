@@ -1,95 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1DRHJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 03:09:25 -0400
-Received: from wnohang.net ([178.79.154.173]:37905 "EHLO mail.wnohang.net"
+	id S1752167Ab1DRHR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 03:17:28 -0400
+Received: from gate.eia.be ([194.78.71.18]:33609 "EHLO mail.eia.be"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602Ab1DRHJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 03:09:20 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 482FF40201
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net C6BCB40200
-Date: Mon, 18 Apr 2011 12:38:40 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-mm@kvack.org, Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Jens Axboe <jaxboe@fusionio.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [TOME] Re: [PATCH 1/1] Add check for dirty_writeback_interval in
- bdi_wakeup_thread_delayed
-Message-ID: <20110418070840.GB5143@Xye>
-References: <20110417162308.GA1208@Xye>
- <20110418000204.GQ21395@dastard>
+	id S1751034Ab1DRHRV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 03:17:21 -0400
+Date: Mon, 18 Apr 2011 09:17:16 +0200
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+Message-ID: <20110418071716.GA334@kurt.e-circ.dyndns.org>
+Mail-Followup-To: Kyungmin Park <kmpark@infradead.org>,
+	Linus Walleij <linus.walleij@stericsson.com>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+ <BANLkTinnscZeaHkuMme1h-mxGrpJhmZ_Xg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zCKi3GIZzVBPywwA"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110418000204.GQ21395@dastard>
-X-Operating-System: Arch linux x86_64 2.6.38.3-ck3-bldit-db-FAE
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <BANLkTinnscZeaHkuMme1h-mxGrpJhmZ_Xg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 18 Apr 2011 07:14:16.0265 (UTC) FILETIME=[3A268390:01CBFD98]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---zCKi3GIZzVBPywwA
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+The interface proposed here is a lot better than most ad hoc implementation.
+But similar to what Kyungmin Park noticed, I doubt the usefulness
+of a limited enumeration for all different types.
 
-* On Mon, Apr 18, 2011 at 10:02:04AM +1000, Dave Chinner <david@fromorbit.com> wrote:
->On Sun, Apr 17, 2011 at 09:53:08PM +0530, Raghavendra D Prabhu wrote:
->> In the function bdi_wakeup_thread_delayed, no checks are performed on
->> dirty_writeback_interval unlike other places and timeout is being set to
->> zero as result, thus defeating the purpose. So, I have changed it to be
->> passed default value of interval which is 500 centiseconds, when it is
->> set to zero.
->> I have also verified this and tested it.
+On one hand, upper layers benefit from a limited list (like proposed).
+On the other hand, most SoC's have more options, which are not comparable.
 
->> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
->> ---
->>  mm/backing-dev.c |    5 ++++-
->>  1 files changed, 4 insertions(+), 1 deletions(-)
+How will this interface cope with such differences?
+a) ignore SoC specifics
+b) export it through an _unlimited_ enumeration
+c) export it via some GPIO_DRIVE_PROPRIETARY+X where X is very
+   SoC dependant.
 
->> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
->> index befc875..d06533c 100644
->> --- a/mm/backing-dev.c
->> +++ b/mm/backing-dev.c
->> @@ -336,7 +336,10 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
->>  {
->>  	unsigned long timeout;
->> -	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
->> +	if (dirty_writeback_interval)
->> +		timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
->> +	else
->> +		timeout = msecs_to_jiffies(5000);
->>  	mod_timer(&bdi->wb.wakeup_timer, jiffies + timeout);
->>  }
->
->Isn't the problem that the sysctl handler does not have a min/max
->valid value set? I.e. to prevent invalid values from being set in
->the first place?
->
->Cheers,
->
->Dave.
-0 is a valid value for dirty_writeback_interval which according to the
-definition/documentation is disabled when set to 0. In other places, a constraint
-check is done on that value except here.
+Any suggestions?
 
---zCKi3GIZzVBPywwA
-Content-Type: application/pgp-signature
+Kurt
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNq+N4AAoJEKYW3KHXK+l3APQIAJ/rUNH9Xj3aqEoQETElAV/D
-xb/Uj7klbjAlRXFPHh+1gn09NdUorsBLn+pxqwS1VAkq1Od/SWyN3ElNxS0baU17
-joa8dhU4eLiTJmojowiFsx8nl8+CU4F4wuZHdkaGFRSMrEuLlxapSH2ehYdfNJnc
-oHgBD1lRFRuD4uwzsRqwngED4v0Oz0oUO8z4kP4Pjmix8rzgVYxKyioU/cJfFsf1
-QSWZU/mqMrjs8mb7M5yUWF8jVrEuu+0LuEJ1F70vr6K8w/9eQvE9AnFlgRfZiqus
-kNkC42pVB/IoltrVvSmxzrxyNmliCzbGyWb1C+P1x40pSrGLkDRy4sMl0L+wS1I=
-=mPbO
------END PGP SIGNATURE-----
-
---zCKi3GIZzVBPywwA--
+On Mon, Apr 18, 2011 at 09:09:28AM +0900, Kyungmin Park wrote:
+> Hi Linus,
+> 
+> It's really required feature for ARM architectures.
+> In case of samsung SoCs. it needs more things you described.
+> In case of setting the drive, we can set the drive strength, 1x, 2x, 3x, and 4x.
+> So can it add the more like this? or separate enumeration?
+> 
+> > +enum gpio_drive {
+> > +       GPIO_DRIVE_PUSH_PULL,
+> > +       GPIO_DRIVE_OPEN_DRAIN,
+> > +       GPIO_DRIVE_OPEN_SOURCE,
+>             GPIO_DRIVE_STRENGTH_1X,
+>             GPIO_DRIVE_STRENGTH_2X,
+>             GPIO_DRIVE_STRENGTH_3X,
+>             GPIO_DRIVE_STRENGTH_4X,
+> > +};
+> 
+> or
+> 
+> enum gpio_drive_strength {
+>             GPIO_DRIVE_STRENGTH_1X,
+>             GPIO_DRIVE_STRENGTH_2X,
+>             GPIO_DRIVE_STRENGTH_3X,
+>             GPIO_DRIVE_STRENGTH_4X,
+> };
+> 
+> Thank you,
+> Kyungmin Park
+> 
+> On Mon, Apr 18, 2011 at 6:37 AM, Linus Walleij
+> <linus.walleij@stericsson.com> wrote:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > This adds two functions for struct gpio_chip chips to provide pin
+> > bias and drive mode settings for individual pins. Implementers does
+> > this a bit differently and usually there are a few possible modes you
+> > can select, I'm providing a few common modes for biasing and driving
+> > pins.
+> >
+> > Since we have no previous hacked-up arch-specific drivers for this
+> > we can avoid any __override_functions and we just allow this to be
+> > properly implemented using gpiolib. Further the function is made
+> > non-mandatory, if it is not defined for the chip it will be silently
+> > ignored.
+> >
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+[...]
