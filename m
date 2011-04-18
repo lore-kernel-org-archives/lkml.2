@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab1DRQKp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 12:10:45 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:50020 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755417Ab1DRQK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 12:10:29 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
-Subject: Re: [105/105] nfsd4: fix oops on lock failure
-References: <20110412143559.186613198@clark.kroah.org>
-	<87pqokx6lr.fsf@devron.myhome.or.jp>
-	<BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
-	<20110418153236.GC20935@pad.home.fieldses.org>
-	<87ipubwnj3.fsf@devron.myhome.or.jp>
-Date: Tue, 19 Apr 2011 01:10:26 +0900
-In-Reply-To: <87ipubwnj3.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
-	"Tue, 19 Apr 2011 01:08:00 +0900")
-Message-ID: <8762qbwnf1.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1755584Ab1DRQMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 12:12:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753788Ab1DRQMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 12:12:45 -0400
+Date: Mon, 18 Apr 2011 12:12:39 -0400
+From: Dave Jones <davej@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: WARN_ON report from clockevents_program_event
+Message-ID: <20110418161238.GB1903@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20110417182958.GA1821@redhat.com>
+ <alpine.LFD.2.00.1104180934010.2744@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1104180934010.2744@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+On Mon, Apr 18, 2011 at 09:35:19AM +0200, Thomas Gleixner wrote:
+ > On Sun, 17 Apr 2011, Dave Jones wrote:
+ > 
+ > > I just hit this warning on a box under heavy load.
+ > > 
+ > > WARNING: at kernel/time/clockevents.c:110 clockevents_program_event+0x37/0x90()
+ > > Hardware name: GA-MA78GM-S2H
+ > > Modules linked in: microcode fuse btrfs zlib_deflate tun uinput rfcomm pn_pep can_raw cmtp kernelcapi sctp libcrc32c hidp can pppoe pppox ppp_generic slhc appletalk rds rose ax25 decnet irda crc_ccitt af_key phonet bluetooth rfkill af_802154 ipx p8022 psnap llc p8023 atm nfsd lockd nfs_acl auth_rpcgss sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ppdev snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd soundcore edac_core pcspkr snd_page_alloc edac_mce_amd k10temp sp5100_tco i2c_piix4 r8169 mii parport_pc parport wmi lm63 ipv6 pata_acpi firewire_ohci ata_generic firewire_core crc_itu_t pata_atiixp floppy radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+ > > Pid: 16066, comm: trinity Not tainted 2.6.39-rc3+ #3
+ > > Call Trace:
+ > >  <IRQ>  [<ffffffff810569ac>] warn_slowpath_common+0x83/0x9b
+ > >  [<ffffffff810569de>] warn_slowpath_null+0x1a/0x1c
+ > >  [<ffffffff81080380>] clockevents_program_event+0x37/0x90
+ > >  [<ffffffff8108144d>] tick_dev_program_event+0x3c/0xfb
+ > >  [<ffffffff8108152b>] tick_program_event+0x1f/0x21
+ > >  [<ffffffff81076c41>] hrtimer_interrupt+0x127/0x1c2
+ > >  [<ffffffff814c410e>] smp_apic_timer_interrupt+0x79/0x8c
+ > >  [<ffffffff814c2f93>] apic_timer_interrupt+0x13/0x20
+ > >  <EOI>  [<ffffffff814c257a>] ? sysret_check+0x2e/0x69
+ > > ---[ end trace 76ca0db688fca8df ]---
+ > > hrtimer: interrupt took 47180328 ns
+ > 
+ > Huch, what did you do to make the timer interrupt run 47ms ? There is
+ > something badly wrong.
 
-> "J. Bruce Fields" <bfields@redhat.com> writes:
->
->> On Sun, Apr 17, 2011 at 09:10:12AM -0700, Linus Torvalds wrote:
->>> On Sun, Apr 17, 2011 at 8:03 AM, OGAWA Hirofumi
->>> <hirofumi@mail.parknet.co.jp> wrote:
->>> >
->>> > I'm looking filp leak on recent kernel. Well, anyway,
->>
->> Does this fix it?
->
-> It seems to be no, unfortunately. filp leak is not so fast, and obvious
-> reproduce process is not known yet. Well, sigh, I'm starting to add
-> debugging code for it...
+This is probably a 'root shot himself in the foot' thing.
 
-Ah, I was missing patch itself. I'll see.
+I ran my system call fuzzer from a wrong shell, which was a very bad idea.
+(It seems to have actually destroyed the hardware, no longer even POSTs. oops).
 
-> commit 5152c8a947359758862d4631863e68e83ec01048
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Fri Apr 15 18:08:26 2011 -0400
-> 
->     nfsd4: fix struct file leak on delegation
->     
->     Introduced by acfdf5c383b38f7f4dddae41b97c97f1ae058f49.
->     
->     Cc: stable@kernel.org
->     Reported-by: Gerhard Heift <ml-nfs-linux-20110412-ef47@gheift.de>
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index aa309aa..c79a983 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -258,6 +258,7 @@ static void nfs4_put_deleg_lease(struct nfs4_file *fp)
->  	if (atomic_dec_and_test(&fp->fi_delegees)) {
->  		vfs_setlease(fp->fi_deleg_file, F_UNLCK, &fp->fi_lease);
->  		fp->fi_lease = NULL;
-> +		fput(fp->fi_deleg_file);
->  		fp->fi_deleg_file = NULL;
->  	}
->  }
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+	Dave
+
