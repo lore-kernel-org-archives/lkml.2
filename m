@@ -1,44 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab1DRHZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 03:25:08 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38774 "EHLO mx1.suse.de"
+	id S1753088Ab1DRH0K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 03:26:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38796 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684Ab1DRHZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 03:25:03 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: wanlong.gao@gmail.com
-Subject: Re: [PATCH 1/1] drivers/usb/image/mdc800.c: Remove "typdef enum".
-Date: Mon, 18 Apr 2011 09:26:17 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc2-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-usb@vger.kernel.org
-References: <014287655bd0c4327bbd946b9c823a0e4ec35f8e.1303079016.git.tfransosi@gmail.com> <BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com>
-In-Reply-To: <BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751862Ab1DRH0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 03:26:04 -0400
+Date: Mon, 18 Apr 2011 17:25:51 +1000
+From: NeilBrown <neilb@suse.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110418172551.55629fc6@notabene.brown>
+In-Reply-To: <4DABDC60.2090009@fusionio.com>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
+	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
+	<20110303221353.GA10366@redhat.com>
+	<4D761E0D.8050200@fusionio.com>
+	<20110308202100.GA31744@redhat.com>
+	<4D76912C.9040705@fusionio.com>
+	<20110308220526.GA393@redhat.com>
+	<20110310005810.GA17911@redhat.com>
+	<20110405130541.6c2b5f86@notabene.brown>
+	<20110411145022.710c30e9@notabene.brown>
+	<4DA2C7BE.6060804@fusionio.com>
+	<20110411205928.13915719@notabene.brown>
+	<4DA2E03A.2080607@fusionio.com>
+	<20110411212635.7959de70@notabene.brown>
+	<4DA2E7F0.9010904@fusionio.com>
+	<20110411220505.1028816e@notabene.brown>
+	<4DA2F00E.6010907@fusionio.com>
+	<20110418081922.1651474a@notabene.brown>
+	<4DABDC60.2090009@fusionio.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104180926.17457.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 18. April 2011, 02:54:16 schrieb Wanlong Gao:
-> > -
-> > /***************************************************************************
-> >       The USB Part of the driver
-> > ****************************************************************************/
-> > --
-> > 1.7.3.2.343.g7d43d
-> >
-> Why did you change it ? and why change so many lines ?
-> It had some thing wrong ?
+On Mon, 18 Apr 2011 08:38:24 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
 
-Exactly. This is a driver for legacy hardware. Could you leave it alone
-unless you fix a real, as in makes a difference to code generation, bug?
+> On 2011-04-18 00:19, NeilBrown wrote:
+> > On Mon, 11 Apr 2011 14:11:58 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
+> > 
+> >>> Yes.  But I need to know when to release the requests that I have stored.
+> >>> I need to know when ->write_pages or ->read_pages or whatever has finished
+> >>> submitting a pile of pages so that I can start processing the request that I
+> >>> have put aside.  So I need a callback from blk_finish_plug.
+> >>
+> >> OK fair enough, I'll add your callback patch.
+> >>
+> > 
+> > But you didn't did you?  You added a completely different patch which is
+> > completely pointless.
+> > If you don't like my patch I would really prefer you said so rather than
+> > silently replace it with something completely different (and broken).
+> 
+> First of all, you were CC'ed on all that discussion, yet didn't speak up
+> until now. This was last week. Secondly, please change your tone.
 
-	Regards
-		Oliver
+Yes, I was CC'ed on a discussion.  In that discussion it was never mentioned
+that you had completely changed the patch I sent you, and it never contained
+the new patch in-line for review.   Nothing that was discussed was
+particularly relevant to md's needs so there was nothing to speak up about.
+
+Yes- there were 'git pull' requests and I could have done a pull myself to
+review the code but there seemed to be no urgency because you had already
+agreed to apply my patch.
+When I did finally pull the patches (after all the other issues had settle
+down and I had time to finish of the RAID side) I found ... what I found.
+
+I apologise for my tone, but I was very frustrated.
+
+> 
+> > I'll try to explain again.
+> > 
+> > md does not use __make_request.  At all.
+> > md does not use 'struct request'.  At all.
+> > 
+> > The 'list' in 'struct blk_plug' is a list of 'struct request'.
+> 
+> I'm well aware of how these facts, but thanks for bringing it up.
+> 
+> > Therefore md cannot put anything useful on the list in 'struct blk_plug'.
+> > 
+> > So when blk_flush_plug_list calls queue_unplugged() on a queue that belonged
+> > to a request found on the blk_plug list, that queue cannot possibly ever be
+> > for an 'md' device (because no 'struct request' ever belongs to an md device,
+> > because md doesn't not use 'struct request').
+> > 
+> > So your patch (commit f75664570d8b) doesn't help MD at all.
+> > 
+> > For md, I need to attach something to blk_plug which somehow identifies an md
+> > device, so that blk_finish_plug can get to that device and let it unplug.
+> > The most sensible thing to have is a completely generic callback.  That way
+> > different block devices (which choose not to use __make_request) can attach
+> > different sorts of things to blk_plug.
+> > 
+> > So can we please have my original patch applied? (Revised version using
+> > list_splice_init included below).
+> > 
+> > Or if not, a clear explanation of why not?
+> 
+> So correct me if I'm wrong here, but the _only_ real difference between
+> this patch and the current code in the tree, is the checking of the
+> callback list indicating a need to flush the callbacks. And that's
+> definitely an oversight. It should be functionally equivelant if md
+> would just flag this need to get a callback, eg instead of queueing a
+> callback on the list, just set plug->need_unplug from md instead of
+> queuing a callback and have blk_needs_flush_plug() do:
+> 
+>         return plug && (!list_empty(&plug->list) || plug->need_unplug);
+> 
+> instead. Something like the below, completely untested.
+> 
+
+No, that is not the only real difference.
+
+The real difference is that in the current code, md has no way to register
+anything with a blk_plug because you can only register a 'struct request' on a
+blk_plug, and md doesn't make any use of 'struct request'.
+
+As I said in the Email you quote above:
+
+> > Therefore md cannot put anything useful on the list in 'struct blk_plug'.
+
+That is the heart of the problem.
+
+NeilBrown
+
+
