@@ -1,69 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab1DRDFZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Apr 2011 23:05:25 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:22974 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab1DRDFU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Apr 2011 23:05:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=dV33P8ocsc7S5l2l6zvkhqvJxmKnAeyYGldVjZRFPosy5jrphOcix3CnwU8X7lBEBo
-         PbHJ8BCXGtZ+laZoIRKg==
-Date: Sun, 17 Apr 2011 20:05:19 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Shaohua Li <shaohua.li@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH]mmap: avoid unnecessary anon_vma lock
-In-Reply-To: <1301277532.3981.25.camel@sli10-conroe>
-Message-ID: <alpine.LSU.2.00.1104172003330.22756@sister.anvils>
-References: <1301277532.3981.25.camel@sli10-conroe>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1752245Ab1DRD0y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Apr 2011 23:26:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57320 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab1DRD0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Apr 2011 23:26:47 -0400
+Date: Mon, 18 Apr 2011 13:26:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for April 18
+Message-Id: <20110418132636.f6cb1298.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__18_Apr_2011_13_26_36_+1000_TAqsj2O9m4ZR/jpT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Mar 2011, Shaohua Li wrote:
+--Signature=_Mon__18_Apr_2011_13_26_36_+1000_TAqsj2O9m4ZR/jpT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> If we only change vma->vm_end, we can avoid taking anon_vma lock even 'insert'
-> isn't NULL, which is the case of split_vma.
-> From my understanding, we need the lock before because rmap must get the
-> 'insert' VMA when we adjust old VMA's vm_end (the 'insert' VMA is linked to
-> anon_vma list in __insert_vm_struct before).
-> But now this isn't true any more. The 'insert' VMA is already linked to
-> anon_vma list in __split_vma(with anon_vma_clone()) instead of
-> __insert_vm_struct. There is no race rmap can't get required VMAs.
-> So the anon_vma lock is unnecessary, and this can reduce one locking in brk
-> case and improve scalability.
-> 
-> Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+Hi all,
 
-I was sceptical at first, but yes, you're right: thanks.
-Acked-by: Hugh Dickins <hughd@google.com>
+Changes since 20110415:
 
-> 
-> ---
->  mm/mmap.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux/mm/mmap.c
-> ===================================================================
-> --- linux.orig/mm/mmap.c	2011-03-24 09:08:27.000000000 +0800
-> +++ linux/mm/mmap.c	2011-03-24 09:14:03.000000000 +0800
-> @@ -605,7 +605,7 @@ again:			remove_next = 1 + (end > next->
->  	 * lock may be shared between many sibling processes.  Skipping
->  	 * the lock for brk adjustments makes a difference sometimes.
->  	 */
-> -	if (vma->anon_vma && (insert || importer || start != vma->vm_start)) {
-> +	if (vma->anon_vma && (importer || start != vma->vm_start)) {
->  		anon_vma = vma->anon_vma;
->  		anon_vma_lock(anon_vma);
->  	}
+Dropped tree: xen
+
+The idle-test tree lost its build errors.
+
+The tip tree lost its conflict.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 185 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-designware-cor=
+e.c
+CONFLICT (delete/modify): drivers/i2c/busses/i2c-intel-mid.c deleted in bjd=
+ooks-i2c/next-i2c and modified in HEAD. Version HEAD of drivers/i2c/busses/=
+i2c-intel-mid.c left in tree.
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
+$ git rm -f drivers/i2c/busses/i2c-intel-mid.c
+Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
+Applying: i2c: designware-pcidrv depends on PCI
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+CONFLICT (delete/modify): drivers/media/dvb/frontends/drx397xD.c deleted in=
+ v4l-dvb/master and modified in HEAD. Version HEAD of drivers/media/dvb/fro=
+ntends/drx397xD.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/easycap/easycap_ioctl=
+.c
+$ git rm -f drivers/media/dvb/frontends/drx397xD.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/cpupowerutils
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
+.c
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (content): Merge conflict in sound/soc/codecs/wm8994.c
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/mfd-core.c
+CONFLICT (content): Merge conflict in include/linux/mfd/core.h
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in drivers/platform/x86/intel_pmic_gpio.c
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Mon__18_Apr_2011_13_26_36_+1000_TAqsj2O9m4ZR/jpT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNq69sAAoJEDMEi1NhKgbsj9oH/RmLoC9vIHTF2SlIy7DdXrhb
+uN+tVurLXdUvDQMnq4jb0CRavYp+/CqKkB7c1bvgAWW3skBq395EBZX1zFUdlo6v
+Unk1SWls/90CF1XhS27veoDdMdvlPvk7PS2p7s2NXBZjn1Whypyk2J0e4H4j9SQM
+lVgMGgAVSrjJJ4dGkSAOsc1QhwypJZVdlvAwnmf/ceffDNy8PJ5XzDnPKHNcVQH1
+XtiEDJfwL0sQhrbC+xCaSgvur/Vtrs5xSreECAa+D42zKIoyVRNnyzIVyzVtycdk
+tvQoHuLnq1au+b0XGDz1o5laJMSOYKyvVlVx3Rnc7meA9a5b441v1bWgnqijnA4=
+=cnwt
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__18_Apr_2011_13_26_36_+1000_TAqsj2O9m4ZR/jpT--
