@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab1DRTlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:41:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37417 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752296Ab1DRTk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 15:40:59 -0400
-Message-ID: <4DAC93BA.4030108@zytor.com>
-Date: Mon, 18 Apr 2011 12:40:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1751919Ab1DRTwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 15:52:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33669 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282Ab1DRTwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 15:52:32 -0400
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 1/4] x86, gart: Don't enforce GART aperture lower-bound
- by alignment
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com> <1303134346-5805-2-git-send-email-joerg.roedel@amd.com> <4DAC4E7F.1010502@zytor.com> <20110418145653.GI2192@amd.com> <4DAC5E16.1020408@zytor.com> <20110418173655.GA8155@8bytes.org> <4DAC7739.2060100@zytor.com> <20110418190620.GD8155@8bytes.org>
-In-Reply-To: <20110418190620.GD8155@8bytes.org>
+In-Reply-To: <Pine.SOC.4.64.1104181519490.1320@er3.rutgers.edu>
+References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu>
+ <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com> <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu>
+ <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com> <20110417101731.GA17986@electric-eye.fr.zoreil.com>
+ <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com> <20110418180813.GA18469@electric-eye.fr.zoreil.com>
+ <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com> <Pine.SOC.4.64.1104181519490.1320@er3.rutgers.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 18 Apr 2011 12:51:40 -0700
+Message-ID: <BANLkTi=dke10HougmiQn9hSF15nK0B8mdA@mail.gmail.com>
+Subject: Re: Suspend/resume - slow resume
+To: Ciprian Docan <docan@eden.rutgers.edu>
+Cc: Francois Romieu <romieu@fr.zoreil.com>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael, J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2011 12:06 PM, Joerg Roedel wrote:
-> On Mon, Apr 18, 2011 at 10:39:05AM -0700, H. Peter Anvin wrote:
->> I'm going to apply your patch as-is, based on the notion that this is a
->> change of mechanism, and a change of policy is a separate thing.
->> However, we should address the shutdown of the GART first, and then we
->> can move the start address to zero (again, two separate patches.)
-> 
-> Hmm, thinking again about this, setting the lower-bound to 0 may break
-> kdump setups. The kdump kernel is then able to allocate an aperture too
-> and that may use half of the memory from the kdump-system so that the
-> dump-process triggers OOM.
-> As it is now, the GART is automatically disabled when the BIOS doesn't
-> setup it correctly and the machine has not more than 512MB of memory.
-> Either we keep it as is or, with the changes suggested above, we handle
-> it like soft-iotlb and don't use gart for dma-api at all when
-> max_pfn is smaller than 4G.
-> 
+On Mon, Apr 18, 2011 at 12:27 PM, Ciprian Docan <docan@eden.rutgers.edu> wrote:
+>
+> Linus - I applied your patch and attached the diff between output of dmesg
+> before and after the patch as resume_timing.diff. This patch alone does not
+> seem to fix the issue;
 
-OK, kdump is no longer limited to 512 MiB and so that number is spurious
-in the context of kdump.  If that is broken it is already broken.  Thus
-the 512 MiB number already is looking spurious.
+Ok, that just means that the error return from call_usermodehelper()
+gets lost somewhere along the way to kobject_uevent(). Or that I
+misread the whole thing.
 
-	-hpa
+>  however, applying Francois's patch in addition to
+> yours make the resume smooth.
+
+Well, Francois' patch on its own should already have fixed it for you,
+and made the whole issue moot.
+
+Francois' patch is fine and improves on things, I only had a few
+arguments with it. The problems I think it had were really about some
+rather special cases.
+
+                      Linus
