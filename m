@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab1DRJYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 05:24:13 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:44278 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778Ab1DRJYE (ORCPT
+	id S1754047Ab1DRJZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 05:25:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57984 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab1DRJZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 05:24:04 -0400
-Date: Mon, 18 Apr 2011 11:23:48 +0200
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: castet.matthieu@free.fr, sliakh.lkml@gmail.com, jiang@cs.ncsu.edu,
-        rusty@rustcorp.com.au, mingo@elte.hu
-Subject: Undoing module RONX protection
-Message-ID: <20110418092348.GB7786@hal>
+	Mon, 18 Apr 2011 05:25:41 -0400
+Message-ID: <4DAC0390.9050205@chamonix.reportlab.co.uk>
+Date: Mon, 18 Apr 2011 10:25:36 +0100
+From: Robin Becker <robin@reportlab.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sean Young <sean@mess.org>
+CC: Nicolas Pitre <nico@fluxnic.net>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: arm: mach-kirkwood: Make the red led available on the eSATA SheevaPlug
+References: <20110416220842.GA1518@pequod.mess.org>
+In-Reply-To: <20110416220842.GA1518@pequod.mess.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While debugging I stumbled over two problems in the code that protects module
-pages.
+On 16/04/2011 23:08, Sean Young wrote:
+> After this patch:
+>
+>          7780c80 arm: mach-kirkwood: add led in sheevaplug-setup.c
+>
+> On a eSATA SheevaPlug, neither the red nor the green led can be controlled,
+> since probing fails with:
+>
+> [    6.188278] leds-gpio: probe of leds-gpio failed with error -22
+>
+> Signed-off-by: Sean Young<sean@mess.org>
+>
+> diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/sheevaplug-setup.c
+> index 17de0bf..92db979 100644
+> --- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
+> +++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
+> @@ -94,6 +94,7 @@ static unsigned int sheevaplug_mpp_config[] __initdata = {
+>   static unsigned int sheeva_esata_mpp_config[] __initdata = {
+>   	MPP29_GPIO,	/* USB Power Enable */
+>   	MPP44_GPIO,	/* SD Write Protect */
+> +	MPP46_GPIO,	/* LED Red */
+>   	MPP47_GPIO,	/* SD Card Detect */
+>   	MPP49_GPIO,	/* LED Green */
+>   	0
+>
 
-First issue is that disabling the protection before freeing init or unload of
-a module is not symmetric with the enablement. For instance, if pages are set
-to RO the page range from module_core to module_core + core_ro_size is
-protected. If a module is unloaded the page range from module_core to
-module_core + core_size is set back to RW.
-So pages that were not set to RO are also changed to RW.
-This is not critical but IMHO it should be symmetric.
+I think my original patch had some changes to gpio_led sheevaplug_led_pins as 
+well. It definitely works on my standard sheeva plug. In fact I have three 
+controllable leds at 46, 48 & 49. GPIO 45 is also an led, but is also grounded 
+so is permanently on. This is something like the patch I am using with plugbox
 
-Second issue is that while set_memory_rw & set_memory_ro are used for
-RO/RW changes only set_memory_nx is involved for NX/X. One would await that
-the inverse function is called when the NX protection should be removed,
-which is not the case here, unless I'm missing something.
+diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/
+index d2eec35..e14893b 100644
+--- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
++++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
+@@ -58,7 +58,19 @@
 
-The following patch addresses both issues. Works on s390. Boot tested on x86.
+  static struct gpio_led sheevaplug_led_pins[] = {
+     {
+-       .name           = "plug:green:health",
++       .name           = "status:red:misc",
++       .default_trigger    = "none",
++       .gpio           = 46,
++       .active_low     = 1,
++   },
++   {
++       .name           = "status:green:health",
++       .default_trigger    = "none",
++       .gpio           = 48,
++       .active_low     = 1,
++   },
++   {
++       .name           = "status:blue:health",
+         .default_trigger    = "default-on",
+         .gpio           = 49,
+         .active_low     = 1,
+@@ -80,7 +92,9 @@
 
-Please comment,
-Jan
+  static unsigned int sheevaplug_mpp_config[] __initdata = {
+     MPP29_GPIO, /* USB Power Enable */
+-   MPP49_GPIO, /* LED */
++   MPP46_GPIO, /* LED Red Misc */
++   MPP48_GPIO, /* LED Green Health */
++   MPP49_GPIO, /* LED Blue Health */
+     0
+  };
 
----------
 
-Use the proper function to reset the NX page protection and only reset pages
-that were previously protected during module load. Export the missing
-set_memory_x for s390.
-
-Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
----
- arch/s390/include/asm/cacheflush.h |    1 +
- arch/s390/mm/pageattr.c            |    6 ++++++
- kernel/module.c                    |   25 +++++++++++++------------
- 3 files changed, 20 insertions(+), 12 deletions(-)
-
---- a/arch/s390/include/asm/cacheflush.h
-+++ b/arch/s390/include/asm/cacheflush.h
-@@ -11,5 +11,6 @@ void kernel_map_pages(struct page *page,
- int set_memory_ro(unsigned long addr, int numpages);
- int set_memory_rw(unsigned long addr, int numpages);
- int set_memory_nx(unsigned long addr, int numpages);
-+int set_memory_x(unsigned long addr, int numpages);
- 
- #endif /* _S390_CACHEFLUSH_H */
---- a/arch/s390/mm/pageattr.c
-+++ b/arch/s390/mm/pageattr.c
-@@ -54,3 +54,9 @@ int set_memory_nx(unsigned long addr, in
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(set_memory_nx);
-+
-+int set_memory_x(unsigned long addr, int numpages)
-+{
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(set_memory_x);
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1607,22 +1607,23 @@ static void set_section_ro_nx(void *base
- 	}
- }
- 
--/* Setting memory back to RW+NX before releasing it */
-+/* Setting memory back to W+X before releasing it */
- void unset_section_ro_nx(struct module *mod, void *module_region)
- {
--	unsigned long total_pages;
--
- 	if (mod->module_core == module_region) {
--		/* Set core as NX+RW */
--		total_pages = MOD_NUMBER_OF_PAGES(mod->module_core, mod->core_size);
--		set_memory_nx((unsigned long)mod->module_core, total_pages);
--		set_memory_rw((unsigned long)mod->module_core, total_pages);
--
-+		set_page_attributes(mod->module_core + mod->core_text_size,
-+			mod->module_core + mod->core_size,
-+			set_memory_x);
-+		set_page_attributes(mod->module_core,
-+			mod->module_core + mod->core_ro_size,
-+			set_memory_rw);
- 	} else if (mod->module_init == module_region) {
--		/* Set init as NX+RW */
--		total_pages = MOD_NUMBER_OF_PAGES(mod->module_init, mod->init_size);
--		set_memory_nx((unsigned long)mod->module_init, total_pages);
--		set_memory_rw((unsigned long)mod->module_init, total_pages);
-+		set_page_attributes(mod->module_init + mod->init_text_size,
-+			mod->module_init + mod->init_size,
-+			set_memory_x);
-+		set_page_attributes(mod->module_init,
-+			mod->module_init + mod->init_ro_size,
-+			set_memory_rw);
- 	}
- }
- 
+-- 
+Robin Becker
