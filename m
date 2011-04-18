@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1DRXPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 19:15:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52910 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab1DRXPN convert rfc822-to-8bit (ORCPT
+	id S1753460Ab1DRXbU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 19:31:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:52081 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab1DRXbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 19:15:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=S9gzIyWbn5HGNF7k9cEiDfHPLdHytKU/wLB7XldFeXvT0WuTUhzvTq6WiagvBv74wF
-         lIJhBNVkVbM7X1AZ8aBTYQHgbjmpRG2c9smKTvRM798muad2/1o4Li8Gi9o11yVsfSRx
-         d13Q86TBFuWNtF4qKBuQ+xVC4S6GnpkH74xM8=
-MIME-Version: 1.0
-In-Reply-To: <20110418230254.GA22588@redhat.com>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
- <20110412190934.GA12082@redhat.com> <20110412192103.GA13278@redhat.com>
- <87tye1ckhr.fsf@linux.vnet.ibm.com> <BANLkTik68Q2bpgF7GpcOs+YF44B9TL60qQ@mail.gmail.com>
- <20110418230254.GA22588@redhat.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 19 Apr 2011 01:14:57 +0200
-Message-ID: <BANLkTik2eRURBtdWCrYF5g3i90PJTVe9Fw@mail.gmail.com>
-Subject: Re: Linux 2.6.39-rc3
-To: Dave Jones <davej@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Sandeen <sandeen@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Apr 2011 19:31:19 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=bx74Hp8RJ4sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=UCXm4OdGIi-FydrpeHgA:9 a=iVFgviD7D8ckdUNLUvYA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/3] x86, cpu: Clean up and unify the NOP selection
+ infrastructure
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Jason Baron <jbaron@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, tglx@linutronix.de,
+        mingo@elte.hu, Tejun Heo <tj@kernel.org>
+In-Reply-To: <1303166160-10315-3-git-send-email-hpa@linux.intel.com>
+References: <1303166160-10315-1-git-send-email-hpa@linux.intel.com>
+	 <1303166160-10315-3-git-send-email-hpa@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 18 Apr 2011 19:31:15 -0400
+Message-ID: <1303169476.7181.71.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 01:02, Dave Jones <davej@redhat.com> wrote:
-> On Tue, Apr 19, 2011 at 12:57:27AM +0200, Kay Sievers wrote:
->
->  > > uuid:<value> is the option field  as per
->  > > Documentation/filesystem/proc.txt. There was an error in libmount
->  > > parsing which got fixed upstream recently
->  >
->  > Just a simple question about this approach in general? A filesystem
->  > UUID can be changed on disk at any time (tune2fs -U ...).
->  >
->  > Your code looks like you copy the bytes to the in-kernel superblock
->  > structure without noticing any later changes on disk? How is that
->  > supposed to work?
->
-> I thought tune2fs on a mounted filesystem was always a
-> "you get to keep both pieces if it breaks" situation.
+On Mon, 2011-04-18 at 15:35 -0700, H. Peter Anvin wrote:
 
-No idea, it works fine that way since forever. :)
+>  #endif /* _ASM_X86_NOPS_H */
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index 4a23467..2ca3f65 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -68,16 +68,20 @@ __setup("noreplace-paravirt", setup_noreplace_paravirt);
+>  	printk(KERN_DEBUG fmt, args)
+>  
+>  #if defined(GENERIC_NOP1) && !defined(CONFIG_X86_64)
+> -/* Use inline assembly to define this because the nops are defined
+> -   as inline assembly strings in the include files and we cannot
+> -   get them easily into strings. */
+> -asm("\t" __stringify(__INITRODATA_OR_MODULE) "\nintelnops: "
+> -	GENERIC_NOP1 GENERIC_NOP2 GENERIC_NOP3 GENERIC_NOP4 GENERIC_NOP5 GENERIC_NOP6
+> -	GENERIC_NOP7 GENERIC_NOP8
+> -    "\t.previous");
+> -extern const unsigned char intelnops[];
 
-$ cat /proc/self/mountinfo | grep sda1
-21 1 8:1 / / rw,relatime - ext4 /dev/sda1 rw, ...
+Can we please add a comment to this. The original (above) was confusing
+enough, but at least it used asm() so it wasn't that bad to figure out.
+Or at least the asm() usage would trigger in one's mind to think "Damn!
+They chose to use 'asm', it must be some kind of nasty trick. Let's take
+a better look at WTF they are doing!".
 
-$ blkid /dev/sda1
-/dev/sda1: LABEL="root" UUID="0e4974cc-6a11-11e0-8d7b-002186a23ce5" TYPE="ext4"
+Now the use a normal character array actual makes this even more subtle.
+What about adding:
 
-$ tune2fs -U time /dev/sda1
-tune2fs 1.41.14 (22-Dec-2010)
+/*
+ * Each GENERIC_NOPX is of X bytes, and defined as an array of bytes
+ * that correspond to that nop. Getting from one nop to the next, we
+ * add to the array the offset that is equal to the sum of all sizes of 
+ * nops preceding the one we are after.
+ *
+ * Note: The GENERIC_NOP5_ATOMIC is at the end, as it breaks the
+ * nice symmetry of sizes of the previous nops.
+ */
 
-$ blkid /dev/sda1
-/dev/sda1: LABEL="root" UUID="26be6e7c-6a11-11e0-ad62-002186a23ce5" TYPE="ext4"
+-- Steve
+ 
+> +static const unsigned char  __initconst_or_module intelnops[] =
+> +{
+> +	GENERIC_NOP1,
+> +	GENERIC_NOP2,
+> +	GENERIC_NOP3,
+> +	GENERIC_NOP4,
+> +	GENERIC_NOP5,
+> +	GENERIC_NOP6,
+> +	GENERIC_NOP7,
+> +	GENERIC_NOP8,
+> +	GENERIC_NOP5_ATOMIC
+> +};
+>  static const unsigned char *const __initconst_or_module
+> -intel_nops[ASM_NOP_MAX+1] = {
+> +intel_nops[ASM_NOP_MAX+2] = {
+>  	NULL,
+>  	intelnops,
+>  	intelnops + 1,
+> @@ -87,17 +91,25 @@ intel_nops[ASM_NOP_MAX+1] = {
+>  	intelnops + 1 + 2 + 3 + 4 + 5,
+>  	intelnops + 1 + 2 + 3 + 4 + 5 + 6,
+>  	intelnops + 1 + 2 + 3 + 4 + 5 + 6 + 7,
+> +	intelnops + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8,
+>  };
+>  #endif
 
-I don't think that approach makes any sense without doing a call into
-the filesystem, and such calls have no place in mountinfo.
 
-Kay
