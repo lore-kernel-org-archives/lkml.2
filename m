@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1DRH3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 03:29:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60266 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1DRH3s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 03:29:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2 cache
-Date: Mon, 18 Apr 2011 09:29:33 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, Ramesh Gupta <grgupta@ti.com>,
-        Hari Kanigeri <h-kanigeri2@ti.com>
-References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com> <20110414223036.GA7335@n2100.arm.linux.org.uk>
-In-Reply-To: <20110414223036.GA7335@n2100.arm.linux.org.uk>
+	id S1753147Ab1DRHdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 03:33:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57616 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752485Ab1DRHde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 03:33:34 -0400
+Message-ID: <4DABE938.6020400@redhat.com>
+Date: Mon, 18 Apr 2011 09:33:12 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Natarajan Gurumoorthy <natg@google.com>
+CC: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Wim Van Sebroeck <wim@iguana.be>, Mike Waychison <mikew@google.com>
+Subject: Re: [lm-sensors] [PATCH v6 1/2] Use "request_muxed_region" in it87
+ watchdog drivers
+References: <1302816996-6345-1-git-send-email-natg@google.com>	<1302817069-6389-1-git-send-email-natg@google.com>	<1302821370.26780.585.camel@groeck-laptop>	<BANLkTin6M0R4d+HMovbRwqthSHowUEKFow@mail.gmail.com>	<20110415024005.GA21642@ericsson.com>	<BANLkTi=t+AgRU47DhKoGOJ2mTa6AVfaPVw@mail.gmail.com>	<20110415055852.GA21905@ericsson.com> <BANLkTi=464Q8z7GzDZw9Mb-j-L4O0bPRjg@mail.gmail.com>
+In-Reply-To: <BANLkTi=464Q8z7GzDZw9Mb-j-L4O0bPRjg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104180929.33569.arnd@arndb.de>
-X-Provags-ID: V02:K0:AYEf+koebSFW0cF6H4y/ojmCa197WaS1xCDFaKecj5T
- 9TZ/u5q7U56jYf0IsKg3Q5/AU26s5QsA/ZyFVkoAdX0zkwjau7
- 02BkTIWb5ZZdOtxgWiCzrw2dlwpwc2+IEf9FFwJHsNlojDVzoa
- eQW5jF0q2Zi2Eti6vunTx3ABwPCGQTxtJhrb4NDdU+wir/6RCN
- MFOIzI3GGBLkeEk1Ivsdg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 April 2011, Russell King - ARM Linux wrote:
-> On Thu, Apr 14, 2011 at 04:52:48PM -0500, Fernando Guzman Lugo wrote:
-> > From: Ramesh Gupta <grgupta@ti.com>
-> > 
-> > This patch is to flush the iommu page table entries from L1 and L2
-> > caches using dma_map_single. This also simplifies the implementation
-> > by removing the functions  flush_iopgd_range/flush_iopte_range.
-> 
-> No.  This usage is just wrong.  If you're going to use the DMA API then
-> unmap it, otherwise the DMA API debugging will go awol.
+Hi,
 
+On 04/15/2011 10:46 AM, Natarajan Gurumoorthy wrote:
+> On Thu, Apr 14, 2011 at 10:58 PM, Guenter Roeck
+> <guenter.roeck@ericsson.com>  wrote:
+>> I have seen the list. I don't think you should fix everything in one go.
+>> First step might be to get the w83697hf and it87 to work together, then
+>> go from there.
+>>
+>> Is there a reason for loading (or trying to load) both the it87 and
+>> the w83697hf driver at the same time ? Those drivers are usually only
+>> loaded if the respective chip is known to exist. If there is no reason
+>> to try loading both drivers, a simple workaround would be to not do it.
+>>
+> Guenter,
+>        I agree the above should never happen. The only way the 2
+> drivers will be loaded at the same time is a misconfigured kernel
+> where these 2 drivers get built and the rc scripts end up loading them
+> too. If we are agreed that I suggest we make the superio_enter routine
+> be the following:
+>
+> static inline void
+> superio_enter(void)
+> {
+> 	/*
+> 	 * Reserve REG and REG + 1 for exclusive access.
+> 	 */
+> 	while (!request_muxed_region(REG, 2, WATCHDOG_NAME))
+> 		continue;
+>
 
-It's also completely upside-down: The iommu support should provide interfaces
-using the dma-mapping API, not use that API to provide a machine specific
-version of the generic interface.
+Natajaran,
 
-As far as I can tell, nothing actually uses these drivers, maybe we should just
-remove them before we get any code in the mainline kernel that depends on it.
+Please stop being so stubborn. XXX people have told you not to put a
+while loop here, but simply to check for an error and propagate
+it (in all places where superio_enter gets called).
 
-	Arnd
+Your bogus argument of the driver then failing to load when another
+non muxed superio driver loads is really far fetched. No system ever
+has 2 super io chips. So as long as all ite drivers use the muxed
+version all will be fine.
+
+And if some unforeseen scenario happens where the request_muxed_region
+fails, we will get a bug report about a driver failing to load (*). Which
+is a lot better for the end user then being stuck in an endless loop.
+
+Regards,
+
+Hans
+
+*) And deal with that then.
