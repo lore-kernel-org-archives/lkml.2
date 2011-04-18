@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab1DRNet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:34:49 -0400
-Received: from stinky.trash.net ([213.144.137.162]:43881 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab1DRNeo (ORCPT
+	id S1753999Ab1DRNfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 09:35:00 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38788 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868Ab1DRNez convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 09:34:44 -0400
-Message-ID: <4DAC3DEF.6070702@trash.net>
-Date: Mon, 18 Apr 2011 15:34:39 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	Mon, 18 Apr 2011 09:34:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=expujdNEY1HCejIbWoCakIsLFdDxxtSPMEZNLmHG+xSPmPuHBWlBy8GYR2xD3BT3Cv
+         kAOUty3mP6NVw+wACEbEmqDNMPXODWOyh12M0C6tL+8XGu9gPf4SBnP1au+feengeFG0
+         fp6mE5HKI8yKhIbG1j3uZZpriBNvczL1iQvLc=
 MIME-Version: 1.0
-To: Simon Arlott <simon@fire.lp0.eu>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Netfilter Development Mailinglist 
-	<netfilter-devel@vger.kernel.org>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 000002c0
-  / IP: [<c04c70f2>] in6_dev_finish_destroy+0x35/0x8c
-References: <4DA77AE5.9060501@simon.arlott.org.uk>	 <0b5f315dd0f6e8eefabbd8b38b1d43e181fdd728@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>	 <1302872983.3613.10.camel@edumazet-laptop> <1302873876.3613.11.camel@edumazet-laptop> <4DA86FE5.8080507@simon.arlott.org.uk>
-In-Reply-To: <4DA86FE5.8080507@simon.arlott.org.uk>
-Content-Type: multipart/mixed;
- boundary="------------030102080707030002020304"
+In-Reply-To: <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+ <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com>
+ <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com>
+ <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com> <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Mon, 18 Apr 2011 15:34:34 +0200
+X-Google-Sender-Auth: d51SRv1gqDSiuZL9yML6z3-k298
+Message-ID: <BANLkTim-YwWeOB7mn4WcSG69OozRDk3a-g@mail.gmail.com>
+Subject: Re: Unionmount status?
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Jiri Kosina <jkosina@suse.cz>,
+        Ric Wheeler <ricwheeler@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Ian Kent <ikent@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030102080707030002020304
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-
-Am 15.04.2011 18:18, schrieb Simon Arlott:
-> On 15/04/11 14:24, Eric Dumazet wrote:
->> Hmm.. a more complete patch :
+On 16 April 2011 00:18, Andreas Dilger <adilger@dilger.ca> wrote:
+> On 2011-04-15, at 6:29 AM, Miklos Szeredi wrote:
+>> Apparently tmpfs does not support generic xattr.  I understand why
+>> tmpfs is an attractive choice for an upper filesystem, so this should
+>> be addressed.
 >>
->> diff --git a/net/ipv6/netfilter/nf_conntrack_reasm.c b/net/ipv6/netfilter/nf_conntrack_reasm.c
->> index 0857272..6f0bed0 100644
-> 
-> I applied the patch by recompiling and then reloading the nf_conntrack_ipv6
-> module (temporarily flushing and then restoring all ip6tables rules).
-> Then this happened 10 minutes later:
-> 
-> [33876.950100] BUG: unable to handle kernel NULL pointer dereference at 00000014
-> [33876.951060] IP: [<f9b012bb>] nf_ct_frag6_gather+0x864/0x881 [nf_conntrack_ipv6]
+>> I see two options here:
+>>
+>> 1) implement generic xattr in tmpfs
+>
+> There was a patch posted recently to add xattr support to tmpfs, so that it can use security labels:
+>
+> From: Eric Paris <eparis@redhat.com>
+> Subject: [PATCH] tmpfs: implement xattr support for the entire security namespace
+> Date: March 29, 2011 12:56:49 PM MDT
+>
+> Cheers, Andreas
 
-nf_ct_frag6_reasm() can return NULL, so we need to check for a non-NULL
-ret_skb before trying to set the device.
+Applying this patch is not sufficient. Apparently more xattrs are
+needed but adding them on top of this patch should be easy.
 
-Does this patch (based on Eric's second version) help?
+The ones mentioned in the overlayfs doc are
 
+trusted.overlay.whiteout
+trusted.overlay.opaque
 
---------------030102080707030002020304
-Content-Type: text/plain;
- name="x"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="x"
+The patch implements security.*
 
-ZGlmZiAtLWdpdCBhL25ldC9pcHY2L25ldGZpbHRlci9uZl9jb25udHJhY2tfcmVhc20uYyBi
-L25ldC9pcHY2L25ldGZpbHRlci9uZl9jb25udHJhY2tfcmVhc20uYwppbmRleCAwODU3Mjcy
-Li5iN2VjZmNlIDEwMDY0NAotLS0gYS9uZXQvaXB2Ni9uZXRmaWx0ZXIvbmZfY29ubnRyYWNr
-X3JlYXNtLmMKKysrIGIvbmV0L2lwdjYvbmV0ZmlsdGVyL25mX2Nvbm50cmFja19yZWFzbS5j
-CkBAIC01NzYsNyArNTc2LDkgQEAgc3RydWN0IHNrX2J1ZmYgKm5mX2N0X2ZyYWc2X2dhdGhl
-cihzdHJ1Y3Qgc2tfYnVmZiAqc2tiLCB1MzIgdXNlcikKIAlpZiAoZnEtPnEubGFzdF9pbiA9
-PSAoSU5FVF9GUkFHX0ZJUlNUX0lOIHwgSU5FVF9GUkFHX0xBU1RfSU4pICYmCiAJICAgIGZx
-LT5xLm1lYXQgPT0gZnEtPnEubGVuKSB7CiAJCXJldF9za2IgPSBuZl9jdF9mcmFnNl9yZWFz
-bShmcSwgZGV2KTsKLQkJaWYgKHJldF9za2IgPT0gTlVMTCkKKwkJaWYgKHJldF9za2IgIT0g
-TlVMTCkKKwkJCXJldF9za2ItPmRldiA9IGRldjsKKwkJZWxzZQogCQkJcHJfZGVidWcoIkNh
-bid0IHJlYXNzZW1ibGUgZnJhZ21lbnRlZCBwYWNrZXRzXG4iKTsKIAl9CiAJc3Bpbl91bmxv
-Y2tfYmgoJmZxLT5xLmxvY2spOwpAQCAtNjAyLDcgKzYwNCw3IEBAIHZvaWQgbmZfY3RfZnJh
-ZzZfb3V0cHV0KHVuc2lnbmVkIGludCBob29rbnVtLCBzdHJ1Y3Qgc2tfYnVmZiAqc2tiLAog
-CiAJCXMyID0gcy0+bmV4dDsKIAkJcy0+bmV4dCA9IE5VTEw7Ci0KKwkJcy0+ZGV2ID0gaW47
-CiAJCU5GX0hPT0tfVEhSRVNIKE5GUFJPVE9fSVBWNiwgaG9va251bSwgcywgaW4sIG91dCwg
-b2tmbiwKIAkJCSAgICAgICBORl9JUDZfUFJJX0NPTk5UUkFDS19ERUZSQUcgKyAxKTsKIAkJ
-cyA9IHMyOwo=
---------------030102080707030002020304--
+Thanks
+
+Michal
