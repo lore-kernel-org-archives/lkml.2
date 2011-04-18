@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab1DRUfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 16:35:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59986 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab1DRUfS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 16:35:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=i14eVx6WcO9JxsrNsjr8cFqiUcd5Jb7XFkqlnJk/G0UNoe0ETTQkURRL6OwwYioKjI
-         +VcCbgdziqqgykV+ebGfRrxxZQ67sovXJ/1maTaYRJoWP6w9gjhNQBEue0VqFxRXeenw
-         qvag2tfE9u/cDB1O8Kp9IfuFtJgc845r2Y5HM=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikEAro9mbrPys+iqUEJDvGFmRvwsA@mail.gmail.com>
-References: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
-	<BANLkTi=UjQ5tenjbHpkNWGmFSd2JzOvOOw@mail.gmail.com>
-	<BANLkTikEAro9mbrPys+iqUEJDvGFmRvwsA@mail.gmail.com>
-Date: Mon, 18 Apr 2011 16:35:17 -0400
-X-Google-Sender-Auth: JFWwFnt_04SBhnkNw8ey3agP1oY
-Message-ID: <BANLkTimL+x+CwHKLkpMsY7kGsk3WkWHvpw@mail.gmail.com>
-Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
-From: Colin Walters <walters@verbum.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752130Ab1DRUhn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 16:37:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40025 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab1DRUhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 16:37:41 -0400
+Date: Mon, 18 Apr 2011 22:37:26 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, linux-kernel@vger.kernel.org,
         Andi Kleen <andi@firstfloor.org>, x86 <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
+Message-ID: <20110418203726.GA30868@elte.hu>
+References: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
+ <BANLkTi=hpNy3iA+49N90dbU4f0_L2RVJNQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=hpNy3iA+49N90dbU4f0_L2RVJNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 4:27 PM, Andrew Lutomirski <luto@mit.edu> wrote:
 
-> Well, crap.  Can you run:
->  dmesg | grep -i tsc
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-# dmesg|grep -i tsc
-[    0.000000] Fast TSC calibration using PIT
-[    0.098999] TSC synchronization [CPU#0 -> CPU#1]:
-[    0.098999] Measured 2399269672 cycles TSC warp between CPUs,
-turning off TSC clock.
-[    0.098999] Marking TSC unstable due to check_tsc_sync_source failed
+> Some opteron love would be good, but I don't have access to any right here.
 
-> There are two possible explanations:
-> 1. Your tscs are out of sync, and whether the test notices or not
-> depends on which cpus the scheduler sticks the threads on.
+Here's one:
 
-Looks like that's the case?   But for what you want to do in kernel,
-the kernel already did this test and so would know to not use the TSC
-for vgettimeofday(), right?  (I only sort of followed the clock
-discussion earlier but I found it quite interesting, so decided to run
-the test).
+ CPU vendor   : AuthenticAMD
+ CPU model    : Quad-Core AMD Opteron(tm) Processor 8356
+ CPU stepping : 3
+ TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
+ Using mfence_rdtsc because you don't have an Intel CPU
+ Will test the "mfence;rdtsc" clock.
+ Now test passed  : margin 252 with 7198256 samples
+ Load3 test passed: margin 536 with 1833844 samples
+ Load test passed : margin 219 with 3097882 samples
+ Store test passed: margin 250 with 3553454 samples
+
+Thanks,
+
+	Ingo
