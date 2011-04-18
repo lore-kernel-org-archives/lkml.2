@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1DRNpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:45:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753745Ab1DRNpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 09:45:45 -0400
-Date: Mon, 18 Apr 2011 15:45:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/7] signal: retarget_shared_pending: consider
-	shared/unblocked signals only
-Message-ID: <20110418134501.GC15951@redhat.com>
-References: <20110418134421.GA15951@redhat.com>
+	id S1754363Ab1DRNqO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 09:46:14 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:42331
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753745Ab1DRNqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 09:46:02 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bh8275dhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LJUOWF-01-FT9-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, <stable@kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 3/4] x86, gart: Set DISTLBWALKPRB bit always
+Date: Mon, 18 Apr 2011 15:45:45 +0200
+Message-ID: <1303134346-5805-4-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
+References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110418134421.GA15951@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-exit_signals() checks signal_pending() before retarget_shared_pending() but
-this is suboptimal. We can avoid the while_each_thread() loop in case when
-there are no shared signals visible to us.
+The DISTLBWALKPRB bit must be set for the GART because the
+gatt table is mapped UC. But the current code does not set
+the bit at boot when the BIOS setup the aperture correctly.
+Fix that by setting this bit when enabling the GART instead
+of the other places.
 
-Add the "shared_pending.signal & ~blocked" check. We don't use tsk->blocked
-directly but pass ~blocked as an argument, this is needed for the next patch.
-
-Note: we can optimize this more. while_each_thread(t) can check t->blocked
-into account and stop after every pending signal has the new target, see the
-next patch.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@kernel.org
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
+ arch/x86/include/asm/gart.h   |    4 ++--
+ arch/x86/kernel/aperture_64.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
- kernel/signal.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
+index 88c1ebe..156cd5d 100644
+--- a/arch/x86/include/asm/gart.h
++++ b/arch/x86/include/asm/gart.h
+@@ -66,7 +66,7 @@ static inline void gart_set_size_and_enable(struct pci_dev *dev, u32 order)
+ 	 * Don't enable translation but enable GART IO and CPU accesses.
+ 	 * Also, set DISTLBWALKPRB since GART tables memory is UC.
+ 	 */
+-	ctl = DISTLBWALKPRB | order << 1;
++	ctl = order << 1;
+ 
+ 	pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
+ }
+@@ -83,7 +83,7 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
+ 
+ 	/* Enable GART translation for this hammer. */
+ 	pci_read_config_dword(dev, AMD64_GARTAPERTURECTL, &ctl);
+-	ctl |= GARTEN;
++	ctl |= GARTEN | DISTLBWALKPRB;
+ 	ctl &= ~(DISGARTCPU | DISGARTIO);
+ 	pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
+ }
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 5c66a2f..3d2661c 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -503,7 +503,7 @@ out:
+ 		 * Don't enable translation yet but enable GART IO and CPU
+ 		 * accesses and set DISTLBWALKPRB since GART table memory is UC.
+ 		 */
+-		u32 ctl = DISTLBWALKPRB | aper_order << 1;
++		u32 ctl = aper_order << 1;
+ 
+ 		bus = amd_nb_bus_dev_ranges[i].bus;
+ 		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
+-- 
+1.7.1
 
---- sigprocmask/kernel/signal.c~2_optimize_retarget	2011-04-17 21:02:59.000000000 +0200
-+++ sigprocmask/kernel/signal.c	2011-04-17 21:08:05.000000000 +0200
-@@ -2022,10 +2022,15 @@ relock:
-  * group-wide signal. Another thread should be notified now to take
-  * the signal since we will not.
-  */
--static void retarget_shared_pending(struct task_struct *tsk)
-+static void retarget_shared_pending(struct task_struct *tsk, sigset_t *set)
- {
-+	sigset_t shared_pending;
- 	struct task_struct *t;
- 
-+	sigandsets(&shared_pending, &tsk->signal->shared_pending.signal, set);
-+	if (sigisemptyset(&shared_pending))
-+		return;
-+
- 	t = tsk;
- 	while_each_thread(tsk, t) {
- 		if (!signal_pending(t) && !(t->flags & PF_EXITING))
-@@ -2036,6 +2041,7 @@ static void retarget_shared_pending(stru
- void exit_signals(struct task_struct *tsk)
- {
- 	int group_stop = 0;
-+	sigset_t set;
- 
- 	if (thread_group_empty(tsk) || signal_group_exit(tsk->signal)) {
- 		tsk->flags |= PF_EXITING;
-@@ -2051,7 +2057,9 @@ void exit_signals(struct task_struct *ts
- 	if (!signal_pending(tsk))
- 		goto out;
- 
--	retarget_shared_pending(tsk);
-+	set = tsk->blocked;
-+	signotset(&set);
-+	retarget_shared_pending(tsk, &set);
- 
- 	if (unlikely(tsk->signal->group_stop_count) &&
- 			!--tsk->signal->group_stop_count) {
 
