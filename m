@@ -1,73 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab1DRO5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 10:57:15 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:15255
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754995Ab1DRO5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 10:57:06 -0400
-X-SpamScore: -28
-X-BigFish: VPS-28(zzbb2dK9371O1432N98dKzz1202hzz15d4R8275bh8275dhz32i637h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJUS6W-02-B7I-02
-X-M-MSG: 
-Date: Mon, 18 Apr 2011 16:56:53 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 1/4] x86, gart: Don't enforce GART aperture lower-bound
- by alignment
-Message-ID: <20110418145653.GI2192@amd.com>
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
- <1303134346-5805-2-git-send-email-joerg.roedel@amd.com>
- <4DAC4E7F.1010502@zytor.com>
+	id S1755110Ab1DRO7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 10:59:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51422 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755014Ab1DRO7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 10:59:33 -0400
+Date: Mon, 18 Apr 2011 16:59:29 +0200
+From: Jan Kara <jack@suse.cz>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+Message-ID: <20110418145929.GH5557@quack.suse.cz>
+References: <20110413220444.GF4648@quack.suse.cz>
+ <20110413233122.GA6097@localhost>
+ <20110413235211.GN31057@dastard>
+ <20110414002301.GA9826@localhost>
+ <20110414151424.GA367@localhost>
+ <20110414181609.GH5054@quack.suse.cz>
+ <20110415034300.GA23430@localhost>
+ <20110415143711.GA17181@localhost>
+ <20110415221314.GE5432@quack.suse.cz>
+ <1302942809.2388.254.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DAC4E7F.1010502@zytor.com>
+In-Reply-To: <1302942809.2388.254.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:45:19AM -0400, H. Peter Anvin wrote:
-> On 04/18/2011 06:45 AM, Joerg Roedel wrote:
-> > This patch changes the allocation of the GART aperture to
-> > enforce only natural alignment instead of aligning it on
-> > 512MB. This big alignment was used to force the GART
-> > aperture to be over 512MB. This is enforced by using 512MB
-> > as the lower-bound address in the allocation range.
+On Sat 16-04-11 10:33:29, Peter Zijlstra wrote:
+> On Sat, 2011-04-16 at 00:13 +0200, Jan Kara wrote:
 > > 
-> > Cc: Yinghai Lu <yinghai@kernel.org>
-> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> > So what is a takeaway from this for me is that scaling the period
+> > with the dirty limit is not the right thing. If you'd have 4-times more
+> > memory, your choice of "dirty limit" as the period would be as bad as
+> > current 4*"dirty limit". What would seem like a better choice of period
+> > to me would be to have the period in an order of a few seconds worth of
+> > writeback. That would allow the bdi limit to scale up reasonably fast when
+> > new bdi starts to be used and still not make it fluctuate that much
+> > (hopefully).
 > 
-> Better implementation of the existing bounds, yes, but I think the
-> algorithm is still wrong.  Specifically, 512 MiB seems to have been the
-> maximum address of the kernel at some point, but that is historic at
-> this point, at least on 64 bits.
+> No best would be to scale the period with the writeout bandwidth, but
+> lacking that the dirty limit had to do. Since we're counting pages, and
+> bandwidth is pages/second we'll end up with a time measure, exactly the
+> thing you wanted.
+  Yes, I was thinking about this as well. We could measure the throughput
+but essentially it's a changing entity (dependent on the type of load and
+possibly other things like network load for NFS, or other machines
+accessing your NAS). So I'm not sure one constant value will work (esp.
+because you have to measure it and you never know at which state you did
+the measurement). And when you have changing values, you have to solve the
+same problem as with time based periods - that's how I came to them.
 
-I am fine with a smaller lower-bound, but I am not sure what a better
-choice is. The comment about kexec seems to be valid. It shouldn't matter
-for kdump because in this case the memory is allocated independently and
-the kdump kernel will only use this part, but for other kexec uses it is
-a bit harder. Probably any number we choose as a lower bound is an
-arbitrary choice at some point. But I am open for
-suggestions/corrections to this.
+> > Looking at math in lib/proportions.c, nothing really fundamental requires
+> > that each period has the same length. So it shouldn't be hard to actually
+> > create proportions calculator that would have timer triggered periods -
+> > simply whenever the timer fires, we would declare a new period. The only
+> > things which would be broken by this are (t represents global counter of
+> > events):
+> > a) counting of periods as t/period_len - we would have to maintain global
+> > period counter but that's trivial
+> > b) trick that we don't do t=t/2 for each new period but rather use
+> > period_len/2+(t % (period_len/2)) when calculating fractions - again we
+> > would have to bite the bullet and divide the global counter when we declare
+> > new period but again it's not a big deal in our case.
+> > 
+> > Peter what do you think about this? Do you (or anyone else) think it makes
+> > sense? 
+> 
+> But if you don't have a fixed sized period, then how do you catch up on
+> fractions that haven't been updated for several periods? You cannot go
+> remember all the individual period lengths.
+  OK, I wrote the expressions down and the way I want to do it would get
+different fractions than your original formula:
 
-Regards,
+  Your formula is:
+p(j)=\sum_i x_i(j)/(t_i*2^{i+1})
+  where $i$ sums from 0 to \infty, x_i(j) is the number of events of type
+$j$ in period $i$, $t_i$ is the total number of events in period $i$.
 
-	Joerg
+  I want to compute
+l(j)=\sum_i x_i(j)/2^{i+1}
+g=\sum_i t_i/2^{i+1}
+  and
+p(j)=l(j)/g
 
+  Clearly, all these values can be computed in O(1). Now for t_i = t for every
+i, the results of both formulas are the same (which is what made me make my
+mistake). But when t_i differ, the results are different. I'd say that the
+new formula also provides a meaningful notion of writeback share although
+it's hard to quantify how far the computations will be in practice...
+  
+> The whole trick to the proportion stuff is that its all O(1) regardless
+> of the number of contestants. There isn't a single loop that iterates
+> over all BDIs or tasks to update their cycle, that wouldn't have scaled.
+  Sure, I understand.
+
+								Honza
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
