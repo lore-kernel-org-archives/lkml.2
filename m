@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab1DRW6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 18:58:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65273 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab1DRW5n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 18:57:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hbPa7MSwcgnv98xUa0bxV1xkMzcpbnJyaBjNMUqP7ClcxckC4jts1xtJwv230AgFHq
-         e7IH+SSQLrTmwyQTPyWoP0PButqzzVZJXl0AtaAdf2fuY2ov58HSSRpsSL2d00wtJSM8
-         VIPxq05BhnjFCXy9vjQzAm12DJ4NXxoc2ZDOE=
-MIME-Version: 1.0
-In-Reply-To: <87tye1ckhr.fsf@linux.vnet.ibm.com>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
- <20110412190934.GA12082@redhat.com> <20110412192103.GA13278@redhat.com> <87tye1ckhr.fsf@linux.vnet.ibm.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 19 Apr 2011 00:57:27 +0200
-Message-ID: <BANLkTik68Q2bpgF7GpcOs+YF44B9TL60qQ@mail.gmail.com>
-Subject: Re: Linux 2.6.39-rc3
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Sandeen <sandeen@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753562Ab1DRW56 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 18:57:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52675 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753315Ab1DRW5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 18:57:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
+   d="scan'208";a="911338170"
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, tglx@linutronix.de,
+        mingo@elte.hu, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/3] x86, percpu: Use ASM_NOP4 instead of hardcoding P6_NOP4
+Date: Mon, 18 Apr 2011 15:35:58 -0700
+Message-Id: <1303166160-10315-2-git-send-email-hpa@linux.intel.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1303166160-10315-1-git-send-email-hpa@linux.intel.com>
+References: <1303166160-10315-1-git-send-email-hpa@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 10:20, Aneesh Kumar K.V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> On Tue, 12 Apr 2011 15:21:03 -0400, Dave Jones <davej@redhat.com> wrote:
->> On Tue, Apr 12, 2011 at 03:09:34PM -0400, Dave Jones wrote:
->>
->>  > however, the output of mount looks very confused..
->>  >
->>  > .38:
->>  > /dev/mapper/vg_adamo-lv_home on /home type ext4 (rw,relatime,seclabel,barrier=1,data=ordered)
->>  >
->>  > .39:
->>  > - on /home type 79a9-4526-888c-1f86d35a6704 (rw,relatime,ext4)
->>  >
->>  > It looks like /proc/self/mountinfo broke abi.
->>  >
->>  > .38:
->>  > 48 45 253:3 / /home rw,relatime - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,barrier=1,data=ordered
->>  >
->>  > .39:
->>  > 46 22 253:3 / /home rw,relatime uuid:f3971858-79a9-4526-888c-1f86d35a6704 - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,user_xattr,barrier=1,data=ordered
->>
->> looks like this was caused by 93f1c20bc8cdb757be50566eff88d65c3b26881f
->>
->> perhaps adding that string to the end of the line would preserve what mount expects ?
->
-> uuid:<value> is the option field  as per
-> Documentation/filesystem/proc.txt. There was an error in libmount
-> parsing which got fixed upstream recently
+For use in assembly constants, use the ASM_NOP* defines.
 
-Just a simple question about this approach in general? A filesystem
-UUID can be changed on disk at any time (tune2fs -U ...).
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ arch/x86/include/asm/percpu.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Your code looks like you copy the bytes to the in-kernel superblock
-structure without noticing any later changes on disk? How is that
-supposed to work?
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index d475b43..751e7f3 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -517,7 +517,7 @@ do {									\
+ 	typeof(o2) __o2 = o2;						\
+ 	typeof(o2) __n2 = n2;						\
+ 	typeof(o2) __dummy;						\
+-	alternative_io("call this_cpu_cmpxchg16b_emu\n\t" P6_NOP4,	\
++	alternative_io("call this_cpu_cmpxchg16b_emu\n\t" ASM_NOP4,	\
+ 		       "cmpxchg16b " __percpu_prefix "(%%rsi)\n\tsetz %0\n\t",	\
+ 		       X86_FEATURE_CX16,				\
+ 		       ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),		\
+-- 
+1.7.3.4
 
-Kay
