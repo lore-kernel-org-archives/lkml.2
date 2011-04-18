@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1DRNWr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 09:22:47 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:55639 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751703Ab1DRNWo (ORCPT
+	id S1753395Ab1DRNZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 09:25:36 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37662 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab1DRNZ3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 09:22:44 -0400
-Date: Mon, 18 Apr 2011 15:21:40 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Gottfried Haider <gottfried.haider@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [Regression] Bluetooth pairing does not work anymore in
- 2.6.39-rc3 (works in 2.6.38.3)
-Message-ID: <20110418132140.GA1479@ucw.cz>
-References: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com>
+	Mon, 18 Apr 2011 09:25:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TcugVOsBCwfQIf/OIBxFwTP9SJMeyYXdKIibYlraMFoLJJKXslw6D1TuFfHZwMkTwa
+         pbR2qVvvg0NAfiQkaImQig5qaobyLUGr1OtGk03RLriuZKuDHRzZi6ytgsrIr+XpYEDK
+         KzksnTV/lu8fMK/KSmqTNaPAelH10jGAtqgbw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110418130441.GA29530@elte.hu>
+References: <BANLkTi=kEvVCwxd=g65jBGTzmZD_KtT92w@mail.gmail.com>
+	<20110418130441.GA29530@elte.hu>
+Date: Mon, 18 Apr 2011 21:25:27 +0800
+Message-ID: <BANLkTinV4JMAQpbo0TPA6q7q8b0JOTJ3qQ@mail.gmail.com>
+Subject: Re: [PATCH] sched: remove hrtick_enabled()
+From: Hillf Danton <dhillf@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Apr 18, 2011 at 9:04 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Hillf Danton <dhillf@gmail.com> wrote:
+>
+>> The function, hrtick_enabled(), could be removed, since it is not used
+>> anywhere, though defined.
+>
+> Well, what about kernel/sched_fair.c?
+>
+Yeah, the tricky is #include "sched-fair.c", though the removed is static.
 
-> I am having problems pairing bluetooth devices in 2.6.39. Scanning
-> works fine (hcitool scan), but when I try to pair a device using
-> "bluez-simple-agent hci0 $MAC", I receive the following error message:
-> "Creating device failed: org.bluez.Error.Failed: Input/output error"
-> 
-> The same command reliably works on a 2.6.38.3 kernel with pretty much
-> the same config.
-> 
-> According to lsusb, I have a Broadcom Bluetooth Controller with ID
-> 0a5c:217f. I don't see anything related in either of the dmesgs.
-> My lspci output is here: http://sukzessiv.net/x120e/
-> Userspace is an up-to-date Ubuntu 11.04 beta (with bluez 4.91).
-> 
-> If there are any debugging steps that I could do or patches to try or
-> revert, let me know. Unfortunately I can't do a proper bisect since
-> the machine is a netbook type.
+Thanks,
 
-I guess strace of the pairing attempt would be helpful.
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+          Hillf
