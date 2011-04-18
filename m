@@ -1,39 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab1DRHVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 03:21:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:54069 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab1DRHVH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 03:21:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=KOuLy5M7hmbcf582BYOh+6s4T7lF6lu02iK/RDkm6OFuflpE4EQP5rkd4KkUlXLl7E
-         k1aLLe2Pr03gXPW6/sfeNLgZz/HCvXJMH8GxcdVi6CIer5p6l0TygpQr6VA5J6OMYCrA
-         SIZHaCmrms2uNvdvTAuJAhvYm1MYuPSzvYEfw=
-MIME-Version: 1.0
-In-Reply-To: <20110417180722.GA21112@hallyn.com>
-References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
-	<20110417180722.GA21112@hallyn.com>
-Date: Mon, 18 Apr 2011 16:21:05 +0900
-Message-ID: <BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
-Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
- from root or to another non-root uid from a non-root uid.
-From: crocket <crockabiscuit@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752386Ab1DRHXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 03:23:21 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:52024 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab1DRHXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 03:23:16 -0400
+Subject: Re: [PATCH 1/1] Add check for dirty_writeback_interval in
+ bdi_wakeup_thread_delayed
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reply-To: Artem.Bityutskiy@nokia.com
+To: Raghavendra D Prabhu <rprabhu@wnohang.net>
+Cc: linux-mm@kvack.org, Jens Axboe <jaxboe@fusionio.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110417162308.GA1208@Xye>
+References: <20110417162308.GA1208@Xye>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Mon, 18 Apr 2011 10:19:12 +0300
+Message-ID: <1303111152.2815.29.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't like the fact that an application should be linux-specific to
-keep capabilities after setuid.
-If users added capabilities to a file, they would know what they were
-doing, and they would want applications to keep capabilities even
-after setuid.
+On Sun, 2011-04-17 at 21:53 +0530, Raghavendra D Prabhu wrote:
+> In the function bdi_wakeup_thread_delayed, no checks are performed on
+> dirty_writeback_interval unlike other places and timeout is being set to
+> zero as result, thus defeating the purpose. So, I have changed it to be
+> passed default value of interval which is 500 centiseconds, when it is
+> set to zero.
+> I have also verified this and tested it.
+> 
+> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
 
-If linux capabilities were kept after setuid by default, system
-administration and programming would become easier.
+If  dirty_writeback_interval then the periodic write-back has to be
+disabled. Which means we should rather do something like this:
+
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 0d9a036..f38722c 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -334,10 +334,12 @@ static void wakeup_timer_fn(unsigned long data)
+  */
+ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ {
+-       unsigned long timeout;
++       if (dirty_writeback_interval) {
++               unsigned long timeout;
+ 
+-       timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-       mod_timer(&bdi->wb.wakeup_timer, jiffies + timeout);
++               timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
++               mod_timer(&bdi->wb.wakeup_timer, jiffies + timeout);
++       }
+ }
+
+I do not see why you use 500 centisecs instead - I think this is wrong.
+
+> ---
+>   mm/backing-dev.c |    5 ++++-
+>   1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index befc875..d06533c 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -336,7 +336,10 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+>   {
+>   	unsigned long timeout;
+>   
+> -	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+> +	if (dirty_writeback_interval)
+> +		timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+> +	else
+> +		timeout = msecs_to_jiffies(5000);
+>   	mod_timer(&bdi->wb.wakeup_timer, jiffies + timeout);
+>   }
+>   
+
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
