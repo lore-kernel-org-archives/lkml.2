@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab1DRSNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 14:13:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23740 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab1DRSNd (ORCPT
+	id S1756307Ab1DRSRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 14:17:22 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:32899 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab1DRSRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 14:13:33 -0400
-Date: Mon, 18 Apr 2011 11:12:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Cc: akpm@linux-foundation.org, jkosina@suse.cz, Alan Ott <alan@signal11.us>
-Subject: [PATCH -next] hid-example: fix some build issues
-Message-Id: <20110418111251.8a922b6b.randy.dunlap@oracle.com>
-In-Reply-To: <201104142149.p3ELnnoF008424@imap1.linux-foundation.org>
-References: <201104142149.p3ELnnoF008424@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Mon, 18 Apr 2011 14:17:19 -0400
+Date: Mon, 18 Apr 2011 20:08:13 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ciprian Docan <docan@eden.rutgers.edu>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael, J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Suspend/resume - slow resume
+Message-ID: <20110418180813.GA18469@electric-eye.fr.zoreil.com>
+References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu> <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com> <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu> <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com> <20110417101731.GA17986@electric-eye.fr.zoreil.com> <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4DAC7F26.006F:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Linus Torvalds <torvalds@linux-foundation.org> :
+[lots of silly bugs]
 
-samples/hid-example.o needs some Kconfig and Makefile additions
-in order to build.  It should use <linux/*.h> headers from
-the build tree, so use HEADERS_CHECK to require that those
-header files be present.
+Ok. it should be fixed for wednesday.
 
-Change the kconfig symbol from tristate to bool since
-userspace cannot be built as loadable modules.
+[...]
+>  - unload not on close, but on device unregister (iow not when you do
+> "ifconfig eth0 down", but when the "eth0" device really goes away)
 
-However, I don't understand why the userspace header files are
-not present as reported in Andrew's build log, since it builds
-OK on x86_64 without any of these changes.
+Without further action, the firmware(s) will thus be locked in until the
+driver is removed. 
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Alan Ott <alan@signal11.us>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org
----
- samples/Kconfig         |    4 ++--
- samples/hidraw/Makefile |    2 ++
- 2 files changed, 4 insertions(+), 2 deletions(-)
+> But as mentioned, the above is (a) just my gut feel - please discuss -
+> and (b) I really think that leaving this to the network driver has
+> been shown to continually result in the drivers doing the firmware
+> load/unload in all the wrong places.
 
---- linux-next-20110418.orig/samples/hidraw/Makefile
-+++ linux-next-20110418/samples/hidraw/Makefile
-@@ -6,3 +6,5 @@ hostprogs-y := hid-example
- 
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
-+
-+HOSTCFLAGS_hid-example.o += -I$(objtree)/usr/include
---- linux-next-20110418.orig/samples/Kconfig
-+++ linux-next-20110418/samples/Kconfig
-@@ -62,8 +62,8 @@ config SAMPLE_KDB
- 	  command to the kdb shell.
- 
- config SAMPLE_HIDRAW
--	tristate "Build simple hidraw example"
--	depends on HIDRAW
-+	bool "Build simple hidraw example"
-+	depends on HIDRAW && HEADERS_CHECK
- 	help
- 	  Build an example of how to use hidraw from userspace.
- 
+As long as it can be fixed... If the 60s delay is removed and the firmware
+loading emits some messages for programmer barbie, I am more than happy.
+
+If someone can tell me where Realtek's firmware should be sent to as David
+W. seems to be busy, it will be perfect.
+
+-- 
+"Lack of vision" Ueimor
