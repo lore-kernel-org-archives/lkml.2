@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab1DRRoL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 13:44:11 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51064 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756080Ab1DRRoD (ORCPT
+	id S1756207Ab1DRRoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 13:44:21 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:47548 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab1DRRoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 13:44:03 -0400
-Subject: Re: [PATCH] Fix infinite loop in ARM user perf_event backtrace code
-From: Will Deacon <will.deacon@arm.com>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: Jamie Iles <jamie@jamieiles.com>, olofj@chromium.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
+	Mon, 18 Apr 2011 13:44:14 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6320"; a="86267497"
+Message-ID: <4DAC786D.4020809@codeaurora.org>
+Date: Mon, 18 Apr 2011 10:44:13 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Russell King <linux@arm.linux.org.uk>
+CC: Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1302924445-18557-1-git-send-email-sonnyrao@chromium.org>
-References: <1302924445-18557-1-git-send-email-sonnyrao@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Apr 2011 18:42:24 +0100
-Message-ID: <1303148544.13157.1.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Subject: Re: [PATCH] ARM: allow hotplug on msm
+References: <1301078861-1991-1-git-send-email-johlstei@codeaurora.org>
+In-Reply-To: <1301078861-1991-1-git-send-email-johlstei@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sonny,
+Russell,
 
-On Sat, 2011-04-16 at 04:27 +0100, Sonny Rao wrote:
-> The ARM user backtrace code can get into an infinite loop if it
-> runs into an invalid stack frame which points back to itself.
-> This situation has been observed in practice.  Fix it by capping
-> the number of entries in the backtrace.  This is also what other
-> architectures do in their backtrace code.
-> 
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> ---
->  arch/arm/kernel/perf_event.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index 69cfee0..1e61d60 100644
-> --- a/arch/arm/kernel/perf_event.c
-> +++ b/arch/arm/kernel/perf_event.c
-> @@ -746,7 +746,8 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-> 
->         tail = (struct frame_tail __user *)regs->ARM_fp - 1;
-> 
-> -       while (tail && !((unsigned long)tail & 0x3))
-> +       while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
-> +              tail && !((unsigned long)tail & 0x3))
->                 tail = user_backtrace(tail, entry);
->  }
+On 3/25/2011 11:47 AM, Jeff Ohlstein wrote:
+> Hotplug support was added in 9f1890a (msm: hotplug: support cpu hotplug
+> on msm, 2010-12-02)
+>
+> Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
 
-Ok. Please can you put this into Russell's patch system?
+This fixes a Kconfig warning on MSM:
 
-Will
+warning: (PM_SLEEP_SMP) selects HOTPLUG_CPU which has unmet direct
+dependencies (SMP && HOTPLUG && EXPERIMENTAL && !ARCH_MSM)
+
+Is there any way we can get this merged for .39 final? It's 6863/1 in
+the patch tracker.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
