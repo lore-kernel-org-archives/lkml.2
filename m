@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab1DRU5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 16:57:33 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:19857 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab1DRU5b (ORCPT
+	id S1752154Ab1DRVCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 17:02:38 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53658 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751750Ab1DRVCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 16:57:31 -0400
-Subject: Re: [PATCH V14 4/4] ptp: Added a clock driver for the National
- Semiconductor PHYTER.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-In-Reply-To: <1728ffb5735c2a04876a69ad55427c4e7b5a1bd7.1303107532.git.richard.cochran@omicron.at>
-References: <cover.1303107532.git.richard.cochran@omicron.at>
-	 <1728ffb5735c2a04876a69ad55427c4e7b5a1bd7.1303107532.git.richard.cochran@omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 18 Apr 2011 21:57:25 +0100
-Message-ID: <1303160245.2857.60.camel@bwh-desktop>
+	Mon, 18 Apr 2011 17:02:36 -0400
+Date: Mon, 18 Apr 2011 22:03:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        airlied@linux.ie, Matt Turner <mattst88@gmail.com>
+Subject: Re: [PATCH] drm: Add a driver for kvm emulated Cirrus
+Message-ID: <20110418220306.7799d850@lxorguk.ukuu.org.uk>
+In-Reply-To: <1303157094-11425-1-git-send-email-mjg@redhat.com>
+References: <1303157094-11425-1-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Apr 2011 20:57:30.0800 (UTC) FILETIME=[3B966B00:01CBFE0B]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18080.005
-X-TM-AS-Result: No--11.839700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-18 at 08:30 +0200, Richard Cochran wrote:
-> This patch adds support for the PTP clock found on the DP83640.
-> The basic clock operations and one external time stamp have
-> been implemented.
-[...]
-> --- /dev/null
-> +++ b/drivers/net/phy/dp83640.c
-[...]
-> +static int match(struct sk_buff *skb, unsigned int type, struct rxts *rxts)
+So has this been benchmarked - intuitively I'd agree and expect that a
+shadowfb driver ought to give best performance.
+
+> +/* Map the framebuffer from the card and configure the core */
+> +static int cirrus_vram_init(struct cirrus_device *cdev)
 > +{
-> +	u16 *seqid;
-
-Should be __be16 *, and similarly for the casts.
-
-> +	u8 *msgtype, *data = skb_mac_header(skb);
+> +	int ret;
 > +
-> +	/* check sequenceID, messageType, 12 bit hash of offset 20-29 */
-> +	/* We assume that the IPv4 header has no options. */
+> +	/* BAR 0 is VRAM */
+> +	cdev->mc.vram_base = pci_resource_start(cdev->ddev->pdev, 0);
+> +	/* We have 4MB of VRAM */
+> +	cdev->mc.vram_size = 4 * 1024 * 1024;
 
-Does the hardware definitely not timestamp received packets with IP
-options?
+For real hardware at least you should check that the pci resource is at
+least 4Mb long before doing this, otherwise the resulting progression in
+the fail case is that you map some other device into user address space,
+which isn't good!
 
-> +	switch (type) {
-> +	case PTP_CLASS_V1_IPV4:
-> +		msgtype = data + 42 + 32;
-> +		seqid = (u16 *)(data + 42 + 30);
+> +static void cirrus_encoder_mode_set(struct drm_encoder *encoder,
+> +				struct drm_display_mode *mode,
+> +				struct drm_display_mode *adjusted_mode)
+> +{
+> +	struct drm_device *dev = encoder->dev;
+> +	struct cirrus_device *cdev = dev->dev_private;
+> +
+> +	unsigned char tmp;
+> +
+> +	switch (encoder->crtc->fb->bits_per_pixel) {
+> +	case 8:
+> +		tmp = 0x0;
 > +		break;
-> +	case PTP_CLASS_V1_IPV6:
-> +		msgtype = data + 62 + 32;
-> +		seqid = (u16 *)(data + 62 + 30);
-> +		break;
-> +	case PTP_CLASS_V2_IPV4:
-> +		msgtype = data + 42 + 0;
-> +		seqid = (u16 *)(data + 42 + 30);
-> +		break;
-> +	case PTP_CLASS_V2_IPV6:
-> +		msgtype = data + 62 + 0;
-> +		seqid = (u16 *)(data + 62 + 30);
-> +		break;
-> +	case PTP_CLASS_V2_L2:
-> +		msgtype = data + 14 + 0;
-> +		seqid = (u16 *)(data + 14 + 30);
-> +		break;
-> +	case PTP_CLASS_V2_VLAN:
-> +		msgtype = data + 18 + 0;
-> +		seqid = (u16 *)(data + 18 + 30);
-> +		break;
-[...]
+> +	case 16:
+> +		/* Enable 16 bit mode */
+> +		WREG_HDR(0x01);
 
-Would be better without the magic numbers.
+If you switch back from 16 does this not need clearing ?
 
-Ben.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Alan
