@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab1DRPnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 11:43:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1930 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754043Ab1DRPnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 11:43:06 -0400
-Date: Mon, 18 Apr 2011 11:42:13 -0400
-From: "J. Bruce Fields" <bfields@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
-Subject: Re: [105/105] nfsd4: fix oops on lock failure
-Message-ID: <20110418154212.GD20935@pad.home.fieldses.org>
-References: <20110412143559.186613198@clark.kroah.org>
- <87pqokx6lr.fsf@devron.myhome.or.jp>
- <BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
- <20110418153236.GC20935@pad.home.fieldses.org>
+	id S1755280Ab1DRPsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 11:48:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55249 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab1DRPsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 11:48:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ii0G3/qAAmXiVACO359uIwuOXcLqOi0ZpFeHCZKMdm72N+dHN5sI70F6A7XIufDO14
+         f6cS2qTcHGqA5qAwG8iK65Qld5hIPHnRpVzq9koqZHo5cqgc2fLVwqFS4SqSYSPl4f7W
+         tOFw7vQGzwAKucEgF1ZfM7N9k2TLIBQrRLJ7U=
+Message-ID: <4DAC5D2B.8000100@gmail.com>
+Date: Mon, 18 Apr 2011 08:47:55 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110403 Fedora/3.1.9-6.fc15 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110418153236.GC20935@pad.home.fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gottfried Haider <gottfried.haider@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        padovan@profusion.mobi
+Subject: Re: [Regression] Bluetooth pairing does not work anymore in 2.6.39-rc3
+ (works in 2.6.38.3)
+References: <BANLkTi=LvyZ+7BHfVL849pztfvsYaVM4SQ@mail.gmail.com> <4DA9CB83.4050000@gmail.com> <BANLkTi=avo9yvpQ0VRPRv1uroF3ZnJzfAg@mail.gmail.com> <4DAA27C8.7060800@gmail.com> <BANLkTikihzxtp9ep3dE1zpPGKUGm1gij8Q@mail.gmail.com>
+In-Reply-To: <BANLkTikihzxtp9ep3dE1zpPGKUGm1gij8Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 11:32:36AM -0400, J. Bruce Fields wrote:
-> On Sun, Apr 17, 2011 at 09:10:12AM -0700, Linus Torvalds wrote:
-> > On Sun, Apr 17, 2011 at 8:03 AM, OGAWA Hirofumi
-> > <hirofumi@mail.parknet.co.jp> wrote:
-> > >
-> > > I'm looking filp leak on recent kernel. Well, anyway,
-> 
-> Does this fix it?
+On 04/18/2011 12:34 AM, Gottfried Haider wrote:
+>>> I checked: I have this commit in -rc3, so it must be something else here.
+>> hmm... seems to be working over here with the latest Mainline. one thing  I
+>> have notice though is the daemon is not starting during boot(systemd),
+>> manually starting bluetoothd gets me to connect.(system is fedora 15).
+>
+> It was my fault after all:
+>
+> I had based my kernel config on 2.6.39-rc2 from Ubuntu's
+> mainline-kernel PPA, and this doesn't have BT_L2CAP..
+>
+> Case closed.
+>
 
-(But, yes, I think your patch is almost certainly right as well.
-Gah--I've been introducing depressing number of regressions lately.)
+thats alright...(your human!!!)
 
---b.
+>
+> I am just wondering: is it possible to make BT_L2CAP (and SCO?)
+> default to yes when BT is compiled in or build as a module?
 
-> 
-> --b.
-> 
-> commit 5152c8a947359758862d4631863e68e83ec01048
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Fri Apr 15 18:08:26 2011 -0400
-> 
->     nfsd4: fix struct file leak on delegation
->     
->     Introduced by acfdf5c383b38f7f4dddae41b97c97f1ae058f49.
->     
->     Cc: stable@kernel.org
->     Reported-by: Gerhard Heift <ml-nfs-linux-20110412-ef47@gheift.de>
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index aa309aa..c79a983 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -258,6 +258,7 @@ static void nfs4_put_deleg_lease(struct nfs4_file *fp)
->  	if (atomic_dec_and_test(&fp->fi_delegees)) {
->  		vfs_setlease(fp->fi_deleg_file, F_UNLCK, &fp->fi_lease);
->  		fp->fi_lease = NULL;
-> +		fput(fp->fi_deleg_file);
->  		fp->fi_deleg_file = NULL;
->  	}
->  }
+tweaking the kconfig can do this.
+
+>
+>> From commit 6427451: "The L2CAP layer is needed by almost all
+> Bluetooth protocols and profiles. There isn't any real use case
+> without having L2CAP loaded." Yet when I am doing oldconfig from a
+> config that had L2CAP build as a module, I am getting these easily
+> overlooked lines:
+>
+> L2CAP protocol support (BT_L2CAP) [N/y/?] (NEW)
+> SCO links support (BT_SCO) [N/y/?] (NEW)
+>
+>
+> cheers,
+> gohai
+>
+
+Justin P. Mattock
