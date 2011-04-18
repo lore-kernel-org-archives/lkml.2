@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab1DRTZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 15:25:41 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:9321 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab1DRTZk (ORCPT
+	id S1752767Ab1DRTdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 15:33:16 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:59116 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab1DRTdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 15:25:40 -0400
-Subject: Re: Suspend/resume - slow resume
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Francois Romieu <romieu@fr.zoreil.com>,
-        Ciprian Docan <docan@eden.rutgers.edu>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael, J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@suse.de>
-In-Reply-To: <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com>
-References: <Pine.SOC.4.64.1104150931390.1320@er3.rutgers.edu>
-	 <BANLkTinO+HFq+Mgg1aUz9V==zYs7qSBtDw@mail.gmail.com>
-	 <Pine.SOC.4.64.1104151122330.1320@er3.rutgers.edu>
-	 <BANLkTi=Gq5thZk2f1nWTz3dDA5Non8ANZg@mail.gmail.com>
-	 <20110417101731.GA17986@electric-eye.fr.zoreil.com>
-	 <BANLkTi=tPc6NmUuTYqbVZduNRNbE=-c34Q@mail.gmail.com>
-	 <20110418180813.GA18469@electric-eye.fr.zoreil.com>
-	 <BANLkTim_1OgqjCeD1a4Ay2fWJSmPHa_XTQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 18 Apr 2011 20:25:36 +0100
-Message-ID: <1303154736.2857.46.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Apr 2011 19:25:40.0015 (UTC) FILETIME=[66E75BF0:01CBFDFE]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18080.005
-X-TM-AS-Result: No--24.502300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 18 Apr 2011 15:33:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:content-type;
+        b=TrhlYxj9thndn0GtnRfyupfeaZmSuUs7tkcaS3SbIBFLntJKjPGkvtPoVxETtYMmv7
+         VYLLJ34oSERQdejcHt5ziK3sdLGgpn2nCqRu2ZH2vwnw985zS+GFo4aWsVCqExk1AZ3n
+         1dAk+9J2Vet4XcEB5OR5PmOdtHC02+675LG4o=
+MIME-Version: 1.0
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 18 Apr 2011 15:32:52 -0400
+X-Google-Sender-Auth: b8PuGwPeS6Y1kSBl8bNKKSKpbVU
+Message-ID: <BANLkTi=0gS2TSGgG15DbDPGttzCvEbEvaw@mail.gmail.com>
+Subject: [RFT] Please test rdtsc on various x86-64 hardware (app included)
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, x86 <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-18 at 11:49 -0700, Linus Torvalds wrote:
-> On Mon, Apr 18, 2011 at 11:08 AM, Francois Romieu <romieu@fr.zoreil.com> wrote:
-> > [...]
-> >>  - unload not on close, but on device unregister (iow not when you do
-> >> "ifconfig eth0 down", but when the "eth0" device really goes away)
-> >
-> > Without further action, the firmware(s) will thus be locked in until the
-> > driver is removed.
-> 
-> I do agree. It's a downside. Maybe doing it in "close()" is the right
-> thing, as long as we don't have that crazy "every four timer ticks"
-> situation with rtl8169_reinit_task.
-> 
-> As mentioned, the only real reason for me to be worried about the
-> close thing is that I don't have a good feel for what happens at boot
-> time. Are the setup scripts going to look at the interface lots of
-> times? On my desktop, I couldn't care less, but I try to keep boot
-> time in mind.
->
-> Maybe in practice there's just a single open at boot-time (for dhcp or
-> whatever), and I'm just worried for no good reason.
-[...]
+Hi all-
 
-Well, net devices are weird - they don't have file descriptors, they
-just have names and indices which you can specify in an ioctl on any
-socket (or netlink message on an appropriate netlink socket).  Opening
-means starting the device, and I can't think of a configuration tool
-that implicitly opens a net device.  Normally they get opened by ifup or
-network-manager or the local equivalent, and then they stay open until
-an explicit action by the administrator.
+I'd appreciate some help testing rdtsc's ordering wrt memory on
+various hardware.  You can download evil-clock-test code at:
 
-Ben.
+https://gitorious.org/linux-test-utils/linux-clock-tests/blobs/raw/master/evil-clock-test.cc
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+or pull from:
 
+git://gitorious.org/linux-test-utils/linux-clock-tests.git
+
+or see it online at:
+
+https://gitorious.org/linux-test-utils/linux-clock-tests
+
+No kernel patches required.  If you have an old glibc then timing_test
+will fail to build.  You can ignore that problem, because I'm only
+really interested in what evil-clock-test says.
+
+On Sandy Bridge, you'll see something like:
+
+$ ./evil-clock-test
+CPU vendor   : GenuineIntel
+CPU model    : Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz
+CPU stepping : 7
+TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
+Using lfence_rdtsc because you have an Intel CPU
+Will test the "lfence;rdtsc" clock.
+Now test passed  : margin 68 with 78370992 samples
+Load3 test passed: margin 71 with 12740250 samples
+Load test passed : margin 60 with 17743461 samples
+Store test failed as expected: worst error 3316 with 14666029 samples
+
+I've tested on Sandy Bridge, Allendale (i.e. Pentium Dual-Core),
+Bloomfield. and C2D.  I don't have any AMD machines with usable tscs,
+and I haven't tested on systems with multiple packages.  (If you're
+feeling adventurous, you can play with the -p option.  If you give it
+two cpu numbers, comma-separated, which live on different packages,
+maybe you'll learn something interesting.  It might also be
+interesting to try evil-clock-test -3 -p a,b,c where c is on a
+different package from a and b.
+
+(Oddly enough, the test *passes* on my C2D box, even though the kernel
+thinks that my TSC halts in idle.  This is with a fair amount of time
+spent in C6 and even after a suspend/resume cycle.  I'm not sure
+what's going on there.)
+
+For those of you who really care about this stuff, the 'store test'
+will *fail* on most Intel systems.  IMO that's OK, since fixing it
+would slow everything down and since I don't think it deserves to
+pass, even though it looks like the tsc is warping.
+
+--Andy
