@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab1DRVUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 17:20:22 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59123 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1DRVUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 17:20:20 -0400
-Date: Mon, 18 Apr 2011 22:20:13 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        airlied@linux.ie, Matt Turner <mattst88@gmail.com>
-Subject: Re: [PATCH] drm: Add a driver for kvm emulated Cirrus
-Message-ID: <20110418212013.GA1778@srcf.ucam.org>
-References: <1303157094-11425-1-git-send-email-mjg@redhat.com>
- <20110418220306.7799d850@lxorguk.ukuu.org.uk>
+	id S1752740Ab1DRVWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 17:22:36 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33059 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621Ab1DRVWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 17:22:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Romosan <romosan@sycorax.lbl.gov>
+Subject: Re: [Bug #32902] 2.6.39-rc1 doesn't boot on thinkpad t61p x86_64
+Date: Mon, 18 Apr 2011 23:22:56 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera> <_H4l51C1wXN.A.-JC.2GuqNB@chimera> <87ipub7evl.fsf@sycorax.lbl.gov>
+In-Reply-To: <87ipub7evl.fsf@sycorax.lbl.gov>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110418220306.7799d850@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201104182322.56995.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 18, 2011 at 10:03:06PM +0100, Alan Cox wrote:
-> So has this been benchmarked - intuitively I'd agree and expect that a
-> shadowfb driver ought to give best performance.
-
-No, but it's noticably nicer to use under virt-manager. I'll try to come 
-up with some numbers.
-
-> > +/* Map the framebuffer from the card and configure the core */
-> > +static int cirrus_vram_init(struct cirrus_device *cdev)
-> > +{
-> > +	int ret;
-> > +
-> > +	/* BAR 0 is VRAM */
-> > +	cdev->mc.vram_base = pci_resource_start(cdev->ddev->pdev, 0);
-> > +	/* We have 4MB of VRAM */
-> > +	cdev->mc.vram_size = 4 * 1024 * 1024;
+On Monday, April 18, 2011, Alex Romosan wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> For real hardware at least you should check that the pci resource is at
-> least 4Mb long before doing this, otherwise the resulting progression in
-> the fail case is that you map some other device into user address space,
-> which isn't good!
-
-True. The PCI table is restrictive enough that it won't bind to real 
-hardware, so I don't know if it's worth it to be paranoid.
-
-> > +static void cirrus_encoder_mode_set(struct drm_encoder *encoder,
-> > +				struct drm_display_mode *mode,
-> > +				struct drm_display_mode *adjusted_mode)
-> > +{
-> > +	struct drm_device *dev = encoder->dev;
-> > +	struct cirrus_device *cdev = dev->dev_private;
-> > +
-> > +	unsigned char tmp;
-> > +
-> > +	switch (encoder->crtc->fb->bits_per_pixel) {
-> > +	case 8:
-> > +		tmp = 0x0;
-> > +		break;
-> > +	case 16:
-> > +		/* Enable 16 bit mode */
-> > +		WREG_HDR(0x01);
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.38. Please verify if it still should be listed and let the
+> > tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=32902
+> > Subject		: 2.6.39-rc1 doesn't boot on thinkpad t61p x86_64
+> > Submitter	: Alex Romosan <romosan@sycorax.lbl.gov>
+> > Date		: 2011-04-03 19:41 (15 days old)
+> > Message-ID	: <87k4fbnmw8.fsf@sycorax.lbl.gov>
+> > References	: http://marc.info/?l=linux-kernel&m=130186054431678&w=2
+> >
 > 
-> If you switch back from 16 does this not need clearing ?
+> my laptop works again with 2.6.39-rc3 (except the boot process hangs at
+> waiting for /dev to be populated.... if i hit Ctrl-C then the booting
+> proceeds normally. this doesn't happen with 2.6.38) so probably this bug
+> can be closed.
 
-Nope. qemu just looks at this to distinguish between 15 and 16 bit, and 
-I've no intention of supporting 15 bit...
+Thanks, closing.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Rafael
