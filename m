@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab1DRSjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 14:39:03 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:40799 "EHLO mx2.fusionio.com"
+	id S1756336Ab1DRSkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 14:40:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36226 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754811Ab1DRSi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 14:38:59 -0400
-X-ASG-Debug-ID: 1303151937-01de284cf81601f0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DAC853C.5070509@fusionio.com>
-Date: Mon, 18 Apr 2011 20:38:52 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752650Ab1DRSkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 14:40:04 -0400
+Date: Mon, 18 Apr 2011 18:39:53 GMT
+From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
+Message-ID: <tip-c387aa3a1a910ce00b86f3a85082d24f144db256@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, joerg.roedel@amd.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, joerg.roedel@amd.com, tglx@linutronix.de
+In-Reply-To: <1303134346-5805-2-git-send-email-joerg.roedel@amd.com>
+References: <1303134346-5805-2-git-send-email-joerg.roedel@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/gart] x86, gart: Don't enforce GART aperture lower-bound by alignment
+Git-Commit-ID: c387aa3a1a910ce00b86f3a85082d24f144db256
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>
-Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
-References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera> <_H4l51C1wXN.A.yDC.yGuqNB@chimera> <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com> <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com> <4DAC2429.5000105@fusionio.com> <BANLkTinCWWYqnksxevho9TN3u6ZC_Rjzwg@mail.gmail.com> <4DAC82E6.3020809@fusionio.com> <BANLkTimaekpwmK+z=ePE+XSP6GUteidwfw@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [Bug #32982] Kernel locks up a few minutes after boot
-In-Reply-To: <BANLkTimaekpwmK+z=ePE+XSP6GUteidwfw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303151937
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61239
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Apr 2011 18:39:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-18 20:32, Bart Van Assche wrote:
-> On Mon, Apr 18, 2011 at 8:28 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
->> On 2011-04-18 20:21, Bart Van Assche wrote:
->>> a performance regression in the block layer not related to the md
->>> issue. If I run a small block IOPS test on a block device created by
->>> ib_srp (NOOP scheduler) I see about 11% less IOPS than with 2.6.38.3
->>> (155.000 IOPS with 2.6.38.3 and 140.000 IOPS with 2.6.39-rc3+).
->>
->> That's not good. What's the test case?
-> 
-> Nothing more than a fio IOPS test:
-> 
-> fio --bs=512 --ioengine=libaio --buffered=0 --rw=read --thread
-> --iodepth=64 --numjobs=2 --loops=10000 --group_reporting --size=1G
->     --gtod_reduce=1 --name=iops-test --filename=/dev/${dev} --invalidate=1
+Commit-ID:  c387aa3a1a910ce00b86f3a85082d24f144db256
+Gitweb:     http://git.kernel.org/tip/c387aa3a1a910ce00b86f3a85082d24f144db256
+Author:     Joerg Roedel <joerg.roedel@amd.com>
+AuthorDate: Mon, 18 Apr 2011 15:45:43 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 18 Apr 2011 10:31:38 -0700
 
-Interesting, I'll have to check if we regressed with all these recent
-changes. Comparing your .38 to .39-rc3+, are you using more/less CPU,
-more/less sys%, etc?
+x86, gart: Don't enforce GART aperture lower-bound by alignment
 
-A quick perf record -fg / perf report -g for both kernels would be nice
-to see.
+This patch changes the allocation of the GART aperture to
+enforce only natural alignment instead of aligning it on
+512MB. This big alignment was used to force the GART
+aperture to be over 512MB. This is enforced by using 512MB
+as the lower-bound address in the allocation range.
 
--- 
-Jens Axboe
+[ hpa: The actual number 512 MiB needs to be revisited, too. ]
 
+Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Link: http://lkml.kernel.org/r/1303134346-5805-2-git-send-email-joerg.roedel@amd.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/aperture_64.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 73fb469..3d2661c 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -30,6 +30,22 @@
+ #include <asm/amd_nb.h>
+ #include <asm/x86_init.h>
+ 
++/*
++ * Using 512M as goal, in case kexec will load kernel_big
++ * that will do the on-position decompress, and could overlap with
++ * with the gart aperture that is used.
++ * Sequence:
++ * kernel_small
++ * ==> kexec (with kdump trigger path or gart still enabled)
++ * ==> kernel_small (gart area become e820_reserved)
++ * ==> kexec (with kdump trigger path or gart still enabled)
++ * ==> kerne_big (uncompressed size will be big than 64M or 128M)
++ * So don't use 512M below as gart iommu, leave the space for kernel
++ * code for safe.
++ */
++#define GART_MIN_ADDR	(512ULL << 20)
++#define GART_MAX_ADDR	(1ULL   << 32)
++
+ int gart_iommu_aperture;
+ int gart_iommu_aperture_disabled __initdata;
+ int gart_iommu_aperture_allowed __initdata;
+@@ -70,21 +86,9 @@ static u32 __init allocate_aperture(void)
+ 	 * memory. Unfortunately we cannot move it up because that would
+ 	 * make the IOMMU useless.
+ 	 */
+-	/*
+-	 * using 512M as goal, in case kexec will load kernel_big
+-	 * that will do the on position decompress, and  could overlap with
+-	 * that position with gart that is used.
+-	 * sequende:
+-	 * kernel_small
+-	 * ==> kexec (with kdump trigger path or previous doesn't shutdown gart)
+-	 * ==> kernel_small(gart area become e820_reserved)
+-	 * ==> kexec (with kdump trigger path or previous doesn't shutdown gart)
+-	 * ==> kerne_big (uncompressed size will be big than 64M or 128M)
+-	 * so don't use 512M below as gart iommu, leave the space for kernel
+-	 * code for safe
+-	 */
+-	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
+-	if (addr == MEMBLOCK_ERROR || addr + aper_size > 0xffffffff) {
++	addr = memblock_find_in_range(GART_MIN_ADDR, GART_MAX_ADDR,
++				      aper_size, aper_size);
++	if (addr == MEMBLOCK_ERROR || addr + aper_size > GART_MAX_ADDR) {
+ 		printk(KERN_ERR
+ 			"Cannot allocate aperture memory hole (%lx,%uK)\n",
+ 				addr, aper_size>>10);
