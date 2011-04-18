@@ -1,829 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab1DREHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 00:07:55 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50908 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab1DREHt (ORCPT
+	id S1751749Ab1DREJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 00:09:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55678 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab1DREJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 00:07:49 -0400
+	Mon, 18 Apr 2011 00:09:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=BEUYIAnyzYw7TFrjdkTpeXH2ZceLkTnsU+PfMiegPj96Vj9Lj+kLgAH/J5DqzAt4X4
-         A7cHLM02psr78ox9IhfjuCD92mgG2klNI4su/jsLwu9jMP4P3KoHv23NUVdVSF0kDfev
-         bNfabWqYExizxEi9gkeSMs/+FmboW4Ck+jrIw=
+        b=kgOt2EV1rEEPOLc/l3kq/mCnfj7J1rZrInKvJC3Ke9j7aJRLQjcEdlWM5Pe3HC6nuT
+         WUa2pBaW+aHAaYXkCaErN8x9VpVCA/X1Qk5NV7rxkVPkGBZNyKt2rIQBeGhTG9GpB9MJ
+         6JSk8D1FMNlO2KUQgRrChWWU/3O4FTcrK0lFg=
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin_UNQPPDPWq_4qySd-4DAOrR53pA@mail.gmail.com>
-References: <32e68901c2ab3d47fad3dfe68b230a6bee5b1e98.1303082527.git.tfransosi@gmail.com>
-	<BANLkTin_UNQPPDPWq_4qySd-4DAOrR53pA@mail.gmail.com>
-Date: Mon, 18 Apr 2011 01:07:48 -0300
-Message-ID: <BANLkTin-KyduTH4vdFEA-eZYQVGAHRDQpg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] sound/oss/aedsp16.c: Remove #define TRUE/FALSE, use
- bool instead.
+In-Reply-To: <BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com>
+References: <014287655bd0c4327bbd946b9c823a0e4ec35f8e.1303079016.git.tfransosi@gmail.com>
+	<BANLkTikDtpg2CKM_Rq9hZ44F4jHvM3bOdg@mail.gmail.com>
+Date: Mon, 18 Apr 2011 01:09:02 -0300
+Message-ID: <BANLkTinFYjtOQbcdrDBNODrzjtU-VDuNxQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drivers/usb/image/mdc800.c: Remove "typdef enum".
 From: Thiago Farina <tfransosi@gmail.com>
 To: wanlong.gao@gmail.com
-Cc: linux-kernel@vger.kernel.org, Riccardo Facchetti <fizban@tin.it>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3I480IW005249
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p3I49FKK005253
 
-On Sun, Apr 17, 2011 at 10:03 PM, Wanlong Gao <wanlong.gao@gmail.com> wrote:
+On Sun, Apr 17, 2011 at 9:54 PM, Wanlong Gao <wanlong.gao@gmail.com> wrote:
 > On 4/18/11, Thiago Farina <tfransosi@gmail.com> wrote:
+>> Instead use the keyword "enum" where we use it.
+>>
 >> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
 >> ---
->>  sound/oss/aedsp16.c |  324
->> +++++++++++++++++++++++++--------------------------
->>  1 files changed, 158 insertions(+), 166 deletions(-)
+>>  drivers/usb/image/mdc800.c |  111
+>> +++++++++++++++++++++----------------------
+>>  1 files changed, 54 insertions(+), 57 deletions(-)
 >>
->> diff --git a/sound/oss/aedsp16.c b/sound/oss/aedsp16.c
->> index 35b5912..5ae37b6 100644
->> --- a/sound/oss/aedsp16.c
->> +++ b/sound/oss/aedsp16.c
->> @@ -245,12 +245,11 @@
+>> diff --git a/drivers/usb/image/mdc800.c b/drivers/usb/image/mdc800.c
+>> index 575b56c..4b0a032 100644
+>> --- a/drivers/usb/image/mdc800.c
+>> +++ b/drivers/usb/image/mdc800.c
+>> @@ -122,59 +122,57 @@
+>>  /* Minor Number of the device (create with mknod /dev/mustek c 180 32) */
+>>  #define MDC800_DEVICE_MINOR_BASE 32
 >>
->>   */
+>> +/*
+>> + * Data and structs.
+>> + */
 >>
->> +#define VERSION "1.3"                /* Version of Audio Excel DSP 16 driver.  */
->>
->> -#define VERSION "1.3"                /* Version of Audio Excel DSP 16 driver */
+>> -/**************************************************************************
+>> -     Data and structs
+>> -***************************************************************************/
 >> -
->> -#undef       AEDSP16_DEBUG           /* Define this to 1 to enable debug code     */
->> -#undef       AEDSP16_DEBUG_MORE      /* Define this to 1 to enable more debug     */
->> -#undef       AEDSP16_INFO            /* Define this to 1 to enable info code      */
->> +#undef       AEDSP16_DEBUG           /* Define this to 1 to enable debug code. */
->> +#undef       AEDSP16_DEBUG_MORE      /* Define this to 1 to enable more debug. */
->> +#undef       AEDSP16_INFO            /* Define this to 1 to enable info code.  */
->>
->>  #if defined(AEDSP16_DEBUG)
->>  # define DBG(x)  printk x
->> @@ -265,12 +264,6 @@
->>  #endif
->>
->>  /*
->> - * Misc definitions
->> - */
->> -#define TRUE 1
->> -#define FALSE        0
 >> -
->> -/*
->>   * Region Size for request/check/release region.
->>   */
->>  #define IOBASE_REGION_SIZE   0x10
->> @@ -497,7 +490,7 @@ static struct aedsp16_info ae_config = {
->>  static char     DSPCopyright[CARDNAMELEN + 1] __initdata = {0, };
->>  static char     DSPVersion[CARDVERLEN + 1] __initdata = {0, };
+>> -typedef enum {
+>> +enum mdc800_state {
+>>       NOT_CONNECTED, READY, WORKING, DOWNLOAD
+>> -} mdc800_state;
+>> +};
 >>
->> -static int __init aedsp16_wait_data(int port)
->> +static bool __init aedsp16_wait_data(int port)
+>>
+>> -/* Data for the driver */
+>> +/* Data for the driver. */
+>>  struct mdc800_data
 >>  {
->>       int             loop = STATUSRETRY;
->>       unsigned char   ret = 0;
->> @@ -505,19 +498,19 @@ static int __init aedsp16_wait_data(int port)
->>       DBG1(("aedsp16_wait_data (0x%x): ", port));
+>> -     struct usb_device *     dev;                    // Device Data
+>> -     mdc800_state            state;
+>> +     struct usb_device*      dev;                  /* Device Data. */
+>> +     enum mdc800_state       state;
 >>
->>       do {
->> -               ret = inb(port + DSP_DATAVAIL);
->> -     /*
->> -      * Wait for data available (bit 7 of ret == 1)
->> -      */
->> -       } while (!(ret & 0x80) && loop--);
->> +             ret = inb(port + DSP_DATAVAIL);
->> +             /*
->> +              * Wait for data available (bit 7 of ret == 1)
->> +              */
->> +     } while (!(ret & 0x80) && loop--);
+>> -     unsigned int            endpoint [4];
+>> +     unsigned int            endpoint[4];
 >>
->>       if (ret & 0x80) {
->>               DBG1(("success.\n"));
->> -             return TRUE;
->> +             return true;
->>       }
+>> -     struct urb *            irq_urb;
+>> +     struct urb*             irq_urb;
+>>       wait_queue_head_t       irq_wait;
+>>       int                     irq_woken;
+>>       char*                   irq_urb_buffer;
 >>
->>       DBG1(("failure.\n"));
->> -     return FALSE;
->> +     return false;
->>  }
+>> -     int                     camera_busy;          // is camera busy ?
+>> -     int                     camera_request_ready; // Status to synchronize with irq
+>> -     char                    camera_response [8];  // last Bytes send after busy
+>> +     int                     camera_busy;          /* Is camera busy? */
+>> +     int                     camera_request_ready; /* Status to synchronize with irq. */
+>> +     char                    camera_response[8];   /* last Bytes send after busy. */
 >>
->>  static int __init aedsp16_read(int port)
->> @@ -526,7 +519,7 @@ static int __init aedsp16_read(int port)
+>> -     struct urb *            write_urb;
+>> +     struct urb*             write_urb;
+>>       char*                   write_urb_buffer;
+>>       wait_queue_head_t       write_wait;
+>>       int                     written;
 >>
->>       DBG(("    Read DSP Byte (0x%x): ", port));
 >>
->> -     if (aedsp16_wait_data(port) == FALSE) {
->> +     if (aedsp16_wait_data(port) == false) {
->>               DBG(("failure.\n"));
->>               return -1;
->>       }
->> @@ -538,17 +531,16 @@ static int __init aedsp16_read(int port)
->>       return inbyte;
->>  }
+>> -     struct urb *            download_urb;
+>> +     struct urb*             download_urb;
+>>       char*                   download_urb_buffer;
+>>       wait_queue_head_t       download_wait;
+>>       int                     downloaded;
+>> -     int                     download_left;          // Bytes left to download ?
+>> +     int                     download_left;       /* Bytes left to download? */
 >>
->> -static int __init aedsp16_test_dsp(int port)
->> +static bool __init aedsp16_test_dsp(int port)
+>>
+>>       /* Device Data */
+>> -     char                    out [64];       // Answer Buffer
+>> -     int                     out_ptr;        // Index to the first not readen byte
+>> -     int                     out_count;      // Bytes in the buffer
+>> +     char                    out[64];        /* Answer buffer. */
+>> +     int                     out_ptr;        /* Index to the first not readen byte. */
+>> +     int                     out_count;      /* Bytes in the buffer. */
+>>
+>> -     int                     open;           // Camera device open ?
+>> -     struct mutex            io_lock;        // IO -lock
+>> +     int                     open;           /* Camera device open. */
+>> +     struct mutex            io_lock;        /* IO -lock. */
+>>
+>> -     char                    in [8];         // Command Input Buffer
+>> -     int                     in_count;
+>> +     char                    in [8];         /* Command Input Buffer. */
+>> +     int                     in_count;
+>>
+>> -     int                     pic_index;      // Cache for the Imagesize (-1 for nothing cached )
+>> +     int                     pic_index;      /* Cache for the Imagesize (-1 for nothing cached) */
+>>       int                     pic_len;
+>>       int                     minor;
+>>  };
+>> @@ -183,52 +181,51 @@ struct mdc800_data
+>>  /* Specification of the Endpoints */
+>>  static struct usb_endpoint_descriptor mdc800_ed [4] =
 >>  {
->> -     return ((aedsp16_read(port) == 0xaa) ? TRUE : FALSE);
->> +     return ((aedsp16_read(port) == 0xaa) ? true : false);
->>  }
+>> -     {
+>> -             .bLength =              0,
+>> +     {
+>> +             .bLength =              0,
+>>               .bDescriptorType =      0,
+>>               .bEndpointAddress =     0x01,
+>> -             .bmAttributes =         0x02,
+>> +             .bmAttributes =         0x02,
+>>               .wMaxPacketSize =       cpu_to_le16(8),
+>> -             .bInterval =            0,
+>> -             .bRefresh =             0,
+>> -             .bSynchAddress =        0,
+>> +             .bInterval =            0,
+>> +             .bRefresh =             0,
+>> +             .bSynchAddress =        0,
+>>       },
+>>       {
+>> -             .bLength =              0,
+>> -             .bDescriptorType =      0,
+>> -             .bEndpointAddress =     0x82,
+>> -             .bmAttributes =         0x03,
+>> -             .wMaxPacketSize =       cpu_to_le16(8),
+>> -             .bInterval =            0,
+>> -             .bRefresh =             0,
+>> -             .bSynchAddress =        0,
+>> +             .bLength =              0,
+>> +             .bDescriptorType =      0,
+>> +             .bEndpointAddress =     0x82,
+>> +             .bmAttributes =         0x03,
+>> +             .wMaxPacketSize =       cpu_to_le16(8),
+>> +             .bInterval =            0,
+>> +             .bRefresh =             0,
+>> +             .bSynchAddress =        0,
+>>       },
+>>       {
+>> -             .bLength =              0,
+>> -             .bDescriptorType =      0,
+>> -             .bEndpointAddress =     0x03,
+>> -             .bmAttributes =         0x02,
+>> -             .wMaxPacketSize =       cpu_to_le16(64),
+>> -             .bInterval =            0,
+>> -             .bRefresh =             0,
+>> -             .bSynchAddress =        0,
+>> +             .bLength =              0,
+>> +             .bDescriptorType =      0,
+>> +             .bEndpointAddress =     0x03,
+>> +             .bmAttributes =         0x02,
+>> +             .wMaxPacketSize =       cpu_to_le16(64),
+>> +             .bInterval =            0,
+>> +             .bRefresh =             0,
+>> +             .bSynchAddress =        0,
+>>       },
+>>       {
+>> -             .bLength =              0,
+>> -             .bDescriptorType =      0,
+>> -             .bEndpointAddress =     0x84,
+>> -             .bmAttributes =         0x02,
+>> -             .wMaxPacketSize =       cpu_to_le16(64),
+>> -             .bInterval =            0,
+>> -             .bRefresh =             0,
+>> -             .bSynchAddress =        0,
+>> +             .bLength =              0,
+>> +             .bDescriptorType =      0,
+>> +             .bEndpointAddress =     0x84,
+>> +             .bmAttributes =         0x02,
+>> +             .wMaxPacketSize =       cpu_to_le16(64),
+>> +             .bInterval =            0,
+>> +             .bRefresh =             0,
+>> +             .bSynchAddress =        0,
+>>       },
+>>  };
 >>
->> -static int __init aedsp16_dsp_reset(int port)
->> +static bool __init aedsp16_dsp_reset(int port)
->>  {
->>       /*
->> -      * Reset DSP
->> +      * Reset DSP.
->>        */
+>>  /* The Variable used by the driver */
+>>  static struct mdc800_data* mdc800;
+>>
 >> -
->>       DBG(("Reset DSP:\n"));
->>
->>       outb(1, (port + DSP_RESET));
->> @@ -556,12 +548,12 @@ static int __init aedsp16_dsp_reset(int port)
->>       outb(0, (port + DSP_RESET));
->>       udelay(10);
->>       udelay(10);
->> -     if (aedsp16_test_dsp(port) == TRUE) {
->> +     if (aedsp16_test_dsp(port) == true) {
->>               DBG(("success.\n"));
->> -             return TRUE;
->> +             return true;
->>       } else
->>               DBG(("failure.\n"));
->> -     return FALSE;
->> +     return false;
->>  }
->>
->>  static int __init aedsp16_write(int port, int cmd)
->> @@ -678,66 +670,66 @@ static int __init aedsp16_hard_write(int port) {
->>       if (aedsp16_write(port, COMMAND_6C)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_6C);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, COMMAND_5C)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_5C);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, hard_cfg[0])) {
->>               printk("[AEDSP16] DATA 0x%x: failed!\n", hard_cfg[0]);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, hard_cfg[1])) {
->>               printk("[AEDSP16] DATA 0x%x: failed!\n", hard_cfg[1]);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, COMMAND_C5)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_C5);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       DBG(("success.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->> -static int __init aedsp16_hard_read(int port) {
->> +static bool __init aedsp16_hard_read(int port) {
->>
->>       DBG(("aedsp16_hard_read:\n"));
->>
->>       if (aedsp16_write(port, READ_HARD_CFG)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", READ_HARD_CFG);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       if ((hard_cfg[0] = aedsp16_read(port)) == -1) {
->>               printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
->>                       READ_HARD_CFG);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>       if ((hard_cfg[1] = aedsp16_read(port)) == -1) {
->>               printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
->>                       READ_HARD_CFG);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_read(port) == -1) {
->>               printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
->>                       READ_HARD_CFG);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       DBG(("success.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->>  static int __init aedsp16_ext_cfg_write(int port) {
->> @@ -746,7 +738,7 @@ static int __init aedsp16_ext_cfg_write(int port) {
->>
->>       if (aedsp16_write(port, COMMAND_66)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_66);
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       extcfg = 7;
->> @@ -762,51 +754,51 @@ static int __init aedsp16_ext_cfg_write(int port) {
->>
->>       if (aedsp16_write(port, extcfg)) {
->>               printk("[AEDSP16] Write extcfg: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, 0)) {
->>               printk("[AEDSP16] Write extcfg: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (decoded_hcfg.cdrom == 3) {
->>               if (aedsp16_write(port, COMMAND_52)) {
->>                       printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_52);
->> -                     return FALSE;
->> +                     return false;
->>               }
->>               if ((val = aedsp16_read(port)) == -1) {
->>                       printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n"
->>                                       , COMMAND_52);
->> -                     return FALSE;
->> +                     return false;
->>               }
->>               val &= 0x7F;
->>               if (aedsp16_write(port, COMMAND_60)) {
->>                       printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_60);
->> -                     return FALSE;
->> +                     return false;
->>               }
->>               if (aedsp16_write(port, val)) {
->>                       printk("[AEDSP16] Write val: failed!\n");
->> -                     return FALSE;
->> +                     return false;
->>               }
->>       }
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->>  #endif /* CONFIG_SC6600 */
->>
->> -static int __init aedsp16_cfg_write(int port) {
->> +static bool __init aedsp16_cfg_write(int port) {
->>       if (aedsp16_write(port, WRITE_MDIRQ_CFG)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", WRITE_MDIRQ_CFG);
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, soft_cfg)) {
->>               printk("[AEDSP16] Initialization of (M)IRQ and DMA: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->> -     return TRUE;
->> +     return true;
->>  }
->>
->> -static int __init aedsp16_init_mss(int port)
->> +static bool __init aedsp16_init_mss(int port)
->>  {
->>       DBG(("aedsp16_init_mss:\n"));
->>
->> @@ -816,154 +808,153 @@ static int __init aedsp16_init_mss(int port)
->>               printk("[AEDSP16] aedsp16_init_mss [0x%x]: failed!\n",
->>                               DSP_INIT_MSS);
->>               DBG(("failure.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->> -
->>       mdelay(10);
->>
->> -     if (aedsp16_cfg_write(port) == FALSE)
->> -             return FALSE;
->> +     if (aedsp16_cfg_write(port) == false)
->> +             return false;
->>
->>       outb(soft_cfg_mss, ae_config.mss_base);
->>
->>       DBG(("success.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->> -static int __init aedsp16_setup_board(int port) {
->> -     int     loop = RETRY;
->> +static bool __init aedsp16_setup_board(int port) {
->> +     int loop = RETRY;
->>
->>  #if defined(CONFIG_SC6600)
->> -     int     val = 0;
->> +     int val = 0;
->>
->> -     if (aedsp16_hard_read(port) == FALSE) {
->> +     if (aedsp16_hard_read(port) == false) {
->>               printk("[AEDSP16] aedsp16_hard_read: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       if (aedsp16_write(port, COMMAND_52)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_52);
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       if ((val = aedsp16_read(port)) == -1) {
->>               printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
->>                               COMMAND_52);
->> -             return FALSE;
->> +             return false;
->>       }
->>  #endif
->>
->>       do {
->>               if (aedsp16_write(port, COMMAND_88)) {
->>                       printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_88);
->> -                     return FALSE;
->> +                     return false;
->>               }
->>               mdelay(10);
->> -     } while ((aedsp16_wait_data(port) == FALSE) && loop--);
->> +     } while ((aedsp16_wait_data(port) == false) && loop--);
->>
->>       if (aedsp16_read(port) == -1) {
->>               printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
->>                               COMMAND_88);
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>  #if !defined(CONFIG_SC6600)
->>       if (aedsp16_write(port, COMMAND_5C)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_5C);
->> -             return FALSE;
->> +             return false;
->>       }
->>  #endif
->>
->> -     if (aedsp16_cfg_write(port) == FALSE)
->> -             return FALSE;
->> +     if (aedsp16_cfg_write(port) == false)
->> +             return false;
->>
->>  #if defined(CONFIG_SC6600)
->>       if (aedsp16_write(port, COMMAND_60)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_60);
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, val)) {
->>               printk("[AEDSP16] DATA 0x%x: failed!\n", val);
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, COMMAND_6E)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_6E);
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, ver[0])) {
->>               printk("[AEDSP16] DATA 0x%x: failed!\n", ver[0]);
->> -             return FALSE;
->> +             return false;
->>       }
->>       if (aedsp16_write(port, ver[1])) {
->>               printk("[AEDSP16] DATA 0x%x: failed!\n", ver[1]);
->> -             return FALSE;
->> +             return false;
->>       }
->>
->> -     if (aedsp16_hard_write(port) == FALSE) {
->> +     if (aedsp16_hard_write(port) == false) {
->>               printk("[AEDSP16] aedsp16_hard_write: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       if (aedsp16_write(port, COMMAND_5C)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_5C);
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>  #if defined(THIS_IS_A_THING_I_HAVE_NOT_TESTED_YET)
->> -     if (aedsp16_cfg_write(port) == FALSE)
->> -             return FALSE;
->> +     if (aedsp16_cfg_write(port) == false)
->> +             return false;
->>  #endif
->>
->>  #endif
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->> -static int __init aedsp16_stdcfg(int port) {
->> +static bool __init aedsp16_stdcfg(int port) {
->>       if (aedsp16_write(port, WRITE_MDIRQ_CFG)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", WRITE_MDIRQ_CFG);
->> -             return FALSE;
->> +             return false;
->>       }
->>       /*
->>        * 0x0A == (IRQ 7, DMA 1, MIRQ 0)
->>        */
->>       if (aedsp16_write(port, 0x0A)) {
->>               printk("[AEDSP16] aedsp16_stdcfg: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->> -     return TRUE;
->> +     return true;
->>  }
->>
->> -static int __init aedsp16_dsp_version(int port)
->> +static bool __init aedsp16_dsp_version(int port)
->>  {
->> -     int             len = 0;
->> -     int             ret;
->> +     int len = 0;
->> +     int ret;
->>
->>       DBG(("Get DSP Version:\n"));
->>
->>       if (aedsp16_write(ae_config.base_io, GET_DSP_VERSION)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", GET_DSP_VERSION);
->>               DBG(("failed.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       do {
->>               if ((ret = aedsp16_read(port)) == -1) {
->>                       DBG(("failed.\n"));
->> -                     return FALSE;
->> +                     return false;
->>               }
->> -     /*
->> -      * We already know how many int are stored (2), so we know when the
->> -      * string is finished.
->> -      */
->> +             /*
->> +              * We already know how many int are stored (2), so we know when
->> +              * the string is finished.
->> +              */
->>               ver[len++] = ret;
->>         } while (len < CARDVERDIGITS);
->>       sprintf(DSPVersion, "%d.%d", ver[0], ver[1]);
->>
->>       DBG(("success.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->>  static int __init aedsp16_dsp_copyright(int port)
->> @@ -976,20 +967,21 @@ static int __init aedsp16_dsp_copyright(int port)
->>       if (aedsp16_write(ae_config.base_io, GET_DSP_COPYRIGHT)) {
->>               printk("[AEDSP16] CMD 0x%x: failed!\n", GET_DSP_COPYRIGHT);
->>               DBG(("failed.\n"));
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       do {
->>               if ((ret = aedsp16_read(port)) == -1) {
->> -     /*
->> -      * If no more data available, return to the caller, no error if len>0.
->> -      * We have no other way to know when the string is finished.
->> -      */
->> +                     /*
->> +                      * If no more data available, return to the caller, no
->> +                      * error if len > 0. We have no other way to know when
->> +                      * the string is finished.
->> +                      */
->>                       if (len)
->>                               break;
->>                       else {
->>                               DBG(("failed.\n"));
->> -                             return FALSE;
->> +                             return false;
->>                       }
->>               }
->>
->> @@ -999,7 +991,7 @@ static int __init aedsp16_dsp_copyright(int port)
->>
->>       DBG(("success.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->>  static void __init aedsp16_init_tables(void)
->> @@ -1026,17 +1018,17 @@ static void __init aedsp16_init_tables(void)
->>               }
->>  }
->>
->> -static int __init aedsp16_init_board(void)
->> +static bool __init aedsp16_init_board(void)
->>  {
->>       aedsp16_init_tables();
->>
->> -     if (aedsp16_dsp_reset(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_dsp_reset(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_dsp_reset: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->> -     if (aedsp16_dsp_copyright(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_dsp_copyright(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_dsp_copyright: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       /*
->> @@ -1046,48 +1038,48 @@ static int __init aedsp16_init_board(void)
->>       if (strcmp("SC-6000", DSPCopyright))
->>               printk("[AEDSP16] Warning: non SC-6000 audio card!\n");
->>
->> -     if (aedsp16_dsp_version(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_dsp_version(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_dsp_version: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->> -     if (aedsp16_stdcfg(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_stdcfg(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_stdcfg: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>  #if defined(CONFIG_SC6600)
->> -     if (aedsp16_hard_read(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_hard_read(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_hard_read: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       aedsp16_hard_decode();
->>
->>       aedsp16_hard_encode();
->>
->> -     if (aedsp16_hard_write(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_hard_write(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_hard_write: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->> -     if (aedsp16_ext_cfg_write(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_ext_cfg_write(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_ext_cfg_write: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>  #endif /* CONFIG_SC6600 */
->>
->> -     if (aedsp16_setup_board(ae_config.base_io) == FALSE) {
->> +     if (aedsp16_setup_board(ae_config.base_io) == false) {
->>               printk("[AEDSP16] aedsp16_setup_board: failed!\n");
->> -             return FALSE;
->> +             return false;
->>       }
->>
->>       if (ae_config.mss_base != -1) {
->>               if (ae_config.init & INIT_MSS) {
->> -                     if (aedsp16_init_mss(ae_config.base_io) == FALSE) {
->> +                     if (aedsp16_init_mss(ae_config.base_io) == false) {
->>                               printk("[AEDSP16] Can not initialize"
->>                                      "Microsoft Sound System mode.\n");
->> -                             return FALSE;
->> +                             return false;
->>                       }
->>               }
->>       }
->> @@ -1124,27 +1116,27 @@ static int __init aedsp16_init_board(void)
->>
->>       mdelay(10);
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->> -static int __init init_aedsp16_sb(void)
->> +static bool __init init_aedsp16_sb(void)
->>  {
->>       DBG(("init_aedsp16_sb: "));
->>
->> -/*
->> - * If the card is already init'ed MSS, we can not init it to SBPRO too
->> - * because the board can not emulate simultaneously MSS and SBPRO.
->> - */
->> +     /*
->> +      * If the card is already init'ed MSS, we can not init it to SBPRO too
->> +      * because the board can not emulate simultaneously MSS and SBPRO.
->> +      */
->>       if (ae_config.init & INIT_MSS)
->> -             return FALSE;
->> +             return false;
->>       if (ae_config.init & INIT_SBPRO)
->> -             return FALSE;
->> +             return false;
->>
->>       ae_config.init |= INIT_SBPRO;
->>
->>       DBG(("done.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->>  static void uninit_aedsp16_sb(void)
->> @@ -1160,24 +1152,24 @@ static int __init init_aedsp16_mss(void)
->>  {
->>       DBG(("init_aedsp16_mss: "));
->>
->> -/*
->> - * If the card is already init'ed SBPRO, we can not init it to MSS too
->> - * because the board can not emulate simultaneously MSS and SBPRO.
->> - */
->> +     /*
->> +      * If the card is already init'ed SBPRO, we can not init it to MSS too
->> +      * because the board can not emulate simultaneously MSS and SBPRO.
->> +      */
->>       if (ae_config.init & INIT_SBPRO)
->> -             return FALSE;
->> +             return false;
->>       if (ae_config.init & INIT_MSS)
->> -             return FALSE;
->> -/*
->> - * We must allocate the CONFIG_AEDSP16_BASE region too because these are
->> the
->> - * I/O ports to access card's control registers.
->> - */
->> +             return false;
->> +     /*
->> +      * We must allocate the CONFIG_AEDSP16_BASE region too because these are
->> +      * the I/O ports to access card's control registers.
->> +      */
->>       if (!(ae_config.init & INIT_MPU401)) {
->>               if (!request_region(ae_config.base_io, IOBASE_REGION_SIZE,
->>                               "aedsp16 (base)")) {
->>                       printk(
->>                       "AEDSP16 BASE I/O port region is already in use.\n");
->> -                     return FALSE;
->> +                     return false;
->>               }
->>       }
->>
->> @@ -1185,7 +1177,7 @@ static int __init init_aedsp16_mss(void)
->>
->>       DBG(("done.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->>  static void uninit_aedsp16_mss(void)
->> @@ -1202,23 +1194,23 @@ static void uninit_aedsp16_mss(void)
->>       DBG(("done.\n"));
->>  }
->>
->> -static int __init init_aedsp16_mpu(void)
->> +static bool __init init_aedsp16_mpu(void)
->>  {
->>       DBG(("init_aedsp16_mpu: "));
->>
->>       if (ae_config.init & INIT_MPU401)
->> -             return FALSE;
->> +             return false;
->>
->> -/*
->> - * We must request the CONFIG_AEDSP16_BASE region too because these are the
->> I/O
->> - * ports to access card's control registers.
->> - */
->> +     /*
->> +      * We must request the CONFIG_AEDSP16_BASE region too because these are
->> +      * the I/O ports to access card's control registers.
->> +      */
->>       if (!(ae_config.init & (INIT_MSS | INIT_SBPRO))) {
->>               if (!request_region(ae_config.base_io, IOBASE_REGION_SIZE,
->>                                       "aedsp16 (base)")) {
->>                       printk(
->>                       "AEDSP16 BASE I/O port region is already in use.\n");
->> -                     return FALSE;
->> +                     return false;
->>               }
->>       }
->>
->> @@ -1226,7 +1218,7 @@ static int __init init_aedsp16_mpu(void)
->>
->>       DBG(("done.\n"));
->>
->> -     return TRUE;
->> +     return true;
->>  }
->>
->>  static void uninit_aedsp16_mpu(void)
->> @@ -1244,40 +1236,40 @@ static void uninit_aedsp16_mpu(void)
->>       DBG(("done.\n"));
->>  }
->>
->> -static int __init init_aedsp16(void)
->> +static bool __init init_aedsp16(void)
->>  {
->> -     int initialized = FALSE;
->> +     int initialized = false;
->>
->>       DBG(("Initializing BASE[0x%x] IRQ[%d] DMA[%d] MIRQ[%d]\n",
->>            ae_config.base_io,ae_config.irq,ae_config.dma,ae_config.mpu_irq));
->>
->>       if (ae_config.mss_base == -1) {
->> -             if (init_aedsp16_sb() == FALSE) {
->> +             if (init_aedsp16_sb() == false) {
->>                       uninit_aedsp16_sb();
->>               } else {
->> -                     initialized = TRUE;
->> +                     initialized = true;
->>               }
->>       }
->>
->>       if (ae_config.mpu_base != -1) {
->> -             if (init_aedsp16_mpu() == FALSE) {
->> +             if (init_aedsp16_mpu() == false) {
->>                       uninit_aedsp16_mpu();
->>               } else {
->> -                     initialized = TRUE;
->> +                     initialized = true;
->>               }
->>       }
->>
->> -/*
->> - * In the sequence of init routines, the MSS init MUST be the last!
->> - * This because of the special register programming the MSS mode needs.
->> - * A board reset would disable the MSS mode restoring the default SBPRO
->> - * mode.
->> - */
->> +     /*
->> +      * In the sequence of init routines, the MSS init MUST be the last!
->> +      * This because of the special register programming the MSS mode needs.
->> +      * A board reset would disable the MSS mode restoring the default SBPRO
->> +      * mode.
->> +      */
->>       if (ae_config.mss_base != -1) {
->> -             if (init_aedsp16_mss() == FALSE) {
->> +             if (init_aedsp16_mss() == false) {
->>                       uninit_aedsp16_mss();
->>               } else {
->> -                     initialized = TRUE;
->> +                     initialized = true;
->>               }
->>       }
->>
->> @@ -1334,7 +1326,7 @@ static int __init do_init_aedsp16(void) {
->>       ae_config.mpu_base = mpu_base;
->>       ae_config.mpu_irq = mpu_irq;
->>
->> -     if (init_aedsp16() == FALSE) {
->> +     if (init_aedsp16() == false) {
->>               printk(KERN_ERR "aedsp16: initialization failed\n");
->>               /*
->>                * XXX
+>> /***************************************************************************
+>>       The USB Part of the driver
+>> ****************************************************************************/
 >> --
->> 1.7.5.rc2.4.g4d8b3
+>> 1.7.3.2.343.g7d43d
 >>
->> --
-> I think you just did the wrong thing .
+> Why did you change it ?
 
-Care to explain what thing I did wrong?
+To get rid of the typedef?
+
+> and why change so many lines ?
+
+Removed whitespaces, and converted // to /* */
+
+> It had some thing wrong ?
+
+Hum?
 ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
