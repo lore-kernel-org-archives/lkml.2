@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab1DRV4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 17:56:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36213 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab1DRV4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 17:56:44 -0400
-Message-ID: <4DACB38D.2070102@oracle.com>
-Date: Mon, 18 Apr 2011 14:56:29 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: werner <w.landgraf@ru.ru>
-CC: tj@kernel.org, gregkh@suse.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.39-rc3-gitX  compiling errors of olpc-dcon_xo_1 and i82975x-edac
-References: <web-507861711@zbackend1.aha.ru>
-In-Reply-To: <web-507861711@zbackend1.aha.ru>
-Content-Type: multipart/mixed;
- boundary="------------080105030904020706040108"
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DACB390.00FE:SCFSTAT5015188,ss=1,fgs=0
+	id S1752661Ab1DRV5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 17:57:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751480Ab1DRV5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 17:57:47 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: [PATCH] perf, nmi: Move LVT un-masking into irq handlers
+Date: Mon, 18 Apr 2011 12:56:55 -0400
+Message-Id: <1303145815-15050-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080105030904020706040108
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+It was noticed that P4 machines were generating double NMIs for each
+perf event.  These extra NMIs lead to 'Dazed and confused' messages on
+the screen.
 
-On 04/18/11 14:49, werner wrote:
-> =============================
-> 
->   CC [M]  drivers/staging/olpc_dcon/olpc_dcon_xo_1.o
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c: In function 'dcon_wiggle_xo_1':
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:168: error: implicit
-> declaration of function 'udelay'
-> 
+I tracked this down to a P4 quirk that said the overflow bit had to be
+cleared before re-enabling the apic LVT mask.  My first attempt was
+to move the un-masking inside the perf nmi handler from before the
+chipset NMI handler to after.
 
-Andrew has merged a patch for this one into his MM tree.
-I'm attaching it below.
+This broke Nehalem boxes that seem to like the unmasking before the
+counters themselves are re-enabled.
 
-> 
->   CC [M]  drivers/edac/i82975x_edac.o
-> drivers/edac/i82975x_edac.c: In function 'i82975x_process_error_info':
-> drivers/edac/i82975x_edac.c:298: warning: integer constant is too large
-> for 'unsigned long' type
+In order to keep this change simple for 2.6.39, I decided to just
+simply move the apic LVT un-masking to the beginning of all the
+chipset NMI handlers, with the exeption of Pentium4's to fix the
+double NMI issue.
 
-warning, not error.
+Later on we can move the un-masking to later in the handlers to save
+a number of 'extra' NMIs on those particular chipsets.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I tested this change on a P4 machine, an AMD machine, a Nehalem box,
+and a core2quad box.  'perf top' worked correctly along with various
+other small 'perf record' runs.  Anything high stress breaks all the
+machines but that is a different problem.
 
---------------080105030904020706040108
-Content-Type: text/x-patch;
- name="stag-olpcdcon-delayh.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="stag-olpcdcon-delayh.patch"
+Thanks to various people for testing different versions of this patch.
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-
-Fix build error, needs delay.h:
-
-drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:168: error: implicit declaration of function 'udelay'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Andres Salomon <dilinger@queued.net>
+Reported-and-tested-by: Shaun Ruffell <sruffell@digium.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>
 ---
- drivers/staging/olpc_dcon/olpc_dcon_xo_1.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/cpu/perf_event.c       |    5 +++--
+ arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
+ arch/x86/kernel/cpu/perf_event_p4.c    |   14 ++++++++++----
+ 3 files changed, 16 insertions(+), 6 deletions(-)
 
-Can we get something in MAINTAINERS for OLPC, please?
-
---- mmotm-2011-0331-1448.orig/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-+++ mmotm-2011-0331-1448/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-@@ -11,6 +11,7 @@
-  * License as published by the Free Software Foundation.
-  */
- #include <linux/cs5535.h>
-+#include <linux/delay.h>
- #include <linux/gpio.h>
- #include <asm/olpc.h>
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index eed3673a..97c6c44 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1284,6 +1284,9 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
  
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
++	/* chipsets have their own quirks when to unmask */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
++
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+ 		if (!test_bit(idx, cpuc->active_mask)) {
+ 			/*
+@@ -1370,8 +1373,6 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 		return NOTIFY_DONE;
+ 	}
+ 
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-
+ 	handled = x86_pmu.handle_irq(args->regs);
+ 	if (!handled)
+ 		return NOTIFY_DONE;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 8fc2b2c..d2326e1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -933,6 +933,9 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
++	/* chipsets have their own quirks when to unmask */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
++
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index c2520e1..20e37ed 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -950,11 +950,17 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 			p4_pmu_disable_event(event);
+ 	}
+ 
+-	if (handled) {
+-		/* p4 quirk: unmask it again */
+-		apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
++	if (handled)
+ 		inc_irq_stat(apic_perf_irqs);
+-	}
++
++        /*
++	 * P4 quirks:
++	 * - An overflown perfctr will assert its interrupt
++	 *   until the OVF flag in its CCCR is cleared.
++	 * - LVTPC is masked on interrupt and must be
++	 *   unmasked by the LVTPC handler.
++	 */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 
+ 	return handled;
+ }
+-- 
+1.7.4.2
 
---------------080105030904020706040108--
