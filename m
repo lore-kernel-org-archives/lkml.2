@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab1DSUc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:32:29 -0400
-Received: from kroah.org ([198.145.64.141]:47547 "EHLO coco.kroah.org"
+	id S1754672Ab1DSUcq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:32:46 -0400
+Received: from kroah.org ([198.145.64.141]:47538 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab1DSUQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:16:51 -0400
+	id S1754237Ab1DSUQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:16:49 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:43 2011
-Message-Id: <20110419201043.824344501@clark.kroah.org>
+Message-Id: <20110419201043.618871419@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:15 -0700
+Date: Tue, 19 Apr 2011 13:08:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [06/70] cifs: set ra_pages in backing_dev_info
+Subject: [04/70] cifs: always do is_path_accessible check in cifs_mount
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeff Layton <jlayton@redhat.com>
 
-commit 2b6c26a0a62cc0bab0ad487533d5581d7c293fef upstream.
+commit 70945643722ffeac779d2529a348f99567fa5c33 upstream.
 
-Commit 522440ed made cifs set backing_dev_info on the mapping attached
-to new inodes. This change caused a fairly significant read performance
-regression, as cifs started doing page-sized reads exclusively.
+Currently, we skip doing the is_path_accessible check in cifs_mount if
+there is no prefixpath. I have a report of at least one server however
+that allows a TREE_CONNECT to a share that has a DFS referral at its
+root. The reporter in this case was using a UNC that had no prefixpath,
+so the is_path_accessible check was not triggered and the box later hit
+a BUG() because we were chasing a DFS referral on the root dentry for
+the mount.
 
-By virtue of the fact that they're allocated as part of cifs_sb_info by
-kzalloc, the ra_pages on cifs BDIs get set to 0, which prevents any
-readahead. This forces the normal read codepaths to use readpage instead
-of readpages causing a four-fold increase in the number of read calls
-with the default rsize.
+This patch fixes this by removing the check for a zero-length
+prefixpath.  That should make the is_path_accessible check be done in
+this situation and should allow the client to chase the DFS referral at
+mount time instead.
 
-Fix it by setting ra_pages in the BDI to the same value as that in the
-default_backing_dev_info.
-
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=31662
-
-Reported-and-Tested-by: Till <till2.schaefer@uni-dortmund.de>
+Reported-and-Tested-by: Yogesh Sharma <ysharma@cymer.com>
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifsfs.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/cifs/connect.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -127,6 +127,7 @@ cifs_read_super(struct super_block *sb,
- 		kfree(cifs_sb);
- 		return rc;
- 	}
-+	cifs_sb->bdi.ra_pages = default_backing_dev_info.ra_pages;
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2826,7 +2826,7 @@ try_mount_again:
  
- #ifdef CONFIG_CIFS_DFS_UPCALL
- 	/* copy mount params to sb for use in submounts */
+ remote_path_check:
+ 	/* check if a whole path (including prepath) is not remote */
+-	if (!rc && cifs_sb->prepathlen && tcon) {
++	if (!rc && tcon) {
+ 		/* build_path_to_root works only when we have a valid tcon */
+ 		full_path = cifs_build_path_to_root(cifs_sb, tcon);
+ 		if (full_path == NULL) {
 
 
