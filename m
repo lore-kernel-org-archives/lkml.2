@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab1DSWcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:32:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47801 "EHLO mx1.redhat.com"
+	id S1754916Ab1DSWhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40612 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab1DSWcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 18:32:09 -0400
-Subject: Re: 2.6.39-rc1 nouveau(?) regression (bisected)
-From: Ben Skeggs <bskeggs@redhat.com>
-Reply-To: bskeggs@redhat.com
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kyle Spaans <kspaans@uwaterloo.ca>, linux-kernel@vger.kernel.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>, airlied@redhat.com,
-        dri-devel@lists.freedesktop.org, mjg@redhat.com,
-        maciej.rutecki@gmail.com, nouveau@lists.freedesktop.org,
-        Nigel Cunningham <lkml@nigelcunningham.com.au>,
-        Nick Piggin <npiggin@gmail.com>
-In-Reply-To: <20110419214747.GA2965@joi.lan>
-References: <20110414190117.GA3493@joi.lan>
-	 <20110415061136.GA21979@isilmar-3.linta.de>
-	 <4DAA1453.5000604@nigelcunningham.com.au>
-	 <20110416235028.GA6096@taurine.csclub.uwaterloo.ca>
-	 <20110417151204.GA24519@taurine.csclub.uwaterloo.ca>
-	 <20110417154557.GA2871@joi.lan>
-	 <20110417162427.GB25242@taurine.csclub.uwaterloo.ca>
-	 <20110417164920.GA2626@joi.lan> <20110418200204.GA2522@joi.lan>
-	 <BANLkTi=Oo03CQchHYh4EvEsk+wZy7akLNw@mail.gmail.com>
-	 <20110419214747.GA2965@joi.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Apr 2011 08:34:42 +1000
-Message-ID: <1303252482.7270.398.camel@caspar>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752079Ab1DSWhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 18:37:19 -0400
+Date: Tue, 19 Apr 2011 15:37:03 -0700
+From: Chris Wright <chrisw@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Chris Wright <chrisw@redhat.com>, pugs@ieee.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        qemu-devel@nongnu.org, aafabbri@cisco.com, dwang2@cisco.com,
+        benve@cisco.com
+Subject: Re: [PATCH] vfio: Add an ioctl to reset the device
+Message-ID: <20110419223703.GQ12133@x200.localdomain>
+References: <20110419203234.4254.94914.stgit@s20.home>
+ <20110419220743.GO12133@x200.localdomain>
+ <1303251751.3110.129.camel@x201>
+ <20110419222626.GP12133@x200.localdomain>
+ <1303252237.3110.131.camel@x201>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303252237.3110.131.camel@x201>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 23:47 +0200, Marcin Slusarz wrote:
-> On Mon, Apr 18, 2011 at 01:27:10PM -0700, Linus Torvalds wrote:
-> > On Mon, Apr 18, 2011 at 1:02 PM, Marcin Slusarz
-> > <marcin.slusarz@gmail.com> wrote:
-> > >
-> > > It's some nasty corruption:
+* Alex Williamson (alex.williamson@redhat.com) wrote:
+> On Tue, 2011-04-19 at 15:26 -0700, Chris Wright wrote:
+> > * Alex Williamson (alex.williamson@redhat.com) wrote:
+> > > On Tue, 2011-04-19 at 15:07 -0700, Chris Wright wrote:
+> > > > * Alex Williamson (alex.williamson@redhat.com) wrote:
+> > > > > When using VFIO to assign a device to a guest, we want to make sure
+> > > > > the device is quiesced on VM reset to stop all DMA within the guest
+> > > > > mapped memory.  Add an ioctl which just calls pci_reset_function()
+> > > > > and returns whether it succeeds.
+> > > > 
+> > > > Shouldn't there be a reset when binding/unbinding vfio to/from a pci
+> > > > device?
+> > > 
+> > > There's already one when the /dev/vfioX file is opened, we should add
+> > > another on release, and probably add the same PCI save state store/load
+> > > that I'm proposing for KVM across those.  Thanks,
 > > 
-> > Looks like something wrote 0xffffffff to free'd memory.
-> > 
-> > Enabling DEBUG_PAGEALLOC *might* show where it happens.
-> > 
-> > >
-> > > [    6.523867] =============================================================================
-> > > [    6.523916] BUG sysfs_dir_cache: Poison overwritten
-> > > [    6.523949] -----------------------------------------------------------------------------
-> > > [    6.523950]
-> > > [    6.524016] INFO: 0xffff8801bb47df4c-0xffff8801bb47df4f. First byte 0xff instead of 0x6b
-> > > [    6.524061] INFO: Slab 0xffffea00060f7b58 objects=22 used=21 fp=0xffff8801bb47df18 flags=0x80000000000000c1
-> > > [    6.524110] INFO: Object 0xffff8801bb47df18 @offset=3864 fp=0x          (null)
-> > > [    6.524111]
-> > > [    6.524170] Bytes b4 0xffff8801bb47df08:  00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a ........ZZZZZZZZ
-> > > [    6.524516]   Object 0xffff8801bb47df18:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-> > > [    6.524862]   Object 0xffff8801bb47df28:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-> > > [    6.525208]   Object 0xffff8801bb47df38:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-> > > [    6.525556]   Object 0xffff8801bb47df48:  6b 6b 6b 6b ff ff ff ff 6b 6b 6b 6b 6b 6b 6b 6b kkkk<FF><FF><FF><FF>kkkkkkkk
-> > 
-> > So here the 0xffffffff is pretty obvious.
-> > 
-> > > and in another boot:
-> > >
-> > > [    6.704786] BUG: unable to handle kernel paging request at ffffffffbc70b058
-> > 
-> > Here it is less obvious, but it was _probably_ a regular kernel
-> > pointer of the type 0xffff8801bc70b058 before the high bits were
-> > overwritten by a 0xffffffff.
-> > 
-> > So then sysfs_refresh_inode() follows that pointer, and crashes.
-> > 
-> > Just a guess, obviously, but it looks rather likely.
+> > Hmm, I looked and didn't see it, hence the question.
 > 
-> Thanks. It helped a bit.
-> I'll send two patches in response to this message, one of which fixes this bug.
-Nice catch.  I'll push these to the nouveau tree now, and get them to
-Dave with some additional fixes.
+> vfio_open() -> pci_reset_function()
+> https://github.com/pugs/vfio-linux-2.6/blob/vfio/drivers/vfio/vfio_main.c
 
-Ben.
-> 
-> Marcin
-> 
-
-
+Got it, thanks Alex.
