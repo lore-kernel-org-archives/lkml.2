@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1DSD12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 23:27:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57079 "EHLO smtps.tip.net.au"
+	id S1754672Ab1DSD3L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 23:29:11 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:60234 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754219Ab1DSD10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 23:27:26 -0400
-Date: Tue, 19 Apr 2011 13:27:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Archit Taneja <archit@ti.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: linux-next: manual merge of the omap_dss2 tree with the
- fbdev-current tree
-Message-Id: <20110419132720.d86b8afd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1754381Ab1DSD3J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 23:29:09 -0400
+X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
+   d="scan'208";a="542236968"
+Subject: Re: [PATCH 6/6] NFS: return -EAGAIN when skipped commit in
+ nfs_commit_unstable_pages()
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+In-Reply-To: <20110419030532.902141228@intel.com>
+References: <20110419030003.108796967@intel.com>
+	 <20110419030532.902141228@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Mon, 18 Apr 2011 23:29:07 -0400
+Message-ID: <1303183747.5417.11.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 19 Apr 2011 03:29:08.0550 (UTC) FILETIME=[F1568660:01CBFE41]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
+On Tue, 2011-04-19 at 11:00 +0800, Wu Fengguang wrote:
+> plain text document attachment (nfs-fix-write_inode-retval.patch)
+> It's probably not sane to return success while redirtying the inode at
+> the same time in ->write_inode().
+> 
+> CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/nfs/write.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-next.orig/fs/nfs/write.c	2011-04-19 10:18:16.000000000 +0800
+> +++ linux-next/fs/nfs/write.c	2011-04-19 10:18:32.000000000 +0800
+> @@ -1519,7 +1519,7 @@ static int nfs_commit_unstable_pages(str
+>  {
+>  	struct nfs_inode *nfsi = NFS_I(inode);
+>  	int flags = FLUSH_SYNC;
+> -	int ret = 0;
+> +	int ret = -EAGAIN;
+>  
+>  	if (wbc->sync_mode == WB_SYNC_NONE) {
+>  		/* Don't commit yet if this is a non-blocking flush and there
+> 
+> 
 
-Today's linux-next merge of the omap_dss2 tree got a conflict in
-drivers/video/omap2/dss/dss_features.c
-drivers/video/omap2/dss/dss_features.h between commit 0b41136c0d2f
-("OMAP: DSS2: DSI: Fix DSI PLL power bug") from the fbdev-current tree
-and commit 0f7d043bd56b ("OMAP4: DSS2: Register configuration changes for
-DSI") from the omap_dss2 tree.
+Hi Fengguang,
 
-I fixed it up (see below) and can carry the fix as necessary.
+I don't understand the purpose of this patch...
+
+Currently, the value of 'ret' only affects the case where the commit
+exits early due to this being a non-blocking flush where we have not yet
+written back enough pages to make it worth our while to send a commit.
+
+In essence, this really only matters for the cases where someone calls
+'write_inode_now' (not used by anybody calling into the NFS client) and
+'sync_inode', which is only called by nfs_wb_all (with sync_mode =
+WB_SYNC_ALL).
+
+So can you please elaborate on the possible use cases for this change?
+
+Cheers
+  Trond
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Trond Myklebust
+Linux NFS client maintainer
 
-diff --cc drivers/video/omap2/dss/dss_features.c
-index 8c50e18,179a7a4..0000000
---- a/drivers/video/omap2/dss/dss_features.c
-+++ b/drivers/video/omap2/dss/dss_features.c
-@@@ -271,7 -272,8 +272,8 @@@ static struct omap_dss_features omap363
-  		FEAT_LCDENABLESIGNAL | FEAT_PCKFREEENABLE |
-  		FEAT_PRE_MULT_ALPHA | FEAT_FUNCGATED |
-  		FEAT_ROWREPEATENABLE | FEAT_LINEBUFFERSPLIT |
-- 		FEAT_RESIZECONF | FEAT_DSI_PLL_PWR_BUG,
- -		FEAT_RESIZECONF | FEAT_DSI_PLL_FREQSEL |
- -		FEAT_DSI_LDO_STATUS,
-++		FEAT_RESIZECONF | FEAT_DSI_PLL_PWR_BUG |
-++		FEAT_DSI_PLL_FREQSEL | FEAT_DSI_LDO_STATUS,
-  
-  	.num_mgrs = 2,
-  	.num_ovls = 3,
-diff --cc drivers/video/omap2/dss/dss_features.h
-index 37922ce,c5c0b40..0000000
---- a/drivers/video/omap2/dss/dss_features.h
-+++ b/drivers/video/omap2/dss/dss_features.h
-@@@ -26,22 -26,24 +26,25 @@@
-  
-  /* DSS has feature id */
-  enum dss_feat_id {
-- 	FEAT_GLOBAL_ALPHA	= 1 << 0,
-- 	FEAT_GLOBAL_ALPHA_VID1	= 1 << 1,
-- 	FEAT_PRE_MULT_ALPHA	= 1 << 2,
-- 	FEAT_LCDENABLEPOL	= 1 << 3,
-- 	FEAT_LCDENABLESIGNAL	= 1 << 4,
-- 	FEAT_PCKFREEENABLE	= 1 << 5,
-- 	FEAT_FUNCGATED		= 1 << 6,
-- 	FEAT_MGR_LCD2		= 1 << 7,
-- 	FEAT_LINEBUFFERSPLIT	= 1 << 8,
-- 	FEAT_ROWREPEATENABLE	= 1 << 9,
-- 	FEAT_RESIZECONF		= 1 << 10,
-- 	/* Independent core clk divider */
-- 	FEAT_CORE_CLK_DIV	= 1 << 11,
-- 	FEAT_LCD_CLK_SRC	= 1 << 12,
-+ 	FEAT_GLOBAL_ALPHA		= 1 << 0,
-+ 	FEAT_GLOBAL_ALPHA_VID1		= 1 << 1,
-+ 	FEAT_PRE_MULT_ALPHA		= 1 << 2,
-+ 	FEAT_LCDENABLEPOL		= 1 << 3,
-+ 	FEAT_LCDENABLESIGNAL		= 1 << 4,
-+ 	FEAT_PCKFREEENABLE		= 1 << 5,
-+ 	FEAT_FUNCGATED			= 1 << 6,
-+ 	FEAT_MGR_LCD2			= 1 << 7,
-+ 	FEAT_LINEBUFFERSPLIT		= 1 << 8,
-+ 	FEAT_ROWREPEATENABLE		= 1 << 9,
-+ 	FEAT_RESIZECONF			= 1 << 10,
- -	/* Independent core clk divider */
-+ 	FEAT_CORE_CLK_DIV		= 1 << 11,
-+ 	FEAT_LCD_CLK_SRC		= 1 << 12,
-+ 	FEAT_DSI_PLL_FREQSEL		= 1 << 13,
-+ 	FEAT_DSI_LDO_STATUS		= 1 << 14,
-+ 	FEAT_DSI_DCS_CMD_CONFIG_VC	= 1 << 15,
-+ 	FEAT_DSI_VC_OCP_WIDTH		= 1 << 16,
- +	/* DSI-PLL power command 0x3 is not working */
-- 	FEAT_DSI_PLL_PWR_BUG	= 1 << 13,
-++	FEAT_DSI_PLL_PWR_BUG		= 1 << 17,
-  };
-  
-  /* DSS register field id */
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
