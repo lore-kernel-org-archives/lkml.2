@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab1DSUmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:42:46 -0400
-Received: from kroah.org ([198.145.64.141]:58927 "EHLO coco.kroah.org"
+	id S1755126Ab1DSUq3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:46:29 -0400
+Received: from kroah.org ([198.145.64.141]:58978 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754286Ab1DSUmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:36 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:17 2011
-Message-Id: <20110419204117.456689253@clark.kroah.org>
+	id S1754778Ab1DSUmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:46 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:18 2011
+Message-Id: <20110419204118.600700383@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:30:45 -0700
+Date: Tue, 19 Apr 2011 13:30:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Mahoney <jeffm@suse.com>, Tony Luck <tony.luck@intel.com>
-Subject: [07/28] [IA64] mca.c: Fix cast from integer to pointer warning
+        Enrico Mioso <mrkiko.rs@gmail.com>
+Subject: [18/28] USB: option: Add new ONDA vendor id and product id for ONDA MT825UP
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-commit c1d036c4d1cb00b7e8473a2ad0a78f13e13a8183 upstream.
+commit c6991b6fd2b4201174dc4620d0c8c4f5ff27b36f upstream.
 
-ia64_mca_cpu_init has a void *data local variable that is assigned
-the value from either __get_free_pages() or mca_bootmem(). The problem
-is that __get_free_pages returns an unsigned long and mca_bootmem, via
-alloc_bootmem(), returns a void *. format_mca_init_stack takes the void *,
-and it's also used with __pa(), but that casts it to long anyway.
+This patch, adds to the option driver the Onda Communication
+(http://www.ondacommunication.com) vendor id, and the MT825UP modem
+device id.
 
-This results in the following build warning:
+Note that many variants of this same device are being release here in
+Italy (at least one or two per telephony operator).
 
-arch/ia64/kernel/mca.c:1898: warning: assignment makes pointer from
-integer without a cast
+These devices are perfectly equivalent except for some predefined
+settings (which can be changed of course).
 
-Cast the return of __get_free_pages to a void * to avoid
-the warning.
+It should be noted that most ONDA devices are allready supported (they
+used other vendor's ids in the past). The patch seems working fine here,
+and the rest of the driver seems uninfluenced.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/kernel/mca.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/ia64/kernel/mca.c
-+++ b/arch/ia64/kernel/mca.c
-@@ -1850,7 +1850,8 @@ ia64_mca_cpu_init(void *cpu_data)
- 			data = mca_bootmem();
- 			first_time = 0;
- 		} else
--			data = __get_free_pages(GFP_KERNEL, get_order(sz));
-+			data = (void *)__get_free_pages(GFP_KERNEL,
-+							get_order(sz));
- 		if (!data)
- 			panic("Could not allocate MCA memory for cpu %d\n",
- 					cpu);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -388,6 +388,12 @@ static int  option_resume(struct usb_ser
+ #define CELOT_VENDOR_ID				0x211f
+ #define CELOT_PRODUCT_CT680M			0x6801
+ 
++/* ONDA Communication vendor id */
++#define ONDA_VENDOR_ID       0x1ee8
++
++/* ONDA MT825UP HSDPA 14.2 modem */
++#define ONDA_MT825UP         0x000b
++
+ static struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -917,6 +923,7 @@ static struct usb_device_id option_ids[]
+ 
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
++	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
