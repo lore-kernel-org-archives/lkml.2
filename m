@@ -1,133 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab1DSUUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:20:53 -0400
-Received: from kroah.org ([198.145.64.141]:35712 "EHLO coco.kroah.org"
+	id S1755274Ab1DSUVB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:21:01 -0400
+Received: from kroah.org ([198.145.64.141]:35792 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754949Ab1DSURk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
-Message-Id: <20110419201049.398380594@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:07 -0700
+	id S1754746Ab1DSUU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:20:59 -0400
+Date: Tue, 19 Apr 2011 13:15:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric B Munson <emunson@mgebm.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [58/70] powerpc/perf_event: Skip updating kernel counters if register value shrinks
-In-Reply-To: <20110419201501.GA8865@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/70] 2.6.38.4-rc1-stable review
+Message-ID: <20110419201501.GA8865@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.38.4 release.
+There are 70 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Thursday, April 21, 2011, 20:00:00 UTC.
+Anything received after that time might be too late.
 
-From: Eric B Munson <emunson@mgebm.net>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.38.4-rc1.gz
+and the diffstat can be found below.
 
-commit 86c74ab317c1ef4d37325e0d7ca8a01a796b0bd7 upstream.
+thanks,
 
-Because of speculative event roll back, it is possible for some event coutners
-to decrease between reads on POWER7.  This causes a problem with the way that
-counters are updated.  Delta calues are calculated in a 64 bit value and the
-top 32 bits are masked.  If the register value has decreased, this leaves us
-with a very large positive value added to the kernel counters.  This patch
-protects against this by skipping the update if the delta would be negative.
-This can lead to a lack of precision in the coutner values, but from my testing
-the value is typcially fewer than 10 samples at a time.
-
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/powerpc/kernel/perf_event.c |   37 ++++++++++++++++++++++++++++++-------
- 1 file changed, 30 insertions(+), 7 deletions(-)
-
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -398,6 +398,25 @@ static int check_excludes(struct perf_ev
- 	return 0;
- }
- 
-+static u64 check_and_compute_delta(u64 prev, u64 val)
-+{
-+	u64 delta = (val - prev) & 0xfffffffful;
-+
-+	/*
-+	 * POWER7 can roll back counter values, if the new value is smaller
-+	 * than the previous value it will cause the delta and the counter to
-+	 * have bogus values unless we rolled a counter over.  If a coutner is
-+	 * rolled back, it will be smaller, but within 256, which is the maximum
-+	 * number of events to rollback at once.  If we dectect a rollback
-+	 * return 0.  This can lead to a small lack of precision in the
-+	 * counters.
-+	 */
-+	if (prev > val && (prev - val) < 256)
-+		delta = 0;
-+
-+	return delta;
-+}
-+
- static void power_pmu_read(struct perf_event *event)
- {
- 	s64 val, delta, prev;
-@@ -416,10 +435,11 @@ static void power_pmu_read(struct perf_e
- 		prev = local64_read(&event->hw.prev_count);
- 		barrier();
- 		val = read_pmc(event->hw.idx);
-+		delta = check_and_compute_delta(prev, val);
-+		if (!delta)
-+			return;
- 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
- 
--	/* The counters are only 32 bits wide */
--	delta = (val - prev) & 0xfffffffful;
- 	local64_add(delta, &event->count);
- 	local64_sub(delta, &event->hw.period_left);
- }
-@@ -449,8 +469,9 @@ static void freeze_limited_counters(stru
- 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
- 		prev = local64_read(&event->hw.prev_count);
- 		event->hw.idx = 0;
--		delta = (val - prev) & 0xfffffffful;
--		local64_add(delta, &event->count);
-+		delta = check_and_compute_delta(prev, val);
-+		if (delta)
-+			local64_add(delta, &event->count);
- 	}
- }
- 
-@@ -458,14 +479,16 @@ static void thaw_limited_counters(struct
- 				  unsigned long pmc5, unsigned long pmc6)
- {
- 	struct perf_event *event;
--	u64 val;
-+	u64 val, prev;
- 	int i;
- 
- 	for (i = 0; i < cpuhw->n_limited; ++i) {
- 		event = cpuhw->limited_counter[i];
- 		event->hw.idx = cpuhw->limited_hwidx[i];
- 		val = (event->hw.idx == 5) ? pmc5 : pmc6;
--		local64_set(&event->hw.prev_count, val);
-+		prev = local64_read(&event->hw.prev_count);
-+		if (check_and_compute_delta(prev, val))
-+			local64_set(&event->hw.prev_count, val);
- 		perf_event_update_userpage(event);
- 	}
- }
-@@ -1197,7 +1220,7 @@ static void record_and_restart(struct pe
- 
- 	/* we don't have to worry about interrupts here */
- 	prev = local64_read(&event->hw.prev_count);
--	delta = (val - prev) & 0xfffffffful;
-+	delta = check_and_compute_delta(prev, val);
- 	local64_add(delta, &event->count);
- 
- 	/*
+greg k-h
 
 
+ MAINTAINERS                                        |    1 -
+ Makefile                                           |    2 +-
+ arch/arm/kernel/hw_breakpoint.c                    |    7 +
+ arch/ia64/kernel/mca.c                             |    3 +-
+ arch/ia64/sn/pci/tioca_provider.c                  |    2 +-
+ arch/powerpc/kernel/perf_event.c                   |   37 +-
+ arch/powerpc/kernel/time.c                         |    3 +
+ arch/sparc/kernel/entry.S                          |    2 +-
+ arch/sparc/kernel/iommu.c                          |    3 -
+ arch/sparc/kernel/ldc.c                            |   28 +-
+ arch/sparc/kernel/pci.c                            |    1 +
+ arch/sparc/kernel/pci_common.c                     |   11 +-
+ arch/sparc/kernel/pci_fire.c                       |    2 -
+ arch/sparc/kernel/pci_schizo.c                     |    4 +-
+ arch/sparc/kernel/pci_sun4v.c                      |    3 +-
+ arch/sparc/kernel/pcr.c                            |    2 +-
+ arch/sparc/kernel/ptrace_64.c                      |    3 +-
+ arch/sparc/kernel/smp_64.c                         |   11 +-
+ arch/sparc/kernel/traps_64.c                       |    3 +-
+ arch/sparc/kernel/una_asm_64.S                     |    2 +-
+ arch/sparc/mm/fault_32.c                           |    3 +-
+ arch/x86/include/asm/msr-index.h                   |    4 +
+ arch/x86/kernel/cpu/amd.c                          |   23 +
+ arch/x86/lib/semaphore_32.S                        |    2 +-
+ drivers/gpu/drm/radeon/atom.c                      |    6 +-
+ drivers/gpu/drm/radeon/atombios_crtc.c             |    6 +
+ drivers/gpu/drm/radeon/radeon_fence.c              |    2 +-
+ drivers/gpu/drm/radeon/radeon_ring.c               |    2 +-
+ drivers/i2c/algos/i2c-algo-bit.c                   |   22 +-
+ drivers/media/video/sn9c102/sn9c102_core.c         |    6 +-
+ drivers/net/gianfar.c                              |   16 +-
+ drivers/net/gianfar.h                              |    1 +
+ drivers/net/pppoe.c                                |    2 +-
+ drivers/net/usb/cdc-phonet.c                       |    9 +-
+ drivers/rtc/rtc-bfin.c                             |    2 +
+ drivers/usb/core/devices.c                         |   10 +-
+ drivers/usb/core/hcd.c                             |    2 +-
+ drivers/usb/host/ehci-q.c                          |   15 +-
+ drivers/usb/host/xhci-mem.c                        |   90 ++-
+ drivers/usb/host/xhci.c                            |   16 +-
+ drivers/usb/host/xhci.h                            |    6 +-
+ drivers/usb/musb/Kconfig                           |    6 +-
+ drivers/usb/serial/ftdi_sio.c                      |    5 +
+ drivers/usb/serial/ftdi_sio_ids.h                  |   12 +
+ drivers/usb/serial/option.c                        |    5 +
+ drivers/usb/serial/qcserial.c                      |   31 +-
+ drivers/video/via/viafbdev.h                       |    3 -
+ fs/binfmt_elf.c                                    |    6 +-
+ fs/cifs/cifsencrypt.c                              |   15 +-
+ fs/cifs/cifsfs.c                                   |    1 +
+ fs/cifs/connect.c                                  |    2 +-
+ fs/cifs/file.c                                     |    6 +-
+ fs/namei.c                                         |    1 +
+ fs/proc/base.c                                     |    9 +-
+ fs/ramfs/file-nommu.c                              |    1 +
+ fs/ubifs/debug.c                                   |    6 +-
+ fs/ubifs/file.c                                    |    3 +
+ fs/ubifs/super.c                                   |    3 +-
+ include/linux/kernel.h                             |   70 ++-
+ include/linux/perf_event.h                         |    2 +-
+ include/linux/pid.h                                |    2 +-
+ include/linux/sched.h                              |    3 +
+ include/net/bluetooth/hci.h                        |    2 +
+ kernel/futex.c                                     |    2 +-
+ kernel/pid.c                                       |    5 +-
+ kernel/sched_fair.c                                |   11 +-
+ lib/Kconfig.debug                                  |    3 +
+ lib/Makefile                                       |    2 +
+ lib/kstrtox.c                                      |  227 ++++++
+ lib/test-kstrtox.c                                 |  739 ++++++++++++++++++++
+ lib/vsprintf.c                                     |  141 ----
+ mm/huge_memory.c                                   |   24 +-
+ mm/memory.c                                        |   26 +-
+ mm/mlock.c                                         |   13 -
+ mm/mmap.c                                          |   15 +-
+ mm/oom_kill.c                                      |   27 -
+ mm/vmscan.c                                        |   24 +-
+ net/8021q/vlan_dev.c                               |    1 +
+ net/bluetooth/hci_core.c                           |    5 +-
+ net/bluetooth/hci_event.c                          |    4 +-
+ net/bridge/br_multicast.c                          |    2 +-
+ net/bridge/br_netfilter.c                          |    3 +
+ net/ipv4/fib_frontend.c                            |    2 +
+ net/ipv4/route.c                                   |    2 +-
+ net/ipv4/tcp_input.c                               |   12 +-
+ net/ipv6/sysctl_net_ipv6.c                         |   18 +-
+ net/l2tp/l2tp_eth.c                                |    2 +-
+ net/sctp/protocol.c                                |    4 +-
+ net/xfrm/xfrm_policy.c                             |    2 +
+ scripts/checkpatch.pl                              |    4 +-
+ sound/pci/hda/patch_realtek.c                      |   21 +-
+ tools/perf/bench/sched-pipe.c                      |    2 +-
+ tools/perf/builtin-sched.c                         |   12 +-
+ tools/perf/builtin-top.c                           |    5 +-
+ tools/perf/util/header.c                           |    2 +-
+ tools/perf/util/hist.c                             |    3 -
+ .../util/scripting-engines/trace-event-python.c    |    3 +-
+ tools/perf/util/symbol.c                           |    4 +-
+ tools/perf/util/trace-event-parse.c                |    2 +-
+ tools/perf/util/ui/browsers/map.c                  |    2 +-
+ 100 files changed, 1522 insertions(+), 423 deletions(-)
