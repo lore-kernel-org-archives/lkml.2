@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1DSUmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:42:44 -0400
-Received: from kroah.org ([198.145.64.141]:58921 "EHLO coco.kroah.org"
+	id S1755468Ab1DSUrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:47:00 -0400
+Received: from kroah.org ([198.145.64.141]:58975 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754238Ab1DSUme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:34 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:17 2011
-Message-Id: <20110419204117.246916167@clark.kroah.org>
+	id S1754653Ab1DSUmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:44 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:18 2011
+Message-Id: <20110419204118.397606140@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:30:43 -0700
+Date: Tue, 19 Apr 2011 13:30:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [05/28] x86: Fix a bogus unwind annotation in lib/semaphore_32.S
+        Johan Hovold <jhovold@gmail.com>
+Subject: [16/28] USB: ftdi_sio: add PID for OCT DK201 docking station
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit e938c287ea8d977e079f07464ac69923412663ce upstream.
+commit 11a31d84129dc3133417d626643d714c9df5317e upstream.
 
-'simple' would have required specifying current frame address
-and return address location manually, but that's obviously not
-the case (and not necessary) here.
+Add PID 0x0103 for serial port of the OCT DK201 docking station.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-LKML-Reference: <4D6D1082020000780003454C@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reported-by: Jan Hoogenraad <jan@hoogenraad.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/lib/semaphore_32.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/arch/x86/lib/semaphore_32.S
-+++ b/arch/x86/lib/semaphore_32.S
-@@ -36,7 +36,7 @@
-  */
- #ifdef CONFIG_SMP
- ENTRY(__write_lock_failed)
--	CFI_STARTPROC simple
-+	CFI_STARTPROC
- 	FRAME
- 2: 	LOCK_PREFIX
- 	addl	$ RW_LOCK_BIAS,(%eax)
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -531,6 +531,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
+ 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
+ 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
++	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_HE_TIRA1_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_HE_TIRA1_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_USB_UIRT_PID),
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -579,6 +579,7 @@
+ /* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
+ /* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
+ /* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
++#define OCT_DK201_PID		0x0103	/* OCT DK201 USB docking station */
+ #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+ 
+ /*
 
 
