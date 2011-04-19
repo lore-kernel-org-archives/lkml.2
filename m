@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab1DSN7R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 09:59:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:4836 "EHLO mail.perches.com"
+	id S1752280Ab1DSODF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:03:05 -0400
+Received: from kroah.org ([198.145.64.141]:57401 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518Ab1DSN7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 09:59:13 -0400
-Subject: RE: [rfc patch] treewide: Convert "static const char <*> foo[] ="
- to "static const char <*> const foo[] ="
-From: Joe Perches <joe@perches.com>
-To: ym cheng <yongmingcheng@hotmail.com>
-Cc: vapier.adi@gmail.com,
-        Linux-kernel =?UTF-8?Q?=E9=82=AE=E4=BB=B6=E5=88=97=E8=A1=A8?= 
-	<zeuux-linux-request@zeuux.org>,
-        lkml <majordomo@vger.kernel.org>, "Stephen A.Rago" <sar@apuebook.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <SNT104-W3438BE3FC4EAC0A537D57EBA900@phx.gbl>
-References: <1284056536.24986.182.camel@Joe-Laptop>
-	 ,<AANLkTimAuA1oYyoaKsFTPEifdDsz9h=EzTB8gKudyAJk@mail.gmail.com>
-	 ,<1284058127.24986.199.camel@Joe-Laptop>
-	 ,<AANLkTimzAOvP62VnhpSmKoazKkPc30-YTy09g2eYPGBg@mail.gmail.com>
-	 ,<1284060808.24986.231.camel@Joe-Laptop>
-	 ,<AANLkTikm_ROCEZco0UMX47aD28O0EALh=WYfNwSX=fVa@mail.gmail.com>
-	 ,<1284061730.24986.238.camel@Joe-Laptop>
-	 ,<AANLkTinDTkW9oAG_i30YHc_Ox8ZmWU6YcNouKWYrU=Zr@mail.gmail.com>
-	 ,<1284062744.24986.244.camel@Joe-Laptop>
-	 <SNT104-W3438BE3FC4EAC0A537D57EBA900@phx.gbl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Apr 2011 06:59:12 -0700
-Message-ID: <1303221552.31723.67.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751011Ab1DSODC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 10:03:02 -0400
+Date: Tue, 19 Apr 2011 07:02:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, George Kashperko <george@znau.edu.ua>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Russell King <rmk@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jonas Gorski <jonas.gorski@gmail.com>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        Andy Botting <andy@andybotting.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
+Message-ID: <20110419140257.GA20456@kroah.com>
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
+ <1302892585.30441.12.camel@dev.znau.edu.ua>
+ <BANLkTi=16i+D8frz3X2f+JDtp4hbJKLL3A@mail.gmail.com>
+ <201104171938.12834.arnd@arndb.de>
+ <op.vt6ufu1n3ri7v4@arend-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <op.vt6ufu1n3ri7v4@arend-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 07:24 +0000, ym cheng wrote:
->   CC      arch/arm/plat-s3c24xx/gpio.o
->   CC      arch/arm/plat-s3c24xx/gpiolib.o
->   CC      arch/arm/plat-s3c24xx/time.o
-> arch/arm/plat-s3c24xx/time.c:258: error: unknown field 'offset'
-> specified in initializer
-> arch/arm/plat-s3c24xx/time.c:258: warning: initialization from
-> incompatible pointer type
-> make[1]: *** [arch/arm/plat-s3c24xx/time.o] 错误 1
-> make: *** [arch/arm/plat-s3c24xx] 错误 2
+On Tue, Apr 19, 2011 at 03:58:32PM +0200, Arend van Spriel wrote:
+> On Sun, 17 Apr 2011 19:38:12 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
 > 
+> Hi Rafał,
 > 
-> error: unknown field 'offset' specified in initializer??????????why???
-> I do not know why?
-> my board is TQ2440,which is S3C2440.I want to  support hrtimer.what
-> can I do now?
+> As you probably expected I tried to integrate and use your bcmai/bcmaxi/?
+> driver with our brcm80211 driver (making progress). In the mean time
+> I tried to follow the discussions going on, but I am still catching
+> up.
+> 
+> >Compare this to the PCI bus type, which essentially deals with devices
+> >that have a PCI configuration space that contains generic (irq, memory,
+> >vendor/device ID, ...) registers along with device specific registers.
+> 
+> How much alike is the (BCM)AXI bus type? My assumption was that each
+> registered PCI device is handled by a single driver module. In the
+> current(?) bcmai implementation each device driver is called with the
+> appropriate device structure reference, but it will also have the bus
+> structure reference and through that can also access other cores on the
+> (bcm)axi bus. This seems to me a potential issue when there are no
+> synchronization mechanisms in place (whether in a SoC configuration or
+> PCI-hosted). Does the PCI bus type allow driver for device A access
+> device B?
+> 
+> >A new bus_type really only makes sense if you expect a lot of devices
+> >to use this and you want to have the probing in the bus. If you only
+> >want to have a way to enumerate devices that get created by the
+> >parent driver, you can also use platform devices.
+> 
+> The main assumption of the (bcm)axi driver seems to be that each core can
+> be considered as a device. Correct me if I am wrong, but I consider a
+> device to be an entity providing a particular system function. So an
+> ethernet device provides ethernet connectivity function, a mixer device
+> provides sound mixing function, and so on. The cores within a chip are not
+> always self-contained like this. To clarify let's say a system function is
+> realized by programming core A, core B, and finally trigger core A to set
+> the function in motion. This implies the need of coordination between the
+> programming steps on those cores.
+> 
+> Is my view on what is a device wrong? Does a platform device differ in
+> this respect from a regular device?
 
-time.c was moved to plat-s3c in 2008.
-Use a more current version?
+Please don't use a platform device, unless there is no other way for
+your device to work.  For this device, you are connected to the PCI bus,
+so a platform device does not make sense at all.
 
-commit b915a125112b2500d5c6fd752948afc170a49cef
-Author: Ben Dooks <ben-linux@fluff.org>
-Date:   Tue Oct 21 14:06:53 2008 +0100
+thanks,
 
-    [ARM] S3C: Move time.c to arch/arm/plat-s3c
-    
-    Move time.c to arch/arm/plat-s3c
-    to be shared with the S3C64XX implementations.
-    
-    Signed-off-by: Ben Dooks <ben-linux@fluff.org>
-
-
-
+greg k-h
