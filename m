@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab1DSW6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:58:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32614 "EHLO mga02.intel.com"
+	id S1752273Ab1DSW6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:58:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31202 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab1DSW6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751502Ab1DSW6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Apr 2011 18:58:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,241,1301900400"; 
-   d="scan'208";a="735757817"
+   d="scan'208";a="911895394"
 From: james_p_freyensee@linux.intel.com
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
         james_p_freyensee@linux.intel.com, christophe.guerard@intel.com
-Subject: 3rd request for review & addition of PTI/n_trace implementation into kernel
-Date: Tue, 19 Apr 2011 15:58:05 -0700
-Message-Id: <1303253889-10074-1-git-send-email-james_p_freyensee@linux.intel.com>
+Subject: [PATCH 1/4] export kernel call get_task_comm().
+Date: Tue, 19 Apr 2011 15:58:06 -0700
+Message-Id: <1303253889-10074-2-git-send-email-james_p_freyensee@linux.intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <james_p_freyensee@linux.intel.com>
 References: <james_p_freyensee@linux.intel.com>
@@ -23,31 +23,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies for a long delay between submission attempts- this is the 3rd request
-for review and acceptance into the mainline kernel for the Intel-Atom
-implementation of the MIPI P1149.7 compact JTAG
-standard for mobile devices.  Complete documentation and background
-has been provided in PATCH 02/12, "Kernel documentation for the PTI
-feature".  PATCH 01/12 is a kernel fix to allow the PTI driver
-to compile modularly; this is a fix Greg KH, Alan Cox, and Arjan
-van de Ven and I talked about a while ago.  It's not techincally
-related to PTI, but it is it's own separate patch so it can be
-applied independent of any possible problems with the PTI submission.
+From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-Changes/fixes from last review include:
--lock acquire and release same ordering in n_tracesink and n_tracerouter
--variable renaming in pti.c
--elimination of one variable not used in pti.c
--patch groups submissions in logical, independent chunks instead one
- file per patch.
--use of linux-next instead of linux-stable for patch base
--Kconfig descriptions appearing in patch descriptions for
- pti and n_tracesink/n_tracerouter, as requested.
+This allows drivers who call this function to be compiled modularly.
+Otherwise, a driver who is interested in this type of functionality
+has to implement their own get_task_comm() call, causing code
+duplication in the Linux source tree.
 
-Thanks for your help and time. Regards,
-J Freyensee
+Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+---
+ fs/exec.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-From: james_p_freyensee@linux.intel.com
-Subject: 3rd request for review & addition of PTI/n_trace implementation into kernel
-In-Reply-To: james_p_freyensee@linux.intel.com
+diff --git a/fs/exec.c b/fs/exec.c
+index 8328beb..e1ac338 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1004,6 +1004,7 @@ char *get_task_comm(char *buf, struct task_struct *tsk)
+ 	task_unlock(tsk);
+ 	return buf;
+ }
++EXPORT_SYMBOL_GPL(get_task_comm);
+ 
+ void set_task_comm(struct task_struct *tsk, char *buf)
+ {
+-- 
+1.7.2.3
 
