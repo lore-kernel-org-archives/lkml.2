@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab1DSUUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:20:07 -0400
-Received: from kroah.org ([198.145.64.141]:35724 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab1DSURm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:42 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
-Message-Id: <20110419201049.614535681@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:09 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Hardy <shardy@redhat.com>
-Subject: [60/70] usb: qcserial avoid pointing to freed memory
-In-Reply-To: <20110419201501.GA8865@kroah.com>
+	id S1755255Ab1DSUVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:21:53 -0400
+Received: from eazy.amigager.de ([213.239.192.238]:44282 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055Ab1DSUVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:21:50 -0400
+Date: Tue, 19 Apr 2011 22:22:12 +0200
+From: Tino Keitel <tino.keitel@tikei.de>
+To: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] /proc/acpi/wakeup regression in 2.6.39-rc3
+Message-ID: <20110419202212.GA15438@mac.home>
+Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+	Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+	linux-kernel@vger.kernel.org
+References: <201104150053.37037.rjw@sisk.pl>
+ <Pine.LNX.4.44L0.1104151034580.2051-100000@iolanthe.rowland.org>
+ <20110415145457.GA27650@eazy.amigager.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110415145457.GA27650@eazy.amigager.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+Hi,
 
-------------------
+I reverted some wakeup and ACPI related commits. When I reverted commit
+7fa69baf29de8c77a6b32c054df2abb8f11f8aa4, wakeup using the keyboard
+worked again and /proc/acpi/wakeup behaved as expected.
 
-From: Steven Hardy <shardy@redhat.com>
+So check this, I reverted the following commits to avoid conflicts and
+build failures:
 
-commit 99ab3f9e4eaec35fd2d7159c31b71f17f7e613e3 upstream.
+c19f9a84ec807da57fd75bbd9a3f2b8269611f79
+5190726765b40774c069e187a958e10ccd970e65
+2a5d24286e8bdafdc272b37ec5bdd9e977b3767c
+f2b56bc808addb908a5bf435d9b942c02af9a7c4
+7fa69baf29de8c77a6b32c054df2abb8f11f8aa4
 
-Rework the qcprobe logic such that serial->private is not set when
-qcprobe exits with -ENODEV, otherwise serial->private will point to freed
-memory on -ENODEV
-
-Signed-off-by: Steven Hardy <shardy@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/serial/qcserial.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
-
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -111,7 +111,7 @@ static int qcprobe(struct usb_serial *se
- 	ifnum = intf->desc.bInterfaceNumber;
- 	dbg("This Interface = %d", ifnum);
- 
--	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private),
-+	data = kzalloc(sizeof(struct usb_wwan_intf_private),
- 					 GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
-@@ -134,8 +134,10 @@ static int qcprobe(struct usb_serial *se
- 		    usb_endpoint_is_bulk_out(&intf->endpoint[1].desc)) {
- 			dbg("QDL port found");
- 
--			if (serial->interface->num_altsetting == 1)
--				return 0;
-+			if (serial->interface->num_altsetting == 1) {
-+				retval = 0; /* Success */
-+				break;
-+			}
- 
- 			retval = usb_set_interface(serial->dev, ifnum, 1);
- 			if (retval < 0) {
-@@ -145,7 +147,6 @@ static int qcprobe(struct usb_serial *se
- 				retval = -ENODEV;
- 				kfree(data);
- 			}
--			return retval;
- 		}
- 		break;
- 
-@@ -177,7 +178,6 @@ static int qcprobe(struct usb_serial *se
- 				retval = -ENODEV;
- 				kfree(data);
- 			}
--			return retval;
- 		} else if (ifnum==3) {
- 			/*
- 			 * NMEA (serial line 9600 8N1)
-@@ -199,9 +199,12 @@ static int qcprobe(struct usb_serial *se
- 		dev_err(&serial->dev->dev,
- 			"unknown number of interfaces: %d\n", nintf);
- 		kfree(data);
--		return -ENODEV;
-+		retval = -ENODEV;
- 	}
- 
-+	/* Set serial->private if not returning -ENODEV */
-+	if (retval != -ENODEV)
-+		usb_set_serial_data(serial, data);
- 	return retval;
- }
- 
-
-
+Regards,
+Tino
