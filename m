@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab1DSUXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:23:00 -0400
-Received: from kroah.org ([198.145.64.141]:35649 "EHLO coco.kroah.org"
+	id S1752812Ab1DSUXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:23:25 -0400
+Received: from kroah.org ([198.145.64.141]:35641 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab1DSURb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:31 -0400
+	id S1754769Ab1DSURa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
-Message-Id: <20110419201048.281575300@clark.kroah.org>
+Message-Id: <20110419201048.166112266@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:57 -0700
+Date: Tue, 19 Apr 2011 13:08:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@kernel.dk>, David Rientjes <rientjes@google.com>
-Subject: [48/70] vmscan: all_unreclaimable() use zone->all_unreclaimable as a name
+        Ken Chen <kenchen@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [47/70] sched: Fix erroneous all_pinned logic
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,146 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Ken Chen <kenchen@google.com>
 
-commit 929bea7c714220fc76ce3f75bef9056477c28e74 upstream.
+commit b30aef17f71cf9e24b10c11cbb5e5f0ebe8a85ab upstream.
 
-all_unreclaimable check in direct reclaim has been introduced at 2.6.19
-by following commit.
+The scheduler load balancer has specific code to deal with cases of
+unbalanced system due to lots of unmovable tasks (for example because of
+hard CPU affinity). In those situation, it excludes the busiest CPU that
+has pinned tasks for load balance consideration such that it can perform
+second 2nd load balance pass on the rest of the system.
 
-	2006 Sep 25; commit 408d8544; oom: use unreclaimable info
+This all works as designed if there is only one cgroup in the system.
 
-And it went through strange history. firstly, following commit broke
-the logic unintentionally.
+However, when we have multiple cgroups, this logic has false positives and
+triggers multiple load balance passes despite there are actually no pinned
+tasks at all.
 
-	2008 Apr 29; commit a41f24ea; page allocator: smarter retry of
-				      costly-order allocations
+The reason it has false positives is that the all pinned logic is deep in
+the lowest function of can_migrate_task() and is too low level:
 
-Two years later, I've found obvious meaningless code fragment and
-restored original intention by following commit.
+load_balance_fair() iterates each task group and calls balance_tasks() to
+migrate target load. Along the way, balance_tasks() will also set a
+all_pinned variable. Given that task-groups are iterated, this all_pinned
+variable is essentially the status of last group in the scanning process.
+Task group can have number of reasons that no load being migrated, none
+due to cpu affinity. However, this status bit is being propagated back up
+to the higher level load_balance(), which incorrectly think that no tasks
+were moved.  It kick off the all pinned logic and start multiple passes
+attempt to move load onto puller CPU.
 
-	2010 Jun 04; commit bb21c7ce; vmscan: fix do_try_to_free_pages()
-				      return value when priority==0
+To fix this, move the all_pinned aggregation up at the iterator level.
+This ensures that the status is aggregated over all task-groups, not just
+last one in the list.
 
-But, the logic didn't works when 32bit highmem system goes hibernation
-and Minchan slightly changed the algorithm and fixed it .
-
-	2010 Sep 22: commit d1908362: vmscan: check all_unreclaimable
-				      in direct reclaim path
-
-But, recently, Andrey Vagin found the new corner case. Look,
-
-	struct zone {
-	  ..
-	        int                     all_unreclaimable;
-	  ..
-	        unsigned long           pages_scanned;
-	  ..
-	}
-
-zone->all_unreclaimable and zone->pages_scanned are neigher atomic
-variables nor protected by lock.  Therefore zones can become a state of
-zone->page_scanned=0 and zone->all_unreclaimable=1.  In this case, current
-all_unreclaimable() return false even though zone->all_unreclaimabe=1.
-
-This resulted in the kernel hanging up when executing a loop of the form
-
-1. fork
-2. mmap
-3. touch memory
-4. read memory
-5. munmmap
-
-as described in
-http://www.gossamer-threads.com/lists/linux/kernel/1348725#1348725
-
-Is this ignorable minor issue?  No.  Unfortunately, x86 has very small dma
-zone and it become zone->all_unreclamble=1 easily.  and if it become
-all_unreclaimable=1, it never restore all_unreclaimable=0.  Why?  if
-all_unreclaimable=1, vmscan only try DEF_PRIORITY reclaim and
-a-few-lru-pages>>DEF_PRIORITY always makes 0.  that mean no page scan at
-all!
-
-Eventually, oom-killer never works on such systems.  That said, we can't
-use zone->pages_scanned for this purpose.  This patch restore
-all_unreclaimable() use zone->all_unreclaimable as old.  and in addition,
-to add oom_killer_disabled check to avoid reintroduce the issue of commit
-d1908362 ("vmscan: check all_unreclaimable in direct reclaim path").
-
-Reported-by: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ken Chen <kenchen@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/BANLkTi=ernzNawaR5tJZEsV_QVnfxqXmsQ@mail.gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/vmscan.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ kernel/sched_fair.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -41,6 +41,7 @@
- #include <linux/memcontrol.h>
- #include <linux/delayacct.h>
- #include <linux/sysctl.h>
-+#include <linux/oom.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -1988,17 +1989,12 @@ static bool zone_reclaimable(struct zone
- 	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
- }
- 
--/*
-- * As hibernation is going on, kswapd is freezed so that it can't mark
-- * the zone into all_unreclaimable. It can't handle OOM during hibernation.
-- * So let's check zone's unreclaimable in direct reclaim as well as kswapd.
-- */
-+/* All zones in zonelist are unreclaimable? */
- static bool all_unreclaimable(struct zonelist *zonelist,
- 		struct scan_control *sc)
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2043,21 +2043,20 @@ balance_tasks(struct rq *this_rq, int th
+ 	      enum cpu_idle_type idle, int *all_pinned,
+ 	      int *this_best_prio, struct cfs_rq *busiest_cfs_rq)
  {
- 	struct zoneref *z;
- 	struct zone *zone;
--	bool all_unreclaimable = true;
+-	int loops = 0, pulled = 0, pinned = 0;
++	int loops = 0, pulled = 0;
+ 	long rem_load_move = max_load_move;
+ 	struct task_struct *p, *n;
  
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 			gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2006,13 +2002,11 @@ static bool all_unreclaimable(struct zon
- 			continue;
- 		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 			continue;
--		if (zone_reclaimable(zone)) {
--			all_unreclaimable = false;
--			break;
--		}
-+		if (!zone->all_unreclaimable)
-+			return false;
- 	}
+ 	if (max_load_move == 0)
+ 		goto out;
  
--	return all_unreclaimable;
-+	return true;
+-	pinned = 1;
+-
+ 	list_for_each_entry_safe(p, n, &busiest_cfs_rq->tasks, se.group_node) {
+ 		if (loops++ > sysctl_sched_nr_migrate)
+ 			break;
+ 
+ 		if ((p->se.load.weight >> 1) > rem_load_move ||
+-		    !can_migrate_task(p, busiest, this_cpu, sd, idle, &pinned))
++		    !can_migrate_task(p, busiest, this_cpu, sd, idle,
++				      all_pinned))
+ 			continue;
+ 
+ 		pull_task(busiest, p, this_rq, this_cpu);
+@@ -2092,9 +2091,6 @@ out:
+ 	 */
+ 	schedstat_add(sd, lb_gained[idle], pulled);
+ 
+-	if (all_pinned)
+-		*all_pinned = pinned;
+-
+ 	return max_load_move - rem_load_move;
  }
  
- /*
-@@ -2108,6 +2102,14 @@ out:
- 	if (sc->nr_reclaimed)
- 		return sc->nr_reclaimed;
- 
-+	/*
-+	 * As hibernation is going on, kswapd is freezed so that it can't mark
-+	 * the zone into all_unreclaimable. Thus bypassing all_unreclaimable
-+	 * check.
-+	 */
-+	if (oom_killer_disabled)
-+		return 0;
-+
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
- 	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
- 		return 1;
+@@ -3297,6 +3293,7 @@ redo:
+ 		 * still unbalanced. ld_moved simply stays zero, so it is
+ 		 * correctly treated as an imbalance.
+ 		 */
++		all_pinned = 1;
+ 		local_irq_save(flags);
+ 		double_rq_lock(this_rq, busiest);
+ 		ld_moved = move_tasks(this_rq, this_cpu, busiest,
 
 
