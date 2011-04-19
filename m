@@ -1,95 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1DSIfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:35:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27787 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167Ab1DSIfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:35:19 -0400
-Subject: Re: Linux 2.6.39-rc3
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Sandeen <sandeen@redhat.com>
-In-Reply-To: <87ipuar6nq.fsf@linux.vnet.ibm.com>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
-	 <20110412190934.GA12082@redhat.com> <20110412192103.GA13278@redhat.com>
-	 <87tye1ckhr.fsf@linux.vnet.ibm.com>
-	 <BANLkTik68Q2bpgF7GpcOs+YF44B9TL60qQ@mail.gmail.com>
-	 <87ipuar6nq.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 19 Apr 2011 09:37:47 +0100
-Message-ID: <1303202267.2702.6.camel@dolmen>
+	id S1753828Ab1DSIiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:38:24 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49094 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752833Ab1DSIiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 04:38:22 -0400
+Date: Tue, 19 Apr 2011 09:38:55 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ben Nizette <bn@niasdigital.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/2] gpio: add pin biasing and drive mode to gpiolib
+Message-ID: <20110419093855.36910400@lxorguk.ukuu.org.uk>
+In-Reply-To: <6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
+References: <1303076273-8093-1-git-send-email-linus.walleij@stericsson.com>
+	<3F5641E3-C443-4541-9FDA-24D215597C1F@niasdigital.com>
+	<20110418091902.13345132@lxorguk.ukuu.org.uk>
+	<92FFDB9F-37F1-4618-A53D-FEF4151A4953@niasdigital.com>
+	<20110418132629.12d9a106@lxorguk.ukuu.org.uk>
+	<6C3F739A-A157-4796-9572-C6B0FAC2565E@niasdigital.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 2011-04-19 at 13:53 +0530, Aneesh Kumar K.V wrote:
-> On Tue, 19 Apr 2011 00:57:27 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> > On Thu, Apr 14, 2011 at 10:20, Aneesh Kumar K.V
-> > <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> > > On Tue, 12 Apr 2011 15:21:03 -0400, Dave Jones <davej@redhat.com> wrote:
-> > >> On Tue, Apr 12, 2011 at 03:09:34PM -0400, Dave Jones wrote:
-> > >>
-> > >>  > however, the output of mount looks very confused..
-> > >>  >
-> > >>  > .38:
-> > >>  > /dev/mapper/vg_adamo-lv_home on /home type ext4 (rw,relatime,seclabel,barrier=1,data=ordered)
-> > >>  >
-> > >>  > .39:
-> > >>  > - on /home type 79a9-4526-888c-1f86d35a6704 (rw,relatime,ext4)
-> > >>  >
-> > >>  > It looks like /proc/self/mountinfo broke abi.
-> > >>  >
-> > >>  > .38:
-> > >>  > 48 45 253:3 / /home rw,relatime - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,barrier=1,data=ordered
-> > >>  >
-> > >>  > .39:
-> > >>  > 46 22 253:3 / /home rw,relatime uuid:f3971858-79a9-4526-888c-1f86d35a6704 - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,user_xattr,barrier=1,data=ordered
-> > >>
-> > >> looks like this was caused by 93f1c20bc8cdb757be50566eff88d65c3b26881f
-> > >>
-> > >> perhaps adding that string to the end of the line would preserve what mount expects ?
-> > >
-> > > uuid:<value> is the option field  as per
-> > > Documentation/filesystem/proc.txt. There was an error in libmount
-> > > parsing which got fixed upstream recently
-> > 
-> > Just a simple question about this approach in general? A filesystem
-> > UUID can be changed on disk at any time (tune2fs -U ...).
-> > 
-> > Your code looks like you copy the bytes to the in-kernel superblock
-> > structure without noticing any later changes on disk? How is that
-> > supposed to work?
-> > 
+> > It also doesn't solve the real problem which is that you've got to
+> > implement platform specific parallel gpio extensions all over the place
+> > when you really want it all using the same 'handle' and request logic.
 > 
-> Isn't that true even for the fsid returned by statfs ?.  IIUC tune2fs
-> won't change even the ext4_super_block.s_uuid .
+> Fair enough.  Forgive me if you've stated this in a previous conversation
+> then but what do you see as being the best way forward here?  Should
+> gpiolib enforce itself as the One True Allocator and require all firmware
+> drivers call back in to it to get access to the pins rather than gpiolib
+> calling back to the platform upon gpio_request()?
+
+We need something to allocate gpios and manage them. gpiolib seems to be
+very good at this. We also need gpiolib to route other requests because
+gpiolib is the one thing which knows how to turn "gpio 43" a struct and
+function calls.
+
+> > And for a lot of this stuff that the gpio layer really doesn't want
+> > internal knowledge of other chunks of the kernel have used models like
+> > 'get_property/set_property' (eg battery, video4linux etc) so that the mid
+> > layer can plumb in a conversation between the handle owner and the driver
+> > without getting involved in the conversation.
 > 
-> -aneesh
+> Yeah that sounds like a more reasonable way to expose this functionality if
+> the driver does indeed need it.
 
-For gfs2 we insist that the volume label (lock table name) and the uuid
-do not change during the lifetime of a mount since they are used as
-identifiers by the userland infrastructure. We include them with all
-uevent messages, for example, and we do not have a "uuid changed"
-uevent. So we use exactly the behaviour proposed: copying the info from
-the sb at mount time and then never changing it during the lifetime of
-the mount.
+Leaving aside the current input/output and on/off bits I would go for
+being able to do
 
-The doesn't prevent someone making an on-disk change though while the fs
-is mounted with tunegfs2 (or gfs2_tool for older gfs2-utils).
+	gpio_get_property(gpio, GPIO_BIAS, GPIO_BIAS_WHATEVER);
+	gpio_set_property(gpio, GPIO_BIAS, GPIO_BIAS_WHATEVER_ELSE);
 
-One question though, is why would it be useful to change the uuid of a
-mounted filesystem? It seems likely to lead to confusion for no useful
-gain,
+and having gpiolib perform nothing more on these than
 
-Steve.
+	is the gpio allocated 
+	does ->get_property() exist
+		no -EOPNOTSUPP
+		yes return ->get_proprty(gpio struct, op, val)
+	
+For dynamically configurable features that avoids the 
+
+	gpio_request(35);
+	magic_platform_hack(&foo[3], blah); /* foo3 will be gpio35 */
+
+type stuff that becomes unmaintainable.
+
+It would be entirely optional for a driver to support any of this stuff,
+but it would both allow drivers to do so and also mean that where there
+are multiple devices with a common feature *and* a driver wants to use it
+that it will be properly abstracted in the driver itself.
 
 
+Alan
+
+
+
+> 
+> 	--Ben.
+> 
+> > 
+> > Alan
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+--
+	"Alan, I'm getting a bit worried about you."
+				-- Linus Torvalds
