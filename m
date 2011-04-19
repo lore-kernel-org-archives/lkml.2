@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab1DSUsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:48:13 -0400
-Received: from kroah.org ([198.145.64.141]:58956 "EHLO coco.kroah.org"
+	id S1754937Ab1DSUsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:48:32 -0400
+Received: from kroah.org ([198.145.64.141]:58948 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754369Ab1DSUmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:18 2011
-Message-Id: <20110419204117.979118654@clark.kroah.org>
+	id S1754324Ab1DSUmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:39 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:17 2011
+Message-Id: <20110419204117.882676010@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:30:50 -0700
+Date: Tue, 19 Apr 2011 13:30:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Hans Rosenfeld <hans.rosenfeld@amd.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [12/28] x86, cpu: Clean up AMD erratum 400 workaround
+Subject: [11/28] x86, cpu: AMD errata checking framework
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,100 +28,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hans Rosenfeld <hans.rosenfeld@amd.com>
 
-commit 9d8888c2a214aece2494a49e699a097c2ba9498b upstream.
+commit d78d671db478eb8b14c78501c0cee1cc7baf6967 upstream.
 
-Remove check_c1e_idle() and use the new AMD errata checking framework
-instead.
+Errata are defined using the AMD_LEGACY_ERRATUM() or AMD_OSVW_ERRATUM()
+macros. The latter is intended for newer errata that have an OSVW id
+assigned, which it takes as first argument. Both take a variable number
+of family-specific model-stepping ranges created by AMD_MODEL_RANGE().
+
+Iff an erratum has an OSVW id, OSVW is available on the CPU, and the
+OSVW id is known to the hardware, it is used to determine whether an
+erratum is present. Otherwise, the model-stepping ranges are matched
+against the current CPU to find out whether the erratum applies.
+
+For certain special errata, the code using this framework might have to
+conduct further checks to make sure an erratum is really (not) present.
 
 Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
-LKML-Reference: <1280336972-865982-2-git-send-email-hans.rosenfeld@amd.com>
+LKML-Reference: <1280336972-865982-1-git-send-email-hans.rosenfeld@amd.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/processor.h |    1 +
- arch/x86/kernel/cpu/amd.c        |    5 +++++
- arch/x86/kernel/process.c        |   39 ++-------------------------------------
- 3 files changed, 8 insertions(+), 37 deletions(-)
+ arch/x86/include/asm/processor.h |   18 +++++++++++
+ arch/x86/kernel/cpu/amd.c        |   60 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 78 insertions(+)
 
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -1033,6 +1033,7 @@ unsigned long calc_aperfmperf_ratio(stru
-  * AMD errata checking
-  */
- #ifdef CONFIG_CPU_SUP_AMD
-+extern const int amd_erratum_400[];
- extern bool cpu_has_amd_erratum(const int *);
- 
- #define AMD_LEGACY_ERRATUM(...)		{ -1, __VA_ARGS__, 0 }
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -629,6 +629,11 @@ cpu_dev_register(amd_cpu_dev);
-  *			   AMD_MODEL_RANGE(0x10, 0x9, 0x0, 0x9, 0x0));
-  */
- 
-+const int amd_erratum_400[] =
-+	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
-+			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
-+
-+
- bool cpu_has_amd_erratum(const int *erratum)
- {
- 	struct cpuinfo_x86 *cpu = &current_cpu_data;
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -438,42 +438,6 @@ static int __cpuinit mwait_usable(const
- 	return (edx & MWAIT_EDX_C1);
+@@ -1029,4 +1029,22 @@ unsigned long calc_aperfmperf_ratio(stru
+ 	return ratio;
  }
  
--/*
-- * Check for AMD CPUs, where APIC timer interrupt does not wake up CPU from C1e.
-- * For more information see
-- * - Erratum #400 for NPT family 0xf and family 0x10 CPUs
-- * - Erratum #365 for family 0x11 (not affected because C1e not in use)
-- */
--static int __cpuinit check_c1e_idle(const struct cpuinfo_x86 *c)
--{
--	u64 val;
--	if (c->x86_vendor != X86_VENDOR_AMD)
--		goto no_c1e_idle;
--
--	/* Family 0x0f models < rev F do not have C1E */
--	if (c->x86 == 0x0F && c->x86_model >= 0x40)
--		return 1;
--
--	if (c->x86 == 0x10) {
--		/*
--		 * check OSVW bit for CPUs that are not affected
--		 * by erratum #400
--		 */
--		if (cpu_has(c, X86_FEATURE_OSVW)) {
--			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
--			if (val >= 2) {
--				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
--				if (!(val & BIT(1)))
--					goto no_c1e_idle;
--			}
--		}
--		return 1;
--	}
--
--no_c1e_idle:
--	return 0;
--}
--
- static cpumask_var_t c1e_mask;
- static int c1e_detected;
++/*
++ * AMD errata checking
++ */
++#ifdef CONFIG_CPU_SUP_AMD
++extern bool cpu_has_amd_erratum(const int *);
++
++#define AMD_LEGACY_ERRATUM(...)		{ -1, __VA_ARGS__, 0 }
++#define AMD_OSVW_ERRATUM(osvw_id, ...)	{ osvw_id, __VA_ARGS__, 0 }
++#define AMD_MODEL_RANGE(f, m_start, s_start, m_end, s_end) \
++	((f << 24) | (m_start << 16) | (s_start << 12) | (m_end << 4) | (s_end))
++#define AMD_MODEL_RANGE_FAMILY(range)	(((range) >> 24) & 0xff)
++#define AMD_MODEL_RANGE_START(range)	(((range) >> 12) & 0xfff)
++#define AMD_MODEL_RANGE_END(range)	((range) & 0xfff)
++
++#else
++#define cpu_has_amd_erratum(x)	(false)
++#endif /* CONFIG_CPU_SUP_AMD */
++
+ #endif /* _ASM_X86_PROCESSOR_H */
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -610,3 +610,63 @@ static const struct cpu_dev __cpuinitcon
+ };
  
-@@ -551,7 +515,8 @@ void __cpuinit select_idle_routine(const
- 		 */
- 		printk(KERN_INFO "using mwait in idle threads.\n");
- 		pm_idle = mwait_idle;
--	} else if (check_c1e_idle(c)) {
-+	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
-+		/* E400: APIC timer interrupt does not wake up CPU from C1e */
- 		printk(KERN_INFO "using C1E aware idle routine\n");
- 		pm_idle = c1e_idle;
- 	} else
+ cpu_dev_register(amd_cpu_dev);
++
++/*
++ * AMD errata checking
++ *
++ * Errata are defined as arrays of ints using the AMD_LEGACY_ERRATUM() or
++ * AMD_OSVW_ERRATUM() macros. The latter is intended for newer errata that
++ * have an OSVW id assigned, which it takes as first argument. Both take a
++ * variable number of family-specific model-stepping ranges created by
++ * AMD_MODEL_RANGE(). Each erratum also has to be declared as extern const
++ * int[] in arch/x86/include/asm/processor.h.
++ *
++ * Example:
++ *
++ * const int amd_erratum_319[] =
++ *	AMD_LEGACY_ERRATUM(AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0x4, 0x2),
++ *			   AMD_MODEL_RANGE(0x10, 0x8, 0x0, 0x8, 0x0),
++ *			   AMD_MODEL_RANGE(0x10, 0x9, 0x0, 0x9, 0x0));
++ */
++
++bool cpu_has_amd_erratum(const int *erratum)
++{
++	struct cpuinfo_x86 *cpu = &current_cpu_data;
++	int osvw_id = *erratum++;
++	u32 range;
++	u32 ms;
++
++	/*
++	 * If called early enough that current_cpu_data hasn't been initialized
++	 * yet, fall back to boot_cpu_data.
++	 */
++	if (cpu->x86 == 0)
++		cpu = &boot_cpu_data;
++
++	if (cpu->x86_vendor != X86_VENDOR_AMD)
++		return false;
++
++	if (osvw_id >= 0 && osvw_id < 65536 &&
++	    cpu_has(cpu, X86_FEATURE_OSVW)) {
++		u64 osvw_len;
++
++		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, osvw_len);
++		if (osvw_id < osvw_len) {
++			u64 osvw_bits;
++
++			rdmsrl(MSR_AMD64_OSVW_STATUS + (osvw_id >> 6),
++			    osvw_bits);
++			return osvw_bits & (1ULL << (osvw_id & 0x3f));
++		}
++	}
++
++	/* OSVW unavailable or ID unknown, match family-model-stepping range */
++	ms = (cpu->x86_model << 8) | cpu->x86_mask;
++	while ((range = *erratum++))
++		if ((cpu->x86 == AMD_MODEL_RANGE_FAMILY(range)) &&
++		    (ms >= AMD_MODEL_RANGE_START(range)) &&
++		    (ms <= AMD_MODEL_RANGE_END(range)))
++			return true;
++
++	return false;
++}
 
 
