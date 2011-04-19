@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab1DSQ7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:59:13 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57946 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751626Ab1DSQ7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:59:11 -0400
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: John David Anglin <dave@hiauly1.hia.nrc.ca>
-Cc: mhocko@suse.cz, akpm@linux-foundation.org, hughd@google.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org
-In-Reply-To: <20110419160606.932084E6A@hiauly1.hia.nrc.ca>
-References: <20110419160606.932084E6A@hiauly1.hia.nrc.ca>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Apr 2011 11:59:09 -0500
-Message-ID: <1303232349.3171.21.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1753213Ab1DSRBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:01:52 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47781 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752081Ab1DSRBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 13:01:51 -0400
+Date: Tue, 19 Apr 2011 19:01:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Youquan Song <youquan.song@intel.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, hpa@zytor.com, hpa@linux.intel.com,
+        suresh.b.siddha@intel.com, yong.y.wang@linux.intel.com,
+        joe@perches.com, jbaron@redhat.com, trenn@suse.de, kent.liu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH v4 1/2] apic: Fix error interrupt report at all APs
+Message-ID: <20110419170121.GA6640@elte.hu>
+References: <1302762968-24380-1-git-send-email-youquan.song@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302762968-24380-1-git-send-email-youquan.song@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 12:06 -0400, John David Anglin wrote:
-> > It compiles OK, but crashes on boot in fsck.  The crash is definitely mm
-> > but looks to be a slab problem (it's a null deref on a spinlock in
-> > add_partial(), which seems unrelated to this patch).
-> 
-> I had a somewhat similar crash Sunday with the "debian" config building GCC.
-> This is with 2.6.39-rc3+  without the mm patch:
-> 
-> mx3210 login: [12244.664000] Backtrace:
-> [12244.664000]  [<000000004020c9a0>] __slab_free+0x100/0x200
-> [12244.664000]  [<000000004020d23c>] kmem_cache_free+0xf4/0x108
-> [12244.668000]  [<000000001c7e9efc>] __journal_remove_journal_head+0x214/0x248 [
-> jbd]
-> [12244.668000]  [<000000001c7edd48>] journal_put_journal_head+0xc8/0x168 [jbd]
-> [12244.668000]  [<000000001c7e158c>] journal_invalidatepage+0x45c/0x710 [jbd]
-> [12244.672000]  [<000000001c8652d8>] ext3_invalidatepage+0x88/0xe8 [ext3]
-> [12244.672000]  [<00000000401d76f4>] do_invalidatepage+0x34/0x40
-> [12244.672000]  [<00000000401d7770>] truncate_inode_page+0x70/0x178
-> [12244.676000]  [<00000000401d798c>] truncate_inode_pages_range+0x114/0x518
-> [12244.676000]  [<00000000401d7da4>] truncate_inode_pages+0x14/0x20
-> [12244.680000]  [<000000001c86ac1c>] ext3_evict_inode+0x64/0x2a8 [ext3]
-> [12244.680000]  [<0000000040234424>] evict+0xac/0x1c8
-> 
-> [12244.692000] PSW: 00001000000001101111001100001110 Not tainted
-> [12244.692000] r00-03  000000ff0806f30e 0000000040745e50 000000004020c9a0 000000
-> 01453d6000
-> [12244.692000] r04-07  0000000040722e50 0000000000000000 00000002bf400000 000000
-> 001c7dc000
-> [12244.696000] r08-11  0000000000000002 0000000040630298 0000000000000001 000000
-> 007bba4940
-> [12244.696000] r12-15  00000002bf400000 0000000000000001 0000000000000000 000000
-> 0000000001
-> [12244.700000] r16-19  000000007e71d888 000000007e71d888 0000000000001000 200000
-> 0000000081
-> [12244.700000] r20-23  0000000000000000 0000000040630290 0000000000000001 000000
-> 001c7e9efc
-> [12244.704000] r24-27  000000000800000e 00000001453d6000 0000000000000000 000000
-> 0040722e50
-> [12244.704000] r28-31  0000000000000001 000000007bba4b70 000000007bba4ba0 000000
-> 0000000023
-> [12244.708000] sr00-03  000000000556c000 000000000556c000 0000000000000000 000000000556c000
-> [12244.708000] sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-> 
-> [12244.712000]
-> [12244.712000] IASQ: 0000000000000000 0000000000000000 IAOQ: 000000004011b240 000000004011b244
-> [12244.712000]  IIR: 0f4015dc    ISR: 0000000000000000  IOR: 0000000000000000
-> [12244.716000]  CPU:        3   CR30: 000000007bba4000 CR31: ffffffffffffffff
-> [12244.716000]  ORIG_R28: 0000000000000001
-> [12244.720000]  IAOQ[0]: _raw_spin_lock+0x10/0x20
-> [12244.720000]  IAOQ[1]: _raw_spin_lock+0x14/0x20
-> [12244.720000]  RP(r2): __slab_free+0x100/0x200
 
-Yes, it's the same crash.  Apparently get_node() is returning NULL for
-some reason.
+* Youquan Song <youquan.song@intel.com> wrote:
 
-James
+> Recently, customer report that once machine boot, there are many error interrupt
+> reported with exact number of all APs. 
+> 
+> The root cause is Local APIC will generate error interrupt when it detect
+> the illegal vector (one in 0 ~ 15) in an interrupt message received or
+> interrupt generate from local vector table or self IPI. SDM3A.chapter 10.
+> 
+> AP LAPIC thermal sensor register will be reset to 0x10000, if thermal throttling
+> interrupt take over by BIOS, it need restore AP with the thermal sensor register
+> value of geting from BSP, otherwise cause system issue. If BIOS does not take
+> over the thermal interrupt, The restore value will be CPU rest value of 0x10000,
+> which means the interrupt vector is zero. After writing 0x10000 to thermal
+> sensor LVT, the processor will recieve the error interrupt report if the APIC
+> error interrupt is also set.
+> 
+> This patch add check the BIOS whether take over the thermal interrupt by look
+> at interrupt delivery mode not fixed mode(BIOS handle will be SMI mode) before
+> restore AP's thermal LVT. So the agony noise of error interrupt will dismiss
+> when boot on machine that BIOS does not handle thermal interrupt..  
+> 
+> 
+> Signed-off-by: Youquan Song <youquan.song@intel.com>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Acked-by: Yong Wang <yong.y.wang@intel.com>
+> ---
+>  arch/x86/include/asm/apicdef.h           |    1 +
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
+>  2 files changed, 8 insertions(+), 5 deletions(-)
 
+I don't disagree with this change, but unfortunately the changelog is in 
+absolutely unreadable English. Please fix it or find someone who can fix it for 
+you.
 
+I decoded and fixed the changelog of the 2/2 patch of your series so no need to 
+do it for that patch.
+
+Thanks,
+
+	Ingo
