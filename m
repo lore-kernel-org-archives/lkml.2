@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab1DSHfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 03:35:33 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:8628 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750795Ab1DSHf3 (ORCPT
+	id S1753144Ab1DSHfi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 03:35:38 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:49798 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960Ab1DSHfe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 03:35:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhMEAJQ6rU15LHHJgWdsb2JhbAClQRUBARYmJcVtDoVjBA
-Date: Tue, 19 Apr 2011 17:35:23 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20110419073523.GF23985@dastard>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.515923886@intel.com>
+	Tue, 19 Apr 2011 03:35:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=iexXL4EdKPyXij7wTXy1dE16SLvulHBVV1/BCiHe0nFndRyDz5w5YJ111V+GmqYBni
+         PsuxIhSLbw+r4hg0btKPn7KnwuFSxuPjpuAWJkZxYc4fOUdyVJMvGBrMZaBsoaibNcEv
+         inwIg7/sKZ4M5YkWzSx1TGI7EpP0Yb1ZplgcI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419030532.515923886@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DAD327B.4030904@suse.cz>
+References: <BANLkTikYuYVvXiHvi_kr2H7n29k=veThtw@mail.gmail.com>
+	<4DAD327B.4030904@suse.cz>
+Date: Tue, 19 Apr 2011 15:35:33 +0800
+Message-ID: <BANLkTikspr9jVNF-VZbnc_MxUYNWad7Kkg@mail.gmail.com>
+Subject: Re: LOCALVERSION in setlocalversion
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 11:00:06AM +0800, Wu Fengguang wrote:
-> A background flush work may run for ever. So it's reasonable for it to
-> mimic the kupdate behavior of syncing old/expired inodes first.
-> 
-> The policy is
-> - enqueue all newly expired inodes at each queue_io() time
-> - enqueue all dirty inodes if there are no more expired inodes to sync
-> 
-> This will help reduce the number of dirty pages encountered by page
-> reclaim, eg. the pageout() calls. Normally older inodes contain older
-> dirty pages, which are more close to the end of the LRU lists. So
-> syncing older inodes first helps reducing the dirty pages reached by
-> the page reclaim code.
+On Tue, Apr 19, 2011 at 2:58 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On 19.4.2011 08:42, Haojian Zhuang wrote:
+>> In scripts/setlocalversion under linux kernel tree, the scripts seems
+>> a little strange.
+> [...]
+>>         # append a plus sign if the repository is not in a clean
+>>         # annotated or signed tagged state (as git describe only
+>>         # looks at signed or annotated tags - git tag -a/-s) and
+>>         # LOCALVERSION= is not specified
+>>         if test "${LOCALVERSION+set}" != "set"; then
+>>                 scm=$(scm_version --short)
+>>                 res="$res${scm:++}"
+>>         fi
+>> fi
+>>
+>> LOCALVERSION isn't assigned in any place. Only CONFIG_LOCALVERSION
+>> can be assigned in .config file.
+>> Why do we need to check LOCALVERSION at here?
+>
+> It can be set on the commandline:
+>
+> make LOCALVERSION=something
+>
+> Michal
+>
 
-Once again I think this is the wrong place to be changing writeback
-policy decisions. for_background writeback only goes through
-wb_writeback() and writeback_inodes_wb() (same as for_kupdate
-writeback), so a decision to change from expired inodes to fresh
-inodes, IMO, should be made in wb_writeback.
+Thanks a lot. It works.
 
-That is, for_background and for_kupdate writeback start with the
-same policy (older_than_this set) to writeback expired inodes first,
-then when background writeback runs out of expired inodes, it should
-switch to all remaining inodes by clearing older_than_this instead
-of refreshing it for the next loop.
+I still have a question. I can't find the semantic of
+${LOCALVERSION+set} in some
+shell tutorials. Could you help me to figure out a link of introducing this?
 
-This keeps all the policy decisions in the one place, all using the
-same (existing) mechanism, and all relatively simple to understand,
-and easy to tracepoint for debugging.  Changing writeback policy
-deep in the writeback stack is not a good idea as it will make
-extending writeback policies in future (e.g. for cgroup awareness)
-very messy.
-
-> @@ -585,7 +597,8 @@ void writeback_inodes_wb(struct bdi_writ
->  	if (!wbc->wb_start)
->  		wbc->wb_start = jiffies; /* livelock avoidance */
->  	spin_lock(&inode_wb_list_lock);
-> -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
-> +
-> +	if (list_empty(&wb->b_io))
->  		queue_io(wb, wbc);
->  
->  	while (!list_empty(&wb->b_io)) {
-> @@ -612,7 +625,7 @@ static void __writeback_inodes_sb(struct
->  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
->  
->  	spin_lock(&inode_wb_list_lock);
-> -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
-> +	if (list_empty(&wb->b_io))
->  		queue_io(wb, wbc);
->  	writeback_sb_inodes(sb, wb, wbc, true);
->  	spin_unlock(&inode_wb_list_lock);
-
-That changes the order in which we queue inodes for writeback.
-Instead of calling every time to move b_more_io inodes onto the b_io
-list and expiring more aged inodes, we only ever do it when the list
-is empty. That is, it seems to me that this will tend to give
-b_more_io inodes a smaller share of writeback because they are being
-moved back to the b_io list less frequently where there are lots of
-other inodes being dirtied. Have you tested the impact of this
-change on mixed workload performance? Indeed, can you starve
-writeback of a large file simply by creating lots of small files in
-another thread?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Best Regards
+Haojian
