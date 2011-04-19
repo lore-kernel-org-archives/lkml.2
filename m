@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab1DSG6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 02:58:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56113 "EHLO mx1.suse.de"
+	id S1752990Ab1DSG6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 02:58:53 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:60828 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889Ab1DSG6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 02:58:09 -0400
-Message-ID: <4DAD327B.4030904@suse.cz>
-Date: Tue, 19 Apr 2011 08:58:03 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1751889Ab1DSG6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 02:58:51 -0400
+Date: Tue, 19 Apr 2011 12:15:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 9/26]  9: uprobes: mmap and fork
+ hooks.
+Message-ID: <20110419064511.GC10698@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+ <20110401143413.15455.75831.sendpatchset@localhost6.localdomain6>
+ <1303144163.32491.875.camel@twins>
 MIME-Version: 1.0
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: LOCALVERSION in setlocalversion
-References: <BANLkTikYuYVvXiHvi_kr2H7n29k=veThtw@mail.gmail.com>
-In-Reply-To: <BANLkTikYuYVvXiHvi_kr2H7n29k=veThtw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1303144163.32491.875.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.4.2011 08:42, Haojian Zhuang wrote:
-> In scripts/setlocalversion under linux kernel tree, the scripts seems
-> a little strange.
-[...]
->         # append a plus sign if the repository is not in a clean
->         # annotated or signed tagged state (as git describe only
->         # looks at signed or annotated tags - git tag -a/-s) and
->         # LOCALVERSION= is not specified
->         if test "${LOCALVERSION+set}" != "set"; then
->                 scm=$(scm_version --short)
->                 res="$res${scm:++}"
->         fi
-> fi
+* Peter Zijlstra <peterz@infradead.org> [2011-04-18 18:29:23]:
+
+> On Fri, 2011-04-01 at 20:04 +0530, Srikar Dronamraju wrote:
+> > +               if (vaddr > ULONG_MAX)
+> > +                       /*
+> > +                        * We cannot have a virtual address that is
+> > +                        * greater than ULONG_MAX
+> > +                        */
+> > +                       continue; 
 > 
-> LOCALVERSION isn't assigned in any place. Only CONFIG_LOCALVERSION
-> can be assigned in .config file.
-> Why do we need to check LOCALVERSION at here?
+> I'm having trouble with those checks.. while they're not wrong they're
+> not correct either. Mostly the top address space is where the kernel
+> lives and on 32-on-64 compat the boundary is much lower still. Ideally
+> it'd be TASK_SIZE, but that doesn't work since it assumes you're testing
+> for the current task.
+> 
 
-It can be set on the commandline:
+Guess I can use TASK_SIZE_OF(tsk) instead of ULONG_MAX ?
+I think TASK_SIZE_OF handles 32-on-64 correctly.
 
-make LOCALVERSION=something
-
-Michal
+-- 
+Thanks and Regards
+Srikar
