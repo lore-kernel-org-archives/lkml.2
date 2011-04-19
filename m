@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab1DSQ6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:58:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:26453 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081Ab1DSQ6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:58:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,240,1301900400"; 
-   d="scan'208";a="421988416"
-Date: Tue, 19 Apr 2011 09:58:01 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
-Cc: stable@kernel.org, giridhar.malavali@qlogic.com, James.Bottomley@suse.de,
-        linux-kernel@vger.kernel.org, andrew.vasquez@qlogic.com
-Subject: Re: [BISECTED] QLogic Corp. ISP2532-based 8Gb Fibre Channel not
- working on 2.6.35.y
-Message-ID: <20110419165801.GA17788@tassilo.jf.intel.com>
-References: <4DAD5495.5060704@pardus.org.tr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DAD5495.5060704@pardus.org.tr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753542Ab1DSQ7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 12:59:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57946 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751626Ab1DSQ7L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 12:59:11 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: John David Anglin <dave@hiauly1.hia.nrc.ca>
+Cc: mhocko@suse.cz, akpm@linux-foundation.org, hughd@google.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org
+In-Reply-To: <20110419160606.932084E6A@hiauly1.hia.nrc.ca>
+References: <20110419160606.932084E6A@hiauly1.hia.nrc.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 11:59:09 -0500
+Message-ID: <1303232349.3171.21.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From 2f0f3f4f06f7cfadebf58b70bd9e7f71d8fd96e4 Mon Sep 17 00:00:00 2001
-> From: Madhuranath Iyengar <madhuranath.iyengar@qlogic.com>
-> Date: Fri, 23 Jul 2010 15:28:24 +0500
-> Subject: [PATCH 021/107] [SCSI] qla2xxx: Appropriately log FCP
-> priority data messages
+On Tue, 2011-04-19 at 12:06 -0400, John David Anglin wrote:
+> > It compiles OK, but crashes on boot in fsck.  The crash is definitely mm
+> > but looks to be a slab problem (it's a null deref on a spinlock in
+> > add_partial(), which seems unrelated to this patch).
 > 
-> Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-> Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+> I had a somewhat similar crash Sunday with the "debian" config building GCC.
+> This is with 2.6.39-rc3+  without the mm patch:
 > 
+> mx3210 login: [12244.664000] Backtrace:
+> [12244.664000]  [<000000004020c9a0>] __slab_free+0x100/0x200
+> [12244.664000]  [<000000004020d23c>] kmem_cache_free+0xf4/0x108
+> [12244.668000]  [<000000001c7e9efc>] __journal_remove_journal_head+0x214/0x248 [
+> jbd]
+> [12244.668000]  [<000000001c7edd48>] journal_put_journal_head+0xc8/0x168 [jbd]
+> [12244.668000]  [<000000001c7e158c>] journal_invalidatepage+0x45c/0x710 [jbd]
+> [12244.672000]  [<000000001c8652d8>] ext3_invalidatepage+0x88/0xe8 [ext3]
+> [12244.672000]  [<00000000401d76f4>] do_invalidatepage+0x34/0x40
+> [12244.672000]  [<00000000401d7770>] truncate_inode_page+0x70/0x178
+> [12244.676000]  [<00000000401d798c>] truncate_inode_pages_range+0x114/0x518
+> [12244.676000]  [<00000000401d7da4>] truncate_inode_pages+0x14/0x20
+> [12244.680000]  [<000000001c86ac1c>] ext3_evict_inode+0x64/0x2a8 [ext3]
+> [12244.680000]  [<0000000040234424>] evict+0xac/0x1c8
 > 
-> -------
+> [12244.692000] PSW: 00001000000001101111001100001110 Not tainted
+> [12244.692000] r00-03  000000ff0806f30e 0000000040745e50 000000004020c9a0 000000
+> 01453d6000
+> [12244.692000] r04-07  0000000040722e50 0000000000000000 00000002bf400000 000000
+> 001c7dc000
+> [12244.696000] r08-11  0000000000000002 0000000040630298 0000000000000001 000000
+> 007bba4940
+> [12244.696000] r12-15  00000002bf400000 0000000000000001 0000000000000000 000000
+> 0000000001
+> [12244.700000] r16-19  000000007e71d888 000000007e71d888 0000000000001000 200000
+> 0000000081
+> [12244.700000] r20-23  0000000000000000 0000000040630290 0000000000000001 000000
+> 001c7e9efc
+> [12244.704000] r24-27  000000000800000e 00000001453d6000 0000000000000000 000000
+> 0040722e50
+> [12244.704000] r28-31  0000000000000001 000000007bba4b70 000000007bba4ba0 000000
+> 0000000023
+> [12244.708000] sr00-03  000000000556c000 000000000556c000 0000000000000000 000000000556c000
+> [12244.708000] sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
 > 
-> So I think at least the first commit that I've mentioned should be
-> queued for the next 2.6.35.y to fix this issue.
+> [12244.712000]
+> [12244.712000] IASQ: 0000000000000000 0000000000000000 IAOQ: 000000004011b240 000000004011b244
+> [12244.712000]  IIR: 0f4015dc    ISR: 0000000000000000  IOR: 0000000000000000
+> [12244.716000]  CPU:        3   CR30: 000000007bba4000 CR31: ffffffffffffffff
+> [12244.716000]  ORIG_R28: 0000000000000001
+> [12244.720000]  IAOQ[0]: _raw_spin_lock+0x10/0x20
+> [12244.720000]  IAOQ[1]: _raw_spin_lock+0x14/0x20
+> [12244.720000]  RP(r2): __slab_free+0x100/0x200
 
-Thanks for the bisection.
+Yes, it's the same crash.  Apparently get_node() is returning NULL for
+some reason.
 
-Can I get an ack for that from the driver or SCSI maintainer or
-patch author first please?
-I don't understand the driver well enough to make a call myself.
+James
 
-Thanks,
 
--Andi
