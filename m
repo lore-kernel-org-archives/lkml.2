@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1DSD3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 23:29:11 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:60234 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754381Ab1DSD3J convert rfc822-to-8bit (ORCPT
+	id S1751979Ab1DSDwb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 23:52:31 -0400
+Received: from amavis-outgoing1.knology.net ([24.214.64.230]:36280 "EHLO
+	amavis-outgoing1.knology.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282Ab1DSDwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 23:29:09 -0400
-X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
-   d="scan'208";a="542236968"
-Subject: Re: [PATCH 6/6] NFS: return -EAGAIN when skipped commit in
- nfs_commit_unstable_pages()
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>
-In-Reply-To: <20110419030532.902141228@intel.com>
-References: <20110419030003.108796967@intel.com>
-	 <20110419030532.902141228@intel.com>
+	Mon, 18 Apr 2011 23:52:30 -0400
+X-Greylist: delayed 1213 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Apr 2011 23:52:30 EDT
+Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
+From: David Dillow <dave@thedillows.org>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>
+In-Reply-To: <BANLkTinCWWYqnksxevho9TN3u6ZC_Rjzwg@mail.gmail.com>
+References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera>
+	 <_H4l51C1wXN.A.yDC.yGuqNB@chimera>
+	 <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com>
+	 <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com>
+	 <4DAC2429.5000105@fusionio.com>
+	 <BANLkTinCWWYqnksxevho9TN3u6ZC_Rjzwg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 18 Apr 2011 23:29:07 -0400
-Message-ID: <1303183747.5417.11.camel@lade.trondhjem.org>
+Date: Mon, 18 Apr 2011 23:32:14 -0400
+Message-ID: <1303183934.2585.12.camel@obelisk.thedillows.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 19 Apr 2011 03:29:08.0550 (UTC) FILETIME=[F1568660:01CBFE41]
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-19 at 11:00 +0800, Wu Fengguang wrote:
-> plain text document attachment (nfs-fix-write_inode-retval.patch)
-> It's probably not sane to return success while redirtying the inode at
-> the same time in ->write_inode().
+On Mon, 2011-04-18 at 20:21 +0200, Bart Van Assche wrote:
+> On Mon, Apr 18, 2011 at 1:44 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> > Bart, can you try and pull:
+> >
+> > git://git.kernel.dk/linux-2.6-block.git for-linus
+> >
+> > into Linus' tree and see if that works? This has, among other things,
+> > Neils fixes for MD.
 > 
-> CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  fs/nfs/write.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-next.orig/fs/nfs/write.c	2011-04-19 10:18:16.000000000 +0800
-> +++ linux-next/fs/nfs/write.c	2011-04-19 10:18:32.000000000 +0800
-> @@ -1519,7 +1519,7 @@ static int nfs_commit_unstable_pages(str
->  {
->  	struct nfs_inode *nfsi = NFS_I(inode);
->  	int flags = FLUSH_SYNC;
-> -	int ret = 0;
-> +	int ret = -EAGAIN;
->  
->  	if (wbc->sync_mode == WB_SYNC_NONE) {
->  		/* Don't commit yet if this is a non-blocking flush and there
-> 
-> 
+> md seems to work stable with the resulting tree, but it looks there is
+> a performance regression in the block layer not related to the md
+> issue. If I run a small block IOPS test on a block device created by
+> ib_srp (NOOP scheduler) I see about 11% less IOPS than with 2.6.38.3
+> (155.000 IOPS with 2.6.38.3 and 140.000 IOPS with 2.6.39-rc3+).
 
-Hi Fengguang,
+The mapping code for ib_srp changed in 2.6.39-rc1, but it showed
+improved IOPS for a similar setup in my testing so I'd be surprised if
+it is the culprit. Still, it wouldn't hurt to check. Do you have time to
+try the new ib_srp code with 2.6.38.3 to eliminate it from the equation?
 
-I don't understand the purpose of this patch...
-
-Currently, the value of 'ret' only affects the case where the commit
-exits early due to this being a non-blocking flush where we have not yet
-written back enough pages to make it worth our while to send a commit.
-
-In essence, this really only matters for the cases where someone calls
-'write_inode_now' (not used by anybody calling into the NFS client) and
-'sync_inode', which is only called by nfs_wb_all (with sync_mode =
-WB_SYNC_ALL).
-
-So can you please elaborate on the possible use cases for this change?
-
-Cheers
-  Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Thanks,
+Dave
 
