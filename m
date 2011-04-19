@@ -1,514 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab1DSMxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 08:53:18 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:40679 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab1DSMxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 08:53:17 -0400
-Date: Tue, 19 Apr 2011 14:53:03 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
-Message-ID: <20110419145303.111aead7@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754532Ab1DSM4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 08:56:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38943 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752497Ab1DSM4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 08:56:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,239,1301900400"; 
+   d="scan'208";a="735515431"
+Date: Tue, 19 Apr 2011 20:56:16 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20110419125616.GA20059@localhost>
+References: <20110419030003.108796967@intel.com>
+ <20110419030532.515923886@intel.com>
+ <20110419073523.GF23985@dastard>
+ <20110419095740.GC5257@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="HlL+5n6rz5pIUxbD"
+Content-Disposition: inline
+In-Reply-To: <20110419095740.GC5257@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I need this to handle SMBus multiplexing on my Asus Z8NA-D6 board. It
-has an ICH10, I've added support for older ICH chips in case someone
-needs it, as it was relatively simply to do that.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
-Note 1: On early ICH chips, some pins are exclusively inputs or
-outputs. The driver doesn't currently enforce this.
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Note 2: I'm not yet sure if we want a module alias for this driver.
-Many systems have the device but only a few of them will need the
-driver (and an ACPI resource conflict will be reported for many
-others, especially laptops I suspect.) So it might make more sense to
-let consumer drivers request the i801_gpio driver as needed (which they
-should do anyway, as you can't assume udev is always up and running on
-all systems.)
+On Tue, Apr 19, 2011 at 05:57:40PM +0800, Jan Kara wrote:
+> On Tue 19-04-11 17:35:23, Dave Chinner wrote:
+> > On Tue, Apr 19, 2011 at 11:00:06AM +0800, Wu Fengguang wrote:
+> > > A background flush work may run for ever. So it's reasonable for it to
+> > > mimic the kupdate behavior of syncing old/expired inodes first.
+> > > 
+> > > The policy is
+> > > - enqueue all newly expired inodes at each queue_io() time
+> > > - enqueue all dirty inodes if there are no more expired inodes to sync
+> > > 
+> > > This will help reduce the number of dirty pages encountered by page
+> > > reclaim, eg. the pageout() calls. Normally older inodes contain older
+> > > dirty pages, which are more close to the end of the LRU lists. So
+> > > syncing older inodes first helps reducing the dirty pages reached by
+> > > the page reclaim code.
+> > 
+> > Once again I think this is the wrong place to be changing writeback
+> > policy decisions. for_background writeback only goes through
+> > wb_writeback() and writeback_inodes_wb() (same as for_kupdate
+> > writeback), so a decision to change from expired inodes to fresh
+> > inodes, IMO, should be made in wb_writeback.
+> > 
+> > That is, for_background and for_kupdate writeback start with the
+> > same policy (older_than_this set) to writeback expired inodes first,
+> > then when background writeback runs out of expired inodes, it should
+> > switch to all remaining inodes by clearing older_than_this instead
+> > of refreshing it for the next loop.
+>   Yes, I agree with this and my impression is that Fengguang is trying to
+> achieve exactly this behavior.
+> 
+> > This keeps all the policy decisions in the one place, all using the
+> > same (existing) mechanism, and all relatively simple to understand,
+> > and easy to tracepoint for debugging.  Changing writeback policy
+> > deep in the writeback stack is not a good idea as it will make
+> > extending writeback policies in future (e.g. for cgroup awareness)
+> > very messy.
+>   Hmm, I see. I agree the policy decisions should be at one place if
+> reasonably possible. Fengguang moves them from wb_writeback() to inode
+> queueing code which looks like a logical place to me as well - there we
+> have the largest control over what inodes do we decide to write and don't
+> have to pass all the detailed 'instructions' down in wbc structure. So if
+> we later want to add cgroup awareness to writeback, I imagine we just add
+> the knowledge to inode queueing code.
 
-Note 3: This is my first GPIO driver, so while it works fine for me, it
-might not be perfect. I welcome comments on how to improve it.
+I actually started with wb_writeback() as a natural choice, and then
+found it much easier to do the expired-only=>all-inodes switching in
+move_expired_inodes() since it needs to know the @b_dirty and @tmp
+lists' emptiness to trigger the switch. It's not sane for
+wb_writeback() to look into such details. And once you do the switch
+part in move_expired_inodes(), the whole policy naturally follows.
 
- drivers/gpio/Kconfig     |    7 
- drivers/gpio/Makefile    |    1 
- drivers/gpio/i801_gpio.c |  432 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 440 insertions(+)
+> > > @@ -585,7 +597,8 @@ void writeback_inodes_wb(struct bdi_writ
+> > >  	if (!wbc->wb_start)
+> > >  		wbc->wb_start = jiffies; /* livelock avoidance */
+> > >  	spin_lock(&inode_wb_list_lock);
+> > > -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> > > +
+> > > +	if (list_empty(&wb->b_io))
+> > >  		queue_io(wb, wbc);
+> > >  
+> > >  	while (!list_empty(&wb->b_io)) {
+> > > @@ -612,7 +625,7 @@ static void __writeback_inodes_sb(struct
+> > >  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+> > >  
+> > >  	spin_lock(&inode_wb_list_lock);
+> > > -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> > > +	if (list_empty(&wb->b_io))
+> > >  		queue_io(wb, wbc);
+> > >  	writeback_sb_inodes(sb, wb, wbc, true);
+> > >  	spin_unlock(&inode_wb_list_lock);
+> > 
+> > That changes the order in which we queue inodes for writeback.
+> > Instead of calling every time to move b_more_io inodes onto the b_io
+> > list and expiring more aged inodes, we only ever do it when the list
+> > is empty. That is, it seems to me that this will tend to give
+> > b_more_io inodes a smaller share of writeback because they are being
+> > moved back to the b_io list less frequently where there are lots of
+> > other inodes being dirtied. Have you tested the impact of this
+> > change on mixed workload performance? Indeed, can you starve
+> > writeback of a large file simply by creating lots of small files in
+> > another thread?
+>   Yeah, this change looks suspicious to me as well.
 
---- linux-2.6.39-rc3.orig/drivers/gpio/Kconfig	2011-04-18 19:41:51.000000000 +0200
-+++ linux-2.6.39-rc3/drivers/gpio/Kconfig	2011-04-18 22:36:41.000000000 +0200
-@@ -322,6 +322,13 @@ config GPIO_BT8XX
- 
- 	  If unsure, say N.
- 
-+config GPIO_I801
-+	tristate "Intel 82801 (ICH) GPIO"
-+	depends on PCI
-+	help
-+	  This driver is for the GPIO pins of Intel 82801 south bridges
-+	  (aka ICH).
-+
- config GPIO_LANGWELL
- 	bool "Intel Langwell/Penwell GPIO support"
- 	depends on PCI && X86
---- linux-2.6.39-rc3.orig/drivers/gpio/Makefile	2011-04-18 19:41:51.000000000 +0200
-+++ linux-2.6.39-rc3/drivers/gpio/Makefile	2011-04-18 22:36:41.000000000 +0200
-@@ -11,6 +11,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
- obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
- obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
- obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
-+obj-$(CONFIG_GPIO_I801)		+= i801_gpio.o
- obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
- obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
- obj-$(CONFIG_GPIO_MAX7300)	+= max7300.o
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6.39-rc3/drivers/gpio/i801_gpio.c	2011-04-19 13:55:25.000000000 +0200
-@@ -0,0 +1,432 @@
-+/*
-+ * Linux kernel driver for the Intel 82801 GPIO pins
-+ * Copyright (C) 2011 Jean Delvare <khali@linux-fr.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/acpi.h>
-+#include <linux/bitops.h>
-+#include <linux/gpio.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/pci.h>
-+
-+static int force;
-+module_param(force, int, 0444);
-+MODULE_PARM_DESC(force, "Forcibly enable access to GPIO");
-+
-+enum chips { ICH2, ICH4, ICH6, ICH10_CORP };
-+
-+/* Register definitions */
-+static const u8 REG_GPIO_USE_SEL[3]	= { 0x00, 0x30, 0x40 };
-+static const u8 REG_GP_IO_SEL[3]	= { 0x04, 0x34, 0x44 };
-+static const u8 REG_GP_LVL[3]		= { 0x0C, 0x38, 0x48 };
-+
-+/**
-+ * struct i801_gpio_data - 82801 GPIO private data
-+ * @base:		Base I/O port
-+ * @io_size:		I/O region size (64 or 128)
-+ * @gpio:		Data for GPIO infrastructure
-+ * @lock:		Mutex to serialize read-modify-write cycles
-+ */
-+struct i801_gpio_data {
-+	u32 base;
-+	u32 io_size;
-+	u32 use_sel[3];
-+	struct gpio_chip gpio;
-+	struct mutex lock;
-+};
-+
-+static int i801_gpio_request(struct gpio_chip *gpio, unsigned nr)
-+{
-+	struct i801_gpio_data *data;
-+	int group = nr >> 5;
-+
-+	data = container_of(gpio, struct i801_gpio_data, gpio);
-+	nr &= 0x1f;
-+
-+	if (data->use_sel[group] & BIT(nr))
-+		return 0;
-+	else
-+		return -EINVAL;
-+}
-+
-+static void i801_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
-+{
-+	struct i801_gpio_data *data;
-+	int group = nr >> 5;
-+	u32 reg_val;
-+
-+	data = container_of(gpio, struct i801_gpio_data, gpio);
-+	nr &= 0x1f;
-+
-+	mutex_lock(&data->lock);
-+	reg_val = inl(data->base + REG_GP_LVL[group]);
-+	if (val)
-+		reg_val |= BIT(nr);
-+	else
-+		reg_val &= ~BIT(nr);
-+	outl(reg_val, data->base + REG_GP_LVL[group]);
-+	mutex_unlock(&data->lock);
-+}
-+
-+static int i801_gpio_get(struct gpio_chip *gpio, unsigned nr)
-+{
-+	struct i801_gpio_data *data;
-+	int group = nr >> 5;
-+
-+	data = container_of(gpio, struct i801_gpio_data, gpio);
-+	nr &= 0x1f;
-+
-+	return (inl(data->base + REG_GP_LVL[group]) >> nr) & 1;
-+}
-+
-+static int i801_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
-+				      int val)
-+{
-+	struct i801_gpio_data *data;
-+	int group = nr >> 5;
-+	u32 reg_val;
-+
-+	data = container_of(gpio, struct i801_gpio_data, gpio);
-+	nr &= 0x1f;
-+
-+	mutex_lock(&data->lock);
-+	reg_val = inl(data->base + REG_GP_IO_SEL[group]);
-+	reg_val &= ~BIT(nr);
-+	outl(reg_val, data->base + REG_GP_IO_SEL[group]);
-+
-+	reg_val = inl(data->base + REG_GP_LVL[group]);
-+	if (val)
-+		reg_val |= BIT(nr);
-+	else
-+		reg_val &= ~BIT(nr);
-+	outl(reg_val, data->base + REG_GP_LVL[group]);
-+	mutex_unlock(&data->lock);
-+
-+	return 0;
-+}
-+
-+static int i801_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
-+{
-+	struct i801_gpio_data *data;
-+	int group = nr >> 5;
-+	u32 reg_val;
-+
-+	data = container_of(gpio, struct i801_gpio_data, gpio);
-+	nr &= 0x1f;
-+
-+	mutex_lock(&data->lock);
-+	reg_val = inl(data->base + REG_GP_IO_SEL[group]);
-+	reg_val |= BIT(nr);
-+	outl(reg_val, data->base + REG_GP_IO_SEL[group]);
-+	mutex_unlock(&data->lock);
-+
-+	return 0;
-+}
-+
-+static void __devinit i801_gpio_setup(struct gpio_chip *gpio,
-+				      struct device *dev, int ngpio)
-+{
-+	gpio->label = "i801_gpio";
-+	gpio->dev = dev;
-+	gpio->owner = THIS_MODULE;
-+	gpio->request = i801_gpio_request;
-+	gpio->direction_input = i801_gpio_direction_input;
-+	gpio->get = i801_gpio_get;
-+	gpio->direction_output = i801_gpio_direction_output;
-+	gpio->set = i801_gpio_set;
-+	gpio->base = -1;
-+	gpio->ngpio = ngpio;
-+}
-+
-+/*
-+ * On the ICH/ICH0, ICH3, ICH4 and ICH5, some selection bits control more
-+ * than one GPIO.
-+ */
-+static void __devinit i801_gpio_sel_fixup(struct i801_gpio_data *data,
-+					  u32 device)
-+{
-+	switch (device) {
-+	case PCI_DEVICE_ID_INTEL_82801AA_0:
-+	case PCI_DEVICE_ID_INTEL_82801AB_0:
-+	case PCI_DEVICE_ID_INTEL_82801CA_0:
-+	case PCI_DEVICE_ID_INTEL_82801CA_12:
-+	case PCI_DEVICE_ID_INTEL_82801DB_0:
-+	case PCI_DEVICE_ID_INTEL_82801DB_12:
-+	case PCI_DEVICE_ID_INTEL_82801EB_0:
-+		if (data->use_sel[0] & BIT(0))
-+			data->use_sel[0] |= BIT(16);
-+		if (data->use_sel[0] & BIT(1))
-+			data->use_sel[0] |= BIT(17);
-+		if (data->use_sel[0] & BIT(27))
-+			data->use_sel[0] |= BIT(28);
-+		break;
-+	}
-+}
-+
-+static __devinitdata
-+const struct {
-+	int ngroup;
-+	int io_size;
-+	u8 reg_gpiobase;
-+	u8 reg_gc;
-+} i801_gpio_cfg[] = {
-+	[ICH2]		= { 1,  64, 0x58, 0x5C },
-+	[ICH4]		= { 2,  64, 0x58, 0x5C },
-+	[ICH6]		= { 2,  64, 0x48, 0x4C },
-+	[ICH10_CORP]	= { 3, 128, 0x48, 0x4C },
-+};
-+
-+static void __devinit i801_gpio_print_state(struct i801_gpio_data *data,
-+					    struct device *dev, int ngroup)
-+{
-+	int i, group;
-+	u32 io_sel, lvl;
-+
-+	dev_dbg(dev, "Current state of GPIO pins:\n");
-+	for (group = 0; group < ngroup; group++) {
-+		io_sel = inl(data->base + REG_GP_IO_SEL[group]);
-+		lvl = inl(data->base + REG_GP_LVL[group]);
-+
-+		for (i = 0; i < 32; i++) {
-+			if (!(data->use_sel[group] & BIT(i)))
-+				continue;
-+
-+			dev_dbg(dev, "GPIO%d: %s, level %d\n", group * 32 + i,
-+				io_sel & BIT(i) ? "input" : "output",
-+				!!(lvl & BIT(i)));
-+		}
-+	}
-+}
-+
-+static int __devinit i801_gpio_probe(struct pci_dev *pdev,
-+				     const struct pci_device_id *id)
-+{
-+	struct i801_gpio_data *data;
-+	u32 gpiobase;
-+	u8 gc;
-+	int type = id->driver_data;
-+	int group, ngroup, err;
-+
-+	data = kzalloc(sizeof(struct i801_gpio_data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	err = pci_enable_device(pdev);
-+	if (err) {
-+		dev_err(&pdev->dev, "Failed to enable device (%d)\n", err);
-+		goto err_free;
-+	}
-+
-+	/* Get the base I/O address */
-+	err = pci_read_config_dword(pdev, i801_gpio_cfg[type].reg_gpiobase,
-+				    &gpiobase);
-+	if (err) {
-+		dev_err(&pdev->dev, "Couldn't read %s value (%d)\n",
-+			"GPIOBASE", err);
-+		goto err_disable;
-+	}
-+	data->base = gpiobase & ~BIT(0);
-+	if (!data->base) {
-+		dev_err(&pdev->dev, "GPIOBASE not set\n");
-+		err = -ENODEV;
-+		goto err_disable;
-+	}
-+
-+	/* Check configuration */
-+	err = pci_read_config_byte(pdev, i801_gpio_cfg[type].reg_gc, &gc);
-+	if (err) {
-+		dev_err(&pdev->dev, "Couldn't read %s value (%d)\n",
-+			"GC", err);
-+		goto err_disable;
-+	}
-+	if (gc & BIT(0)) {
-+		dev_err(&pdev->dev, "GPIO function is %s\n", "locked");
-+		err = -EBUSY;
-+		goto err_disable;
-+	}
-+	if (!(gc & BIT(4))) {
-+		if (!force) {
-+			dev_err(&pdev->dev, "GPIO function is %s\n",
-+				"disabled");
-+			err = -ENODEV;
-+			goto err_disable;
-+		}
-+
-+		gc |= BIT(4);
-+		err = pci_write_config_byte(pdev,
-+					    i801_gpio_cfg[type].reg_gc, gc);
-+		if (err) {
-+			dev_err(&pdev->dev,
-+				"Failed to enable GPIO function (%d)\n",
-+				err);
-+			err = -ENODEV;
-+			goto err_disable;
-+		}
-+		dev_info(&pdev->dev, "Enabling GPIO function\n");
-+	}
-+
-+	/*
-+	 * "Corporate" incarnations of the ICH10 have an I/O region of size
-+	 * 128 and 73 GPIO pins. Others ("consumer") have an I/O region of
-+	 * size only 64 and 61 GPIO pins, as the ICH6, ICH7, ICH8 and ICH9
-+	 * had.
-+	 */
-+	data->io_size = i801_gpio_cfg[type].io_size;
-+	if (!force) {
-+		err = acpi_check_region(data->base, data->io_size, "i801_gpio");
-+		if (err)
-+			goto err_disable;
-+	}
-+	if (!request_region(data->base, data->io_size, "i801_gpio")) {
-+		dev_err(&pdev->dev, "Failed to request I/O ports (%d)", err);
-+		err = -EBUSY;
-+		goto err_disable;
-+	}
-+
-+	ngroup = i801_gpio_cfg[type].ngroup;
-+	for (group = 0; group < ngroup; group++)
-+		data->use_sel[group] = inl(data->base +
-+					   REG_GPIO_USE_SEL[group]);
-+	i801_gpio_sel_fixup(data, id->device);
-+	mutex_init(&data->lock);
-+
-+	i801_gpio_setup(&data->gpio, &pdev->dev, ngroup * 32);
-+	i801_gpio_print_state(data, &pdev->dev, ngroup);
-+
-+	pci_set_drvdata(pdev, data);
-+	err = gpiochip_add(&data->gpio);
-+	if (err) {
-+		dev_err(&pdev->dev, "Failed to register GPIO (%d)\n", err);
-+		goto err_release;
-+	}
-+
-+	return 0;
-+
-+ err_release:
-+	release_region(data->base, data->io_size);
-+
-+ err_disable:
-+	pci_disable_device(pdev);
-+
-+ err_free:
-+	kfree(data);
-+	return err;
-+}
-+
-+static void __devexit i801_gpio_remove(struct pci_dev *pdev)
-+{
-+	struct i801_gpio_data *data = pci_get_drvdata(pdev);
-+	int err;
-+
-+	err = gpiochip_remove(&data->gpio);
-+	if (err)
-+		dev_err(&pdev->dev, "Failed to unregister GPIO (%d)\n", err);
-+
-+	release_region(data->base, data->io_size);
-+	pci_disable_device(pdev);
-+	kfree(data);
-+}
-+
-+/* driver_data is the number of GPIO groups */
-+static DEFINE_PCI_DEVICE_TABLE(i801_gpio_pcidev_id) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801AA_0),
-+	  .driver_data = ICH2 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801AB_0),
-+	  .driver_data = ICH2 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801BA_0),
-+	  .driver_data = ICH2 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801BA_10),
-+	  .driver_data = ICH2 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801CA_0),
-+	  .driver_data = ICH4 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801CA_12),
-+	  .driver_data = ICH4 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801DB_0),
-+	  .driver_data = ICH4 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801DB_12),
-+	  .driver_data = ICH4 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801EB_0),
-+	  .driver_data = ICH4 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH7_0),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH7_1),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH7_31),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_0),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_1),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_2),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_3),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_4),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_1),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_2),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_4),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_5),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_7),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_8),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_0),
-+	  .driver_data = ICH10_CORP },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_1),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_2),
-+	  .driver_data = ICH6 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_3),
-+	  .driver_data = ICH10_CORP },
-+	{ 0, }
-+};
-+MODULE_DEVICE_TABLE(pci, i801_gpio_pcidev_id);
-+
-+static struct pci_driver i801_gpio_driver = {
-+	.name		= "i801_gpio",
-+	.id_table	= i801_gpio_pcidev_id,
-+	.probe		= i801_gpio_probe,
-+	.remove		= __devexit_p(i801_gpio_remove),
-+};
-+
-+static int __init i801_gpio_pci_init(void)
-+{
-+	return pci_register_driver(&i801_gpio_driver);
-+}
-+module_init(i801_gpio_pci_init);
-+
-+static void __exit i801_gpio_pci_exit(void)
-+{
-+	pci_unregister_driver(&i801_gpio_driver);
-+}
-+module_exit(i801_gpio_pci_exit);
-+
-+MODULE_AUTHOR("Jean Delvare <khali@linux-fr.org>");
-+MODULE_DESCRIPTION("Intel 82801 (ICH) GPIO driver");
-+MODULE_LICENSE("GPL");
+The exact behaviors are indeed rather complex. I personally feel the
+new "always refill iff empty" policy more consistent, clean and easy
+to understand.
+
+It basically says: at each round started by a b_io refill, setup a
+_fixed_ work set with all current expired (or all currently dirtied
+inodes if non is expired) and walk through it. "Fixed" work set means
+no new inodes will be added to the work set during the walk.  When a
+complete walk is done, start over with a new set of inodes that are
+eligible at the time.
+
+The figure in page 14 illustrates the "rounds" idea:
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/slides/linux-writeback-queues.pdf
+
+This procedure provides fairness among the inodes and guarantees each
+inode to be synced once and only once at each round. So it's free from
+starvations.
+
+If you are worried about performance, here is a simple tar+dd benchmark.
+Both commands are actually running faster with this patchset:
+
+wfg /tmp% g cpu log-* | g dd
+log-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 9% cpu 13.658 total
+log-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 9% cpu 12.961 total
+log-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 9% cpu 13.420 total
+log-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.30s system 9% cpu 13.103 total
+log-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.31s system 9% cpu 13.650 total
+log-no-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.25s system 8% cpu 15.258 total
+log-no-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 8% cpu 14.255 total
+log-no-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 8% cpu 14.443 total
+log-no-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.25s system 8% cpu 14.051 total
+log-no-moving-expire:dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.27s system 8% cpu 14.648 total
+
+wfg /tmp% g cpu log-* | g tar
+log-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.49s user 3.99s system 60% cpu 27.285 total
+log-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.78s user 4.40s system 65% cpu 26.125 total
+log-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.50s user 4.56s system 64% cpu 26.265 total
+log-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.50s user 4.18s system 62% cpu 26.766 total
+log-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.60s user 4.03s system 60% cpu 27.463 total
+log-no-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.42s user 4.17s system 57% cpu 28.688 total
+log-no-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.67s user 4.04s system 58% cpu 28.738 total
+log-no-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.53s user 4.50s system 58% cpu 29.287 total
+log-no-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.38s user 4.28s system 57% cpu 28.861 total
+log-no-moving-expire:tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.44s user 4.19s system 56% cpu 29.443 total
+
+Total elapsed time (from tar/dd start to sync complete) is
+244.36s vs. 239.91s, also a bit faster with patch. 
+
+The base kernel is 2.6.39-rc3+ plus IO-less patchset plus large write
+chunk size. The test box has 3G mem and runs XFS. Test script is:
+
+#!/bin/zsh
 
 
--- 
-Jean Delvare
+# we are doing pure write tests
+cp /c/linux-2.6.38.3.tar.bz2 /dev/shm/
+
+umount /dev/sda7
+mkfs.xfs -f /dev/sda7
+mount /dev/sda7 /fs
+
+echo 3 > /proc/sys/vm/drop_caches
+
+echo 1 > /debug/tracing/events/writeback/writeback_single_inode/enable
+
+cat /proc/uptime
+
+cd /fs
+time tar jxf /dev/shm/linux-2.6.38.3.tar.bz2 &
+time dd if=/dev/zero of=/fs/zero bs=1M count=1000 &
+
+wait
+sync
+cat /proc/uptime
+
+Thanks,
+Fengguang
+
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=log-no-moving-expire
+
+dt7, no moving target
+
+wfg ~% s fat                                                                                                   [ 255 ]  :-(
+Linux fat 2.6.39-rc3-dt7+ #235 SMP Tue Apr 19 19:33:15 CST 2011 x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+No mail.
+Last login: Tue Apr 19 19:16:05 2011 from 10.255.20.73
+wfg@fat ~% su
+root@fat /home/wfg# for i in 1 2 3 4 5; do bin/test-tar-dd.sh; sleep 3; done
+umount: /dev/sda7: not mounted
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+306.70 2423.01
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 15.2306 s, 68.8 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.25s system 8% cpu 15.258 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.42s user 4.17s system 57% cpu 28.688 total
+344.05 2662.47
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+351.63 2721.77
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 14.1873 s, 73.9 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 8% cpu 14.255 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.67s user 4.04s system 58% cpu 28.738 total
+388.94 2963.14
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+396.53 3024.20
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 14.385 s, 72.9 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 8% cpu 14.443 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.53s user 4.50s system 58% cpu 29.287 total
+434.18 3268.86
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+441.69 3327.58
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.997 s, 74.9 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.25s system 8% cpu 14.051 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.38s user 4.28s system 57% cpu 28.861 total
+478.91 3569.24
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+486.48 3627.06
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 14.5851 s, 71.9 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.27s system 8% cpu 14.648 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.44s user 4.19s system 56% cpu 29.443 total
+524.46 3871.42
+
+3871.42 - 3627.06 = 244.36
+
+
+ext4:
+
+1855.48 14403.91
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.48s user 3.31s system 86% cpu 18.345 total
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 20.4943 s, 51.2 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.65s system 8% cpu 20.518 total
+1884.20 14562.35
+
+14562.35 - 14403.91 = 158.44
+
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=log-moving-expire
+
+dt7, moving target
+
+wfg ~% s fat                                                                                                   [ 255 ]  :-(
+Linux fat 2.6.39-rc3-dt7+ #234 SMP Tue Apr 19 17:23:44 CST 2011 x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+No mail.
+Last login: Tue Apr 19 17:25:16 2011 from 10.255.20.73
+wfg@fat ~% su
+root@fat /home/wfg# vi bin/test-tar-dd.sh
+root@fat /home/wfg# bin/test-tar-dd.sh
+umount: /dev/sda7: not mounted
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+634.16 5029.23
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.6318 s, 76.9 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 9% cpu 13.658 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.49s user 3.99s system 60% cpu 27.285 total
+670.17 5262.84
+root@fat /home/wfg# bin/test-tar-dd.sh
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+678.41 5327.07
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 12.9063 s, 81.2 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 9% cpu 12.961 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.78s user 4.40s system 65% cpu 26.125 total
+713.93 5559.64
+root@fat /home/wfg# bin/test-tar-dd.sh
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+722.54 5626.94
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.3658 s, 78.5 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.26s system 9% cpu 13.420 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.50s user 4.56s system 64% cpu 26.265 total
+757.98 5855.34
+root@fat /home/wfg# bin/test-tar-dd.sh
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+766.10 5918.93
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.0385 s, 80.4 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.30s system 9% cpu 13.103 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.50s user 4.18s system 62% cpu 26.766 total
+801.72 6152.51
+root@fat /home/wfg#
+root@fat /home/wfg# bin/test-tar-dd.sh
+meta-data=/dev/sda7              isize=256    agcount=4, agsize=6170464 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=24681856, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=12051, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+994.01 7677.81
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.5859 s, 77.2 MB/s
+dd if=/dev/zero of=/fs/zero bs=1M count=1000  0.00s user 1.31s system 9% cpu 13.650 total
+tar jxf /dev/shm/linux-2.6.38.3.tar.bz2  12.60s user 4.03s system 60% cpu 27.463 total
+1030.08 7917.72
+
+7917.72 - 7677.81 = 239.91
+
+--HlL+5n6rz5pIUxbD--
