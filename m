@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1DSUQs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:16:48 -0400
-Received: from kroah.org ([198.145.64.141]:47520 "EHLO coco.kroah.org"
+	id S1754272Ab1DSUQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:16:49 -0400
+Received: from kroah.org ([198.145.64.141]:47532 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab1DSUQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:16:46 -0400
+	id S1754128Ab1DSUQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:16:48 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:43 2011
-Message-Id: <20110419201043.293822047@clark.kroah.org>
+Message-Id: <20110419201043.510943951@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:10 -0700
+Date: Tue, 19 Apr 2011 13:08:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [01/70] vm: fix vm_pgoff wrap in stack expansion
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [03/70] drm/radeon/kms: fix suspend on rv530 asics
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,49 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit a626ca6a656450e9f4df91d0dda238fff23285f4 upstream.
+commit 71e16bfbd2b1c63d4d97cc5059694c9346aee340 upstream.
 
-Commit 982134ba6261 ("mm: avoid wrapping vm_pgoff in mremap()") fixed
-the case of a expanding mapping causing vm_pgoff wrapping when you used
-mremap.  But there was another case where we expand mappings hiding in
-plain sight: the automatic stack expansion.
+Apparently only rv515 asics need the workaround
+added in f24d86f1a49505cdea56728b853a5d0a3f8e3d11
+(drm/radeon/kms: fix resume regression for some r5xx laptops).
 
-This fixes that case too.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=34709
 
-This one also found by Robert Święcki, using his nasty system call
-fuzzer tool.  Good job.
-
-Reported-and-tested-by: Robert Święcki <robert@swiecki.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mmap.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/atom.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1814,11 +1814,14 @@ static int expand_downwards(struct vm_ar
- 		size = vma->vm_end - address;
- 		grow = (vma->vm_start - address) >> PAGE_SHIFT;
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -32,6 +32,7 @@
+ #include "atom.h"
+ #include "atom-names.h"
+ #include "atom-bits.h"
++#include "radeon.h"
  
--		error = acct_stack_growth(vma, size, grow);
--		if (!error) {
--			vma->vm_start = address;
--			vma->vm_pgoff -= grow;
--			perf_event_mmap(vma);
-+		error = -ENOMEM;
-+		if (grow <= vma->vm_pgoff) {
-+			error = acct_stack_growth(vma, size, grow);
-+			if (!error) {
-+				vma->vm_start = address;
-+				vma->vm_pgoff -= grow;
-+				perf_event_mmap(vma);
-+			}
- 		}
- 	}
- 	vma_unlock_anon_vma(vma);
+ #define ATOM_COND_ABOVE		0
+ #define ATOM_COND_ABOVEOREQUAL	1
+@@ -101,7 +102,9 @@ static void debug_print_spaces(int n)
+ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
+ 				 uint32_t index, uint32_t data)
+ {
++	struct radeon_device *rdev = ctx->card->dev->dev_private;
+ 	uint32_t temp = 0xCDCDCDCD;
++
+ 	while (1)
+ 		switch (CU8(base)) {
+ 		case ATOM_IIO_NOP:
+@@ -112,7 +115,8 @@ static uint32_t atom_iio_execute(struct
+ 			base += 3;
+ 			break;
+ 		case ATOM_IIO_WRITE:
+-			(void)ctx->card->ioreg_read(ctx->card, CU16(base + 1));
++			if (rdev->family == CHIP_RV515)
++				(void)ctx->card->ioreg_read(ctx->card, CU16(base + 1));
+ 			ctx->card->ioreg_write(ctx->card, CU16(base + 1), temp);
+ 			base += 3;
+ 			break;
 
 
