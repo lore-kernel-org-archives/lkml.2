@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1DSRpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 13:45:05 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39572 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab1DSRpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 13:45:03 -0400
-Date: Tue, 19 Apr 2011 19:44:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH -v2 2/2] x86, MCE: Drop the default decoding notifier
-Message-ID: <20110419174446.GA13616@elte.hu>
-References: <1303135222-17118-2-git-send-email-bp@amd64.org>
- <20110419171340.GE6640@elte.hu>
- <20110419173521.GA25374@aftab>
+	id S1753951Ab1DSRrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:47:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35224 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1DSRrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 13:47:22 -0400
+Date: Tue, 19 Apr 2011 19:47:12 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org,
+        sameo@linux.intel.com, patches@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?utf-8?B?7KCV7J6s7ZuI?= <jh80.chung@samsung.com>
+Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
+ self registered
+Message-ID: <20110419174712.GA29314@pengutronix.de>
+References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+ <20110419102031.GA4164@pengutronix.de>
+ <BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
 Content-Disposition: inline
-In-Reply-To: <20110419173521.GA25374@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Borislav Petkov <bp@amd64.org> wrote:
+--5vNYLRcllDrimb99
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +	if (ret != NOTIFY_STOP)
-> +		printk_ratelimited(KERN_EMERG HW_ERR
-> +				   "Run the above through 'mcelog --ascii'\n");
 
-pr_emerg_ratelimited() would allow you to keep that broken line happy?
+> BTW, Are there reason to omit the sdhci-s3c.c? Maybe Mr. Jung will handle=
+ it.
 
-Thanks,
+The difference is that sdhci-s3c.c was more like a fork of sdhci-pltfm while
+the others were users of it. With the new interface, s3c can be converted u=
+sing
+pltfm more easily. If somebody is willing to do that, this is very much
+welcome. I'd suggest waiting for Shawn's interface to stabilize, though.
 
-	Ingo
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--5vNYLRcllDrimb99
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk2tyqAACgkQD27XaX1/VRtDNACfT4IWD0wLs38e/nFIJLqwSiq4
+VF8AoMBpBAt1Y4R4K3xSnr+A6UQbcYuS
+=5iwB
+-----END PGP SIGNATURE-----
+
+--5vNYLRcllDrimb99--
