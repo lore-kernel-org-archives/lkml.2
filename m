@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab1DSIeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:34:17 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:36855 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab1DSIeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:34:13 -0400
-Message-ID: <4DAD48FC.5040003@ahsoftware.de>
-Date: Tue, 19 Apr 2011 10:34:04 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1753847Ab1DSIes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:34:48 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46252 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752167Ab1DSIeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 04:34:46 -0400
+Date: Tue, 19 Apr 2011 09:30:59 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm/vmalloc: remove guard page from between vmap blocks
+Message-ID: <20110419083059.GA23041@csn.ul.ie>
+References: <20110414211441.GA1700@cmpxchg.org>
 MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] Implement /dev/byte (a generic byte source similiar
- to /dev/zero)
-References: <1303126676-3456-1-git-send-email-holler@ahsoftware.de> <BANLkTi=yaXOWnUi2s1A-BtoAFgjExX8q4w@mail.gmail.com>
-In-Reply-To: <BANLkTi=yaXOWnUi2s1A-BtoAFgjExX8q4w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110414211441.GA1700@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.04.2011 15:57, schrieb Mike Frysinger:
-> On Mon, Apr 18, 2011 at 07:37, Alexander Holler wrote:
->> I don't know if this patch qualifies for inclusion into the mainline kernel, but
->> maybe someone else would be interested in such, so I'm posting it here.
->>
->> The main idea for that device was to have a source for 0xff to clear FLASH based
->> devices. And to make it more generic, I've added the possibility to change the
->> default value on a per file descriptor basis.
->>
->> I don't want to discuss if such a device makes sense or if such should be done
->> in userspace only. I like it as a device, otherwise I wouldn't have written it.
->> So besides this message, I will not take part in such a discussion.
->
-> cant you do this with cuse ?  that would satisfy the "has to be a
-> device" requirement while keeping it in userspace.
+On Thu, Apr 14, 2011 at 05:14:41PM -0400, Johannes Weiner wrote:
+> The vmap allocator is used to, among other things, allocate per-cpu
+> vmap blocks, where each vmap block is naturally aligned to its own
+> size.  Obviously, leaving a guard page after each vmap area forbids
+> packing vmap blocks efficiently and can make the kernel run out of
+> possible vmap blocks long before overall vmap space is exhausted.
+> 
+> The new interface to map a user-supplied page array into linear
+> vmalloc space (vm_map_ram) insists on allocating from a vmap block
+> (instead of falling back to a custom area) when the area size is below
+> a certain threshold.  With heavy users of this interface (e.g. XFS)
+> and limited vmalloc space on 32-bit, vmap block exhaustion is a real
+> problem.
+> 
+> Remove the guard page from the core vmap allocator.  vmalloc and the
+> old vmap interface enforce a guard page on their own at a higher
+> level.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> Cc: Dave Chinner <david@fromorbit.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Christoph Hellwig <hch@infradead.org>
 
-I know almost nothing about cuse, but I assume it should be possible to 
-build such a device with cuse too.
+If necessary, the guard page could be reintroduced as a debugging-only
+option (CONFIG_DEBUG_PAGEALLOC?). Otherwise it seems reasonable.
 
-> although, i have a hard time seeing there be a realistic perf diff with:
-> tr '\000' '\377'<  /dev/zero | dd ......
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-There are many other ways to achieve such in userspace (even without 
-using /dev/zero) and I want to avoid such a discussion.
-
-As for /dev/zero there are many other possible reasons to use such a 
-device, besides filling something with a value. For me it's as 
-reasonable as dev/zero, just that it offers a bit more flexibility and 
-provides another, at least for me useful, default value. Maybe 
-/dev/nzero would have been a good name too. ;)
-
-But I don't really care about inclusion into the kernel, it's just 
-something I had lying around (and needed only marginally work to 
-finalize as a proper patch) and I thought someone else could find it 
-usefull and I should share that here.
-
-Regards,
-
-Alexander Holler
+-- 
+Mel Gorman
+SUSE Labs
