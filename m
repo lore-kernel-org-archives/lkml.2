@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab1DSURf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:35 -0400
-Received: from kroah.org ([198.145.64.141]:35668 "EHLO coco.kroah.org"
+	id S1754914Ab1DSURd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:33 -0400
+Received: from kroah.org ([198.145.64.141]:35578 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754757Ab1DSURe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:34 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
-Message-Id: <20110419201048.612741180@clark.kroah.org>
+	id S1754757Ab1DSURW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:22 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:47 2011
+Message-Id: <20110419201047.351019555@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:00 -0700
+Date: Tue, 19 Apr 2011 13:08:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Simon <simon@swine.de>
-Subject: [51/70] USB: ftdi_sio: Added IDs for CTI USB Serial Devices
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Chris Wright <chrisw@sous-sol.org>
+Subject: [39/70] MAINTAINERS: update STABLE BRANCH info
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Simon <simon@swine.de>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-commit 5a9443f08c83c294c5c806a689c1184b27cb26b3 upstream.
+commit d00ebeac5f24f290636f7a895dafc124b2930a08 upstream.
 
-I added new ProdutIds for two devices from CTI GmbH Leipzig.
+Drop Chris Wright from STABLE maintainers.  He hasn't done STABLE release
+work for quite some time.
 
-Signed-off-by: Christian Simon <simon@swine.de>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
- 2 files changed, 11 insertions(+)
+ MAINTAINERS |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -151,6 +151,8 @@ static struct ftdi_sio_quirk ftdi_stmcli
-  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
-  */
- static struct usb_device_id id_table_combined [] = {
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1140,3 +1140,12 @@
- #define QIHARDWARE_VID			0x20B7
- #define MILKYMISTONE_JTAGSERIAL_PID	0x0713
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5944,7 +5944,6 @@ F:	arch/alpha/kernel/srm_env.c
  
-+/*
-+ * CTI GmbH RS485 Converter http://www.cti-lean.com/
-+ */
-+/* USB-485-Mini*/
-+#define FTDI_CTI_MINI_PID	0xF608
-+/* USB-Nano-485*/
-+#define FTDI_CTI_NANO_PID	0xF60B
-+
-+
+ STABLE BRANCH
+ M:	Greg Kroah-Hartman <greg@kroah.com>
+-M:	Chris Wright <chrisw@sous-sol.org>
+ L:	stable@kernel.org
+ S:	Maintained
+ 
 
 
