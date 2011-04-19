@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1DSRHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 13:07:49 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55403 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753649Ab1DSRHs (ORCPT
+	id S1753751Ab1DSRLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:11:32 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37863 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752774Ab1DSRLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 13:07:48 -0400
-Date: Tue, 19 Apr 2011 18:08:29 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Jean Delvare <khali@linux-fr.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, arnd@arndb.de
-Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
-Message-ID: <20110419180829.56daccd0@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110419164048.GA30346@oksana.dev.rtsoft.ru>
-References: <20110419145303.111aead7@endymion.delvare>
-	<BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
-	<20110419155406.1da0e7fb@lxorguk.ukuu.org.uk>
-	<BANLkTi=tzXyozCck9H03-2RErGsvSxrv1Q@mail.gmail.com>
-	<20110419165746.2857c56f@lxorguk.ukuu.org.uk>
-	<20110419164048.GA30346@oksana.dev.rtsoft.ru>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 19 Apr 2011 13:11:31 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+In-Reply-To: <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>
+References: <20110415135144.GE8828@tiehlicka.suse.cz>
+	 <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
+	 <20110418100131.GD8925@tiehlicka.suse.cz>
+	 <20110418135637.5baac204.akpm@linux-foundation.org>
+	 <20110419111004.GE21689@tiehlicka.suse.cz>
+	 <1303228009.3171.18.camel@mulgrave.site>
+	 <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 12:11:28 -0500
+Message-ID: <1303233088.3171.26.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How about exporting some bus/device-type neutral probe function, like
-> we do in drivers/ata/pata_platform.c ?
+On Tue, 2011-04-19 at 20:05 +0300, Pekka Enberg wrote:
+> > It seems to be a random intermittent mm crash because the next reboot
+> > crashed with the same trace but after the fsck had completed and the
+> > third came up to the login prompt.
+> 
+> Looks like a genuine SLUB problem on parisc. Christoph?
 
-Not sure you want to be using resources as the basic currency, nor do you
-want your generic code doing the request_region stuff. That was a nasty
-mistake we made in the IDE code.
+Looking through the slub code, it seems to be making invalid
+assumptions.  All of the node stuff is dependent on CONFIG_NUMA.
+However, we're CONFIG_DISCONTIGMEM (with CONFIG_NUMA not set): on the
+machines I and Dave Anglin have, our physical memory ranges are 0-1GB
+and 64-65GB, so I think slub crashes when we get a page from the high
+memory range ... because it's not expecting a non-zero node number.
 
-Maybe the platform code should do that bit, but the generic stuff not - in
-the PCI case the caller will have done pci_request_* itself and chances
-are several of the resources are the same pci device resource and
-different offsets so doing request_resource on them will blow up.
+James
 
-Concept looks good
 
-Alan
