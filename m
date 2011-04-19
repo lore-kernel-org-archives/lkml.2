@@ -1,61 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab1DSMrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 08:47:09 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46051 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab1DSMrH (ORCPT
+	id S1754587Ab1DSMrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 08:47:25 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34708 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754436Ab1DSMrX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 08:47:07 -0400
+	Tue, 19 Apr 2011 08:47:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=r4ybyT7VIf7FDNpsVTZBUOxMTn3kBqElVvx3oA79DmdSaBTpxmYvPR/vt0s59M2kYm
-         J/gKtf4YxNR8RIFxiYrM22D1yxLfvfCvwoW06KmIhSBzKn+29X4IhXcDsg4DIC1AWO46
-         0hBILZb4wDCxRxEvp1PeooaG12bkhoP8Uog6w=
-Message-ID: <4DAD843C.7060409@gmail.com>
-Date: Tue, 19 Apr 2011 20:46:52 +0800
-From: Wanlong Gao <wanlong.gao@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=DrOkhwp/4NeSvSxo7wDH0w/Q2okVXhpklwGRpmcVYy0aK1ywT3u0iH1bf0Y4yUz0Wp
+         ZAMWql+zlazOCMRlvkgGbJgITlB7FlXWEjaLUJeu5qlxzIM9swjxwFc7dcBThHQDz2yz
+         SeZsczIOBnPucGn1RoxM1Lgvc58d7z2e5U/50=
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Alessio Igor Bogani <abogani@kernel.org>, Tim Abbott <tabbott@ksplice.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH 4/4] module: Use the binary search for symbols resolution
-References: <1302960373-5309-1-git-send-email-abogani@kernel.org> <1302960373-5309-5-git-send-email-abogani@kernel.org> <BANLkTik9oekjUH6YXTda1P_dM231nEHQqA@mail.gmail.com> <87liz73tso.fsf@rustcorp.com.au> <4DACE8F4.2050807@gmail.com> <87aafmo4mi.fsf@rustcorp.com.au>
-In-Reply-To: <87aafmo4mi.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110419102031.GA4164@pengutronix.de>
+References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
+	<20110419102031.GA4164@pengutronix.de>
+Date: Tue, 19 Apr 2011 21:47:22 +0900
+X-Google-Sender-Auth: FQnBcvGCtUp184DDQJF32sPgW0Q
+Message-ID: <BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
+ self registered
+From: Kyungmin Park <kmpark@infradead.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org,
+        sameo@linux.intel.com, patches@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?7KCV7J6s7ZuI?= <jh80.chung@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  2011-4-19 19:35, Rusty Russell wroted:
-> On Tue, 19 Apr 2011 09:44:20 +0800, Wanlong Gao<wanlong.gao@gmail.com>  wrote:
->>    2011-4-19 9:37, Rusty Russell wroted:
->>> On Sat, 16 Apr 2011 22:32:08 +0800, Wanlong Gao<wanlong.gao@gmail.com>   wrote:
->>>>> +	sym = bsearch(fsa->name, syms->start, syms->stop - syms->start,
->>>> As the bsearch func, why not change the syms->stop to syms->end ?
->>>> Hmm..Just a stupid suggestion.
->>>
->>>
->>> The names are derived from the linker symbols for end of sections, which
->>> is __stop_<sectionname>.
->>>
->>> Cheers,
->>> Rusty.
->> As this , why not change the bsearch's "end" to "stop", too ? It will be
->> more readable.
->
-> I'm confused.  bsearch uses a count, not an end pointer...
->
-> Rusty.
+Hi,
 
-Hmm...I see, I see . I made a mistake on this func .
-Thanks for your explanation.
+BTW, Are there reason to omit the sdhci-s3c.c? Maybe Mr. Jung will handle it.
 
-Best regards
+Thank you,
+Kyungmin Park
+
+On Tue, Apr 19, 2011 at 7:20 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> Hi Shawn,
+>
+> On Fri, Mar 25, 2011 at 04:48:46PM +0800, Shawn Guo wrote:
+>> Here are what the patch set does.
+>>
+>> * Remove .probe and .remove hooks from sdhci-pltfm.c and make it be
+>>   a pure common helper function providers.
+>> * Add .probe and .remove hooks for sdhci pltfm drivers sdhci-cns3xxx,
+>>   sdhci-dove, sdhci-tegra, and sdhci-esdhc-imx to make them self
+>>   registered with calling helper functions created above.
+>> * Migrate the use of sdhci_of_host and sdhci_of_data to
+>>   sdhci_pltfm_host and sdhci_pltfm_data, so that OF version host and
+>>   data structure works can be saved, and pltfm version works for both
+>>   cases.
+>> * Add OF common helper stuff into sdhci-pltfm.c, and make OF version
+>>   sdhci drivers sdhci-of-esdhc and sdhci-of-hlwd become self
+>>   registered as well, so that sdhci-of-core.c and sdhci-of.h can be
+>>   removed.
+>> * Consolidate the OF and pltfm esdhc drivers into one with sharing
+>>   the same pair of .probe and .remove hooks.  As a result,
+>>   sdhci-esdhc-imx.c and sdhci-of-esdhc.c go away, while
+>>   sdhci-esdhc.c comes in and works for both MPCxxx and i.MX.
+>> * Eliminate include/linux/mmc/sdhci-pltfm.h with moving stuff into
+>>   drivers/mmc/host/sdhci-pltfm.h.
+>>
+>> And the benefits we gain from the changes are:
+>>
+>> * Get the sdhci device driver follow the Linux trend that driver
+>>   makes the registration by its own.
+>> * sdhci-pltfm.c becomes simple and clean as it only has common helper
+>>   stuff there now.
+>> * All sdhci device specific things are going back its own driver.
+>> * The dt and non-dt drivers are consolidated to use the same pair of
+>>   .probe and .remove hooks.
+>> * SDHCI driver for Freescale eSDHC controller found on both MPCxxx
+>>   and i.MX platforms is consolidated to use the same one .probe
+>>   function.
+>>
+>> The patch set works against the tree below, and was only tested on
+>> i.mx51 babbage board, all other targets were build tested.
+>>
+>>   git://git.secretlab.ca/git/linux-2.6.git devicetree/test
+>>
+>> Comments are welcomed and appreciated.
+>
+> First of all, thanks _a lot_ for doing this! Many people have promised
+> to do such an approach, but you finally made it!
+>
+> Sorry for the long delay in reviewing it, I didn't want to rush a review
+> so I needed some time for it which I didn't have much in the last weeks.
+> Let's hope my battery will have enough power on my flight back to
+> Germany ;) So, this is for now a purely "visual" review. I hope I can
+> check V2 on real hardware then.
+>
+> The approach seems sensible, so have a look at my (mostly minor)
+> comments inside the patches. However, there is one bigger piece missing.
+> You converted all the drivers which had a seperate source-file and
+> hooked into sdhci-pltfm.c. However, those are only those users which
+> need additional code to work around the quirks. There are also users
+> which can take the plain pltfm-driver with a properly set
+> platform_data (check the thread "[PATCH] mmc: add SDHCI driver for STM
+> platforms (V2)" for an example). Those have to be converted, too.
+> Now the discussion could be if every of those users gets its own
+> pltfm-<something>.c or if we create something similat to
+> sdhci-pltfm-generic, which can also be setup with platform_data like the
+> old driver (/me likes the latter a bit more. If we don't change the name
+> of the driver (not talking about the sourcefile) and keep it
+> "sdhci-pltfm", then you wouldn't need to change all those users if you
+> ensured it behaves the same.
+>
+> Also, I think the next version of this series should have all makers of
+> a sdhci-pltfm user CCed so we give them a chance to report breakage. Or
+> donate acks or tested-by.
+>
+> Regards,
+>
+>   Wolfram
+>
+> --
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.10 (GNU/Linux)
+>
+> iEYEARECAAYFAk2tYe8ACgkQD27XaX1/VRsCRgCgkp+BmJJsLsKllKL0OI/BnO9F
+> PRkAn1BpnXBv1exnkJFlqFAPe5O2Yt8w
+> =GSqA
+> -----END PGP SIGNATURE-----
+>
+> _______________________________________________
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
+>
+>
