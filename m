@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab1DSVEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:04:40 -0400
-Received: from kroah.org ([198.145.64.141]:39454 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755671Ab1DSVEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:36 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:24 2011
-Message-Id: <20110419210324.897223839@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:41 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <kees.cook@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [25/26] net: ax25: fix information leak to userland harder
-In-Reply-To: <20110419210333.GA17417@kroah.com>
+	id S1755751Ab1DSVEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:04:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48132 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755730Ab1DSVEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:46 -0400
+Date: Tue, 19 Apr 2011 14:04:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Roman Borisov <ext-roman.borisov@nokia.com>
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        vda.linux@googlemail.com, cebbert@redhat.com, virtuoso@slind.org
+Subject: Re: [PATCH] fs: bound mount propagation fix
+Message-Id: <20110419140400.23367a16.akpm@linux-foundation.org>
+In-Reply-To: <7b9aa806294aadd47704d56ae3e7c757bf0ce6db.1301667509.git.ext-roman.borisov@nokia.com>
+References: <201103262243.18031.vda.linux@googlemail.com>
+	<7b9aa806294aadd47704d56ae3e7c757bf0ce6db.1301667509.git.ext-roman.borisov@nokia.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+On Fri,  1 Apr 2011 18:48:20 +0400
+Roman Borisov <ext-roman.borisov@nokia.com> wrote:
 
-------------------
+> I think MS_SILENT shouldn't be cleared anywhere. I suppose the bug is in 
+> MS_SHARED options checking. Please see the patch below.
+> 
+> Fixed MS_SHARED, MS_SLAVE, MS_UNBINDABLE option handling; 
+> Existing options check doesn't allow to have any options combinations 
+> because of integer comparison (not bitwise).
+> 
 
-From: Kees Cook <kees.cook@canonical.com>
-
-commit 5b919f833d9d60588d026ad82d17f17e8872c7a9 upstream.
-
-Commit fe10ae53384e48c51996941b7720ee16995cbcb7 adds a memset() to clear
-the structure being sent back to userspace, but accidentally used the
-wrong size.
-
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/ax25/af_ax25.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/net/ax25/af_ax25.c
-+++ b/net/ax25/af_ax25.c
-@@ -1391,7 +1391,7 @@ static int ax25_getname(struct socket *s
- 	ax25_cb *ax25;
- 	int err = 0;
- 
--	memset(fsa, 0, sizeof(fsa));
-+	memset(fsa, 0, sizeof(*fsa));
- 	lock_sock(sk);
- 	ax25 = ax25_sk(sk);
- 
+(when fixing a bug, please include a *complete* description of that bug
+in the changelog.  It should include a description of the user-visible
+misbehaviour and a description of the coding error).
 
 
+The vfs code is pretty confusing about whether `type' is supposed to be
+a scalar or a bitfield.
+
+flags_to_propagation_type() has that is_power_of-two() check in there
+to reject more-than-one-bit-set.
+
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 2beb0fb..e0cf263 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -1434,7 +1434,7 @@ static int do_change_type(struct path *path, int flag)
+>  		return -EINVAL;
+>  
+>  	down_write(&namespace_sem);
+> -	if (type == MS_SHARED) {
+> +	if (type & MS_SHARED) {
+
+So this change won't do anything, because do_change_type() has used
+flags_to_propagation_type().
+
+>  		err = invent_group_ids(mnt, recurse);
+>  		if (err)
+>  			goto out_unlock;
+> diff --git a/fs/pnode.c b/fs/pnode.c
+> index 8d5f392..0c9dc54 100644
+> --- a/fs/pnode.c
+> +++ b/fs/pnode.c
+> @@ -128,15 +128,15 @@ static int do_make_slave(struct vfsmount *mnt)
+>  
+>  void change_mnt_propagation(struct vfsmount *mnt, int type)
+>  {
+> -	if (type == MS_SHARED) {
+> +	if (type & MS_SHARED) {
+>  		set_mnt_shared(mnt);
+>  		return;
+>  	}
+>  	do_make_slave(mnt);
+> -	if (type != MS_SLAVE) {
+> +	if (!(type & MS_SLAVE)) {
+>  		list_del_init(&mnt->mnt_slave);
+>  		mnt->mnt_master = NULL;
+> -		if (type == MS_UNBINDABLE)
+> +		if (type & MS_UNBINDABLE)
+>  			mnt->mnt_flags |= MNT_UNBINDABLE;
+>  		else
+>  			mnt->mnt_flags &= ~MNT_UNBINDABLE;
+
+And afaict, no caller of change_mnt_propagation() will pass in a `type'
+with more than a single bit set.  umount_tree() passed MS_PRIVATE and
+do_change_type() uses flags_to_propagation_type().
+
+So as far as I can tell, this patch won't fix anything??
