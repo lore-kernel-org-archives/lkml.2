@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab1DSBXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 21:23:00 -0400
-Received: from mail.perches.com ([173.55.12.10]:4829 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992Ab1DSBW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 21:22:59 -0400
-Subject: Re: [PATCH] Documentation/dontdiff: large update
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, Michael Prokop <mika@grml.org>
-In-Reply-To: <20110418160809.f10c0b62.rdunlap@xenotime.net>
-References: <20110418160809.f10c0b62.rdunlap@xenotime.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Apr 2011 18:22:57 -0700
-Message-ID: <1303176177.31723.58.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753829Ab1DSB33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 21:29:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41642 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab1DSB32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 21:29:28 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=wom5GMh1gUkA:10 a=n9MmX0RCC_8A:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:17 a=pGLkceISAAAA:8 a=0qwYxUaSe-xcaSBP4wcA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=eAWTIsOZi86Vnn5xZOjC/w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.154.172
+Date: Mon, 18 Apr 2011 20:29:25 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: crocket <crockabiscuit@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
+ from root or to another non-root uid from a non-root uid.
+Message-ID: <20110419012925.GA5734@hallyn.com>
+References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
+ <20110417180722.GA21112@hallyn.com>
+ <BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
+ <20110418082838.GA30088@hallyn.com>
+ <BANLkTi=kxpFkQ86ZGd2_q+XFRm-nVWzw4g@mail.gmail.com>
+ <20110418220232.GA15967@hallyn.com>
+ <BANLkTikJqgwGixtgXKOY-2e=1sAQYUtbcQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikJqgwGixtgXKOY-2e=1sAQYUtbcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-18 at 16:08 -0700, Randy Dunlap wrote:
-> Update to Documentation/dontdiff, based on many updates to
-> various .gitignore patches over the last 2 years.
-[]
-> --- lnx-2639-r3g8-dontdiff.orig/Documentation/dontdiff
-> +++ lnx-2639-r3g8-dontdiff/Documentation/dontdiff
-[]
-> -int16.c
-> -int1.c
-> -int2.c
-> -int32.c
-> -int4.c
-> -int8.c
-> +int*.c
+Quoting crocket (crockabiscuit@gmail.com):
+> Is there an existing utility that sets SECBIT_NO_SETUID_FIXUP?
+> Or is there a way to set it without writing a C wrapper program?
 
-Is this really a good idea?
+You can use capsh (with --secbits=), which ships with libcap2.
 
-$ find -name "int*.c" | wc -l
-115
-
-
+-serge
