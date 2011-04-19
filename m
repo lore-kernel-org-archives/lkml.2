@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1DSUR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:56 -0400
-Received: from kroah.org ([198.145.64.141]:35782 "EHLO coco.kroah.org"
+	id S1754943Ab1DSURf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:35 -0400
+Received: from kroah.org ([198.145.64.141]:35668 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab1DSURw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:50 2011
-Message-Id: <20110419201050.665258193@clark.kroah.org>
+	id S1754757Ab1DSURe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
+Message-Id: <20110419201048.612741180@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:19 -0700
+Date: Tue, 19 Apr 2011 13:09:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@redhat.com>, Kyle McMartin <kyle@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: [70/70] perf tool: Fix gcc 4.6.0 issues
+        Christian Simon <simon@swine.de>
+Subject: [51/70] USB: ftdi_sio: Added IDs for CTI USB Serial Devices
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,208 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kyle McMartin <kyle@mcmartin.ca>
+From: Christian Simon <simon@swine.de>
 
-commit fb7d0b3cefb80a105f7fd26bbc62e0cbf9192822 upstream.
+commit 5a9443f08c83c294c5c806a689c1184b27cb26b3 upstream.
 
-GCC 4.6.0 in Fedora rawhide turned up some compile errors in tools/perf
-due to the -Werror=unused-but-set-variable flag.
+I added new ProdutIds for two devices from CTI GmbH Leipzig.
 
-I've gone through and annotated some of the assignments that had side
-effects (ie: return value from a function) with the __used annotation,
-and in some cases, just removed unused code.
-
-In a few cases, we were assigning something useful, but not using it in
-later parts of the function.
-
-kyle@dreadnought:~/src% gcc --version
-gcc (GCC) 4.6.0 20110122 (Red Hat 4.6.0-0.3)
-
-Cc: Ingo Molnar <mingo@redhat.com>
-LKML-Reference: <20110124161304.GK27353@bombadil.infradead.org>
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-[ committer note: Fixed up the annotation fixes, as that code moved recently ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-[Backported to 2.6.38.2 by deleting unused but set variables]
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Christian Simon <simon@swine.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- tools/perf/bench/sched-pipe.c                          |    2 +-
- tools/perf/builtin-sched.c                             |   12 +++---------
- tools/perf/builtin-top.c                               |    5 +----
- tools/perf/util/header.c                               |    2 +-
- tools/perf/util/hist.c                                 |    3 ---
- tools/perf/util/scripting-engines/trace-event-python.c |    3 +--
- tools/perf/util/symbol.c                               |    4 ++--
- tools/perf/util/trace-event-parse.c                    |    2 +-
- tools/perf/util/ui/browsers/map.c                      |    2 +-
- 9 files changed, 11 insertions(+), 24 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
+ 2 files changed, 11 insertions(+)
 
---- a/tools/perf/bench/sched-pipe.c
-+++ b/tools/perf/bench/sched-pipe.c
-@@ -55,7 +55,7 @@ int bench_sched_pipe(int argc, const cha
- 	 * discarding returned value of read(), write()
- 	 * causes error in building environment for perf
- 	 */
--	int ret, wait_stat;
-+	int __used ret, wait_stat;
- 	pid_t pid, retpid;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -151,6 +151,8 @@ static struct ftdi_sio_quirk ftdi_stmcli
+  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
+  */
+ static struct usb_device_id id_table_combined [] = {
++	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1140,3 +1140,12 @@
+ #define QIHARDWARE_VID			0x20B7
+ #define MILKYMISTONE_JTAGSERIAL_PID	0x0713
  
- 	argc = parse_options(argc, argv, options,
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -369,11 +369,6 @@ static void
- process_sched_event(struct task_desc *this_task __used, struct sched_atom *atom)
- {
- 	int ret = 0;
--	u64 now;
--	long long delta;
--
--	now = get_nsecs();
--	delta = start_time + atom->timestamp - now;
- 
- 	switch (atom->type) {
- 		case SCHED_EVENT_RUN:
-@@ -562,7 +557,7 @@ static void wait_for_tasks(void)
- 
- static void run_one_test(void)
- {
--	u64 T0, T1, delta, avg_delta, fluct, std_dev;
-+	u64 T0, T1, delta, avg_delta, fluct;
- 
- 	T0 = get_nsecs();
- 	wait_for_tasks();
-@@ -578,7 +573,6 @@ static void run_one_test(void)
- 	else
- 		fluct = delta - avg_delta;
- 	sum_fluct += fluct;
--	std_dev = sum_fluct / nr_runs / sqrt(nr_runs);
- 	if (!run_avg)
- 		run_avg = delta;
- 	run_avg = (run_avg*9 + delta)/10;
-@@ -799,7 +793,7 @@ replay_switch_event(struct trace_switch_
- 		    u64 timestamp,
- 		    struct thread *thread __used)
- {
--	struct task_desc *prev, *next;
-+	struct task_desc *prev, __used *next;
- 	u64 timestamp0;
- 	s64 delta;
- 
-@@ -1404,7 +1398,7 @@ map_switch_event(struct trace_switch_eve
- 		 u64 timestamp,
- 		 struct thread *thread __used)
- {
--	struct thread *sched_out, *sched_in;
-+	struct thread *sched_out __used, *sched_in;
- 	int new_shortname;
- 	u64 timestamp0;
- 	s64 delta;
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -183,7 +183,6 @@ static int parse_source(struct sym_entry
- 	FILE *file;
- 	char command[PATH_MAX*2];
- 	const char *path;
--	u64 len;
- 
- 	if (!syme)
- 		return -1;
-@@ -212,8 +211,6 @@ static int parse_source(struct sym_entry
- 	}
- 	path = map->dso->long_name;
- 
--	len = sym->end - sym->start;
--
- 	sprintf(command,
- 		"objdump --start-address=%#0*" PRIx64 " --stop-address=%#0*" PRIx64 " -dS %s",
- 		BITS_PER_LONG / 4, map__rip_2objdump(map, sym->start),
-@@ -1296,7 +1293,7 @@ static int __cmd_top(void)
- {
- 	pthread_t thread;
- 	struct perf_evsel *counter;
--	int i, ret;
-+	int i, ret __used;
- 	/*
- 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
- 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1144,7 +1144,7 @@ int event__synthesize_tracing_data(int f
- {
- 	event_t ev;
- 	ssize_t size = 0, aligned_size = 0, padding;
--	int err = 0;
-+	int err __used = 0;
- 
- 	memset(&ev, 0, sizeof(ev));
- 
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1095,7 +1095,6 @@ int hist_entry__annotate(struct hist_ent
- 	char command[PATH_MAX * 2];
- 	FILE *file;
- 	int err = 0;
--	u64 len;
- 	char symfs_filename[PATH_MAX];
- 
- 	if (filename) {
-@@ -1140,8 +1139,6 @@ fallback:
- 		 filename, sym->name, map->unmap_ip(map, sym->start),
- 		 map->unmap_ip(map, sym->end));
- 
--	len = sym->end - sym->start;
--
- 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
- 		 dso, dso->long_name, sym, sym->name);
- 
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -248,8 +248,7 @@ static void python_process_event(int cpu
- 	context = PyCObject_FromVoidPtr(scripting_context, NULL);
- 
- 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
--	PyTuple_SetItem(t, n++,
--			PyCObject_FromVoidPtr(scripting_context, NULL));
-+	PyTuple_SetItem(t, n++, context);
- 
- 	if (handler) {
- 		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1525,8 +1525,8 @@ int dso__load(struct dso *self, struct m
- 			     symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_GUEST_KMODULE:
--			if (map->groups && map->groups->machine)
--				root_dir = map->groups->machine->root_dir;
-+			if (map->groups && machine)
-+				root_dir = machine->root_dir;
- 			else
- 				root_dir = "";
- 			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -153,7 +153,7 @@ void parse_proc_kallsyms(char *file, uns
- 	char *next = NULL;
- 	char *addr_str;
- 	char ch;
--	int ret;
-+	int ret __used;
- 	int i;
- 
- 	line = strtok_r(file, "\n", &next);
---- a/tools/perf/util/ui/browsers/map.c
-+++ b/tools/perf/util/ui/browsers/map.c
-@@ -41,7 +41,7 @@ static int ui_entry__read(const char *ti
- out_free_form:
- 	newtPopWindow();
- 	newtFormDestroy(form);
--	return 0;
-+	return err;
- }
- 
- struct map_browser {
++/*
++ * CTI GmbH RS485 Converter http://www.cti-lean.com/
++ */
++/* USB-485-Mini*/
++#define FTDI_CTI_MINI_PID	0xF608
++/* USB-Nano-485*/
++#define FTDI_CTI_NANO_PID	0xF60B
++
++
 
 
