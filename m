@@ -1,92 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab1DSXje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 19:39:34 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:44549 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab1DSXjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 19:39:33 -0400
-Date: Wed, 20 Apr 2011 01:39:05 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm/vmalloc: remove block allocation bitmap
-Message-ID: <20110419233905.GA2333@cmpxchg.org>
-References: <20110414211656.GB1700@cmpxchg.org>
- <20110419093118.GB23041@csn.ul.ie>
+	id S1753305Ab1DSXjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 19:39:46 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:12959
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753217Ab1DSXjo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 19:39:44 -0400
+X-SpamScore: -30
+X-BigFish: VPS-30(zz1803M9371O542M1432N98dK4015Lzz1202hzz8275bh8275dhz2dh95h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419093118.GB23041@csn.ul.ie>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] tty/serial: add support for Xilinx PS UART
+Date: Tue, 19 Apr 2011 17:39:30 -0600
+In-Reply-To: <20110419232141.GA27491@kroah.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] tty/serial: add support for Xilinx PS UART
+Thread-Index: Acv+6KDmIk5chGFMQa+qju79mH+T9gAAPlaw
+References: <e35578a9-909d-4594-bbe4-41d89b5f9b3e@VA3EHSMHS014.ehs.local> <20110419221530.7370d013@lxorguk.ukuu.org.uk> <8d05c32c-9ff1-4eda-9563-6857ede6541a@VA3EHSMHS020.ehs.local> <20110419232141.GA27491@kroah.com>
+From: John Linn <John.Linn@xilinx.com>
+To: Greg KH <greg@kroah.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>
+X-OriginalArrivalTime: 19 Apr 2011 23:39:24.0652 (UTC) FILETIME=[03E85AC0:01CBFEEB]
+X-RCIS-Action: ALLOW
+Message-ID: <68925dd6-03b8-48af-9f96-0a3f611712e1@VA3EHSMHS020.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 10:31:18AM +0100, Mel Gorman wrote:
-> On Thu, Apr 14, 2011 at 05:16:56PM -0400, Johannes Weiner wrote:
-> > Space in a vmap block that was once allocated is considered dirty and
-> > not made available for allocation again before the whole block is
-> > recycled.
-> > 
-> > The result is that free space within a vmap block is always contiguous
-> > and the allocation bitmap can be replaced by remembering the offset of
-> > free space in the block.
-> > 
-> > The fragmented block purging was never invoked from vb_alloc() either,
-> > as it skips blocks that do not have enough free space for the
-> > allocation in the first place.  According to the above, it is
-> > impossible for a block to have enough free space and still fail the
-> > allocation.  Thus, this dead code is removed.  Partially consumed
-> > blocks will be reclaimed anyway when an attempt is made to allocate a
-> > new vmap block altogether and no free space is found.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Nick Piggin <npiggin@kernel.dk>
-> > Cc: Mel Gorman <mel@csn.ul.ie>
-> > Cc: Hugh Dickins <hughd@google.com>
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, April 19, 2011 5:22 PM
+> To: John Linn
+> Cc: Alan Cox; linux-kernel@vger.kernel.org; linux-
+> serial@vger.kernel.org
+> Subject: Re: [PATCH] tty/serial: add support for Xilinx PS UART
 > 
-> I didn't see a problem with the patch per-se but I wonder if your patch
-> is the intended behaviour. It looks like the intention was that dirty
-> blocks could be flushed from the TLB and made available for allocations
-> leading to the possibility of fragmented vmap blocks.
->
-> It's this check that is skipping over blocks without taking dirty into
-> account.
+> On Tue, Apr 19, 2011 at 04:22:00PM -0600, John Linn wrote:
+> > > -----Original Message-----
+> > > From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+> > > Sent: Tuesday, April 19, 2011 3:16 PM
+> > > To: John Linn
+> > > Cc: linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org
+> > > Subject: Re: [PATCH] tty/serial: add support for Xilinx PS UART
+> > >
+> > > On Tue, 19 Apr 2011 14:14:52 -0600
+> > > John Linn <john.linn@xilinx.com> wrote:
+> > >
+> > > > The Xilinx PS Uart is used on the new ARM based SoC. This
+> > > > UART is not compatible with others such that a seperate
+> > > > driver is required.
+> > >
+> > > Joyous. I wish people would standardise.
+> > >
+> > > > +		 213 = /dev/ttyPS0		Xilinx PS serial
+port 0
+> > > > +		 214 = /dev/ttyPS1		Xilinx PS serial
+port 1
+> > > > +		 215 = /dev/ttyPS2		Xilinx PS serial
+port 2
+> > > > +		 216 = /dev/ttyPS3		Xilinx PS serial
+port 3
+> > >
+> > > Is there a specific reason you need fixed minor numbers ? If not
+> > please
+> > > use a dynamic range and keep Linus happy.
+> >
+> > Hi Alan,
+> >
+> > I hope you don't mind me asking a bit more to better understand.
+> Here's
+> > my
+> > concerns (maybe not valid).
+> >
+> > It seems like since this is a console it can get hard to debug with
+> > dynamic
+> > nodes for this driver.
+> >
+> > This driver is for an embedded device where we don't want to require
+> > udev
+> > or mdev to assign nodes.
 > 
->   		spin_lock(&vb->lock);
->  		if (vb->free < 1UL << order)
->  			goto next;
+> Why not use devtmpfs?  There's no need to use udev or mdev at all.
 > 
-> It was introduced by [02b709d: mm: purge fragmented percpu vmap blocks]
-> but is there any possibility that this is what should be fixed instead?
 
-I would like to emphasize that the quoted check only made it clear
-that the allocation bitmap is superfluous.  There is no partial
-recycling of a block with live allocations, not even before this
-commit.
+Hi Greg,
 
-> Do we know what the consequences of blocks only getting flushed when
-> they have been fully allocated are?
+Reading up on it a bit as I'm not an expert on it (like you). 
+It's not clear to me what the device driver uses for it's major/minor in
+this case.  
 
-Note that it can get recycled earlier if there is no outstanding
-allocation on it, even if only a small amount of it is dirty (the
-purge_fragmented_blocks code does this).
+Maybe it doesn't matter, the driver can use ttyS0 and then it gets
+deleted 
+later if you want to change it.
 
-A single outstanding allocation prevents the block from being
-recycled, blocking the reuse of the dirty area.
+The only reason we didn't just use ttyS0 was that it's not a 8250 really
+and
+since we have are an FPGA people can add real 8250s in soft logic and
+then
+the system would get confusing.
 
-Theoretically, we could end up with all possible vmap blocks being
-pinned by single allocations with most of their area being dirty and
-not reusable.  But I believe this is unlikely to happen.
+Thanks,
+John
 
-Would you be okay with printing out block usage statistics on
-allocation errors for the time being, so we can identify this case if
-problems show up?
+> thanks,
+> 
+> greg k-h
 
-And consider this patch an optimization/simplification of a status quo
-that does not appear problematic?  We can still revert it and
-implement live block recycling when it turns out to be necessary.
 
-	Hannes
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
