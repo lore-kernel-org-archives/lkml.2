@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab1DSJJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:09:46 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:45369 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382Ab1DSJJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:09:44 -0400
-X-ASG-Debug-ID: 1303204182-01de284cf8165230001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DAD5156.2050300@fusionio.com>
-Date: Tue, 19 Apr 2011 11:09:42 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753838Ab1DSJKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:10:35 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:45628 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751921Ab1DSJKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 05:10:33 -0400
+Message-ID: <4DAD516F.50901@st.com>
+Date: Tue, 19 Apr 2011 14:40:07 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>
-Subject: Re: [Bug #32982] Kernel locks up a few minutes after boot
-References: <OlQwC5HnRsN.A.ULB.OGuqNB@chimera> <_H4l51C1wXN.A.yDC.yGuqNB@chimera> <BANLkTimeaHwBiZoz=isCM=qtBxoxaBqDUw@mail.gmail.com> <BANLkTi=1jO73DXDTD50bVpU82qphVKmRCw@mail.gmail.com> <4DAC2429.5000105@fusionio.com> <BANLkTinCWWYqnksxevho9TN3u6ZC_Rjzwg@mail.gmail.com> <4DAC82E6.3020809@fusionio.com> <BANLkTimaekpwmK+z=ePE+XSP6GUteidwfw@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [Bug #32982] Kernel locks up a few minutes after boot
-In-Reply-To: <BANLkTimaekpwmK+z=ePE+XSP6GUteidwfw@mail.gmail.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Subject: Re: [PATCH V2 7/7] dmaengine/dw_dmac: implement pause and resume
+ in dwc_control
+References: <cover.1303194835.git.viresh.kumar@st.com> <a1168e413888e35badd9fab6b1626fcfe355dc9b.1303194836.git.viresh.kumar@st.com> <20110419085514.GG2820@pulham.picochip.com>
+In-Reply-To: <20110419085514.GG2820@pulham.picochip.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1303204182
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61296
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-04-18 20:32, Bart Van Assche wrote:
-> On Mon, Apr 18, 2011 at 8:28 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
->> On 2011-04-18 20:21, Bart Van Assche wrote:
->>> a performance regression in the block layer not related to the md
->>> issue. If I run a small block IOPS test on a block device created by
->>> ib_srp (NOOP scheduler) I see about 11% less IOPS than with 2.6.38.3
->>> (155.000 IOPS with 2.6.38.3 and 140.000 IOPS with 2.6.39-rc3+).
->>
->> That's not good. What's the test case?
-> 
-> Nothing more than a fio IOPS test:
-> 
-> fio --bs=512 --ioengine=libaio --buffered=0 --rw=read --thread
-> --iodepth=64 --numjobs=2 --loops=10000 --group_reporting --size=1G
->     --gtod_reduce=1 --name=iops-test --filename=/dev/${dev} --invalidate=1
+On 04/19/2011 02:25 PM, Jamie Iles wrote:
+>From the Synopsys datasheet it looks to me like pausing by clearing the 
+> channel enable bit could cause data to be lost.  I think you need to set 
+> the CH_SUSP bit and wait for the FIFO_EMPTY flag to go high then disable 
+> the channel.
 
-Bart, can you try the below:
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 5fa3dd2..9b41da1 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -307,11 +307,7 @@ void __blk_run_queue(struct request_queue *q)
- 	 * Only recurse once to avoid overrunning the stack, let the unplug
- 	 * handling reinvoke the handler shortly if we already got there.
- 	 */
--	if (!queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
--		q->request_fn(q);
--		queue_flag_clear(QUEUE_FLAG_REENTER, q);
--	} else
--		queue_delayed_work(kblockd_workqueue, &q->delay_work, 0);
-+	q->request_fn(q);
- }
- EXPORT_SYMBOL(__blk_run_queue);
- 
+Yes, Previously i looked at some other doc of dwc and couldn't find this info.
+But now found it in datasheet. Will correct and resend it.
 
 -- 
-Jens Axboe
-
+viresh
