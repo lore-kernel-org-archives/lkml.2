@@ -1,45 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1DSRsU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 13:48:20 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47685 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1DSRsT (ORCPT
+	id S1754072Ab1DSRsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:48:30 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58930 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754029Ab1DSRs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 13:48:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pq+GB3OE2xP10DHdXwbemZ7cHt19vKFoCQukKJUsGNNRikUzFLtcpnyROHCtUxlYIV
-         lKO/7NN/EwyVXxUOkW+0Hayr0ij8rBMcci7mGWE9lEU1MSErHmJJtNtB3lAifyWc6whb
-         7YXqTTCLQSbCLhD3qlATYiKn95zmvUyEFyhCY=
-Date: Tue, 19 Apr 2011 21:48:13 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Greg KH <greg@kroah.com>
-Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        security@kernel.org
-Subject: Re: [PATCH] char: agp: fix OOM and buffer overflow
-Message-ID: <20110419174813.GA27544@albatros>
-References: <1302800120-31560-1-git-send-email-segoon@openwall.com>
- <20110419162157.GD23196@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419162157.GD23196@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 19 Apr 2011 13:48:29 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <alpine.DEB.2.00.1104191213120.17888@router.home>
+References: <20110415135144.GE8828@tiehlicka.suse.cz>
+	 <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
+	 <20110418100131.GD8925@tiehlicka.suse.cz>
+	 <20110418135637.5baac204.akpm@linux-foundation.org>
+	 <20110419111004.GE21689@tiehlicka.suse.cz>
+	 <1303228009.3171.18.camel@mulgrave.site>
+	 <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>
+	 <1303233088.3171.26.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104191213120.17888@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 12:48:26 -0500
+Message-ID: <1303235306.3171.33.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 09:21 -0700, Greg KH wrote:
-> David, what ever happened to this, and the other agp bugfix from
-> Vasiliy?
+On Tue, 2011-04-19 at 12:15 -0500, Christoph Lameter wrote:
+> On Tue, 19 Apr 2011, James Bottomley wrote:
+> 
+> > On Tue, 2011-04-19 at 20:05 +0300, Pekka Enberg wrote:
+> > > > It seems to be a random intermittent mm crash because the next reboot
+> > > > crashed with the same trace but after the fsck had completed and the
+> > > > third came up to the login prompt.
+> > >
+> > > Looks like a genuine SLUB problem on parisc. Christoph?
+> >
+> > Looking through the slub code, it seems to be making invalid
+> > assumptions.  All of the node stuff is dependent on CONFIG_NUMA.
+> > However, we're CONFIG_DISCONTIGMEM (with CONFIG_NUMA not set): on the
+> > machines I and Dave Anglin have, our physical memory ranges are 0-1GB
+> > and 64-65GB, so I think slub crashes when we get a page from the high
+> > memory range ... because it's not expecting a non-zero node number.
+> 
+> Right !NUMA systems only have node 0.
 
-I got emails that both fixes went into -mm.
+That's rubbish.  Discontigmem uses the nodes field to identify the
+discontiguous region.  page_to_nid() returns this value.  Your code
+wrongly assumes this is zero for non NUMA.
 
-Thanks,
+This simple program triggers the problem instantly because it forces
+allocation up into the upper discontigmem range:
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+#include <stdlib.h>
+
+void main(void)
+{
+  const long size = 1024*1024*1024;
+  char *a = malloc(size);
+  int i;
+
+  for (i=0; i < size; i += 4096)
+    a[i] = '\0';
+}
+
+I can fix the panic by hard coding get_nodes() to return the zero node
+for the non-numa case ... however, presumably it's more than just this
+that's broken in slub?
+
+James
+
+---
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 94d2a33..243bd9c 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -235,7 +235,11 @@ int slab_is_available(void)
+ 
+ static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
+ {
++#ifdef CONFIG_NUMA
+ 	return s->node[node];
++#else
++	return s->node[0];
++#endif
+ }
+ 
+ /* Verify that a pointer has an address that is valid within a slab page */
+
+
