@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1DSSLF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 14:11:05 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:41993 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752386Ab1DSSLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 14:11:04 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 5DgR6WYVM1nxd2v1acPyXE2GIv8AOzi.qDprt119XZrD4tu
- UDw2.u7RoD62pHszxuEblCY.bhpkpRyUIQiAtM2E2jiyLFeY7TzkhHpB5V7f
- AjwWJB2VidQuKVhOfmmNNdKdoL4cje6nat5PBBy7niGxQxGRXC4frnZ_5jFF
- 0A8WAJihCP7jRVOxoLqntA8yVzuomylmU8si87VnL4Yye2Ofd_cmayaxLfKi
- 5NsnaLVRIOCGOgRXsz9lF8f3vfnZyS2gCVvcTs.uDhQvFTV4mb8IDs3q7lwU
- qgiQos6c7OqxFjtylJQYzQtPXjRpmrfaR_g3fMT4lli8oAduv
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 19 Apr 2011 13:10:57 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
- expand_upwards
-In-Reply-To: <1303235306.3171.33.camel@mulgrave.site>
-Message-ID: <alpine.DEB.2.00.1104191254300.19358@router.home>
-References: <20110415135144.GE8828@tiehlicka.suse.cz>  <alpine.LSU.2.00.1104171952040.22679@sister.anvils>  <20110418100131.GD8925@tiehlicka.suse.cz>  <20110418135637.5baac204.akpm@linux-foundation.org>  <20110419111004.GE21689@tiehlicka.suse.cz> 
- <1303228009.3171.18.camel@mulgrave.site>  <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>  <1303233088.3171.26.camel@mulgrave.site>  <alpine.DEB.2.00.1104191213120.17888@router.home> <1303235306.3171.33.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754127Ab1DSSSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 14:18:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753451Ab1DSSSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 14:18:16 -0400
+Date: Tue, 19 Apr 2011 20:17:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stas Sergeev <stsp@aknet.ru>
+Cc: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
+Message-ID: <20110419181733.GA30702@redhat.com>
+References: <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <20110419161301.GA23914@redhat.com> <20110419162909.GC23914@redhat.com> <4DADBE31.7000400@aknet.ru> <20110419172036.GA27213@redhat.com> <4DADC92E.3010409@aknet.ru>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DADC92E.3010409@aknet.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Apr 2011, James Bottomley wrote:
-
-> > Right !NUMA systems only have node 0.
+On 04/19, Stas Sergeev wrote:
 >
-> That's rubbish.  Discontigmem uses the nodes field to identify the
-> discontiguous region.  page_to_nid() returns this value.  Your code
-> wrongly assumes this is zero for non NUMA.
+> 19.04.2011 21:20, Oleg Nesterov wrote:
+>
+>>>> do_signal_parent() must not return DEATH_REAP (this means that
+>>>> leader->exit_signal becomes -1), but this can happen and this is bug.
+>>>>
+>>> Could you please clarify this a bit: according to the comments
+>>> in signal.c:
+>>> ---
+>>>                   * We are exiting and our parent doesn't care.  POSIX.1
+>>>                   * defines special semantics for setting SIGCHLD to SIG_IGN
+>>>                   * or setting the SA_NOCLDWAIT flag: we should be reaped
+>>>                   * automatically and not left for our parent's wait4 call.
+>>> ---
+>>> That's how I understand it: if DEATH_REAP is returned, the
+>>> parent ignores SIGCHILD, and in this case I am not allowing
+>>> it to read the detach code with wait(). What is the bug?
+>> Indeed. But, once again, that is why do_notify_parent() expects the dead
+>> tsk! Please note that if it returns DEATH_REAP it sets ->exit_signal = -1.
+>> And this is _only_ allowed if the leader is already dead and we are going
+>> to reap it.
+> Ah, so, by saying "do_signal_parent() must not return DEATH_REAP (this means that
+> leader->exit_signal becomes -1)", you actually meant
+> "do_signal_parent(), when returning DEATH_REAP, must not
+> set ->exit_signal = -1,
 
-Sorry the kernel has no node awareness if you do not set CONFIG_NUMA
+Yes.
 
-F.e. zone node lookups work the following way
+> because only do_notify_parent()
+> can do that"?
 
-static inline int
-zone_to_nid(struct zone *zone)
-{
-#ifdef CONFIG_NUMA
-        return zone->node;
-#else
-        return 0;
-#endif
-}
+because we can only do this if we are going to reap the task
 
-How in the world did you get a zone setup in node 1 with a !NUMA config?
+> If so - will fix, thanks.
 
+Stas, please do not trim CC. I am very glad Alan looked at this patch,
+I hope he will participate. Better yet, add Linus too as I already asked ;)
 
-The problem seems to be that the kernel seems to allow a
-definition of a page_to_nid() function that returns non zero in the !NUMA
-case. And slub relies on page_to_nid returning zero in the !NUMA case.
-Because NODES_WIDTH should be 0 in the !NUMA case and therefore
-page_to_nid must return 0.
-
-> I can fix the panic by hard coding get_nodes() to return the zero node
-> for the non-numa case ... however, presumably it's more than just this
-> that's broken in slub?
-
-If you think that is broken then we have brokenness all over the kernel
-whenever we determine the node from a page and use that to do a lookup.
+Oleg.
 
