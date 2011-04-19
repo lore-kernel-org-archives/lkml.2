@@ -1,214 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab1DSHUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 03:20:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58417 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab1DSHUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 03:20:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,238,1301900400"; 
-   d="scan'208";a="630853793"
-Date: Tue, 19 Apr 2011 15:20:40 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/6] writeback: the kupdate expire timestamp should be
- a moving target
-Message-ID: <20110419072040.GA6404@localhost>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.392203618@intel.com>
- <20110419070247.GE23985@dastard>
+	id S1752697Ab1DSHWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 03:22:23 -0400
+Received: from ext190.halfdog.net ([88.116.147.190]:50244 "EHLO
+	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab1DSHWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 03:22:20 -0400
+X-Greylist: delayed 679 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Apr 2011 03:22:18 EDT
+Message-ID: <4DAD361D.1010602@halfdog.net>
+Date: Tue, 19 Apr 2011 07:13:33 +0000
+From: halfdog <me@halfdog.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0b8pre) Gecko/20101210 Firefox/4.0b8pre SeaMonkey/2.1b2pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419070247.GE23985@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Opinions on open/exec syscalls and security
+X-Enigmail-Version: 1.2a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 03:02:47PM +0800, Dave Chinner wrote:
-> On Tue, Apr 19, 2011 at 11:00:05AM +0800, Wu Fengguang wrote:
-> > Dynamically compute the dirty expire timestamp at queue_io() time.
-> > 
-> > writeback_control.older_than_this used to be determined at entrance to
-> > the kupdate writeback work. This _static_ timestamp may go stale if the
-> > kupdate work runs on and on. The flusher may then stuck with some old
-> > busy inodes, never considering newly expired inodes thereafter.
-> > 
-> > This has two possible problems:
-> > 
-> > - It is unfair for a large dirty inode to delay (for a long time) the
-> >   writeback of small dirty inodes.
-> > 
-> > - As time goes by, the large and busy dirty inode may contain only
-> >   _freshly_ dirtied pages. Ignoring newly expired dirty inodes risks
-> >   delaying the expired dirty pages to the end of LRU lists, triggering
-> >   the evil pageout(). Nevertheless this patch merely addresses part
-> >   of the problem.
-> 
-> When wb_writeback() is called with for_kupdate set, it initialises
-> wbc->older_than_this appropriately outside the writeback loop.
-> queue_io() is called once per writeback_inodes_wb() call, which is
-> once per loop in wb_writeback. All your change does is re-initialise
-> older_than_this once per loop in wb_writeback, jus tin a different
-> and very non-obvious place.
-> 
-> So why didn't you just re-initialise it inside the loop in
-> wb_writeback() and leave all the other code alone?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-It helps both readability and efficiency to make it a local var.
+Hello List,
 
-I have another patch to kill the wbc->older_than_this (and one more
-for wbc->more_io). They are delayed to avoid possible merge conflicts
-with the IO-less patchset.
+Quite a few programs, that have to traverse directory trees recursively,
+do not treat symlinks correctly, e.g. most backup applications I tested
+allowed inclusion of arbitrary files. Although this could just be seen
+as a problem of application security, I think that the suboptimal kernel
+interface to filesystem makes it hard to code correctly, hence
+increasing the number of vulnerable programs of some type (e.g. backup
+programs).
 
-But yeah, it seems reasonable to move the first chunk of the below
-patch to this one.
+The problem is, that is hard to open a file in a user-controlled
+directory, e.g. for backup, and apply some policy to that, e.g. that no
+component in the path is a symlink. Otherwise, the sequence
 
-Thanks,
-Fengguang
----
-Subject: writeback: the kupdate expire timestamp should be a moving target
-Date: Wed Jul 21 20:32:30 CST 2010
+readdir /home/user/somedir/
+open  /home/user/somedir/shadow
 
-Remove writeback_control.older_than_this which is no longer used.
+in a backup program might cause inclusion of real password, if somedir
+was moved and relinked to /etc in between the two calls, a race that is
+very easy to win. If the backup program would do only openat/stat pairs
+for every component in the path, the program then might run out of
+filedescriptors easily (DOS).
 
-[kitayama@cl.bb4u.ne.jp] fix btrfs and ext4 references
+- From my opinion, the system api, that makes it too hard to check, if
+problematic symlinks (or user space filesystem mounts) are included in a
+path. To provide really time-race free api, an open-and-check operation
+could be useful. An implementation of a "secure" file open library call,
+e.g. in libc, would also be an option, but it might be rather hard to
+provide the same level of security, because the library routine has no
+atomic syscall to rely on, and hence implementation might be racy,
+altough the window of opportunity might be very small. Without this
+system support, it is quite tricky to write 100% correct code and one
+might introduce other flaws, e.g. DOS via reaching max. open file
+descriptors.
 
-Acked-by: Jan Kara <jack@suse.cz>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Itaru Kitayama <kitayama@cl.bb4u.ne.jp>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/btrfs/extent_io.c             |    2 --
- fs/fs-writeback.c                |   13 -------------
- include/linux/writeback.h        |    2 --
- include/trace/events/writeback.h |    6 +-----
- mm/backing-dev.c                 |    1 -
- 5 files changed, 1 insertion(+), 23 deletions(-)
+Could a new syscall or modified syscall options make it easier for
+developers, so that they to not have to keep numerous fds open and apply
+all the policy checks in user space, e.g. using inode numbers, dev
+references?
 
---- linux-next.orig/fs/fs-writeback.c	2011-04-18 08:37:01.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-04-18 08:38:16.000000000 +0800
-@@ -681,30 +681,20 @@ static unsigned long writeback_chunk_siz
-  * Try to run once per dirty_writeback_interval.  But if a writeback event
-  * takes longer than a dirty_writeback_interval interval, then leave a
-  * one-second gap.
-- *
-- * older_than_this takes precedence over nr_to_write.  So we'll only write back
-- * all dirty pages if they are all attached to "old" mappings.
-  */
- static long wb_writeback(struct bdi_writeback *wb,
- 			 struct wb_writeback_work *work)
- {
- 	struct writeback_control wbc = {
- 		.sync_mode		= work->sync_mode,
--		.older_than_this	= NULL,
- 		.for_kupdate		= work->for_kupdate,
- 		.for_background		= work->for_background,
- 		.range_cyclic		= work->range_cyclic,
- 	};
--	unsigned long oldest_jif;
- 	long wrote = 0;
- 	long write_chunk;
- 	struct inode *inode;
- 
--	if (wbc.for_kupdate) {
--		wbc.older_than_this = &oldest_jif;
--		oldest_jif = jiffies -
--				msecs_to_jiffies(dirty_expire_interval * 10);
--	}
- 	if (!wbc.range_cyclic) {
- 		wbc.range_start = 0;
- 		wbc.range_end = LLONG_MAX;
-@@ -1139,9 +1129,6 @@ EXPORT_SYMBOL(__mark_inode_dirty);
-  * Write out a superblock's list of dirty inodes.  A wait will be performed
-  * upon no inodes, all inodes or the final one, depending upon sync_mode.
-  *
-- * If older_than_this is non-NULL, then only write out inodes which
-- * had their first dirtying at a time earlier than *older_than_this.
-- *
-  * If `bdi' is non-zero then we're being asked to writeback a specific queue.
-  * This function assumes that the blockdev superblock's inodes are backed by
-  * a variety of queues, so all inodes are searched.  For other superblocks,
---- linux-next.orig/include/linux/writeback.h	2011-04-18 08:36:59.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-04-18 08:38:16.000000000 +0800
-@@ -66,8 +66,6 @@ enum writeback_sync_modes {
-  */
- struct writeback_control {
- 	enum writeback_sync_modes sync_mode;
--	unsigned long *older_than_this;	/* If !NULL, only write back inodes
--					   older than this */
- 	unsigned long wb_start;         /* Time writeback_inodes_wb was
- 					   called. This is needed to avoid
- 					   extra jobs and livelock */
---- linux-next.orig/include/trace/events/writeback.h	2011-04-18 08:36:59.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-04-18 08:38:16.000000000 +0800
-@@ -115,7 +115,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__field(int, for_reclaim)
- 		__field(int, range_cyclic)
- 		__field(int, more_io)
--		__field(unsigned long, older_than_this)
- 		__field(long, range_start)
- 		__field(long, range_end)
- 	),
-@@ -130,14 +129,12 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_reclaim	= wbc->for_reclaim;
- 		__entry->range_cyclic	= wbc->range_cyclic;
- 		__entry->more_io	= wbc->more_io;
--		__entry->older_than_this = wbc->older_than_this ?
--						*wbc->older_than_this : 0;
- 		__entry->range_start	= (long)wbc->range_start;
- 		__entry->range_end	= (long)wbc->range_end;
- 	),
- 
- 	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
--		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
-+		"bgrd=%d reclm=%d cyclic=%d more=%d "
- 		"start=0x%lx end=0x%lx",
- 		__entry->name,
- 		__entry->nr_to_write,
-@@ -148,7 +145,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_reclaim,
- 		__entry->range_cyclic,
- 		__entry->more_io,
--		__entry->older_than_this,
- 		__entry->range_start,
- 		__entry->range_end)
- )
---- linux-next.orig/mm/backing-dev.c	2011-04-18 08:36:59.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2011-04-18 08:38:16.000000000 +0800
-@@ -263,7 +263,6 @@ static void bdi_flush_io(struct backing_
- {
- 	struct writeback_control wbc = {
- 		.sync_mode		= WB_SYNC_NONE,
--		.older_than_this	= NULL,
- 		.range_cyclic		= 1,
- 		.nr_to_write		= 1024,
- 	};
---- linux-next.orig/fs/btrfs/extent_io.c	2011-04-18 08:36:59.000000000 +0800
-+++ linux-next/fs/btrfs/extent_io.c	2011-04-18 08:38:16.000000000 +0800
-@@ -2556,7 +2556,6 @@ int extent_write_full_page(struct extent
- 	};
- 	struct writeback_control wbc_writepages = {
- 		.sync_mode	= wbc->sync_mode,
--		.older_than_this = NULL,
- 		.nr_to_write	= 64,
- 		.range_start	= page_offset(page) + PAGE_CACHE_SIZE,
- 		.range_end	= (loff_t)-1,
-@@ -2589,7 +2588,6 @@ int extent_write_locked_range(struct ext
- 	};
- 	struct writeback_control wbc_writepages = {
- 		.sync_mode	= mode,
--		.older_than_this = NULL,
- 		.nr_to_write	= nr_pages * 2,
- 		.range_start	= start,
- 		.range_end	= end + 1,
+See http://www.halfdog.net/Security/2010/FilesystemRecursionAndSymlinks/
+for a short writeup on that topic (still work in progress).
+
+- -- 
+http://www.halfdog.net/
+PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.6 (GNU/Linux)
+
+iD8DBQFNrTVdxFmThv7tq+4RAprNAJ9nTTy2s2zjS4zy6wUk7SZPkN10nwCgh061
+mNiOTFp9x0mhvkA418AHDgo=
+=6LcN
+-----END PGP SIGNATURE-----
