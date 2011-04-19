@@ -1,192 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab1DSQD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:03:28 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55860 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752996Ab1DSQD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:03:26 -0400
-Date: Tue, 19 Apr 2011 18:03:16 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] timer fixes
-Message-ID: <20110419160316.GA3377@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753303Ab1DSQHi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 12:07:38 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36753 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751862Ab1DSQHg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 12:07:36 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org
+In-Reply-To: <1303228009.3171.18.camel@mulgrave.site>
+References: <20110415135144.GE8828@tiehlicka.suse.cz>
+	 <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
+	 <20110418100131.GD8925@tiehlicka.suse.cz>
+	 <20110418135637.5baac204.akpm@linux-foundation.org>
+	 <20110419111004.GE21689@tiehlicka.suse.cz>
+	 <1303228009.3171.18.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 11:07:33 -0500
+Message-ID: <1303229253.3171.19.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 2011-04-19 at 10:46 -0500, James Bottomley wrote:
+> On Tue, 2011-04-19 at 13:10 +0200, Michal Hocko wrote:
+> > On Mon 18-04-11 13:56:37, Andrew Morton wrote:
+> > > On Mon, 18 Apr 2011 12:01:31 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > Currently we have expand_upwards exported while expand_downwards is
+> > > > accessible only via expand_stack or expand_stack_downwards.
+> > > > 
+> > > > check_stack_guard_page is a nice example of the asymmetry. It uses
+> > > > expand_stack for VM_GROWSDOWN while expand_upwards is called for
+> > > > VM_GROWSUP case.
+> > > > 
+> > > > Let's clean this up by exporting both functions and make those name
+> > > > consistent. Let's use expand_stack_{upwards,downwards} so that we are
+> > > > explicit about stack manipulation in the name. expand_stack_downwards
+> > > > has to be defined for both CONFIG_STACK_GROWS{UP,DOWN} because
+> > > > get_arg_page calls the downwards version in the early process
+> > > > initialization phase for growsup configuration.
+> > > 
+> > > Has this patch been tested on any stack-grows-upwards architecture?
+> > 
+> > The only one I can find in the tree is parisc and I do not have access
+> > to any such machine. Maybe someone on the list (CCed) can help with
+> > testing the patch bellow? Nevertheless, the patch doesn't change growsup
+> > case. It just renames functions and exports growsdown.
+> 
+> It compiles OK, but crashes on boot in fsck.  The crash is definitely mm
+> but looks to be a slab problem (it's a null deref on a spinlock in
+> add_partial(), which seems unrelated to this patch).
+> 
+> [   15.628000] sd 1:0:2:0: [sdc] Attached SCSI disk
+> done.
+> [   16.632000] EXT3-fs: barriers not enabled
+> [   16.640000] kjournald starting.  Commit interval 5 seconds
+> [   16.640000] EXT3-fs (sda3): mounted filesystem with ordered data mode
+> Begin: Running /scripts/local-bottom ... done.
+> done.
+> Begin: Running /scripts/init-bottom ... done.
+> INIT: version 2.88 booting
+> Setting hostname to 'ion'...done.
+> Starting the hotplug events dispatcher: udevd[   22.008000] udev[211]: starting version 164
+> .
+> Synthesizing the initial hotplug events...done.
+> Waiting for /dev to be fully populated...done.
+> Activating swap:swapon on /dev/sda2
+> swapon: /dev/sda2: found swap signature: version 1, page-size 4, same byte order
+> swapon: /dev/sda2: pagesize=4096, swapsize=1028157440, devsize=1028160000
+> [   28.780000] Adding 1004056k swap on /dev/sda2.  Priority:-1 extents:1 across:1004056k 
+> .
+> Will now check root file system:fsck from util-linux-ng 2.17.2
+> [/sbin/fsck.ext3 (1) -- /] fsck.ext3 -a -C0 /dev/sda3 
+> /dev/sda3 has been mounted 37 times without being checked, check forced.
+> [  257.192000] Backtrace:===========                                \ 42.8%   
+> [  257.192000]  [<0000000040214f78>] add_partial+0x28/0x98
+> [  257.192000]  [<0000000040217ff8>] __slab_free+0x1d0/0x1d8
+> [  257.192000]  [<000000004021825c>] kmem_cache_free+0xc4/0x128
+> [  257.192000]  [<00000000401fd1a4>] remove_vma+0x8c/0xc0
+> [  257.192000]  [<00000000401fd3a8>] exit_mmap+0x1d0/0x220
+> [  257.192000]  [<0000000040156514>] mmput+0xd4/0x200
+> [  257.192000]  [<000000004015c7b8>] exit_mm+0x100/0x2c0
+> [  257.192000]  [<000000004015ef40>] do_exit+0x778/0x9d8
+> [  257.192000]  [<000000004015f1ec>] do_group_exit+0x4c/0xe0
+> [  257.192000]  [<000000004015f298>] sys_exit_group+0x18/0x28
+> [  257.192000]  [<0000000040106034>] syscall_exit+0x0/0x14
+> [  257.192000] 
+> [  257.192000] 
+> [  257.192000] Kernel Fault: Code=26 regs=00000040bf1807d0 (Addr=0000000000000000)
+> [  257.192000] 
+> [  257.192000]      YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+> [  257.192000] PSW: 00001000000001001111000000001110 Not tainted
+> [  257.192000] r00-03  000000ff0804f00e 0000000040769e40 0000000040214f78 0000000000000000
+> [  257.192000] r04-07  0000000040746e40 0000000000000001 0000004080ded370 0000000000000001
+> [  257.192000] r08-11  0000000040654150 0000000000000000 0000000000000001 0000000000000001
+> [  257.192000] r12-15  0000000000000000 00000000ffffffff 0000000000000024 0000000000000000
+> [  257.192000] r16-19  00000000fb4ead9c 00000000fb4eac54 0000000000000000 0000000000000000
+> [  257.192000] r20-23  000000000800000e 0000000000000001 000000007bbb7180 00000000401fd1a4
+> [  257.192000] r24-27  0000000000000001 0000004080ded370 0000000000000000 0000000040746e40
+> [  257.192000] r28-31  000000007ec0a908 00000040bf1807a0 00000040bf1807d0 0000000000000016
+> [  257.192000] sr00-03  00000000002d9000 0000000000000000 0000000000000000 00000000002d9000
+> [  257.192000] sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+> [  257.192000] 
+> [  257.192000] IASQ: 0000000000000000 0000000000000000 IAOQ: 000000004011bbc0 000000004011bbc4
+> [  257.192000]  IIR: 0f4015dc    ISR: 0000000000000000  IOR: 0000000000000000
+> [  257.192000]  CPU:        0   CR30: 00000040bf180000 CR31: fffffff0f0e098e0
+> [  257.192000]  ORIG_R28: 0000000040769e40
+> [  257.192000]  IAOQ[0]: _raw_spin_lock+0x0/0x20
+> [  257.192000]  IAOQ[1]: _raw_spin_lock+0x4/0x20
+> [  257.192000]  RP(r2): add_partial+0x28/0x98
+> [  257.192000] Backtrace:
+> [  257.192000]  [<0000000040214f78>] add_partial+0x28/0x98
+> [  257.192000]  [<0000000040217ff8>] __slab_free+0x1d0/0x1d8
+> [  257.192000]  [<000000004021825c>] kmem_cache_free+0xc4/0x128
+> [  257.192000]  [<00000000401fd1a4>] remove_vma+0x8c/0xc0
+> [  257.192000]  [<00000000401fd3a8>] exit_mmap+0x1d0/0x220
+> [  257.192000]  [<0000000040156514>] mmput+0xd4/0x200
+> [  257.192000]  [<000000004015c7b8>] exit_mm+0x100/0x2c0
+> [  257.192000]  [<000000004015ef40>] do_exit+0x778/0x9d8
+> [  257.192000]  [<000000004015f1ec>] do_group_exit+0x4c/0xe0
+> [  257.192000]  [<000000004015f298>] sys_exit_group+0x18/0x28
+> [  257.192000]  [<0000000040106034>] syscall_exit+0x0/0x14
+> [  257.192000] 
+> [  257.192000] Kernel panic - not syncing: Kernel Fault
+> [  257.192000] Backtrace:
+> [  257.192000]  [<000000004011f984>] show_stack+0x14/0x20
+> [  257.192000]  [<000000004011f9a8>] dump_stack+0x18/0x28
+> [  257.192000]  [<000000004015946c>] panic+0xd4/0x368
+> [  257.192000]  [<0000000040120024>] parisc_terminate+0x14c/0x170
+> [  257.192000]  [<000000004012059c>] handle_interruption+0x2ac/0x8f8
+> [  257.192000]  [<000000004011bbc0>] _raw_spin_lock+0x0/0x20
+> [  257.192000] 
+> [  257.192000] Rebooting in 5 seconds..
+> 
+> It seems to be a random intermittent mm crash because the next reboot
+> crashed with the same trace but after the fsck had completed and the
+> third came up to the login prompt.
 
-Please pull the latest timer-fixes-for-linus git tree from:
+I should add that this crash is with CONFIG_SLUB ... do you want me to
+retry with CONFIG_SLAB?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timer-fixes-for-linus
-
-The posix clocks change fixes a pretty bad latency regression introduced in 
-this cycle. (In hindsight this information should have been in the changelog)
-
- Thanks,
-
-	Ingo
-
------------------->
-Axel Lin (1):
-      RTC: rtc-omap: Fix a leak of the IRQ during init failure
-
-Richard Cochran (1):
-      posix clocks: Replace mutex with reader/writer semaphore
+James
 
 
- drivers/rtc/rtc-omap.c      |    2 +-
- include/linux/posix-clock.h |    5 +++--
- kernel/time/posix-clock.c   |   24 +++++++++---------------
- 3 files changed, 13 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index de0dd7b..bcae8dd 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -394,7 +394,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	return 0;
- 
- fail2:
--	free_irq(omap_rtc_timer, NULL);
-+	free_irq(omap_rtc_timer, rtc);
- fail1:
- 	rtc_device_unregister(rtc);
- fail0:
-diff --git a/include/linux/posix-clock.h b/include/linux/posix-clock.h
-index 369e19d..7f1183d 100644
---- a/include/linux/posix-clock.h
-+++ b/include/linux/posix-clock.h
-@@ -24,6 +24,7 @@
- #include <linux/fs.h>
- #include <linux/poll.h>
- #include <linux/posix-timers.h>
-+#include <linux/rwsem.h>
- 
- struct posix_clock;
- 
-@@ -104,7 +105,7 @@ struct posix_clock_operations {
-  * @ops:     Functional interface to the clock
-  * @cdev:    Character device instance for this clock
-  * @kref:    Reference count.
-- * @mutex:   Protects the 'zombie' field from concurrent access.
-+ * @rwsem:   Protects the 'zombie' field from concurrent access.
-  * @zombie:  If 'zombie' is true, then the hardware has disappeared.
-  * @release: A function to free the structure when the reference count reaches
-  *           zero. May be NULL if structure is statically allocated.
-@@ -117,7 +118,7 @@ struct posix_clock {
- 	struct posix_clock_operations ops;
- 	struct cdev cdev;
- 	struct kref kref;
--	struct mutex mutex;
-+	struct rw_semaphore rwsem;
- 	bool zombie;
- 	void (*release)(struct posix_clock *clk);
- };
-diff --git a/kernel/time/posix-clock.c b/kernel/time/posix-clock.c
-index 25028dd..c340ca6 100644
---- a/kernel/time/posix-clock.c
-+++ b/kernel/time/posix-clock.c
-@@ -19,7 +19,6 @@
-  */
- #include <linux/device.h>
- #include <linux/file.h>
--#include <linux/mutex.h>
- #include <linux/posix-clock.h>
- #include <linux/slab.h>
- #include <linux/syscalls.h>
-@@ -34,19 +33,19 @@ static struct posix_clock *get_posix_clock(struct file *fp)
- {
- 	struct posix_clock *clk = fp->private_data;
- 
--	mutex_lock(&clk->mutex);
-+	down_read(&clk->rwsem);
- 
- 	if (!clk->zombie)
- 		return clk;
- 
--	mutex_unlock(&clk->mutex);
-+	up_read(&clk->rwsem);
- 
- 	return NULL;
- }
- 
- static void put_posix_clock(struct posix_clock *clk)
- {
--	mutex_unlock(&clk->mutex);
-+	up_read(&clk->rwsem);
- }
- 
- static ssize_t posix_clock_read(struct file *fp, char __user *buf,
-@@ -156,7 +155,7 @@ static int posix_clock_open(struct inode *inode, struct file *fp)
- 	struct posix_clock *clk =
- 		container_of(inode->i_cdev, struct posix_clock, cdev);
- 
--	mutex_lock(&clk->mutex);
-+	down_read(&clk->rwsem);
- 
- 	if (clk->zombie) {
- 		err = -ENODEV;
-@@ -172,7 +171,7 @@ static int posix_clock_open(struct inode *inode, struct file *fp)
- 		fp->private_data = clk;
- 	}
- out:
--	mutex_unlock(&clk->mutex);
-+	up_read(&clk->rwsem);
- 	return err;
- }
- 
-@@ -211,25 +210,20 @@ int posix_clock_register(struct posix_clock *clk, dev_t devid)
- 	int err;
- 
- 	kref_init(&clk->kref);
--	mutex_init(&clk->mutex);
-+	init_rwsem(&clk->rwsem);
- 
- 	cdev_init(&clk->cdev, &posix_clock_file_operations);
- 	clk->cdev.owner = clk->ops.owner;
- 	err = cdev_add(&clk->cdev, devid, 1);
--	if (err)
--		goto no_cdev;
- 
- 	return err;
--no_cdev:
--	mutex_destroy(&clk->mutex);
--	return err;
- }
- EXPORT_SYMBOL_GPL(posix_clock_register);
- 
- static void delete_clock(struct kref *kref)
- {
- 	struct posix_clock *clk = container_of(kref, struct posix_clock, kref);
--	mutex_destroy(&clk->mutex);
-+
- 	if (clk->release)
- 		clk->release(clk);
- }
-@@ -238,9 +232,9 @@ void posix_clock_unregister(struct posix_clock *clk)
- {
- 	cdev_del(&clk->cdev);
- 
--	mutex_lock(&clk->mutex);
-+	down_write(&clk->rwsem);
- 	clk->zombie = true;
--	mutex_unlock(&clk->mutex);
-+	up_write(&clk->rwsem);
- 
- 	kref_put(&clk->kref, delete_clock);
- }
