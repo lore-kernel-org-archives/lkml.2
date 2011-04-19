@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab1DSOs6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:48:58 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52973 "EHLO
+	id S1753145Ab1DSOt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:49:27 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52980 "EHLO
 	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752789Ab1DSOs4 (ORCPT
+	with ESMTP id S1752789Ab1DSOtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:48:56 -0400
+	Tue, 19 Apr 2011 10:49:23 -0400
 From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH 4/8] gma500: Begin the GEMification of the cursor code
+Subject: [PATCH 6/8] gma500: GEM - now we have the basics we shall stick pins
+ in it
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 19 Apr 2011 15:27:53 +0100
-Message-ID: <20110419142748.16479.22040.stgit@localhost.localdomain>
+Date: Tue, 19 Apr 2011 15:28:21 +0100
+Message-ID: <20110419142809.16479.83632.stgit@localhost.localdomain>
 In-Reply-To: <20110419142432.16479.89255.stgit@localhost.localdomain>
 References: <20110419142432.16479.89255.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,265 +23,277 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do a first pass over the cursor code and rework it to use GEM objects for
-the cursor buffer as we need.
-
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_fb.c            |   32 ++--------------
- drivers/staging/gma500/psb_intel_display.c |   56 +++++++++++-----------------
- drivers/staging/gma500/psb_intel_drv.h     |   13 +------
- 3 files changed, 26 insertions(+), 75 deletions(-)
+ drivers/staging/gma500/psb_gtt.c           |   70 +++++++++++++++++++++-------
+ drivers/staging/gma500/psb_gtt.h           |   13 ++---
+ drivers/staging/gma500/psb_intel_display.c |   33 ++++++++-----
+ 3 files changed, 80 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index eaf960e..4ea39d6 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -732,39 +732,17 @@ static void psb_setup_outputs(struct drm_device *dev)
- 	}
+diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
+index 090d30e..a991c12 100644
+--- a/drivers/staging/gma500/psb_gtt.c
++++ b/drivers/staging/gma500/psb_gtt.c
+@@ -66,7 +66,6 @@ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
+ 	return dev_priv->gtt_map + (offset >> PAGE_SHIFT);
  }
  
--/* FIXME: rewrite these in terms of the gtt_range and GEM objects
-+/* FIXME: rewrite this in terms of the gtt_range and GEM objects
-    rather than faking them as we do now */
- 
--static void *psb_bo_from_handle(struct drm_device *dev,
--				struct drm_file *file_priv,
--				unsigned int handle)
--{
--	return NULL;
--}
 -
--static size_t psb_bo_size(struct drm_device *dev, void *bof)
--{
--	return 0;
--}
--
--static size_t psb_bo_offset(struct drm_device *dev, void *bof)
-+static size_t psb_bo_offset(struct drm_device *dev, void *obj)
+ /**
+  *	psb_gtt_insert	-	put an object into the GART
+  *	@dev: our DRM device
+@@ -77,21 +76,19 @@ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
+  *
+  *	FIXME: gtt lock ?
+  */
+-int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
++static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
  {
- 	struct psb_framebuffer *psbfb
--		= (struct psb_framebuffer *)bof;
-+		= (struct psb_framebuffer *)obj;
+ 	u32 *gtt_slot, pte;
+ 	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
+ 	struct page **pages;
+ 	int i;
  
- 	return (size_t)psbfb->offset;
- }
- 
--static int psb_bo_pin_for_scanout(struct drm_device *dev, void *bo)
--{
--	 return 0;
--}
--
--static int psb_bo_unpin_for_scanout(struct drm_device *dev, void *bo)
--{
--	return 0;
--}
--
- void psb_modeset_init(struct drm_device *dev)
- {
- 	struct drm_psb_private *dev_priv =
-@@ -774,11 +752,7 @@ void psb_modeset_init(struct drm_device *dev)
- 
- 	PSB_DEBUG_ENTRY("\n");
- 	/* Init mm functions */
--	mode_dev->bo_from_handle = psb_bo_from_handle;
--	mode_dev->bo_size = psb_bo_size;
- 	mode_dev->bo_offset = psb_bo_offset;
--	mode_dev->bo_pin_for_scanout = psb_bo_pin_for_scanout;
--	mode_dev->bo_unpin_for_scanout = psb_bo_unpin_for_scanout;
- 
- 	drm_mode_config_init(dev);
- 
-diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
-index 6e14657..697e1c3 100644
---- a/drivers/staging/gma500/psb_intel_display.c
-+++ b/drivers/staging/gma500/psb_intel_display.c
-@@ -1014,8 +1014,6 @@ static void psb_intel_crtc_restore(struct drm_crtc *crtc)
- 		REG_WRITE(paletteReg + (i << 2), crtc_state->savePalette[i]);
- }
- 
--#if 0
--/* FIXME */
- static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 				 struct drm_file *file_priv,
- 				 uint32_t handle,
-@@ -1024,17 +1022,14 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	struct drm_device *dev = crtc->dev;
- 	struct drm_psb_private *dev_priv =
- 				(struct drm_psb_private *)dev->dev_private;
--	struct psb_gtt *pg = dev_priv->pg;
- 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
--	struct psb_intel_mode_device *mode_dev = psb_intel_crtc->mode_dev;
- 	int pipe = psb_intel_crtc->pipe;
- 	uint32_t control = (pipe == 0) ? CURACNTR : CURBCNTR;
- 	uint32_t base = (pipe == 0) ? CURABASE : CURBBASE;
- 	uint32_t temp;
- 	size_t addr = 0;
--	uint32_t page_offset;
--	size_t size;
--	void *bo;
-+	struct gtt_range *gt;
-+	struct drm_gem_object *obj;
- 	int ret;
- 
- 	DRM_DEBUG("\n");
-@@ -1043,8 +1038,7 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	if (!handle) {
- 		DRM_DEBUG("cursor off\n");
- 		/* turn off the cursor */
--		temp = 0;
--		temp |= CURSOR_MODE_DISABLE;
-+		temp = CURSOR_MODE_DISABLE;
- 
-         	if (gma_power_begin(dev, false)) {
- 			REG_WRITE(control, temp);
-@@ -1052,12 +1046,10 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 			gma_power_end(dev);
- 		}
- 
--		/* unpin the old bo */
--		if (psb_intel_crtc->cursor_bo) {
--			mode_dev->bo_unpin_for_scanout(dev,
--						       psb_intel_crtc->
--						       cursor_bo);
--			psb_intel_crtc->cursor_bo = NULL;
-+		/* Unpin the old GEM object */
-+		if (psb_intel_crtc->cursor_obj) {
-+			drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
-+			psb_intel_crtc->cursor_obj = NULL;
- 		}
- 
- 		return 0;
-@@ -1069,15 +1061,11 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+-	if (r->stolen)
+-		return 0;
+ 	if (r->pages == NULL) {
+ 		WARN_ON(1);
  		return -EINVAL;
  	}
  
--	bo = mode_dev->bo_from_handle(dev, file_priv, handle);
--	if (!bo)
-+	obj = drm_gem_object_lookup(dev, file_priv, handle);
-+	if (!obj)
- 		return -ENOENT;
+-	WARN_ON(r->in_gart);	/* refcount these maybe ? */
++	WARN_ON(r->stolen);	/* refcount these maybe ? */
  
--	ret = mode_dev->bo_pin_for_scanout(dev, bo);
--	if (ret)
--		return ret;
--	size = mode_dev->bo_size(dev, bo);
--	if (size < width * height * 4) {
-+	if (obj->size < width * height * 4) {
- 		DRM_ERROR("buffer is to small\n");
+ 	gtt_slot = psb_gtt_entry(dev, r);
+ 	pages = r->pages;
+@@ -118,16 +115,14 @@ int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
+  *	page table entries with the dummy page
+  */
+ 
+-void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r)
++static void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r)
+ {
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	u32 *gtt_slot, pte;
+ 	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
+ 	int i;
+ 
+-	if (r->stolen)
+-		return;
+-	WARN_ON(!r->in_gart);
++	WARN_ON(r->stolen);
+ 
+ 	gtt_slot = psb_gtt_entry(dev, r);
+ 	pte = psb_gtt_mask_pte(page_to_pfn(dev_priv->scratch_page), 0);;
+@@ -146,7 +141,7 @@ void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r)
+  *	Pin and build an in kernel list of the pages that back our GEM object.
+  *	While we hold this the pages cannot be swapped out
+  */
+-int psb_gtt_attach_pages(struct gtt_range *gt)
++static int psb_gtt_attach_pages(struct gtt_range *gt)
+ {
+ 	struct inode *inode;
+ 	struct address_space *mapping;
+@@ -189,13 +184,11 @@ err:
+  *	must have been removed from the GART as they could now be paged out
+  *	and move bus address.
+  */
+-void psb_gtt_detach_pages(struct gtt_range *gt)
++static void psb_gtt_detach_pages(struct gtt_range *gt)
+ {
+ 	int i;
+ 	int pages = (gt->resource.end + 1 - gt->resource.start) >> PAGE_SHIFT;
+ 
+-	WARN_ON(gt->in_gart);
+-
+ 	for (i = 0; i < pages; i++) {
+ 		/* FIXME: do we need to force dirty */
+ 		set_page_dirty(gt->pages[i]);
+@@ -207,6 +200,50 @@ void psb_gtt_detach_pages(struct gtt_range *gt)
+ }
+ 
+ /*
++ *	Manage pinning of resources into the GART
++ */
++
++int psb_gtt_pin(struct drm_device *dev, struct gtt_range *gt)
++{
++	int ret;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++
++	mutex_lock(&dev_priv->gtt_mutex);
++
++	if (gt->in_gart == 0 && gt->stolen == 0) {
++		ret = psb_gtt_attach_pages(gt);
++		if (ret < 0)
++			goto out;
++		ret = psb_gtt_insert(dev, gt);
++		if (ret < 0) {
++			psb_gtt_detach_pages(gt);
++			goto out;
++		}
++	}
++	gt->in_gart++;
++out:
++	mutex_unlock(&dev_priv->gtt_mutex);
++	return ret;
++}
++
++void psb_gtt_unpin(struct drm_device *dev, struct gtt_range *gt)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++
++	mutex_lock(&dev_priv->gtt_mutex);
++
++	WARN_ON(!gt->in_gart);
++
++	gt->in_gart--;
++	if (gt->in_gart == 0 && gt->stolen == 0) {
++		psb_gtt_remove(dev, gt);
++		psb_gtt_detach_pages(gt);
++	}
++
++	mutex_unlock(&dev_priv->gtt_mutex);
++}
++	
++/*
+  *	GTT resource allocator - allocate and manage GTT address space
+  */
+ 
+@@ -265,10 +302,7 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
+ static void psb_gtt_destroy(struct kref *kref)
+ {
+ 	struct gtt_range *gt = container_of(kref, struct gtt_range, kref);
+-	if (gt->in_gart && !gt->stolen)
+-		psb_gtt_remove(gt->gem.dev, gt);
+-	if (gt->pages)
+-		psb_gtt_detach_pages(gt);
++	WARN_ON(gt->in_gart && !gt->stolen);
+ 	release_resource(&gt->resource);
+ 	kfree(gt);
+ }
+@@ -345,6 +379,8 @@ int psb_gtt_init(struct drm_device *dev, int resume)
+ 	int ret = 0;
+ 	uint32_t pte;
+ 
++	mutex_init(&dev_priv->gtt_mutex);
++
+ 	dev_priv->pg = pg = psb_gtt_alloc(dev);
+ 	if (pg == NULL)
+ 	        return -ENOMEM;
+diff --git a/drivers/staging/gma500/psb_gtt.h b/drivers/staging/gma500/psb_gtt.h
+index b5d6530..dc553e0 100644
+--- a/drivers/staging/gma500/psb_gtt.h
++++ b/drivers/staging/gma500/psb_gtt.h
+@@ -44,18 +44,17 @@ struct gtt_range {
+ 	struct resource resource;
+ 	u32 offset;
+ 	struct kref kref;
+-        struct drm_gem_object gem;	/* GEM high level stuff */
+-        int in_gart;			/* Currently in the GART */
+-        int stolen;			/* Backed from stolen RAM */
+-        struct page **pages;		/* Backing pages if present */
++	struct drm_gem_object gem;	/* GEM high level stuff */
++	int in_gart;			/* Currently in the GART (ref ct) */
++        bool stolen;			/* Backed from stolen RAM */
++	struct page **pages;		/* Backing pages if present */
+ };
+ 
+-extern int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r);
+-extern void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r);
+-
+ extern struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
+ 						const char *name, int backed);
+ extern void psb_gtt_kref_put(struct gtt_range *gt);
+ extern void psb_gtt_free_range(struct drm_device *dev, struct gtt_range *gt);
++extern int psb_gtt_pin(struct drm_device *dev, struct gtt_range *gt);
++extern void psb_gtt_unpin(struct drm_device *dev, struct gtt_range *gt);
+ 
+ #endif
+diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
+index 4d384d5..b5a36d2 100644
+--- a/drivers/staging/gma500/psb_intel_display.c
++++ b/drivers/staging/gma500/psb_intel_display.c
+@@ -341,7 +341,6 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
+ 	/* struct drm_i915_master_private *master_priv; */
+ 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
+ 	struct psb_framebuffer *psbfb = to_psb_fb(crtc->fb);
+-	struct psb_intel_mode_device *mode_dev = psb_intel_crtc->mode_dev;
+ 	int pipe = psb_intel_crtc->pipe;
+ 	unsigned long start, offset;
+ 	int dspbase = (pipe == 0 ? DSPABASE : DSPBBASE);
+@@ -1020,8 +1019,6 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 				 uint32_t width, uint32_t height)
+ {
+ 	struct drm_device *dev = crtc->dev;
+-	struct drm_psb_private *dev_priv =
+-				(struct drm_psb_private *)dev->dev_private;
+ 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
+ 	int pipe = psb_intel_crtc->pipe;
+ 	uint32_t control = (pipe == 0) ? CURACNTR : CURBCNTR;
+@@ -1048,6 +1045,9 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 
+ 		/* Unpin the old GEM object */
+ 		if (psb_intel_crtc->cursor_obj) {
++                	gt = container_of(psb_intel_crtc->cursor_obj,
++                	                        struct gtt_range, gem);
++			psb_gtt_unpin(crtc->dev, gt);
+ 			drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
+ 			psb_intel_crtc->cursor_obj = NULL;
+ 		}
+@@ -1070,19 +1070,17 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
  		return -ENOMEM;
  	}
-@@ -1086,15 +1074,15 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	DRM_DEBUG("%s: map meminfo for hw cursor. handle %x\n",
- 						__func__, handle);
  
--	ret = psb_gtt_map_meminfo(dev, (void *)handle, &page_offset);
-+/* Pin : FIXME
- 	if (ret) {
- 		DRM_ERROR("Can not map meminfo to GTT. handle 0x%x\n", handle);
- 		return ret;
- 	}
-+*/
+-	/*insert this bo into gtt*/
+-	DRM_DEBUG("%s: map meminfo for hw cursor. handle %x\n",
+-						__func__, handle);
 +	gt = container_of(obj, struct gtt_range, gem);
  
--	addr = page_offset << PAGE_SHIFT;
--
--	addr += dev_priv->stolen_base;
-+	addr = gt->resource.start;
+-/* Pin : FIXME
++	/* Pin the memory into the GTT */
++	ret = psb_gtt_pin(crtc->dev, gt);
+ 	if (ret) {
+-		DRM_ERROR("Can not map meminfo to GTT. handle 0x%x\n", handle);
++		DRM_ERROR("Can not pin down handle 0x%x\n", handle);
+ 		return ret;
+ 	}
+-*/
+-	gt = container_of(obj, struct gtt_range, gem);
+ 
+-	addr = gt->resource.start;
++
++	addr = gt->offset;	/* Or resource.start ??? */
  
  	psb_intel_crtc->cursor_addr = addr;
  
-@@ -1110,9 +1098,9 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	}
+@@ -1099,6 +1097,9 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
  
  	/* unpin the old bo */
--	if (psb_intel_crtc->cursor_bo && psb_intel_crtc->cursor_bo != bo) {
--		mode_dev->bo_unpin_for_scanout(dev, psb_intel_crtc->cursor_bo);
--		psb_intel_crtc->cursor_bo = bo;
-+	if (psb_intel_crtc->cursor_obj && psb_intel_crtc->cursor_obj != obj) {
-+		drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
-+		psb_intel_crtc->cursor_obj = obj;
+ 	if (psb_intel_crtc->cursor_obj && psb_intel_crtc->cursor_obj != obj) {
++               	gt = container_of(psb_intel_crtc->cursor_obj,
++               	                        struct gtt_range, gem);
++		psb_gtt_unpin(crtc->dev, gt);
+ 		drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
+ 		psb_intel_crtc->cursor_obj = obj;
  	}
- 
- 	return 0;
-@@ -1124,7 +1112,7 @@ static int psb_intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
- 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
- 	int pipe = psb_intel_crtc->pipe;
- 	uint32_t temp = 0;
--	uint32_t adder;
-+	uint32_t addr;
- 
- 
- 	if (x < 0) {
-@@ -1139,16 +1127,15 @@ static int psb_intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
- 	temp |= ((x & CURSOR_POS_MASK) << CURSOR_X_SHIFT);
- 	temp |= ((y & CURSOR_POS_MASK) << CURSOR_Y_SHIFT);
- 
--	adder = psb_intel_crtc->cursor_addr;
-+	addr = psb_intel_crtc->cursor_addr;
- 
-        	if (gma_power_begin(dev, false)) {
- 		REG_WRITE((pipe == 0) ? CURAPOS : CURBPOS, temp);
--		REG_WRITE((pipe == 0) ? CURABASE : CURBBASE, adder);
-+		REG_WRITE((pipe == 0) ? CURABASE : CURBBASE, addr);
- 		gma_power_end(dev);
- 	}
- 	return 0;
- }
--#endif
- 
- static void psb_intel_crtc_gamma_set(struct drm_crtc *crtc, u16 *red,
- 			 u16 *green, u16 *blue, uint32_t type, uint32_t size)
-@@ -1315,6 +1302,7 @@ static void psb_intel_crtc_destroy(struct drm_crtc *crtc)
+@@ -1301,8 +1302,16 @@ struct drm_display_mode *psb_intel_crtc_mode_get(struct drm_device *dev,
+ static void psb_intel_crtc_destroy(struct drm_crtc *crtc)
  {
  	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
++	struct gtt_range *gt;
  
-+	/* FIXME: do we need to put the final GEM cursor ? */
+-	/* FIXME: do we need to put the final GEM cursor ? */
++	/* Unpin the old GEM object */
++	if (psb_intel_crtc->cursor_obj) {
++		gt = container_of(psb_intel_crtc->cursor_obj,
++						struct gtt_range, gem);
++		psb_gtt_unpin(crtc->dev, gt);
++		drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
++		psb_intel_crtc->cursor_obj = NULL;
++	}
  	kfree(psb_intel_crtc->crtc_state);
  	drm_crtc_cleanup(crtc);
  	kfree(psb_intel_crtc);
-@@ -1332,10 +1320,8 @@ static const struct drm_crtc_helper_funcs psb_intel_helper_funcs = {
- const struct drm_crtc_funcs psb_intel_crtc_funcs = {
- 	.save = psb_intel_crtc_save,
- 	.restore = psb_intel_crtc_restore,
--/* FIXME 
- 	.cursor_set = psb_intel_crtc_cursor_set,
- 	.cursor_move = psb_intel_crtc_cursor_move,
--*/	
- 	.gamma_set = psb_intel_crtc_gamma_set,
- 	.set_config = psb_crtc_set_config,
- 	.destroy = psb_intel_crtc_destroy,
-diff --git a/drivers/staging/gma500/psb_intel_drv.h b/drivers/staging/gma500/psb_intel_drv.h
-index f6229c5..6006ddd 100644
---- a/drivers/staging/gma500/psb_intel_drv.h
-+++ b/drivers/staging/gma500/psb_intel_drv.h
-@@ -76,13 +76,7 @@ struct psb_intel_mode_device {
- 	/*
- 	 * Abstracted memory manager operations
- 	 */
--	void *(*bo_from_handle) (struct drm_device *dev,
--				 struct drm_file *file_priv,
--				 unsigned int handle);
--	 size_t(*bo_size) (struct drm_device *dev, void *bo);
- 	 size_t(*bo_offset) (struct drm_device *dev, void *bo);
--	int (*bo_pin_for_scanout) (struct drm_device *dev, void *bo);
--	int (*bo_unpin_for_scanout) (struct drm_device *dev, void *bo);
- 
- 	/*
- 	 * Cursor
-@@ -156,11 +150,8 @@ struct psb_intel_crtc {
- 	/* a mode_set for fbdev users on this crtc */
- 	struct drm_mode_set mode_set;
- 
--	/* current bo we scanout from */
--	void *scanout_bo;
--
--	/* current bo we cursor from */
--	void *cursor_bo;
-+	/* GEM object that holds our cursor */
-+	struct drm_gem_object *cursor_obj;
- 
- 	struct drm_display_mode saved_mode;
- 	struct drm_display_mode saved_adjusted_mode;
 
