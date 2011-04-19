@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab1DSO34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:29:56 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:9994 "EHLO
-	VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752079Ab1DSO3z (ORCPT
+	id S1752789Ab1DSOaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:30:07 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49261 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab1DSOaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:29:55 -0400
-X-SpamScore: -34
-X-BigFish: VPS-34(zzbb2dK9371O179dN1432N98dKzz1202hzz15d4Rz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LJWLLP-02-0L2-02
-X-M-MSG: 
-Date: Tue, 19 Apr 2011 16:29:04 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: "H. Peter Anvin" <hpa@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH 4/4] x86, gart: Make sure GART does not map physmem
- above 1TB
-Message-ID: <20110419142904.GT2192@amd.com>
-References: <1303134346-5805-1-git-send-email-joerg.roedel@amd.com>
- <1303134346-5805-5-git-send-email-joerg.roedel@amd.com>
- <4DAC4EC0.80008@zytor.com>
- <4DAC5099.4010403@kernel.org>
- <20110418145941.GJ2192@amd.com>
- <20110418155033.GC8623@elte.hu>
- <20110419061259.GL2192@amd.com>
- <20110419072520.GD25353@elte.hu>
- <4DAD919A.3080102@kernel.org>
+	Tue, 19 Apr 2011 10:30:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=B/XSrAasLJ52cajC2NtSaU5PnbSWpfMGlyJNYArSlGKr9F4hQ3F/0wqx5RTWhBdDb8
+         ih3T/FobMBdt1jpZfpqkKh8ccUSmhA9XoralNjSHIQwmLaAzl5Vr+VXPPLWAHdrX1T3c
+         L7sxbAIPlB0ojPDE+dZVqaqNuQiPsGcKcst1A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4DAD919A.3080102@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+Date: Tue, 19 Apr 2011 23:30:01 +0900
+Message-ID: <BANLkTink1Lz4s6D+A7ZPKGTT9a5BUWu6VA@mail.gmail.com>
+Subject: SPI problem
+From: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 09:43:54AM -0400, H. Peter Anvin wrote:
-> On 04/19/2011 12:25 AM, Ingo Molnar wrote:
-> >>>>
-> >>>> Yes, this file mostly contains the dma-ops implementation that uses the
-> >>>> K8 gart plus some k8-gart specific initialization functions.
-> >>>
-> >>> Does the file want to be renamed to pci-amd_gart_64.c or so?
-> >>
-> >> Hmm, that seems long. How about just amd64_gart.c?
-> > 
-> 
-> Arguably we call this the k8_nb in other places, so my suggestion would
-> be k8_gart.c
+Hello there,
+I have a device which is Written_to/Read_from using SPI Bus.
 
-The k8_nb was renamed to amd_nb recently. The NB is implemented in all
-64 bit AMD processors and there are more today then K8. The k8_nb was
-historically chosen and misleading today.
+I initialize the device like this:
 
-	Joerg
+static int __init myDEV_init(void)
+{
+   return spi_register_driver(&myDEV_driver);
+}
+module_init(myDEV_init);
 
--- 
-AMD Operating System Research Center
+My myDEV_probe() function looks like this:
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+static int __devinit myDEV_probe(struct spi_device *spi)
+{
+.....
+.....
+/*when my CPU receives a particular IRQ, I have to do a spi_read() and
+do couple of spi_write(), I am using like this:*/
+err = request_threaded_irq (MY_DEV_IRQ, NULL, myDEV_irq_thread,
+           IRQF_TRIGGER_RISING, "MYDEV", NULL);
 
+return 0;
+}
+
+When the Interrupt is received by the CPU, myDEV_irq_thread is being called.
+However, in the ISR I have to do  spi_read(). This is always returning
+"Timed out".
+
+To verify if the device is not at all working, along with registering
+for the IRQ, I also created a char device through I did a IOCTL.
+The IOCTL command in turn does spi_read(). In this case spi_read() is
+successful.
+
+Since it is necessary to do spi_read() in my ISR, I searched around
+and found some information that
+spi_read() is callable only from contexts that can sleep.
+
+How can I make my ISR sleep? or is there any other way of doing this?
+
+Any help is highly appreciated.
+Thanks & regards
+Murali
