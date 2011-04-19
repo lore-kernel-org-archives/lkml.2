@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab1DSOtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:49:08 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52977 "EHLO
+	id S1753224Ab1DSOs6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:48:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52973 "EHLO
 	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753052Ab1DSOtG (ORCPT
+	with ESMTP id S1752789Ab1DSOs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:49:06 -0400
+	Tue, 19 Apr 2011 10:48:56 -0400
 From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH 5/8] gma500: GEMify the frame buffer base bits
+Subject: [PATCH 4/8] gma500: Begin the GEMification of the cursor code
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 19 Apr 2011 15:28:03 +0100
-Message-ID: <20110419142759.16479.44771.stgit@localhost.localdomain>
+Date: Tue, 19 Apr 2011 15:27:53 +0100
+Message-ID: <20110419142748.16479.22040.stgit@localhost.localdomain>
 In-Reply-To: <20110419142432.16479.89255.stgit@localhost.localdomain>
 References: <20110419142432.16479.89255.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,282 +22,265 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This then kills off the old bo_ interfaces
+Do a first pass over the cursor code and rework it to use GEM objects for
+the cursor buffer as we need.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/mrst_crtc.c         |   15 +++++++--------
- drivers/staging/gma500/psb_2d.c            |    4 ++--
- drivers/staging/gma500/psb_drm.h           |   11 -----------
- drivers/staging/gma500/psb_drv.c           |    4 ++--
- drivers/staging/gma500/psb_drv.h           |    2 --
- drivers/staging/gma500/psb_fb.c            |   24 +++++-------------------
- drivers/staging/gma500/psb_fb.h            |    5 +----
- drivers/staging/gma500/psb_intel_display.c |   14 +++++++-------
- 8 files changed, 24 insertions(+), 55 deletions(-)
+ drivers/staging/gma500/psb_fb.c            |   32 ++--------------
+ drivers/staging/gma500/psb_intel_display.c |   56 +++++++++++-----------------
+ drivers/staging/gma500/psb_intel_drv.h     |   13 +------
+ 3 files changed, 26 insertions(+), 75 deletions(-)
 
-diff --git a/drivers/staging/gma500/mrst_crtc.c b/drivers/staging/gma500/mrst_crtc.c
-index 664d0e7..e4a0c03 100644
---- a/drivers/staging/gma500/mrst_crtc.c
-+++ b/drivers/staging/gma500/mrst_crtc.c
-@@ -530,9 +530,8 @@ int mrst_pipe_set_base(struct drm_crtc *crtc,
- 	/* struct drm_i915_master_private *master_priv; */
- 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
- 	struct psb_framebuffer *psbfb = to_psb_fb(crtc->fb);
--	struct psb_intel_mode_device *mode_dev = psb_intel_crtc->mode_dev;
- 	int pipe = psb_intel_crtc->pipe;
--	unsigned long Start, Offset;
-+	unsigned long start, offset;
- 	/* FIXME: check if we need this surely MRST is pipe 0 only */
- 	int dspbase = (pipe == 0 ? DSPALINOFF : DSPBBASE);
- 	int dspsurf = (pipe == 0 ? DSPASURF : DSPBSURF);
-@@ -552,8 +551,8 @@ int mrst_pipe_set_base(struct drm_crtc *crtc,
- 	if (!gma_power_begin(dev, true))
- 		return 0;
- 
--	Start = mode_dev->bo_offset(dev, psbfb);
--	Offset = y * crtc->fb->pitch + x * (crtc->fb->bits_per_pixel / 8);
-+	start = psbfb->gtt->offset;
-+	offset = y * crtc->fb->pitch + x * (crtc->fb->bits_per_pixel / 8);
- 
- 	REG_WRITE(dspstride, crtc->fb->pitch);
- 
-@@ -581,14 +580,14 @@ int mrst_pipe_set_base(struct drm_crtc *crtc,
- 	}
- 	REG_WRITE(dspcntr_reg, dspcntr);
- 
--	DRM_DEBUG("Writing base %08lX %08lX %d %d\n", Start, Offset, x, y);
-+	DRM_DEBUG("Writing base %08lX %08lX %d %d\n", start, offset, x, y);
- 	if (0 /* FIXMEAC - check what PSB needs */) {
--		REG_WRITE(dspbase, Offset);
-+		REG_WRITE(dspbase, offset);
- 		REG_READ(dspbase);
--		REG_WRITE(dspsurf, Start);
-+		REG_WRITE(dspsurf, start);
- 		REG_READ(dspsurf);
- 	} else {
--		REG_WRITE(dspbase, Start + Offset);
-+		REG_WRITE(dspbase, start + offset);
- 		REG_READ(dspbase);
- 	}
- 
-diff --git a/drivers/staging/gma500/psb_2d.c b/drivers/staging/gma500/psb_2d.c
-index 29959de..0bd834c 100644
---- a/drivers/staging/gma500/psb_2d.c
-+++ b/drivers/staging/gma500/psb_2d.c
-@@ -160,7 +160,7 @@ static void psbfb_fillrect_accel(struct fb_info *info,
- 	if (!fb)
- 		return;
- 
--	offset = psbfb->offset;
-+	offset = psbfb->gtt->offset;
- 	stride = fb->pitch;
- 
- 	switch (fb->depth) {
-@@ -303,7 +303,7 @@ static void psbfb_copyarea_accel(struct fb_info *info,
- 	if (!fb)
- 		return;
- 
--	offset = psbfb->offset;
-+	offset = psbfb->gtt->offset;
- 	stride = fb->pitch;
- 
- 	switch (fb->depth) {
-diff --git a/drivers/staging/gma500/psb_drm.h b/drivers/staging/gma500/psb_drm.h
-index 28862c7..49ffdd5 100644
---- a/drivers/staging/gma500/psb_drm.h
-+++ b/drivers/staging/gma500/psb_drm.h
-@@ -219,17 +219,6 @@ struct drm_psb_register_rw_arg {
- 	u32 subpicture_disable_mask;
- };
- 
--struct psb_gtt_mapping_arg {
--	void *hKernelMemInfo;
--	u32 offset_pages;
--};
--
--struct drm_psb_getpageaddrs_arg {
--	u32 handle;
--	unsigned long *page_addrs;
--	unsigned long gtt_offset;
--};
--
- /* Controlling the kernel modesetting buffers */
- 
- #define DRM_PSB_KMS_OFF		0x00
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index f501cd7..01f6ed7 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -870,11 +870,11 @@ static int psb_mode_operation_ioctl(struct drm_device *dev, void *data,
- 		psb_fb = to_psb_fb(drm_fb);
- 
- 		if (gma_power_begin(dev, 0)) {
--			REG_WRITE(DSPASURF, psb_fb->offset);
-+			REG_WRITE(DSPASURF, psb_fb->gtt->offset);
- 			REG_READ(DSPASURF);
- 			gma_power_end(dev);
- 		} else {
--			dev_priv->saveDSPASURF = psb_fb->offset;
-+			dev_priv->saveDSPASURF = psb_fb->gtt->offset;
- 		}
- 
- 		return 0;
-diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index 4c983ff..e19a454 100644
---- a/drivers/staging/gma500/psb_drv.h
-+++ b/drivers/staging/gma500/psb_drv.h
-@@ -35,8 +35,6 @@
- /*Append new drm mode definition here, align with libdrm definition*/
- #define DRM_MODE_SCALE_NO_SCALE   2
- 
--extern struct ttm_bo_driver psb_ttm_bo_driver;
--
- enum {
- 	CHIP_PSB_8108 = 0,
- 	CHIP_PSB_8109 = 1,
 diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index 4ea39d6..f36e83f 100644
+index eaf960e..4ea39d6 100644
 --- a/drivers/staging/gma500/psb_fb.c
 +++ b/drivers/staging/gma500/psb_fb.c
-@@ -310,7 +310,7 @@ static struct fb_ops psbfb_ops = {
- 
- static struct drm_framebuffer *psb_framebuffer_create
- 			(struct drm_device *dev, struct drm_mode_fb_cmd *r,
--			 void *mm_private)
-+			 struct gtt_range *gt)
- {
- 	struct psb_framebuffer *fb;
- 	int ret;
-@@ -326,7 +326,7 @@ static struct drm_framebuffer *psb_framebuffer_create
- 
- 	drm_helper_mode_fill_fb_struct(&fb->base, r);
- 
--	fb->mem = mm_private;
-+	fb->gtt = gt;
- 
- 	return &fb->base;
- 
-@@ -380,7 +380,6 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 		goto out_err1;
- 	}
- 	psbfb = to_psb_fb(fb);
--	psbfb->size = size;
- 
- 	info = framebuffer_alloc(sizeof(struct psb_fbdev), device);
- 	if (!info) {
-@@ -524,7 +523,7 @@ int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
- 
- 	if (fbdev->psb_fb_helper.fbdev) {
- 		info = fbdev->psb_fb_helper.fbdev;
--		psb_gtt_free_range(dev, psbfb->mem);
-+		psb_gtt_free_range(dev, psbfb->gtt);
- 		unregister_framebuffer(info);
- 		iounmap(info->screen_base);
- 		framebuffer_release(info);
-@@ -611,7 +610,7 @@ static int psb_user_framebuffer_create_handle(struct drm_framebuffer *fb,
- 					      unsigned int *handle)
- {
-         struct psb_framebuffer *psbfb = to_psb_fb(fb);
--        struct gtt_range *r = psbfb->mem;
-+        struct gtt_range *r = psbfb->gtt;
-         return drm_gem_handle_create(file_priv, &r->gem, handle);
- }
- 
-@@ -626,7 +625,7 @@ static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb)
- {
- 	struct drm_device *dev = fb->dev;
- 	struct psb_framebuffer *psbfb = to_psb_fb(fb);
--	struct gtt_range *r = psbfb->mem;
-+	struct gtt_range *r = psbfb->gtt;
- 
- 	if (psbfb->fbdev)
- 		psbfb_remove(dev, fb);
-@@ -732,17 +731,6 @@ static void psb_setup_outputs(struct drm_device *dev)
+@@ -732,39 +732,17 @@ static void psb_setup_outputs(struct drm_device *dev)
  	}
  }
  
--/* FIXME: rewrite this in terms of the gtt_range and GEM objects
--   rather than faking them as we do now */
--
--static size_t psb_bo_offset(struct drm_device *dev, void *obj)
+-/* FIXME: rewrite these in terms of the gtt_range and GEM objects
++/* FIXME: rewrite this in terms of the gtt_range and GEM objects
+    rather than faking them as we do now */
+ 
+-static void *psb_bo_from_handle(struct drm_device *dev,
+-				struct drm_file *file_priv,
+-				unsigned int handle)
 -{
--	struct psb_framebuffer *psbfb
--		= (struct psb_framebuffer *)obj;
+-	return NULL;
+-}
 -
--	return (size_t)psbfb->offset;
+-static size_t psb_bo_size(struct drm_device *dev, void *bof)
+-{
+-	return 0;
+-}
+-
+-static size_t psb_bo_offset(struct drm_device *dev, void *bof)
++static size_t psb_bo_offset(struct drm_device *dev, void *obj)
+ {
+ 	struct psb_framebuffer *psbfb
+-		= (struct psb_framebuffer *)bof;
++		= (struct psb_framebuffer *)obj;
+ 
+ 	return (size_t)psbfb->offset;
+ }
+ 
+-static int psb_bo_pin_for_scanout(struct drm_device *dev, void *bo)
+-{
+-	 return 0;
+-}
+-
+-static int psb_bo_unpin_for_scanout(struct drm_device *dev, void *bo)
+-{
+-	return 0;
 -}
 -
  void psb_modeset_init(struct drm_device *dev)
  {
  	struct drm_psb_private *dev_priv =
-@@ -751,8 +739,6 @@ void psb_modeset_init(struct drm_device *dev)
- 	int i;
+@@ -774,11 +752,7 @@ void psb_modeset_init(struct drm_device *dev)
  
  	PSB_DEBUG_ENTRY("\n");
--	/* Init mm functions */
--	mode_dev->bo_offset = psb_bo_offset;
+ 	/* Init mm functions */
+-	mode_dev->bo_from_handle = psb_bo_from_handle;
+-	mode_dev->bo_size = psb_bo_size;
+ 	mode_dev->bo_offset = psb_bo_offset;
+-	mode_dev->bo_pin_for_scanout = psb_bo_pin_for_scanout;
+-	mode_dev->bo_unpin_for_scanout = psb_bo_unpin_for_scanout;
  
  	drm_mode_config_init(dev);
  
-diff --git a/drivers/staging/gma500/psb_fb.h b/drivers/staging/gma500/psb_fb.h
-index b943a9f..c8ec0d6 100644
---- a/drivers/staging/gma500/psb_fb.h
-+++ b/drivers/staging/gma500/psb_fb.h
-@@ -32,10 +32,7 @@ struct psb_framebuffer {
- 	struct drm_framebuffer base;
- 	struct address_space *addr_space;
- 	struct fb_info *fbdev;
--	struct gtt_range *mem;
--	void * hKernelMemInfo;
--	uint32_t size;
--	uint32_t offset;
-+	struct gtt_range *gtt;
- };
- 
- struct psb_fbdev {
 diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
-index 697e1c3..4d384d5 100644
+index 6e14657..697e1c3 100644
 --- a/drivers/staging/gma500/psb_intel_display.c
 +++ b/drivers/staging/gma500/psb_intel_display.c
-@@ -343,7 +343,7 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
- 	struct psb_framebuffer *psbfb = to_psb_fb(crtc->fb);
- 	struct psb_intel_mode_device *mode_dev = psb_intel_crtc->mode_dev;
+@@ -1014,8 +1014,6 @@ static void psb_intel_crtc_restore(struct drm_crtc *crtc)
+ 		REG_WRITE(paletteReg + (i << 2), crtc_state->savePalette[i]);
+ }
+ 
+-#if 0
+-/* FIXME */
+ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 				 struct drm_file *file_priv,
+ 				 uint32_t handle,
+@@ -1024,17 +1022,14 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_psb_private *dev_priv =
+ 				(struct drm_psb_private *)dev->dev_private;
+-	struct psb_gtt *pg = dev_priv->pg;
+ 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
+-	struct psb_intel_mode_device *mode_dev = psb_intel_crtc->mode_dev;
  	int pipe = psb_intel_crtc->pipe;
--	unsigned long Start, Offset;
-+	unsigned long start, offset;
- 	int dspbase = (pipe == 0 ? DSPABASE : DSPBBASE);
- 	int dspsurf = (pipe == 0 ? DSPASURF : DSPBSURF);
- 	int dspstride = (pipe == 0) ? DSPASTRIDE : DSPBSTRIDE;
-@@ -362,8 +362,8 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
- 	if (!gma_power_begin(dev, true))
+ 	uint32_t control = (pipe == 0) ? CURACNTR : CURBCNTR;
+ 	uint32_t base = (pipe == 0) ? CURABASE : CURBBASE;
+ 	uint32_t temp;
+ 	size_t addr = 0;
+-	uint32_t page_offset;
+-	size_t size;
+-	void *bo;
++	struct gtt_range *gt;
++	struct drm_gem_object *obj;
+ 	int ret;
+ 
+ 	DRM_DEBUG("\n");
+@@ -1043,8 +1038,7 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 	if (!handle) {
+ 		DRM_DEBUG("cursor off\n");
+ 		/* turn off the cursor */
+-		temp = 0;
+-		temp |= CURSOR_MODE_DISABLE;
++		temp = CURSOR_MODE_DISABLE;
+ 
+         	if (gma_power_begin(dev, false)) {
+ 			REG_WRITE(control, temp);
+@@ -1052,12 +1046,10 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 			gma_power_end(dev);
+ 		}
+ 
+-		/* unpin the old bo */
+-		if (psb_intel_crtc->cursor_bo) {
+-			mode_dev->bo_unpin_for_scanout(dev,
+-						       psb_intel_crtc->
+-						       cursor_bo);
+-			psb_intel_crtc->cursor_bo = NULL;
++		/* Unpin the old GEM object */
++		if (psb_intel_crtc->cursor_obj) {
++			drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
++			psb_intel_crtc->cursor_obj = NULL;
+ 		}
+ 
  		return 0;
- 
--	Start = mode_dev->bo_offset(dev, psbfb);
--	Offset = y * crtc->fb->pitch + x * (crtc->fb->bits_per_pixel / 8);
-+	start = psbfb->gtt->offset;
-+	offset = y * crtc->fb->pitch + x * (crtc->fb->bits_per_pixel / 8);
- 
- 	REG_WRITE(dspstride, crtc->fb->pitch);
- 
-@@ -391,14 +391,14 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
- 	}
- 	REG_WRITE(dspcntr_reg, dspcntr);
- 
--	DRM_DEBUG("Writing base %08lX %08lX %d %d\n", Start, Offset, x, y);
-+	DRM_DEBUG("Writing base %08lX %08lX %d %d\n", start, offset, x, y);
- 	if (0 /* FIXMEAC - check what PSB needs */) {
--		REG_WRITE(dspbase, Offset);
-+		REG_WRITE(dspbase, offset);
- 		REG_READ(dspbase);
--		REG_WRITE(dspsurf, Start);
-+		REG_WRITE(dspsurf, start);
- 		REG_READ(dspsurf);
- 	} else {
--		REG_WRITE(dspbase, Start + Offset);
-+		REG_WRITE(dspbase, start + offset);
- 		REG_READ(dspbase);
+@@ -1069,15 +1061,11 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 		return -EINVAL;
  	}
  
+-	bo = mode_dev->bo_from_handle(dev, file_priv, handle);
+-	if (!bo)
++	obj = drm_gem_object_lookup(dev, file_priv, handle);
++	if (!obj)
+ 		return -ENOENT;
+ 
+-	ret = mode_dev->bo_pin_for_scanout(dev, bo);
+-	if (ret)
+-		return ret;
+-	size = mode_dev->bo_size(dev, bo);
+-	if (size < width * height * 4) {
++	if (obj->size < width * height * 4) {
+ 		DRM_ERROR("buffer is to small\n");
+ 		return -ENOMEM;
+ 	}
+@@ -1086,15 +1074,15 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 	DRM_DEBUG("%s: map meminfo for hw cursor. handle %x\n",
+ 						__func__, handle);
+ 
+-	ret = psb_gtt_map_meminfo(dev, (void *)handle, &page_offset);
++/* Pin : FIXME
+ 	if (ret) {
+ 		DRM_ERROR("Can not map meminfo to GTT. handle 0x%x\n", handle);
+ 		return ret;
+ 	}
++*/
++	gt = container_of(obj, struct gtt_range, gem);
+ 
+-	addr = page_offset << PAGE_SHIFT;
+-
+-	addr += dev_priv->stolen_base;
++	addr = gt->resource.start;
+ 
+ 	psb_intel_crtc->cursor_addr = addr;
+ 
+@@ -1110,9 +1098,9 @@ static int psb_intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 	}
+ 
+ 	/* unpin the old bo */
+-	if (psb_intel_crtc->cursor_bo && psb_intel_crtc->cursor_bo != bo) {
+-		mode_dev->bo_unpin_for_scanout(dev, psb_intel_crtc->cursor_bo);
+-		psb_intel_crtc->cursor_bo = bo;
++	if (psb_intel_crtc->cursor_obj && psb_intel_crtc->cursor_obj != obj) {
++		drm_gem_object_unreference(psb_intel_crtc->cursor_obj);
++		psb_intel_crtc->cursor_obj = obj;
+ 	}
+ 
+ 	return 0;
+@@ -1124,7 +1112,7 @@ static int psb_intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+ 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
+ 	int pipe = psb_intel_crtc->pipe;
+ 	uint32_t temp = 0;
+-	uint32_t adder;
++	uint32_t addr;
+ 
+ 
+ 	if (x < 0) {
+@@ -1139,16 +1127,15 @@ static int psb_intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+ 	temp |= ((x & CURSOR_POS_MASK) << CURSOR_X_SHIFT);
+ 	temp |= ((y & CURSOR_POS_MASK) << CURSOR_Y_SHIFT);
+ 
+-	adder = psb_intel_crtc->cursor_addr;
++	addr = psb_intel_crtc->cursor_addr;
+ 
+        	if (gma_power_begin(dev, false)) {
+ 		REG_WRITE((pipe == 0) ? CURAPOS : CURBPOS, temp);
+-		REG_WRITE((pipe == 0) ? CURABASE : CURBBASE, adder);
++		REG_WRITE((pipe == 0) ? CURABASE : CURBBASE, addr);
+ 		gma_power_end(dev);
+ 	}
+ 	return 0;
+ }
+-#endif
+ 
+ static void psb_intel_crtc_gamma_set(struct drm_crtc *crtc, u16 *red,
+ 			 u16 *green, u16 *blue, uint32_t type, uint32_t size)
+@@ -1315,6 +1302,7 @@ static void psb_intel_crtc_destroy(struct drm_crtc *crtc)
+ {
+ 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
+ 
++	/* FIXME: do we need to put the final GEM cursor ? */
+ 	kfree(psb_intel_crtc->crtc_state);
+ 	drm_crtc_cleanup(crtc);
+ 	kfree(psb_intel_crtc);
+@@ -1332,10 +1320,8 @@ static const struct drm_crtc_helper_funcs psb_intel_helper_funcs = {
+ const struct drm_crtc_funcs psb_intel_crtc_funcs = {
+ 	.save = psb_intel_crtc_save,
+ 	.restore = psb_intel_crtc_restore,
+-/* FIXME 
+ 	.cursor_set = psb_intel_crtc_cursor_set,
+ 	.cursor_move = psb_intel_crtc_cursor_move,
+-*/	
+ 	.gamma_set = psb_intel_crtc_gamma_set,
+ 	.set_config = psb_crtc_set_config,
+ 	.destroy = psb_intel_crtc_destroy,
+diff --git a/drivers/staging/gma500/psb_intel_drv.h b/drivers/staging/gma500/psb_intel_drv.h
+index f6229c5..6006ddd 100644
+--- a/drivers/staging/gma500/psb_intel_drv.h
++++ b/drivers/staging/gma500/psb_intel_drv.h
+@@ -76,13 +76,7 @@ struct psb_intel_mode_device {
+ 	/*
+ 	 * Abstracted memory manager operations
+ 	 */
+-	void *(*bo_from_handle) (struct drm_device *dev,
+-				 struct drm_file *file_priv,
+-				 unsigned int handle);
+-	 size_t(*bo_size) (struct drm_device *dev, void *bo);
+ 	 size_t(*bo_offset) (struct drm_device *dev, void *bo);
+-	int (*bo_pin_for_scanout) (struct drm_device *dev, void *bo);
+-	int (*bo_unpin_for_scanout) (struct drm_device *dev, void *bo);
+ 
+ 	/*
+ 	 * Cursor
+@@ -156,11 +150,8 @@ struct psb_intel_crtc {
+ 	/* a mode_set for fbdev users on this crtc */
+ 	struct drm_mode_set mode_set;
+ 
+-	/* current bo we scanout from */
+-	void *scanout_bo;
+-
+-	/* current bo we cursor from */
+-	void *cursor_bo;
++	/* GEM object that holds our cursor */
++	struct drm_gem_object *cursor_obj;
+ 
+ 	struct drm_display_mode saved_mode;
+ 	struct drm_display_mode saved_adjusted_mode;
 
