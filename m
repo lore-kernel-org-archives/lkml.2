@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab1DSVEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:04:16 -0400
-Received: from kroah.org ([198.145.64.141]:39324 "EHLO coco.kroah.org"
+	id S1755551Ab1DSVJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:09:37 -0400
+Received: from kroah.org ([198.145.64.141]:39344 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab1DSVEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:14 -0400
+	id S1754899Ab1DSVER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:17 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:22 2011
-Message-Id: <20110419210322.461118904@clark.kroah.org>
+Message-Id: <20110419210322.774100380@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:18 -0700
+Date: Tue, 19 Apr 2011 14:02:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Luca Risolia <luca.risolia@studio.unibo.it>
-Subject: [02/26] [media] video: sn9c102: world-wirtable sysfs files
+        Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [05/26] x86: Fix a bogus unwind annotation in lib/semaphore_32.S
 In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,36 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Jan Beulich <JBeulich@novell.com>
 
-commit 14ddc3188d50855ae2a419a6aced995e2834e5d4 upstream.
+commit e938c287ea8d977e079f07464ac69923412663ce upstream.
 
-Don't allow everybody to change video settings.
+'simple' would have required specifying current frame address
+and return address location manually, but that's obviously not
+the case (and not necessary) here.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Acked-by: Luca Risolia <luca.risolia@studio.unibo.it>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4D6D1082020000780003454C@vpn.id2.novell.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/sn9c102/sn9c102_core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/lib/semaphore_32.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/video/sn9c102/sn9c102_core.c
-+++ b/drivers/media/video/sn9c102/sn9c102_core.c
-@@ -1430,9 +1430,9 @@ static DEVICE_ATTR(i2c_reg, S_IRUGO | S_
- 		   sn9c102_show_i2c_reg, sn9c102_store_i2c_reg);
- static DEVICE_ATTR(i2c_val, S_IRUGO | S_IWUSR,
- 		   sn9c102_show_i2c_val, sn9c102_store_i2c_val);
--static DEVICE_ATTR(green, S_IWUGO, NULL, sn9c102_store_green);
--static DEVICE_ATTR(blue, S_IWUGO, NULL, sn9c102_store_blue);
--static DEVICE_ATTR(red, S_IWUGO, NULL, sn9c102_store_red);
-+static DEVICE_ATTR(green, S_IWUSR, NULL, sn9c102_store_green);
-+static DEVICE_ATTR(blue, S_IWUSR, NULL, sn9c102_store_blue);
-+static DEVICE_ATTR(red, S_IWUSR, NULL, sn9c102_store_red);
- static DEVICE_ATTR(frame_header, S_IRUGO, sn9c102_show_frame_header, NULL);
- 
- 
+--- a/arch/x86/lib/semaphore_32.S
++++ b/arch/x86/lib/semaphore_32.S
+@@ -36,7 +36,7 @@
+  */
+ #ifdef CONFIG_SMP
+ ENTRY(__write_lock_failed)
+-	CFI_STARTPROC simple
++	CFI_STARTPROC
+ 	FRAME
+ 2: 	LOCK_PREFIX
+ 	addl	$ RW_LOCK_BIAS,(%eax)
 
 
