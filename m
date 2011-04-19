@@ -1,155 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1DSLQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 07:16:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27190 "EHLO mga01.intel.com"
+	id S1751794Ab1DSL3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 07:29:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53079 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab1DSLQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 07:16:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,239,1301900400"; 
-   d="scan'208";a="911596404"
-Date: Tue, 19 Apr 2011 19:16:01 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 5/6] writeback: try more writeback as long as something
- was written
-Message-ID: <20110419111601.GA18961@localhost>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.778889102@intel.com>
- <20110419102016.GD5257@quack.suse.cz>
+	id S1750866Ab1DSL3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 07:29:39 -0400
+Date: Tue, 19 Apr 2011 13:29:33 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
+ overlapping counters
+Message-ID: <20110419112933.GA18660@elte.hu>
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
+ <1302913676-14352-5-git-send-email-robert.richter@amd.com>
+ <20110419102600.GU31407@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110419102016.GD5257@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110419102600.GU31407@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 06:20:16PM +0800, Jan Kara wrote:
-> On Tue 19-04-11 11:00:08, Wu Fengguang wrote:
-> > writeback_inodes_wb()/__writeback_inodes_sb() are not aggressive in that
-> > they only populate possibly a subset of elegible inodes into b_io at
-> > entrance time. When the queued set of inodes are all synced, they just
-> > return, possibly with all queued inode pages written but still
-> > wbc.nr_to_write > 0.
-> > 
-> > For kupdate and background writeback, there may be more eligible inodes
-> > sitting in b_dirty when the current set of b_io inodes are completed. So
-> > it is necessary to try another round of writeback as long as we made some
-> > progress in this round. When there are no more eligible inodes, no more
-> > inodes will be enqueued in queue_io(), hence nothing could/will be
-> > synced and we may safely bail.
->   Let me understand your concern here: You are afraid that if we do
-> for_background or for_kupdate writeback and we write less than
-> MAX_WRITEBACK_PAGES, we stop doing writeback although there could be more
-> inodes to write at the time we are stopping writeback - the two realistic
 
-Yes.
+* Robert Richter <robert.richter@amd.com> wrote:
 
-> cases I can think of are:
-> a) when inodes just freshly expired during writeback
-> b) when bdi has less than MAX_WRITEBACK_PAGES of dirty data but we are over
->   background threshold due to data on some other bdi. And then while we are
->   doing writeback someone does dirtying at our bdi.
-> Or do you see some other case as well?
-> 
-> The a) case does not seem like a big issue to me after your changes to
+> +				if (!state)
+> +					/* no events to reschedule */
+> +					goto done;
 
-Yeah (a) is not an issue with kupdate writeback.
-
-> move_expired_inodes(). The b) case maybe but do you think it will make any
-> difference? 
-
-(b) seems also weird. What in my mind is this for_background case.
-Imagine 100 inodes
-
-        i0, i1, i2, ..., i90, i91, i99
-
-At queue_io() time, i90-i99 happen to be expired and moved to s_io for
-IO. When finished successfully, if their total size is less than
-MAX_WRITEBACK_PAGES, nr_to_write will be > 0. Then wb_writeback() will
-quit the background work (w/o this patch) while it's still over
-background threshold.
-
-This will be a fairly normal/frequent case I guess.
+Hm, that's 5 levels of indentation. Would it be possible to factor out the gist 
+of the logic into a helper and such? My eyes would be much happier!
 
 Thanks,
-Fengguang
 
-> 								Honza
-> > 
-> > Jan raised the concern
-> > 
-> > 	I'm just afraid that in some pathological cases this could
-> > 	result in bad writeback pattern - like if there is some process
-> > 	which manages to dirty just a few pages while we are doing
-> > 	writeout, this looping could result in writing just a few pages
-> > 	in each round which is bad for fragmentation etc.
-> > 
-> > However it requires really strong timing to make that to (continuously)
-> > happen.  In practice it's very hard to produce such a pattern even if
-> > it's possible in theory. I actually tried to write 1 page per 1ms with
-> > this command
-> > 
-> > 	write-and-fsync -n10000 -S 1000 -c 4096 /fs/test
-> > 
-> > and do sync(1) at the same time. The sync completes quickly on ext4,
-> > xfs, btrfs. The readers could try other write-and-sleep patterns and
-> > check if it can block sync for longer time.
-> > 
-> > CC: Jan Kara <jack@suse.cz>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  fs/fs-writeback.c |   16 ++++++++--------
-> >  1 file changed, 8 insertions(+), 8 deletions(-)
-> > 
-> > --- linux-next.orig/fs/fs-writeback.c	2011-04-19 10:18:30.000000000 +0800
-> > +++ linux-next/fs/fs-writeback.c	2011-04-19 10:18:31.000000000 +0800
-> > @@ -750,23 +750,23 @@ static long wb_writeback(struct bdi_writ
-> >  		wrote += write_chunk - wbc.nr_to_write;
-> >  
-> >  		/*
-> > -		 * If we consumed everything, see if we have more
-> > +		 * Did we write something? Try for more
-> > +		 *
-> > +		 * Dirty inodes are moved to b_io for writeback in batches.
-> > +		 * The completion of the current batch does not necessarily
-> > +		 * mean the overall work is done. So we keep looping as long
-> > +		 * as made some progress on cleaning pages or inodes.
-> >  		 */
-> > -		if (wbc.nr_to_write <= 0)
-> > +		if (wbc.nr_to_write < write_chunk)
-> >  			continue;
-> >  		if (wbc.inodes_cleaned)
-> >  			continue;
-> >  		/*
-> > -		 * Didn't write everything and we don't have more IO, bail
-> > +		 * No more inodes for IO, bail
-> >  		 */
-> >  		if (!wbc.more_io)
-> >  			break;
-> >  		/*
-> > -		 * Did we write something? Try for more
-> > -		 */
-> > -		if (wbc.nr_to_write < write_chunk)
-> > -			continue;
-> > -		/*
-> >  		 * Nothing written. Wait for some inode to
-> >  		 * become available for writeback. Otherwise
-> >  		 * we'll just busyloop.
-> > 
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+	Ingo
