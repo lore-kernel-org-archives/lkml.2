@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab1DSUaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:30:15 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:54719 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751530Ab1DSUaM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:30:12 -0400
-Message-ID: <4DADF0D3.3040006@bluewatersys.com>
-Date: Wed, 20 Apr 2011 08:30:11 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1754760Ab1DSUaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:30:21 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50168 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752184Ab1DSUaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:30:19 -0400
+Date: Tue, 19 Apr 2011 21:29:22 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: Greg KH <greg@kroah.com>
+cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
+        security@kernel.org
+Subject: Re: [PATCH] char: agp: fix OOM and buffer overflow
+In-Reply-To: <20110419181013.GA12437@kroah.com>
+Message-ID: <alpine.DEB.2.00.1104192127170.31867@skynet.skynet.ie>
+References: <1302800120-31560-1-git-send-email-segoon@openwall.com> <20110419162157.GD23196@kroah.com> <20110419174813.GA27544@albatros> <20110419181013.GA12437@kroah.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, greg@kroah.com,
-        adobriyan@gmail.com
-Subject: Re: [PATCH 2/3] debugfs: move to new strtobool
-References: <a> <1303213427-12798-3-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1303213427-12798-3-git-send-email-jic23@cam.ac.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2011 11:43 PM, Jonathan Cameron wrote:
-> No functional changes requires that we eat errors from strtobool.
-> If people want to not do this, then it should be fixed at a later date.
 
-May as well fix it now or it will get forgotten about. A second patch on
-top of this can fix the bug.
-
-~Ryan
-
-> V2: Simplification suggested by Rusty Russell removes the need for
-> additional variable ret.
+> On Tue, Apr 19, 2011 at 09:48:13PM +0400, Vasiliy Kulikov wrote:
+> > On Tue, Apr 19, 2011 at 09:21 -0700, Greg KH wrote:
+> > > David, what ever happened to this, and the other agp bugfix from
+> > > Vasiliy?
+> > 
+> > I got emails that both fixes went into -mm.
 > 
-> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  fs/debugfs/file.c |   17 ++++-------------
->  1 files changed, 4 insertions(+), 13 deletions(-)
+> That's good, but David needs to take them and push them to Linus...
 > 
-> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-> index 89d394d..568304d 100644
-> --- a/fs/debugfs/file.c
-> +++ b/fs/debugfs/file.c
-> @@ -429,25 +429,16 @@ static ssize_t write_file_bool(struct file *file, const char __user *user_buf,
->  {
->  	char buf[32];
->  	int buf_size;
-> +	bool bv;
->  	u32 *val = file->private_data;
->  
->  	buf_size = min(count, (sizeof(buf)-1));
->  	if (copy_from_user(buf, user_buf, buf_size))
->  		return -EFAULT;
->  
-> -	switch (buf[0]) {
-> -	case 'y':
-> -	case 'Y':
-> -	case '1':
-> -		*val = 1;
-> -		break;
-> -	case 'n':
-> -	case 'N':
-> -	case '0':
-> -		*val = 0;
-> -		break;
-> -	}
-> -	
-> +	if (strtobool(buf, &bv) == 0)
-> +		*val = bv;
-> +
->  	return count;
->  }
->  
+> 
 
+I'm ruminating, while they are security fixes, I'm hesitant to push them 
+ASAP, without further testing, the /dev/agpgart hasn't really been used
+by much in around 5 years, so getting a userspace and hardware that can 
+test it is quite a lot of fun, though I suppse on the other side, nobody 
+will notice if it breaks anything for 2 years.
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+Dave.
