@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab1DSGmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 02:42:42 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45544 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab1DSGmk (ORCPT
+	id S1753408Ab1DSGn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 02:43:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61257 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab1DSGn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 02:42:40 -0400
+	Tue, 19 Apr 2011 02:43:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=iHKvdmFH35kczRRNhd0t4Y2xcpqNqTnvYpZ3FamzFiL4I2ei1EatSWUqj0pwD5jC7Z
-         Rgpr20/siD5A3cxozG3YeX4iXYoa76VfpVCJUPf3nK8qtC4kQ0t7CPSvUCZxaO2DlzAr
-         WsBIjgi5erSA6CoBKERcz3iowO4P9dyD/GLpw=
-MIME-Version: 1.0
-Date: Tue, 19 Apr 2011 14:42:39 +0800
-Message-ID: <BANLkTikYuYVvXiHvi_kr2H7n29k=veThtw@mail.gmail.com>
-Subject: LOCALVERSION in setlocalversion
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vYvwms93ADQhLdaQaSmZG4iar5QAVOwIGdbS+J1gbIuRgoO5itqrH0Ls91hllep5ML
+         rT5eW+z5v/kBI+jOJjM8yL5lqq90QN/xx3XqJ/2ynXCFrWAECfpkQlSwfIA2Nj+XkfXE
+         7FJUXF7YogRHnXTAHeAk4jjICBLKKnK6iT8B4=
+Date: Tue, 19 Apr 2011 01:41:14 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-s390@vger.kernel.org, Stephen Powell <zlinuxman@wowway.com>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [OOPS s390] Unable to handle kernel pointer dereference at
+ virtual kernel address (null)
+Message-ID: <20110419064114.GA28291@elie>
+References: <2099315211.286690.1302917498637.JavaMail.root@md01.wow.synacor.com>
+ <20110416014811.GA6150@elie>
+ <20110419063400.GA2878@osiris.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110419063400.GA2878@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Heiko Carstens wrote:
 
-In scripts/setlocalversion under linux kernel tree, the scripts seems
-a little strange.
+> Ok, I was able to reproduce it and could verify that my patch fixes the bug.
 
-# scm version string if not at a tagged commit
-if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
-        # full scm version string
-        res="$res$(scm_version)"
-else
-        # append a plus sign if the repository is not in a clean
-        # annotated or signed tagged state (as git describe only
-        # looks at signed or annotated tags - git tag -a/-s) and
-        # LOCALVERSION= is not specified
-        if test "${LOCALVERSION+set}" != "set"; then
-                scm=$(scm_version --short)
-                res="$res${scm:++}"
-        fi
-fi
+Thanks!
 
-LOCALVERSION isn't assigned in any place. Only CONFIG_LOCALVERSION
-can be assigned in .config file.
-Why do we need to check LOCALVERSION at here?
+> Cc: Jonathan Nieder <jrnieder@gmail.com>
 
-Thanks
-Haojian
+The patch makes sense to me fwiw.
