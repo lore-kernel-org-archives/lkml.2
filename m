@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab1DSVIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:08:10 -0400
-Received: from kroah.org ([198.145.64.141]:39391 "EHLO coco.kroah.org"
+	id S1755529Ab1DSVEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:04:23 -0400
+Received: from kroah.org ([198.145.64.141]:39356 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755538Ab1DSVEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:24 -0400
+	id S1755491Ab1DSVEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:20 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:23 2011
-Message-Id: <20110419210323.675432156@clark.kroah.org>
+Message-Id: <20110419210323.123191265@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 14:02:29 -0700
+Date: Tue, 19 Apr 2011 14:02:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [13/26] x86, cpu: Clean up AMD erratum 400 workaround
+        Bob Liu <lliubbo@gmail.com>, Hugh Dickins <hughd@google.com>,
+        David Howells <dhowells@redhat.com>
+Subject: [08/26] ramfs: fix memleak on no-mmu arch
 In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,102 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+From: Bob Liu <lliubbo@gmail.com>
 
-commit 9d8888c2a214aece2494a49e699a097c2ba9498b upstream.
+commit b836aec53e2bce71de1d5415313380688c851477 upstream.
 
-Remove check_c1e_idle() and use the new AMD errata checking framework
-instead.
+On no-mmu arch, there is a memleak during shmem test.  The cause of this
+memleak is ramfs_nommu_expand_for_mapping() added page refcount to 2
+which makes iput() can't free that pages.
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
-LKML-Reference: <1280336972-865982-2-git-send-email-hans.rosenfeld@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+The simple test file is like this:
+
+  int main(void)
+  {
+	int i;
+	key_t k = ftok("/etc", 42);
+
+	for ( i=0; i<100; ++i) {
+		int id = shmget(k, 10000, 0644|IPC_CREAT);
+		if (id == -1) {
+			printf("shmget error\n");
+		}
+		if(shmctl(id, IPC_RMID, NULL ) == -1) {
+			printf("shm  rm error\n");
+			return -1;
+		}
+	}
+	printf("run ok...\n");
+	return 0;
+  }
+
+And the result:
+
+  root:/> free
+               total         used         free       shared      buffers
+  Mem:         60320        17912        42408            0            0
+  -/+ buffers:              17912        42408
+  root:/> shmem
+  run ok...
+  root:/> free
+               total         used         free       shared      buffers
+  Mem:         60320        19096        41224            0            0
+  -/+ buffers:              19096        41224
+  root:/> shmem
+  run ok...
+  root:/> free
+               total         used         free       shared      buffers
+  Mem:         60320        20296        40024            0            0
+  -/+ buffers:              20296        40024
+  ...
+
+After this patch the test result is:(no memleak anymore)
+
+  root:/> free
+               total         used         free       shared      buffers
+  Mem:         60320        16668        43652            0            0
+  -/+ buffers:              16668        43652
+  root:/> shmem
+  run ok...
+  root:/> free
+               total         used         free       shared      buffers
+  Mem:         60320        16668        43652            0            0
+  -/+ buffers:              16668        43652
+
+Signed-off-by: Bob Liu <lliubbo@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/processor.h |    1 +
- arch/x86/kernel/cpu/amd.c        |    5 +++++
- arch/x86/kernel/process.c        |   39 ++-------------------------------------
- 3 files changed, 8 insertions(+), 37 deletions(-)
+ fs/ramfs/file-nommu.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -1035,6 +1035,7 @@ unsigned long calc_aperfmperf_ratio(stru
-  * AMD errata checking
-  */
- #ifdef CONFIG_CPU_SUP_AMD
-+extern const int amd_erratum_400[];
- extern bool cpu_has_amd_erratum(const int *);
+--- a/fs/ramfs/file-nommu.c
++++ b/fs/ramfs/file-nommu.c
+@@ -111,6 +111,7 @@ int ramfs_nommu_expand_for_mapping(struc
+ 		SetPageDirty(page);
  
- #define AMD_LEGACY_ERRATUM(...)		{ -1, __VA_ARGS__, 0 }
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -631,6 +631,11 @@ cpu_dev_register(amd_cpu_dev);
-  *			   AMD_MODEL_RANGE(0x10, 0x9, 0x0, 0x9, 0x0));
-  */
+ 		unlock_page(page);
++		put_page(page);
+ 	}
  
-+const int amd_erratum_400[] =
-+	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
-+			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
-+
-+
- bool cpu_has_amd_erratum(const int *erratum)
- {
- 	struct cpuinfo_x86 *cpu = &current_cpu_data;
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -518,42 +518,6 @@ static int __cpuinit mwait_usable(const
- 	return (edx & MWAIT_EDX_C1);
- }
- 
--/*
-- * Check for AMD CPUs, where APIC timer interrupt does not wake up CPU from C1e.
-- * For more information see
-- * - Erratum #400 for NPT family 0xf and family 0x10 CPUs
-- * - Erratum #365 for family 0x11 (not affected because C1e not in use)
-- */
--static int __cpuinit check_c1e_idle(const struct cpuinfo_x86 *c)
--{
--	u64 val;
--	if (c->x86_vendor != X86_VENDOR_AMD)
--		goto no_c1e_idle;
--
--	/* Family 0x0f models < rev F do not have C1E */
--	if (c->x86 == 0x0F && c->x86_model >= 0x40)
--		return 1;
--
--	if (c->x86 == 0x10) {
--		/*
--		 * check OSVW bit for CPUs that are not affected
--		 * by erratum #400
--		 */
--		if (cpu_has(c, X86_FEATURE_OSVW)) {
--			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
--			if (val >= 2) {
--				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
--				if (!(val & BIT(1)))
--					goto no_c1e_idle;
--			}
--		}
--		return 1;
--	}
--
--no_c1e_idle:
--	return 0;
--}
--
- static cpumask_var_t c1e_mask;
- static int c1e_detected;
- 
-@@ -631,7 +595,8 @@ void __cpuinit select_idle_routine(const
- 		 */
- 		printk(KERN_INFO "using mwait in idle threads.\n");
- 		pm_idle = mwait_idle;
--	} else if (check_c1e_idle(c)) {
-+	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
-+		/* E400: APIC timer interrupt does not wake up CPU from C1e */
- 		printk(KERN_INFO "using C1E aware idle routine\n");
- 		pm_idle = c1e_idle;
- 	} else
+ 	return 0;
 
 
