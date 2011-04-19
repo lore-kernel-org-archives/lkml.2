@@ -1,134 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab1DSRtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 13:49:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46460 "EHLO hera.kernel.org"
+	id S1754050Ab1DSRuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:50:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39327 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab1DSRtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 13:49:12 -0400
-Date: Tue, 19 Apr 2011 17:48:55 GMT
-From: tip-bot for Youquan Song <youquan.song@intel.com>
-Message-ID: <tip-2b398bd9f8f73be706b41adcbb240ce95793049a@git.kernel.org>
+	id S1752378Ab1DSRuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 13:50:13 -0400
+Date: Tue, 19 Apr 2011 17:49:23 GMT
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-7b70bd3441437b7bc04fc9d321e17c8ed0e8f958@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joe@perches.com, tglx@linutronix.de, youquan.song@intel.com,
-        mingo@elte.hu
+        torvalds@linux-foundation.org, tony.luck@intel.com, rja@sgi.com,
+        akpm@linux-foundation.org, Nagananda.Chumbalkar@hp.com,
+        tglx@linutronix.de, prarit@redhat.com, mingo@elte.hu,
+        borislav.petkov@amd.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joe@perches.com, tglx@linutronix.de, youquan.song@intel.com,
+        torvalds@linux-foundation.org, tony.luck@intel.com, rja@sgi.com,
+        akpm@linux-foundation.org, Nagananda.Chumbalkar@hp.com,
+        tglx@linutronix.de, prarit@redhat.com, borislav.petkov@amd.com,
         mingo@elte.hu
-In-Reply-To: <1302762968-24380-2-git-send-email-youquan.song@intel.com>
-References: <1302762968-24380-2-git-send-email-youquan.song@intel.com>
+In-Reply-To: <1303135222-17118-1-git-send-email-bp@amd64.org>
+References: <1303135222-17118-1-git-send-email-bp@amd64.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, apic: Print verbose error interrupt reason on apic=debug
-Git-Commit-ID: 2b398bd9f8f73be706b41adcbb240ce95793049a
+Subject: [tip:x86/mce] x86, MCE: Do not taint when handling correctable errors
+Git-Commit-ID: 7b70bd3441437b7bc04fc9d321e17c8ed0e8f958
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Apr 2011 17:48:56 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Apr 2011 17:49:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b398bd9f8f73be706b41adcbb240ce95793049a
-Gitweb:     http://git.kernel.org/tip/2b398bd9f8f73be706b41adcbb240ce95793049a
-Author:     Youquan Song <youquan.song@intel.com>
-AuthorDate: Thu, 14 Apr 2011 14:36:08 +0800
+Commit-ID:  7b70bd3441437b7bc04fc9d321e17c8ed0e8f958
+Gitweb:     http://git.kernel.org/tip/7b70bd3441437b7bc04fc9d321e17c8ed0e8f958
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Mon, 18 Apr 2011 16:00:21 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 19 Apr 2011 19:03:30 +0200
+CommitDate: Tue, 19 Apr 2011 19:14:13 +0200
 
-x86, apic: Print verbose error interrupt reason on apic=debug
+x86, MCE: Do not taint when handling correctable errors
 
-End users worry about the error interrupt printout we generate
-currently:
+Correctable errors are considered something rather normal on
+modern hardware these days. Even more importantly, correctable
+errors mean exactly that - they've been corrected by the
+hardware - and there's no need to taint the kernel since
+execution hasn't been compromised so far.
 
-	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
-	smp_processor_id(), v , v1);
+Also, drop tainting in the thermal throttling code for a similar
+reason: crossing a thermal threshold does not mean corruption.
 
-... and would like to know the reason why error interrupts are generated.
-
-This patch prints out more detailed debug information.
-
-Another practical problem is that dynamic debug is not initialized yet
-when the APIC initializes, so the pr_debug() will not output the error
-interrupt debug information on bootup. In this patch, we use
-apic_printk(APIC_DEBUG, ...), so the apic=debug boot option will print
-verbose error interupts during bootup.
-
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: hpa@linux.intel.com
-Cc: suresh.b.siddha@intel.com
-Cc: yong.y.wang@linux.intel.com
-Cc: jbaron@redhat.com
-Cc: trenn@suse.de
-Cc: kent.liu@intel.com
-Cc: chaohong.guo@intel.com
-Link: http://lkml.kernel.org/r/1302762968-24380-2-git-send-email-youquan.song@intel.com
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Acked-by: Nagananda Chumbalkar <Nagananda.Chumbalkar@hp.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1303135222-17118-1-git-send-email-bp@amd64.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/apic/apic.c |   41 ++++++++++++++++++++++++++---------------
- 1 files changed, 26 insertions(+), 15 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c         |    1 -
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ---
+ 2 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index fabf01e..ae14712 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1812,30 +1812,41 @@ void smp_spurious_interrupt(struct pt_regs *regs)
-  */
- void smp_error_interrupt(struct pt_regs *regs)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 3385ea2..68e2303 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -590,7 +590,6 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
+ 			mce_log(&m);
+ 			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m);
+-			add_taint(TAINT_MACHINE_CHECK);
+ 		}
+ 
+ 		/*
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 6f8c5e9..5846a79 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -187,8 +187,6 @@ static int therm_throt_process(bool new_event, int event, int level)
+ 				this_cpu,
+ 				level == CORE_LEVEL ? "Core" : "Package",
+ 				state->count);
+-
+-		add_taint(TAINT_MACHINE_CHECK);
+ 		return 1;
+ 	}
+ 	if (old_event) {
+@@ -393,7 +391,6 @@ static void unexpected_thermal_interrupt(void)
  {
--	u32 v, v1;
-+	u32 v0, v1;
-+	u32 i = 0;
-+	static const char * const error_interrupt_reason[] = {
-+		"Send CS error",		/* APIC Error Bit 0 */
-+		"Receive CS error",		/* APIC Error Bit 1 */
-+		"Send accept error",		/* APIC Error Bit 2 */
-+		"Receive accept error",		/* APIC Error Bit 3 */
-+		"Redirectable IPI",		/* APIC Error Bit 4 */
-+		"Send illegal vector",		/* APIC Error Bit 5 */
-+		"Received illegal vector",	/* APIC Error Bit 6 */
-+		"Illegal register address",	/* APIC Error Bit 7 */
-+	};
- 
- 	exit_idle();
- 	irq_enter();
- 	/* First tickle the hardware, only then report what went on. -- REW */
--	v = apic_read(APIC_ESR);
-+	v0 = apic_read(APIC_ESR);
- 	apic_write(APIC_ESR, 0);
- 	v1 = apic_read(APIC_ESR);
- 	ack_APIC_irq();
- 	atomic_inc(&irq_err_count);
- 
--	/*
--	 * Here is what the APIC error bits mean:
--	 * 0: Send CS error
--	 * 1: Receive CS error
--	 * 2: Send accept error
--	 * 3: Receive accept error
--	 * 4: Reserved
--	 * 5: Send illegal vector
--	 * 6: Received illegal vector
--	 * 7: Illegal register address
--	 */
--	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
--		smp_processor_id(), v , v1);
-+	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
-+		    smp_processor_id(), v0 , v1);
-+
-+	v1 = v1 & 0xff;
-+	while (v1) {
-+		if (v1 & 0x1)
-+			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
-+		i++;
-+		v1 >>= 1;
-+	};
-+
-+	apic_printk(APIC_DEBUG, KERN_CONT "\n");
-+
- 	irq_exit();
+ 	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
+ 			smp_processor_id());
+-	add_taint(TAINT_MACHINE_CHECK);
  }
  
+ static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
