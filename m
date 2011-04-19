@@ -1,33 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab1DSVnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:43:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56556 "EHLO mx1.redhat.com"
+	id S1756032Ab1DSVpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:45:14 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2935 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab1DSVnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:43:19 -0400
-Date: Tue, 19 Apr 2011 14:43:01 -0700
-From: Chris Wright <chrisw@redhat.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Alex Williamson <alex.williamson@redhat.com>, pugs@ieee.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        qemu-devel@nongnu.org, chrisw@redhat.com, aafabbri@cisco.com,
-        dwang2@cisco.com, benve@cisco.com
-Subject: Re: [PATCH] vfio: Add an ioctl to reset the device
-Message-ID: <20110419214301.GN12133@x200.localdomain>
-References: <20110419203234.4254.94914.stgit@s20.home>
- <20110419144023.4d3f61da.rdunlap@xenotime.net>
+	id S1754085Ab1DSVpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:45:12 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Jian Peng" <jipeng2005@gmail.com>
+To: "Jeff Garzik" <jgarzik@pobox.com>, "Tejun Heo" <htejun@gmail.com>
+cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Jian Peng" <jipeng2005@gmail.com>
+Subject: [PATCH 1/1] libata: ahci_start_engine compliant to AHCI spec
+Date: Tue, 19 Apr 2011 14:44:59 -0700
+Message-ID: <1303249499-11557-1-git-send-email-jipeng2005@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110419144023.4d3f61da.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 61B0DCAC3GO5218745-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Randy Dunlap (rdunlap@xenotime.net) wrote:
-> I can't find include/linux/vfio.h in linux-next or mainline git, but
-> ioctls need to be documented in Documentation/ioctl/ioctl-number.txt....
+At the end of section 10.1 of AHCI spec (rev 1.3), it states
 
-It is in the full patchset: https://github.com/pugs/vfio-linux-2.6
+Software shall not set PxCMD.ST to 1 until it is determined that a
+functoinal device is present on the port as determined by
+PxTFD.STS.BSY=0, PxTFD.STS.DRQ=0 and PxSSTS.DET=3h
+
+Even though most AHCI host controller works without this additional
+check, specific controller will fail without this.
+
+Signed-off-by: Jian Peng <jipeng2005@gmail.com>
+---
+ drivers/ata/libahci.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 26d4523..39e0698 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -539,6 +539,12 @@ void ahci_start_engine(struct ata_port *ap)
+ {
+ 	void __iomem *port_mmio = ahci_port_base(ap);
+ 	u32 tmp;
++	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
++
++	if (status & (ATA_BUSY | ATA_DRQ) ||
++	    ahci_scr_read(&ap->link, SCR_STATUS, &tmp) ||
++	    (tmp & 0x0f) != 0x03)
++		return;
+ 
+ 	/* start DMA */
+ 	tmp = readl(port_mmio + PORT_CMD);
+-- 
+1.7.4.1
+
+
