@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab1DSJKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 05:10:35 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:45628 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751921Ab1DSJKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 05:10:33 -0400
-Message-ID: <4DAD516F.50901@st.com>
-Date: Tue, 19 Apr 2011 14:40:07 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Subject: Re: [PATCH V2 7/7] dmaengine/dw_dmac: implement pause and resume
- in dwc_control
-References: <cover.1303194835.git.viresh.kumar@st.com> <a1168e413888e35badd9fab6b1626fcfe355dc9b.1303194836.git.viresh.kumar@st.com> <20110419085514.GG2820@pulham.picochip.com>
-In-Reply-To: <20110419085514.GG2820@pulham.picochip.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754228Ab1DSJKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 05:10:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753675Ab1DSJKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 05:10:45 -0400
+Subject: GFS2: Pull request (fixes)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Tue, 19 Apr 2011 10:13:11 +0100
+Message-ID: <1303204391.2702.9.camel@dolmen>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2011 02:25 PM, Jamie Iles wrote:
->From the Synopsys datasheet it looks to me like pausing by clearing the 
-> channel enable bit could cause data to be lost.  I think you need to set 
-> the CH_SUSP bit and wait for the FIFO_EMPTY flag to go high then disable 
-> the channel.
+Hi,
 
-Yes, Previously i looked at some other doc of dwc and couldn't find this info.
-But now found it in datasheet. Will correct and resend it.
+Please consider pulling the following four GFS2 fixes,
 
--- 
-viresh
+Steve.
+
+--------------------------------------------------------------------------------------
+
+The following changes since commit a1b49cb7e2a7961ec3aa8b64860bf480d4ec9077:
+
+  Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging (2011-04-17 17:37:02 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes.git master
+
+Benjamin Marzinski (1):
+      GFS2: directly write blocks past i_size
+
+Bob Peterson (2):
+      GFS2: write_end error path fails to unlock transaction lock
+      GFS2: filesystem hang caused by incorrect lock order
+
+Steven Whitehouse (1):
+      GFS2: Don't try to deallocate unlinked inodes when mounted ro
+
+ fs/gfs2/aops.c       |    2 +-
+ fs/gfs2/dir.c        |    2 +-
+ fs/gfs2/file.c       |   58 +++++++++++++++++++++++++++++++++++++++++--------
+ fs/gfs2/glops.c      |    4 +++
+ fs/gfs2/inode.c      |   56 +++++++++++++++++++++++++++++++++++-------------
+ fs/gfs2/inode.h      |    3 +-
+ fs/gfs2/ops_fstype.c |    2 +-
+ fs/gfs2/rgrp.c       |    4 +-
+ fs/gfs2/super.c      |   14 +++++++++--
+ 9 files changed, 111 insertions(+), 34 deletions(-)
+
+
