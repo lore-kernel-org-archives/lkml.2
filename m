@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab1DSII2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:08:28 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:50927 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab1DSIIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:08:25 -0400
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Rafael J. Wysocki'" <rjw@sisk.pl>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Greg KH'" <gregkh@suse.de>, "'Kay Sievers'" <kay.sievers@suse.de>,
-        "'Linux PM mailing list'" <linux-pm@lists.linux-foundation.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        <linux-omap@vger.kernel.org>, "'Kevin Hilman'" <khilman@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Mike Frysinger'" <vapier@gentoo.org>,
-        "'Ralf Baechle'" <ralf@linux-mips.org>,
-        "'Hans-Christian Egtvedt'" <hans-christian.egtvedt@atmel.com>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, "'Jiri Kosina'" <jkosina@suse.cz>,
-        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
-        "'Jeremy Fitzhardinge'" <jeremy.fitzhardinge@citrix.com>
-References: <201103280125.11750.rjw@sisk.pl> <201104172301.54115.rjw@sisk.pl> <201104172313.45854.rjw@sisk.pl>
-In-Reply-To: <201104172313.45854.rjw@sisk.pl>
-Subject: RE: [PATCH 12/14] PM / UNICORE32: Use struct syscore_ops instead of sysdevs for PM
-Date: Tue, 19 Apr 2011 16:02:55 +0800
-Message-ID: <006201cbfe68$3ad01380$b0703a80$@mprc.pku.edu.cn>
+	id S1753468Ab1DSIJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:09:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48009 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751490Ab1DSIJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 04:09:10 -0400
+Date: Tue, 19 Apr 2011 09:09:19 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Haojian Zhuang <hzhuang1@marvell.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
+        "cbou@mail.ru" <cbou@mail.ru>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 13/14] regulator: check name in initialization of max8925
+Message-ID: <20110419080919.GC16357@opensource.wolfsonmicro.com>
+References: <1303135451-26362-14-git-send-email-haojian.zhuang@marvell.com>
+ <20110418142855.GE2466@opensource.wolfsonmicro.com>
+ <BANLkTim1QHe-hpyt0yQxKt2SBwtOAPQ3Bg@mail.gmail.com>
+ <20110418160424.GG1765@opensource.wolfsonmicro.com>
+ <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B424@SC-VEXCH1.marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGigRf2YbaBbwN3nae5nt2hV/RFAQE9f7yfAR5lag2UpO7MUA==
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C05CF05B424@SC-VEXCH1.marvell.com>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 18, 2011 at 07:42:09PM -0700, Haojian Zhuang wrote:
+> 	Machine driver:
+> 		Platform data:
+> 			.regulator[0]	= xxx
+> 			.regulator[1]	= xxx
 
+> 	The index of regulator array is id of buck and ldo.
+> 	There's issue in max8925_core.c since we can't assume regulator[0] always declared in machine driver.
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Monday, April 18, 2011 5:14 AM
-> To: LKML
-> Cc: Greg KH; Kay Sievers; Linux PM mailing list; Russell King; linux-omap@vger.kernel.org; Kevin Hilman; linux-arm-
-> kernel@lists.infradead.org; Ben Dooks; Mike Frysinger; Ralf Baechle; Hans-Christian Egtvedt; Guan Xuetao; Benjamin Herrenschmidt;
-> linuxppc-dev@lists.ozlabs.org; Jiri Kosina; Konrad Rzeszutek Wilk; Jeremy Fitzhardinge
-> Subject: [PATCH 12/14] PM / UNICORE32: Use struct syscore_ops instead of sysdevs for PM
-> 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Make some UNICORE32 architecture's code use struct syscore_ops
-> objects for power management instead of sysdev classes and sysdevs.
-> 
-> This simplifies the code and reduces the kernel's memory footprint.
-> It also is necessary for removing sysdevs from the kernel entirely in
-> the future.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-
+What is the issue?  It's trivial to skip the regulator if the data is
+null.
