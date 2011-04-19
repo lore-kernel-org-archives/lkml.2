@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab1DSQtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 12:49:07 -0400
-Received: from kroah.org ([198.145.64.141]:59760 "EHLO coco.kroah.org"
+	id S1753369Ab1DSQxC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 12:53:02 -0400
+Received: from liner.boxed.no ([89.250.115.71]:45201 "EHLO liner.boxed.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473Ab1DSQtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 12:49:03 -0400
-Date: Tue, 19 Apr 2011 09:21:57 -0700
-From: Greg KH <greg@kroah.com>
-To: Vasiliy Kulikov <segoon@openwall.com>, David Airlie <airlied@linux.ie>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH] char: agp: fix OOM and buffer overflow
-Message-ID: <20110419162157.GD23196@kroah.com>
-References: <1302800120-31560-1-git-send-email-segoon@openwall.com>
+	id S1752595Ab1DSQxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 12:53:00 -0400
+X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Apr 2011 12:53:00 EDT
+Message-ID: <4DADBBBC.6020803@boxed.no>
+Date: Tue, 19 Apr 2011 18:43:40 +0200
+From: Alexander Hoogerhuis <alexh@boxed.no>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302800120-31560-1-git-send-email-segoon@openwall.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Wright <chrisw@sous-sol.org>
+CC: linux-kernel@vger.kernel.org
+Subject: A patch you wrote some time ago (aka: "[patch 41/54] ICMP: Fix icmp_errors_use_inbound_ifaddr
+ sysctl")
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 14, 2011 at 08:55:19PM +0400, Vasiliy Kulikov wrote:
-> page_count is copied from userspace.  agp_allocate_memory() tries to
-> check whether this number is too big, but doesn't take into account the
-> wrap case.  Also agp_create_user_memory() doesn't check whether
-> alloc_size is calculated from num_agp_pages variable without overflow.
-> This may lead to allocation of too small buffer with following buffer
-> overflow.
-> 
-> Another problem in agp code is not addressed in the patch - kernel memory
-> exhaustion (AGPIOC_RESERVE and AGPIOC_ALLOCATE ioctls).  It is not checked
-> whether requested pid is a pid of the caller (no check in agpioc_reserve_wrap()).
-> Each allocation is limited to 16KB, though, there is no per-process limit.
-> This might lead to OOM situation, which is not even solved in case of the
-> caller death by OOM killer - the memory is allocated for another (faked) process.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+I hope you (or anyone else) can spare half a minute to have a quick look 
+at a patch you wrote a few years ago:
 
-David, what ever happened to this, and the other agp bugfix from
-Vasiliy?
+> http://lkml.org/lkml/2007/6/8/124
 
-thanks,
+I've been tracking down a case of ICMP Redirects originating from the 
+wrong IPs, and as far I can tell, you patch is the last to touch this 
+code (net/ipv4/icmp.c:507):
 
-greg k-h
+>  if (rt->fl.iif && net->ipv4.sysctl_icmp_errors_use_inbound_ifaddr)
+>         dev = dev_get_by_index_rcu(net, rt->fl.iif);
+>
+> if (dev)
+>         saddr = inet_select_addr(dev, 0, RT_SCOPE_LINK);
+> else
+>         saddr = 0;
 
-> ---
->  drivers/char/agp/generic.c |    8 +++++++-
->  1 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
-> index 745e7ba..342df51 100644
-> --- a/drivers/char/agp/generic.c
-> +++ b/drivers/char/agp/generic.c
-> @@ -115,6 +115,9 @@ static struct agp_memory *agp_create_user_memory(unsigned long num_agp_pages)
->  	struct agp_memory *new;
->  	unsigned long alloc_size = num_agp_pages*sizeof(struct page *);
->  
-> +	if (INT_MAX/sizeof(struct page *) < num_agp_pages)
-> +		return NULL;
-> +
->  	new = kzalloc(sizeof(struct agp_memory), GFP_KERNEL);
->  	if (new == NULL)
->  		return NULL;
-> @@ -234,11 +237,14 @@ struct agp_memory *agp_allocate_memory(struct agp_bridge_data *bridge,
->  	int scratch_pages;
->  	struct agp_memory *new;
->  	size_t i;
-> +	int cur_memory;
->  
->  	if (!bridge)
->  		return NULL;
->  
-> -	if ((atomic_read(&bridge->current_memory_agp) + page_count) > bridge->max_memory_agp)
-> +	cur_memory = atomic_read(&bridge->current_memory_agp);
-> +	if ((cur_memory + page_count > bridge->max_memory_agp) ||
-> +	    (cur_memory + page_count < page_count))
->  		return NULL;
->  
->  	if (type >= AGP_USER_TYPES) {
-> -- 
-> 1.7.0.4
-> 
-> _______________________________________________
-> Security mailing list
-> Security@linux.kernel.org
-> http://linux.kernel.org/mailman/listinfo/security
+In a plain world this would work, but I have come across a case that 
+seems to be not handled by this.
+
+I have two machines set up with VRRP to act as routers out of a subnet, 
+and they have IPs x.x.x.13/28 and x.x.x.14/28, with VRRP holding on to 
+x.x.x.1/28.
+
+If a node in x.x.x.0/28 needs to get a ICMP redirect from x.x.x.1/28 (to 
+reach another subnet behind a  different gateway in x.x.x.0/28), then 
+the source IP on the ICMP redirect is chosen as the primary IP on the 
+interface that the packet arrived at.
+
+This is as far as I can tell from RFCs and colleagues fine for most 
+things after you're routed one hop or more, but in the case of ICMP 
+redirect it means that the redirect is not adhered to by the client, as 
+it will get the reidrect from x.x.x.13/28, not x.x.x.1/28.
+
+inet_select_addr seems to be explicitly looking for the primary IP in 
+all cases (./net/ipv4/devinet.c:875), and in the case of sending ICMP 
+recdirect when in an VRRP setup, that would not work well. It should try 
+to match the actual inbound IP.
+
+Judging by the comments from your patch I am not sure if the source IP 
+that triggers the ICMP redirect is available at this point any more.
+
+The way I understand it should pick adress is this way:
+
+ >  if (rt->fl.iif && net->ipv4.sysctl_icmp_errors_use_inbound_ifaddr)
+ >         dev = dev_get_by_index_rcu(net, rt->fl.iif);
+ >
+ > if (dev == fl.iif)
+ >         saddr = iph->daddr;
+ >
+ > if (dev != fl.iif)
+ >         saddr = inet_select_addr(dev, 0, RT_SCOPE_LINK);
+ > else
+ >         saddr = 0;
+
+I.e. if we are replying to something that is from a local network 
+segment, then iph->daddr would be a more correct source. My C skill is 
+prehistoric so what I've written likely is far from correct, but the 
+general gist is that there is a special case for replying to something 
+local.
+
+As it stands today (I'm on 2.6.35.11), ICMP redirects when using VRRP 
+are broken, and I'm hoping I may have found out why. :)
+
+mvh,
+A
+-- 
+Alexander Hoogerhuis | http://no.linkedin.com/in/alexh
+Boxed Solutions AS   | +47 908 21 485 - alexh@boxed.no
+"Given enough eyeballs, all bugs are shallow." -Eric S. Raymond
