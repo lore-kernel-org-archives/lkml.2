@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1DSU36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:29:58 -0400
-Received: from kroah.org ([198.145.64.141]:47603 "EHLO coco.kroah.org"
+	id S1754761Ab1DSUbX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:31:23 -0400
+Received: from kroah.org ([198.145.64.141]:47586 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394Ab1DSUQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:16:58 -0400
+	id S1754376Ab1DSUQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:16:56 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:44 2011
-Message-Id: <20110419201044.660659540@clark.kroah.org>
+Message-Id: <20110419201044.344040762@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:23 -0700
+Date: Tue, 19 Apr 2011 13:08:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Mahoney <jeffm@suse.com>, Tony Luck <tony.luck@intel.com>
-Subject: [14/70] [IA64] mca.c: Fix cast from integer to pointer warning
+        Jiri Slaby <jslaby@suse.cz>,
+        =?ISO-8859-15?q?R=C3=A9mi=20Denis-Courmont?= 
+	<remi.denis-courmont@nokia.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [11/70] NET: cdc-phonet, handle empty phonet header
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit c1d036c4d1cb00b7e8473a2ad0a78f13e13a8183 upstream.
+commit 468c3f924f043cad7a04f4f4d5224a2c9bc886c1 upstream.
 
-ia64_mca_cpu_init has a void *data local variable that is assigned
-the value from either __get_free_pages() or mca_bootmem(). The problem
-is that __get_free_pages returns an unsigned long and mca_bootmem, via
-alloc_bootmem(), returns a void *. format_mca_init_stack takes the void *,
-and it's also used with __pa(), but that casts it to long anyway.
+Currently, for N 5800 XM I get:
+cdc_phonet: probe of 1-6:1.10 failed with error -22
 
-This results in the following build warning:
+It's because phonet_header is empty. Extra altsetting looks like
+there:
+E 05 24 00 01 10 03 24 ab 05 24 06 0a 0b 04 24 fd  .$....$..$....$.
+E 00                                               .
 
-arch/ia64/kernel/mca.c:1898: warning: assignment makes pointer from
-integer without a cast
+I don't see the header used anywhere so just check if the phonet
+descriptor is there, not the structure itself.
 
-Cast the return of __get_free_pages to a void * to avoid
-the warning.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+Cc: David S. Miller <davem@davemloft.net>
+Acked-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/kernel/mca.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/usb/cdc-phonet.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/arch/ia64/kernel/mca.c
-+++ b/arch/ia64/kernel/mca.c
-@@ -1859,7 +1859,8 @@ ia64_mca_cpu_init(void *cpu_data)
- 			data = mca_bootmem();
- 			first_time = 0;
- 		} else
--			data = __get_free_pages(GFP_KERNEL, get_order(sz));
-+			data = (void *)__get_free_pages(GFP_KERNEL,
-+							get_order(sz));
- 		if (!data)
- 			panic("Could not allocate MCA memory for cpu %d\n",
- 					cpu);
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -328,13 +328,13 @@ int usbpn_probe(struct usb_interface *in
+ {
+ 	static const char ifname[] = "usbpn%d";
+ 	const struct usb_cdc_union_desc *union_header = NULL;
+-	const struct usb_cdc_header_desc *phonet_header = NULL;
+ 	const struct usb_host_interface *data_desc;
+ 	struct usb_interface *data_intf;
+ 	struct usb_device *usbdev = interface_to_usbdev(intf);
+ 	struct net_device *dev;
+ 	struct usbpn_dev *pnd;
+ 	u8 *data;
++	int phonet = 0;
+ 	int len, err;
+ 
+ 	data = intf->altsetting->extra;
+@@ -355,10 +355,7 @@ int usbpn_probe(struct usb_interface *in
+ 					(struct usb_cdc_union_desc *)data;
+ 				break;
+ 			case 0xAB:
+-				if (phonet_header || dlen < 5)
+-					break;
+-				phonet_header =
+-					(struct usb_cdc_header_desc *)data;
++				phonet = 1;
+ 				break;
+ 			}
+ 		}
+@@ -366,7 +363,7 @@ int usbpn_probe(struct usb_interface *in
+ 		len -= dlen;
+ 	}
+ 
+-	if (!union_header || !phonet_header)
++	if (!union_header || !phonet)
+ 		return -EINVAL;
+ 
+ 	data_intf = usb_ifnum_to_if(usbdev, union_header->bSlaveInterface0);
 
 
