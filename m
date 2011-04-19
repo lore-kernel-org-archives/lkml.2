@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab1DSURW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:22 -0400
-Received: from kroah.org ([198.145.64.141]:35532 "EHLO coco.kroah.org"
+	id S1755062Ab1DSURp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:17:45 -0400
+Received: from kroah.org ([198.145.64.141]:35700 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754609Ab1DSURO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:14 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:46 2011
-Message-Id: <20110419201046.449606659@clark.kroah.org>
+	id S1754954Ab1DSURi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
+Message-Id: <20110419201049.182541523@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:40 -0700
+Date: Tue, 19 Apr 2011 13:09:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [31/70] sparc32: Fix might-be-used-uninitialized warning in do_sparc_fault().
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [56/70] proc: do proper range check on readdir offset
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: David S. Miller <davem@davemloft.net>
+commit d8bdc59f215e62098bc5b4256fd9928bf27053a1 upstream.
 
-[ Upstream commit c816be7b5f24585baa9eba1f2413935f771d6ad6 ]
+Rather than pass in some random truncated offset to the pid-related
+functions, check that the offset is in range up-front.
 
-When we try to handle vmalloc faults, we can take a code
-path which uses "code" before we actually set it.
+This is just cleanup, the previous commit fixed the real problem.
 
-Amusingly gcc-3.3 notices this yet gcc-4.x does not.
-
-Reported-by: Bob Breuer <breuerr@mc.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/mm/fault_32.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/sparc/mm/fault_32.c
-+++ b/arch/sparc/mm/fault_32.c
-@@ -240,11 +240,10 @@ asmlinkage void do_sparc_fault(struct pt
- 	 * only copy the information from the master page table,
- 	 * nothing more.
- 	 */
-+	code = SEGV_MAPERR;
- 	if (!ARCH_SUN4C && address >= TASK_SIZE)
- 		goto vmalloc_fault;
+---
+ fs/proc/base.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -3066,11 +3066,16 @@ static int proc_pid_fill_cache(struct fi
+ /* for the /proc/ directory itself, after non-process stuff has been done */
+ int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ {
+-	unsigned int nr = filp->f_pos - FIRST_PROCESS_ENTRY;
+-	struct task_struct *reaper = get_proc_task(filp->f_path.dentry->d_inode);
++	unsigned int nr;
++	struct task_struct *reaper;
+ 	struct tgid_iter iter;
+ 	struct pid_namespace *ns;
  
--	code = SEGV_MAPERR;
--
- 	/*
- 	 * If we're in an interrupt or have no user
- 	 * context, we must not take the fault..
++	if (filp->f_pos >= PID_MAX_LIMIT + TGID_OFFSET)
++		goto out_no_task;
++	nr = filp->f_pos - FIRST_PROCESS_ENTRY;
++
++	reaper = get_proc_task(filp->f_path.dentry->d_inode);
+ 	if (!reaper)
+ 		goto out_no_task;
+ 
 
 
