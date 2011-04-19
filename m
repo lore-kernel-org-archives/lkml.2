@@ -1,88 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab1DSFGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 01:06:21 -0400
-Received: from science.horizon.com ([71.41.210.146]:62553 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751692Ab1DSFGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 01:06:19 -0400
-Date: 19 Apr 2011 01:06:18 -0400
-Message-ID: <20110419050618.18187.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: luto@mit.edu
-Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org
+	id S1752205Ab1DSFGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 01:06:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43361 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab1DSFGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 01:06:51 -0400
+Date: Tue, 19 Apr 2011 15:06:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for April 19
+Message-Id: <20110419150641.644638d5.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__19_Apr_2011_15_06_41_+1000_zVQdY3R+DcLkFCk8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not doing so well:
+--Signature=_Tue__19_Apr_2011_15_06_41_+1000_zVQdY3R+DcLkFCk8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-$ ./evil-clock-test
-CPU vendor   : AuthenticAMD
-CPU model    : AMD Phenom(tm) 9850 Quad-Core Processor
-CPU stepping : 3
-TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
-Using mfence_rdtsc because you don't have an Intel CPU
-Will test the "mfence;rdtsc" clock.
-Now test passed  : margin 168 with 15744696 samples
-Load3 test got no data
-Load test got no data
-Store test failed: worst error 10 with 617583 samples
+Hi all,
 
-$ ./evil-clock-test
-CPU vendor   : AuthenticAMD
-CPU model    : AMD Phenom(tm) 9850 Quad-Core Processor
-CPU stepping : 3
-TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
-Using mfence_rdtsc because you don't have an Intel CPU
-Will test the "mfence;rdtsc" clock.
-Now test passed  : margin 168 with 15666016 samples
-Load3 test got no data
-Load test got no data
-Store test got no data
+Changes since 20110418:
 
-$ ./evil-clock-test
-CPU vendor   : AuthenticAMD
-CPU model    : AMD Phenom(tm) 9850 Quad-Core Processor
-CPU stepping : 3
-TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
-Using mfence_rdtsc because you don't have an Intel CPU
-Will test the "mfence;rdtsc" clock.
-Now test passed  : margin 168 with 15981720 samples
-Load3 test got no data
-Load test got no data
-Store test got no data
+Dropped tree: xen
 
-Compiled from git revision 8f7d7a62, "Add script to test all pairs."
-Running as root makes no difference.
+The net tree gained a conflict against the net-current tree.
 
-Other programs:
+The omap_dss2 tree gained a conflict against the fbdev-current tree.
 
-$ ./now_test_all_pairs.sh
-0,1: Now test passed  : margin 168 with 15007304 samples
-0,2: Now test passed  : margin 168 with 15288360 samples
-0,3: Now test passed  : margin 168 with 15539776 samples
-1,0: Now test passed  : margin 168 with 14890744 samples
-1,2: Now test passed  : margin 168 with 15266128 samples
-1,3: Now test passed  : margin 168 with 15322480 samples
-2,0: Now test passed  : margin 168 with 14978320 samples
-2,1: Now test passed  : margin 168 with 15109872 samples
-2,3: Now test passed  : margin 168 with 15207616 samples
-3,0: Now test passed  : margin 168 with 15043208 samples
-3,1: Now test passed  : margin 168 with 14686352 samples
-3,2: Now test passed  : margin 168 with 14945840 samples
+----------------------------------------------------------------------------
 
-$ ./timing_test
-Usage: time <Miters> <mode> [POSIX clock id]
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
-Clocks are:
-  0 (CLOCK_REALTIME)  resolution = 0.000000001
-  1 (CLOCK_MONOTONIC)  resolution = 0.000000001
-  5 (CLOCK_REALTIME_COARSE)  resolution = 0.010000000
-  6 (CLOCK_MONOTONIC_COARSE)  resolution = 0.010000000
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
-System is 2.6.38.2 with 8 GB ECC RAM.  ATI RD790/SB600 chipset.
+Below is a summary of the state of the merge.
 
-Hope this helps!
+We are up to 185 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-designware-cor=
+e.c
+CONFLICT (delete/modify): drivers/i2c/busses/i2c-intel-mid.c deleted in bjd=
+ooks-i2c/next-i2c and modified in HEAD. Version HEAD of drivers/i2c/busses/=
+i2c-intel-mid.c left in tree.
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
+$ git rm -f drivers/i2c/busses/i2c-intel-mid.c
+Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
+Applying: i2c: designware-pcidrv depends on PCI
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+CONFLICT (delete/modify): drivers/media/dvb/frontends/drx397xD.c deleted in=
+ v4l-dvb/master and modified in HEAD. Version HEAD of drivers/media/dvb/fro=
+ntends/drx397xD.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/easycap/easycap_ioctl=
+.c
+$ git rm -f drivers/media/dvb/frontends/drx397xD.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/cpupowerutils
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/bnx2x/bnx2x_ethtool.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
+.c
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (content): Merge conflict in sound/soc/codecs/wm8994.c
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/mfd-core.c
+CONFLICT (content): Merge conflict in include/linux/mfd/core.h
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.c
+CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.h
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen-two/linux-next
+CONFLICT (content): Merge conflict in drivers/input/misc/xen-kbdfront.c
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in drivers/platform/x86/intel_pmic_gpio.c
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Tue__19_Apr_2011_15_06_41_+1000_zVQdY3R+DcLkFCk8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNrRhhAAoJEDMEi1NhKgbsNNUH/1UdmBMOp2Qq4ID36U84crFQ
+I7irQsR9b7KpOFlYQ+F6rlnm3F9RZiI/9lsU3G14gVr3BOU0MLxx+quoTx9VCtdo
+Zj+1BrGxasm3F7g09PuWK4s19+oBnzq476ok6zHzkz1TwPqtPLTm9Dba5cT5zfnB
+YTPjCN/XGuCu+ktoZNJ09Pezb7gnAjMxurYFQQjH3LfE9D9P2jgIyqTij8N7+eXI
+R3XY3yuOSY6nDtbfkepj7rFKwrgBtbyivewxtPCB4YfJ3dCSB9qFaASwsmxQ5d78
+6Va8NI3ijSCj4QwXzHLP9d0zOG8LjTGnB7JHV0FosSPMIsJFxDyCvbXj0BsgTPw=
+=0Cdf
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Apr_2011_15_06_41_+1000_zVQdY3R+DcLkFCk8--
