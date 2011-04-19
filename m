@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab1DSKVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 06:21:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51420 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab1DSKVW (ORCPT
+	id S1754834Ab1DSKVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 06:21:41 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:35613 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627Ab1DSKVi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 06:21:22 -0400
-Date: Tue, 19 Apr 2011 12:21:26 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 5/5] mmc: sdhci: merge two sdhci-pltfm.h into one
-Message-ID: <20110419102126.GF4164@pengutronix.de>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
- <1301042931-4869-6-git-send-email-shawn.guo@linaro.org>
+	Tue, 19 Apr 2011 06:21:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=n0w+LOtL2tOOwYWlGQYKPEZbUJLWAlBnGIDpYR2gNUWI29Ofd+Zg2qA3JKaWT0y1Tc
+         +NrRAr0cBoq+ycFrhIx/2a3CvoD1fuKDeP3SVapdG/NHdrm2ix2Bxwit+VKH1U2Cyk6+
+         Wdn5JOepxLDMXcvbYJ4luFXMyb7ZYxHMBfRVY=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gdTfX7fkYsEEjebm"
-Content-Disposition: inline
-In-Reply-To: <1301042931-4869-6-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1303207320.2779.9.camel@localhost>
+References: <1301874939-2630-1-git-send-email-sedat.dilek@gmail.com>
+	<1301900656.2760.6.camel@localhost>
+	<BANLkTi=WTWa4yj+ysta8jiHs9r4MX5Gf_g@mail.gmail.com>
+	<1301911604.2760.52.camel@localhost>
+	<BANLkTi=DHTjL7M9bzYY-t5MJS2s1WScBCQ@mail.gmail.com>
+	<BANLkTinysw90tiWhFRmQH_0LWx7o+sD1-A@mail.gmail.com>
+	<1303207320.2779.9.camel@localhost>
+Date: Tue, 19 Apr 2011 12:21:36 +0200
+Message-ID: <BANLkTinyp9Ne_OBPf+ejERjAPeUUxga2cQ@mail.gmail.com>
+Subject: Re: [PATCH] ubifs: Use empty_iops and empty_fops consistently
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 19, 2011 at 12:02 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Tue, 2011-04-19 at 11:50 +0200, Sedat Dilek wrote:
+>> can you take this patch into your UBIFS tree?
+>> Thanks in advance.
+>
+> Sorry, forgot about this patch. Pushed to ubifs-2.6.git tree, but I
+> re-wrote the commit message because I found yours a bit confusing. Is
+> this OK?
+>
 
---gdTfX7fkYsEEjebm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks.
+Nice wording, fire it up :-).
 
-On Fri, Mar 25, 2011 at 04:48:51PM +0800, Shawn Guo wrote:
-> The structure sdhci_pltfm_data is not necessarily to be in a public
-> header like include/linux/mmc/sdhci-pltfm.h, so the patch moves it
-> into drivers/mmc/host/sdhci-pltfm.h and eliminates the former one.
->=20
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---gdTfX7fkYsEEjebm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk2tYiYACgkQD27XaX1/VRtyJgCgtEKqdat1hW9wRBOf65j3diql
-WIcAoJN0XjGYUkhpB64fHj8n1m32JXTH
-=p0MJ
------END PGP SIGNATURE-----
-
---gdTfX7fkYsEEjebm--
+> http://git.infradead.org/ubifs-2.6.git/commit/8c355ad269c9da635fad8367e9a6d52bf3fe08c8
+>
+> --
+> Best Regards,
+> Artem Bityutskiy (Артём Битюцкий)
+>
+>
