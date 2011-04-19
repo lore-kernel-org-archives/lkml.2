@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab1DSVk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:40:28 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:46764 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752382Ab1DSVk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:40:26 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=AF+0iX71KKIAA8+YSZcpeo+rMyFvC+3yMOdDz736VKFKSJm8hJuXCHllRzKpyr8zi8sGe8s15qYEm6P+NslcISgDwgida9gIVrD04lTWZpOp3Knrfo1S0R4CKF8ZP9pk;
-Date: Tue, 19 Apr 2011 14:40:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: pugs@ieee.org, linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        qemu-devel@nongnu.org, chrisw@redhat.com, aafabbri@cisco.com,
-        dwang2@cisco.com, benve@cisco.com
-Subject: Re: [PATCH] vfio: Add an ioctl to reset the device
-Message-Id: <20110419144023.4d3f61da.rdunlap@xenotime.net>
-In-Reply-To: <20110419203234.4254.94914.stgit@s20.home>
-References: <20110419203234.4254.94914.stgit@s20.home>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756029Ab1DSVmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:42:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36631 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752971Ab1DSVl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:41:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [Update][PATCH 7/9] PM / Runtime: Add generic clock manipulation rountines for runtime PM
+Date: Tue, 19 Apr 2011 23:42:26 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-sh@vger.kernel.org, lethal@linux-sh.org,
+        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
+References: <201104130205.26988.rjw@sisk.pl> <201104182159.54316.rjw@sisk.pl> <BANLkTimZpXAH7uGTDmYJSJJWgX=H5md0JQ@mail.gmail.com>
+In-Reply-To: <BANLkTimZpXAH7uGTDmYJSJJWgX=H5md0JQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201104192342.26670.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Apr 2011 14:32:59 -0600 Alex Williamson wrote:
+On Tuesday, April 19, 2011, Magnus Damm wrote:
+> Hi Rafael,
+> 
+> On Tue, Apr 19, 2011 at 4:59 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Many different platforms and subsystems may want to disable device
+> > clocks during suspend and enable them during resume which is going to
+> > be done in a very similar way in all those cases.  For this reason,
+> > provide generic routines for the manipulation of device clocks during
+> > suspend and resume.
+> >
+> > Convert the ARM shmobile platform to using the new routines.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >
+> > Hi,
+> >
+> > The previous version of the patch had a build problem for CONFIG_HAVE_CLK
+> > unset and a the name of pm_runtime_clock_add_notifier() misspelled (a
+> > couple of times).
+> 
+> Thanks for your work on this. I like that we get closer to a shared code base.
+> 
+> Do you have any plans to add support for multiple clocks per struct
+> device? I had some plans to play around with that myself, but if we're
+> moving the code to a common place then this obviously becomes a bit
+> more complicated.
+> 
+> It's rather common that each hardware block in an SoC is connected to
+> more than a single clock. This needs to be managed by software
+> somehow.
+> 
+> So if the plan is to make to the code generic, how about allowing the
+> architecture to associate clocks with each struct device somehow?
 
-> When using VFIO to assign a device to a guest, we want to make sure
-> the device is quiesced on VM reset to stop all DMA within the guest
-> mapped memory.  Add an ioctl which just calls pci_reset_function()
-> and returns whether it succeeds.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
-> We've recently needed to add this functionality for current KVM
-> based device assignment, VFIO should provide a way to do this too.
-> An example of it being used in the Qemu VFIO driver can be found
-> here:
-> 
-> https://github.com/awilliam/qemu-vfio/blob/vfio/hw/vfio.c
-> 
->  drivers/vfio/vfio_main.c |    4 ++++
->  include/linux/vfio.h     |    3 +++
->  2 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/vfio/vfio_main.c b/drivers/vfio/vfio_main.c
-> index 7e427fc..b9bb692 100644
-> --- a/drivers/vfio/vfio_main.c
-> +++ b/drivers/vfio/vfio_main.c
-> @@ -490,6 +490,10 @@ static long vfio_unl_ioctl(struct file *filep,
->  		ret = vfio_irq_eoi_eventfd(vdev, fd);
->  		break;
->  
-> +	case VFIO_RESET_FUNCTION:
-> +		ret = pci_reset_function(vdev->pdev);
-> +		break;
-> +
->  	default:
->  		return -EINVAL;
->  	}
-> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-> index f07d8fe..47d9bb9 100644
-> --- a/include/linux/vfio.h
-> +++ b/include/linux/vfio.h
-> @@ -215,6 +215,9 @@ struct vfio_dma_map {
->  /* Re-enable INTx via eventfd */
->  #define	VFIO_IRQ_EOI_EVENTFD	_IOW(';', 110, int)
->  
-> +/* Reset PCI function */
-> +#define VFIO_RESET_FUNCTION	_IO(';', 111)
-> +
->  /*
->   * Reads, writes, and mmaps determine which PCI BAR (or config space)
->   * from the high level bits of the file offset
+Hmm.  For now, my patchset generally reorganizes the existing code without
+adding new functionality.  Of course, it is possible to add new functionality
+on top of it, but I'd prefer to focus on the "real" power domains support
+first (which I think should be done in a generic way too).
 
-I can't find include/linux/vfio.h in linux-next or mainline git, but
-ioctls need to be documented in Documentation/ioctl/ioctl-number.txt....
+The plan is to share as much code as it makes sense between platforms and
+architectures.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+Rafael
