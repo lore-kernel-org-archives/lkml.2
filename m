@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab1DSVEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:04:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48132 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755730Ab1DSVEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:04:46 -0400
-Date: Tue, 19 Apr 2011 14:04:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Roman Borisov <ext-roman.borisov@nokia.com>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        vda.linux@googlemail.com, cebbert@redhat.com, virtuoso@slind.org
-Subject: Re: [PATCH] fs: bound mount propagation fix
-Message-Id: <20110419140400.23367a16.akpm@linux-foundation.org>
-In-Reply-To: <7b9aa806294aadd47704d56ae3e7c757bf0ce6db.1301667509.git.ext-roman.borisov@nokia.com>
-References: <201103262243.18031.vda.linux@googlemail.com>
-	<7b9aa806294aadd47704d56ae3e7c757bf0ce6db.1301667509.git.ext-roman.borisov@nokia.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755611Ab1DSVEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:04:30 -0400
+Received: from kroah.org ([198.145.64.141]:39406 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755562Ab1DSVE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 17:04:26 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 14:03:23 2011
+Message-Id: <20110419210323.884112249@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 19 Apr 2011 14:02:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Christian Simon <simon@swine.de>
+Subject: [15/26] USB: ftdi_sio: Added IDs for CTI USB Serial Devices
+In-Reply-To: <20110419210333.GA17417@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  1 Apr 2011 18:48:20 +0400
-Roman Borisov <ext-roman.borisov@nokia.com> wrote:
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
-> I think MS_SILENT shouldn't be cleared anywhere. I suppose the bug is in 
-> MS_SHARED options checking. Please see the patch below.
-> 
-> Fixed MS_SHARED, MS_SLAVE, MS_UNBINDABLE option handling; 
-> Existing options check doesn't allow to have any options combinations 
-> because of integer comparison (not bitwise).
-> 
+------------------
 
-(when fixing a bug, please include a *complete* description of that bug
-in the changelog.  It should include a description of the user-visible
-misbehaviour and a description of the coding error).
+From: Christian Simon <simon@swine.de>
+
+commit 5a9443f08c83c294c5c806a689c1184b27cb26b3 upstream.
+
+I added new ProdutIds for two devices from CTI GmbH Leipzig.
+
+Signed-off-by: Christian Simon <simon@swine.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
+ 2 files changed, 11 insertions(+)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -155,6 +155,8 @@ static struct ftdi_sio_quirk ftdi_stmcli
+  * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
+  */
+ static struct usb_device_id id_table_combined [] = {
++	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1093,3 +1093,12 @@
+ #define XVERVE_SIGNALYZER_SH2_PID	0xBCA2
+ #define XVERVE_SIGNALYZER_SH4_PID	0xBCA4
+ 
++/*
++ * CTI GmbH RS485 Converter http://www.cti-lean.com/
++ */
++/* USB-485-Mini*/
++#define FTDI_CTI_MINI_PID	0xF608
++/* USB-Nano-485*/
++#define FTDI_CTI_NANO_PID	0xF60B
++
++
 
 
-The vfs code is pretty confusing about whether `type' is supposed to be
-a scalar or a bitfield.
-
-flags_to_propagation_type() has that is_power_of-two() check in there
-to reject more-than-one-bit-set.
-
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 2beb0fb..e0cf263 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -1434,7 +1434,7 @@ static int do_change_type(struct path *path, int flag)
->  		return -EINVAL;
->  
->  	down_write(&namespace_sem);
-> -	if (type == MS_SHARED) {
-> +	if (type & MS_SHARED) {
-
-So this change won't do anything, because do_change_type() has used
-flags_to_propagation_type().
-
->  		err = invent_group_ids(mnt, recurse);
->  		if (err)
->  			goto out_unlock;
-> diff --git a/fs/pnode.c b/fs/pnode.c
-> index 8d5f392..0c9dc54 100644
-> --- a/fs/pnode.c
-> +++ b/fs/pnode.c
-> @@ -128,15 +128,15 @@ static int do_make_slave(struct vfsmount *mnt)
->  
->  void change_mnt_propagation(struct vfsmount *mnt, int type)
->  {
-> -	if (type == MS_SHARED) {
-> +	if (type & MS_SHARED) {
->  		set_mnt_shared(mnt);
->  		return;
->  	}
->  	do_make_slave(mnt);
-> -	if (type != MS_SLAVE) {
-> +	if (!(type & MS_SLAVE)) {
->  		list_del_init(&mnt->mnt_slave);
->  		mnt->mnt_master = NULL;
-> -		if (type == MS_UNBINDABLE)
-> +		if (type & MS_UNBINDABLE)
->  			mnt->mnt_flags |= MNT_UNBINDABLE;
->  		else
->  			mnt->mnt_flags &= ~MNT_UNBINDABLE;
-
-And afaict, no caller of change_mnt_propagation() will pass in a `type'
-with more than a single bit set.  umount_tree() passed MS_PRIVATE and
-do_change_type() uses flags_to_propagation_type().
-
-So as far as I can tell, this patch won't fix anything??
