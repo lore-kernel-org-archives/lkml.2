@@ -1,32 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1DSBjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 21:39:09 -0400
-Received: from ozlabs.org ([203.10.76.45]:42357 "EHLO ozlabs.org"
+	id S1753766Ab1DSBnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 21:43:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27981 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab1DSBjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 21:39:07 -0400
-From: Rusty Russell <rusty@ozlabs.org>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Amit Shah <amit.shah@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC][PATCH] virtio balloon: kill tell-host-first logic
-In-Reply-To: <1302813005.16562.818.camel@nimitz>
-References: <20110407174325.ED21C82B@kernel> <20110411110131.GA23123@redhat.com> <1302559871.7286.16749.camel@nimitz> <20110412054330.GH26678@amit-x200.redhat.com> <1302625352.8321.2126.camel@nimitz>  <878vvdawsa.fsf@rustcorp.com.au> <1302813005.16562.818.camel@nimitz>
-User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Tue, 19 Apr 2011 10:55:54 +0930
-Message-ID: <87tydv3ucd.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751985Ab1DSBnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 21:43:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
+   d="scan'208";a="421595171"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
+        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC 1/4] HWPoison: add memory_failure_queue()
+Date: Tue, 19 Apr 2011 09:43:36 +0800
+Message-Id: <1303177419-22466-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Apr 2011 13:30:05 -0700, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> Here's a new commit message:
+memory_failure() is the entry point for HWPoison memory error
+recovery.  It must be called in process context.  But commonly
+hardware memory errors are notified via MCE or NMI, so some delayed
+execution mechanism must be used.  In MCE handler, a work queue + ring
+buffer mechanism is used.
 
-Applied, thanks.
+In addition to MCE, now APEI (ACPI Platform Error Interface) GHES
+(Generic Hardware Error Source) can be used to report memory errors
+too.  To add support to APEI GHES memory recovery, a mechanism similar
+to that of MCE is implemented.  memory_failure_queue() is the new
+entry point that can be called in IRQ context.  The next step is to
+make MCE handler uses this interface too.
 
-Rusty.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/linux/mm.h  |    1 
+ mm/memory-failure.c |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+)
+
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1641,6 +1641,7 @@ enum mf_flags {
+ };
+ extern void memory_failure(unsigned long pfn, int trapno);
+ extern int __memory_failure(unsigned long pfn, int trapno, int flags);
++extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
+ extern int unpoison_memory(unsigned long pfn);
+ extern int sysctl_memory_failure_early_kill;
+ extern int sysctl_memory_failure_recovery;
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -52,6 +52,7 @@
+ #include <linux/swapops.h>
+ #include <linux/hugetlb.h>
+ #include <linux/memory_hotplug.h>
++#include <linux/kfifo.h>
+ #include "internal.h"
+ 
+ int sysctl_memory_failure_early_kill __read_mostly = 0;
+@@ -1182,6 +1183,97 @@ void memory_failure(unsigned long pfn, i
+ 	__memory_failure(pfn, trapno, 0);
+ }
+ 
++#define MEMORY_FAILURE_FIFO_ORDER	4
++#define MEMORY_FAILURE_FIFO_SIZE	(1 << MEMORY_FAILURE_FIFO_ORDER)
++
++struct memory_failure_entry {
++	unsigned long pfn;
++	int trapno;
++	int flags;
++};
++
++struct memory_failure_cpu {
++	DECLARE_KFIFO(fifo, struct memory_failure_entry,
++		      MEMORY_FAILURE_FIFO_SIZE);
++	spinlock_t lock;
++	struct work_struct work;
++};
++
++static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
++
++/**
++ * memory_failure_queue - Schedule handling memory failure of a page.
++ * @pfn: Page Number of the corrupted page
++ * @trapno: Trap number reported in the signal to user space.
++ * @flags: Flags for memory failure handling
++ *
++ * This function is called by the low level hardware error handler
++ * when it detects hardware memory corruption of a page. It schedules
++ * the recovering of error page, including dropping pages, killing
++ * processes etc.
++ *
++ * The function is primarily of use for corruptions that
++ * happen outside the current execution context (e.g. when
++ * detected by a background scrubber)
++ *
++ * Can run in IRQ context.
++ */
++void memory_failure_queue(unsigned long pfn, int trapno, int flags)
++{
++	struct memory_failure_cpu *mf_cpu;
++	unsigned long proc_flags;
++	struct memory_failure_entry entry = {
++		.pfn =		pfn,
++		.trapno =	trapno,
++		.flags =	flags,
++	};
++
++	mf_cpu = &get_cpu_var(memory_failure_cpu);
++	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
++	if (kfifo_put(&mf_cpu->fifo, &entry))
++		schedule_work_on(smp_processor_id(), &mf_cpu->work);
++	else
++		pr_err("Memory failure: buffer overflow when recovering memory failure at 0x%#lx\n",
++		       pfn);
++	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
++	put_cpu_var(memory_failure_cpu);
++}
++EXPORT_SYMBOL_GPL(memory_failure_queue);
++
++static void memory_failure_work_func(struct work_struct *work)
++{
++	struct memory_failure_cpu *mf_cpu;
++	struct memory_failure_entry entry = { 0, };
++	unsigned long proc_flags;
++	int gotten;
++
++	mf_cpu = &__get_cpu_var(memory_failure_cpu);
++	for (;;) {
++		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
++		gotten = kfifo_get(&mf_cpu->fifo, &entry);
++		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
++		if (!gotten)
++			break;
++		__memory_failure(entry.pfn, entry.trapno, entry.flags);
++	}
++}
++
++static int __init memory_failure_init(void)
++{
++	struct memory_failure_cpu *mf_cpu;
++	int cpu;
++
++	for_each_possible_cpu(cpu) {
++		mf_cpu = &per_cpu(memory_failure_cpu, cpu);
++		spin_lock_init(&mf_cpu->lock);
++		INIT_KFIFO(mf_cpu->fifo);
++		INIT_WORK(&mf_cpu->work, memory_failure_work_func);
++	}
++
++	return 0;
++}
++core_initcall(memory_failure_init);
++
+ /**
+  * unpoison_memory - Unpoison a previously poisoned page
+  * @pfn: Page number of the to be unpoisoned page
