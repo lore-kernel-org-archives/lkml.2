@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab1DSVQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 17:16:32 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:53064 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605Ab1DSVQb convert rfc822-to-8bit (ORCPT
+	id S1755863Ab1DSVRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 17:17:13 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:40241 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754278Ab1DSVRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 17:16:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ea9GUZtmlPLsPVGEa42Xs2olrLYMLzuYRdiw0YtKS05smj4N6+VbHqw9uzDOOUg4uF
-         pnhPDwo9JAu6VFJ1AScA==
+	Tue, 19 Apr 2011 17:17:11 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: Re: [105/105] nfsd4: fix oops on lock failure
+References: <20110412143559.186613198@clark.kroah.org>
+	<87pqokx6lr.fsf@devron.myhome.or.jp>
+	<BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
+	<20110418153236.GC20935@pad.home.fieldses.org>
+	<87ipubwnj3.fsf@devron.myhome.or.jp>
+	<8762qbwnf1.fsf@devron.myhome.or.jp>
+	<87zknnv7id.fsf@devron.myhome.or.jp>
+	<87vcybgt6u.fsf@devron.myhome.or.jp>
+	<87hb9uhcre.fsf@devron.myhome.or.jp>
+	<20110419204349.GB8228@fieldses.org>
+Date: Wed, 20 Apr 2011 06:17:03 +0900
+In-Reply-To: <20110419204349.GB8228@fieldses.org> (J. Bruce Fields's message
+	of "Tue, 19 Apr 2011 16:43:49 -0400")
+Message-ID: <87aafmgcvk.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1303240935.8345.7.camel@twins>
-References: <BANLkTi=g6iPgdctAmuZ=bb8J6FqNJA-vZQ@mail.gmail.com>
-	<1303240935.8345.7.camel@twins>
-Date: Tue, 19 Apr 2011 21:16:27 +0000
-Message-ID: <BANLkTi=GX3JGw-Dq+ejsCguV0A+9w2eCjQ@mail.gmail.com>
-Subject: Re: [BUG] perf_event: sampling buffer format cannot handle
- multi-event sampling
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
-        Paul Mackerras <paulus@samba.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 7:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-04-19 at 19:10 +0000, Stephane Eranian wrote:
->> Hi,
->>
->> I was looking at the sampling buffer format and I think there is an
->> issue in case
->> one samples on more than one event at a time and each event as a different
->> sample_type value (i.e., what it wants to record in each sample).
->>
->> The sample_type is exported per-event by the API. In order to decode a sample
->> (PERF_RECORD_SAMPLE) one has to know which event caused it. To identify
->> the event, one has to include PERF_SAMPLE_ID in the sample_type. Each such
->> id uniquely identifies an event. Assuming the tool keeps a mapping of event to
->> ID, we can then reconstruct. This is what perf does.
->>
->> The problem is that to extract the event ID, one has to already parse the sample
->> itself. That means, you need sample_type to extract the event ID.
->>
->> Thus, we have a catch 22 situation.
->>
->> Looking at the perf tool, it sort of works today simply because the
->> same sample_type
->> is applied to all events.
->>
->> To solve this, we could either:
->>    - add the event ID to the header for PERF_RECORD_SAMPLE
->>    - enforce event ID is systematically saved at the beginning on
->> PERF_RECORD_SAMPLE
->>
->> None of those options is transparent, I am afraid, unless we introduce
->> new record types.
+"J. Bruce Fields" <bfields@fieldses.org> writes:
+
+> On Tue, Apr 19, 2011 at 05:21:57PM +0900, OGAWA Hirofumi wrote:
+>> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+>> 
+>> >> I'll start test of this patch, and see what happens.
+>> >
+>> > OK. Although filp slabs are still slightly increasing (I'm not sure yet
+>> > whether this is leak of filp on system). But watching before/after
+>> > patch, the graph of filp slabs is clearly different.
+>> >
+>> > As far as I can say patches are fine.
+>> 
+>> slightly increasing was stopped at 2200-2300. filp leak seems to be fixed.
 >
-> Or simply don't mix different sample_types in the same buffer?
+> Another thing to check is whether you can always unmount the exported
+> filesystem on the server after running your test.  So something like:
 >
-Does the kernel disallow this when you merge the output via that ioctl()?
+> 	service nfs stop
+> 	unmount /exports/fs
+>
+> should always succeed; if you get an inexplicable EBUSY on the final
+> unmount then we likely still have a leak someplace.
+
+It succeeded.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
