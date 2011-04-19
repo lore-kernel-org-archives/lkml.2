@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1DSSSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 14:18:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40949 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451Ab1DSSSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 14:18:16 -0400
-Date: Tue, 19 Apr 2011 20:17:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stas Sergeev <stsp@aknet.ru>
-Cc: Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command [3/3]
-Message-ID: <20110419181733.GA30702@redhat.com>
-References: <20110405164557.GA23248@redhat.com> <4DADA22A.1010205@aknet.ru> <20110419155830.7ad33312@lxorguk.ukuu.org.uk> <4DADA581.9060700@aknet.ru> <20110419165429.71cb1508@lxorguk.ukuu.org.uk> <20110419161301.GA23914@redhat.com> <20110419162909.GC23914@redhat.com> <4DADBE31.7000400@aknet.ru> <20110419172036.GA27213@redhat.com> <4DADC92E.3010409@aknet.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DADC92E.3010409@aknet.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754147Ab1DSSUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 14:20:23 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49717 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753587Ab1DSSUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 14:20:21 -0400
+Subject: Re: [PATCH v3] mm: make expand_downwards symmetrical to
+ expand_upwards
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <alpine.DEB.2.00.1104191254300.19358@router.home>
+References: <20110415135144.GE8828@tiehlicka.suse.cz>
+	 <alpine.LSU.2.00.1104171952040.22679@sister.anvils>
+	 <20110418100131.GD8925@tiehlicka.suse.cz>
+	 <20110418135637.5baac204.akpm@linux-foundation.org>
+	 <20110419111004.GE21689@tiehlicka.suse.cz>
+	 <1303228009.3171.18.camel@mulgrave.site>
+	 <BANLkTimYrD_Sby_u-fPSwn-RJJyEVavU5w@mail.gmail.com>
+	 <1303233088.3171.26.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104191213120.17888@router.home>
+	 <1303235306.3171.33.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1104191254300.19358@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 13:20:17 -0500
+Message-ID: <1303237217.3171.39.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19, Stas Sergeev wrote:
->
-> 19.04.2011 21:20, Oleg Nesterov wrote:
->
->>>> do_signal_parent() must not return DEATH_REAP (this means that
->>>> leader->exit_signal becomes -1), but this can happen and this is bug.
->>>>
->>> Could you please clarify this a bit: according to the comments
->>> in signal.c:
->>> ---
->>>                   * We are exiting and our parent doesn't care.  POSIX.1
->>>                   * defines special semantics for setting SIGCHLD to SIG_IGN
->>>                   * or setting the SA_NOCLDWAIT flag: we should be reaped
->>>                   * automatically and not left for our parent's wait4 call.
->>> ---
->>> That's how I understand it: if DEATH_REAP is returned, the
->>> parent ignores SIGCHILD, and in this case I am not allowing
->>> it to read the detach code with wait(). What is the bug?
->> Indeed. But, once again, that is why do_notify_parent() expects the dead
->> tsk! Please note that if it returns DEATH_REAP it sets ->exit_signal = -1.
->> And this is _only_ allowed if the leader is already dead and we are going
->> to reap it.
-> Ah, so, by saying "do_signal_parent() must not return DEATH_REAP (this means that
-> leader->exit_signal becomes -1)", you actually meant
-> "do_signal_parent(), when returning DEATH_REAP, must not
-> set ->exit_signal = -1,
+On Tue, 2011-04-19 at 13:10 -0500, Christoph Lameter wrote:
+> On Tue, 19 Apr 2011, James Bottomley wrote:
+> 
+> > > Right !NUMA systems only have node 0.
+> >
+> > That's rubbish.  Discontigmem uses the nodes field to identify the
+> > discontiguous region.  page_to_nid() returns this value.  Your code
+> > wrongly assumes this is zero for non NUMA.
+> 
+> Sorry the kernel has no node awareness if you do not set CONFIG_NUMA
+> 
+> F.e. zone node lookups work the following way
+> 
+> static inline int
+> zone_to_nid(struct zone *zone)
+> {
+> #ifdef CONFIG_NUMA
+>         return zone->node;
+> #else
+>         return 0;
+> #endif
+> }
+> 
+> How in the world did you get a zone setup in node 1 with a !NUMA config?
 
-Yes.
+I told you ... I forced an allocation into the first discontiguous
+region.  That will return 1 for page_to_nid().
 
-> because only do_notify_parent()
-> can do that"?
+> The problem seems to be that the kernel seems to allow a
+> definition of a page_to_nid() function that returns non zero in the !NUMA
+> case.
 
-because we can only do this if we are going to reap the task
+This is called reality, yes.
 
-> If so - will fix, thanks.
+>  And slub relies on page_to_nid returning zero in the !NUMA case.
+> Because NODES_WIDTH should be 0 in the !NUMA case and therefore
+> page_to_nid must return 0.
 
-Stas, please do not trim CC. I am very glad Alan looked at this patch,
-I hope he will participate. Better yet, add Linus too as I already asked ;)
+right, that's what I told you: slub is broken because it's making a
+wrong assumption.  Look in asm-generic/memory_model.h it shows how the
+page_to_nid() is used in finding the pfn array.  DISCONTIGMEM uses some
+of the numa properties (including assigning zones to the discontiguous
+regions).
 
-Oleg.
+> > I can fix the panic by hard coding get_nodes() to return the zero node
+> > for the non-numa case ... however, presumably it's more than just this
+> > that's broken in slub?
+> 
+> If you think that is broken then we have brokenness all over the kernel
+> whenever we determine the node from a page and use that to do a lookup.
+
+Not really.  The rest of the kernel uses the proper macros.  in
+DISCONTIGMEM but !NUMA configs, the numa macros expand correctly.
+You've cut across that with all the CONFIG_NUMA checks in slub.
+
+James
+
 
