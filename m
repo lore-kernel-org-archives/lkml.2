@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab1DSCdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 22:33:49 -0400
-Received: from fallback.mail.timico.net ([62.121.11.168]:43921 "EHLO
-	fallback.mail.timico.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab1DSCdp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 22:33:45 -0400
-X-Greylist: delayed 2512 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Apr 2011 22:33:45 EDT
-From: Jon Povey <Jon.Povey@racelogic.co.uk>
-To: Ben Gardiner <bengardiner@nanometrics.ca>, "Nori, Sekhar" <nsekhar@ti.com>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bastian Ruppert <Bastian.Ruppert@sewerin.de>,
-        "Griffis, Brad" <bgriffis@ti.com>, Philby John <pjohn@in.mvista.com>
-Content-Class: urn:content-classes:message
-Date: Tue, 19 Apr 2011 02:47:53 +0100
-Subject: RE: [PATCH 0/6] i2c-davinci gpio pulsed SCL recovery with ICPFUNC
-Thread-Topic: [PATCH 0/6] i2c-davinci gpio pulsed SCL recovery with ICPFUNC
-Thread-Index: Acv+EJ38iH3RAWm0Ql2hvEXDsbMa3AAIpVUg
-Message-ID: <70E876B0EA86DD4BAF101844BC814DFE093FB40998@Cloud.RL.local>
-In-Reply-To: <BANLkTi=7DbMrbo0nQU+268LC_2258q-_DA@mail.gmail.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754082Ab1DSCki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 22:40:38 -0400
+Received: from linux-sh.org ([111.68.239.195]:55472 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753979Ab1DSCkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 22:40:37 -0400
+Date: Tue, 19 Apr 2011 11:40:30 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Michael Prokop <mika@grml.org>
+Subject: Re: [PATCH] Documentation/dontdiff: large update
+Message-ID: <20110419024030.GA28271@linux-sh.org>
+References: <20110418160809.f10c0b62.rdunlap@xenotime.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110418160809.f10c0b62.rdunlap@xenotime.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Gardiner wrote:
+On Mon, Apr 18, 2011 at 04:08:09PM -0700, Randy Dunlap wrote:
+> -int16.c
+> -int1.c
+> -int2.c
+> -int32.c
+> -int4.c
+> -int8.c
+> +int*.c
 
->>> When creating this series I noticed that there are obvious
->>> similarities between the existing recovery routine implemented by
->>> Philby John and John Povey
+int[0-9]*.c or something might make sense, but this is going to trip up a
+lot of intel and interrupt related files.
 
-> I'm not sure how the 20us in the existing method was derived -- I
-> wonder if Philby John or John Povey could comment?
+> +lib1funcs.S
 
-I've been a little bemused about why I am getting credited for I2C
-bus recovery work. I don't remember doing any work on that.
-
-I did a couple of patches to fix a race when setting up a TX, but
-those are, afaik, unrelated.
-
-All I know about the bus recovery stuff is looking at it a while back
-and thinking hmm, that seems to wiggle gpio without changing the
-pinmuxing, so it can't possibly work.
-
---
-Jon Povey
-jon.povey@racelogic.co.uk
-
-Racelogic is a limited company registered in England. Registered number 2743719 .
-Registered Office Unit 10, Swan Business Centre, Osier Way, Buckingham, Bucks, MK18 1TB .
-
-The information contained in this electronic mail transmission is intended by Racelogic Ltd for the use of the named individual or entity to which it is directed and may contain information that is confidential or privileged. If you have received this electronic mail transmission in error, please delete it from your system without copying or forwarding it, and notify the sender of the error by reply email so that the sender's address records can be corrected. The views expressed by the sender of this communication do not necessarily represent those of Racelogic Ltd. Please note that Racelogic reserves the right to monitor e-mail communications passing through its network
-
-
+This is also bogus. The one place it's used in a .gitignore in the kernel
+is a special case, while you obviously don't want to ignore it in the
+arch/foo/lib/ case.
