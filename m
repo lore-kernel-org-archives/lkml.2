@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab1DSFrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 01:47:20 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53390
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750766Ab1DSFrS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 01:47:18 -0400
-Date: Mon, 18 Apr 2011 22:46:42 -0700 (PDT)
-Message-Id: <20110418.224642.71106517.davem@davemloft.net>
-To: decot@google.com
-Cc: jes@trained-monkey.org, linux-acenic@sunsite.dk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acenic: Fix using the specified speed when configuring
- NIC
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1303001827-4283-1-git-send-email-decot@google.com>
-References: <1303001827-4283-1-git-send-email-decot@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752217Ab1DSF5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 01:57:08 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:41699 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751011Ab1DSF5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 01:57:06 -0400
+Date: Tue, 19 Apr 2011 11:13:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2.6.39-rc1-tip 14/26] 14: x86: x86 specific probe
+ handling
+Message-ID: <20110419054325.GA10698@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110401143223.15455.19844.sendpatchset@localhost6.localdomain6>
+ <20110401143517.15455.88373.sendpatchset@localhost6.localdomain6>
+ <1303145700.32491.891.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1303145700.32491.891.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@google.com>
-Date: Sat, 16 Apr 2011 17:57:07 -0700
+* Peter Zijlstra <peterz@infradead.org> [2011-04-18 18:55:00]:
 
-> This patch needs review, as I did not test it: I only think something
-> is weird by looking at the code, but experts must confirm.
+> On Fri, 2011-04-01 at 20:05 +0530, Srikar Dronamraju wrote:
+> > +/*
+> > + * @reg: reflects the saved state of the task
+> > + * @vaddr: the virtual address to jump to.
+> > + * Return 0 on success or a -ve number on error.
+> > + */
+> > +void set_ip(struct pt_regs *regs, unsigned long vaddr)
+> > +{
+> > +       regs->ip = vaddr;
+> > +} 
 > 
-> This tells the NIC to take the speed specified by ethtool into account
-> when configuring the NIC, instead of keeping the previous speed.
-> 
-> Signed-off-by: David Decotigny <decot@google.com>
+> Since we have the cross-architecture function:
+> instruction_pointer(struct pt_regs*) to read the thing, this ought to be
+> called set_instruction_pointer(struct pt_regs*, unsigned long) or
+> somesuch.
 
-Looks correct, but seems to be dependent upon some other patches which
-have feedback pending which you need to address.
+Okay, will rename set_ip to set_instruction_pointer.
 
-Please resubmit that when the other series ends up being applied after
-you've fixed it up.
