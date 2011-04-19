@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab1DSUWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:22:17 -0400
-Received: from kroah.org ([198.145.64.141]:35674 "EHLO coco.kroah.org"
+	id S1755304Ab1DSUWb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:22:31 -0400
+Received: from kroah.org ([198.145.64.141]:35664 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754920Ab1DSURe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:34 -0400
+	id S1754907Ab1DSURd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:33 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
-Message-Id: <20110419201048.725890936@clark.kroah.org>
+Message-Id: <20110419201048.481217763@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:01 -0700
+Date: Tue, 19 Apr 2011 13:08:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [52/70] USB: ftdi_sio: add PID for OCT DK201 docking station
+        Felipe Balbi <balbi@ti.com>
+Subject: [50/70] usb: musb: temporarily make it bool
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 11a31d84129dc3133417d626643d714c9df5317e upstream.
+commit 7a180e70cfc56e131bfe4796773df2acfc7d4180 upstream.
 
-Add PID 0x0103 for serial port of the OCT DK201 docking station.
+Due to the recent changes to musb's glue layers,
+we can't compile musb-hdrc as a module - compilation
+will break due to undefined symbol musb_debug. In
+order to fix that, we need a big re-work of the
+debug support on the MUSB driver.
 
-Reported-by: Jan Hoogenraad <jan@hoogenraad.net>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Because that would mean a lot of new code coming
+into the -rc series, it's best to defer that to
+next merge window and for now just disable module
+support for MUSB.
+
+Once we get the refactor of the debugging support
+done, we can simply revert this patch and things
+will go back to normal again.
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/usb/musb/Kconfig |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -527,6 +527,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(SEALEVEL_VID, SEALEVEL_2803_8_PID) },
- 	{ USB_DEVICE(IDTECH_VID, IDTECH_IDT1221U_PID) },
- 	{ USB_DEVICE(OCT_VID, OCT_US101_PID) },
-+	{ USB_DEVICE(OCT_VID, OCT_DK201_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_HE_TIRA1_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_HE_TIRA1_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_USB_UIRT_PID),
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -572,6 +572,7 @@
- /* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
- /* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
- /* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
-+#define OCT_DK201_PID		0x0103	/* OCT DK201 USB docking station */
- #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+--- a/drivers/usb/musb/Kconfig
++++ b/drivers/usb/musb/Kconfig
+@@ -14,7 +14,7 @@ config USB_MUSB_HDRC
+ 	select TWL4030_USB if MACH_OMAP_3430SDP
+ 	select TWL6030_USB if MACH_OMAP_4430SDP || MACH_OMAP4_PANDA
+ 	select USB_OTG_UTILS
+-	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
++	bool 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
+ 	help
+ 	  Say Y here if your system has a dual role high speed USB
+ 	  controller based on the Mentor Graphics silicon IP.  Then
+@@ -30,8 +30,8 @@ config USB_MUSB_HDRC
  
- /*
+ 	  If you do not know what this is, please say N.
+ 
+-	  To compile this driver as a module, choose M here; the
+-	  module will be called "musb-hdrc".
++#	  To compile this driver as a module, choose M here; the
++#	  module will be called "musb-hdrc".
+ 
+ choice
+ 	prompt "Platform Glue Layer"
 
 
