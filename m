@@ -1,159 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1DSOuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:50:05 -0400
-Received: from mail.aknet.ru ([78.158.192.28]:41913 "EHLO mail.aknet.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab1DSOuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:50:03 -0400
-Message-ID: <4DADA119.40503@aknet.ru>
-Date: Tue, 19 Apr 2011 18:50:01 +0400
-From: Stas Sergeev <stsp@aknet.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command [2/3]
-References: <20110224132906.GA15733@redhat.com> <4D6675B0.2010700@aknet.ru> <20110224153221.GA22770@redhat.com> <4D94A788.1050806@aknet.ru> <20110331170244.GA13271@redhat.com> <4D99D6E6.4070008@aknet.ru> <20110404160351.GA23655@redhat.com> <4D9A24A0.5050105@aknet.ru> <20110405151549.GB17490@redhat.com> <4D9B4265.6080403@aknet.ru> <20110405164557.GA23248@redhat.com>
-In-Reply-To: <20110405164557.GA23248@redhat.com>
-Content-Type: multipart/mixed;
- boundary="------------060809020808090106050408"
+	id S1752121Ab1DSOxQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:53:16 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43083 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751399Ab1DSOxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 10:53:14 -0400
+Date: Tue, 19 Apr 2011 15:54:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Jean Delvare <khali@linux-fr.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
+Message-ID: <20110419155406.1da0e7fb@lxorguk.ukuu.org.uk>
+In-Reply-To: <BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
+References: <20110419145303.111aead7@endymion.delvare>
+	<BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060809020808090106050408
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+> I'm not at all concerned about this.  Users *must* know what a pin is
+> when they start fiddling with it.  If you ask a pin to do something
+> that it cannot do, then it just isn't going to work.  There's no real
+> point in trying to enforce any behaviour in the API.
 
-The attached patch adds the can_wait_task() and
-can_wait_task_ptrace() functions by splitting out the
-checks from wait_consider_task().
+Disagree 8) - errors are better than silently and undetectably failing.
+That might not be an error code but ideally it would WARN() or
+similar so that errors get caught and fixed and you don't instead find
+out something was poking the wrong pin and worked by chance a year later.
 
-		int ret = wait_consider_task(wo, 0, p);
+> In this particular case, you've got a PCI device which looks to be
+> going into config space to get some information about how the chip is
+> layed out.  What I would do is keep your existing pci probe & remove
+> hooks, but use them to create and register child basic_mmio_gpio
+> platform_devices for each gpio bank.
 
-gets then replaced by
+That means more devices, weird sysfs heirarchies and lots of mess with
+runtime power management in the general case.
 
-		ret = can_wait_task(wo, p);
-		if (!ret)
-			continue;
-		ret = wait_consider_task(wo, 0, p);
+If the basic_mmio_gpio code is properly abstracted it ought not to need
+magic extra platform devices.
 
+That aside it'll be less code to keep it separate than do all the messing
+around with platform devices so it seems to be a gross overdoing of 'lets
+make everything use the same code however big a hammer is needed'
 
---------------060809020808090106050408
-Content-Type: text/plain;
- name="02_cwaittsk.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="02_cwaittsk.diff"
+If it was a platform device it might make sense, if the config was
+platform config to create a device it would certainly make sense, in the
+PCI case it's smaller, cleaner and saner not to add insane layers of glue
+and indirection IMHO.
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index f9a45eb..2aa64e8 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1507,21 +1507,11 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
- 	return retval;
- }
- 
--/*
-- * Consider @p for a wait by @parent.
-- *
-- * -ECHILD should be in ->notask_error before the first call.
-- * Returns nonzero for a final return, when we have unlocked tasklist_lock.
-- * Returns zero if the search for a child should continue;
-- * then ->notask_error is 0 if @p is an eligible child,
-- * or another error from security_task_wait(), or still -ECHILD.
-- */
--static int wait_consider_task(struct wait_opts *wo, int ptrace,
--				struct task_struct *p)
-+static int can_wait_task_common(struct wait_opts *wo, struct task_struct *p)
- {
- 	int ret = eligible_child(wo, p);
- 	if (!ret)
--		return ret;
-+		return 0;
- 
- 	ret = security_task_wait(p);
- 	if (unlikely(ret < 0)) {
-@@ -1537,7 +1527,25 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
- 		return 0;
- 	}
- 
--	if (likely(!ptrace) && unlikely(task_ptrace(p))) {
-+	if (p->exit_state == EXIT_DEAD)
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static int can_wait_task_ptrace(struct wait_opts *wo, struct task_struct *p)
-+{
-+	/* don't worry, gcc will optimize away this function :) */
-+	return can_wait_task_common(wo, p);
-+}
-+
-+static int can_wait_task(struct wait_opts *wo, struct task_struct *p)
-+{
-+	int ret = can_wait_task_common(wo, p);
-+	if (!ret)
-+		return 0;
-+
-+	if (unlikely(task_ptrace(p))) {
- 		/*
- 		 * This child is hidden by ptrace.
- 		 * We aren't allowed to see it now, but eventually we will.
-@@ -1546,9 +1554,21 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
- 		return 0;
- 	}
- 
--	if (p->exit_state == EXIT_DEAD)
--		return 0;
-+	return 1;
-+}
- 
-+/*
-+ * Consider @p for a wait by @parent.
-+ *
-+ * -ECHILD should be in ->notask_error before the first call.
-+ * Returns nonzero for a final return, when we have unlocked tasklist_lock.
-+ * Returns zero if the search for a child should continue;
-+ * then ->notask_error is 0 if @p is an eligible child,
-+ * or another error from security_task_wait(), or still -ECHILD.
-+ */
-+static int wait_consider_task(struct wait_opts *wo, int ptrace,
-+				struct task_struct *p)
-+{
- 	/*
- 	 * We don't reap group leaders with subthreads.
- 	 */
-@@ -1578,10 +1598,14 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
-  */
- static int do_wait_thread(struct wait_opts *wo, struct task_struct *tsk)
- {
-+	int ret;
- 	struct task_struct *p;
- 
- 	list_for_each_entry(p, &tsk->children, sibling) {
--		int ret = wait_consider_task(wo, 0, p);
-+		ret = can_wait_task(wo, p);
-+		if (!ret)
-+			continue;
-+		ret = wait_consider_task(wo, 0, p);
- 		if (ret)
- 			return ret;
- 	}
-@@ -1594,7 +1618,10 @@ static int ptrace_do_wait(struct wait_opts *wo, struct task_struct *tsk)
- 	struct task_struct *p;
- 
- 	list_for_each_entry(p, &tsk->ptraced, ptrace_entry) {
--		int ret = wait_consider_task(wo, 1, p);
-+		int ret = can_wait_task_ptrace(wo, p);
-+		if (!ret)
-+			continue;
-+		ret = wait_consider_task(wo, 1, p);
- 		if (ret)
- 			return ret;
- 	}
-
---------------060809020808090106050408--
+Alan
