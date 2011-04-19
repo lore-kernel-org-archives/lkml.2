@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab1DSRrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 13:47:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35224 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1DSRrW (ORCPT
+	id S1753984Ab1DSRsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 13:48:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47685 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1DSRsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 13:47:22 -0400
-Date: Tue, 19 Apr 2011 19:47:12 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org,
-        sameo@linux.intel.com, patches@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?utf-8?B?7KCV7J6s7ZuI?= <jh80.chung@samsung.com>
-Subject: Re: [PATCH 0/5] consolidate sdhci pltfm & OF drivers and get them
- self registered
-Message-ID: <20110419174712.GA29314@pengutronix.de>
-References: <1301042931-4869-1-git-send-email-shawn.guo@linaro.org>
- <20110419102031.GA4164@pengutronix.de>
- <BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
+	Tue, 19 Apr 2011 13:48:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pq+GB3OE2xP10DHdXwbemZ7cHt19vKFoCQukKJUsGNNRikUzFLtcpnyROHCtUxlYIV
+         lKO/7NN/EwyVXxUOkW+0Hayr0ij8rBMcci7mGWE9lEU1MSErHmJJtNtB3lAifyWc6whb
+         7YXqTTCLQSbCLhD3qlATYiKn95zmvUyEFyhCY=
+Date: Tue, 19 Apr 2011 21:48:13 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Greg KH <greg@kroah.com>
+Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        security@kernel.org
+Subject: Re: [PATCH] char: agp: fix OOM and buffer overflow
+Message-ID: <20110419174813.GA27544@albatros>
+References: <1302800120-31560-1-git-send-email-segoon@openwall.com>
+ <20110419162157.GD23196@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTinfhb3vejJSM4y-C=3vk5RE76gPjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110419162157.GD23196@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 19, 2011 at 09:21 -0700, Greg KH wrote:
+> David, what ever happened to this, and the other agp bugfix from
+> Vasiliy?
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I got emails that both fixes went into -mm.
 
+Thanks,
 
-> BTW, Are there reason to omit the sdhci-s3c.c? Maybe Mr. Jung will handle=
- it.
-
-The difference is that sdhci-s3c.c was more like a fork of sdhci-pltfm while
-the others were users of it. With the new interface, s3c can be converted u=
-sing
-pltfm more easily. If somebody is willing to do that, this is very much
-welcome. I'd suggest waiting for Shawn's interface to stabilize, though.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk2tyqAACgkQD27XaX1/VRtDNACfT4IWD0wLs38e/nFIJLqwSiq4
-VF8AoMBpBAt1Y4R4K3xSnr+A6UQbcYuS
-=5iwB
------END PGP SIGNATURE-----
-
---5vNYLRcllDrimb99--
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
