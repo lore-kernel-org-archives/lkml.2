@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab1DSURn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:17:43 -0400
-Received: from kroah.org ([198.145.64.141]:35681 "EHLO coco.kroah.org"
+	id S1755271Ab1DSUTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:19:51 -0400
+Received: from kroah.org ([198.145.64.141]:35729 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754941Ab1DSURf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:35 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
-Message-Id: <20110419201048.837033074@clark.kroah.org>
+	id S1755042Ab1DSURn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:43 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:49 2011
+Message-Id: <20110419201049.715422556@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:09:02 -0700
+Date: Tue, 19 Apr 2011 13:09:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [53/70] USB: ftdi_sio: add ids for Hameg HO720 and HO730
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Steven Hardy <shardy@redhat.com>
+Subject: [61/70] usb: qcserial add missing errorpath kfrees
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,41 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Friedrich <Paul.Friedrich@hameg.com>
+From: Steven Hardy <shardy@redhat.com>
 
-commit c53c2fab40cf16e13af66f40bfd27200cda98d2f upstream.
+commit cb62d65f966146a39fdde548cb474dacf1d00fa5 upstream.
 
-usb serial: ftdi_sio: add two missing USB ID's for Hameg interfaces HO720
-and HO730
+There are two -ENODEV error paths in qcprobe where the allocated private
+data is not freed, this patch adds the two missing kfrees to avoid
+leaking memory on the error path
 
+Signed-off-by: Steven Hardy <shardy@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    2 ++
- 2 files changed, 4 insertions(+)
+ drivers/usb/serial/qcserial.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -788,6 +788,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(FTDI_VID, HAMEG_HO820_PID) },
-+	{ USB_DEVICE(FTDI_VID, HAMEG_HO720_PID) },
-+	{ USB_DEVICE(FTDI_VID, HAMEG_HO730_PID) },
- 	{ USB_DEVICE(FTDI_VID, HAMEG_HO870_PID) },
- 	{ USB_DEVICE(FTDI_VID, MJSG_GENERIC_PID) },
- 	{ USB_DEVICE(FTDI_VID, MJSG_SR_RADIO_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -300,6 +300,8 @@
-  * Hameg HO820 and HO870 interface (using VID 0x0403)
-  */
- #define HAMEG_HO820_PID			0xed74
-+#define HAMEG_HO730_PID			0xed73
-+#define HAMEG_HO720_PID			0xed72
- #define HAMEG_HO870_PID			0xed71
- 
- /*
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -167,6 +167,7 @@ static int qcprobe(struct usb_serial *se
+ 					"Could not set interface, error %d\n",
+ 					retval);
+ 				retval = -ENODEV;
++				kfree(data);
+ 			}
+ 		} else if (ifnum == 2) {
+ 			dbg("Modem port found");
+@@ -191,6 +192,7 @@ static int qcprobe(struct usb_serial *se
+ 					"Could not set interface, error %d\n",
+ 					retval);
+ 				retval = -ENODEV;
++				kfree(data);
+ 			}
+ 		}
+ 		break;
 
 
