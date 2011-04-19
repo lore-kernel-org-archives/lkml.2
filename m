@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab1DSUXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:23:42 -0400
-Received: from kroah.org ([198.145.64.141]:35632 "EHLO coco.kroah.org"
+	id S1752670Ab1DSUX4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:23:56 -0400
+Received: from kroah.org ([198.145.64.141]:35625 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754817Ab1DSUR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:17:29 -0400
+	id S1754609Ab1DSUR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:17:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:10:48 2011
-Message-Id: <20110419201048.063316928@clark.kroah.org>
+Message-Id: <20110419201047.963193415@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:08:55 -0700
+Date: Tue, 19 Apr 2011 13:08:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Frysinger <vapier@gentoo.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [46/70] RTC: add missing "return 0" in new alarm func for rtc-bfin.c
+        Alex Deucher <alexdeucher@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [45/70] i2c-algo-bit: Call pre/post_xfer for bit_test
 In-Reply-To: <20110419201501.GA8865@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 8c122b96866580c99e44f3f07ac93a993d964ec3 upstream.
+commit d3b3e15da14ded61c9654db05863b04a2435f4cc upstream.
 
-The new bfin_rtc_alarm_irq_enable function forgot to add a "return 0" to
-the end leading to the build warning:
-	drivers/rtc/rtc-bfin.c: In function 'bfin_rtc_alarm_irq_enable':
-	drivers/rtc/rtc-bfin.c:253: warning: control reaches end of non-void function
+Apparently some distros set i2c-algo-bit.bit_test to 1 by
+default.  In some cases this causes i2c_bit_add_bus
+to fail and prevents the i2c bus from being added.  In the
+radeon case, we fail to add the ddc i2c buses which prevents
+the driver from being able to detect attached monitors.
+The i2c bus works fine even if bit_test fails.  This is likely
+due to gpio switching that is required and handled in the
+pre/post_xfer hooks, so call the pre/post_xfer hooks in the
+bit test as well.
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=36221
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-bfin.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/i2c/algos/i2c-algo-bit.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---- a/drivers/rtc/rtc-bfin.c
-+++ b/drivers/rtc/rtc-bfin.c
-@@ -276,6 +276,8 @@ static int bfin_rtc_alarm_irq_enable(str
- 		bfin_rtc_int_set_alarm(rtc);
- 	else
- 		bfin_rtc_int_clear(~(RTC_ISTAT_ALARM | RTC_ISTAT_ALARM_DAY));
+--- a/drivers/i2c/algos/i2c-algo-bit.c
++++ b/drivers/i2c/algos/i2c-algo-bit.c
+@@ -232,9 +232,17 @@ static int i2c_inb(struct i2c_adapter *i
+  * Sanity check for the adapter hardware - check the reaction of
+  * the bus lines only if it seems to be idle.
+  */
+-static int test_bus(struct i2c_algo_bit_data *adap, char *name)
++static int test_bus(struct i2c_adapter *i2c_adap)
+ {
+-	int scl, sda;
++	struct i2c_algo_bit_data *adap = i2c_adap->algo_data;
++	const char *name = i2c_adap->name;
++	int scl, sda, ret;
 +
-+	return 0;
++	if (adap->pre_xfer) {
++		ret = adap->pre_xfer(i2c_adap);
++		if (ret < 0)
++			return -ENODEV;
++	}
+ 
+ 	if (adap->getscl == NULL)
+ 		pr_info("%s: Testing SDA only, SCL is not readable\n", name);
+@@ -297,11 +305,19 @@ static int test_bus(struct i2c_algo_bit_
+ 		       "while pulling SCL high!\n", name);
+ 		goto bailout;
+ 	}
++
++	if (adap->post_xfer)
++		adap->post_xfer(i2c_adap);
++
+ 	pr_info("%s: Test OK\n", name);
+ 	return 0;
+ bailout:
+ 	sdahi(adap);
+ 	sclhi(adap);
++
++	if (adap->post_xfer)
++		adap->post_xfer(i2c_adap);
++
+ 	return -ENODEV;
  }
  
- static int bfin_rtc_read_time(struct device *dev, struct rtc_time *tm)
+@@ -607,7 +623,7 @@ static int __i2c_bit_add_bus(struct i2c_
+ 	int ret;
+ 
+ 	if (bit_test) {
+-		ret = test_bus(bit_adap, adap->name);
++		ret = test_bus(adap);
+ 		if (ret < 0)
+ 			return -ENODEV;
+ 	}
 
 
