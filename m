@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab1DSIWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:22:08 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:57554 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab1DSIWF (ORCPT
+	id S1753661Ab1DSIX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:23:57 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48000 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab1DSIXy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:22:05 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
-Subject: Re: [105/105] nfsd4: fix oops on lock failure
-References: <20110412143559.186613198@clark.kroah.org>
-	<87pqokx6lr.fsf@devron.myhome.or.jp>
-	<BANLkTimN6L80e_oiJ_uqbLde2Cdnw5p45Q@mail.gmail.com>
-	<20110418153236.GC20935@pad.home.fieldses.org>
-	<87ipubwnj3.fsf@devron.myhome.or.jp>
-	<8762qbwnf1.fsf@devron.myhome.or.jp>
-	<87zknnv7id.fsf@devron.myhome.or.jp>
-	<87vcybgt6u.fsf@devron.myhome.or.jp>
-Date: Tue, 19 Apr 2011 17:21:57 +0900
-In-Reply-To: <87vcybgt6u.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
-	"Tue, 19 Apr 2011 06:12:25 +0900")
-Message-ID: <87hb9uhcre.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Tue, 19 Apr 2011 04:23:54 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Sandeen <sandeen@redhat.com>
+Subject: Re: Linux 2.6.39-rc3
+In-Reply-To: <BANLkTik68Q2bpgF7GpcOs+YF44B9TL60qQ@mail.gmail.com>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com> <20110412190934.GA12082@redhat.com> <20110412192103.GA13278@redhat.com> <87tye1ckhr.fsf@linux.vnet.ibm.com> <BANLkTik68Q2bpgF7GpcOs+YF44B9TL60qQ@mail.gmail.com>
+User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Tue, 19 Apr 2011 13:53:37 +0530
+Message-ID: <87ipuar6nq.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+On Tue, 19 Apr 2011 00:57:27 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Thu, Apr 14, 2011 at 10:20, Aneesh Kumar K.V
+> <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > On Tue, 12 Apr 2011 15:21:03 -0400, Dave Jones <davej@redhat.com> wrote:
+> >> On Tue, Apr 12, 2011 at 03:09:34PM -0400, Dave Jones wrote:
+> >>
+> >>  > however, the output of mount looks very confused..
+> >>  >
+> >>  > .38:
+> >>  > /dev/mapper/vg_adamo-lv_home on /home type ext4 (rw,relatime,seclabel,barrier=1,data=ordered)
+> >>  >
+> >>  > .39:
+> >>  > - on /home type 79a9-4526-888c-1f86d35a6704 (rw,relatime,ext4)
+> >>  >
+> >>  > It looks like /proc/self/mountinfo broke abi.
+> >>  >
+> >>  > .38:
+> >>  > 48 45 253:3 / /home rw,relatime - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,barrier=1,data=ordered
+> >>  >
+> >>  > .39:
+> >>  > 46 22 253:3 / /home rw,relatime uuid:f3971858-79a9-4526-888c-1f86d35a6704 - ext4 /dev/mapper/vg_adamo-lv_home rw,seclabel,user_xattr,barrier=1,data=ordered
+> >>
+> >> looks like this was caused by 93f1c20bc8cdb757be50566eff88d65c3b26881f
+> >>
+> >> perhaps adding that string to the end of the line would preserve what mount expects ?
+> >
+> > uuid:<value> is the option field  as per
+> > Documentation/filesystem/proc.txt. There was an error in libmount
+> > parsing which got fixed upstream recently
+> 
+> Just a simple question about this approach in general? A filesystem
+> UUID can be changed on disk at any time (tune2fs -U ...).
+> 
+> Your code looks like you copy the bytes to the in-kernel superblock
+> structure without noticing any later changes on disk? How is that
+> supposed to work?
+> 
 
->> I'll start test of this patch, and see what happens.
->
-> OK. Although filp slabs are still slightly increasing (I'm not sure yet
-> whether this is leak of filp on system). But watching before/after
-> patch, the graph of filp slabs is clearly different.
->
-> As far as I can say patches are fine.
+Isn't that true even for the fsid returned by statfs ?.  IIUC tune2fs
+won't change even the ext4_super_block.s_uuid .
 
-slightly increasing was stopped at 2200-2300. filp leak seems to be fixed.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+-aneesh
