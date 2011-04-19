@@ -1,57 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab1DSPGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 11:06:06 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51609 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1DSPGE convert rfc822-to-8bit (ORCPT
+	id S1752673Ab1DSPGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 11:06:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41461 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab1DSPGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 11:06:04 -0400
+	Tue, 19 Apr 2011 11:06:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=hjsaWLWEtomZBxuujDJ11FNuFrC8CpGBC9p/cPVJI0U77MLlYDTvG1uqxUP/yfRywd
+         GBiOFLoCLAX3GFMkwBKUtBVxUUINLOO4R/0SqozxfVcul4flFXogp6M8GRmjn/KVphsi
+         oju1Ag7N3xkjM/SZf29tWHU/BHC1ZuUppvYZE=
+Message-ID: <4DADA4D8.4080602@gmail.com>
+Date: Tue, 19 Apr 2011 17:06:00 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <20110419155406.1da0e7fb@lxorguk.ukuu.org.uk>
-References: <20110419145303.111aead7@endymion.delvare> <BANLkTinbO_p=sKtFJtjgpo4yrEVopq9vrw@mail.gmail.com>
- <20110419155406.1da0e7fb@lxorguk.ukuu.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 19 Apr 2011 09:05:44 -0600
-X-Google-Sender-Auth: AImtYOcPC4tKfcLFt50nL9A2Fwg
-Message-ID: <BANLkTi=tzXyozCck9H03-2RErGsvSxrv1Q@mail.gmail.com>
-Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jean Delvare <khali@linux-fr.org>, LKML <linux-kernel@vger.kernel.org>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: "'Jiri Slaby'" <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        "'Jean Delvare'" <khali@linux-fr.org>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 5/7] I2C: eg20t, remove unused variable
+References: <1300870200-24405-1-git-send-email-jslaby@suse.cz> <1300870200-24405-5-git-send-email-jslaby@suse.cz> <3DCFFD98C696488F94CB1A74F2998DF9@hacdom.okisemi.com>
+In-Reply-To: <3DCFFD98C696488F94CB1A74F2998DF9@hacdom.okisemi.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 19, 2011 at 8:54 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> In this particular case, you've got a PCI device which looks to be
->> going into config space to get some information about how the chip is
->> layed out.  What I would do is keep your existing pci probe & remove
->> hooks, but use them to create and register child basic_mmio_gpio
->> platform_devices for each gpio bank.
->
-> That means more devices, weird sysfs heirarchies and lots of mess with
-> runtime power management in the general case.
->
-> If the basic_mmio_gpio code is properly abstracted it ought not to need
-> magic extra platform devices.
->
-> That aside it'll be less code to keep it separate than do all the messing
-> around with platform devices so it seems to be a gross overdoing of 'lets
-> make everything use the same code however big a hammer is needed'
->
-> If it was a platform device it might make sense, if the config was
-> platform config to create a device it would certainly make sense, in the
-> PCI case it's smaller, cleaner and saner not to add insane layers of glue
-> and indirection IMHO.
+On 03/23/2011 11:50 AM, Tomoya MORINAGA wrote:
+> Hi Jiri,
+> 
+> It looks OK.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com> 
 
-Doing a platform device is one solution that is pretty simple to
-implement and I don't think adding child devices is at all a problem.
-However, I'm not mandating that approach, and if you or Jean prefer to
-abstract out the gpio accessors from basic_mmio_gpio(), then that is
-fine by me.  The key issue it to avoid merging yet another, probably
-subtly broken, set of GPIO accessor functions if it can at all be
-avoided.
+Hi, will somebody take it or should I resubmit?
 
-g.
+> Thanks,
+> -----------------------------------------
+> Tomoya MORINAGA
+> OKI SEMICONDUCTOR CO., LTD.
+> 
+>> -----Original Message-----
+>> From: linux-kernel-owner@vger.kernel.org 
+>> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Jiri Slaby
+>> Sent: Wednesday, March 23, 2011 5:50 PM
+>> To: jirislaby@gmail.com
+>> Cc: linux-kernel@vger.kernel.org; Jiri Slaby; Jean Delvare; 
+>> linux-i2c@vger.kernel.org
+>> Subject: [PATCH 5/7] I2C: eg20t, remove unused variable
+>>
+>> drivers/i2c/busses/i2c-eg20t.c:684:2: warning: Value stored 
+>> to 'msglen' is never read msglen = (pmsg->len) - (subaddrlen + 1);
+>> ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Jean Delvare <khali@linux-fr.org>
+>> Cc: linux-i2c@vger.kernel.org
+>> ---
+>>  drivers/i2c/busses/i2c-eg20t.c |    8 --------
+>>  1 files changed, 0 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-eg20t.c 
+>> b/drivers/i2c/busses/i2c-eg20t.c index 878a120..ea73252 100644
+>> --- a/drivers/i2c/busses/i2c-eg20t.c
+>> +++ b/drivers/i2c/busses/i2c-eg20t.c
+>> @@ -651,8 +651,6 @@ static s32 pch_i2c_xfer(struct 
+>> i2c_adapter *i2c_adap,
+>>  	struct i2c_msg *pmsg;
+>>  	u32 i = 0;
+>>  	u32 status;
+>> -	u32 msglen;
+>> -	u32 subaddrlen;
+>>  	s32 ret;
+>>  
+>>  	struct i2c_algo_pch_data *adap = i2c_adap->algo_data; 
+>> @@ -676,12 +674,6 @@ static s32 pch_i2c_xfer(struct 
+>> i2c_adapter *i2c_adap,
+>>  	status = pmsg->flags;
+>>  	pch_dbg(adap,
+>>  		"After invoking I2C_MODE_SEL :flag= 0x%x\n", status);
+>> -	/* calculate sub address length and message length */
+>> -	/* these are applicable only for buffer mode */
+>> -	subaddrlen = pmsg->buf[0];
+>> -	/* calculate actual message length excluding
+>> -	 * the sub address fields */
+>> -	msglen = (pmsg->len) - (subaddrlen + 1);
+>>  	if (status & (I2C_M_RD)) {
+>>  		pch_dbg(adap, "invoking pch_i2c_readbytes\n");
+>>  		ret = pch_i2c_readbytes(i2c_adap, pmsg, (i + 1 == num),
+>> --
+>> 1.7.4.1
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+
+
+-- 
+js
