@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab1DSGJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 02:09:04 -0400
-Received: from science.horizon.com ([71.41.210.146]:55757 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751979Ab1DSGJC (ORCPT
+	id S1752849Ab1DSGLY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 02:11:24 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57914 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab1DSGLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 02:09:02 -0400
-Date: 19 Apr 2011 02:09:01 -0400
-Message-ID: <20110419060901.1738.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: luto@mit.edu
-Subject: Re: [RFT] Please test rdtsc on various x86-64 hardware (app included)
-Cc: linux-kernel@vger.kernel.org, linux@horizon.com
-In-Reply-To: <20110419050618.18187.qmail@science.horizon.com>
+	Tue, 19 Apr 2011 02:11:23 -0400
+Date: Tue, 19 Apr 2011 00:11:21 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: John Williams <john.williams@petalogix.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Michal Simek <monstr@monstr.eu>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        hjk@hansjkoch.de, arnd@arndb.de
+Subject: Re: [PATCH v3] uio/pdrv_genirq: Add OF support
+Message-ID: <20110419061121.GB5252@ponder.secretlab.ca>
+References: <1303116654-5042-1-git-send-email-monstr@monstr.eu>
+ <20110418160658.GD23814@pengutronix.de>
+ <BANLkTimFnfgiQ5aMq_KwqHP8p92pjOJJwg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimFnfgiQ5aMq_KwqHP8p92pjOJJwg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bit more info on those failing tests (common headers snipped):
+On Tue, Apr 19, 2011 at 11:58:25AM +1000, John Williams wrote:
+> On Tue, Apr 19, 2011 at 2:06 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> > Hi,
+> >
+> >> For example with "uio" compatible string:
+> >> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> >>       { .compatible = "uio", },
+> >>       { /* empty for now */ },
+> >> };
+> >
+> > Please use a proper example with "vendor,device".
+> > (And after that it won't be empty anymore)
+> 
+> My vote is, and always has been 'generic-uio' :)
+> 
+> Putting some random vendor/device string in there is just nuts. Do you
+> really want a kernel patch every time some one binds their device to
+> it?
+> 
+> Or, is there no expectation that anybody would attempt to merge such a
+> pointless patch to begin with?
+> 
+> As we discussed at ELC, putting a real vendor/device in there is also
+> broken because all instances in the system wil bind to the generic
+> uio, which is not necessarily what is desired.
+> 
+> I know the arguments against the 'generic-uio' tag, but come on, let's
+> look at the lesser of two evils here!  I call BS on this DTS purity.
 
-$ ./evil-clock-test -v -v -v
-CPU vendor   : AuthenticAMD
-CPU model    : AMD Phenom(tm) 9850 Quad-Core Processor
-CPU stepping : 3
-TSC flags    : tsc rdtscp constant_tsc nonstop_tsc
-Using mfence_rdtsc because you don't have an Intel CPU
-Will test the "mfence;rdtsc" clock.
-Running now test...
-Now test passed  : margin 168 with 15176312 samples
-Running load3 test...
-Load3 test got no data
-Running load test...
-  Failed 5/615154 times with worst error 4
-  Failed 3/618034 times with worst error 4
-  Failed 4/618552 times with worst error 7
-  Failed 2/618457 times with worst error 7
-  Failed 1/618518 times with worst error 4
-  Failed 2/616455 times with worst error 4
-  Failed 1/617990 times with worst error 4
-Load test failed : worst error 7 with 4323160 samples
-Running store test...
-  Failed 3/614883 times with worst error 4
-  Failed 3/616023 times with worst error 4
-  Failed 6/613633 times with worst error 4
-Store test failed: worst error 4 with 1844539 samples
+Call it what you like, but the reasons are well founded.  The alternative
+that has been proposed which I am in agreement with is to investigate
+giving userspace the hook to tell the kernel at runtime which devices
+should be picked up by the uio driver.
 
-Running now test...
-Now test passed  : margin 168 with 15125496 samples
-Running load3 test...
-Load3 test got no data
-Running load test...
-  Failed 5/603344 times with worst error 4
-  Failed 3/609628 times with worst error 4
-Load test failed : worst error 4 with 1212972 samples
-Running store test...
-  Failed 2/610838 times with worst error 3
-  Failed 4/611400 times with worst error 4
-Store test failed: worst error 4 with 1222238 samples
+In the mean time, explicitly modifying the match table is an okay
+compromise.
 
-Running now test...
-Now test passed  : margin 169 with 15136216 samples
-Running load3 test...
-Load3 test got no data
-Running load test...
-Load test got no data
-Running store test...
-  Failed 1/617293 times with worst error 4
-Store test failed: worst error 4 with 617293 samples
-
-Running now test...
-Now test passed  : margin 170 with 15128832 samples
-Running load3 test...
-Load3 test got no data
-Running load test...
-Load test got no data
-Running store test...
-Store test got no data
-
-Running now test...
-Now test passed  : margin 170 with 15039712 samples
-Running load3 test...
-Load3 test got no data
-Running load test...
-  Failed 4/617259 times with worst error 4
-  Failed 4/621375 times with worst error 4
-Load test failed : worst error 4 with 1238634 samples
-Running store test...
-Store test got no data
-
-Now test passed  : margin 169 with 14977856 samples
-Running load3 test...
-Load3 test got no data
-Running load test...
-  Passed with margin 2 (613724 samples)
-  Failed 7/610443 times with worst error 30
-Load test failed : worst error 30 with 1224167 samples
-Running store test...
-Store test got no data
-
-Running now test...
-Now test passed  : margin 170 with 15131920 samples
-Running load3 test...
-Load3 test got no data
-Running load test...
-  Failed 3/607735 times with worst error 4
-  Failed 4/614570 times with worst error 4
-  Failed 1/614801 times with worst error 4
-  Failed 5/614483 times with worst error 4
-  Failed 4/614106 times with worst error 4
-  Failed 1/614649 times with worst error 4
-  Failed 5/614351 times with worst error 8
-  Failed 4/614453 times with worst error 4
-  Failed 4/614643 times with worst error 4
-Load test failed : worst error 8 with 5523791 samples
-Running store test...
-  Failed 5/613788 times with worst error 4
-  Failed 1/614285 times with worst error 4
-Store test failed: worst error 4 with 1228073 samples
+g.
 
