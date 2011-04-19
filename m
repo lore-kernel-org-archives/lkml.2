@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab1DSUm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:42:57 -0400
-Received: from kroah.org ([198.145.64.141]:59006 "EHLO coco.kroah.org"
+	id S1755275Ab1DSUm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:42:58 -0400
+Received: from kroah.org ([198.145.64.141]:59017 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754442Ab1DSUmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:42:53 -0400
+	id S1755100Ab1DSUmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:19 2011
-Message-Id: <20110419204119.495459238@clark.kroah.org>
+Message-Id: <20110419204119.717155529@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 19 Apr 2011 13:31:04 -0700
+Date: Tue, 19 Apr 2011 13:31:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [26/28] x86, cpu: Fix regression in AMD errata checking code
+        Andy Grover <andy.grover@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Brad Figg <brad.figg@canonical.com>
+Subject: [28/28] net: fix rds_iovec page count overflow
 In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 07a7795ca2e6e66d00b184efb46bd0e23d90d3fe upstream.
+commit 1b1f693d7ad6d193862dcb1118540a030c5e761f upstream.
 
-A bug in the family-model-stepping matching code caused the presence of
-errata to go undetected when OSVW was not used. This causes hangs on
-some K8 systems because the E400 workaround is not enabled.
+As reported by Thomas Pollet, the rdma page counting can overflow.  We
+get the rdma sizes in 64-bit unsigned entities, but then limit it to
+UINT_MAX bytes and shift them down to pages (so with a possible "+1" for
+an unaligned address).
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
-LKML-Reference: <1282141190-930137-1-git-send-email-hans.rosenfeld@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+So each individual page count fits comfortably in an 'unsigned int' (not
+even close to overflowing into signed), but as they are added up, they
+might end up resulting in a signed return value. Which would be wrong.
+
+Catch the case of tot_pages turning negative, and return the appropriate
+error code.
+
+Reported-by: Thomas Pollet <thomas.pollet@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andy Grover <andy.grover@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[v2: nr is unsigned in the old code]
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Acked-by: Tim Gardner <tim.gardner@canonical.com>
+Acked-by: Brad Figg <brad.figg@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/amd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/rds/rdma.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -689,7 +689,7 @@ bool cpu_has_amd_erratum(const int *erra
+--- a/net/rds/rdma.c
++++ b/net/rds/rdma.c
+@@ -473,6 +473,17 @@ static struct rds_rdma_op *rds_rdma_prep
+ 
+ 		max_pages = max(nr, max_pages);
+ 		nr_pages += nr;
++
++		/*
++		 * nr for one entry in limited to (UINT_MAX>>PAGE_SHIFT)+1
++		 * so nr_pages cannot overflow without becoming bigger than
++		 * INT_MAX first. If nr cannot overflow then max_pages should
++		 * be ok.
++		 */
++		if (nr_pages > INT_MAX) {
++			ret = -EINVAL;
++			goto out;
++		}
  	}
  
- 	/* OSVW unavailable or ID unknown, match family-model-stepping range */
--	ms = (cpu->x86_model << 8) | cpu->x86_mask;
-+	ms = (cpu->x86_model << 4) | cpu->x86_mask;
- 	while ((range = *erratum++))
- 		if ((cpu->x86 == AMD_MODEL_RANGE_FAMILY(range)) &&
- 		    (ms >= AMD_MODEL_RANGE_START(range)) &&
+ 	pages = kcalloc(max_pages, sizeof(struct page *), GFP_KERNEL);
 
 
