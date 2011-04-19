@@ -1,106 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab1DSDKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 23:10:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45032 "EHLO mga01.intel.com"
+	id S1754579Ab1DSDQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 23:16:28 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54104 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754296Ab1DSDKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 23:10:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
-   d="scan'208";a="680845554"
-Message-Id: <20110419030532.778889102@intel.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 19 Apr 2011 11:00:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-cc: Dave Chinner <david@fromorbit.com>
-cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-cc: Itaru Kitayama <kitayama@cl.bb4u.ne.jp>
-CC: Minchan Kim <minchan.kim@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-cc: <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: [PATCH 5/6] writeback: try more writeback as long as something was written
-References: <20110419030003.108796967@intel.com>
-Content-Disposition: inline; filename=writeback-background-retry.patch
+	id S1754464Ab1DSDQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 23:16:26 -0400
+Date: Tue, 19 Apr 2011 13:16:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yaniv Rosner <yanivr@broadcom.com>,
+        stephen hemminger <shemminger@vyatta.com>
+Subject: linux-next: manual merge of the net tree with the net-current tree
+Message-Id: <20110419131618.a474326a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-writeback_inodes_wb()/__writeback_inodes_sb() are not aggressive in that
-they only populate possibly a subset of elegible inodes into b_io at
-entrance time. When the queued set of inodes are all synced, they just
-return, possibly with all queued inode pages written but still
-wbc.nr_to_write > 0.
+Hi all,
 
-For kupdate and background writeback, there may be more eligible inodes
-sitting in b_dirty when the current set of b_io inodes are completed. So
-it is necessary to try another round of writeback as long as we made some
-progress in this round. When there are no more eligible inodes, no more
-inodes will be enqueued in queue_io(), hence nothing could/will be
-synced and we may safely bail.
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/bnx2x/bnx2x_ethtool.c between commit 70dda99c41fc ("bnx2x:
+Fix port identification problem") from the net-current tree and commit
+32d3613475d8 ("bnx2x: convert to set_phys_id") from the net tree.
 
-Jan raised the concern
+I fixed it up (maybe - see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	I'm just afraid that in some pathological cases this could
-	result in bad writeback pattern - like if there is some process
-	which manages to dirty just a few pages while we are doing
-	writeout, this looping could result in writing just a few pages
-	in each round which is bad for fragmentation etc.
-
-However it requires really strong timing to make that to (continuously)
-happen.  In practice it's very hard to produce such a pattern even if
-it's possible in theory. I actually tried to write 1 page per 1ms with
-this command
-
-	write-and-fsync -n10000 -S 1000 -c 4096 /fs/test
-
-and do sync(1) at the same time. The sync completes quickly on ext4,
-xfs, btrfs. The readers could try other write-and-sleep patterns and
-check if it can block sync for longer time.
-
-CC: Jan Kara <jack@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
---- linux-next.orig/fs/fs-writeback.c	2011-04-19 10:18:30.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-04-19 10:18:31.000000000 +0800
-@@ -750,23 +750,23 @@ static long wb_writeback(struct bdi_writ
- 		wrote += write_chunk - wbc.nr_to_write;
- 
- 		/*
--		 * If we consumed everything, see if we have more
-+		 * Did we write something? Try for more
-+		 *
-+		 * Dirty inodes are moved to b_io for writeback in batches.
-+		 * The completion of the current batch does not necessarily
-+		 * mean the overall work is done. So we keep looping as long
-+		 * as made some progress on cleaning pages or inodes.
- 		 */
--		if (wbc.nr_to_write <= 0)
-+		if (wbc.nr_to_write < write_chunk)
- 			continue;
- 		if (wbc.inodes_cleaned)
- 			continue;
- 		/*
--		 * Didn't write everything and we don't have more IO, bail
-+		 * No more inodes for IO, bail
- 		 */
- 		if (!wbc.more_io)
- 			break;
- 		/*
--		 * Did we write something? Try for more
--		 */
--		if (wbc.nr_to_write < write_chunk)
--			continue;
--		/*
- 		 * Nothing written. Wait for some inode to
- 		 * become available for writeback. Otherwise
- 		 * we'll just busyloop.
-
-
+diff --cc drivers/net/bnx2x/bnx2x_ethtool.c
+index 89cb977,e711a22..0000000
+--- a/drivers/net/bnx2x/bnx2x_ethtool.c
++++ b/drivers/net/bnx2x/bnx2x_ethtool.c
+@@@ -2097,35 -2013,38 +2013,36 @@@ static void bnx2x_get_ethtool_stats(str
+  	}
+  }
+  
+- static int bnx2x_phys_id(struct net_device *dev, u32 data)
++ static int bnx2x_set_phys_id(struct net_device *dev,
++ 			     enum ethtool_phys_id_state state)
+  {
+  	struct bnx2x *bp = netdev_priv(dev);
+- 	int i;
+  
+  	if (!netif_running(dev))
+- 		return 0;
++ 		return -EAGAIN;
+  
+  	if (!bp->port.pmf)
+- 		return 0;
++ 		return -EOPNOTSUPP;
+  
+- 	if (data == 0)
+- 		data = 2;
++ 	switch (state) {
++ 	case ETHTOOL_ID_ACTIVE:
++ 		return 1;	/* cycle on/off once per second */
+  
+- 	for (i = 0; i < (data * 2); i++) {
+- 		if ((i % 2) == 0)
+- 			bnx2x_set_led(&bp->link_params, &bp->link_vars,
+- 				      LED_MODE_ON, SPEED_1000);
+- 		else
+- 			bnx2x_set_led(&bp->link_params, &bp->link_vars,
+- 				      LED_MODE_FRONT_PANEL_OFF, 0);
++ 	case ETHTOOL_ID_ON:
++ 		bnx2x_set_led(&bp->link_params, &bp->link_vars,
+ -			      LED_MODE_OPER, SPEED_1000);
+++			      LED_MODE_ON, SPEED_1000);
++ 		break;
+  
+- 		msleep_interruptible(500);
+- 		if (signal_pending(current))
+- 			break;
+- 	}
++ 	case ETHTOOL_ID_OFF:
++ 		bnx2x_set_led(&bp->link_params, &bp->link_vars,
+ -			      LED_MODE_OFF, 0);
+++			      LED_MODE_FRONT_PANEL_OFF, 0);
++ 
++ 		break;
+  
+- 	bnx2x_set_led(&bp->link_params, &bp->link_vars,
+- 		      LED_MODE_OPER, bp->link_vars.line_speed);
++ 	case ETHTOOL_ID_INACTIVE:
+ -		if (bp->link_vars.link_up)
+ -			bnx2x_set_led(&bp->link_params, &bp->link_vars,
+ -				      LED_MODE_OPER,
+ -				      bp->link_vars.line_speed);
+++		bnx2x_set_led(&bp->link_params, &bp->link_vars,
+++			      LED_MODE_OPER, bp->link_vars.line_speed);
++ 	}
+  
+  	return 0;
+  }
