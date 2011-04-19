@@ -1,134 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab1DSWuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 18:50:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36811 "EHLO ogre.sisk.pl"
+	id S1751912Ab1DSW6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 18:58:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32614 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab1DSWt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 18:49:59 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [Update][PATCH 7/9] PM / Runtime: Add generic clock manipulation rountines for runtime PM
-Date: Wed, 20 Apr 2011 00:50:04 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <gregkh@suse.de>
-References: <201104130205.26988.rjw@sisk.pl> <201104200010.50656.rjw@sisk.pl> <20110419222004.GA9664@linux-sh.org>
-In-Reply-To: <20110419222004.GA9664@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201104200050.04347.rjw@sisk.pl>
+	id S1751388Ab1DSW6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 18:58:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,241,1301900400"; 
+   d="scan'208";a="735757817"
+From: james_p_freyensee@linux.intel.com
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        james_p_freyensee@linux.intel.com, christophe.guerard@intel.com
+Subject: 3rd request for review & addition of PTI/n_trace implementation into kernel
+Date: Tue, 19 Apr 2011 15:58:05 -0700
+Message-Id: <1303253889-10074-1-git-send-email-james_p_freyensee@linux.intel.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <james_p_freyensee@linux.intel.com>
+References: <james_p_freyensee@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 20, 2011, Paul Mundt wrote:
-> On Wed, Apr 20, 2011 at 12:10:50AM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, April 19, 2011, Paul Mundt wrote:
-> > > On Tue, Apr 19, 2011 at 11:42:26PM +0200, Rafael J. Wysocki wrote:
-> > > > On Tuesday, April 19, 2011, Magnus Damm wrote:
-> > > > > Do you have any plans to add support for multiple clocks per struct
-> > > > > device? I had some plans to play around with that myself, but if we're
-> > > > > moving the code to a common place then this obviously becomes a bit
-> > > > > more complicated.
-> > > > > 
-> > > > > It's rather common that each hardware block in an SoC is connected to
-> > > > > more than a single clock. This needs to be managed by software
-> > > > > somehow.
-> > > > > 
-> > > > > So if the plan is to make to the code generic, how about allowing the
-> > > > > architecture to associate clocks with each struct device somehow?
-> > > > 
-> > > > Hmm.  For now, my patchset generally reorganizes the existing code without
-> > > > adding new functionality.  Of course, it is possible to add new functionality
-> > > > on top of it, but I'd prefer to focus on the "real" power domains support
-> > > > first (which I think should be done in a generic way too).
-> > > > 
-> > > Multiple clocks is not new functionality, it's the common case for the
-> > > bulk of the platforms, and something that is already presently handled.
-> > 
-> > OK
-> > 
-> > > > The plan is to share as much code as it makes sense between platforms and
-> > > > architectures.
-> > > 
-> > > An admirable plan, but the framework needs to be able to provide at least
-> > > the current required level of functionality in order for it to be
-> > > adopted, too.
-> > 
-> > Sure.
-> > 
-> > > On Mon, Apr 18, 2011 at 09:57:28PM +0200, Rafael J. Wysocki wrote:
-> > > > @@ -24,23 +24,18 @@
-> > > >  #ifdef CONFIG_PM_RUNTIME
-> > > >  static int omap1_pm_runtime_suspend(struct device *dev)
-> > > >  {
-> > > > -	struct clk *iclk, *fclk;
-> > > > -	int ret = 0;
-> > > > +	int ret;
-> > > >  
-> > > >  	dev_dbg(dev, "%s\n", __func__);
-> > > >  
-> > > >  	ret = pm_generic_runtime_suspend(dev);
-> > > > +	if (ret)
-> > > > +		return ret;
-> > > >  
-> > > > -	fclk = clk_get(dev, "fck");
-> > > > -	if (!IS_ERR(fclk)) {
-> > > > -		clk_disable(fclk);
-> > > > -		clk_put(fclk);
-> > > > -	}
-> > > > -
-> > > > -	iclk = clk_get(dev, "ick");
-> > > > -	if (!IS_ERR(iclk)) {
-> > > > -		clk_disable(iclk);
-> > > > -		clk_put(iclk);
-> > > > +	ret = pm_runtime_clock_suspend(dev);
-> > > > +	if (ret) {
-> > > > +		pm_generic_runtime_resume(dev);
-> > > > +		return ret;
-> > > >  	}
-> > > >  
-> > > >  	return 0;
-> > > 
-> > > The before and after changes here are not functionally equivalent. You've
-> > > gone from an explicit multi-clock scheme to a single encapsulated one via
-> > > pm_runtime_clock_suspend().
-> > 
-> > You're refferring to the OMAP changes I suppose?
-> 
-> Yes, but we have similar use cases on SH, too.
-> 
-> > > Almost every single SH IP block is likewise abstracted in to a function
-> > > and interface clock, and OMAP and others are where we modelled this
-> > > abstraction on top of in the first place, so there are certainly users
-> > > there too.
-> > 
-> > In fact, the shmobile runtime PM code in arch/arm/mach-shmobile/pm_runtime.c
-> > uses only one clock right now.
-> > 
-> That's more due to general laziness than design. The code in
-> arch/sh/kernel/cpu/shmobile/pm_runtime.c goes through a hwblk abstraction
-> that functionally maps out for some CPUs via one API what is the function
-> clock on other CPUs. The hwblk API was never carried over to the ARM
-> side, and so a simplistic single clock case was implemented instead, and
-> the drivers with multiple clocks all performed manual clock gating on
-> their multiple clocks outside of the context of runtime PM.
-> 
-> OMAP1 clearly has a demonstratable case for multiple clocks that are
-> runtime PM managed, and this is exactly the sort of use case that SH
-> requires, too. If we can migrate off of and kill off some short-lived
-> ill-conceived APIs in the process, great. IOW, if you solve the OMAP1
-> problem then we can easily fix up ARM SH/R-Mobile and regular SH parts to
-> comply uniformly.
+Apologies for a long delay between submission attempts- this is the 3rd request
+for review and acceptance into the mainline kernel for the Intel-Atom
+implementation of the MIPI P1149.7 compact JTAG
+standard for mobile devices.  Complete documentation and background
+has been provided in PATCH 02/12, "Kernel documentation for the PTI
+feature".  PATCH 01/12 is a kernel fix to allow the PTI driver
+to compile modularly; this is a fix Greg KH, Alan Cox, and Arjan
+van de Ven and I talked about a while ago.  It's not techincally
+related to PTI, but it is it's own separate patch so it can be
+applied independent of any possible problems with the PTI submission.
 
-OK, I'll extend the generic code to cover the OMAP case.
+Changes/fixes from last review include:
+-lock acquire and release same ordering in n_tracesink and n_tracerouter
+-variable renaming in pti.c
+-elimination of one variable not used in pti.c
+-patch groups submissions in logical, independent chunks instead one
+ file per patch.
+-use of linux-next instead of linux-stable for patch base
+-Kconfig descriptions appearing in patch descriptions for
+ pti and n_tracesink/n_tracerouter, as requested.
 
-Thanks,
-Rafael
+Thanks for your help and time. Regards,
+J Freyensee
+
+From: james_p_freyensee@linux.intel.com
+Subject: 3rd request for review & addition of PTI/n_trace implementation into kernel
+In-Reply-To: james_p_freyensee@linux.intel.com
+
