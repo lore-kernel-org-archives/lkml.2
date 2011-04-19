@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1DSUiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:38:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15783 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab1DSUiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:38:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=L1zYSWtqV55UVAabCK/kPi4DYF4gVu7jDmiFSpTw8hjm9EKDuJELthjjPCCHjUwxJ
-	/Evs9zDpLnRYklyR1KP4g==
-From: Mike Waychison <mikew@google.com>
-To: Peter Jones <pjones@redhat.com>, Paul Mundt <lethal@linux-sh.org>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Waychison <mikew@google.com>
-Subject: [PATCH] efifb: Fix "cast to pointer from integer of different size"
-Date: Tue, 19 Apr 2011 13:38:03 -0700
-Message-Id: <1303245483-2799-1-git-send-email-mikew@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1753697Ab1DSUmb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:42:31 -0400
+Received: from kroah.org ([198.145.64.141]:58894 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab1DSUma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:16 2011
+Message-Id: <20110419204116.830892689@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 19 Apr 2011 13:30:39 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [01/28] cifs: always do is_path_accessible check in cifs_mount
+In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix set_system() to not cause a cast warning when printing a u32 as a
-pointer:
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-drivers/video/efifb.c: In function 'set_system':
-drivers/video/efifb.c:247: error: cast to pointer from integer of
-different size
+------------------
 
-Allow the integer to print as a pointer by first casting to unsigned
-long which we know will be the width of a pointer and at least as wide
-as u32.
+From: Jeff Layton <jlayton@redhat.com>
 
-Signed-off-by: Mike Waychison <mikew@google.com>
+commit 70945643722ffeac779d2529a348f99567fa5c33 upstream.
+
+Currently, we skip doing the is_path_accessible check in cifs_mount if
+there is no prefixpath. I have a report of at least one server however
+that allows a TREE_CONNECT to a share that has a DFS referral at its
+root. The reporter in this case was using a UNC that had no prefixpath,
+so the is_path_accessible check was not triggered and the box later hit
+a BUG() because we were chasing a DFS referral on the root dentry for
+the mount.
+
+This patch fixes this by removing the check for a zero-length
+prefixpath.  That should make the is_path_accessible check be done in
+this situation and should allow the client to chase the DFS referral at
+mount time instead.
+
+Reported-and-Tested-by: Yogesh Sharma <ysharma@cymer.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/video/efifb.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ fs/cifs/connect.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index 4eb38db..59e9f06 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -244,8 +244,9 @@ static int set_system(const struct dmi_system_id *id)
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2532,7 +2532,7 @@ try_mount_again:
  
- 	printk(KERN_INFO "efifb: dmi detected %s - framebuffer at %p "
- 			 "(%dx%d, stride %d)\n", id->ident,
--			 (void *)screen_info.lfb_base, screen_info.lfb_width,
--			 screen_info.lfb_height, screen_info.lfb_linelength);
-+			 (void *)(unsigned long)screen_info.lfb_base,
-+			 screen_info.lfb_width, screen_info.lfb_height,
-+			 screen_info.lfb_linelength);
- 
- 
- 	return 1;
--- 
-1.7.3.1
+ remote_path_check:
+ 	/* check if a whole path (including prepath) is not remote */
+-	if (!rc && cifs_sb->prepathlen && tcon) {
++	if (!rc && tcon) {
+ 		/* build_path_to_root works only when we have a valid tcon */
+ 		full_path = cifs_build_path_to_root(cifs_sb);
+ 		if (full_path == NULL) {
+
 
