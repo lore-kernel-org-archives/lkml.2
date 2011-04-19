@@ -1,71 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab1DSIoC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 04:44:02 -0400
-Received: from ausc60pc101.us.dell.com ([143.166.85.206]:63477 "EHLO
-	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab1DSIn7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 04:43:59 -0400
-X-Loopcount0: from 10.175.216.251
-From: <Narendra_K@Dell.com>
-To: <mingo@elte.hu>
-CC: <viro@zeniv.linux.org.uk>, <jbarnes@virtuousgeek.org>, <mjg@redhat.com>,
-        <sfr@canb.auug.org.au>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, <Shyam_Iyer@Dell.com>,
-        <Matt_Domsch@Dell.com>, <Charles_Rose@Dell.com>,
-        <Jordan_Hargrave@Dell.com>
-Date: Tue, 19 Apr 2011 01:43:53 -0700
-Subject: RE: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Index: Acv+WADOASDkhDDqSBaf8InHTEVvdgAFLQMw
-Message-ID: <E31FB011129F30488D5861F3839049151DA2EC035A@BLRX7MCDC201.AMER.DELL.COM>
-References: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
- <20110419060641.GA26624@elte.hu>
-In-Reply-To: <20110419060641.GA26624@elte.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754062Ab1DSIow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 04:44:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45880 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753788Ab1DSIos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 04:44:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,238,1301900400"; 
+   d="scan'208";a="630877732"
+Subject: [PATCH 1/2]block: optimize non-queueable flush request drive
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>, linux-ide <linux-ide@vger.kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Christoph Hellwig <hch@infradead.org>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Apr 2011 16:44:46 +0800
+Message-ID: <1303202686.3981.216.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Ingo Molnar [mailto:mingo@elte.hu]
-> Sent: Tuesday, April 19, 2011 11:37 AM
-> To: K, Narendra
-> Cc: viro@zeniv.linux.org.uk; jbarnes@virtuousgeek.org; mjg@redhat.com;
-> sfr@canb.auug.org.au; linux-kernel@vger.kernel.org; linux-
-> next@vger.kernel.org; Iyer, Shyam; Domsch, Matt; Rose, Charles; Hargrave,
-> Jordan
-> Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
-> allmodconfig
-> 
-> 
-> * Narendra_K@Dell.com <Narendra_K@Dell.com> wrote:
-> 
-> > This patch fixes the following build breakage introduced by the patch
-> > '[PATCH V3] Export ACPI _DSM provided firmware instance number and
-> > string to sysfs'.
-> >
-> > drivers/built-in.o: In function `T.647':
-> > pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
-> 
-> btw., this build bug still triggers upstream with .39-rc4 - any plans on when
-> this regression will be fixed?
 
-Hi,
+In some drives, flush requests are non-queueable. This means when a flush request
+is running, normal read/write requests are not. In such drive, when running flush
+requests finish, we can make pending flush requests finish. Since normal write
+requests are not running, pending flush requests also flush required drive cache
+out. This reduces some flush requests running and improve performance.
 
-The commit  8a226e00eeed8db843d4a580013a49ae3559bcd7 in linux-next fixes it (PCI: pci-label: Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig).
-It is not in .39-rc4.
+This patch allows block core utilizes the optimization. Next patch will enable it
+for SATA.
 
-With regards,
-Narendra K
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ block/blk-flush.c      |   15 +++++++++++++--
+ include/linux/blkdev.h |   11 +++++++++++
+ 2 files changed, 24 insertions(+), 2 deletions(-)
+
+Index: linux/block/blk-flush.c
+===================================================================
+--- linux.orig/block/blk-flush.c	2011-04-19 09:21:47.000000000 +0800
++++ linux/block/blk-flush.c	2011-04-19 16:38:22.000000000 +0800
+@@ -193,18 +193,29 @@ static bool blk_flush_complete_seq(struc
+ static void flush_end_io(struct request *flush_rq, int error)
+ {
+ 	struct request_queue *q = flush_rq->q;
+-	struct list_head *running = &q->flush_queue[q->flush_running_idx];
++	LIST_HEAD(proceed_list);
+ 	bool queued = false;
+ 	struct request *rq, *n;
+ 
+ 	BUG_ON(q->flush_pending_idx == q->flush_running_idx);
+ 
++	list_splice_init(&q->flush_queue[q->flush_running_idx], &proceed_list);
++	/*
++	 * If queue doesn't support queueable flush request, we can push the
++	 * pending requests to the next stage too. For such queue, there are no
++	 * normal requests running when flush request is running, so this still
++	 * guarantees the correctness.
++	 */
++	if (!blk_queue_flush_queueable(q))
++		list_splice_tail_init(&q->flush_queue[q->flush_pending_idx],
++			&proceed_list);
++
+ 	/* account completion of the flush request */
+ 	q->flush_running_idx ^= 1;
+ 	elv_completed_request(q, flush_rq);
+ 
+ 	/* and push the waiting requests to the next stage */
+-	list_for_each_entry_safe(rq, n, running, flush.list) {
++	list_for_each_entry_safe(rq, n, &proceed_list, flush.list) {
+ 		unsigned int seq = blk_flush_cur_seq(rq);
+ 
+ 		BUG_ON(seq != REQ_FSEQ_PREFLUSH && seq != REQ_FSEQ_POSTFLUSH);
+Index: linux/include/linux/blkdev.h
+===================================================================
+--- linux.orig/include/linux/blkdev.h	2011-04-19 09:15:15.000000000 +0800
++++ linux/include/linux/blkdev.h	2011-04-19 10:04:46.000000000 +0800
+@@ -366,6 +366,7 @@ struct request_queue
+ 	 * for flush operations
+ 	 */
+ 	unsigned int		flush_flags;
++	unsigned int		flush_not_queueable:1;
+ 	unsigned int		flush_pending_idx:1;
+ 	unsigned int		flush_running_idx:1;
+ 	unsigned long		flush_pending_since;
+@@ -552,6 +553,16 @@ static inline void blk_clear_queue_full(
+ 		queue_flag_clear(QUEUE_FLAG_ASYNCFULL, q);
+ }
+ 
++static inline void blk_set_queue_flush_queueable(struct request_queue *q,
++	bool queueable)
++{
++	q->flush_not_queueable = !queueable;
++}
++
++static inline bool blk_queue_flush_queueable(struct request_queue *q)
++{
++	return !q->flush_not_queueable;
++}
+ 
+ /*
+  * mergeable request must not have _NOMERGE or _BARRIER bit set, nor may
+
 
