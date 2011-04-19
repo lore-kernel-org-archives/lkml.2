@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab1DSOgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 10:36:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60827 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab1DSOfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 10:35:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Arend van Spriel" <arend@broadcom.com>
-Subject: Re: Could I (ab)use bus (struct bus_type) for virtual Broadcom bus?
-Date: Tue, 19 Apr 2011 16:35:40 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "George Kashperko" <george@znau.edu.ua>,
-        "Hauke Mehrtens" <hauke@hauke-m.de>,
-        "Russell King" <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Jonas Gorski" <jonas.gorski@gmail.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "Greg KH" <greg@kroah.com>, "Andy Botting" <andy@andybotting.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com> <201104171938.12834.arnd@arndb.de> <op.vt6ufu1n3ri7v4@arend-laptop>
-In-Reply-To: <op.vt6ufu1n3ri7v4@arend-laptop>
+	id S1752859Ab1DSOkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 10:40:08 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:46653 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab1DSOkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 10:40:07 -0400
+X-ASG-Debug-ID: 1303224004-01de284cf8166670001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DAD9EC5.4030400@fusionio.com>
+Date: Tue, 19 Apr 2011 16:40:05 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Mike Snitzer <snitzer@redhat.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: block: add blk_run_queue_async
+References: <20110418092647.GB3837@infradead.org> <BANLkTikOKji3_p+bqMO4zoSnXFunEdue0g@mail.gmail.com> <20110418195929.GA9650@infradead.org> <20110418202053.GA29394@redhat.com> <20110418214818.GA2217@redhat.com>
+X-ASG-Orig-Subj: Re: block: add blk_run_queue_async
+In-Reply-To: <20110418214818.GA2217@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201104191635.40351.arnd@arndb.de>
-X-Provags-ID: V02:K0:fXRHylkA2+wY5vvPccKtk0WgJgGWi5iGHjGdgqzhdEo
- 6XBSVH3DhdZK8pM+0UJqoTQ8FGrzP+mPieg2ZZ5NqP1G3kYb8b
- y4QSq/b28zX+uwD23cinmRgCmUX8jdCfGEL1bnJRGTYBjdTP5A
- fW1LHcw0cxMaQyxglXX7WZ9VAt9FqPp3SdqFxzaWeWtOVyDK/e
- YgEm5asWKvTzjG26RwVNw==
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1303224004
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.61318
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 April 2011, Arend van Spriel wrote:
-
-> > A new bus_type really only makes sense if you expect a lot of devices
-> > to use this and you want to have the probing in the bus. If you only
-> > want to have a way to enumerate devices that get created by the
-> > parent driver, you can also use platform devices.
+On 2011-04-18 23:48, Mike Snitzer wrote:
+> On Mon, Apr 18 2011 at  4:20pm -0400,
+> Mike Snitzer <snitzer@redhat.com> wrote:
 > 
-> The main assumption of the (bcm)axi driver seems to be that each core can
-> be considered as a device. Correct me if I am wrong, but I consider a
-> device to be an entity providing a particular system function. So an
-> ethernet device provides ethernet connectivity function, a mixer device
-> provides sound mixing function, and so on. The cores within a chip are not
-> always self-contained like this. To clarify let's say a system function is
-> realized by programming core A, core B, and finally trigger core A to set
-> the function in motion. This implies the need of coordination between the
-> programming steps on those cores.
+>> On Mon, Apr 18 2011 at  3:59pm -0400,
+>> Christoph Hellwig <hch@infradead.org> wrote:
+>>
+>>> On Mon, Apr 18, 2011 at 03:55:04PM -0400, Mike Snitzer wrote:
+>>>>> +{
+>>>>> + ? ? ? if (likely(!blk_queue_stopped(q)))
+>>>>> + ? ? ? ? ? ? ? queue_delayed_work(kblockd_workqueue, &q->delay_work, 0);
+>>>>
+>>>> I know Jens already queued this up 'for-linus' but why not use
+>>>> kblockd_schedule_work(q, &q->delay_work)?
+>>>
+>>> I don't see what that would buy us.  If we'd absolutely want a wrapper
+>>> a blk_delay_queue(q, 0) in Jens' current tree would do it now that is
+>>> has been fixed up to use the kblockd workqueue.
+>>
+>> Right, I missed 4521cc4 block: blk_delay_queue() should use kblockd
+>> workqueue.  So why not use blk_delay_queue()?
+>>
+>> I agree with Jens that it doesn't much matter but I also cannot see it
+>> being a bad thing.. I'd prefer it ;)
+>>
+>> *shrug*
 > 
-> Is my view on what is a device wrong? Does a platform device differ in
-> this respect from a regular device?
+> Also, FYI, I'm seeing a leftover '@force_kblockd: ...' comment in the
+> __blk_run_queue's comment block.
 
-A platform device means something that cannot be probed, in every other
-respect it is the same as other devices. From your explanation above,
-it seems that you don't actually need to represent the cores on your
-particular chips as struct device in Linux at all.
+Thanks Mike, I've killed that now.
 
-If you wanted to use platform_device, the right way would probably
-be an MFD device that creates multiple child devices (which end
-up as platform_device, though you don't need to worry about that)
-from the PCI driver. Then you could use the child devices completely
-independent from one another.
+-- 
+Jens Axboe
 
-Since you say that the cores in this case are tightly coupled and
-don't provide independent functionality to the system, there is
-no need to represent them as devices.
-
-	Arnd
