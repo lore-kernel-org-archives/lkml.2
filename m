@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1DSUou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Apr 2011 16:44:50 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:34306 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755236Ab1DSUot convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Apr 2011 16:44:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1303220033-5274-1-git-send-email-roger.quadros@nokia.com>
-References: <1303220033-5274-1-git-send-email-roger.quadros@nokia.com>
-Date: Tue, 19 Apr 2011 15:44:47 -0500
-Message-ID: <BANLkTinKUc17SevjYGpawqcCqnZpLMEhDQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] usb: gadget: Make mass_storage pass USBCV MSC
- Compliance tests
-From: "Sonasath, Moiz" <m-sonasath@ti.com>
-To: Roger Quadros <roger.quadros@nokia.com>
-Cc: gregkh@suse.de, stern@rowland.harvard.edu, mina86@mina86.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755236Ab1DSUpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Apr 2011 16:45:08 -0400
+Received: from kroah.org ([198.145.64.141]:58990 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754888Ab1DSUms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Apr 2011 16:42:48 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Apr 19 13:41:19 2011
+Message-Id: <20110419204118.941779217@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 19 Apr 2011 13:30:59 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [21/28] proc: do proper range check on readdir offset
+In-Reply-To: <20110419204122.GA13268@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roger,
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-On Tue, Apr 19, 2011 at 8:33 AM, Roger Quadros <roger.quadros@nokia.com> wrote:
->
-> Hi,
->
-> The first patch makes composite framework support a mechanism of defering
-> setup transfer's data/status phase.
->
-> Second patch makes f_mass_storage use that mechanism.
->
-> Together they help the composite devices using f_mass_storage interface to
-> pass USBCV Mass Storage Class compliance tests.
->
-> ---
-> Roger Quadros (2):
->  usb: gadget: composite: Allow function drivers to defer setup
->    responses
->  usb: gadget: f_mass_storage: Make us pass USBCV MSC Compliance tests
+------------------
 
-Apart from the comments going on, With these patches I see USBCV MSC
-tests passing. thanks for the effort Roger :)
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
---Acked
+commit d8bdc59f215e62098bc5b4256fd9928bf27053a1 upstream.
 
->
->  drivers/usb/gadget/composite.c      |   61 ++++++++++++++++++++++++++++++++++-
->  drivers/usb/gadget/f_mass_storage.c |    6 +++-
->  include/linux/usb/composite.h       |   17 +++++++++-
->  3 files changed, 81 insertions(+), 3 deletions(-)
->
+Rather than pass in some random truncated offset to the pid-related
+functions, check that the offset is in range up-front.
+
+This is just cleanup, the previous commit fixed the real problem.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/proc/base.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2806,11 +2806,16 @@ static int proc_pid_fill_cache(struct fi
+ /* for the /proc/ directory itself, after non-process stuff has been done */
+ int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ {
+-	unsigned int nr = filp->f_pos - FIRST_PROCESS_ENTRY;
+-	struct task_struct *reaper = get_proc_task(filp->f_path.dentry->d_inode);
++	unsigned int nr;
++	struct task_struct *reaper;
+ 	struct tgid_iter iter;
+ 	struct pid_namespace *ns;
+ 
++	if (filp->f_pos >= PID_MAX_LIMIT + TGID_OFFSET)
++		goto out_no_task;
++	nr = filp->f_pos - FIRST_PROCESS_ENTRY;
++
++	reaper = get_proc_task(filp->f_path.dentry->d_inode);
+ 	if (!reaper)
+ 		goto out_no_task;
+ 
 
 
-
-
---
-Regards
-Moiz Sonasath
-Android Kernel Team
