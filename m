@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab1DSBHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 21:07:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24253 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752884Ab1DSBHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 21:07:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,236,1301900400"; 
-   d="scan'208";a="421584524"
-Subject: Re: [RFC]block: add flush request at head
-From: Shaohua Li <shaohua.li@intel.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
-        Tejun Heo <htejun@gmail.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <20110418092607.GA3837@infradead.org>
-References: <1303112174.3981.187.camel@sli10-conroe>
-	 <4DABF194.4010603@fusionio.com>  <20110418092607.GA3837@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Apr 2011 09:07:04 +0800
-Message-ID: <1303175224.3981.202.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753655Ab1DSBO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 21:14:59 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59787 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab1DSBO6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 21:14:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Q00sm4LGS3vy/HqRodamKkj7uJy69bPei7/pmRi2+6hWfhc/HDKQqRhqWzL08UzDOl
+         zJ+oW/AdS/PU7viZAiGPxStSBm/fbZnieq6pSTMb2ty0X3LK0swAEtThdMcycs8mBp7y
+         crvofSMFO5Fb6Ba689FpxD/fx/2/NJPEdWK/Q=
+MIME-Version: 1.0
+In-Reply-To: <20110418220232.GA15967@hallyn.com>
+References: <BANLkTikTxCFHs2xb4b5QFQp3SJAEjgyRJg@mail.gmail.com>
+	<20110417180722.GA21112@hallyn.com>
+	<BANLkTinumLPEsstxP9px9=K23SUR9e2aRw@mail.gmail.com>
+	<20110418082838.GA30088@hallyn.com>
+	<BANLkTi=kxpFkQ86ZGd2_q+XFRm-nVWzw4g@mail.gmail.com>
+	<20110418220232.GA15967@hallyn.com>
+Date: Tue, 19 Apr 2011 10:14:57 +0900
+Message-ID: <BANLkTikJqgwGixtgXKOY-2e=1sAQYUtbcQ@mail.gmail.com>
+Subject: Re: Linux capabilities shouldn't be lost during setuid to non-root
+ from root or to another non-root uid from a non-root uid.
+From: crocket <crockabiscuit@gmail.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-18 at 17:26 +0800, Christoph Hellwig wrote:
-> On Mon, Apr 18, 2011 at 10:08:52AM +0200, Jens Axboe wrote:
-> > Might be worth adding something for this special case, seems like the
-> > NCQ restrictions will continue to be around forever (or a long time, at
-> > least).
-> 
-> I heared people are working on adding a queued FLUSH to the standard,
-> but it's going to take a long time for it to get into real life systems.
-> 
-> What would help now is allowing libata to actually use the FUA bit,
-> given that every common disk and controller supports it these days.
-> 
-> Shaohua, does adding a
-> 
-> 	libata.fua = 1
-> 
-> to the kernel command line help your benchmark in any way?  It should
-> if you flushes are mostly from journal writes, but not from fsync
-> that didn't change any metadata.
-This is a workload with fsync. I tested libata.fua=1, but nothing changed.
+Is there an existing utility that sets SECBIT_NO_SETUID_FIXUP?
+Or is there a way to set it without writing a C wrapper program?
 
-I also hacked the code when we proceed queue running flush list, also
-proceed queue pending flush list, which doesn't change correctness for
-sata. This improved a little, around 5%, but doesn't recover the whole
-regression. so I still need add the flush request at queue head.
-
-Thanks,
-Shaohua
-
-
+On Tue, Apr 19, 2011 at 7:02 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting crocket (crockabiscuit@gmail.com):
+>> I have several questions.
+>>
+>> 1) How do I set SECBIT_NO_SETUID_FIXUP?
+>
+> prctl(PR_SET_SECUREBITS, SECBIT_NO_SETUID_FIXUP | SECBIT_NO_SETUID_FIXUP_LOCKED)
+>
+> see capabilities(7) for details.
+>
+>> 2) Is there any reason to unset SECBIT_NO_SETUID_FIXUP by default?
+>
+> Yes, because it's what userspace expects.  If you prefer to run in
+> a full POSIX capabilities environment with unprivileged root, you
+> can have init set SECBIT_NO_SETUID_FIXUP and SECBIT_NOROOT and
+> tune userspace to do the right thing, but it's not trivial.
+>
+> -serge
+>
