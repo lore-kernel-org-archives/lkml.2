@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1DSDzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Apr 2011 23:55:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27745 "EHLO mga11.intel.com"
+	id S1752285Ab1DSD6d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Apr 2011 23:58:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45264 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab1DSDzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Apr 2011 23:55:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,237,1301900400"; 
-   d="scan'208";a="911435840"
-Date: Tue, 19 Apr 2011 11:55:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH 6/6] NFS: return -EAGAIN when skipped commit in
- nfs_commit_unstable_pages()
-Message-ID: <20110419035504.GB25194@localhost>
-References: <20110419030003.108796967@intel.com>
- <20110419030532.902141228@intel.com>
- <1303183747.5417.11.camel@lade.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303183747.5417.11.camel@lade.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751761Ab1DSD6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Apr 2011 23:58:30 -0400
+Date: Tue, 19 Apr 2011 13:58:18 +1000
+From: NeilBrown <neilb@suse.de>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH 6/6] overlay: overlay filesystem documentation
+Message-ID: <20110419135818.024cd289@notabene.brown>
+In-Reply-To: <7795.1303182317@jrobl>
+References: <1303142440-26328-1-git-send-email-miklos@szeredi.hu>
+	<1303142440-26328-7-git-send-email-miklos@szeredi.hu>
+	<7795.1303182317@jrobl>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trond,
+On Tue, 19 Apr 2011 12:05:17 +0900 "J. R. Okajima" <hooanon05@yahoo.co.jp>
+wrote:
 
-On Tue, Apr 19, 2011 at 11:29:07AM +0800, Trond Myklebust wrote:
-> On Tue, 2011-04-19 at 11:00 +0800, Wu Fengguang wrote:
-> > plain text document attachment (nfs-fix-write_inode-retval.patch)
-> > It's probably not sane to return success while redirtying the inode at
-> > the same time in ->write_inode().
-> > 
-> > CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  fs/nfs/write.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > --- linux-next.orig/fs/nfs/write.c	2011-04-19 10:18:16.000000000 +0800
-> > +++ linux-next/fs/nfs/write.c	2011-04-19 10:18:32.000000000 +0800
-> > @@ -1519,7 +1519,7 @@ static int nfs_commit_unstable_pages(str
-> >  {
-> >  	struct nfs_inode *nfsi = NFS_I(inode);
-> >  	int flags = FLUSH_SYNC;
-> > -	int ret = 0;
-> > +	int ret = -EAGAIN;
-> >  
-> >  	if (wbc->sync_mode == WB_SYNC_NONE) {
-> >  		/* Don't commit yet if this is a non-blocking flush and there
-> > 
-> > 
 > 
-> Hi Fengguang,
+> Hello Miklos,
 > 
-> I don't understand the purpose of this patch...
+> Miklos Szeredi:
+> > +The lower filesystem can be any filesystem supported by Linux and does
+> > +not need to be writable.  The lower filesystem can even be another
+> > +overlayfs.  ...
 > 
-> Currently, the value of 'ret' only affects the case where the commit
-> exits early due to this being a non-blocking flush where we have not yet
-> written back enough pages to make it worth our while to send a commit.
+> When user mounts overlayfs over and over like this,
+> # mount -t overlayfs -o upper=/rw1,lower=/ro1 none /ovl1
+> # mount -t overlayfs -o upper=/rw2,lower=/ovl1 none /ovl2
+> 	:::
+> # mount -t overlayfs -o upper=/rwN,lower=/ovl{N-1} none /ovlN
 > 
-> In essence, this really only matters for the cases where someone calls
-> 'write_inode_now' (not used by anybody calling into the NFS client) and
-> 'sync_inode', which is only called by nfs_wb_all (with sync_mode =
-> WB_SYNC_ALL).
+> And if he modify a file in the bottom RO layer, then overlayfs copies-up
+> the file into each RW layer?
+> - 'fileA' exists in only /ro1.
+> - nested mounts.
+> - run "echo append >> /ovlN/fileA"
+> - is fileA copied-up to /rw1, and then to /rw2, and then ... to /rwN?
 > 
-> So can you please elaborate on the possible use cases for this change?
+> If user specify a single dir as every upper laery, then the copyup will
+> be done only once, or such RW layers are not allowed?
+> 
+> 
+> J. R. Okajima
 
-Yeah it has no real impact for current kernel. The "fix" is just to
-make it behave more aligned to my expectation.
+Only to top level of an overlay stack is writable.  All others are or should
+be read only.  So only the top level can change.
 
-It did lead to a sync() hung bug with the v1 patch 4/6 in this series,
-where I do the below code and expected "write_inode() == 0" to be
-"done with the inode".  But only to find that it's not the case for NFS..
+So in your example, fileA will be copied from ro1 directly into rwN where it
+will then be appended to.
 
-Thanks,
-Fengguang
----
-
-@@ -389,6 +389,8 @@ writeback_single_inode(struct inode *ino
-                int err = write_inode(inode, wbc);
-                if (ret == 0)
-                        ret = err;
-+               if (!err)
-+                       wbc->inodes_written++;
-        }
-       
-        spin_lock(&inode_lock);
-@@ -664,6 +667,8 @@ static long wb_writeback(struct bdi_writ
-                 */
-                if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
-                        continue;
-+               if (wbc.inodes_written)
-+                       continue;
-               
-                /*
-                 * Nothing written and no more inodes for IO, bail
-
+NeilBrown
